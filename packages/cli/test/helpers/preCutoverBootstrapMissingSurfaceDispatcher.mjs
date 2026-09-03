@@ -56,9 +56,7 @@ try {
     });
   }
   process.stdout.write(`${JSON.stringify(observations)}\n`);
-  process.exit(observations.some(({ status, classification, childStarted, restored }) =>
-    status !== 64 || classification !== "invalid_authority" || childStarted || !restored
-  ) ? 65 : 0);
+  process.exit(observations.some(({ status, classification, childStarted, restored }) => status !== 64 || classification !== "invalid_authority" || childStarted || !restored) ? 65 : 0);
 } catch (error) {
   process.stderr.write(`${JSON.stringify({ diagnostic: String(error?.message ?? error) })}\n`);
   process.exit(64);

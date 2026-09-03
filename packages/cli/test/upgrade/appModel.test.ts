@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  doctorRoots,
-  loadSuiteVersion,
-  resolveActiveAppModel,
-  resolveInstallRoot,
-} from "../../src/upgrade/appModel.js";
+import { doctorRoots, loadSuiteVersion, resolveActiveAppModel, resolveInstallRoot } from "../../src/upgrade/appModel.js";
 import { resolvePath } from "../../src/core/paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -47,16 +42,12 @@ describe("resolveInstallRoot", () => {
 
   it("falls back to the platform default when no env is set", () => {
     const xdg = path.join(home, ".local", "share");
-    expect(resolveInstallRoot(null, REPO_ROOT, home, { XDG_DATA_HOME: xdg })).toBe(
-      resolvePath(platformDefaultAppHome(home, xdg)),
-    );
+    expect(resolveInstallRoot(null, REPO_ROOT, home, { XDG_DATA_HOME: xdg })).toBe(resolvePath(platformDefaultAppHome(home, xdg)));
   });
 
   it("uses AGENTERA_DEFAULT_INSTALL_ROOT when present", () => {
     const dflt = path.join(home, "dflt");
-    expect(resolveInstallRoot(null, REPO_ROOT, home, { AGENTERA_DEFAULT_INSTALL_ROOT: dflt })).toBe(
-      resolvePath(dflt),
-    );
+    expect(resolveInstallRoot(null, REPO_ROOT, home, { AGENTERA_DEFAULT_INSTALL_ROOT: dflt })).toBe(resolvePath(dflt));
   });
 
   it("recovers from a stale legacy default app home to the platform default", () => {

@@ -7,21 +7,11 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
-import {
-  CAPABILITY_INSTRUCTIONS,
-  capabilityInstructionModulePath,
-} from "../../src/capabilities/index.js";
+import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
 import { preCutoverInstructionBody } from "../../src/cli/preCutoverCommand.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
-import {
-  printCapabilityHelp,
-  printRouteHelp,
-  printStateHelp,
-  printTopLevelHelp,
-  printUpgradeHelp,
-  stateCommandNames,
-} from "../../src/cli/help.js";
+import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
 import {
   preCutoverBootstrapAuthorityDiagnostics,
   preCutoverBootstrapGuidanceViolations,
@@ -44,73 +34,25 @@ const forbiddenCurrentSupportPatterns = [
   ["Claude Code Task tool", /Claude Code:\s*Task tool/i],
   ["Claude runtime question tool", /Claude Code\s+`AskUserQuestion`/i],
   ["Claude runtime opt-out", /--no-claude\b/i],
-  [
-    "Claude in a supported runtime list",
-    /(?:supported|active) runtime(?: ids|s)?(?:\s+are|:)?[^.\n]*(?:\bclaude\b|claude-code)/i,
-  ],
-  [
-    "Claude in supported runtime sources",
-    /Supported runtime sources:[\s\S]{0,800}\*\*Claude Code\*\*/i,
-  ],
-  [
-    "Claude install command",
-    /(?:\bnpx\s+(?:-y\s+)?skills\s+add[^\n]*(?:\bclaude\b|claude-code)|\bclaude\s+(?:plugin|install|setup|configure)\b[^\n]*agentera)/i,
-  ],
-  [
-    "active native runtime roster",
-    /Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot/i,
-  ],
+  ["Claude in a supported runtime list", /(?:supported|active) runtime(?: ids|s)?(?:\s+are|:)?[^.\n]*(?:\bclaude\b|claude-code)/i],
+  ["Claude in supported runtime sources", /Supported runtime sources:[\s\S]{0,800}\*\*Claude Code\*\*/i],
+  ["Claude install command", /(?:\bnpx\s+(?:-y\s+)?skills\s+add[^\n]*(?:\bclaude\b|claude-code)|\bclaude\s+(?:plugin|install|setup|configure)\b[^\n]*agentera)/i],
+  ["active native runtime roster", /Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot/i],
   ["runtime selector write requirement", /runtime writes require an explicit selector/i],
   ["managed native repair", /managed runtime config, plugins, hooks, commands, and safe cleanup/i],
   ["active package-update flag", /External package manager changes require `--update-packages`/i],
-  [
-    "active narrow bundle selector",
-    /`--only bundle`\s*\|\s*Compatibility selector for narrow app-file work/i,
-  ],
-  [
-    "active runtime adapter",
-    /Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation/i,
-  ],
+  ["active narrow bundle selector", /`--only bundle`\s*\|\s*Compatibility selector for narrow app-file work/i],
+  ["active runtime adapter", /Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation/i],
   ["active plugin hooks", /Hooks that are shipped by active runtime plugin package surfaces/i],
-  [
-    "named native worker roster",
-    /worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI/i,
-  ],
+  ["named native worker roster", /worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI/i],
   ["runtime setup doctor", /Diagnostic command surface for install\/runtime health/i],
 ] as const;
 
-const publicInstallSurfaceRoots = [
-  "AGENTS.md",
-  "README.md",
-  "packages/cli/README.md",
-  "packages/cli/shim",
-  "packages/cli/src/cli/help.ts",
-  "UPGRADE.md",
-  "references/adapters/package-surface-characterization.md",
-  "references/cli/app-lifecycle-vocabulary.yaml",
-  "references/cli/vocabulary.md",
-] as const;
+const publicInstallSurfaceRoots = ["AGENTS.md", "README.md", "packages/cli/README.md", "packages/cli/shim", "packages/cli/src/cli/help.ts", "UPGRADE.md", "references/adapters/package-surface-characterization.md", "references/cli/app-lifecycle-vocabulary.yaml", "references/cli/vocabulary.md"] as const;
 
-const retiredInstallerSurfaces = [
-  "packages/cli/shim/lib/exec.mjs",
-  "references/adapters/package-registry.yaml",
-  "references/adapters/package-surface-characterization.md",
-] as const;
+const retiredInstallerSurfaces = ["packages/cli/shim/lib/exec.mjs", "references/adapters/package-registry.yaml", "references/adapters/package-surface-characterization.md"] as const;
 
-const textExtensions = new Set([
-  ".astro",
-  ".cjs",
-  ".js",
-  ".json",
-  ".md",
-  ".mdx",
-  ".mjs",
-  ".sh",
-  ".toml",
-  ".ts",
-  ".yaml",
-  ".yml",
-]);
+const textExtensions = new Set([".astro", ".cjs", ".js", ".json", ".md", ".mdx", ".mjs", ".sh", ".toml", ".ts", ".yaml", ".yml"]);
 
 function read(relativePath: string): string {
   return fs.readFileSync(path.join(repoRoot, relativePath), "utf8");
@@ -134,37 +76,35 @@ function commandAuthorityFixture(): string {
   fs.mkdirSync(path.join(root, "packages/cli/src/emitted"), { recursive: true });
   fs.writeFileSync(path.join(root, "docs/guidance.md"), "Run `npx -y agentera@next prime`.\n");
   fs.writeFileSync(path.join(root, "LICENSE"), "fixture license\n");
-  fs.writeFileSync(path.join(root, "packages/cli/src/cli/preCutoverCommand.ts"), [
-    "export const preCutoverCommand = (value: string) => value;",
-    "export const preCutoverInstructionBody = (value: string) => value;",
-    "export const preCutoverCommandFromBare = (value: string) => value;",
-    "",
-  ].join("\n"));
-  fs.writeFileSync(path.join(root, "packages/cli/src/emitted/guidance.ts"), [
-    'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-    'preCutoverCommand("prime");',
-    "",
-  ].join("\n"));
-  fs.writeFileSync(path.join(root, "references/adapters/package-registry.yaml"), YAML.stringify({
-    records: [{
-      identity: { id: "agentera" },
-      bundle_surfaces: {
-        directories: [{ path: "docs" }],
-        files: [{ path: "LICENSE" }],
-        generated_files: [{
-          id: "generated-fixture",
-          path: "generated.json",
-          format: "json",
-          classification: "active",
-          command_authority_reason: "Generated only during package construction.",
-        }],
-      },
-      bootstrap_command_authority: {
-        emitted_producers: [{ path: "packages/cli/src/emitted/guidance.ts", reason: "Guarded fixture producer." }],
-        constructor_non_producers: [],
-      },
-    }],
-  }));
+  fs.writeFileSync(path.join(root, "packages/cli/src/cli/preCutoverCommand.ts"), ["export const preCutoverCommand = (value: string) => value;", "export const preCutoverInstructionBody = (value: string) => value;", "export const preCutoverCommandFromBare = (value: string) => value;", ""].join("\n"));
+  fs.writeFileSync(path.join(root, "packages/cli/src/emitted/guidance.ts"), ['import { preCutoverCommand } from "../cli/preCutoverCommand.js";', 'preCutoverCommand("prime");', ""].join("\n"));
+  fs.writeFileSync(
+    path.join(root, "references/adapters/package-registry.yaml"),
+    YAML.stringify({
+      records: [
+        {
+          identity: { id: "agentera" },
+          bundle_surfaces: {
+            directories: [{ path: "docs" }],
+            files: [{ path: "LICENSE" }],
+            generated_files: [
+              {
+                id: "generated-fixture",
+                path: "generated.json",
+                format: "json",
+                classification: "active",
+                command_authority_reason: "Generated only during package construction.",
+              },
+            ],
+          },
+          bootstrap_command_authority: {
+            emitted_producers: [{ path: "packages/cli/src/emitted/guidance.ts", reason: "Guarded fixture producer." }],
+            constructor_non_producers: [],
+          },
+        },
+      ],
+    }),
+  );
   return root;
 }
 
@@ -187,9 +127,7 @@ function decodeRawCapabilityModule(relativePath: string): string {
 }
 
 function currentSupportViolations(content: string): string[] {
-  return forbiddenCurrentSupportPatterns
-    .filter(([, pattern]) => pattern.test(content))
-    .map(([label]) => label);
+  return forbiddenCurrentSupportPatterns.filter(([, pattern]) => pattern.test(content)).map(([label]) => label);
 }
 
 function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void {
@@ -200,10 +138,7 @@ function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void 
   const wildcard = relativePath.search(/[?*[]/);
   if (wildcard >= 0) {
     const prefix = relativePath.slice(0, wildcard);
-    collectTextSurfaces(
-      prefix.endsWith("/") ? prefix.slice(0, -1) : path.dirname(prefix),
-      surfaces,
-    );
+    collectTextSurfaces(prefix.endsWith("/") ? prefix.slice(0, -1) : path.dirname(prefix), surfaces);
     return;
   }
 
@@ -231,9 +166,7 @@ describe("retired runtime current-surface policy", () => {
       const raw = decodeRawCapabilityModule(modulePath);
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
-      const canonical = typeof module.servedInstructions === "function"
-        ? module.servedInstructions()
-        : staticInstructions;
+      const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
       const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       surfaces.push([`${modulePath} raw instructions`, raw]);
       surfaces.push([`${modulePath} served instructions`, expected]);
@@ -247,22 +180,11 @@ describe("retired runtime current-surface policy", () => {
 
   it("keeps every complete served body and active bundled bootstrap authority on @next", () => {
     for (const [capability, body] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
-      expect(
-        preCutoverBootstrapAuthorityDiagnostics(`${capability}.md`, body),
-        `${capability} complete served body`,
-      ).toEqual([]);
-      expect(body, `${capability} development bootstrap`).toContain(
-        `npx -y agentera@next prime --context ${capability}`,
-      );
+      expect(preCutoverBootstrapAuthorityDiagnostics(`${capability}.md`, body), `${capability} complete served body`).toEqual([]);
+      expect(body, `${capability} development bootstrap`).toContain(`npx -y agentera@next prime --context ${capability}`);
     }
     const authorities = registryBundledAuthorityPaths(repoRoot);
-    expect(authorities).toEqual(expect.arrayContaining([
-      "README.md",
-      "UPGRADE.md",
-      "references/cli/routing-model.md",
-      "references/cli/vocabulary.md",
-      "skills/agentera/SKILL.md",
-    ]));
+    expect(authorities).toEqual(expect.arrayContaining(["README.md", "UPGRADE.md", "references/cli/routing-model.md", "references/cli/vocabulary.md", "skills/agentera/SKILL.md"]));
     expect(registryBundledAuthorityViolations(repoRoot), `${authorities.length} registry-owned source authorities`).toEqual([]);
   });
 
@@ -284,24 +206,14 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("exempts only the two exact stable-v2 upgrade commands", () => {
-    const content = read("UPGRADE.md").replace(
-      "npx -y agentera@latest upgrade --dry-run",
-      "npx -y agentera@latest prime --context status",
-    );
-    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
-      .toContain("UPGRADE.md: stable_v2_sequence");
+    const content = read("UPGRADE.md").replace("npx -y agentera@latest upgrade --dry-run", "npx -y agentera@latest prime --context status");
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]]))).toContain("UPGRADE.md: stable_v2_sequence");
   });
 
   it("distinguishes executable startup guidance from vocabulary labels", () => {
-    expect(preCutoverBootstrapGuidanceViolations(
-      "CLI-visible `agentera prime` labels are source labels; `agentera doctor` is a diagnostic name.",
-    )).toEqual([]);
-    expect(preCutoverBootstrapGuidanceViolations(
-      "Recovery: Run `agentera doctor`.",
-    )).toEqual(["bare_executable"]);
-    expect(preCutoverBootstrapGuidanceViolations(
-      "```bash\nagentera prime --context status\n```",
-    )).toEqual(["bare_executable"]);
+    expect(preCutoverBootstrapGuidanceViolations("CLI-visible `agentera prime` labels are source labels; `agentera doctor` is a diagnostic name.")).toEqual([]);
+    expect(preCutoverBootstrapGuidanceViolations("Recovery: Run `agentera doctor`.")).toEqual(["bare_executable"]);
+    expect(preCutoverBootstrapGuidanceViolations("```bash\nagentera prime --context status\n```")).toEqual(["bare_executable"]);
   });
 
   it.each([
@@ -317,13 +229,18 @@ describe("retired runtime current-surface policy", () => {
   ])("rejects Markdown command evasion with complete diagnostics: %s", (_label, content) => {
     const diagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.md", content);
     expect(diagnostics).not.toEqual([]);
-    expect(diagnostics[0]).toEqual(expect.objectContaining({
-      path: "fixture.md",
-      location: expect.objectContaining({ line: expect.any(Number), column: expect.any(Number) }),
-      candidate: expect.objectContaining({ raw: expect.any(String), normalized: expect.any(String) }),
-      violation: expect.any(String),
-      correction: expect.stringContaining("npx -y agentera@next"),
-    }));
+    expect(diagnostics[0]).toEqual(
+      expect.objectContaining({
+        path: "fixture.md",
+        location: expect.objectContaining({ line: expect.any(Number), column: expect.any(Number) }),
+        candidate: expect.objectContaining({
+          raw: expect.any(String),
+          normalized: expect.any(String),
+        }),
+        violation: expect.any(String),
+        correction: expect.stringContaining("npx -y agentera@next"),
+      }),
+    );
   });
 
   it.each([
@@ -331,16 +248,21 @@ describe("retired runtime current-surface policy", () => {
     ["and composition", "```bash\nnpx -y agentera@next prime && true\n```", "command_composition"],
     ["pipeline", "```bash\nnpx -y agentera@next doctor | jq .\n```", "command_composition"],
     ["substitution", "```bash\nresult=$(npx -y agentera@next prime)\n```", "command_substitution"],
-    ["split dist-tag", "```bash\nnpx -y agentera@ne\"xt\" prime\n```", "noncanonical_development_executable"],
+    ["split dist-tag", '```bash\nnpx -y agentera@ne"xt" prime\n```', "noncanonical_development_executable"],
   ])("rejects a non-exact complete shell context: %s", (_label, content, violation) => {
     const [diagnostic] = preCutoverBootstrapAuthorityDiagnostics("shell.md", content);
-    expect(diagnostic).toEqual(expect.objectContaining({
-      path: "shell.md",
-      location: expect.objectContaining({ line: 2, column: expect.any(Number) }),
-      candidate: expect.objectContaining({ raw: expect.any(String), normalized: expect.any(String) }),
-      violation,
-      correction: expect.stringMatching(/^npx -y agentera@next /),
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        path: "shell.md",
+        location: expect.objectContaining({ line: 2, column: expect.any(Number) }),
+        candidate: expect.objectContaining({
+          raw: expect.any(String),
+          normalized: expect.any(String),
+        }),
+        violation,
+        correction: expect.stringMatching(/^npx -y agentera@next /),
+      }),
+    );
   });
 
   it.each([
@@ -354,11 +276,13 @@ describe("retired runtime current-surface policy", () => {
   ])("rejects a canonical-composition escape: %s", (_label, command) => {
     const scan = scanBootstrapAuthority("escape.md", `\`\`\`text\n${command}\n\`\`\`\n`);
     expect(scan.spans).toHaveLength(1);
-    expect(scan.diagnostics).toEqual([expect.objectContaining({
-      token: expect.objectContaining({ raw: expect.stringContaining("agentera") }),
-      candidate: expect.objectContaining({ raw: expect.stringContaining("agentera") }),
-      correction: expect.stringContaining("npx -y agentera@next"),
-    })]);
+    expect(scan.diagnostics).toEqual([
+      expect.objectContaining({
+        token: expect.objectContaining({ raw: expect.stringContaining("agentera") }),
+        candidate: expect.objectContaining({ raw: expect.stringContaining("agentera") }),
+        correction: expect.stringContaining("npx -y agentera@next"),
+      }),
+    ]);
   });
 
   it.each([
@@ -376,15 +300,19 @@ describe("retired runtime current-surface policy", () => {
   ])("rejects a bounded shell redirection in the IR: %s", (_label, command) => {
     const scan = scanBootstrapAuthority("redirection.md", `\`\`\`bash\n${command}\n\`\`\`\n`);
     expect(scan.spans).toHaveLength(1);
-    expect(scan.spans[0]).toEqual(expect.objectContaining({
-      candidate: { raw: command, normalized: command },
-      traits: expect.objectContaining({ composed: true, composition_kinds: ["redirection"] }),
-    }));
-    expect(scan.diagnostics).toEqual([expect.objectContaining({
-      candidate: { raw: command, normalized: command },
-      violation: "command_composition",
-      correction: "npx -y agentera@next prime",
-    })]);
+    expect(scan.spans[0]).toEqual(
+      expect.objectContaining({
+        candidate: { raw: command, normalized: command },
+        traits: expect.objectContaining({ composed: true, composition_kinds: ["redirection"] }),
+      }),
+    );
+    expect(scan.diagnostics).toEqual([
+      expect.objectContaining({
+        candidate: { raw: command, normalized: command },
+        violation: "command_composition",
+        correction: "npx -y agentera@next prime",
+      }),
+    ]);
   });
 
   it.each([
@@ -403,11 +331,13 @@ describe("retired runtime current-surface policy", () => {
     const sibling = scan.spans.find(({ token }) => token.normalized === "agentera");
     expect(diagnostic, `${_label}: development diagnostic`).toBeDefined();
     expect(sibling?.candidate.raw).toBe("agentera sibling");
-    expect(diagnostic).toEqual(expect.objectContaining({
-      candidate: { raw: invalid, normalized: invalid },
-      correction: "npx -y agentera@next prime",
-      traits: expect.objectContaining({ composition_kinds: expect.arrayContaining([kind]) }),
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        candidate: { raw: invalid, normalized: invalid },
+        correction: "npx -y agentera@next prime",
+        traits: expect.objectContaining({ composition_kinds: expect.arrayContaining([kind]) }),
+      }),
+    );
     expect(diagnostic!.correction).not.toBe(diagnostic!.candidate?.raw);
     expect(diagnostic!.correction).not.toBe(diagnostic!.candidate?.normalized);
     expect(preCutoverBootstrapAuthorityDiagnostics("correction-result.md", `${diagnostic!.correction}\n`)).toEqual([]);
@@ -423,11 +353,13 @@ describe("retired runtime current-surface policy", () => {
   ])("removes the complete %s without touching a sibling", (_label, invalid, kind) => {
     const scan = scanBootstrapAuthority("prefix.md", `\`\`\`bash\n${invalid}\nagentera sibling\n\`\`\`\n`);
     const diagnostic = scan.diagnostics.find(({ token }) => token?.normalized === "agentera@next");
-    expect(diagnostic).toEqual(expect.objectContaining({
-      candidate: { raw: invalid, normalized: invalid },
-      correction: "npx -y agentera@next prime",
-      traits: expect.objectContaining({ composition_kinds: expect.arrayContaining([kind]) }),
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        candidate: { raw: invalid, normalized: invalid },
+        correction: "npx -y agentera@next prime",
+        traits: expect.objectContaining({ composition_kinds: expect.arrayContaining([kind]) }),
+      }),
+    );
     expect(scan.spans.find(({ token }) => token.normalized === "agentera")?.candidate.raw).toBe("agentera sibling");
     expect(preCutoverBootstrapAuthorityDiagnostics("prefix-correction.md", `${diagnostic!.correction}\n`)).toEqual([]);
   });
@@ -435,10 +367,12 @@ describe("retired runtime current-surface policy", () => {
   it("retains complete quoted command syntax before removing composition", () => {
     const invalid = 'npx -y agentera@next prime --context "status" `printf x`';
     const [diagnostic] = preCutoverBootstrapAuthorityDiagnostics("quoted-correction.md", `\`\`\`bash\n${invalid}\n\`\`\`\n`);
-    expect(diagnostic).toEqual(expect.objectContaining({
-      candidate: { raw: invalid, normalized: invalid },
-      correction: 'npx -y agentera@next prime --context "status"',
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        candidate: { raw: invalid, normalized: invalid },
+        correction: 'npx -y agentera@next prime --context "status"',
+      }),
+    );
     expect(preCutoverBootstrapAuthorityDiagnostics("quoted-result.md", `${diagnostic.correction}\n`)).toEqual([]);
   });
 
@@ -449,12 +383,14 @@ describe("retired runtime current-surface policy", () => {
     const content = `${invalid}\nagentera sibling\n`;
     const scan = scanBootstrapAuthority("unclosed-quote.md", content);
     const diagnostic = scan.diagnostics.find(({ token }) => token?.normalized === "agentera@next");
-    expect(diagnostic).toEqual(expect.objectContaining({
-      candidate: { raw: invalid, normalized: invalid },
-      violation: "malformed_command_context",
-      correction,
-      traits: expect.objectContaining({ malformed: true }),
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        candidate: { raw: invalid, normalized: invalid },
+        violation: "malformed_command_context",
+        correction,
+        traits: expect.objectContaining({ malformed: true }),
+      }),
+    );
     expect(diagnostic!.correction).not.toBe(diagnostic!.candidate!.raw);
     expect(preCutoverBootstrapAuthorityDiagnostics("quote-correction.md", `${diagnostic!.correction}\n`)).toEqual([]);
     expect(scan.spans.find(({ token }) => token.normalized === "agentera")?.candidate.raw).toBe("agentera sibling");
@@ -470,23 +406,14 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("scans stable commands in a Markdown text fence", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "stable-text.md",
-      "```text\nnpx -y agentera@latest prime\n```\n",
-    )).toEqual([expect.objectContaining({ violation: "stable_channel_outside_exemption" })]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("stable-text.md", "```text\nnpx -y agentera@latest prime\n```\n")).toEqual([expect.objectContaining({ violation: "stable_channel_outside_exemption" })]);
   });
 
   it("does not treat documented angle placeholders as shell operators", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "placeholder.md",
-      "```bash\nnpx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb>\n```\n",
-    )).toEqual([]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("placeholder.md", "```bash\nnpx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb>\n```\n")).toEqual([]);
   });
 
-  it.each([
-    "Run agentera CLI now.",
-    "The agentera CLI is descriptive; run agentera destroy --yes.",
-  ])("does not let descriptive vocabulary authorize a positive sibling: %s", (content) => {
+  it.each(["Run agentera CLI now.", "The agentera CLI is descriptive; run agentera destroy --yes."])("does not let descriptive vocabulary authorize a positive sibling: %s", (content) => {
     expect(preCutoverBootstrapAuthorityDiagnostics("contamination.md", content)).not.toEqual([]);
   });
 
@@ -500,8 +427,7 @@ describe("retired runtime current-surface policy", () => {
       { start: firstStart, end: firstStart + "\\u0061gentera".length },
       { start: secondStart, end: secondStart + "agentera".length },
     ]);
-    expect(scan.spans.map(({ raw_document_offsets }) => raw_document_offsets && content
-      .slice(raw_document_offsets.start, raw_document_offsets.end))).toEqual(["\\u0061gentera", "agentera"]);
+    expect(scan.spans.map(({ raw_document_offsets }) => raw_document_offsets && content.slice(raw_document_offsets.start, raw_document_offsets.end))).toEqual(["\\u0061gentera", "agentera"]);
   });
 
   it("segments no-space operator siblings into disjoint corrections", () => {
@@ -510,20 +436,18 @@ describe("retired runtime current-surface policy", () => {
       [{ start: 0, end: 14 }, "agentera three"],
       [{ start: 15, end: 28 }, "agentera four"],
     ]);
-    expect(scan.diagnostics.map(({ correction }) => correction)).toEqual([
-      "npx -y agentera@next three",
-      "npx -y agentera@next four",
-    ]);
+    expect(scan.diagnostics.map(({ correction }) => correction)).toEqual(["npx -y agentera@next three", "npx -y agentera@next four"]);
   });
 
   it("treats standalone structured no-argument commands as executable", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics("command.yaml", "nested:\n  command: agentera prime\n"))
-      .toEqual([expect.objectContaining({
+    expect(preCutoverBootstrapAuthorityDiagnostics("command.yaml", "nested:\n  command: agentera prime\n")).toEqual([
+      expect.objectContaining({
         location: { structured_path: '$["nested"]["command"]', offset: 0 },
         candidate: { raw: "agentera prime", normalized: "agentera prime" },
         violation: "bare_executable",
         correction: "npx -y agentera@next prime",
-      })]);
+      }),
+    ]);
   });
 
   it.each([
@@ -533,73 +457,72 @@ describe("retired runtime current-surface policy", () => {
   ])("returns diagnostics instead of crashing for %s", (_label, surface, content, violation) => {
     const diagnostics = preCutoverBootstrapAuthorityDiagnostics(surface, content);
     expect(diagnostics).not.toEqual([]);
-    expect(diagnostics[0]).toEqual(expect.objectContaining({
-      path: surface,
-      location: { structured_path: "$" },
-      violation,
-      correction: expect.any(String),
-    }));
+    expect(diagnostics[0]).toEqual(
+      expect.objectContaining({
+        path: surface,
+        location: { structured_path: "$" },
+        violation,
+        correction: expect.any(String),
+      }),
+    );
   });
 
   it("parses nested YAML and JSON strings, multiline values, and every candidate", () => {
-    const yamlDiagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.yaml", [
-      "outer:",
-      "  prompts:",
-      "    - >-",
-      "        First run agentera prime",
-      "        --context status.",
-      "    - recovery: npx -y agentera@latest doctor",
-    ].join("\n"));
+    const yamlDiagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.yaml", ["outer:", "  prompts:", "    - >-", "        First run agentera prime", "        --context status.", "    - recovery: npx -y agentera@latest doctor"].join("\n"));
     expect(yamlDiagnostics).toHaveLength(2);
     expect(yamlDiagnostics.map(({ location }) => location)).toEqual([
       { structured_path: '$["outer"]["prompts"][0]', offset: 10 },
       { structured_path: '$["outer"]["prompts"][1]["recovery"]', offset: 7 },
     ]);
-    const jsonDiagnostics = preCutoverBootstrapAuthorityDiagnostics("fixture.json", JSON.stringify({
-      nested: [{ command: "agentera doctor; agentera prime" }],
-    }));
+    const jsonDiagnostics = preCutoverBootstrapAuthorityDiagnostics(
+      "fixture.json",
+      JSON.stringify({
+        nested: [{ command: "agentera doctor; agentera prime" }],
+      }),
+    );
     expect(jsonDiagnostics).toHaveLength(2);
-    expect(jsonDiagnostics).toEqual(Array.from({ length: 2 }, () => expect.objectContaining({
-      violation: "command_composition",
-      candidate: expect.objectContaining({ raw: expect.stringMatching(/^agentera (?:doctor|prime)/) }),
-    })));
+    expect(jsonDiagnostics).toEqual(
+      Array.from({ length: 2 }, () =>
+        expect.objectContaining({
+          violation: "command_composition",
+          candidate: expect.objectContaining({
+            raw: expect.stringMatching(/^agentera (?:doctor|prime)/),
+          }),
+        }),
+      ),
+    );
     expect(jsonDiagnostics.every(({ location }) => "structured_path" in location)).toBe(true);
   });
 
-  it.each(["state", "schema", "check", "report", "future-command"])(
-    "recognizes %s without a subcommand allowlist",
-    (subcommand) => {
-      expect(preCutoverBootstrapAuthorityDiagnostics(
-        "universal.md",
-        `- agentera ${subcommand}`,
-      )).toEqual([expect.objectContaining({
+  it.each(["state", "schema", "check", "report", "future-command"])("recognizes %s without a subcommand allowlist", (subcommand) => {
+    expect(preCutoverBootstrapAuthorityDiagnostics("universal.md", `- agentera ${subcommand}`)).toEqual([
+      expect.objectContaining({
         candidate: expect.objectContaining({ raw: `agentera ${subcommand}` }),
         violation: "bare_executable",
-      })]);
-      expect(preCutoverBootstrapAuthorityDiagnostics(
-        "universal.md",
-        `- npx -y agentera@next ${subcommand}`,
-      )).toEqual([]);
-    },
-  );
+      }),
+    ]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("universal.md", `- npx -y agentera@next ${subcommand}`)).toEqual([]);
+  });
 
   it.each([
     ["YAML literal", "commands.yaml", "command: |\n  npx -y agentera@next prime\n  agentera state todo list\n", ["bare_executable"]],
     ["YAML folded", "commands.yaml", "command: >-\n  npx -y agentera@next prime;\n  agentera schema\n", ["command_composition", "command_composition"]],
-    ["JSON multiline", "commands.json", JSON.stringify({ command: "npx -y agentera@next check compact\nagentera report profile-grounding" }), ["bare_executable"]],
+    [
+      "JSON multiline",
+      "commands.json",
+      JSON.stringify({
+        command: "npx -y agentera@next check compact\nagentera report profile-grounding",
+      }),
+      ["bare_executable"],
+    ],
   ])("inspects every command boundary in %s", (_label, surface, content, expectedViolations) => {
     const diagnostics = preCutoverBootstrapAuthorityDiagnostics(surface, content);
     expect(diagnostics.map(({ violation }) => violation)).toEqual(expectedViolations);
-    expect(diagnostics.some(({ candidate }) => candidate?.normalized.includes("agentera state")
-      || candidate?.normalized.includes("agentera schema")
-      || candidate?.normalized.includes("agentera report"))).toBe(true);
+    expect(diagnostics.some(({ candidate }) => candidate?.normalized.includes("agentera state") || candidate?.normalized.includes("agentera schema") || candidate?.normalized.includes("agentera report"))).toBe(true);
   });
 
   it("returns one diagnostic per Agentera invocation in a composed scalar", () => {
-    const diagnostics = preCutoverBootstrapAuthorityDiagnostics(
-      "commands.json",
-      JSON.stringify({ command: "npx -y agentera@next prime; agentera state todo list" }),
-    );
+    const diagnostics = preCutoverBootstrapAuthorityDiagnostics("commands.json", JSON.stringify({ command: "npx -y agentera@next prime; agentera state todo list" }));
     expect(diagnostics).toHaveLength(2);
     expect(diagnostics.every(({ violation }) => violation === "command_composition")).toBe(true);
   });
@@ -615,31 +538,19 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("keeps descriptive structured vocabulary non-executable", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "description.yaml",
-      "description: The `agentera future-one` label names a future command.\n",
-    )).toEqual([]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("description.yaml", "description: The `agentera future-one` label names a future command.\n")).toEqual([]);
   });
 
   it("keeps every invocation distinct above the retired shell nesting bound", () => {
-    const command = Array.from({ length: 10 }).reduce(
-      (payload) => `bash -c ${JSON.stringify(payload)}`,
-      "agentera future-one; agentera future-two",
-    );
-    const diagnostics = preCutoverBootstrapAuthorityDiagnostics(
-      "nested.yaml",
-      YAML.stringify({ command }),
-    );
+    const command = Array.from({ length: 10 }).reduce((payload) => `bash -c ${JSON.stringify(payload)}`, "agentera future-one; agentera future-two");
+    const diagnostics = preCutoverBootstrapAuthorityDiagnostics("nested.yaml", YAML.stringify({ command }));
     expect(diagnostics).toHaveLength(2);
     expect(diagnostics.every(({ violation }) => violation === "command_composition")).toBe(true);
     expect(new Set(diagnostics.map(({ location }) => JSON.stringify(location))).size).toBe(2);
   });
 
   it("keeps statement inventory boundaries authoritative through context, diagnostics, and corrections", () => {
-    const grouped = preCutoverBootstrapAuthorityDiagnostics(
-      "grouped.md",
-      "Run (agentera one) && agentera two | agentera three; agentera four.\n",
-    );
+    const grouped = preCutoverBootstrapAuthorityDiagnostics("grouped.md", "Run (agentera one) && agentera two | agentera three; agentera four.\n");
     expect(grouped).toHaveLength(4);
     expect(grouped.map(({ location }) => location)).toEqual([
       { line: 1, column: 6 },
@@ -654,29 +565,22 @@ describe("retired runtime current-surface policy", () => {
       ["agentera four", "npx -y agentera@next four"],
     ]);
 
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "negated-positive.md",
-      "Do not run agentera old-command; instead use agentera second-future.\n",
-    )).toEqual([expect.objectContaining({
-      location: { line: 1, column: 46 },
-      candidate: { raw: "agentera second-future", normalized: "agentera second-future" },
-      correction: "npx -y agentera@next second-future",
-    })]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("negated-positive.md", "Do not run agentera old-command; instead use agentera second-future.\n")).toEqual([
+      expect.objectContaining({
+        location: { line: 1, column: 46 },
+        candidate: { raw: "agentera second-future", normalized: "agentera second-future" },
+        correction: "npx -y agentera@next second-future",
+      }),
+    ]);
 
-    const repeated = preCutoverBootstrapAuthorityDiagnostics(
-      "repeated.md",
-      "Run agentera same; then agentera same.\n",
-    );
+    const repeated = preCutoverBootstrapAuthorityDiagnostics("repeated.md", "Run agentera same; then agentera same.\n");
     expect(repeated).toHaveLength(2);
     expect(repeated.map(({ location }) => location)).toEqual([
       { line: 1, column: 5 },
       { line: 1, column: 25 },
     ]);
 
-    const stable = preCutoverBootstrapAuthorityDiagnostics(
-      "latest.md",
-      "Run npx -y agentera@latest one; then npx -y agentera@latest two.\n",
-    );
+    const stable = preCutoverBootstrapAuthorityDiagnostics("latest.md", "Run npx -y agentera@latest one; then npx -y agentera@latest two.\n");
     expect(stable).toHaveLength(2);
     expect(stable.map(({ location }) => location)).toEqual([
       { line: 1, column: 12 },
@@ -687,39 +591,30 @@ describe("retired runtime current-surface policy", () => {
       ["npx -y agentera@latest two", "npx -y agentera@next two"],
     ]);
 
-    const nestedCommand = Array.from({ length: 10 }).reduce(
-      (payload) => `bash -c ${JSON.stringify(payload)}`,
-      "agentera first; agentera second",
-    );
-    const nested = preCutoverBootstrapAuthorityDiagnostics(
-      "nested-boundaries.yaml",
-      YAML.stringify({ command: nestedCommand }),
-    );
+    const nestedCommand = Array.from({ length: 10 }).reduce((payload) => `bash -c ${JSON.stringify(payload)}`, "agentera first; agentera second");
+    const nested = preCutoverBootstrapAuthorityDiagnostics("nested-boundaries.yaml", YAML.stringify({ command: nestedCommand }));
     expect(nested).toHaveLength(2);
-    expect(nested.every(({ location }) => "structured_path" in location
-      && location.structured_path === '$["command"]'
-      && typeof location.offset === "number")).toBe(true);
+    expect(nested.every(({ location }) => "structured_path" in location && location.structured_path === '$["command"]' && typeof location.offset === "number")).toBe(true);
     expect(new Set(nested.map(({ location }) => JSON.stringify(location))).size).toBe(2);
     expect(nested.map(({ candidate, correction }) => [candidate?.raw, correction])).toEqual([
       ["agentera first", "npx -y agentera@next first"],
       ["agentera second", "npx -y agentera@next second"],
     ]);
 
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "split-latest.md",
-      "```bash\nnpx -y agentera@la\"test\" doctor\n```\n",
-    )).toEqual([expect.objectContaining({
-      location: { line: 2, column: 8 },
-      candidate: { raw: 'npx -y agentera@la"test" doctor', normalized: "npx -y agentera@latest doctor" },
-      correction: "npx -y agentera@next doctor",
-    })]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("split-latest.md", '```bash\nnpx -y agentera@la"test" doctor\n```\n')).toEqual([
+      expect.objectContaining({
+        location: { line: 2, column: 8 },
+        candidate: {
+          raw: 'npx -y agentera@la"test" doctor',
+          normalized: "npx -y agentera@latest doctor",
+        },
+        correction: "npx -y agentera@next doctor",
+      }),
+    ]);
   });
 
   it("inventories mixed statement spans before context filtering and diagnoses every invalid boundary", () => {
-    const nested = (depth: number): string => Array.from({ length: depth }).reduce(
-      (payload) => `bash -c ${JSON.stringify(payload)}`,
-      "agentera first-future; agentera second-future",
-    );
+    const nested = (depth: number): string => Array.from({ length: depth }).reduce((payload) => `bash -c ${JSON.stringify(payload)}`, "agentera first-future; agentera second-future");
     const matrix = [
       {
         label: "audit-2 inline to unquoted",
@@ -757,7 +652,9 @@ describe("retired runtime current-surface policy", () => {
         label: "explicit YAML command",
         path: "mixed.yaml",
         statement: "Run `agentera first-future`; then agentera second-future.",
-        content: YAML.stringify({ command: "Run `agentera first-future`; then agentera second-future." }),
+        content: YAML.stringify({
+          command: "Run `agentera first-future`; then agentera second-future.",
+        }),
         invocations: ["first-future", "second-future"],
         violations: ["bare_executable", "command_composition"],
       },
@@ -765,7 +662,9 @@ describe("retired runtime current-surface policy", () => {
         label: "explicit JSON command",
         path: "mixed.json",
         statement: "Run agentera first-future; then `agentera second-future`.",
-        content: JSON.stringify({ command: "Run agentera first-future; then `agentera second-future`." }),
+        content: JSON.stringify({
+          command: "Run agentera first-future; then `agentera second-future`.",
+        }),
         invocations: ["first-future", "second-future"],
         violations: ["bare_executable", "command_composition"],
       },
@@ -773,7 +672,9 @@ describe("retired runtime current-surface policy", () => {
         label: "imperative description",
         path: "description.yaml",
         statement: "Run `agentera first-future`; then agentera second-future.",
-        content: YAML.stringify({ description: "Run `agentera first-future`; then agentera second-future." }),
+        content: YAML.stringify({
+          description: "Run `agentera first-future`; then agentera second-future.",
+        }),
         invocations: ["first-future", "second-future"],
         violations: ["bare_executable", "command_composition"],
       },
@@ -815,48 +716,46 @@ describe("retired runtime current-surface policy", () => {
       const spans = scanBootstrapAuthority(surface, content).spans;
       expect(spans, `${label}: inventory`).toHaveLength(invocations.length);
       expect(new Set(spans.map(({ identity }) => identity)).size, `${label}: offset identity`).toBe(spans.length);
-      const rawOffsets = spans.flatMap(({ raw_document_offsets: offsets }) => offsets ? [offsets] : []);
-      expect(rawOffsets.every((offsets, index) => index === 0
-        || rawOffsets[index - 1].end <= offsets.start), `${label}: raw non-overlap`).toBe(true);
+      const rawOffsets = spans.flatMap(({ raw_document_offsets: offsets }) => (offsets ? [offsets] : []));
+      expect(
+        rawOffsets.every((offsets, index) => index === 0 || rawOffsets[index - 1].end <= offsets.start),
+        `${label}: raw non-overlap`,
+      ).toBe(true);
 
       const diagnostics = preCutoverBootstrapAuthorityDiagnostics(surface, content);
       expect(diagnostics, `${label}: diagnostics`).toHaveLength(invocations.length);
-      expect(diagnostics.map(({ violation }) => violation).sort(), `${label}: violations`)
-        .toEqual([...violations].sort());
+      expect(diagnostics.map(({ violation }) => violation).sort(), `${label}: violations`).toEqual([...violations].sort());
       const unmatched = [...diagnostics];
       for (const invocation of invocations) {
         const match = unmatched.findIndex(({ candidate }) => candidate?.normalized.includes(invocation));
         expect(match, `${label}: candidate for ${invocation}`).toBeGreaterThanOrEqual(0);
         unmatched.splice(match, 1);
       }
-      expect(diagnostics.every((diagnostic) =>
-        diagnostic.path === surface
-        && ("line" in diagnostic.location || diagnostic.location.structured_path.startsWith("$"))
-        && diagnostic.candidate !== null
-        && diagnostic.candidate.raw.length > 0
-        && diagnostic.candidate.normalized.length > 0
-        && diagnostic.violation.length > 0
-        && diagnostic.correction.includes("npx -y agentera@next")), `${label}: complete diagnostics`).toBe(true);
+      expect(
+        diagnostics.every(
+          (diagnostic) =>
+            diagnostic.path === surface &&
+            ("line" in diagnostic.location || diagnostic.location.structured_path.startsWith("$")) &&
+            diagnostic.candidate !== null &&
+            diagnostic.candidate.raw.length > 0 &&
+            diagnostic.candidate.normalized.length > 0 &&
+            diagnostic.violation.length > 0 &&
+            diagnostic.correction.includes("npx -y agentera@next"),
+        ),
+        `${label}: complete diagnostics`,
+      ).toBe(true);
     }
 
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "negated.md",
-      "Do not run `agentera first-future`; and never invoke agentera second-future.\n",
-    )).toEqual([]);
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "description.yaml",
-      "description: The `agentera first-future` label and agentera second-future namespace are descriptive.\n",
-    )).toEqual([]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("negated.md", "Do not run `agentera first-future`; and never invoke agentera second-future.\n")).toEqual([]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("description.yaml", "description: The `agentera first-future` label and agentera second-future namespace are descriptive.\n")).toEqual([]);
   });
 
   it.each([
     ["time", "command: time agentera state todo list\n", "command_wrapper"],
     ["eval", "command: eval agentera schema\n", "command_wrapper"],
-    ["nested bash", "command: bash -c \"printf ok; agentera check compact\"\n", "command_composition"],
+    ["nested bash", 'command: bash -c "printf ok; agentera check compact"\n', "command_composition"],
   ])("rejects the %s wrapper without recognizing its subcommand", (_label, content, violation) => {
-    expect(preCutoverBootstrapAuthorityDiagnostics("wrapper.yaml", content)).toEqual([
-      expect.objectContaining({ violation }),
-    ]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("wrapper.yaml", content)).toEqual([expect.objectContaining({ violation })]);
   });
 
   it("uses one offset-preserving IR for the direct command-boundary matrix", () => {
@@ -908,31 +807,30 @@ describe("retired runtime current-surface policy", () => {
 
   it("has no nesting bound below, at, or above the retired limit", () => {
     for (const depth of [7, 8, 10, 16]) {
-      const command = Array.from({ length: depth }).reduce(
-        (payload) => `bash -c ${JSON.stringify(payload)}`,
-        "agentera first; agentera second",
-      );
+      const command = Array.from({ length: depth }).reduce((payload) => `bash -c ${JSON.stringify(payload)}`, "agentera first; agentera second");
       const scan = scanBootstrapAuthority(`nested-${depth}.yaml`, YAML.stringify({ command }));
       expect(scan.spans, `depth ${depth}`).toHaveLength(2);
-      expect(scan.spans.every(({ nesting }) => nesting.depth === depth), `depth ${depth}: metadata`).toBe(true);
+      expect(
+        scan.spans.every(({ nesting }) => nesting.depth === depth),
+        `depth ${depth}: metadata`,
+      ).toBe(true);
       expect(scan.diagnostics, `depth ${depth}: diagnostics`).toHaveLength(2);
-      expect(scan.diagnostics.every(({ violation }) => violation !== "nested_command_limit"), `depth ${depth}: no fallback`).toBe(true);
+      expect(
+        scan.diagnostics.every(({ violation }) => violation !== "nested_command_limit"),
+        `depth ${depth}: no fallback`,
+      ).toBe(true);
     }
   });
 
   it("keeps negated and positive boundaries independent", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics(
-      "negated.md",
-      "Do not run `agentera old`; and never invoke agentera retired.\n",
-    )).toEqual([]);
-    const diagnostics = preCutoverBootstrapAuthorityDiagnostics(
-      "mixed-negation.md",
-      "Do not run `agentera old`; instead use agentera current.\n",
-    );
+    expect(preCutoverBootstrapAuthorityDiagnostics("negated.md", "Do not run `agentera old`; and never invoke agentera retired.\n")).toEqual([]);
+    const diagnostics = preCutoverBootstrapAuthorityDiagnostics("mixed-negation.md", "Do not run `agentera old`; instead use agentera current.\n");
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]).toEqual(expect.objectContaining({
-      candidate: { raw: "agentera current", normalized: "agentera current" },
-    }));
+    expect(diagnostics[0]).toEqual(
+      expect.objectContaining({
+        candidate: { raw: "agentera current", normalized: "agentera current" },
+      }),
+    );
   });
 
   it("covers every exact negation grammar production and rejects its mutation", () => {
@@ -997,22 +895,19 @@ describe("retired runtime current-surface policy", () => {
     ["fixture.md", "---\nouter: value\n# missing boundary"],
   ])("fails closed on malformed instructional input: %s", (surface, content) => {
     const [diagnostic] = preCutoverBootstrapAuthorityDiagnostics(surface, content);
-    expect(diagnostic).toEqual(expect.objectContaining({
-      path: surface,
-      location: { structured_path: "$" },
-      candidate: null,
-      violation: expect.stringMatching(/^malformed_/),
-      correction: expect.any(String),
-    }));
+    expect(diagnostic).toEqual(
+      expect.objectContaining({
+        path: surface,
+        location: { structured_path: "$" },
+        candidate: null,
+        violation: expect.stringMatching(/^malformed_/),
+        correction: expect.any(String),
+      }),
+    );
   });
 
   it("accepts exact development commands and descriptive command vocabulary", () => {
-    expect(preCutoverBootstrapAuthorityDiagnostics("fixture.md", [
-      "```bash",
-      "npx -y agentera@next prime --context status",
-      "```",
-      "CLI-visible `agentera prime` labels and the `agentera doctor` diagnostic name are vocabulary.",
-    ].join("\n"))).toEqual([]);
+    expect(preCutoverBootstrapAuthorityDiagnostics("fixture.md", ["```bash", "npx -y agentera@next prime --context status", "```", "CLI-visible `agentera prime` labels and the `agentera doctor` diagnostic name are vocabulary."].join("\n"))).toEqual([]);
   });
 
   it.each([
@@ -1027,124 +922,157 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("rejects stable-channel execution outside the sole exemption", () => {
-    const content = read("UPGRADE.md").replace(
-      "npx -y agentera@next doctor",
-      "npx -y agentera@latest doctor",
-    );
-    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
-      .toContain("UPGRADE.md: stable_channel_outside_exemption");
+    const content = read("UPGRADE.md").replace("npx -y agentera@next doctor", "npx -y agentera@latest doctor");
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]]))).toContain("UPGRADE.md: stable_channel_outside_exemption");
   });
 
   it.each([
     ["inline no-arg", "Use `npx -y agentera@latest prime` only as a probe."],
-    ["split quoted", "```bash\nnpx -y agentera@la\"test\" doctor\n```"],
+    ["split quoted", '```bash\nnpx -y agentera@la"test" doctor\n```'],
     ["continued", "```bash\nnpx -y agentera@latest \\\n  prime\n```"],
     ["unknown subcommand", "Use `npx -y agentera@latest future-command` only as a probe."],
     ["unknown wrapped subcommand", "```bash\ntime npx -y agentera@latest future-command\n```"],
     ["nested split quoted", "```bash\nbash -c 'npx -y agentera@la\"test\" future-command'\n```"],
   ])("rejects an outside stable-channel escape: %s", (_label, injected) => {
     const content = `${read("UPGRADE.md")}\n## Outside stable regression\n${injected}\n`;
-    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]])))
-      .toContain("UPGRADE.md: stable_channel_outside_exemption");
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([["UPGRADE.md", content]]))).toContain("UPGRADE.md: stable_channel_outside_exemption");
   });
 
   it("publishes a closed source, generated, and emitted inventory with a reason for every classification", () => {
     const inventory = registryBootstrapAuthorityInventory(repoRoot);
     expect(inventory.diagnostics).toEqual([]);
     expect(new Set(inventory.records.map(({ surface }) => surface))).toEqual(new Set(["source", "generated", "emitted"]));
-    expect(inventory.records.every(({ classification, reason }) =>
-      ["parsed_and_scanned", "reason_classified"].includes(classification) && reason.length > 0)).toBe(true);
-    expect(new Set(inventory.records
-      .filter(({ surface }) => surface === "emitted")
-      .map(({ emitted_classification }) => emitted_classification)))
-      .toEqual(new Set(["producer", "non_producer"]));
+    expect(inventory.records.every(({ classification, reason }) => ["parsed_and_scanned", "reason_classified"].includes(classification) && reason.length > 0)).toBe(true);
+    expect(new Set(inventory.records.filter(({ surface }) => surface === "emitted").map(({ emitted_classification }) => emitted_classification))).toEqual(new Set(["producer", "non_producer"]));
     const registry = YAML.parse(read(packageRegistryPath));
     const authority = registry.records[0].bootstrap_command_authority;
     const declarations = authority.scalar_classifications;
     expect(authority).not.toHaveProperty("exemptions");
     expect(new Set(declarations.map((entry: any) => entry.reason)).size).toBe(declarations.length);
     expect(declarations.some((entry: any) => /^Exact reviewed (?:descriptive|structured|package)/u.test(entry.reason))).toBe(false);
-    expect(inventory.records
-      .filter(({ surface }) => surface === "generated")
-      .map(({ generated_declaration }) => generated_declaration))
-      .toEqual([
-        {
-          id: "build-source-identity",
-          path: ".agentera-build-source.json",
-          format: "json",
-          classification: "active",
-          reason: expect.any(String),
-        },
-        {
-          id: "npx-bundle-marker",
-          path: ".agentera-npx-bundle.json",
-          format: "json",
-          classification: "active",
-          reason: expect.any(String),
-        },
-        {
-          id: "extract-corpus-parity",
-          path: "extract-corpus-parity.json",
-          format: "json",
-          classification: "active",
-          reason: expect.any(String),
-        },
-      ]);
+    expect(inventory.records.filter(({ surface }) => surface === "generated").map(({ generated_declaration }) => generated_declaration)).toEqual([
+      {
+        id: "build-source-identity",
+        path: ".agentera-build-source.json",
+        format: "json",
+        classification: "active",
+        reason: expect.any(String),
+      },
+      {
+        id: "npx-bundle-marker",
+        path: ".agentera-npx-bundle.json",
+        format: "json",
+        classification: "active",
+        reason: expect.any(String),
+      },
+      {
+        id: "extract-corpus-parity",
+        path: "extract-corpus-parity.json",
+        format: "json",
+        classification: "active",
+        reason: expect.any(String),
+      },
+    ]);
   });
 
   it.each([
-    ["missing", (entries: any[]) => entries.splice(entries.findIndex((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml"), 1), "scalar_classification_missing"],
-    ["stale", (entries: any[]) => { entries.find((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml").normalized_sha256 = "0".repeat(64); }, "scalar_classification_stale"],
-    ["unused", (entries: any[]) => entries.push({
-      path: "README.md",
-      region: "line:9999",
-      category: "identity_only",
-      classification: "bounded_descriptive",
-      normalized_sha256: "0".repeat(64),
-      reason: "Exact stale mutation fixture.",
-    }), "scalar_classification_unused"],
-    ["reasonless", (entries: any[]) => { entries.find((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml").reason = ""; }, "scalar_classification_reason_missing"],
+    [
+      "missing",
+      (entries: any[]) =>
+        entries.splice(
+          entries.findIndex((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml"),
+          1,
+        ),
+      "scalar_classification_missing",
+    ],
+    [
+      "stale",
+      (entries: any[]) => {
+        entries.find((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml").normalized_sha256 = "0".repeat(64);
+      },
+      "scalar_classification_stale",
+    ],
+    [
+      "unused",
+      (entries: any[]) =>
+        entries.push({
+          path: "README.md",
+          region: "line:9999",
+          category: "identity_only",
+          classification: "bounded_descriptive",
+          normalized_sha256: "0".repeat(64),
+          reason: "Exact stale mutation fixture.",
+        }),
+      "scalar_classification_unused",
+    ],
+    [
+      "reasonless",
+      (entries: any[]) => {
+        entries.find((entry) => entry.path === "skills/agentera/capability_schema_contract.yaml").reason = "";
+      },
+      "scalar_classification_reason_missing",
+    ],
   ])("rejects a %s exact scalar classification", (_label, mutate, violation) => {
     const registry = YAML.parse(read(packageRegistryPath));
     mutate(registry.records[0].bootstrap_command_authority.scalar_classifications);
-    expect(registryBundledAuthorityViolations(
-      repoRoot,
-      new Map([[packageRegistryPath, YAML.stringify(registry)]]),
-    ).some((entry) => entry.endsWith(`: ${violation}`))).toBe(true);
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([[packageRegistryPath, YAML.stringify(registry)]])).some((entry) => entry.endsWith(`: ${violation}`))).toBe(true);
   });
 
   it("rejects every added exact declaration when any required binding is removed or mutated", () => {
     const registry = YAML.parse(read(packageRegistryPath));
     const declarations = registry.records[0].bootstrap_command_authority.scalar_classifications;
-    const addedPaths = new Set([
-      "DESIGN.md",
-      "references/adapters/package-publication.json",
-      "references/artifacts/state-storage-authority.yaml",
-      "references/cli/update-channels.yaml",
-    ]);
+    const addedPaths = new Set(["DESIGN.md", "references/adapters/package-publication.json", "references/artifacts/state-storage-authority.yaml", "references/cli/update-channels.yaml"]);
     const added = declarations.filter((entry: any) => addedPaths.has(entry.path));
     expect(added).not.toHaveLength(0);
 
     const mutations: Array<[string, (entries: any[]) => void, string]> = [
-      ["missing", (entries) => {
-        entries.splice(0, entries.length, ...entries.filter((entry) => !addedPaths.has(entry.path)));
-      }, "scalar_classification_missing"],
-      ["stale digest", (entries) => entries.filter((entry) => addedPaths.has(entry.path))
-        .forEach((entry) => { entry.normalized_sha256 = "0".repeat(64); }), "scalar_classification_stale"],
-      ["wrong category", (entries) => entries.filter((entry) => addedPaths.has(entry.path))
-        .forEach((entry) => { entry.category = entry.category === "argument_bearing" ? "identity_only" : "argument_bearing"; }), "scalar_classification_category_mismatch"],
-      ["missing reason", (entries) => entries.filter((entry) => addedPaths.has(entry.path))
-        .forEach((entry) => { entry.reason = ""; }), "scalar_classification_reason_missing"],
+      [
+        "missing",
+        (entries) => {
+          entries.splice(0, entries.length, ...entries.filter((entry) => !addedPaths.has(entry.path)));
+        },
+        "scalar_classification_missing",
+      ],
+      [
+        "stale digest",
+        (entries) =>
+          entries
+            .filter((entry) => addedPaths.has(entry.path))
+            .forEach((entry) => {
+              entry.normalized_sha256 = "0".repeat(64);
+            }),
+        "scalar_classification_stale",
+      ],
+      [
+        "wrong category",
+        (entries) =>
+          entries
+            .filter((entry) => addedPaths.has(entry.path))
+            .forEach((entry) => {
+              entry.category = entry.category === "argument_bearing" ? "identity_only" : "argument_bearing";
+            }),
+        "scalar_classification_category_mismatch",
+      ],
+      [
+        "missing reason",
+        (entries) =>
+          entries
+            .filter((entry) => addedPaths.has(entry.path))
+            .forEach((entry) => {
+              entry.reason = "";
+            }),
+        "scalar_classification_reason_missing",
+      ],
     ];
 
     for (const [label, mutate, violation] of mutations) {
       const changed = structuredClone(registry);
       mutate(changed.records[0].bootstrap_command_authority.scalar_classifications);
-      const violations = registryBundledAuthorityViolations(
-        repoRoot,
-        new Map([[packageRegistryPath, YAML.stringify(changed)]]),
-      );
-      expect(violations.filter((entry) => entry.endsWith(`: ${violation}`)), label).toHaveLength(added.length);
+      const violations = registryBundledAuthorityViolations(repoRoot, new Map([[packageRegistryPath, YAML.stringify(changed)]]));
+      expect(
+        violations.filter((entry) => entry.endsWith(`: ${violation}`)),
+        label,
+      ).toHaveLength(added.length);
     }
   });
 
@@ -1152,54 +1080,67 @@ describe("retired runtime current-surface policy", () => {
     const registry = YAML.parse(read(packageRegistryPath));
     const declarations = registry.records[0].bootstrap_command_authority.scalar_classifications;
     declarations[1].reason = declarations[0].reason;
-    expect(registryBundledAuthorityViolations(
-      repoRoot,
-      new Map([[packageRegistryPath, YAML.stringify(registry)]]),
-    )).toContain(`${declarations[1].path}: scalar_classification_reason_duplicate`);
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([[packageRegistryPath, YAML.stringify(registry)]]))).toContain(`${declarations[1].path}: scalar_classification_reason_duplicate`);
   });
 
   it.each([
-    ["state authority", "references/artifacts/state-storage-authority.yaml", (body: string) => {
-      const value = YAML.parse(body);
-      value.status = "Run agentera destroy --yes";
-      return { body: YAML.stringify(value), region: '$["status"]' };
-    }],
-    ["changelog", "CHANGELOG.md", (body: string) => ({
-      body: `${body}\nRun agentera destroy --yes\n`,
-      region: `line:${body.split(/\r?\n/u).length + 1}`,
-    })],
-    ["publication smoke", "references/adapters/package-publication.json", (body: string) => {
-      const value = JSON.parse(body);
-      value.packages.development.smoke[2] = "Run agentera destroy --yes";
-      return { body: JSON.stringify(value), region: '$["packages"]["development"]["smoke"][2]' };
-    }],
-    ["publication localSmoke", "references/adapters/package-publication.json", (body: string) => {
-      const value = JSON.parse(body);
-      value.packages.development.localSmoke[0] = "Run agentera destroy --yes";
-      return { body: JSON.stringify(value), region: '$["packages"]["development"]["localSmoke"][0]' };
-    }],
+    [
+      "state authority",
+      "references/artifacts/state-storage-authority.yaml",
+      (body: string) => {
+        const value = YAML.parse(body);
+        value.status = "Run agentera destroy --yes";
+        return { body: YAML.stringify(value), region: '$["status"]' };
+      },
+    ],
+    [
+      "changelog",
+      "CHANGELOG.md",
+      (body: string) => ({
+        body: `${body}\nRun agentera destroy --yes\n`,
+        region: `line:${body.split(/\r?\n/u).length + 1}`,
+      }),
+    ],
+    [
+      "publication smoke",
+      "references/adapters/package-publication.json",
+      (body: string) => {
+        const value = JSON.parse(body);
+        value.packages.development.smoke[2] = "Run agentera destroy --yes";
+        return { body: JSON.stringify(value), region: '$["packages"]["development"]["smoke"][2]' };
+      },
+    ],
+    [
+      "publication localSmoke",
+      "references/adapters/package-publication.json",
+      (body: string) => {
+        const value = JSON.parse(body);
+        value.packages.development.localSmoke[0] = "Run agentera destroy --yes";
+        return {
+          body: JSON.stringify(value),
+          region: '$["packages"]["development"]["localSmoke"][0]',
+        };
+      },
+    ],
   ])("requires an exact declaration for an imperative %s mutation", (_label, target, mutate) => {
     const mutation = mutate(read(target));
     const registry = YAML.parse(read(packageRegistryPath));
-    registry.records[0].bootstrap_command_authority.scalar_classifications = registry.records[0]
-      .bootstrap_command_authority.scalar_classifications
-      .filter((entry: any) => entry.path !== target || entry.region !== mutation.region);
-    const violations = registryBundledAuthorityViolations(repoRoot, new Map([
-      [target, mutation.body],
-      [packageRegistryPath, YAML.stringify(registry)],
-    ]));
+    registry.records[0].bootstrap_command_authority.scalar_classifications = registry.records[0].bootstrap_command_authority.scalar_classifications.filter((entry: any) => entry.path !== target || entry.region !== mutation.region);
+    const violations = registryBundledAuthorityViolations(
+      repoRoot,
+      new Map([
+        [target, mutation.body],
+        [packageRegistryPath, YAML.stringify(registry)],
+      ]),
+    );
     expect(violations).toContain(`${target}: scalar_classification_missing`);
     expect(violations).toContain(`${target}: bare_executable`);
   });
 
   it("rejects a changed scalar whose exact exemption digest is stale", () => {
     const target = "skills/agentera/capability_schema_contract.yaml";
-    const changed = read(target).replace(
-      "state-oriented CLI command for reading plan state. Do not",
-      "state-oriented CLI command for reading all plan state. Do not",
-    );
-    expect(registryBundledAuthorityViolations(repoRoot, new Map([[target, changed]])))
-      .toContain(`${target}: scalar_classification_stale`);
+    const changed = read(target).replace("state-oriented CLI command for reading plan state. Do not", "state-oriented CLI command for reading all plan state. Do not");
+    expect(registryBundledAuthorityViolations(repoRoot, new Map([[target, changed]]))).toContain(`${target}: scalar_classification_stale`);
   });
 
   it.each([
@@ -1214,73 +1155,46 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it.each([
-    ["import alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/alias.ts"), [
-      'import { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";',
-      'bind("prime");',
-    ].join("\n"))],
-    ["local wrapper", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/wrapper.ts"), [
-      'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-      "const bind = (value: string) => preCutoverCommand(value);",
-      'bind("prime");',
-    ].join("\n"))],
-    ["namespace value alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/namespace.ts"), [
-      'import * as commands from "../cli/preCutoverCommand.js";',
-      "const bind = commands.preCutoverCommand;",
-      'bind("prime");',
-    ].join("\n"))],
-    ["re-export", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/reexport.ts"),
-      'export { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";\n')],
-    ["re-export consumer", (root: string) => {
-      fs.writeFileSync(path.join(root, "packages/cli/src/emitted/reexport.ts"), 'export { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";\n');
-      fs.writeFileSync(path.join(root, "packages/cli/src/emitted/consumer.ts"), 'import { bind } from "./reexport.js";\nbind("prime");\n');
-    }],
-    ["assignment after declaration", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/assignment.ts"), [
-      'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-      "let bind: typeof preCutoverCommand;",
-      "bind = preCutoverCommand;",
-      'bind("prime");',
-    ].join("\n"))],
-    ["conditional alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/conditional.ts"), [
-      'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-      "const bind = Math.random() > 2 ? String : preCutoverCommand;",
-      'bind("prime");',
-    ].join("\n"))],
-    ["namespace destructuring", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/destructure.ts"), [
-      'import * as commands from "../cli/preCutoverCommand.js";',
-      "const { preCutoverCommand: bind } = commands;",
-      'bind("prime");',
-    ].join("\n"))],
-    ["namespace element access", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/element.ts"), [
-      'import * as commands from "../cli/preCutoverCommand.js";',
-      'commands["preCutoverCommand"]("prime");',
-    ].join("\n"))],
-    ["higher-order wrapper", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/higherOrder.ts"), [
-      'import { preCutoverCommand } from "../cli/preCutoverCommand.js";',
-      "const apply = (fn: typeof preCutoverCommand) => fn;",
-      'apply(preCutoverCommand)("prime");',
-    ].join("\n"))],
+    ["import alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/alias.ts"), ['import { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";', 'bind("prime");'].join("\n"))],
+    ["local wrapper", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/wrapper.ts"), ['import { preCutoverCommand } from "../cli/preCutoverCommand.js";', "const bind = (value: string) => preCutoverCommand(value);", 'bind("prime");'].join("\n"))],
+    ["namespace value alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/namespace.ts"), ['import * as commands from "../cli/preCutoverCommand.js";', "const bind = commands.preCutoverCommand;", 'bind("prime");'].join("\n"))],
+    ["re-export", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/reexport.ts"), 'export { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";\n')],
+    [
+      "re-export consumer",
+      (root: string) => {
+        fs.writeFileSync(path.join(root, "packages/cli/src/emitted/reexport.ts"), 'export { preCutoverCommand as bind } from "../cli/preCutoverCommand.js";\n');
+        fs.writeFileSync(path.join(root, "packages/cli/src/emitted/consumer.ts"), 'import { bind } from "./reexport.js";\nbind("prime");\n');
+      },
+    ],
+    ["assignment after declaration", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/assignment.ts"), ['import { preCutoverCommand } from "../cli/preCutoverCommand.js";', "let bind: typeof preCutoverCommand;", "bind = preCutoverCommand;", 'bind("prime");'].join("\n"))],
+    ["conditional alias", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/conditional.ts"), ['import { preCutoverCommand } from "../cli/preCutoverCommand.js";', "const bind = Math.random() > 2 ? String : preCutoverCommand;", 'bind("prime");'].join("\n"))],
+    ["namespace destructuring", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/destructure.ts"), ['import * as commands from "../cli/preCutoverCommand.js";', "const { preCutoverCommand: bind } = commands;", 'bind("prime");'].join("\n"))],
+    ["namespace element access", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/element.ts"), ['import * as commands from "../cli/preCutoverCommand.js";', 'commands["preCutoverCommand"]("prime");'].join("\n"))],
+    ["higher-order wrapper", (root: string) => fs.writeFileSync(path.join(root, "packages/cli/src/emitted/higherOrder.ts"), ['import { preCutoverCommand } from "../cli/preCutoverCommand.js";', "const apply = (fn: typeof preCutoverCommand) => fn;", 'apply(preCutoverCommand)("prime");'].join("\n"))],
   ])("discovers an unclassified %s producer", (_label, mutate) => {
     const root = commandAuthorityFixture();
     mutate(root);
-    expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation))
-      .toContain("emitted_producer_omitted");
+    expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation)).toContain("emitted_producer_omitted");
   });
 
   it("fails closed on a dynamic constructor consumer", () => {
     const root = commandAuthorityFixture();
-    fs.writeFileSync(path.join(root, "packages/cli/src/emitted/dynamic.ts"), [
-      'const commands = await import("../cli/preCutoverCommand.js");',
-      'commands.preCutoverCommand("prime");',
-    ].join("\n"));
-    expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation))
-      .toContain("constructor_closure_dynamic_consumer");
+    fs.writeFileSync(path.join(root, "packages/cli/src/emitted/dynamic.ts"), ['const commands = await import("../cli/preCutoverCommand.js");', 'commands.preCutoverCommand("prime");'].join("\n"));
+    expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation)).toContain("constructor_closure_dynamic_consumer");
   });
 
   it("rejects an unused scalar classification and a stale producer classification", () => {
     const root = commandAuthorityFixture();
     const registryPath = path.join(root, "references/adapters/package-registry.yaml");
     const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
-    (registry.records[0].bootstrap_command_authority.scalar_classifications ??= []).push({ path: "docs/missing.md", region: "line:1", category: "identity_only", classification: "exact_exemption", normalized_sha256: "0".repeat(64), reason: "Exact missing fixture scalar." });
+    (registry.records[0].bootstrap_command_authority.scalar_classifications ??= []).push({
+      path: "docs/missing.md",
+      region: "line:1",
+      category: "identity_only",
+      classification: "exact_exemption",
+      normalized_sha256: "0".repeat(64),
+      reason: "Exact missing fixture scalar.",
+    });
     fs.writeFileSync(registryPath, YAML.stringify(registry));
     fs.writeFileSync(path.join(root, "packages/cli/src/emitted/guidance.ts"), "export const guidance = 'descriptive';\n");
     const violations = registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation);
@@ -1291,35 +1205,57 @@ describe("retired runtime current-surface policy", () => {
   it.each([
     ["deleted child", (packageRoot: string) => fs.rmSync(path.join(packageRoot, "bundle/docs/guidance.md")), "package_inventory_missing"],
     ["extra child", (packageRoot: string) => fs.writeFileSync(path.join(packageRoot, "bundle/docs/extra.md"), "descriptive extra\n"), "package_inventory_extra_or_mismatched"],
-    ["classification mismatch", (packageRoot: string) => {
-      const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
-      const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
-      (registry.records[0].bootstrap_command_authority.scalar_classifications ??= []).push({ path: "docs/guidance.md", region: "line:1", category: "identity_only", classification: "exact_exemption", normalized_sha256: "0".repeat(64), reason: "Incorrect package-only scalar classification." });
-      fs.writeFileSync(registryPath, YAML.stringify(registry));
-    }, "package_inventory_extra_or_mismatched"],
-    ["generated declaration mismatch", (packageRoot: string) => {
-      const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
-      const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
-      registry.records[0].bundle_surfaces.generated_files[0].command_authority_reason = "Changed only in package.";
-      fs.writeFileSync(registryPath, YAML.stringify(registry));
-    }, "package_inventory_extra_or_mismatched"],
-    ["constructor classification drift", (packageRoot: string) => {
-      const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
-      const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
-      const [producer] = registry.records[0].bootstrap_command_authority.emitted_producers.splice(0, 1);
-      registry.records[0].bootstrap_command_authority.constructor_non_producers.push(producer);
-      fs.writeFileSync(registryPath, YAML.stringify(registry));
-    }, "package_inventory_extra_or_mismatched"],
-    ...(["id", "path", "format", "classification"] as const).map((field) => [
-      `generated ${field} mismatch`,
+    [
+      "classification mismatch",
       (packageRoot: string) => {
         const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
         const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
-        registry.records[0].bundle_surfaces.generated_files[0][field] = `changed-${field}`;
+        (registry.records[0].bootstrap_command_authority.scalar_classifications ??= []).push({
+          path: "docs/guidance.md",
+          region: "line:1",
+          category: "identity_only",
+          classification: "exact_exemption",
+          normalized_sha256: "0".repeat(64),
+          reason: "Incorrect package-only scalar classification.",
+        });
         fs.writeFileSync(registryPath, YAML.stringify(registry));
       },
       "package_inventory_extra_or_mismatched",
-    ] as const),
+    ],
+    [
+      "generated declaration mismatch",
+      (packageRoot: string) => {
+        const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
+        const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
+        registry.records[0].bundle_surfaces.generated_files[0].command_authority_reason = "Changed only in package.";
+        fs.writeFileSync(registryPath, YAML.stringify(registry));
+      },
+      "package_inventory_extra_or_mismatched",
+    ],
+    [
+      "constructor classification drift",
+      (packageRoot: string) => {
+        const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
+        const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
+        const [producer] = registry.records[0].bootstrap_command_authority.emitted_producers.splice(0, 1);
+        registry.records[0].bootstrap_command_authority.constructor_non_producers.push(producer);
+        fs.writeFileSync(registryPath, YAML.stringify(registry));
+      },
+      "package_inventory_extra_or_mismatched",
+    ],
+    ...(["id", "path", "format", "classification"] as const).map(
+      (field) =>
+        [
+          `generated ${field} mismatch`,
+          (packageRoot: string) => {
+            const registryPath = path.join(packageRoot, "bundle/references/adapters/package-registry.yaml");
+            const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
+            registry.records[0].bundle_surfaces.generated_files[0][field] = `changed-${field}`;
+            fs.writeFileSync(registryPath, YAML.stringify(registry));
+          },
+          "package_inventory_extra_or_mismatched",
+        ] as const,
+    ),
   ])("fails exact source/package parity for a %s", (label, mutate, violation) => {
     const sourceRoot = commandAuthorityFixture();
     const packageRoot = commandAuthorityPackageFixture(sourceRoot);
@@ -1336,10 +1272,7 @@ describe("retired runtime current-surface policy", () => {
       ["top-level help", printTopLevelHelp()],
       ["route help", printRouteHelp()],
       ["upgrade help", printUpgradeHelp()],
-      ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability): [string, string] => [
-        `${capability} help`,
-        printCapabilityHelp(capability),
-      ]),
+      ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability): [string, string] => [`${capability} help`, printCapabilityHelp(capability)]),
     ];
     for (const [surface, body] of surfaces) {
       expect(preCutoverBootstrapAuthorityDiagnostics(`${surface}.md`, body), surface).toEqual([]);
@@ -1358,7 +1291,8 @@ describe("retired runtime current-surface policy", () => {
     addFile("package guidance", "packages/cli/README.md");
     addFile("package guidance", "docs/packaging/v3-packaging.md");
 
-    const maintainerSkills = fs.readdirSync(path.join(repoRoot, ".opencode/skills"), { withFileTypes: true })
+    const maintainerSkills = fs
+      .readdirSync(path.join(repoRoot, ".opencode/skills"), { withFileTypes: true })
       .filter((entry) => entry.isDirectory() && fs.existsSync(path.join(repoRoot, ".opencode/skills", entry.name, "SKILL.md")))
       .map((entry) => `.opencode/skills/${entry.name}/SKILL.md`)
       .sort();
@@ -1376,14 +1310,11 @@ describe("retired runtime current-surface policy", () => {
     }
 
     const verificationPolicy = YAML.parse(read("references/analysis/verification-policy.yaml"));
-    const currentScripts = verificationPolicy.conservative_routing.exact
-      .filter((relativePath: string) => relativePath.startsWith("packages/cli/scripts/") && relativePath.endsWith(".mjs"));
+    const currentScripts = verificationPolicy.conservative_routing.exact.filter((relativePath: string) => relativePath.startsWith("packages/cli/scripts/") && relativePath.endsWith(".mjs"));
     for (const relativePath of currentScripts) addFile("measurement and release scripts", relativePath);
 
     const outputManifest = YAML.parse(read("scripts/json_output_surface_manifest.yaml"));
-    const activeOutputSurfaces = outputManifest.surfaces.filter(
-      ({ enforcement_tier }: { enforcement_tier: string }) => ["enforce", "monitor"].includes(enforcement_tier),
-    );
+    const activeOutputSurfaces = outputManifest.surfaces.filter(({ enforcement_tier }: { enforcement_tier: string }) => ["enforce", "monitor"].includes(enforcement_tier));
     surfaces.push({
       category: "active command manifest",
       name: "scripts/json_output_surface_manifest.yaml active surfaces",
@@ -1399,29 +1330,19 @@ describe("retired runtime current-surface policy", () => {
     }
     for (const relativePath of [...existingSourcePaths].sort()) addFile("existing active source sets", relativePath);
     surfaces.push(
-      { category: "existing active source sets", name: "served capability instructions", body: Object.values(CAPABILITY_INSTRUCTIONS).join("\n") },
+      {
+        category: "existing active source sets",
+        name: "served capability instructions",
+        body: Object.values(CAPABILITY_INSTRUCTIONS).join("\n"),
+      },
       {
         category: "existing active source sets",
         name: "generated CLI help",
-        body: [
-          PRIME_BLOB,
-          printTopLevelHelp(),
-          printRouteHelp(),
-          printUpgradeHelp(),
-          ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability) => printCapabilityHelp(capability)),
-          ...stateCommandNames().map((artifact) => printStateHelp(artifact)),
-        ].join("\n"),
+        body: [PRIME_BLOB, printTopLevelHelp(), printRouteHelp(), printUpgradeHelp(), ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability) => printCapabilityHelp(capability)), ...stateCommandNames().map((artifact) => printStateHelp(artifact))].join("\n"),
       },
     );
 
-    expect(new Set(surfaces.map(({ category }) => category))).toEqual(new Set([
-      "package guidance",
-      "maintainer skills",
-      "active authorities",
-      "active command manifest",
-      "measurement and release scripts",
-      "existing active source sets",
-    ]));
+    expect(new Set(surfaces.map(({ category }) => category))).toEqual(new Set(["package guidance", "maintainer skills", "active authorities", "active command manifest", "measurement and release scripts", "existing active source sets"]));
     const redundantSelector = /--format(?:\s+|=)json|["']--format["']\s*,\s*["']json["']/u;
     expect(surfaces.filter(({ body }) => redundantSelector.test(body)).map(({ category, name }) => `${category}: ${name}`)).toEqual([]);
   });
@@ -1431,8 +1352,7 @@ describe("retired runtime current-surface policy", () => {
     const historical = historicalRetrievalEvidence(authority);
 
     expect(Buffer.byteLength(historical, "utf8")).toBe(14_507);
-    expect(createHash("sha256").update(historical).digest("hex"))
-      .toBe("1ff6c8a4228f0588c11cf01872ef940c9156c5e9d16eaf9bfd0ad03c62998f5d");
+    expect(createHash("sha256").update(historical).digest("hex")).toBe("1ff6c8a4228f0588c11cf01872ef940c9156c5e9d16eaf9bfd0ad03c62998f5d");
     expect(historical).toContain("state progress get --id ID --format json");
     expect(historical).toContain("state decisions get --id ID --format json");
     expect(historical).toContain("state health get --id ID --format json");
@@ -1460,9 +1380,7 @@ describe("retired runtime current-surface policy", () => {
       // their static module exports for consumers that do not serve a context.
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
-      const canonical = typeof module.servedInstructions === "function"
-        ? module.servedInstructions()
-        : staticInstructions;
+      const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
       const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
@@ -1473,13 +1391,7 @@ describe("retired runtime current-surface policy", () => {
   it("keeps public install surfaces free of active Claude claims", () => {
     const surfaces = new Set<string>([packageRegistryPath, "references/cli/vocabulary.md"]);
     for (const value of publicInstallSurfaceRoots) collectTextSurfaces(value, surfaces);
-    expect([...surfaces]).toEqual(
-      expect.arrayContaining([
-        "README.md",
-        "packages/cli/README.md",
-        "packages/cli/shim/lib/exec.mjs",
-      ]),
-    );
+    expect([...surfaces]).toEqual(expect.arrayContaining(["README.md", "packages/cli/README.md", "packages/cli/shim/lib/exec.mjs"]));
     for (const surface of surfaces) {
       expect(currentSupportViolations(read(surface)), surface).toEqual([]);
     }
@@ -1491,45 +1403,30 @@ describe("retired runtime current-surface policy", () => {
     ["supported list", "All supported runtimes: codex, claude-code, cursor"],
     ["opt-out flag", "Run profile with --no-claude"],
     ["install command", "npx skills add jgabor/agentera -g -a claude-code"],
-    [
-      "active native roster",
-      "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot.",
-    ],
+    ["active native roster", "Canonical active runtime names are OpenCode, Codex, Cursor, and GitHub Copilot."],
     ["selector write contract", "Runtime writes require an explicit selector and --yes."],
-    [
-      "managed native repair",
-      "App repair includes managed runtime config, plugins, hooks, commands, and safe cleanup.",
-    ],
+    ["managed native repair", "App repair includes managed runtime config, plugins, hooks, commands, and safe cleanup."],
     ["package update flag", "External package manager changes require `--update-packages`."],
     ["bundle selector", "| `--only bundle` | Compatibility selector for narrow app-file work |"],
-    [
-      "runtime adapter",
-      "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation.",
-    ],
+    ["runtime adapter", "Runtime-specific Agentera adapter support for skill loading, hooks, artifact validation."],
     ["plugin hooks", "Hooks that are shipped by active runtime plugin package surfaces."],
-    [
-      "native worker roster",
-      "Runtime support for worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI.",
-    ],
+    ["native worker roster", "Runtime support for worker execution through OpenCode, Codex CLI, Cursor IDE, Copilot CLI."],
     ["setup doctor", "Diagnostic command surface for install/runtime health."],
   ])("rejects %s regressions", (_label, claim) => {
     expect(currentSupportViolations(claim)).not.toEqual([]);
   });
 
-  it.each([
-    "Claude Code is not a supported runtime. Use --import-source claude only for historical import.",
-    "Retired Claude migration removes only the exact Agentera-owned legacy link.",
-    "OpenCode supports .claude/skills as a Claude Code compatibility location.",
-  ])("allows classified retirement and compatibility references: %s", (claim) => {
-    expect(currentSupportViolations(claim)).toEqual([]);
-  });
+  it.each(["Claude Code is not a supported runtime. Use --import-source claude only for historical import.", "Retired Claude migration removes only the exact Agentera-owned legacy link.", "OpenCode supports .claude/skills as a Claude Code compatibility location."])(
+    "allows classified retirement and compatibility references: %s",
+    (claim) => {
+      expect(currentSupportViolations(claim)).toEqual([]);
+    },
+  );
 
   it("documents host-neutral shared-skill support and retired Claude only", () => {
     const vocabulary = read("references/cli/vocabulary.md");
     expect(vocabulary).toContain("does not ship host-native package surfaces");
-    expect(vocabulary).toContain(
-      "Claude Code is a retired migration and consent-gated historical-import source",
-    );
+    expect(vocabulary).toContain("Claude Code is a retired migration and consent-gated historical-import source");
   });
 
   it("documents the shared-skill and CLI active contract", () => {
@@ -1542,11 +1439,7 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("keeps active readiness surfaces on app, project, shared-skill, and CLI evidence", () => {
-    const surfaces = [
-      "README.md",
-      "packages/cli/src/cli/help.ts",
-      "skills/agentera/SKILL.md",
-    ];
+    const surfaces = ["README.md", "packages/cli/src/cli/help.ts", "skills/agentera/SKILL.md"];
     const retiredClaims = [
       /detailed install and runtime evidence/i,
       /home directory for runtime detection/i,
@@ -1563,9 +1456,7 @@ describe("retired runtime current-surface policy", () => {
     }
 
     expect(read("README.md")).toContain("app, project-state, shared-skill, and CLI evidence");
-    expect(read("packages/cli/src/cli/help.ts")).toContain(
-      "Home directory for shared-skill diagnosis",
-    );
+    expect(read("packages/cli/src/cli/help.ts")).toContain("Home directory for shared-skill diagnosis");
     expect(read("skills/agentera/SKILL.md")).toContain("One agent, one CLI");
   });
 

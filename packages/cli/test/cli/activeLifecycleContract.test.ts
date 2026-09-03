@@ -21,10 +21,7 @@ function fixture(): { root: string; home: string; project: string } {
   const project = path.join(root, "project");
   fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
   fs.mkdirSync(home, { recursive: true });
-  fs.writeFileSync(
-    path.join(project, ".agentera", "state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return { root, home, project };
 }
 
@@ -32,8 +29,12 @@ function capture(argv: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...argv], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
   });
   return { rc, out, err };
 }
@@ -63,9 +64,7 @@ describe("active shared-skill lifecycle contract", () => {
     const previous = process.cwd();
     process.chdir(project);
     try {
-      const doctor = capture([
-        "doctor", "--home", home, "--install-root", REPO_ROOT, "--project", project, "--format", "json",
-      ]);
+      const doctor = capture(["doctor", "--home", home, "--install-root", REPO_ROOT, "--project", project, "--format", "json"]);
       expect(doctor.rc).toBeGreaterThanOrEqual(0);
       const doctorPayload = JSON.parse(doctor.out) as Record<string, unknown>;
       expect(doctorPayload).toHaveProperty("shared_skill");
@@ -82,10 +81,7 @@ describe("active shared-skill lifecycle contract", () => {
       expect(schema.rc).toBe(0);
       const schemaPayload = JSON.parse(schema.out) as Record<string, unknown>;
       expect(schemaPayload).toHaveProperty("integration.shared_skill.path", "~/.agents/skills/agentera");
-      expect(schemaPayload).toHaveProperty(
-        "integration.authority",
-        "skills/agentera/SKILL.md",
-      );
+      expect(schemaPayload).toHaveProperty("integration.authority", "skills/agentera/SKILL.md");
       expect(schemaPayload).not.toHaveProperty("runtime_lifecycle");
       expect(JSON.stringify(schemaPayload)).not.toMatch(/current_runtime_selectors|current_native_resource_operations/);
     } finally {
@@ -96,9 +92,7 @@ describe("active shared-skill lifecycle contract", () => {
   it("rejects retired runtime selectors before mutation with the shared-skill correction", () => {
     const { root, home, project } = fixture();
     const before = tree(root);
-    const result = capture([
-      "upgrade", "--runtime", "cursor", "--home", home, "--project", project, "--yes", "--format", "json",
-    ]);
+    const result = capture(["upgrade", "--runtime", "cursor", "--home", home, "--project", project, "--yes", "--format", "json"]);
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
     expect(result.out).toContain("retired");
@@ -113,7 +107,10 @@ describe("active shared-skill lifecycle contract", () => {
     const result = capture(["upgrade", "--home", home, "--project", project, "--yes", "--format", "text"]);
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
-    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(JSON.parse(result.out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
     expect(tree(root)).toEqual(before);
   });
 
@@ -121,10 +118,7 @@ describe("active shared-skill lifecycle contract", () => {
     const { root, home, project } = fixture();
     const forbidden = [".opencode", ".codex", ".cursor", ".github", ".claude-plugin"];
     for (const approval of ["--dry-run", "--yes"] as const) {
-      const result = capture([
-        "upgrade", "--home", home, "--install-root", REPO_ROOT, "--project", project,
-        approval,
-      ]);
+      const result = capture(["upgrade", "--home", home, "--install-root", REPO_ROOT, "--project", project, approval]);
       expect([0, 1]).toContain(result.rc);
       if (result.out) {
         const payload = JSON.parse(result.out);
@@ -133,10 +127,7 @@ describe("active shared-skill lifecycle contract", () => {
       for (const entry of forbidden) expect(fs.existsSync(path.join(home, entry))).toBe(false);
     }
 
-    const cleanup = capture([
-      "upgrade", "--legacy-cleanup", "claude.agentera-skill-link", "--home", home, "--install-root", REPO_ROOT,
-      "--project", project, "--dry-run", "--format", "json",
-    ]);
+    const cleanup = capture(["upgrade", "--legacy-cleanup", "claude.agentera-skill-link", "--home", home, "--install-root", REPO_ROOT, "--project", project, "--dry-run", "--format", "json"]);
     expect(cleanup.rc).toBe(0);
     const cleanupPayload = JSON.parse(cleanup.out);
     expect(cleanupPayload).toHaveProperty("lifecycle.nativeResourceCleanup.resourceId", "claude.agentera-skill-link");
@@ -145,16 +136,15 @@ describe("active shared-skill lifecycle contract", () => {
     expect(cleanupPayload.lifecycle).not.toHaveProperty("operations");
     expect(cleanupPayload.lifecycle).not.toHaveProperty("userActions");
 
-    const historicalCleanup = capture([
-      "upgrade", "--legacy-cleanup", "codex.agents.status", "--home", home, "--install-root", REPO_ROOT,
-      "--project", project, "--dry-run", "--format", "json",
-    ]);
+    const historicalCleanup = capture(["upgrade", "--legacy-cleanup", "codex.agents.status", "--home", home, "--install-root", REPO_ROOT, "--project", project, "--dry-run", "--format", "json"]);
     expect(historicalCleanup.rc).toBe(0);
     const historicalPayload = JSON.parse(historicalCleanup.out);
     expect(historicalPayload.lifecycle).toBeNull();
-    expect(historicalPayload.phases[0].items).toContainEqual(expect.objectContaining({
-      resourceId: "codex.agent-descriptor.status",
-      status: "noop",
-    }));
+    expect(historicalPayload.phases[0].items).toContainEqual(
+      expect.objectContaining({
+        resourceId: "codex.agent-descriptor.status",
+        status: "noop",
+      }),
+    );
   });
 });

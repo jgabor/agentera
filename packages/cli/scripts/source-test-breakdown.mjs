@@ -88,12 +88,8 @@ export function summarizeSourceReport(report, { testRoot = path.join(packageRoot
     nonAssertionMs: Math.max(0, cumulativeSuiteMs - cumulativeAssertionMs),
     averageConcurrency: suiteSpanMs === 0 ? 0 : cumulativeSuiteMs / suiteSpanMs,
     areas: [...areas.values()].sort((left, right) => right.workerMs - left.workerMs || left.area.localeCompare(right.area)),
-    slowFiles: [...suites]
-      .sort((left, right) => right.durationMs - left.durationMs || left.file.localeCompare(right.file))
-      .slice(0, 10),
-    slowTests: [...assertions]
-      .sort((left, right) => right.durationMs - left.durationMs || left.name.localeCompare(right.name))
-      .slice(0, 5),
+    slowFiles: [...suites].sort((left, right) => right.durationMs - left.durationMs || left.file.localeCompare(right.file)).slice(0, 10),
+    slowTests: [...assertions].sort((left, right) => right.durationMs - left.durationMs || left.name.localeCompare(right.name)).slice(0, 5),
   };
 }
 
@@ -120,7 +116,7 @@ export function formatSourceBreakdown(summary, { ownerWallMs }) {
     "",
     "| Area | Files | Tests | Worker time | Share |",
     "|---|---:|---:|---:|---:|",
-    ...summary.areas.map((area) => `| ${tableText(area.area)} | ${area.files} | ${area.tests} | ${duration(area.workerMs)} | ${(summary.cumulativeSuiteMs === 0 ? 0 : area.workerMs / summary.cumulativeSuiteMs * 100).toFixed(1)}% |`),
+    ...summary.areas.map((area) => `| ${tableText(area.area)} | ${area.files} | ${area.tests} | ${duration(area.workerMs)} | ${(summary.cumulativeSuiteMs === 0 ? 0 : (area.workerMs / summary.cumulativeSuiteMs) * 100).toFixed(1)}% |`),
     "",
     "## Slowest files",
     "",
@@ -158,17 +154,7 @@ export function main() {
   try {
     const files = sourceInventory();
     const started = process.hrtime.bigint();
-    const result = spawnSync("pnpm", [
-      "exec",
-      "vp",
-      "test",
-      "run",
-      "--config",
-      "vite.config.ts",
-      ...files,
-      "--reporter=json",
-      `--outputFile=${reportPath}`,
-    ], {
+    const result = spawnSync("pnpm", ["exec", "vp", "test", "run", "--config", "vite.config.ts", ...files, "--reporter=json", `--outputFile=${reportPath}`], {
       cwd: packageRoot,
       stdio: "inherit",
       env: { ...process.env, AGENTERA_VERIFICATION_OWNER: "source" },

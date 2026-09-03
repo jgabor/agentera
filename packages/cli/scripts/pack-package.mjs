@@ -6,11 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseReleaseFlags } from "./release-arguments.mjs";
-import {
-  formatConstruction,
-  normalizeConstruction,
-  npmChildEnvironment,
-} from "./package-construction.mjs";
+import { formatConstruction, normalizeConstruction, npmChildEnvironment } from "./package-construction.mjs";
 
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const repoRoot = path.resolve(packageRoot, "../..");
@@ -40,8 +36,7 @@ function run(command, args, cwd) {
     stdio: ["ignore", "pipe", "inherit"],
   });
   if (result.error) throw result.error;
-  if (result.status !== 0)
-    throw new Error(`${command} ${args.join(" ")} failed with exit ${result.status ?? "signal"}`);
+  if (result.status !== 0) throw new Error(`${command} ${args.join(" ")} failed with exit ${result.status ?? "signal"}`);
   return result.stdout;
 }
 
@@ -114,10 +109,7 @@ try {
   const expected = JSON.parse(fs.readFileSync(path.join(construction, "package.json"), "utf8"));
   const expectedTag = expected.publishConfig?.tag ?? "next";
   if (withDryRun) {
-    const { entry: dryEntry, warnings: dryWarnings } = npmPack(
-      ["pack", "--dry-run", "--ignore-scripts"],
-      construction,
-    );
+    const { entry: dryEntry, warnings: dryWarnings } = npmPack(["pack", "--dry-run", "--ignore-scripts"], construction);
     const dry = normalizeConstruction(dryEntry, {
       expectedName: expected.name,
       expectedVersion: expected.version,
@@ -126,14 +118,9 @@ try {
     });
     const destination = path.join(outputDir, dryEntry.filename);
     if (fs.existsSync(destination)) {
-      throw new Error(
-        `package artifact already exists at ${destination}; move or remove it and retry`,
-      );
+      throw new Error(`package artifact already exists at ${destination}; move or remove it and retry`);
     }
-    const { entry, warnings } = npmPack(
-      ["pack", "--ignore-scripts", "--pack-destination", temporary],
-      construction,
-    );
+    const { entry, warnings } = npmPack(["pack", "--ignore-scripts", "--pack-destination", temporary], construction);
     const tarball = path.join(temporary, entry.filename);
     const packedDestination = path.join(outputDir, entry.filename);
     const packed = normalizeConstruction(entry, {
@@ -159,14 +146,9 @@ try {
       expectedTag,
       warnings,
     });
-    process.stdout.write(
-      `${formatConstruction(result, json ? "json" : verbose ? "verbose" : "default")}\n`,
-    );
+    process.stdout.write(`${formatConstruction(result, json ? "json" : verbose ? "verbose" : "default")}\n`);
   } else {
-    const { entry, warnings } = npmPack(
-      ["pack", "--ignore-scripts", "--pack-destination", temporary],
-      construction,
-    );
+    const { entry, warnings } = npmPack(["pack", "--ignore-scripts", "--pack-destination", temporary], construction);
     const tarball = path.join(temporary, entry.filename);
     const destination = path.join(outputDir, entry.filename);
     const result = normalizeConstruction(entry, {
@@ -178,9 +160,7 @@ try {
     });
     fs.mkdirSync(outputDir, { recursive: true });
     if (fs.existsSync(destination)) {
-      throw new Error(
-        `package artifact already exists at ${destination}; move or remove it and retry`,
-      );
+      throw new Error(`package artifact already exists at ${destination}; move or remove it and retry`);
     }
     try {
       fs.copyFileSync(tarball, destination, fs.constants.COPYFILE_EXCL);

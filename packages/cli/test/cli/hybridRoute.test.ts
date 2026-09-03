@@ -55,13 +55,20 @@ function withWrongCorpusExpectation<T>(run: () => T): T {
   const previousSourceRoot = process.env[BOOTSTRAP_SOURCE_ROOT_ENV];
   try {
     for (const directory of ["fixtures", "references", "skills"]) {
-      fs.cpSync(path.join(path.resolve(import.meta.dirname, "../../../.."), directory), path.join(root, directory), { recursive: true });
+      fs.cpSync(path.join(path.resolve(import.meta.dirname, "../../../.."), directory), path.join(root, directory), {
+        recursive: true,
+      });
     }
     const corpusPath = path.join(root, "fixtures/routing/hybrid-corpus.yaml");
-    fs.writeFileSync(corpusPath, fs.readFileSync(corpusPath, "utf8").replace(
-      "id: DEV-PHRASE-STATUS, partition: development, request: \"show project briefing for the checkout\", expected: { phase1: deterministic_selection, tier: phrase, capability: status }",
-      "id: DEV-PHRASE-STATUS, partition: development, request: \"show project briefing for the checkout\", expected: { phase1: deterministic_selection, tier: phrase, capability: vision }",
-    ));
+    fs.writeFileSync(
+      corpusPath,
+      fs
+        .readFileSync(corpusPath, "utf8")
+        .replace(
+          'id: DEV-PHRASE-STATUS, partition: development, request: "show project briefing for the checkout", expected: { phase1: deterministic_selection, tier: phrase, capability: status }',
+          'id: DEV-PHRASE-STATUS, partition: development, request: "show project briefing for the checkout", expected: { phase1: deterministic_selection, tier: phrase, capability: vision }',
+        ),
+    );
     process.env[BOOTSTRAP_SOURCE_ROOT_ENV] = root;
     return run();
   } finally {
@@ -103,7 +110,11 @@ describe("route request CLI", () => {
         nullable_schema: {
           required: ["version", "request_sha256", "semantic_capsule_sha256", "outcome", "capability", "compound", "question", "remainder_span"],
         },
-        outcome_rules: expect.objectContaining({ select: expect.any(Object), clarify: expect.any(Object), no_match: expect.any(Object) }),
+        outcome_rules: expect.objectContaining({
+          select: expect.any(Object),
+          clarify: expect.any(Object),
+          no_match: expect.any(Object),
+        }),
         compound: expect.objectContaining({ dispositions: ["none", "preserve"] }),
         remainder_span: expect.objectContaining({ encoding: "utf8_bytes" }),
       },
@@ -163,20 +174,62 @@ describe("route receipt CLI", () => {
     const cases = [
       {
         name: "select",
-        receipt: { ...common, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
-        malformed: { ...common, outcome: "select", capability: null, compound: "none", question: null, remainder_span: null },
+        receipt: {
+          ...common,
+          outcome: "select",
+          capability: "plan",
+          compound: "none",
+          question: null,
+          remainder_span: null,
+        },
+        malformed: {
+          ...common,
+          outcome: "select",
+          capability: null,
+          compound: "none",
+          question: null,
+          remainder_span: null,
+        },
         result: "selected",
       },
       {
         name: "clarify",
-        receipt: { ...common, outcome: "clarify", capability: null, compound: null, question: "Which primary capability should handle this?", remainder_span: null },
-        malformed: { ...common, outcome: "clarify", capability: null, compound: null, question: null, remainder_span: null },
+        receipt: {
+          ...common,
+          outcome: "clarify",
+          capability: null,
+          compound: null,
+          question: "Which primary capability should handle this?",
+          remainder_span: null,
+        },
+        malformed: {
+          ...common,
+          outcome: "clarify",
+          capability: null,
+          compound: null,
+          question: null,
+          remainder_span: null,
+        },
         result: "clarification",
       },
       {
         name: "no_match",
-        receipt: { ...common, outcome: "no_match", capability: null, compound: null, question: null, remainder_span: null },
-        malformed: { ...common, outcome: "no_match", capability: null, compound: null, question: "This field is forbidden.", remainder_span: null },
+        receipt: {
+          ...common,
+          outcome: "no_match",
+          capability: null,
+          compound: null,
+          question: null,
+          remainder_span: null,
+        },
+        malformed: {
+          ...common,
+          outcome: "no_match",
+          capability: null,
+          compound: null,
+          question: "This field is forbidden.",
+          remainder_span: null,
+        },
         result: "status_fallback",
       },
     ];
@@ -188,7 +241,9 @@ describe("route receipt CLI", () => {
 
       const rejected = invokeReceipt(JSON.stringify({ request, receipt: testCase.malformed }));
       expect(rejected.rc, `${testCase.name} malformed`).toBe(64);
-      expect(JSON.parse(rejected.out), `${testCase.name} malformed`).toMatchObject({ error: { class: "invalid_receipt" } });
+      expect(JSON.parse(rejected.out), `${testCase.name} malformed`).toMatchObject({
+        error: { class: "invalid_receipt" },
+      });
     }
   });
 
@@ -196,19 +251,39 @@ describe("route receipt CLI", () => {
     const request = "private plan the import 8675309";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
     const capsuleDigest = semanticCapsuleDigest(request);
-    const selected = invokeReceipt(JSON.stringify({
-      request,
-      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, semantic_capsule_sha256: capsuleDigest, outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
-    }));
+    const selected = invokeReceipt(
+      JSON.stringify({
+        request,
+        receipt: {
+          version: "agentera.route_receipt.v1",
+          request_sha256: digest,
+          semantic_capsule_sha256: capsuleDigest,
+          outcome: "select",
+          capability: "plan",
+          compound: "none",
+          question: null,
+          remainder_span: null,
+        },
+      }),
+    );
     expect(selected.rc).toBe(0);
     expect(selected.err).toBe("");
-    expect(JSON.parse(selected.out)).toMatchObject({ outcome: "selected", capability: "plan", route_provenance: { startup_command: "npx -y agentera@next prime --context plan" } });
+    expect(JSON.parse(selected.out)).toMatchObject({
+      outcome: "selected",
+      capability: "plan",
+      route_provenance: { startup_command: "npx -y agentera@next prime --context plan" },
+    });
     expect(selected.out).not.toContain(request);
 
     const malformed = invokeReceipt(JSON.stringify({ request, receipt: { outcome: "select", instructions: request } }));
     expect(malformed.rc).toBe(64);
     expect(malformed.err).toBe("");
-    expect(JSON.parse(malformed.out)).toMatchObject({ error: { class: "invalid_receipt", recovery: expect.stringContaining("no capability was started") } });
+    expect(JSON.parse(malformed.out)).toMatchObject({
+      error: {
+        class: "invalid_receipt",
+        recovery: expect.stringContaining("no capability was started"),
+      },
+    });
     expect(malformed.out).not.toContain(request);
   });
 
@@ -217,10 +292,20 @@ describe("route receipt CLI", () => {
     const nonBmpLetter = "\u{10400}";
     const digest = crypto.createHash("sha256").update(request, "utf8").digest("hex");
     const capsuleDigest = semanticCapsuleDigest(request);
-    const receipt = (question: string) => JSON.stringify({
-      request,
-      receipt: { version: "agentera.route_receipt.v1", request_sha256: digest, semantic_capsule_sha256: capsuleDigest, outcome: "clarify", capability: null, compound: null, question, remainder_span: null },
-    });
+    const receipt = (question: string) =>
+      JSON.stringify({
+        request,
+        receipt: {
+          version: "agentera.route_receipt.v1",
+          request_sha256: digest,
+          semantic_capsule_sha256: capsuleDigest,
+          outcome: "clarify",
+          capability: null,
+          compound: null,
+          question,
+          remainder_span: null,
+        },
+      });
 
     expect(invokeReceipt(receipt(nonBmpLetter.repeat(280))).rc).toBe(0);
     expect(invokeReceipt(receipt(nonBmpLetter.repeat(281))).rc).toBe(64);
@@ -253,7 +338,10 @@ describe("route evaluation CLI", () => {
     expect(result.rc).toBe(1);
     expect(result.err).toBe("");
     expect(result.out.match(/agentera\.hybrid_route_evaluation\.v1/g)).toHaveLength(1);
-    expect(report).toMatchObject({ status: "fail", aggregate_metrics: { harmful_misroutes: { observed: 1, status: "fail" } } });
+    expect(report).toMatchObject({
+      status: "fail",
+      aggregate_metrics: { harmful_misroutes: { observed: 1, status: "fail" } },
+    });
     expect(report.results.find((entry: { case_id: string }) => entry.case_id === "DEV-PHRASE-STATUS")).toMatchObject({
       evaluation_tier: "deterministic",
       failure_tier: "deterministic",

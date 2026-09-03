@@ -5,49 +5,15 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 export const EXPLICIT_SEGMENT_GRAMMAR_SCHEMA_VERSION = "agentera.personalGlossarySegmentGrammar.v1";
 
-export const EXPLICIT_SEGMENT_FORM_IDS = [
-  "quoted_means",
-  "definition_list_colon",
-  "acronym_stands_for",
-  "acronym_parenthetical",
-  "by_i_mean",
-  "use_for",
-  "use_to_mean",
-  "refers_to",
-  "clarification_prefer_to_mean",
-  "correction_means",
-] as const;
+export const EXPLICIT_SEGMENT_FORM_IDS = ["quoted_means", "definition_list_colon", "acronym_stands_for", "acronym_parenthetical", "by_i_mean", "use_for", "use_to_mean", "refers_to", "clarification_prefer_to_mean", "correction_means"] as const;
 
 export type ExplicitSegmentFormId = (typeof EXPLICIT_SEGMENT_FORM_IDS)[number];
 
-export const EXPLICIT_SEGMENT_STATES = [
-  "outside",
-  "cue",
-  "inline_meaning",
-  "continuation",
-  "structural_config",
-  "terminated",
-  "rejected",
-] as const;
+export const EXPLICIT_SEGMENT_STATES = ["outside", "cue", "inline_meaning", "continuation", "structural_config", "terminated", "rejected"] as const;
 
 export type ExplicitSegmentState = (typeof EXPLICIT_SEGMENT_STATES)[number];
 
-export const EXPLICIT_SEGMENT_INPUTS = [
-  "approved_cue",
-  "non_empty_inline_meaning",
-  "continuation_line",
-  "blank_line",
-  "next_cue",
-  "structural_fragment",
-  "comment",
-  "list_boundary",
-  "indentation",
-  "nested_marker",
-  "block_scalar",
-  "prose",
-  "unsupported",
-  "eof",
-] as const;
+export const EXPLICIT_SEGMENT_INPUTS = ["approved_cue", "non_empty_inline_meaning", "continuation_line", "blank_line", "next_cue", "structural_fragment", "comment", "list_boundary", "indentation", "nested_marker", "block_scalar", "prose", "unsupported", "eof"] as const;
 
 export type ExplicitSegmentInput = (typeof EXPLICIT_SEGMENT_INPUTS)[number];
 
@@ -61,8 +27,7 @@ export const EXPLICIT_SEGMENT_REASONS = {
   invalidExitBoundary: "invalid_exit_boundary",
 } as const;
 
-export type ExplicitSegmentReason =
-  (typeof EXPLICIT_SEGMENT_REASONS)[keyof typeof EXPLICIT_SEGMENT_REASONS];
+export type ExplicitSegmentReason = (typeof EXPLICIT_SEGMENT_REASONS)[keyof typeof EXPLICIT_SEGMENT_REASONS];
 
 export interface ExplicitSegmentTransition {
   from: ExplicitSegmentState;
@@ -72,56 +37,20 @@ export interface ExplicitSegmentTransition {
   reason?: ExplicitSegmentReason;
 }
 
-function transition(
-  from: ExplicitSegmentState,
-  input: ExplicitSegmentInput,
-  to: ExplicitSegmentState,
-  action: string,
-  reason?: ExplicitSegmentReason,
-): ExplicitSegmentTransition {
+function transition(from: ExplicitSegmentState, input: ExplicitSegmentInput, to: ExplicitSegmentState, action: string, reason?: ExplicitSegmentReason): ExplicitSegmentTransition {
   return { from, input, to, action, ...(reason === undefined ? {} : { reason }) };
 }
 
 const REQUIRED_TRANSITIONS: readonly ExplicitSegmentTransition[] = [
   transition("outside", "approved_cue", "cue", "enter_cue_segment"),
-  transition(
-    "outside",
-    "structural_fragment",
-    "structural_config",
-    "enter_structural_config",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "outside",
-    "list_boundary",
-    "structural_config",
-    "enter_structural_config",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "outside",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
+  transition("outside", "structural_fragment", "structural_config", "enter_structural_config", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("outside", "list_boundary", "structural_config", "enter_structural_config", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("outside", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
   transition("cue", "non_empty_inline_meaning", "inline_meaning", "capture_inline_meaning"),
   transition("cue", "blank_line", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.emptyMeaning),
   transition("cue", "next_cue", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.emptyMeaning),
-  transition(
-    "cue",
-    "structural_fragment",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.emptyMeaning,
-  ),
-  transition(
-    "cue",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
+  transition("cue", "structural_fragment", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.emptyMeaning),
+  transition("cue", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
   transition("inline_meaning", "continuation_line", "continuation", "append_original_newline"),
   transition("inline_meaning", "blank_line", "terminated", "finish_before_boundary"),
   transition("inline_meaning", "next_cue", "terminated", "finish_before_boundary"),
@@ -130,13 +59,7 @@ const REQUIRED_TRANSITIONS: readonly ExplicitSegmentTransition[] = [
   transition("inline_meaning", "list_boundary", "terminated", "finish_before_boundary"),
   transition("inline_meaning", "prose", "continuation", "append_original_newline"),
   transition("inline_meaning", "eof", "terminated", "finish_at_eof"),
-  transition(
-    "inline_meaning",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
+  transition("inline_meaning", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
   transition("continuation", "continuation_line", "continuation", "append_original_newline"),
   transition("continuation", "prose", "continuation", "append_original_newline"),
   transition("continuation", "blank_line", "terminated", "finish_before_boundary"),
@@ -145,104 +68,20 @@ const REQUIRED_TRANSITIONS: readonly ExplicitSegmentTransition[] = [
   transition("continuation", "comment", "terminated", "finish_before_boundary"),
   transition("continuation", "list_boundary", "terminated", "finish_before_boundary"),
   transition("continuation", "eof", "terminated", "finish_at_eof"),
-  transition(
-    "continuation",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
-  transition(
-    "structural_config",
-    "approved_cue",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "structural_fragment",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "comment",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "blank_line",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "indentation",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "nested_marker",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "block_scalar",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "list_boundary",
-    "structural_config",
-    "reject_structural_fragment",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "prose",
-    "outside",
-    "reject_fragment_then_exit",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "structural_config",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
-  transition(
-    "structural_config",
-    "eof",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.structuralFragment,
-  ),
-  transition(
-    "terminated",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
-  transition(
-    "rejected",
-    "unsupported",
-    "rejected",
-    "reject",
-    EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
-  ),
+  transition("continuation", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
+  transition("structural_config", "approved_cue", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "structural_fragment", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "comment", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "blank_line", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "indentation", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "nested_marker", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "block_scalar", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "list_boundary", "structural_config", "reject_structural_fragment", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "prose", "outside", "reject_fragment_then_exit", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("structural_config", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
+  transition("structural_config", "eof", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.structuralFragment),
+  transition("terminated", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
+  transition("rejected", "unsupported", "rejected", "reject", EXPLICIT_SEGMENT_REASONS.unsupportedTransition),
 ];
 export interface ExplicitSegmentForm {
   id: ExplicitSegmentFormId;
@@ -337,15 +176,11 @@ export interface ExplicitSegmentGrammarContract {
 export class ExplicitSegmentGrammarContractError extends Error {}
 type Mapping = Record<string, unknown>;
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string")
-    ? [...(value as string[])]
-    : [];
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? [...(value as string[])] : [];
 }
 
 function sameStrings(value: unknown, expected: readonly string[]): boolean {
@@ -373,17 +208,10 @@ function transitionKey(from: ExplicitSegmentState, input: ExplicitSegmentInput):
 }
 
 function formMappings(value: unknown): Mapping[] {
-  return Array.isArray(value)
-    ? value.map(mapping).filter((item): item is Mapping => item !== null)
-    : [];
+  return Array.isArray(value) ? value.map(mapping).filter((item): item is Mapping => item !== null) : [];
 }
 
-function validateTransition(
-  value: unknown,
-  label: string,
-  fallback: boolean,
-  errors: string[],
-): void {
+function validateTransition(value: unknown, label: string, fallback: boolean, errors: string[]): void {
   const transition = mapping(value);
   if (!transition) {
     errors.push(`${label} must be a mapping`);
@@ -404,12 +232,7 @@ function validateTransition(
   }
 }
 
-function validateExactObjectFields(
-  value: unknown,
-  fields: readonly string[],
-  label: string,
-  errors: string[],
-): Mapping | null {
+function validateExactObjectFields(value: unknown, fields: readonly string[], label: string, errors: string[]): Mapping | null {
   const result = mapping(value);
   if (!result) {
     errors.push(`${label} must be a mapping`);
@@ -465,8 +288,7 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     if (form.segment_class !== "explicit_cue_segment") {
       errors.push(`explicit segment grammar form[${index}] must map to explicit_cue_segment`);
     }
-    if (!nonEmpty(form.syntax))
-      errors.push(`explicit segment grammar form[${index}].syntax is required`);
+    if (!nonEmpty(form.syntax)) errors.push(`explicit segment grammar form[${index}].syntax is required`);
     if (form.entry !== "outside_approved_cue") {
       errors.push(`explicit segment grammar form[${index}].entry is invalid`);
     }
@@ -478,12 +300,7 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     }
   }
 
-  const entry = validateExactObjectFields(
-    segment.entry,
-    ["from", "input", "to", "accepted_forms", "unsupported_reason"],
-    "explicit segment grammar entry",
-    errors,
-  );
+  const entry = validateExactObjectFields(segment.entry, ["from", "input", "to", "accepted_forms", "unsupported_reason"], "explicit segment grammar entry", errors);
   if (entry) {
     if (entry.from !== "outside" || entry.input !== "approved_cue" || entry.to !== "cue") {
       errors.push("explicit segment grammar entry must transition outside approved_cue to cue");
@@ -496,39 +313,12 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     }
   }
 
-  const termination = validateExactObjectFields(
-    segment.termination,
-    [
-      "start_state",
-      "continuation_state",
-      "terminal_state",
-      "required",
-      "boundary_inputs",
-      "maximum_meaning_utf8_bytes",
-      "limit",
-      "over_limit_reason",
-    ],
-    "explicit segment grammar termination",
-    errors,
-  );
+  const termination = validateExactObjectFields(segment.termination, ["start_state", "continuation_state", "terminal_state", "required", "boundary_inputs", "maximum_meaning_utf8_bytes", "limit", "over_limit_reason"], "explicit segment grammar termination", errors);
   if (termination) {
-    if (
-      termination.start_state !== "inline_meaning" ||
-      termination.continuation_state !== "continuation" ||
-      termination.terminal_state !== "terminated" ||
-      termination.required !== "non_empty_inline_meaning"
-    ) {
+    if (termination.start_state !== "inline_meaning" || termination.continuation_state !== "continuation" || termination.terminal_state !== "terminated" || termination.required !== "non_empty_inline_meaning") {
       errors.push("explicit segment grammar termination states are invalid");
     }
-    if (
-      !sameStrings(termination.boundary_inputs, [
-        "blank_line",
-        "next_cue",
-        "structural_fragment",
-        "comment",
-        "list_boundary",
-      ])
-    ) {
+    if (!sameStrings(termination.boundary_inputs, ["blank_line", "next_cue", "structural_fragment", "comment", "list_boundary"])) {
       errors.push("explicit segment grammar termination boundary_inputs are invalid");
     }
     if (termination.maximum_meaning_utf8_bytes !== 4096 || termination.limit !== "inclusive") {
@@ -539,12 +329,7 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     }
   }
 
-  const output = validateExactObjectFields(
-    segment.output,
-    ["fields", "span_encoding", "source_semantics"],
-    "explicit segment grammar output",
-    errors,
-  );
+  const output = validateExactObjectFields(segment.output, ["fields", "span_encoding", "source_semantics"], "explicit segment grammar output", errors);
   if (output) {
     if (!sameStrings(output.fields, ["term", "meaning", "term_span", "meaning_span"])) {
       errors.push("explicit segment grammar output fields are invalid");
@@ -557,59 +342,26 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     }
   }
 
-  const continuation = validateExactObjectFields(
-    segment.continuation,
-    [
-      "starts_after",
-      "preserves",
-      "stops_on",
-      "maximum_utf8_bytes",
-      "limit",
-      "over_limit",
-      "over_limit_reason",
-    ],
-    "explicit segment grammar continuation",
-    errors,
-  );
+  const continuation = validateExactObjectFields(segment.continuation, ["starts_after", "preserves", "stops_on", "maximum_utf8_bytes", "limit", "over_limit", "over_limit_reason"], "explicit segment grammar continuation", errors);
   if (continuation) {
     if (continuation.starts_after !== "non_empty_inline_meaning") {
-      errors.push(
-        "explicit segment grammar continuation must start after non-empty inline meaning",
-      );
+      errors.push("explicit segment grammar continuation must start after non-empty inline meaning");
     }
     if (continuation.preserves !== "exact_source_newlines_and_utf8_bytes") {
-      errors.push(
-        "explicit segment grammar continuation must preserve original newlines and bytes",
-      );
+      errors.push("explicit segment grammar continuation must preserve original newlines and bytes");
     }
-    if (
-      !sameStrings(continuation.stops_on, [
-        "blank_line",
-        "next_cue",
-        "structural_fragment",
-        "comment",
-        "list_boundary",
-      ])
-    ) {
+    if (!sameStrings(continuation.stops_on, ["blank_line", "next_cue", "structural_fragment", "comment", "list_boundary"])) {
       errors.push("explicit segment grammar continuation stops_on is invalid");
     }
     if (continuation.maximum_utf8_bytes !== 4096 || continuation.limit !== "inclusive") {
       errors.push("explicit segment grammar continuation must accept exactly 4096 UTF-8 bytes");
     }
-    if (
-      continuation.over_limit !== "reject" ||
-      continuation.over_limit_reason !== EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded
-    ) {
+    if (continuation.over_limit !== "reject" || continuation.over_limit_reason !== EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded) {
       errors.push("explicit segment grammar continuation must reject one byte over the bound");
     }
   }
 
-  const structural = validateExactObjectFields(
-    segment.structural_configuration,
-    ["state", "entry_inputs", "persist_inputs", "reject_inputs", "exit"],
-    "explicit segment grammar structural_configuration",
-    errors,
-  );
+  const structural = validateExactObjectFields(segment.structural_configuration, ["state", "entry_inputs", "persist_inputs", "reject_inputs", "exit"], "explicit segment grammar structural_configuration", errors);
   if (structural) {
     if (structural.state !== "structural_config") {
       errors.push("explicit segment grammar structural_configuration state is invalid");
@@ -617,65 +369,21 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
     if (!sameStrings(structural.entry_inputs, ["structural_fragment", "list_boundary"])) {
       errors.push("explicit segment grammar structural_configuration entry_inputs are invalid");
     }
-    if (
-      !sameStrings(structural.persist_inputs, [
-        "comment",
-        "blank_line",
-        "indentation",
-        "nested_marker",
-        "block_scalar",
-        "structural_fragment",
-        "list_boundary",
-      ])
-    ) {
+    if (!sameStrings(structural.persist_inputs, ["comment", "blank_line", "indentation", "nested_marker", "block_scalar", "structural_fragment", "list_boundary"])) {
       errors.push("explicit segment grammar structural_configuration persist_inputs are invalid");
     }
-    if (
-      !sameStrings(structural.reject_inputs, [
-        "comment",
-        "blank_line",
-        "indentation",
-        "nested_marker",
-        "block_scalar",
-        "structural_fragment",
-        "list_boundary",
-        "approved_cue",
-      ])
-    ) {
+    if (!sameStrings(structural.reject_inputs, ["comment", "blank_line", "indentation", "nested_marker", "block_scalar", "structural_fragment", "list_boundary", "approved_cue"])) {
       errors.push("explicit segment grammar structural_configuration reject_inputs are invalid");
     }
     const exit = mapping(structural.exit);
     if (!exit) {
       errors.push("explicit segment grammar structural_configuration.exit must be a mapping");
-    } else if (
-      exit.input !== "prose" ||
-      !nonEmpty(exit.condition) ||
-      !nonEmpty(exit.action) ||
-      exit.next_state !== "outside" ||
-      exit.definition_allowed !== "next_physical_line_only"
-    ) {
-      errors.push(
-        "explicit segment grammar structural_configuration must have one finite prose exit",
-      );
+    } else if (exit.input !== "prose" || !nonEmpty(exit.condition) || !nonEmpty(exit.action) || exit.next_state !== "outside" || exit.definition_allowed !== "next_physical_line_only") {
+      errors.push("explicit segment grammar structural_configuration must have one finite prose exit");
     }
   }
 
-  const references = validateExactObjectFields(
-    segment.reference_binding,
-    [
-      "following",
-      "this",
-      "exact_term",
-      "matching",
-      "duplicate_target_reason",
-      "missing_target_reason",
-      "duplicate_target_outcome",
-      "missing_target_outcome",
-      "unrelated_cue_outcome",
-    ],
-    "explicit segment grammar reference_binding",
-    errors,
-  );
+  const references = validateExactObjectFields(segment.reference_binding, ["following", "this", "exact_term", "matching", "duplicate_target_reason", "missing_target_reason", "duplicate_target_outcome", "missing_target_outcome", "unrelated_cue_outcome"], "explicit segment grammar reference_binding", errors);
   if (references) {
     if (
       references.following !== "nearest_next_cue" ||
@@ -688,90 +396,45 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
       references.missing_target_outcome !== "exclude_bound_cue_only" ||
       references.unrelated_cue_outcome !== "retain"
     ) {
-      errors.push(
-        "explicit segment grammar reference_binding direction and ambiguity rules are invalid",
-      );
+      errors.push("explicit segment grammar reference_binding direction and ambiguity rules are invalid");
     }
   }
 
-  const deduplication = validateExactObjectFields(
-    segment.deduplication,
-    [
-      "identity",
-      "same_identity_same_meaning",
-      "same_identity_different_meaning",
-      "unrelated_cue_outcome",
-    ],
-    "explicit segment grammar deduplication",
-    errors,
-  );
+  const deduplication = validateExactObjectFields(segment.deduplication, ["identity", "same_identity_same_meaning", "same_identity_different_meaning", "unrelated_cue_outcome"], "explicit segment grammar deduplication", errors);
   if (deduplication) {
-    if (
-      deduplication.identity !== "personal_mining_authority.term_identity.stable_term_identity" ||
-      deduplication.same_identity_same_meaning !== "retain_one_earliest_source_span" ||
-      deduplication.same_identity_different_meaning !== "reject_all_conflicting_meaning" ||
-      deduplication.unrelated_cue_outcome !== "retain"
-    ) {
-      errors.push(
-        "explicit segment grammar deduplication must preserve identity and conflict semantics",
-      );
+    if (deduplication.identity !== "personal_mining_authority.term_identity.stable_term_identity" || deduplication.same_identity_same_meaning !== "retain_one_earliest_source_span" || deduplication.same_identity_different_meaning !== "reject_all_conflicting_meaning" || deduplication.unrelated_cue_outcome !== "retain") {
+      errors.push("explicit segment grammar deduplication must preserve identity and conflict semantics");
     }
   }
 
-  const order = validateExactObjectFields(
-    segment.canonical_order,
-    ["fields", "comparator", "direction"],
-    "explicit segment grammar canonical_order",
-    errors,
-  );
+  const order = validateExactObjectFields(segment.canonical_order, ["fields", "comparator", "direction"], "explicit segment grammar canonical_order", errors);
   if (order) {
-    if (
-      !sameStrings(order.fields, ["term", "meaning", "term_span.start", "meaning_span.start"]) ||
-      order.comparator !== "unicode_scalar_code_point_ascending" ||
-      order.direction !== "ascending"
-    ) {
+    if (!sameStrings(order.fields, ["term", "meaning", "term_span.start", "meaning_span.start"]) || order.comparator !== "unicode_scalar_code_point_ascending" || order.direction !== "ascending") {
       errors.push("explicit segment grammar canonical_order must remain lexical and ascending");
     }
   }
 
   const transitions = Array.isArray(segment.transitions) ? segment.transitions : [];
-  const canonicalTransitionKeys = new Set(
-    REQUIRED_TRANSITIONS.map((transition) => transitionKey(transition.from, transition.input)),
-  );
+  const canonicalTransitionKeys = new Set(REQUIRED_TRANSITIONS.map((transition) => transitionKey(transition.from, transition.input)));
   const transitionKeys = new Set<string>();
   for (const [index, value] of transitions.entries()) {
     validateTransition(value, `explicit segment grammar transitions[${index}]`, false, errors);
     const transition = mapping(value);
     if (transition && isState(transition.from) && isInput(transition.input)) {
       const key = transitionKey(transition.from, transition.input);
-      if (transitionKeys.has(key))
-        errors.push(`explicit segment grammar transition ${key} is duplicated`);
+      if (transitionKeys.has(key)) errors.push(`explicit segment grammar transition ${key} is duplicated`);
       transitionKeys.add(key);
-      if (!canonicalTransitionKeys.has(key))
-        errors.push(
-          `explicit segment grammar transition ${key} is not declared by its finite rule`,
-        );
+      if (!canonicalTransitionKeys.has(key)) errors.push(`explicit segment grammar transition ${key} is not declared by its finite rule`);
     }
   }
   for (const expected of REQUIRED_TRANSITIONS) {
     const key = transitionKey(expected.from, expected.input);
-    const actual = transitions
-      .map(mapping)
-      .find(
-        (transition): transition is Mapping =>
-          transition?.from === expected.from && transition.input === expected.input,
-      );
+    const actual = transitions.map(mapping).find((transition): transition is Mapping => transition?.from === expected.from && transition.input === expected.input);
     if (!actual) {
       errors.push(`explicit segment grammar transition ${key} is required`);
       continue;
     }
-    if (
-      actual.to !== expected.to ||
-      actual.action !== expected.action ||
-      (expected.reason === undefined
-        ? actual.reason !== undefined
-        : actual.reason !== expected.reason)
-    ) {
+    if (actual.to !== expected.to || actual.action !== expected.action || (expected.reason === undefined ? actual.reason !== undefined : actual.reason !== expected.reason)) {
       errors.push(`explicit segment grammar transition ${key} does not match its finite rule`);
     }
   }
@@ -785,21 +448,12 @@ export function validateExplicitSegmentGrammar(value: unknown): string[] {
         errors.push(`explicit segment grammar fallback_transitions.${state} is required`);
         continue;
       }
-      validateTransition(
-        fallback,
-        `explicit segment grammar fallback_transitions.${state}`,
-        true,
-        errors,
-      );
+      validateTransition(fallback, `explicit segment grammar fallback_transitions.${state}`, true, errors);
       if (fallback.from !== state || fallback.to !== "rejected") {
-        errors.push(
-          `explicit segment grammar fallback_transitions.${state} must reject from its state`,
-        );
+        errors.push(`explicit segment grammar fallback_transitions.${state} must reject from its state`);
       }
       if (fallback.reason !== EXPLICIT_SEGMENT_REASONS.unsupportedTransition) {
-        errors.push(
-          `explicit segment grammar fallback_transitions.${state} must use unsupported_transition`,
-        );
+        errors.push(`explicit segment grammar fallback_transitions.${state} must use unsupported_transition`);
       }
     }
   }
@@ -828,16 +482,12 @@ function requiredString(value: unknown, label: string): string {
 }
 
 /** Load the validated finite contract that a future explicit parser consumes. */
-export function loadExplicitSegmentGrammarContract(
-  pathname: string = explicitSegmentGrammarAuthorityPath(),
-): ExplicitSegmentGrammarContract {
+export function loadExplicitSegmentGrammarContract(pathname: string = explicitSegmentGrammarAuthorityPath()): ExplicitSegmentGrammarContract {
   let authority: Mapping;
   try {
     authority = loadYamlMappingFile(pathname);
   } catch (error) {
-    throw new ExplicitSegmentGrammarContractError(
-      `glossary entry authority ${pathname} is unreadable or malformed: ${(error as Error).message}`,
-    );
+    throw new ExplicitSegmentGrammarContractError(`glossary entry authority ${pathname} is unreadable or malformed: ${(error as Error).message}`);
   }
   const mining = mapping(authority.personal_mining_authority);
   const explicitDiscovery = mapping(mining?.explicit_discovery);
@@ -869,9 +519,7 @@ export function loadExplicitSegmentGrammarContract(
       input,
       to: transition.to as ExplicitSegmentState,
       action: requiredString(transition.action, `${from}:${input}.action`),
-      ...(transition.reason === undefined
-        ? {}
-        : { reason: transition.reason as ExplicitSegmentReason }),
+      ...(transition.reason === undefined ? {} : { reason: transition.reason as ExplicitSegmentReason }),
     });
   }
   const fallbackMap = new Map<ExplicitSegmentState, ExplicitSegmentTransition>();
@@ -907,8 +555,7 @@ export function loadExplicitSegmentGrammarContract(
       input: "approved_cue",
       to: "cue",
       acceptedForms: strings(entry.accepted_forms) as ExplicitSegmentFormId[],
-      unsupportedReason:
-        entry.unsupported_reason as typeof EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
+      unsupportedReason: entry.unsupported_reason as typeof EXPLICIT_SEGMENT_REASONS.unsupportedTransition,
     },
     termination: {
       startState: "inline_meaning",
@@ -918,8 +565,7 @@ export function loadExplicitSegmentGrammarContract(
       boundaryInputs: strings(termination.boundary_inputs) as ExplicitSegmentInput[],
       maximumMeaningUtf8Bytes: 4096,
       limit: "inclusive",
-      overLimitReason:
-        termination.over_limit_reason as typeof EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded,
+      overLimitReason: termination.over_limit_reason as typeof EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded,
     },
     output: {
       fields: ["term", "meaning", "term_span", "meaning_span"],
@@ -933,8 +579,7 @@ export function loadExplicitSegmentGrammarContract(
       maximumUtf8Bytes: 4096,
       limit: "inclusive",
       overLimit: "reject",
-      overLimitReason:
-        continuation.over_limit_reason as typeof EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded,
+      overLimitReason: continuation.over_limit_reason as typeof EXPLICIT_SEGMENT_REASONS.meaningBoundExceeded,
     },
     structuralConfiguration: {
       state: "structural_config",
@@ -954,10 +599,8 @@ export function loadExplicitSegmentGrammarContract(
       this: "nearest_previous_cue",
       exactTerm: "nearest_matching_cue",
       matching: "unicode_caseless_exact_no_normalization",
-      duplicateTargetReason:
-        references.duplicate_target_reason as typeof EXPLICIT_SEGMENT_REASONS.ambiguousReference,
-      missingTargetReason:
-        references.missing_target_reason as typeof EXPLICIT_SEGMENT_REASONS.ambiguousReference,
+      duplicateTargetReason: references.duplicate_target_reason as typeof EXPLICIT_SEGMENT_REASONS.ambiguousReference,
+      missingTargetReason: references.missing_target_reason as typeof EXPLICIT_SEGMENT_REASONS.ambiguousReference,
       duplicateTargetOutcome: "exclude_bound_cue_only",
       missingTargetOutcome: "exclude_bound_cue_only",
       unrelatedCueOutcome: "retain",
@@ -979,11 +622,7 @@ export function loadExplicitSegmentGrammarContract(
 }
 
 /** Resolve one transition, falling back to the declared stable rejection. */
-export function explicitSegmentTransition(
-  contract: ExplicitSegmentGrammarContract,
-  state: ExplicitSegmentState,
-  input: ExplicitSegmentInput,
-): ExplicitSegmentTransition {
+export function explicitSegmentTransition(contract: ExplicitSegmentGrammarContract, state: ExplicitSegmentState, input: ExplicitSegmentInput): ExplicitSegmentTransition {
   return (
     contract.transitions.get(transitionKey(state, input)) ??
     contract.fallbacks.get(state) ?? {

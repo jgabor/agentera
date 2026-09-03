@@ -21,29 +21,16 @@ function validateProjectGlossary(model: any, schema: any): string[] {
   const errors: string[] = [];
   const identities = model.required_artifact_identities?.project_agent_state ?? [];
   const identity = identities.find((candidate: any) => candidate.artifact_id === "glossary");
-  const profile = (model.explicit_special_cases ?? []).find(
-    (candidate: any) => candidate.artifact_id === "profile",
-  );
+  const profile = (model.explicit_special_cases ?? []).find((candidate: any) => candidate.artifact_id === "profile");
 
   if (!identity) errors.push("glossary must have project_agent_state scope");
-  if (
-    identity?.default_path !== ".agentera/glossary.yaml" ||
-    schema.meta?.path !== identity?.default_path
-  ) {
+  if (identity?.default_path !== ".agentera/glossary.yaml" || schema.meta?.path !== identity?.default_path) {
     errors.push("glossary path must be .agentera/glossary.yaml in registry and schema");
   }
-  if (
-    profile?.scope !== "global_user_state" ||
-    profile?.default_path !== "$AGENTERA_PROFILE_DIR/PROFILE.md" ||
-    profile?.docs_yaml_can_override_path !== false
-  ) {
+  if (profile?.scope !== "global_user_state" || profile?.default_path !== "$AGENTERA_PROFILE_DIR/PROFILE.md" || profile?.docs_yaml_can_override_path !== false) {
     errors.push("profile identity must remain isolated global user state");
   }
-  if (
-    schema.meta?.producer !== "build" ||
-    schema.CONFORMANCE?.authority !== AUTHORITY ||
-    schema.CONFORMANCE?.ownership_contract !== "project"
-  ) {
+  if (schema.meta?.producer !== "build" || schema.CONFORMANCE?.authority !== AUTHORITY || schema.CONFORMANCE?.ownership_contract !== "project") {
     errors.push("glossary must derive project ownership from the shared authority");
   }
   if (schema.CONFORMANCE?.provenance_variant !== "project_file") {
@@ -65,10 +52,7 @@ describe("project glossary artifact conformance", () => {
     [
       "scope",
       (model: any) => {
-        model.required_artifact_identities.project_agent_state =
-          model.required_artifact_identities.project_agent_state.filter(
-            (record: any) => record.artifact_id !== "glossary",
-          );
+        model.required_artifact_identities.project_agent_state = model.required_artifact_identities.project_agent_state.filter((record: any) => record.artifact_id !== "glossary");
       },
       "glossary must have project_agent_state scope",
     ],
@@ -82,9 +66,7 @@ describe("project glossary artifact conformance", () => {
     [
       "profile isolation",
       (model: any) => {
-        model.explicit_special_cases.find(
-          (record: any) => record.artifact_id === "profile",
-        ).docs_yaml_can_override_path = true;
+        model.explicit_special_cases.find((record: any) => record.artifact_id === "profile").docs_yaml_can_override_path = true;
       },
       "profile identity must remain isolated global user state",
     ],

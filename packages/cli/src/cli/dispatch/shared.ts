@@ -1,7 +1,4 @@
-import {
-  emitInvalidInput,
-  type InvalidInputErrorBody,
-} from "../errors.js";
+import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 
 export type Io = { out?: (t: string) => void; err?: (t: string) => void; stdin?: () => string };
 

@@ -36,14 +36,10 @@ function fixture(overrides: Record<string, unknown> = {}) {
   ]) {
     const file = path.join(root, relative);
     fs.mkdirSync(path.dirname(file), { recursive: true });
-    fs.writeFileSync(file, relative === FIXTURE_OVERLAP.allowed_pending_assertion.path
-      ? [
-        `describe(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.suite)}, () => { `,
-        "it.runIf(",
-        'process.platform === "darwin"',
-        `)(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.title)}, () => {}); });\n`,
-      ].join("")
-      : "// fixture\n");
+    fs.writeFileSync(
+      file,
+      relative === FIXTURE_OVERLAP.allowed_pending_assertion.path ? [`describe(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.suite)}, () => { `, "it.runIf(", 'process.platform === "darwin"', `)(${JSON.stringify(FIXTURE_OVERLAP.allowed_pending_assertion.title)}, () => {}); });\n`].join("") : "// fixture\n",
+    );
   }
   const contract = {
     schemaVersion: "agentera.verificationPolicy.v1",
@@ -54,22 +50,33 @@ function fixture(overrides: Record<string, unknown> = {}) {
       rules: [
         { owner: "stress", path: "packages/cli/test/stress.test.ts" },
         { owner: "performance", path: "packages/cli/test/performance-analytics.test.ts" },
-        { owner: "performance", path: "packages/cli/test/performance.test.ts", evidence_producer: true },
+        {
+          owner: "performance",
+          path: "packages/cli/test/performance.test.ts",
+          evidence_producer: true,
+        },
         { owner: "capacity", prefix: "packages/cli/test/capacity/" },
         { owner: "package", prefix: "packages/cli/test/packaging/" },
       ],
     },
-    owners: Object.fromEntries(OWNER_NAMES.map((owner) => [owner, {
-      config: `packages/cli/${owner}.config.ts`,
-      correction: `run ${owner} correction`,
-      ...(["performance", "capacity"].includes(owner) ? { execution: { workers: 1 } } : {}),
-      ...(owner === "performance" ? {
-        forwarding: {
-          safe_options: PERFORMANCE_FORWARDING.safe_options,
-          forbidden_options: PERFORMANCE_FORWARDING.forbidden_options,
+    owners: Object.fromEntries(
+      OWNER_NAMES.map((owner) => [
+        owner,
+        {
+          config: `packages/cli/${owner}.config.ts`,
+          correction: `run ${owner} correction`,
+          ...(["performance", "capacity"].includes(owner) ? { execution: { workers: 1 } } : {}),
+          ...(owner === "performance"
+            ? {
+                forwarding: {
+                  safe_options: PERFORMANCE_FORWARDING.safe_options,
+                  forbidden_options: PERFORMANCE_FORWARDING.forbidden_options,
+                },
+              }
+            : {}),
         },
-      } : {}),
-    }])),
+      ]),
+    ),
     mixed_files: [],
     overlap: FIXTURE_OVERLAP,
     policies: POLICY_OWNERS,
@@ -82,7 +89,10 @@ function fixture(overrides: Record<string, unknown> = {}) {
   fs.mkdirSync(bin);
   const record = path.join(root, "runs.jsonl");
   const vp = path.join(bin, "vp");
-  fs.writeFileSync(vp, `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s","workers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" "$AGENTERA_VERIFICATION_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`);
+  fs.writeFileSync(
+    vp,
+    `#!/bin/sh\nprintf '{"owner":"%s","args":"%s","resultChannel":"%s","maxWorkers":"%s","workers":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$*" "$AGENTERA_VERIFICATION_RESULT" "$VITEST_MAX_WORKERS" "$AGENTERA_VERIFICATION_WORKERS" >> "${record}"\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]\n`,
+  );
   fs.chmodSync(vp, 0o755);
   return { root, contractPath, record, bin };
 }
@@ -116,7 +126,12 @@ function run(args: string[], setup = fixture(), extraEnv: Record<string, string>
     },
   });
   const runs = fs.existsSync(setup.record)
-    ? fs.readFileSync(setup.record, "utf8").trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
+    ? fs
+        .readFileSync(setup.record, "utf8")
+        .trim()
+        .split("\n")
+        .filter(Boolean)
+        .map((line) => JSON.parse(line))
     : [];
   return { result, runs, setup };
 }
@@ -140,22 +155,15 @@ function productionRouteJson(...paths: string[]): Record<string, unknown> {
 }
 
 describe("verification lane ownership", () => {
-  it.each([
-    "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
-    "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
-    "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
-    "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
-  ])("defers critical runtime-matrix helper %s to CI ownership", (helper) => {
-    expect(productionRoute(helper)).toBe("ci_owned");
-  });
+  it.each(["packages/cli/test/helpers/runtimeBootstrapMatrix.ts", "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs", "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs", "packages/cli/test/helpers/runtimeProofCliBoundary.mjs"])(
+    "defers critical runtime-matrix helper %s to CI ownership",
+    (helper) => {
+      expect(productionRoute(helper)).toBe("ci_owned");
+    },
+  );
 
   it("keeps the combined runtime-matrix helper change CI-owned without broadening other helpers", () => {
-    expect(productionRoute(
-      "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
-      "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
-      "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
-      "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
-    )).toBe("ci_owned");
+    expect(productionRoute("packages/cli/test/helpers/runtimeBootstrapMatrix.ts", "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs", "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs", "packages/cli/test/helpers/runtimeProofCliBoundary.mjs")).toBe("ci_owned");
     expect(productionRoute("packages/cli/test/helpers/entityAuthorityFixture.ts")).toBe("precommit");
   });
 
@@ -185,11 +193,7 @@ describe("verification lane ownership", () => {
     expect(runs).toHaveLength(1);
     expect(runs[0]).toMatchObject({ owner });
     expect(runs[0].args).toContain(`${owner}.config.ts`);
-    expect(runs[0].args).toContain(owner === "package"
-      ? "test/packaging/package.test.ts"
-      : owner === "capacity"
-        ? "test/capacity/capacity.test.ts"
-        : `test/${owner}.test.ts`);
+    expect(runs[0].args).toContain(owner === "package" ? "test/packaging/package.test.ts" : owner === "capacity" ? "test/capacity/capacity.test.ts" : `test/${owner}.test.ts`);
   });
 
   it("emits a structured full-owner result without replacing the owned inventory", () => {
@@ -282,12 +286,7 @@ describe("verification lane ownership", () => {
   });
 
   it("preserves reviewed observability flags while validating positional owner filters", () => {
-    const { result, runs } = run([
-      "performance",
-      "--no-color",
-      "--logHeapUsage",
-      "test/performance.test.ts",
-    ]);
+    const { result, runs } = run(["performance", "--no-color", "--logHeapUsage", "test/performance.test.ts"]);
     expect(result.status, result.stderr).toBe(0);
     expect(runs).toHaveLength(1);
     expect(runs[0].args).toContain("--no-color --logHeapUsage");
@@ -440,9 +439,14 @@ describe("verification lane ownership", () => {
   });
 
   it("rejects an ownership gap", () => {
-    const setup = fixture({ inventory: {
-      root: "packages/cli/test", suffix: ".test.ts", default_owner: null, rules: [],
-    } });
+    const setup = fixture({
+      inventory: {
+        root: "packages/cli/test",
+        suffix: ".test.ts",
+        default_owner: null,
+        rules: [],
+      },
+    });
     const { result } = run(["validate"], setup);
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("ownership gap");
@@ -450,12 +454,17 @@ describe("verification lane ownership", () => {
   });
 
   it("rejects overlapping primary owners", () => {
-    const setup = fixture({ inventory: {
-      root: "packages/cli/test", suffix: ".test.ts", default_owner: "source", rules: [
-        { owner: "stress", path: "packages/cli/test/stress.test.ts" },
-        { owner: "performance", path: "packages/cli/test/stress.test.ts" },
-      ],
-    } });
+    const setup = fixture({
+      inventory: {
+        root: "packages/cli/test",
+        suffix: ".test.ts",
+        default_owner: "source",
+        rules: [
+          { owner: "stress", path: "packages/cli/test/stress.test.ts" },
+          { owner: "performance", path: "packages/cli/test/stress.test.ts" },
+        ],
+      },
+    });
     const { result } = run(["validate"], setup);
     expect(result.status).toBe(2);
     expect(result.stderr).toContain("ownership overlap");
@@ -472,21 +481,16 @@ describe("verification lane ownership", () => {
 
   it("validates exclusive real ownership after lock evidence separation", () => {
     const result = spawnSync(process.execPath, [RUNNER, "inventory", "--json"], {
-      cwd: PACKAGE_ROOT, encoding: "utf8",
+      cwd: PACKAGE_ROOT,
+      encoding: "utf8",
     });
     expect(result.status, result.stderr).toBe(0);
     const inventory = JSON.parse(result.stdout);
     expect(inventory.counts.total).toBeGreaterThan(190);
     expect(inventory.counts).toMatchObject({ stress: 1, performance: 1, capacity: 4 });
     expect(inventory.files.source).toHaveLength(inventory.counts.source);
-    expect(inventory.files.package).toEqual([
-      "packages/cli/test/packaging/coldProcessScheduler.test.ts",
-      "packages/cli/test/packaging/copyBundleSafety.test.ts",
-      "packages/cli/test/packaging/packageVerification.test.ts",
-    ]);
-    expect(inventory.files.source).toEqual(expect.arrayContaining([
-      "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
-    ]));
+    expect(inventory.files.package).toEqual(["packages/cli/test/packaging/coldProcessScheduler.test.ts", "packages/cli/test/packaging/copyBundleSafety.test.ts", "packages/cli/test/packaging/packageVerification.test.ts"]);
+    expect(inventory.files.source).toEqual(expect.arrayContaining(["packages/cli/test/integration/runtimeBootstrapMatrix.test.ts"]));
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",
     });
@@ -562,7 +566,7 @@ describe("verification lane ownership", () => {
     const sourceSmoke = fs.readFileSync(path.join(PACKAGE_ROOT, "test/cli/primeProjectionContract.test.ts"), "utf8");
     const fixtureHelper = fs.readFileSync(path.join(PACKAGE_ROOT, "test/helpers/entityAuthorityFixture.ts"), "utf8");
     const testPolicy = fs.readFileSync(path.join(PACKAGE_ROOT, "test/README.md"), "utf8");
-    expect(sourceSmoke).toContain('../helpers/entityAuthorityFixture.js');
+    expect(sourceSmoke).toContain("../helpers/entityAuthorityFixture.js");
     expect(sourceSmoke).not.toContain("coldCliMeasurement");
     expect(fixtureHelper).not.toMatch(/node:child_process|node:perf_hooks|sourceSubprocess|--inspect/);
     expect(fs.readFileSync(path.join(PACKAGE_ROOT, "vite.config.ts"), "utf8")).not.toContain("AGENTERA_PERFORMANCE_OUTPUT_FIXTURE");

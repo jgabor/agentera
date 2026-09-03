@@ -7,12 +7,7 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { decidePersonalGlossaryCandidate } from "../../src/analytics/personalGlossaryDecision.js";
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
@@ -22,19 +17,11 @@ import { printReportHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { sourceGlossaryEvaluationRunnerPath } from "../helpers/sourceSubprocess.js";
-import {
-  createGlossaryEvidenceCapsule,
-  createGlossaryHostClassificationReceipt,
-  type GlossaryEvidenceCapsule,
-  type GlossaryHostClassification,
-} from "../../src/registries/glossaryCandidateContracts.js";
+import { createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryEvidenceCapsule, type GlossaryHostClassification } from "../../src/registries/glossaryCandidateContracts.js";
 import { glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 import { PERSONAL_GLOSSARY_MINING_POLICY_VERSION } from "../../src/registries/glossaryMiningAuthority.js";
 import { personalGlossaryCandidateDecisionContract } from "../../src/registries/glossaryCandidateDecisionContract.js";
-import {
-  GLOSSARY_ADMISSION_OUTCOMES,
-  GLOSSARY_ADMISSION_REASONS_BY_OUTCOME,
-} from "../../src/registries/glossaryCandidateDecisionAuthority.js";
+import { GLOSSARY_ADMISSION_OUTCOMES, GLOSSARY_ADMISSION_REASONS_BY_OUTCOME } from "../../src/registries/glossaryCandidateDecisionAuthority.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const SOURCE_BUILD_RUNNER = sourceGlossaryEvaluationRunnerPath();
@@ -42,9 +29,7 @@ const SOURCE_BUILD_RUNNER_URL = pathToFileURL(SOURCE_BUILD_RUNNER).href;
 setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
-const ADMISSION_REASON_PAIRS = Object.entries(GLOSSARY_ADMISSION_REASONS_BY_OUTCOME).flatMap(
-  ([outcome, reasons]) => reasons.map((reason) => ({ outcome, reason })),
-);
+const ADMISSION_REASON_PAIRS = Object.entries(GLOSSARY_ADMISSION_REASONS_BY_OUTCOME).flatMap(([outcome, reasons]) => reasons.map((reason) => ({ outcome, reason })));
 
 let profileDir: string;
 let currentGeneration: string;
@@ -73,11 +58,7 @@ function tiersDir(): string {
   return path.join(profileDir, "intermediate", "tiers");
 }
 
-function record(
-  sourceId: string,
-  text: string,
-  authorClass = "user",
-): Record<string, unknown> {
+function record(sourceId: string, text: string, authorClass = "user"): Record<string, unknown> {
   return {
     source_id: sourceId,
     source_kind: "conversation_turn",
@@ -116,10 +97,7 @@ function persist(capsules: readonly GlossaryEvidenceCapsule[], retainedAt = RETA
   return projection;
 }
 
-function explicitFixture(
-  text = "Actually, `ship shape` means the complete form of a deliverable.",
-  authorClass = "user",
-): { capsule: GlossaryEvidenceCapsule; projection: PersonalGlossaryCandidateProjection } {
+function explicitFixture(text = "Actually, `ship shape` means the complete form of a deliverable.", authorClass = "user"): { capsule: GlossaryEvidenceCapsule; projection: PersonalGlossaryCandidateProjection } {
   publish([record("explicit-source", text, authorClass)]);
   const mined = mineExplicitGlossaryCandidates({ tiersDir: tiersDir() });
   expect(mined.state).toBe("current");
@@ -128,11 +106,7 @@ function explicitFixture(
   return { capsule, projection: persist([capsule]) };
 }
 
-function receiptFor(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  overrides: Partial<GlossaryHostClassification> = {},
-) {
+function receiptFor(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, overrides: Partial<GlossaryHostClassification> = {}) {
   return createGlossaryHostClassificationReceipt({
     capsule,
     candidate_projection_sha256: projection.projection_sha256,
@@ -178,11 +152,7 @@ function request(receipt: unknown): string {
   });
 }
 
-function receiptConstructionRequest(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  classification: Partial<GlossaryHostClassification> = {},
-): string {
+function receiptConstructionRequest(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, classification: Partial<GlossaryHostClassification> = {}): string {
   return JSON.stringify({
     schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
     candidate_id: capsule.candidate_id,
@@ -232,7 +202,10 @@ function requestAtByteLength(receipt: unknown, maxBytes: number): string {
   return `${value}${" ".repeat(maxBytes - Buffer.byteLength(value, "utf8"))}`;
 }
 
-function inferredFixture(): { capsule: GlossaryEvidenceCapsule; projection: PersonalGlossaryCandidateProjection } {
+function inferredFixture(): {
+  capsule: GlossaryEvidenceCapsule;
+  projection: PersonalGlossaryCandidateProjection;
+} {
   const capsule = createGlossaryEvidenceCapsule({
     term: "recurring term",
     meaning: "a term observed in recurring private use",
@@ -248,13 +221,22 @@ function inferredFixture(): { capsule: GlossaryEvidenceCapsule; projection: Pers
   return { capsule, projection: persist([capsule]) };
 }
 
-function unavailableExplicitFixture(): { capsule: GlossaryEvidenceCapsule; projection: PersonalGlossaryCandidateProjection } {
+function unavailableExplicitFixture(): {
+  capsule: GlossaryEvidenceCapsule;
+  projection: PersonalGlossaryCandidateProjection;
+} {
   const capsule = createGlossaryEvidenceCapsule({
     term: "unavailable evidence",
     meaning: "a definition whose source tier is unavailable",
     scope: "personal",
     provenance_kind: "personal_explicit_definition",
-    evidence: [{ source_id: "unavailable-source", evidence_anchor: "unavailable-anchor", signal_type: "correction" }],
+    evidence: [
+      {
+        source_id: "unavailable-source",
+        evidence_anchor: "unavailable-anchor",
+        signal_type: "correction",
+      },
+    ],
     policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
     generation: currentGeneration,
   });
@@ -265,29 +247,19 @@ function qualityGateRoot(): string {
   const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "personal-glossary-quality-gate-"));
   const analysis = path.join(sourceRoot, "references", "analysis");
   fs.mkdirSync(analysis, { recursive: true });
-  for (const name of [
-    "personal-glossary-evaluation-authority.yaml",
-    "personal-glossary-holdout.yaml",
-    "personal-glossary-evaluation-corpus.yaml",
-  ]) {
+  for (const name of ["personal-glossary-evaluation-authority.yaml", "personal-glossary-holdout.yaml", "personal-glossary-evaluation-corpus.yaml"]) {
     fs.copyFileSync(path.join(ROOT, "references", "analysis", name), path.join(analysis, name));
   }
   const artifactPath = path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml");
   fs.mkdirSync(path.dirname(artifactPath), { recursive: true });
   fs.copyFileSync(path.join(ROOT, "references", "artifacts", "glossary-entry-contract.yaml"), artifactPath);
-  fs.copyFileSync(
-    path.join(ROOT, "references", "analysis", "evidence-tier-authority.yaml"),
-    path.join(analysis, "evidence-tier-authority.yaml"),
-  );
+  fs.copyFileSync(path.join(ROOT, "references", "analysis", "evidence-tier-authority.yaml"), path.join(analysis, "evidence-tier-authority.yaml"));
   return sourceRoot;
 }
 
 function failingQualityGateRoot(): string {
   const sourceRoot = qualityGateRoot();
-  fs.appendFileSync(
-    path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"),
-    "\n# fixture drift\n",
-  );
+  fs.appendFileSync(path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"), "\n# fixture drift\n");
   return sourceRoot;
 }
 
@@ -299,7 +271,7 @@ function useEvaluationRunner(sourceRoot: string, source: string): void {
 
 function evaluatedReportRunner(exitCode: number, mutate = ""): string {
   return [
-    "process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = process.argv[2] ?? \"\";",
+    'process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = process.argv[2] ?? "";',
     `const { evaluateGlossaryHoldout } = await import(${JSON.stringify(SOURCE_BUILD_RUNNER_URL)});`,
     "const report = evaluateGlossaryHoldout(process.argv[2]);",
     mutate,
@@ -309,21 +281,19 @@ function evaluatedReportRunner(exitCode: number, mutate = ""): string {
 }
 
 function minimalPassShapedRunner(): string {
-  return `process.stdout.write(${JSON.stringify(JSON.stringify({
-    schemaVersion: "agentera.personalGlossaryEvaluation.v1",
-    status: "pass",
-    gates: {
-      release_authorizing: "pass",
-      explicit_admission: { status: "pass" },
-    },
-  }))});`;
+  return `process.stdout.write(${JSON.stringify(
+    JSON.stringify({
+      schemaVersion: "agentera.personalGlossaryEvaluation.v1",
+      status: "pass",
+      gates: {
+        release_authorizing: "pass",
+        explicit_admission: { status: "pass" },
+      },
+    }),
+  )});`;
 }
 
-function expectQualityGateBlocked(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  sourceRoot: string,
-): void {
+function expectQualityGateBlocked(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, sourceRoot: string): void {
   expect(decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot })).toMatchObject({
     status: "review_required",
     reason: "quality_gate_not_authorizing",
@@ -339,18 +309,13 @@ function invalidDecisionAuthorityRoot(): string {
   const authority = YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
   authority.candidate_contracts.layers.cli_decision.automatic_admission.allowed_provenance = "provenance_variants.invalid";
   fs.writeFileSync(authorityPath, YAML.stringify(authority), "utf8");
-  fs.copyFileSync(
-    path.join(ROOT, "references", "analysis", "evidence-tier-authority.yaml"),
-    path.join(sourceRoot, "references", "analysis", "evidence-tier-authority.yaml"),
-  );
+  fs.copyFileSync(path.join(ROOT, "references", "analysis", "evidence-tier-authority.yaml"), path.join(sourceRoot, "references", "analysis", "evidence-tier-authority.yaml"));
   return sourceRoot;
 }
 
 describe("agentera report personal-glossary-decision", () => {
   it("exposes a bounded read-only decision contract and replays an authorized explicit admission without effects", () => {
-    expect(printReportHelp()).toContain(
-      "agentera report personal-glossary-decision --input <file|->",
-    );
+    expect(printReportHelp()).toContain("agentera report personal-glossary-decision --input <file|->");
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-decision"])).toBe(false);
     expect((buildSchemaPayload().integration as any).personal_glossary.candidate_decision).toMatchObject({
       command: "agentera report personal-glossary-decision",
@@ -365,16 +330,7 @@ describe("agentera report personal-glossary-decision", () => {
       },
       receipt_construction: {
         request_schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
-        request_fields: [
-          "schema_version",
-          "candidate_id",
-          "candidate_revision",
-          "candidate_capsule_sha256",
-          "candidate_projection_sha256",
-          "generation",
-          "policy_version",
-          "classification",
-        ],
+        request_fields: ["schema_version", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "generation", "policy_version", "classification"],
         result_schema_version: "agentera.personalGlossaryAdmissionResult.v2",
         result_fields: ["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"],
       },
@@ -385,14 +341,8 @@ describe("agentera report personal-glossary-decision", () => {
     const projectionPath = personalGlossaryCandidateProjectionPath();
     const projectionBefore = fs.readFileSync(projectionPath, "utf8");
     const tiersBefore = fs.readFileSync(path.join(tiersDir(), "current.json"), "utf8");
-    const first = run(
-      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-      request(receipt),
-    );
-    const replay = run(
-      ["report", "personal-glossary-decision", "--input=-", "--format=json"],
-      request(receipt),
-    );
+    const first = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], request(receipt));
+    const replay = run(["report", "personal-glossary-decision", "--input=-", "--format=json"], request(receipt));
 
     expect(first).toMatchObject({ rc: 0, err: "" });
     expect(replay).toEqual(first);
@@ -421,14 +371,8 @@ describe("agentera report personal-glossary-decision", () => {
   it("constructs a sealed receipt from a bounded classification and exact current bindings", () => {
     const { capsule, projection } = explicitFixture();
     const before = noEffectSnapshot();
-    const first = run(
-      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-      receiptConstructionRequest(capsule, projection),
-    );
-    const replay = run(
-      ["report", "personal-glossary-decision", "--input=-", "--format=json"],
-      receiptConstructionRequest(capsule, projection),
-    );
+    const first = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], receiptConstructionRequest(capsule, projection));
+    const replay = run(["report", "personal-glossary-decision", "--input=-", "--format=json"], receiptConstructionRequest(capsule, projection));
 
     expect(first).toMatchObject({ rc: 0, err: "" });
     expect(replay).toEqual(first);
@@ -461,10 +405,7 @@ describe("agentera report personal-glossary-decision", () => {
     const before = noEffectSnapshot();
     const request = JSON.parse(receiptConstructionRequest(capsule, projection));
     request.candidate_projection_sha256 = "f".repeat(64);
-    const result = run(
-      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-      JSON.stringify(request),
-    );
+    const result = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], JSON.stringify(request));
 
     expect(result).toMatchObject({ rc: 0, err: "" });
     expect(JSON.parse(result.out)).toMatchObject({
@@ -479,28 +420,43 @@ describe("agentera report personal-glossary-decision", () => {
   });
 
   it("loads only the authority-owned outcome/reason pairs", () => {
-    expect(personalGlossaryCandidateDecisionContract().reasonCodesByOutcome).toEqual(
-      GLOSSARY_ADMISSION_REASONS_BY_OUTCOME,
-    );
+    expect(personalGlossaryCandidateDecisionContract().reasonCodesByOutcome).toEqual(GLOSSARY_ADMISSION_REASONS_BY_OUTCOME);
     const authority = YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")) as Record<string, any>;
-    authority.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push(
-      "classification_changed",
-    );
+    authority.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed");
     const invalid = path.join(profileDir, "invalid-glossary-authority.yaml");
     fs.writeFileSync(invalid, YAML.stringify(authority), "utf8");
-    expect(() => personalGlossaryCandidateDecisionContract(invalid)).toThrow(
-      "personal glossary decision outcome/reason authority is unavailable",
-    );
+    expect(() => personalGlossaryCandidateDecisionContract(invalid)).toThrow("personal glossary decision outcome/reason authority is unavailable");
   });
 
   it.each([
     ["candidate ID", (receipt: Record<string, unknown>) => ({ ...receipt, candidate_id: "f".repeat(64) }), true],
     ["revision", (receipt: Record<string, unknown>) => ({ ...receipt, candidate_revision: "f".repeat(64) }), true],
-    ["capsule digest", (receipt: Record<string, unknown>) => ({ ...receipt, candidate_capsule_sha256: "f".repeat(64) }), true],
-    ["projection digest", (receipt: Record<string, unknown>) => ({ ...receipt, candidate_projection_sha256: "f".repeat(64) }), true],
+    [
+      "capsule digest",
+      (receipt: Record<string, unknown>) => ({
+        ...receipt,
+        candidate_capsule_sha256: "f".repeat(64),
+      }),
+      true,
+    ],
+    [
+      "projection digest",
+      (receipt: Record<string, unknown>) => ({
+        ...receipt,
+        candidate_projection_sha256: "f".repeat(64),
+      }),
+      true,
+    ],
     ["generation", (receipt: Record<string, unknown>) => ({ ...receipt, generation: "other-generation" }), true],
     ["policy", (receipt: Record<string, unknown>) => ({ ...receipt, policy_version: "other-policy" }), true],
-    ["classification contract", (receipt: Record<string, unknown>) => ({ ...receipt, schema_version: "agentera.personalGlossaryHostClassificationReceipt.v2" }), true],
+    [
+      "classification contract",
+      (receipt: Record<string, unknown>) => ({
+        ...receipt,
+        schema_version: "agentera.personalGlossaryHostClassificationReceipt.v2",
+      }),
+      true,
+    ],
     ["semantic fingerprint", (receipt: Record<string, unknown>) => ({ ...receipt, semantic_fingerprint: "f".repeat(64) }), true],
     ["receipt digest", (receipt: Record<string, unknown>) => ({ ...receipt, receipt_sha256: "f".repeat(64) }), false],
     ["unknown authority field", (receipt: Record<string, unknown>) => ({ ...receipt, admission: "automatic_admission" }), true],
@@ -536,7 +492,10 @@ describe("agentera report personal-glossary-decision", () => {
       hasDecision: false,
       execute: () => {
         const { capsule, projection } = explicitFixture();
-        const receipt = reseal({ ...receiptFor(capsule, projection), candidate_id: "f".repeat(64) });
+        const receipt = reseal({
+          ...receiptFor(capsule, projection),
+          candidate_id: "f".repeat(64),
+        });
         const before = noEffectSnapshot();
         return { before, result: decidePersonalGlossaryCandidate(receipt) };
       },
@@ -586,7 +545,9 @@ describe("agentera report personal-glossary-decision", () => {
           const before = noEffectSnapshot();
           return {
             before,
-            result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot: ROOT }),
+            result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection), {
+              sourceRoot: ROOT,
+            }),
           };
         } finally {
           if (previous === undefined) delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
@@ -603,7 +564,10 @@ describe("agentera report personal-glossary-decision", () => {
       execute: () => {
         const { capsule, projection } = explicitFixture();
         const before = noEffectSnapshot();
-        return { before, result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { scope: "project" })) };
+        return {
+          before,
+          result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { scope: "project" })),
+        };
       },
     },
     {
@@ -614,7 +578,10 @@ describe("agentera report personal-glossary-decision", () => {
       execute: () => {
         const { capsule, projection } = explicitFixture();
         const before = noEffectSnapshot();
-        return { before, result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { scope: "ambiguous" })) };
+        return {
+          before,
+          result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { scope: "ambiguous" })),
+        };
       },
     },
     {
@@ -625,7 +592,10 @@ describe("agentera report personal-glossary-decision", () => {
       execute: () => {
         const { capsule, projection } = explicitFixture();
         const before = noEffectSnapshot();
-        return { before, result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { consistency: "inconsistent" })) };
+        return {
+          before,
+          result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { consistency: "inconsistent" })),
+        };
       },
     },
     {
@@ -636,7 +606,10 @@ describe("agentera report personal-glossary-decision", () => {
       execute: () => {
         const { capsule, projection } = explicitFixture();
         const before = noEffectSnapshot();
-        return { before, result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { meaning: "a changed meaning" })) };
+        return {
+          before,
+          result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection, { meaning: "a changed meaning" })),
+        };
       },
     },
     {
@@ -651,7 +624,13 @@ describe("agentera report personal-glossary-decision", () => {
           meaning: "a conflicting definition",
           scope: "personal",
           provenance_kind: "personal_explicit_definition",
-          evidence: [{ source_id: "conflict-source", evidence_anchor: "conflict-anchor", signal_type: "correction" }],
+          evidence: [
+            {
+              source_id: "conflict-source",
+              evidence_anchor: "conflict-anchor",
+              signal_type: "correction",
+            },
+          ],
           policy_version: capsule.policy_version,
           generation: capsule.generation,
         });
@@ -707,7 +686,13 @@ describe("agentera report personal-glossary-decision", () => {
           meaning: "the complete form",
           scope: "personal",
           provenance_kind: "personal_explicit_definition",
-          evidence: [{ source_id: "retracted-source", evidence_anchor: "retracted-source", signal_type: "correction" }],
+          evidence: [
+            {
+              source_id: "retracted-source",
+              evidence_anchor: "retracted-source",
+              signal_type: "correction",
+            },
+          ],
           policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
           generation: mineExplicitGlossaryCandidates({ tiersDir: tiersDir() }).generation!,
         });
@@ -728,7 +713,9 @@ describe("agentera report personal-glossary-decision", () => {
           const before = noEffectSnapshot();
           return {
             before,
-            result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection), { sourceRoot }),
+            result: decidePersonalGlossaryCandidate(receiptFor(capsule, projection), {
+              sourceRoot,
+            }),
           };
         } finally {
           fs.rmSync(sourceRoot, { recursive: true, force: true });
@@ -763,10 +750,7 @@ describe("agentera report personal-glossary-decision", () => {
         status: "automatic_admission",
         reason: "explicit_current_authorized",
       });
-      fs.appendFileSync(
-        path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"),
-        "\n# fixture drift\n",
-      );
+      fs.appendFileSync(path.join(sourceRoot, "references", "analysis", "personal-glossary-evaluation-corpus.yaml"), "\n# fixture drift\n");
       expect(decidePersonalGlossaryCandidate(receipt, { sourceRoot })).toMatchObject({
         status: "review_required",
         reason: "quality_gate_not_authorizing",
@@ -795,10 +779,7 @@ describe("agentera report personal-glossary-decision", () => {
     const { capsule, projection } = explicitFixture();
     const sourceRoot = qualityGateRoot();
     try {
-      useEvaluationRunner(
-        sourceRoot,
-        evaluatedReportRunner(0, 'report.authority.sha256 = "0".repeat(64);'),
-      );
+      useEvaluationRunner(sourceRoot, evaluatedReportRunner(0, 'report.authority.sha256 = "0".repeat(64);'));
       expectQualityGateBlocked(capsule, projection, sourceRoot);
     } finally {
       fs.rmSync(sourceRoot, { recursive: true, force: true });
@@ -849,7 +830,13 @@ describe("agentera report personal-glossary-decision", () => {
       meaning: "a conflicting definition",
       scope: "personal",
       provenance_kind: "personal_explicit_definition",
-      evidence: [{ source_id: "conflict-source", evidence_anchor: "conflict-anchor", signal_type: "correction" }],
+      evidence: [
+        {
+          source_id: "conflict-source",
+          evidence_anchor: "conflict-anchor",
+          signal_type: "correction",
+        },
+      ],
       policy_version: capsule.policy_version,
       generation: capsule.generation,
     });
@@ -888,7 +875,13 @@ describe("agentera report personal-glossary-decision", () => {
       meaning: "the complete form",
       scope: "personal",
       provenance_kind: "personal_explicit_definition",
-      evidence: [{ source_id: "retracted-source", evidence_anchor: "retracted-source", signal_type: "correction" }],
+      evidence: [
+        {
+          source_id: "retracted-source",
+          evidence_anchor: "retracted-source",
+          signal_type: "correction",
+        },
+      ],
       policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
       generation: mineExplicitGlossaryCandidates({ tiersDir: tiersDir() }).generation!,
     });
@@ -901,13 +894,7 @@ describe("agentera report personal-glossary-decision", () => {
   });
 
   it("abstains when the only explicit anchor is not a complete user-authored current record", () => {
-    publish([
-      record(
-        "agent-source",
-        "Actually, `ship shape` means the complete form of a deliverable.",
-        "agent",
-      ),
-    ]);
+    publish([record("agent-source", "Actually, `ship shape` means the complete form of a deliverable.", "agent")]);
     const mined = mineExplicitGlossaryCandidates({ tiersDir: tiersDir() });
     expect(mined).toMatchObject({ state: "current", candidates: [] });
     const capsule = createGlossaryEvidenceCapsule({
@@ -949,7 +936,11 @@ describe("agentera report personal-glossary-decision", () => {
   it("rejects malformed request envelopes before reading or changing local candidate state", () => {
     const result = run(
       ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-      JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt: [], extra: true }),
+      JSON.stringify({
+        schema_version: "agentera.personalGlossaryAdmissionRequest.v1",
+        receipt: [],
+        extra: true,
+      }),
     );
     expect(result).toMatchObject({ rc: 2, err: "" });
     expect(JSON.parse(result.out)).toMatchObject({
@@ -993,12 +984,7 @@ describe("agentera report personal-glossary-decision", () => {
   });
 
   it("rejects a duplicate receipt mapping before effects", () => {
-    const input = [
-      "schema_version: agentera.personalGlossaryAdmissionRequest.v1",
-      "receipt: {}",
-      "receipt: {}",
-      "",
-    ].join("\n");
+    const input = ["schema_version: agentera.personalGlossaryAdmissionRequest.v1", "receipt: {}", "receipt: {}", ""].join("\n");
     const before = noEffectSnapshot();
     const result = runRequest("stdin", input);
 
@@ -1043,9 +1029,7 @@ describe("agentera report personal-glossary-decision", () => {
       return nativeOpen(target, flags, mode);
     }) as typeof fs.openSync);
     try {
-      const result = run([
-        "report", "personal-glossary-decision", "--input", input, "--format", "json",
-      ]);
+      const result = run(["report", "personal-glossary-decision", "--input", input, "--format", "json"]);
       expect(result).toMatchObject({ rc: 2, err: "" });
       expect(JSON.parse(result.out)).toMatchObject({ error: { class: "invalid_format" } });
       expectNoEffects(before);
@@ -1062,10 +1046,7 @@ describe("agentera report personal-glossary-decision", () => {
     });
     const projectionPath = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(projectionPath, "utf8");
-    const result = run(
-      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-      request(receipt),
-    );
+    const result = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], request(receipt));
 
     expect(result).toMatchObject({ rc: 0, err: "" });
     expect(JSON.parse(result.out)).toMatchObject({

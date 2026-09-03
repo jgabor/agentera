@@ -6,11 +6,7 @@ import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { hasManagedMarker, opencodeConfigDir } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { doctorRoots } from "./appModel.js";
-import {
-  bindMigrationResource,
-  removeBoundMigrationResource,
-  verifyBoundMigrationResource,
-} from "./migrationPublication.js";
+import { bindMigrationResource, removeBoundMigrationResource, verifyBoundMigrationResource } from "./migrationPublication.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 
 const PYTHON_MANAGED_PATTERNS = [
@@ -31,12 +27,7 @@ const PYTHON_MANAGED_PATTERNS = [
 
 export function projectHasProjectLevelRuntimeHooks(project: string): boolean {
   const root = resolvePath(project);
-  const candidates = [
-    path.join(root, ".cursor", "hooks.json"),
-    path.join(root, ".codex", "config.toml"),
-    path.join(root, ".codex", "hooks", "codex-hooks.json"),
-    path.join(root, ".github", "hooks"),
-  ];
+  const candidates = [path.join(root, ".cursor", "hooks.json"), path.join(root, ".codex", "config.toml"), path.join(root, ".codex", "hooks", "codex-hooks.json"), path.join(root, ".github", "hooks")];
   return candidates.some((candidate) => isFile(candidate) || pathExists(candidate));
 }
 
@@ -86,12 +77,7 @@ function textContainsRetiredAgenteraHook(text: string): boolean {
   return textUsesPythonManagedEntrypoint(text) || RETIRED_NPX_HOOK.test(text);
 }
 
-function pushRetireHookItem(
-  items: MigrationPhaseItem[],
-  runtime: string,
-  filePath: string,
-  allowedRoot: string,
-): void {
+function pushRetireHookItem(items: MigrationPhaseItem[], runtime: string, filePath: string, allowedRoot: string): void {
   const text = fs.readFileSync(filePath, "utf8");
   if (!textContainsRetiredAgenteraHook(text)) {
     return;
@@ -101,10 +87,7 @@ function pushRetireHookItem(
     action: "retire-hooks",
     runtime,
     source: filePath,
-    message:
-      wholeResourceProvesV2HookOwnership(text)
-        ? "will remove whole-resource-proven retired Agentera hook"
-        : "retired Agentera hook preserved: complete resource ownership is unproven; review and remove it manually",
+    message: wholeResourceProvesV2HookOwnership(text) ? "will remove whole-resource-proven retired Agentera hook" : "retired Agentera hook preserved: complete resource ownership is unproven; review and remove it manually",
   };
   if (item.status === "blocked") {
     items.push(item);
@@ -123,33 +106,52 @@ export function planDeclaredCopilotHookItem(filePath: string, project: string, r
   try {
     stat = fs.lstatSync(filePath);
   } catch (error) {
-    return { resourceId, status: (error as NodeJS.ErrnoException).code === "ENOENT" ? "noop" : "blocked",
-      action: "retire-hooks", runtime: "copilot", source: filePath,
-      message: (error as NodeJS.ErrnoException).code === "ENOENT"
-        ? `retired Copilot hook already absent at ${filePath}`
-        : `retired Copilot hook preserved: path could not be inspected` };
+    return {
+      resourceId,
+      status: (error as NodeJS.ErrnoException).code === "ENOENT" ? "noop" : "blocked",
+      action: "retire-hooks",
+      runtime: "copilot",
+      source: filePath,
+      message: (error as NodeJS.ErrnoException).code === "ENOENT" ? `retired Copilot hook already absent at ${filePath}` : `retired Copilot hook preserved: path could not be inspected`,
+    };
   }
-  if (!stat.isFile()) return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
-    message: `retired Copilot hook preserved: declared path is not a regular file` };
+  if (!stat.isFile())
+    return {
+      resourceId,
+      status: "blocked",
+      action: "retire-hooks",
+      runtime: "copilot",
+      source: filePath,
+      message: `retired Copilot hook preserved: declared path is not a regular file`,
+    };
   const items: MigrationPhaseItem[] = [];
   try {
     pushRetireHookItem(items, "copilot", filePath, project);
   } catch {
-    return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
-      message: `retired Copilot hook preserved: declared file could not be read` };
+    return {
+      resourceId,
+      status: "blocked",
+      action: "retire-hooks",
+      runtime: "copilot",
+      source: filePath,
+      message: `retired Copilot hook preserved: declared file could not be read`,
+    };
   }
   const item = items[0];
-  if (!item) return { resourceId, status: "blocked", action: "retire-hooks", runtime: "copilot", source: filePath,
-    message: `retired Copilot hook preserved: complete resource ownership is unproven; review it manually` };
+  if (!item)
+    return {
+      resourceId,
+      status: "blocked",
+      action: "retire-hooks",
+      runtime: "copilot",
+      source: filePath,
+      message: `retired Copilot hook preserved: complete resource ownership is unproven; review it manually`,
+    };
   item.resourceId = resourceId;
   return item;
 }
 
-function planCodexItems(
-  items: MigrationPhaseItem[],
-  home: string,
-  project: string,
-): void {
+function planCodexItems(items: MigrationPhaseItem[], home: string, project: string): void {
   for (const root of [project, home]) {
     const hooksPath = path.join(root, ".codex", "hooks", "codex-hooks.json");
     if (isFile(hooksPath)) {
@@ -158,11 +160,7 @@ function planCodexItems(
   }
 }
 
-function planCursorItems(
-  items: MigrationPhaseItem[],
-  home: string,
-  project: string,
-): void {
+function planCursorItems(items: MigrationPhaseItem[], home: string, project: string): void {
   for (const [root, hooksPath] of [
     [project, path.join(project, ".cursor", "hooks.json")],
     [home, path.join(home, ".cursor", "hooks.json")],
@@ -194,10 +192,7 @@ function symlinkOwnership(linkPath: string, managedSkillsRoot: string): Migratio
   };
 }
 
-export function planStaleCommandCleanupItems(
-  ctx: MigrationContext,
-  items: MigrationPhaseItem[],
-): void {
+export function planStaleCommandCleanupItems(ctx: MigrationContext, items: MigrationPhaseItem[]): void {
   const env = ctx.env ?? process.env;
   const home = resolvePath(ctx.home);
   const configDir = opencodeConfigDir(home, env);
@@ -206,18 +201,23 @@ export function planStaleCommandCleanupItems(
   for (const entry of ["agentera.md", "hej.md"]) {
     const filePath = path.join(commandsDir, entry);
     if (!isFile(filePath) || !hasManagedMarker(fs.readFileSync(filePath, "utf8"))) continue;
-    const item: MigrationPhaseItem = { status: "pending", action: "remove-stale-command", runtime: "opencode", source: filePath,
-      message: `will remove stale managed command ${entry}` };
+    const item: MigrationPhaseItem = {
+      status: "pending",
+      action: "remove-stale-command",
+      runtime: "opencode",
+      source: filePath,
+      message: `will remove stale managed command ${entry}`,
+    };
     const evidenceError = bindMigrationResource(item, "source", filePath, [home], "file");
-    if (evidenceError) { item.status = "blocked"; item.message = `stale command preserved: ${evidenceError}; review the unsafe path manually`; }
+    if (evidenceError) {
+      item.status = "blocked";
+      item.message = `stale command preserved: ${evidenceError}; review the unsafe path manually`;
+    }
     items.push(item);
   }
 }
 
-export function planStaleSkillCleanupItems(
-  ctx: MigrationContext,
-  items: MigrationPhaseItem[],
-): void {
+export function planStaleSkillCleanupItems(ctx: MigrationContext, items: MigrationPhaseItem[]): void {
   const env = ctx.env ?? process.env;
   const home = resolvePath(ctx.home);
   const configDir = opencodeConfigDir(home, env);
@@ -297,13 +297,9 @@ export function planStaleSkillCleanupItems(
   }
 }
 
-export function planRuntimeMigrationItems(
-  ctx: MigrationContext,
-): MigrationPhaseItem[] {
+export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhaseItem[] {
   if (!ctx.env) {
-    throw new Error(
-      "MigrationContext.env is required for runtime migration planning; pass sandboxMigrationEnv(home, sourceRoot) in tests or an explicit env in callers.",
-    );
+    throw new Error("MigrationContext.env is required for runtime migration planning; pass sandboxMigrationEnv(home, sourceRoot) in tests or an explicit env in callers.");
   }
   const home = resolvePath(ctx.home);
   const project = resolvePath(ctx.project);
@@ -314,25 +310,22 @@ export function planRuntimeMigrationItems(
   planCursorItems(items, home, project);
   planStaleCommandCleanupItems(ctx, items);
   planStaleSkillCleanupItems(ctx, items);
-  items.push({ status: "noop", action: "configure", runtime: "copilot",
-    message: "Copilot uses per-invocation AGENTERA_HOME; Agentera does not write shell startup files" });
+  items.push({
+    status: "noop",
+    action: "configure",
+    runtime: "copilot",
+    message: "Copilot uses per-invocation AGENTERA_HOME; Agentera does not write shell startup files",
+  });
   return items;
 }
 
-export type RuntimeMigrationAction =
-  | "retire-hooks"
-  | "remove-stale-command"
-  | "remove-stale-skill";
+export type RuntimeMigrationAction = "retire-hooks" | "remove-stale-command" | "remove-stale-skill";
 
 export type RuntimeMigrationItem = Omit<MigrationPhaseItem, "action"> & {
   action: RuntimeMigrationAction;
 };
 
-const RUNTIME_MIGRATION_ACTIONS: ReadonlySet<string> = new Set<RuntimeMigrationAction>([
-  "retire-hooks",
-  "remove-stale-command",
-  "remove-stale-skill",
-]);
+const RUNTIME_MIGRATION_ACTIONS: ReadonlySet<string> = new Set<RuntimeMigrationAction>(["retire-hooks", "remove-stale-command", "remove-stale-skill"]);
 
 function isRuntimeMigrationAction(action: string): action is RuntimeMigrationAction {
   return RUNTIME_MIGRATION_ACTIONS.has(action);
@@ -385,17 +378,8 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem): void {
             const identity = `${stat.dev}:${stat.ino}`;
             const fingerprint = `sha256:${createHash("sha256").update(target).digest("hex")}`;
             const resolvedTarget = path.resolve(path.dirname(item.source), target);
-            const relative = item.ownership?.root
-              ? path.relative(item.ownership.root, resolvedTarget)
-              : "..";
-            if (
-              item.ownership?.kind !== "managed-app-symlink"
-              || item.ownership.identity !== identity
-              || item.ownership.fingerprint !== fingerprint
-              || relative === ""
-              || relative.startsWith("..")
-              || path.isAbsolute(relative)
-            ) {
+            const relative = item.ownership?.root ? path.relative(item.ownership.root, resolvedTarget) : "..";
+            if (item.ownership?.kind !== "managed-app-symlink" || item.ownership.identity !== identity || item.ownership.fingerprint !== fingerprint || relative === "" || relative.startsWith("..") || path.isAbsolute(relative)) {
               item.status = "blocked";
               item.message = `preserved ${item.source}: authoritative symlink ownership changed or is missing; rerun migration and review the resource`;
               break;
@@ -429,10 +413,7 @@ export function applyRuntimeMigrationItem(item: RuntimeMigrationItem): void {
   }
 }
 
-export function applyRuntimeMigrationItems(
-  items: MigrationPhaseItem[],
-  _ctx: MigrationContext,
-): void {
+export function applyRuntimeMigrationItems(items: MigrationPhaseItem[], _ctx: MigrationContext): void {
   for (const item of items) {
     if (item.status !== "pending") {
       continue;

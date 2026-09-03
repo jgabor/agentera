@@ -1,0 +1,15 @@
+id: qatpxfmidz
+artifact: progress
+record:
+  timestamp: 2026-09-03 20:45
+  type: chore
+  phase: build
+  what: Corrected the formatter audit evidence and identified the governed monolith-budget blocker.
+  context:
+    intent: Include every maintained CLI source file in the selected formatter surface without performing the root Vite+ migration.
+    constraints: Preserve fixtures, generated and package outputs, manifests, hooks, CI, publication behavior, prior task transitions, and the first independent FAIL evaluation.
+    scope: The packages/cli formatter surface and the six previously excluded maintained source monoliths.
+  discovered: Vite+ 0.3.0 with bundled Oxfmt 0.64.0 formats 731 files after removing all maintained-source exclusions, but the hard 1000-line source gate then fails for entityMigrationPreview.ts at 1145 lines, planEntities.ts at 1001, and todoDocsEntities.ts at 1522. Oxfmt rejects print widths above its maximum 320; objectWrap collapse is insufficient. The parity hook also rejects its stale 9b36f93 pin against origin/main 149e0595.
+  verified: "From the repository root, `mise x node@24.19.0 -- corepack pnpm --package=vite-plus@0.3.0 dlx vp fmt packages/cli --write` performed normalization and the same command with `--check` passed 731 files. The selected authority records Vite+ 0.3.0, npm integrity, and bundled Oxfmt 0.64.0; package.json and pnpm-lock.yaml remain on the pre-migration 0.2.9/0.62.0 baseline. The focused formatter test passed 2/2 real clean/drift and surface cases. Typecheck, build, package verification 25/25, and compact passed. Source verification passed 4280 tests with 2 skipped and failed 7: four pre-existing activation-census tests, the pre-existing prime token budget, the pre-existing stale parity pin, and one new monolith gate test naming three formatted files."
+  next: Keep obhhyoadbq in progress. Resolve the governed monolith budget in authorized lint cleanup before this formatter correction can commit, then follow the parity owner's re-pin procedure and rerun independent audit.
+  publication_order: 318

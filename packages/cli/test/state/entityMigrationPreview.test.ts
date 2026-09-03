@@ -16,14 +16,7 @@ import { getDecisionEntity, listDecisionEntities } from "../../src/state/decisio
 import { applyPreparedEntityCutover, prepareEntityCutoverForUpgrade } from "../../src/state/entityCutover.js";
 import { yamlArchiveEntry } from "../../src/hooks/compaction/retention.js";
 import { collectMigrationPreviewPages } from "../helpers/entityMigrationPagination.js";
-import {
-  assertEntityMigrationBinding,
-  ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES,
-  planEntityMigration,
-  previewEntityMigration,
-  validateEntityMigrationTargets,
-  type EntityMigrationPreview,
-} from "../../src/state/entityMigrationPreview.js";
+import { assertEntityMigrationBinding, ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES, planEntityMigration, previewEntityMigration, validateEntityMigrationTargets, type EntityMigrationPreview } from "../../src/state/entityMigrationPreview.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -53,10 +46,7 @@ surprises: []
 const ACTIVE_PLAN_ID = "plan:123e4567-e89b-42d3-a456-426614174000";
 const ARCHIVED_PLAN_ID = "plan:223e4567-e89b-42d3-a456-426614174000";
 const OBJECTIVE_ID = "objective:323e4567-e89b-42d3-a456-426614174000";
-const VALID_ARCHIVED_PLAN = VALID_PLAN
-  .replace(ACTIVE_PLAN_ID, ARCHIVED_PLAN_ID)
-  .replace("status: open", "status: complete")
-  .replace("status: pending", "status: complete");
+const VALID_ARCHIVED_PLAN = VALID_PLAN.replace(ACTIVE_PLAN_ID, ARCHIVED_PLAN_ID).replace("status: open", "status: complete").replace("status: pending", "status: complete");
 const VALID_OBJECTIVE = `header:
   id: ${OBJECTIVE_ID}
   title: Reduce latency
@@ -80,8 +70,10 @@ const VALID_EXPERIMENTS = "experiments:\n  - number: 7\n    result: pinned sourc
 const EXACT_SOURCE_FIXTURES = {
   "TODO.md": "# TODO\n\n## → Normal\n- [ ] Preserve this exact item.\n",
   ".agentera/docs.yaml": "index:\n  - document: README\n    path: README.md\n    last_updated: 2026-07-17\n    status: current\n",
-  ".agentera/progress.yaml": "cycles:\n  - number: 1\n    timestamp: 2026-07-16 10:00\n    type: feat\n    phase: build\n    what: complete\n    inspiration: test\n    discovered: none\n    verified: passed\n    next: done\n    context:\n      intent: test\n      constraints: none\n      unknowns: none\n      scope: fixture\n",
-  ".agentera/decisions.yaml": "decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Test exact source inspection.\n    alternatives:\n      - name: Preserve project boundaries\n        status: chosen\n      - name: Follow external paths\n        status: rejected\n    choice: Preserve project boundaries.\n    reasoning: External bytes cannot define project state.\n    confidence: firm\n    feeds_into: Task 19\n",
+  ".agentera/progress.yaml":
+    "cycles:\n  - number: 1\n    timestamp: 2026-07-16 10:00\n    type: feat\n    phase: build\n    what: complete\n    inspiration: test\n    discovered: none\n    verified: passed\n    next: done\n    context:\n      intent: test\n      constraints: none\n      unknowns: none\n      scope: fixture\n",
+  ".agentera/decisions.yaml":
+    "decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Test exact source inspection.\n    alternatives:\n      - name: Preserve project boundaries\n        status: chosen\n      - name: Follow external paths\n        status: rejected\n    choice: Preserve project boundaries.\n    reasoning: External bytes cannot define project state.\n    confidence: firm\n    feeds_into: Task 19\n",
   ".agentera/health.yaml": "audits:\n  - number: 1\n    date: 2026-07-16\n    dimensions: [architecture_alignment]\n    findings_summary:\n      critical: 0\n      warning: 0\n      info: 0\n      filtered_by_confidence: 0\n    trajectory: stable\n    grades:\n      architecture_alignment: A\n",
   ".agentera/plan.yaml": VALID_PLAN,
   ".agentera/overlays/decisions.yaml": "decisions:7:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: exact source fixture\n",
@@ -166,12 +158,13 @@ const REPRESENTATIVE_SOURCES = [
 ] as const;
 
 function tree(root: string): string[] {
-  const visit = (directory: string): string[] => fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
-    const absolute = path.join(directory, entry.name);
-    const relative = path.relative(root, absolute);
-    if (entry.isSymbolicLink()) return [`${relative}->${fs.readlinkSync(absolute)}`];
-    return entry.isDirectory() ? [relative + "/", ...visit(absolute)] : [relative + ":" + fs.readFileSync(absolute).toString("hex")];
-  });
+  const visit = (directory: string): string[] =>
+    fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+      const absolute = path.join(directory, entry.name);
+      const relative = path.relative(root, absolute);
+      if (entry.isSymbolicLink()) return [`${relative}->${fs.readlinkSync(absolute)}`];
+      return entry.isDirectory() ? [relative + "/", ...visit(absolute)] : [relative + ":" + fs.readFileSync(absolute).toString("hex")];
+    });
   return visit(root).sort();
 }
 
@@ -206,7 +199,9 @@ describe("entity migration read-only preview", () => {
   it("binds approval to the active migration authority before effects", () => {
     const root = project();
     const sourceRoot = project();
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), {
+      recursive: true,
+    });
     write(root, "TODO.md", "# TODO\n\n## → Normal\n- [ ] Bound source.\n");
     const first = previewEntityMigration(root, sourceRoot);
     const authority = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
@@ -222,7 +217,11 @@ describe("entity migration read-only preview", () => {
   it("inventories authority-valid ordered decision revisions and classifies malformed provenance separately", () => {
     const root = project();
     write(root, ".agentera/decisions.yaml", `decisions:\n  - number: 7\n    date: 2026-07-16\n    question: Question?\n    context: Validate revision targets.\n    alternatives:\n      - name: Preserve\n        status: chosen\n    choice: Choice.\n    reasoning: Reason.\n    confidence: firm\n`);
-    write(root, ".agentera/revisions/decisions.yaml", `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\n  - date: 2026-07-18\n    choice: Stale base claim.\n    provenance: historical_revision\n    base_sha256: ${"f".repeat(64)}\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:9:\n  - number: 9\n    choice: Identity is immutable.\n    provenance: historical_revision\ndecisions:10:\n  - satisfaction:\n      state: open\n    provenance: historical_revision\ndecisions:11:\n  - provenance: historical_revision\ndecisions:12:\n  - choice: Wrong provenance claim.\n    provenance: historical_archive\ndecisions:bad: not-a-list\n`);
+    write(
+      root,
+      ".agentera/revisions/decisions.yaml",
+      `decisions:7:\n  - date: 2026-07-16\n    choice: First revision.\n    provenance: historical_revision\n  - date: 2026-07-17\n    reasoning: Second revision.\n    provenance: degraded_projection\n  - date: 2026-07-18\n    choice: Stale base claim.\n    provenance: historical_revision\n    base_sha256: ${"f".repeat(64)}\ndecisions:8:\n  - choice: Invalid provenance.\n    provenance: revision\ndecisions:9:\n  - number: 9\n    choice: Identity is immutable.\n    provenance: historical_revision\ndecisions:10:\n  - satisfaction:\n      state: open\n    provenance: historical_revision\ndecisions:11:\n  - provenance: historical_revision\ndecisions:12:\n  - choice: Wrong provenance claim.\n    provenance: historical_archive\ndecisions:bad: not-a-list\n`,
+    );
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     const revisions = preview.entries.filter((entry) => entry.boundary === "decision_revision");
     const byIdentity = new Map(revisions.map((entry) => [entry.source_identity, entry]));
@@ -234,14 +233,17 @@ describe("entity migration read-only preview", () => {
       expect(byIdentity.get(identity)?.classification, identity).toBe("corrupt");
     }
     expect(byIdentity.get("decision_revision:decisions:7:2")?.recovery).toContain("claims base");
-    const violations = decisionRevisionViolations({
-      "decisions:8": [{ choice: "Invalid provenance.", provenance: "revision" }],
-      "decisions:9": [{ number: 9, choice: "Identity is immutable.", provenance: "historical_revision" }],
-      "decisions:10": [{ satisfaction: { state: "open" }, provenance: "historical_revision" }],
-      "decisions:11": [{ provenance: "historical_revision" }],
-      "decisions:12": [{ choice: "Wrong provenance claim.", provenance: "historical_archive" }],
-      "decisions:bad": "not-a-list",
-    }, decisionRevisionContract(REPO_ROOT));
+    const violations = decisionRevisionViolations(
+      {
+        "decisions:8": [{ choice: "Invalid provenance.", provenance: "revision" }],
+        "decisions:9": [{ number: 9, choice: "Identity is immutable.", provenance: "historical_revision" }],
+        "decisions:10": [{ satisfaction: { state: "open" }, provenance: "historical_revision" }],
+        "decisions:11": [{ provenance: "historical_revision" }],
+        "decisions:12": [{ choice: "Wrong provenance claim.", provenance: "historical_archive" }],
+        "decisions:bad": "not-a-list",
+      },
+      decisionRevisionContract(REPO_ROOT),
+    );
     expect(violations.join("\n")).toMatch(/not one of/);
     expect(violations.join("\n")).toMatch(/not an amendable content path/);
     expect(violations.join("\n")).toMatch(/must amend at least one content field/);
@@ -256,31 +258,86 @@ describe("entity migration read-only preview", () => {
       date: "2026-07-16",
       question: "Where should revision authority live?",
       context: "Migration must preserve ordered evidence.",
-      alternatives: [{ name: "Entities", status: "chosen" }, { name: "Legacy aggregate", status: "rejected" }],
+      alternatives: [
+        { name: "Entities", status: "chosen" },
+        { name: "Legacy aggregate", status: "rejected" },
+      ],
       choice: "Aggregate files",
       reasoning: "Legacy source.",
       confidence: "firm",
     };
     const baseSha256 = createHash("sha256").update(canonicalRecordJson(base)).digest("hex");
     write(root, ".agentera/decisions.yaml", YAML.stringify({ decisions: [base] }));
-    write(root, ".agentera/revisions/decisions.yaml", YAML.stringify({
-      "decisions:7": [{ question: "Where do canonical revisions live?", alternatives: [{ name: "Canonical entities", status: "chosen" }, { name: "Aggregate files", status: "rejected" }], choice: "Canonical entities", reasoning: "Current authority.", confidence: "high", provenance: "historical_revision", base_sha256: baseSha256 }],
-    }));
-    write(root, ".agentera/overlays/decisions.yaml", YAML.stringify({
-      "decisions:7": { satisfaction: { state: "provisionally_satisfied", evidence: "migration verified", review_needed: true } },
-    }));
+    write(
+      root,
+      ".agentera/revisions/decisions.yaml",
+      YAML.stringify({
+        "decisions:7": [
+          {
+            question: "Where do canonical revisions live?",
+            alternatives: [
+              { name: "Canonical entities", status: "chosen" },
+              { name: "Aggregate files", status: "rejected" },
+            ],
+            choice: "Canonical entities",
+            reasoning: "Current authority.",
+            confidence: "high",
+            provenance: "historical_revision",
+            base_sha256: baseSha256,
+          },
+        ],
+      }),
+    );
+    write(
+      root,
+      ".agentera/overlays/decisions.yaml",
+      YAML.stringify({
+        "decisions:7": {
+          satisfaction: {
+            state: "provisionally_satisfied",
+            evidence: "migration verified",
+            review_needed: true,
+          },
+        },
+      }),
+    );
     const sourcePaths = [".agentera/decisions.yaml", ".agentera/revisions/decisions.yaml", ".agentera/overlays/decisions.yaml"];
     const sourceBytes = new Map(sourcePaths.map((relative) => [relative, fs.readFileSync(path.join(root, relative))]));
     const env = { ...process.env };
-    delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE; delete env.GIT_COMMON_DIR;
+    delete env.GIT_DIR;
+    delete env.GIT_WORK_TREE;
+    delete env.GIT_INDEX_FILE;
+    delete env.GIT_COMMON_DIR;
     execFileSync("git", ["init", "--quiet"], { cwd: root, env });
     execFileSync("git", ["add", "."], { cwd: root, env });
-    execFileSync("git", ["-c", "user.email=entity-migration@example.invalid", "-c", "user.name=Entity Migration", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "legacy state"], { cwd: root, env });
+    execFileSync("git", ["-c", "user.email=entity-migration@example.invalid", "-c", "user.name=Entity Migration", "-c", "commit.gpgsign=false", "commit", "--quiet", "-m", "legacy state"], {
+      cwd: root,
+      env,
+    });
 
-    expect(applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(root, REPO_ROOT))).toMatchObject({ status: "complete", mutation_performed: true });
-    const listed = listDecisionEntities(root, 10, undefined, undefined, { sourceRoot: REPO_ROOT }) as any;
+    expect(applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(root, REPO_ROOT))).toMatchObject({
+      status: "complete",
+      mutation_performed: true,
+    });
+    const listed = listDecisionEntities(root, 10, undefined, undefined, {
+      sourceRoot: REPO_ROOT,
+    }) as any;
     const id = listed.entries[0].id as string;
-    const expected = { question: "Where do canonical revisions live?", alternatives: [{ name: "Canonical entities", status: "chosen" }, { name: "Aggregate files", status: "rejected" }], choice: "Canonical entities", reasoning: "Current authority.", confidence: "high", satisfaction: { state: "provisionally_satisfied", evidence: "migration verified", review_needed: true } };
+    const expected = {
+      question: "Where do canonical revisions live?",
+      alternatives: [
+        { name: "Canonical entities", status: "chosen" },
+        { name: "Aggregate files", status: "rejected" },
+      ],
+      choice: "Canonical entities",
+      reasoning: "Current authority.",
+      confidence: "high",
+      satisfaction: {
+        state: "provisionally_satisfied",
+        evidence: "migration verified",
+        review_needed: true,
+      },
+    };
     expect(listed.entries[0].record).toMatchObject(expected);
     const exact = (getDecisionEntity(root, id, REPO_ROOT) as any).entry;
     expect(exact.record).toMatchObject(expected);
@@ -291,8 +348,31 @@ describe("entity migration read-only preview", () => {
 
   it("blocks legacy revisions with invalid effective decision values", () => {
     const root = project();
-    write(root, ".agentera/decisions.yaml", YAML.stringify({ decisions: [{ number: 7, date: "2026-07-16", question: "Question?", context: "Validate revision values.", alternatives: [{ name: "Preserve", status: "chosen" }], choice: "Preserve", reasoning: "Valid base.", confidence: "firm" }] }));
-    write(root, ".agentera/revisions/decisions.yaml", YAML.stringify({ "decisions:7": [{ date: "2026-07-17", choice: 42, provenance: "historical_revision" }] }));
+    write(
+      root,
+      ".agentera/decisions.yaml",
+      YAML.stringify({
+        decisions: [
+          {
+            number: 7,
+            date: "2026-07-16",
+            question: "Question?",
+            context: "Validate revision values.",
+            alternatives: [{ name: "Preserve", status: "chosen" }],
+            choice: "Preserve",
+            reasoning: "Valid base.",
+            confidence: "firm",
+          },
+        ],
+      }),
+    );
+    write(
+      root,
+      ".agentera/revisions/decisions.yaml",
+      YAML.stringify({
+        "decisions:7": [{ date: "2026-07-17", choice: 42, provenance: "historical_revision" }],
+      }),
+    );
 
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     expect(preview.entries.find(({ source_identity }) => source_identity === "decision_revision:decisions:7:0")).toMatchObject({ classification: "corrupt", proposed_target: null });
@@ -318,9 +398,7 @@ describe("entity migration read-only preview", () => {
     write(root, ".agentera/optimize/latency/objective.yaml", VALID_OBJECTIVE);
     write(root, ".agentera/optimize/latency/experiments.yaml", "experiments:\n  - number: 7\n    date: 2026-07-17 10:00\n    status: baseline\n    result: pinned source\n");
     const plan = planEntityMigration(root, REPO_ROOT);
-    expect([...new Set(plan.entries.map(({ boundary }) => boundary))].sort()).toEqual([
-      "decision", "decision_revision", "decision_satisfaction", "documentation_inventory_entry", "experiment", "health_audit", "objective", "plan", "plan_task", "progress_cycle", "todo_item",
-    ]);
+    expect([...new Set(plan.entries.map(({ boundary }) => boundary))].sort()).toEqual(["decision", "decision_revision", "decision_satisfaction", "documentation_inventory_entry", "experiment", "health_audit", "objective", "plan", "plan_task", "progress_cycle", "todo_item"]);
     expect(validateEntityMigrationTargets(root, plan.entries, REPO_ROOT)).toEqual([]);
     expect(plan.entries.every((entry) => entry.proposed_target === null || /^[a-f0-9]{64}$/.test(entry.target_sha256 ?? ""))).toBe(true);
   });
@@ -328,7 +406,11 @@ describe("entity migration read-only preview", () => {
   it("classifies only itemized TODO/docs records and binds preserved singleton authority", () => {
     const root = project();
     write(root, "TODO.md", "# TODO\n\n## ⇉ Degraded\n- [ ] Repair migration.\n\n## ✓ Resolved\n- [x] Preserve history.\n");
-    write(root, ".agentera/docs.yaml", "last_audit: 2026-07-17 (fixture)\nconventions:\n  doc_root: .\nmapping:\n  - artifact: TODO.md\n    path: TODO.md\ncoverage:\n  documented: 1\naudit_log:\n  - date: 2026-07-17\nindex:\n  - document: README\n    path: README.md\n    last_updated: 2026-07-17\n    status: current\n");
+    write(
+      root,
+      ".agentera/docs.yaml",
+      "last_audit: 2026-07-17 (fixture)\nconventions:\n  doc_root: .\nmapping:\n  - artifact: TODO.md\n    path: TODO.md\ncoverage:\n  documented: 1\naudit_log:\n  - date: 2026-07-17\nindex:\n  - document: README\n    path: README.md\n    last_updated: 2026-07-17\n    status: current\n",
+    );
     write(root, ".agentera/vision.yaml", "north_star: preserve intent\n");
     write(root, "DESIGN.md", "# Design\n");
     write(root, "CHANGELOG.md", "# Changelog\n");
@@ -338,16 +420,28 @@ describe("entity migration read-only preview", () => {
     const docs = preview.entries.filter((entry) => entry.boundary === "documentation_inventory_entry");
     expect(todo.map((entry) => entry.source_identity)).toEqual(["TODO.md:line:4", "TODO.md:line:7"]);
     expect(todo.map((entry) => entry.content_sha256)).not.toContain(null);
-    expect(docs).toHaveLength(1); expect(docs[0].source_identity).toBe("docs:path:README.md");
+    expect(docs).toHaveLength(1);
+    expect(docs[0].source_identity).toBe("docs:path:README.md");
     expect(preview.entries.some((entry) => entry.source_identity.includes("mapping") || entry.source_paths.includes("DESIGN.md") || entry.source_paths.includes("CHANGELOG.md") || entry.source_paths.includes(".agentera/vision.yaml"))).toBe(false);
-    expect(preview.preserved_singletons).toEqual(expect.arrayContaining([
-      expect.objectContaining({ boundary: "vision", source_path: ".agentera/vision.yaml", presence: "file", content_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) }),
-      expect.objectContaining({ boundary: "design", presence: "file" }),
-      expect.objectContaining({ boundary: "changelog", presence: "file" }),
-      expect.objectContaining({ boundary: "docs_mapping", presence: "file", preserved_sections: ["last_audit", "conventions", "mapping", "coverage", "audit_log"] }),
-      expect.objectContaining({ boundary: "profile", presence: "missing" }),
-      expect.objectContaining({ boundary: "runtime_local_session_state", presence: "missing" }),
-    ]));
+    expect(preview.preserved_singletons).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          boundary: "vision",
+          source_path: ".agentera/vision.yaml",
+          presence: "file",
+          content_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        }),
+        expect.objectContaining({ boundary: "design", presence: "file" }),
+        expect.objectContaining({ boundary: "changelog", presence: "file" }),
+        expect.objectContaining({
+          boundary: "docs_mapping",
+          presence: "file",
+          preserved_sections: ["last_audit", "conventions", "mapping", "coverage", "audit_log"],
+        }),
+        expect.objectContaining({ boundary: "profile", presence: "missing" }),
+        expect.objectContaining({ boundary: "runtime_local_session_state", presence: "missing" }),
+      ]),
+    );
   });
 
   it("uses an explicit managed TODO ID while importing Markdown-owned public values", () => {
@@ -357,7 +451,12 @@ describe("entity migration read-only preview", () => {
     write(root, `.agentera/entities/todo/todo_item/${id}.yaml`, `id: ${id}\nartifact: todo\nrecord:\n  kind: fix\n  target_version: 3.0.0\n  title: Agentera title\n  requirements: []\n  acceptance: []\n  release_blocker: false\n  severity: normal\n  status: open\n`);
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     const todo = preview.entries.find((entry) => entry.proposed_target?.id === id);
-    expect(todo).toMatchObject({ classification: "verified_full", artifact: "todo", boundary: "todo_item", proposed_target: { id } });
+    expect(todo).toMatchObject({
+      classification: "verified_full",
+      artifact: "todo",
+      boundary: "todo_item",
+      proposed_target: { id },
+    });
     expect(preview.status).toBe("ready");
   });
 
@@ -441,7 +540,10 @@ describe("entity migration read-only preview", () => {
     const root = project();
     write(root, ".agentera/plan.yaml", VALID_PLAN);
 
-    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000, resolveDescriptorPath: () => null });
+    const preview = previewEntityMigration(root, REPO_ROOT, {
+      limit: 1000,
+      resolveDescriptorPath: () => null,
+    });
 
     expect(preview.entries.filter((entry) => entry.source_identity === ACTIVE_PLAN_ID)).toHaveLength(1);
     expect(preview.entries.filter((entry) => entry.source_identity === `${ACTIVE_PLAN_ID}/task:1`)).toHaveLength(1);
@@ -475,12 +577,19 @@ describe("entity migration read-only preview", () => {
       return bytes;
     });
 
-    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000, resolveDescriptorPath: () => null });
+    const preview = previewEntityMigration(root, REPO_ROOT, {
+      limit: 1000,
+      resolveDescriptorPath: () => null,
+    });
 
     expect(mutated).toBe(true);
     expect(fs.statSync(target, { bigint: true }).ino).toBe(fs.statSync(alias, { bigint: true }).ino);
     expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null, proposed_target: null }),
+      expect.objectContaining({
+        classification: "corrupt",
+        content_sha256: null,
+        proposed_target: null,
+      }),
     ]);
     expect(JSON.stringify(preview)).not.toContain(externalIdentity);
   });
@@ -516,12 +625,19 @@ describe("entity migration read-only preview", () => {
       return bytes;
     });
 
-    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000, resolveDescriptorPath: () => null });
+    const preview = previewEntityMigration(root, REPO_ROOT, {
+      limit: 1000,
+      resolveDescriptorPath: () => null,
+    });
 
     expect(mutated).toBe(true);
     expect(Buffer.byteLength(replacement)).toBe(Buffer.byteLength(VALID_PLAN));
     expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null, proposed_target: null }),
+      expect.objectContaining({
+        classification: "corrupt",
+        content_sha256: null,
+        proposed_target: null,
+      }),
     ]);
     expect(JSON.stringify(preview)).not.toContain(externalIdentity);
   });
@@ -564,7 +680,11 @@ describe("entity migration read-only preview", () => {
       expect(openFlags & fs.constants.O_NOFOLLOW).toBe(fs.constants.O_NOFOLLOW);
     }
     expect(observations).toHaveLength(1);
-    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0]).toMatchObject({
+      classification: "corrupt",
+      content_sha256: null,
+      proposed_target: null,
+    });
     expect(JSON.stringify(preview)).not.toContain(externalIdentity);
     expect(JSON.stringify(preview)).not.toContain("external source");
   });
@@ -642,9 +762,7 @@ describe("entity migration read-only preview", () => {
 
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     expect(replaced).toBe(true);
-    expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/plan.yaml"))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
-    ]);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/plan.yaml"))).toEqual([expect.objectContaining({ classification: "corrupt", content_sha256: null })]);
     expect(JSON.stringify(preview)).not.toContain("923e4567-e89b-42d3-a456-426614174000");
   });
 
@@ -669,11 +787,12 @@ describe("entity migration read-only preview", () => {
       return originalOpen(candidate, flags, mode);
     });
 
-    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000, resolveDescriptorPath: () => null });
+    const preview = previewEntityMigration(root, REPO_ROOT, {
+      limit: 1000,
+      resolveDescriptorPath: () => null,
+    });
     expect(replaced).toBe(true);
-    expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/optimize/latency/"))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
-    ]);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/optimize/latency/"))).toEqual([expect.objectContaining({ classification: "corrupt", content_sha256: null })]);
     expect(JSON.stringify(preview)).not.toContain("objective:723e4567-e89b-42d3-a456-426614174000");
   });
 
@@ -706,12 +825,13 @@ describe("entity migration read-only preview", () => {
       return Reflect.apply(originalRead, fs, args);
     });
 
-    const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000, resolveDescriptorPath: () => null });
+    const preview = previewEntityMigration(root, REPO_ROOT, {
+      limit: 1000,
+      resolveDescriptorPath: () => null,
+    });
 
     expect(replaced).toBe(true);
-    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
-    ]);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([expect.objectContaining({ classification: "corrupt", content_sha256: null })]);
     expect(JSON.stringify(preview)).not.toContain(externalIdentity);
   });
 
@@ -738,9 +858,7 @@ describe("entity migration read-only preview", () => {
 
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
     expect(intercepted).toBe(true);
-    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null }),
-    ]);
+    expect(preview.entries.filter((entry) => entry.source_paths.includes(relative))).toEqual([expect.objectContaining({ classification: "corrupt", content_sha256: null })]);
     expect(JSON.stringify(preview)).not.toContain("raw access failure");
     expect(preview.diagnostics.find((diagnostic) => diagnostic.path === relative)?.message).toContain("source path '.agentera/plan.yaml' is");
   });
@@ -754,16 +872,11 @@ describe("entity migration read-only preview", () => {
     write(root, ".agentera/optimize/latency/experiments.yaml", VALID_EXPERIMENTS);
 
     const preview = previewEntityMigration(root, REPO_ROOT, { limit: 1000 });
-    for (const identity of [
-      ACTIVE_PLAN_ID,
-      `${ACTIVE_PLAN_ID}/task:1`,
-      ARCHIVED_PLAN_ID,
-      `${ARCHIVED_PLAN_ID}/task:1`,
-      "decision_revision:decisions:7:0",
-      OBJECTIVE_ID,
-      `${OBJECTIVE_ID}/experiment:7`,
-    ]) {
-      expect(preview.entries.filter((entry) => entry.source_identity === identity), identity).toHaveLength(1);
+    for (const identity of [ACTIVE_PLAN_ID, `${ACTIVE_PLAN_ID}/task:1`, ARCHIVED_PLAN_ID, `${ARCHIVED_PLAN_ID}/task:1`, "decision_revision:decisions:7:0", OBJECTIVE_ID, `${OBJECTIVE_ID}/experiment:7`]) {
+      expect(
+        preview.entries.filter((entry) => entry.source_identity === identity),
+        identity,
+      ).toHaveLength(1);
     }
   });
 
@@ -784,7 +897,11 @@ describe("entity migration read-only preview", () => {
     const observations = second.entries.filter((entry) => entry.source_paths.includes(relative));
 
     expect(observations).toHaveLength(1);
-    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0]).toMatchObject({
+      classification: "corrupt",
+      content_sha256: null,
+      proposed_target: null,
+    });
     expect(observations[0].recovery).toContain(`Repair '${relative}'`);
     expect(second.source_fingerprint).toBe(first.source_fingerprint);
     expect(second.preview_digest).toBe(first.preview_digest);
@@ -806,7 +923,11 @@ describe("entity migration read-only preview", () => {
     const observations = preview.entries.filter((entry) => entry.source_paths.includes(relative));
 
     expect(observations).toHaveLength(1);
-    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0]).toMatchObject({
+      classification: "corrupt",
+      content_sha256: null,
+      proposed_target: null,
+    });
     expect(observations[0].recovery).toContain(`Repair '${relative}'`);
     expect(readSpy.mock.calls.some(([candidate]) => typeof candidate === "string" && path.resolve(candidate) === target)).toBe(false);
     expect(tree(root)).toEqual(before);
@@ -830,7 +951,11 @@ describe("entity migration read-only preview", () => {
     const observations = second.entries.filter((entry) => entry.source_paths.includes(relative));
 
     expect(observations).toHaveLength(1);
-    expect(observations[0]).toMatchObject({ classification: "corrupt", content_sha256: null, proposed_target: null });
+    expect(observations[0]).toMatchObject({
+      classification: "corrupt",
+      content_sha256: null,
+      proposed_target: null,
+    });
     expect(second.source_fingerprint).toBe(first.source_fingerprint);
     expect(second.preview_digest).toBe(first.preview_digest);
     expect(second.counts).toEqual(first.counts);
@@ -852,7 +977,12 @@ describe("entity migration read-only preview", () => {
 
     const first = previewEntityMigration(root, REPO_ROOT, { limit: 1 });
     expect(first.next_after).not.toBeNull();
-    const continuation = { limit: 1, after: first.next_after as string, sourceFingerprint: first.source_fingerprint, previewDigest: first.preview_digest };
+    const continuation = {
+      limit: 1,
+      after: first.next_after as string,
+      sourceFingerprint: first.source_fingerprint,
+      previewDigest: first.preview_digest,
+    };
     const continued = previewEntityMigration(root, REPO_ROOT, continuation);
     fs.writeFileSync(externalPlan, VALID_PLAN.replace("123e4567-e89b-42d3-a456-426614174000", "223e4567-e89b-42d3-a456-426614174000"));
 
@@ -922,9 +1052,19 @@ describe("entity migration read-only preview", () => {
     const first = race(() => previewEntityMigration(root, REPO_ROOT, { limit: 1 }));
     expect(first.next_after).not.toBeNull();
     expect(first.entries).toEqual([
-      expect.objectContaining({ source_paths: [".agentera/archive/"], classification: "corrupt", content_sha256: null, proposed_target: null }),
+      expect.objectContaining({
+        source_paths: [".agentera/archive/"],
+        classification: "corrupt",
+        content_sha256: null,
+        proposed_target: null,
+      }),
     ]);
-    const continuation = { limit: 1, after: first.next_after as string, sourceFingerprint: first.source_fingerprint, previewDigest: first.preview_digest };
+    const continuation = {
+      limit: 1,
+      after: first.next_after as string,
+      sourceFingerprint: first.source_fingerprint,
+      previewDigest: first.preview_digest,
+    };
     const continued = race(() => previewEntityMigration(root, REPO_ROOT, continuation));
     for (let number = 901; number < 910; number += 1) write(externalRoot, `progress/${number}.yaml`, `external-marker: ${number}\n`);
     const repeated = race(() => previewEntityMigration(root, REPO_ROOT, { limit: 1 }));
@@ -937,7 +1077,6 @@ describe("entity migration read-only preview", () => {
     expect(continuedAgain).toEqual(continued);
     expect(JSON.stringify(repeated)).not.toContain("external-marker");
     expect(tree(root)).toEqual(before);
-
   });
 
   it("discards an entire recursive inventory when a nested directory is replaced during readdir", () => {
@@ -965,7 +1104,11 @@ describe("entity migration read-only preview", () => {
 
     expect(restore).toBeTypeOf("function");
     expect(preview.entries.filter((entry) => entry.source_paths.includes(".agentera/optimize/latency/"))).toEqual([
-      expect.objectContaining({ classification: "corrupt", content_sha256: null, proposed_target: null }),
+      expect.objectContaining({
+        classification: "corrupt",
+        content_sha256: null,
+        proposed_target: null,
+      }),
     ]);
     expect(JSON.stringify(preview)).not.toContain(OBJECTIVE_ID);
     expect(JSON.stringify(preview)).not.toContain("objective:423e4567-e89b-42d3-a456-426614174000");
@@ -1001,16 +1144,65 @@ describe("entity migration read-only preview", () => {
     const root = project();
     const context = `    context:\n      intent: test\n      constraints: none\n      unknowns: none\n      scope: fixture\n`;
     const cycle = (number: number, what: string, timestamp: string) => `  - number: ${number}\n    timestamp: ${timestamp}\n    type: feat\n    phase: build\n    what: ${what}\n    inspiration: test\n    discovered: none\n    verified: passed\n    next: done\n${context}`;
-    write(root, ".agentera/progress.yaml", `cycles:\n${cycle(1, "full", "2026-07-16 10:00")}${cycle(2, "projection", "2026-07-16 11:00")}  - number: 3\n    summary: unavailable detail\n${cycle(4, "duplicate", "2026-07-16 12:00")}${cycle(4, "duplicate", "2026-07-16 12:00")}${cycle(5, "first", "2026-07-16 13:00")}${cycle(5, "second", "2026-07-16 13:00")}${cycle(6, "verified", "2026-07-16 14:00")}`);
-    write(root, ".agentera/archive/progress/1.yaml", `schemaVersion: agentera.stateArchiveEntry.v1\nartifact_id: progress\nentry_number: 1\nrecord:\n  number: 1\n  timestamp: 2026-07-16 10:00\n  type: feat\n  phase: build\n  what: full\n  inspiration: test\n  discovered: none\n  verified: passed\n  next: done\nrecord_sha256: invalid\n`);
-    const verified = { number: 6, timestamp: "2026-07-16 14:00", type: "feat", phase: "build", what: "verified", inspiration: "test", discovered: "none", verified: "passed", next: "done", context: { intent: "test", constraints: "none", unknowns: "none", scope: "fixture" } };
+    write(
+      root,
+      ".agentera/progress.yaml",
+      `cycles:\n${cycle(1, "full", "2026-07-16 10:00")}${cycle(2, "projection", "2026-07-16 11:00")}  - number: 3\n    summary: unavailable detail\n${cycle(4, "duplicate", "2026-07-16 12:00")}${cycle(4, "duplicate", "2026-07-16 12:00")}${cycle(5, "first", "2026-07-16 13:00")}${cycle(5, "second", "2026-07-16 13:00")}${cycle(6, "verified", "2026-07-16 14:00")}`,
+    );
+    write(
+      root,
+      ".agentera/archive/progress/1.yaml",
+      `schemaVersion: agentera.stateArchiveEntry.v1\nartifact_id: progress\nentry_number: 1\nrecord:\n  number: 1\n  timestamp: 2026-07-16 10:00\n  type: feat\n  phase: build\n  what: full\n  inspiration: test\n  discovered: none\n  verified: passed\n  next: done\nrecord_sha256: invalid\n`,
+    );
+    const verified = {
+      number: 6,
+      timestamp: "2026-07-16 14:00",
+      type: "feat",
+      phase: "build",
+      what: "verified",
+      inspiration: "test",
+      discovered: "none",
+      verified: "passed",
+      next: "done",
+      context: { intent: "test", constraints: "none", unknowns: "none", scope: "fixture" },
+    };
     const verifiedHash = createHash("sha256").update(canonicalRecordJson(verified)).digest("hex");
-    write(root, ".agentera/archive/progress/6.yaml", YAML.stringify({ schemaVersion: "agentera.stateArchiveEntry.v1", artifact_id: "progress", entry_number: 6, record: verified, record_sha256: verifiedHash }));
+    write(
+      root,
+      ".agentera/archive/progress/6.yaml",
+      YAML.stringify({
+        schemaVersion: "agentera.stateArchiveEntry.v1",
+        artifact_id: "progress",
+        entry_number: 6,
+        record: verified,
+        record_sha256: verifiedHash,
+      }),
+    );
     write(root, ".agentera/archive/progress/unsupported.txt", "record: {}\n");
-    write(root, ".agentera/plan.yaml", `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n  - number: 1\n    name: one\n    depends_on: []\n    status: pending\n    acceptance: [pass]\n  - number: 2\n    name: two\n    depends_on: ["1"]\n    status: pending\n    acceptance: [pass]\nsurprises: []\n`);
+    write(
+      root,
+      ".agentera/plan.yaml",
+      `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n  - number: 1\n    name: one\n    depends_on: []\n    status: pending\n    acceptance: [pass]\n  - number: 2\n    name: two\n    depends_on: ["1"]\n    status: pending\n    acceptance: [pass]\nsurprises: []\n`,
+    );
     const preview = previewEntityMigration(root, REPO_ROOT);
-    expect(preview.counts).toMatchObject({ recoverable_degraded_full_projection: 2, valid_compacted_summary: 1, mirrors: 2, duplicates: 1, conflicts: 1, corrupt: 1, unsupported: 1, physical_records: 14, logical_identities: 10 });
-    expect(preview.entries.find((entry) => entry.source_identity === "progress:3")).toMatchObject({ boundary: "progress_summary", classification: "valid_compacted_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object) });
+    expect(preview.counts).toMatchObject({
+      recoverable_degraded_full_projection: 2,
+      valid_compacted_summary: 1,
+      mirrors: 2,
+      duplicates: 1,
+      conflicts: 1,
+      corrupt: 1,
+      unsupported: 1,
+      physical_records: 14,
+      logical_identities: 10,
+    });
+    expect(preview.entries.find((entry) => entry.source_identity === "progress:3")).toMatchObject({
+      boundary: "progress_summary",
+      classification: "valid_compacted_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      proposed_target: expect.any(Object),
+    });
     expect(preview.entries.find((entry) => entry.source_identity === "progress:4")?.classification).toBe("recoverable_degraded_full_projection");
     expect(preview.entries.find((entry) => entry.source_identity === "progress:5")?.classification).toBe("duplicate");
     expect(preview.entries.find((entry) => entry.source_identity === "progress:6")?.classification).toBe("verified_full");
@@ -1026,44 +1218,116 @@ describe("entity migration read-only preview", () => {
     write(second, ".agentera/progress.yaml", summarySource(["second retained body", "first retained body"]));
 
     const entries = [planEntityMigration(first, REPO_ROOT), planEntityMigration(second, REPO_ROOT)].map((plan) => plan.entries.find((entry) => entry.source_identity === "progress:3")!);
-    expect(entries).toEqual(entries.map(() => expect.objectContaining({
-      classification: "conflict",
-      detail_availability: "full",
-      compatibility: "current",
-      proposed_target: null,
-      record: { summary: "first retained body" },
-    })));
+    expect(entries).toEqual(
+      entries.map(() =>
+        expect.objectContaining({
+          classification: "conflict",
+          detail_availability: "full",
+          compatibility: "current",
+          proposed_target: null,
+          record: { summary: "first retained body" },
+        }),
+      ),
+    );
   });
 
   it("publishes canonical-equivalent summary mirrors deterministically in either source order", () => {
     const summarySource = (rows: Array<{ alias: string; value: string }>) => `cycles:\n${rows.map(({ alias, value }) => `  - number: 3\n    ${alias}: ${value}\n    summary: retained body\n`).join("")}`;
     const first = project();
     const second = project();
-    write(first, ".agentera/progress.yaml", summarySource([{ alias: "stable_id", value: "legacy-a" }, { alias: "type_prefixed_id", value: "legacy-b" }]));
-    write(second, ".agentera/progress.yaml", summarySource([{ alias: "type_prefixed_id", value: "legacy-b" }, { alias: "stable_id", value: "legacy-a" }]));
+    write(
+      first,
+      ".agentera/progress.yaml",
+      summarySource([
+        { alias: "stable_id", value: "legacy-a" },
+        { alias: "type_prefixed_id", value: "legacy-b" },
+      ]),
+    );
+    write(
+      second,
+      ".agentera/progress.yaml",
+      summarySource([
+        { alias: "type_prefixed_id", value: "legacy-b" },
+        { alias: "stable_id", value: "legacy-a" },
+      ]),
+    );
 
     const entries = [planEntityMigration(first, REPO_ROOT), planEntityMigration(second, REPO_ROOT)].map((plan) => plan.entries.find((entry) => entry.source_identity === "progress:3")!);
-    expect(entries[0]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: expect.any(Object), record: { summary: "retained body", migration_provenance: expect.any(Object) } });
-    expect(entries[1]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: entries[0].proposed_target, record: entries[0].record, target_sha256: entries[0].target_sha256 });
+    expect(entries[0]).toMatchObject({
+      classification: "valid_compacted_summary",
+      proposed_target: expect.any(Object),
+      record: { summary: "retained body", migration_provenance: expect.any(Object) },
+    });
+    expect(entries[1]).toMatchObject({
+      classification: "valid_compacted_summary",
+      proposed_target: entries[0].proposed_target,
+      record: entries[0].record,
+      target_sha256: entries[0].target_sha256,
+    });
     expect(entries[0].record).not.toHaveProperty("stable_id");
     expect(entries[0].record).not.toHaveProperty("type_prefixed_id");
   });
 
   it.each([
-    ["progress", "cycles", { number: 7, timestamp: "2026-07-16 10:00", type: "fix", phase: "build", what: "retained work", inspiration: "audit", discovered: "none", verified: "tests", next: "done", context: { intent: "verify", constraints: "none", unknowns: "none", scope: "state" } }],
-    ["decisions", "decisions", { number: 7, date: "2026-07-16", question: "Keep full?", context: "audit", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "evidence", confidence: "firm" }],
-    ["health", "audits", { number: 7, date: "2026-07-16", dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" } }],
+    [
+      "progress",
+      "cycles",
+      {
+        number: 7,
+        timestamp: "2026-07-16 10:00",
+        type: "fix",
+        phase: "build",
+        what: "retained work",
+        inspiration: "audit",
+        discovered: "none",
+        verified: "tests",
+        next: "done",
+        context: { intent: "verify", constraints: "none", unknowns: "none", scope: "state" },
+      },
+    ],
+    [
+      "decisions",
+      "decisions",
+      {
+        number: 7,
+        date: "2026-07-16",
+        question: "Keep full?",
+        context: "audit",
+        alternatives: [{ name: "yes", status: "chosen" }],
+        choice: "yes",
+        reasoning: "evidence",
+        confidence: "firm",
+      },
+    ],
+    [
+      "health",
+      "audits",
+      {
+        number: 7,
+        date: "2026-07-16",
+        dimensions: ["architecture_alignment"],
+        findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+        trajectory: "stable",
+        grades: { architecture_alignment: "A" },
+      },
+    ],
   ] as const)("requires every mixed %s summary to mirror the selected full record in every order", (artifact, collection, full) => {
     const matching = yamlArchiveEntry(artifact, full);
     const divergent = { ...matching, summary: `${matching.summary} divergent` };
     for (const summary of [matching, divergent]) {
-      const results = [[full, summary], [summary, full]].map((rows) => {
+      const results = [
+        [full, summary],
+        [summary, full],
+      ].map((rows) => {
         const root = project();
         write(root, `.agentera/${artifact}.yaml`, YAML.stringify({ [collection]: rows }));
         return planEntityMigration(root, REPO_ROOT).entries.find((entry) => entry.source_identity === `${artifact}:7`)!;
       });
       if (summary === matching) {
-        expect(results.every((entry) => entry.proposed_target !== null), JSON.stringify(results)).toBe(true);
+        expect(
+          results.every((entry) => entry.proposed_target !== null),
+          JSON.stringify(results),
+        ).toBe(true);
         expect(results.map((entry) => entry.record)).toEqual([results[0].record, results[0].record]);
         if (artifact === "decisions") expect(results[0].record).not.toHaveProperty("satisfaction");
       } else {
@@ -1078,13 +1342,31 @@ describe("entity migration read-only preview", () => {
     const scalarOnly = project();
     write(scalarOnly, ".agentera/progress.yaml", YAML.stringify({ cycles: [scalar] }));
     const scalarEntry = planEntityMigration(scalarOnly, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:3")!;
-    expect(scalarEntry).toMatchObject({ classification: "valid_compacted_summary", proposed_target: expect.any(Object), record: { summary: scalar, migration_provenance: { source_record_sha256: createHash("sha256").update(canonicalRecordJson(scalar)).digest("hex") } } });
+    expect(scalarEntry).toMatchObject({
+      classification: "valid_compacted_summary",
+      proposed_target: expect.any(Object),
+      record: {
+        summary: scalar,
+        migration_provenance: {
+          source_record_sha256: createHash("sha256").update(canonicalRecordJson(scalar)).digest("hex"),
+        },
+      },
+    });
 
-    const mirrors = [[scalar, mapping], [mapping, scalar]].map((rows) => {
-      const root = project(); write(root, ".agentera/progress.yaml", YAML.stringify({ cycles: rows }));
+    const mirrors = [
+      [scalar, mapping],
+      [mapping, scalar],
+    ].map((rows) => {
+      const root = project();
+      write(root, ".agentera/progress.yaml", YAML.stringify({ cycles: rows }));
       return planEntityMigration(root, REPO_ROOT).entries.find((entry) => entry.source_identity === "progress:3")!;
     });
-    expect(mirrors[1]).toMatchObject({ classification: "valid_compacted_summary", proposed_target: mirrors[0].proposed_target, record: mirrors[0].record, target_sha256: mirrors[0].target_sha256 });
+    expect(mirrors[1]).toMatchObject({
+      classification: "valid_compacted_summary",
+      proposed_target: mirrors[0].proposed_target,
+      record: mirrors[0].record,
+      target_sha256: mirrors[0].target_sha256,
+    });
 
     const divergent = project();
     write(divergent, ".agentera/progress.yaml", YAML.stringify({ cycles: [scalar, { number: 3, summary: "Cycle 3 divergent" }] }));
@@ -1099,22 +1381,41 @@ describe("entity migration read-only preview", () => {
       { cycles: [{ number: 1, summary: "Cycle 1 retained" }], hidden },
       { hidden, cycles: [{ number: 1, summary: "Cycle 1 retained" }] },
     ].map((document) => {
-      const root = project(); write(root, ".agentera/progress.yaml", YAML.stringify(document)); const before = tree(root);
+      const root = project();
+      write(root, ".agentera/progress.yaml", YAML.stringify(document));
+      const before = tree(root);
       const plan = planEntityMigration(root, REPO_ROOT);
       expect(tree(root)).toEqual(before);
       return plan;
     });
     for (const plan of outcomes) {
       expect(plan.counts).toMatchObject({ blockers: 1, corrupt: 1, publishable_entities: 1 });
-      expect(plan.diagnostics).toEqual([expect.objectContaining({ source_identity: "progress:undeclared_collection:hidden", path: ".agentera/progress.yaml", message: expect.stringContaining("not declared") })]);
+      expect(plan.diagnostics).toEqual([
+        expect.objectContaining({
+          source_identity: "progress:undeclared_collection:hidden",
+          path: ".agentera/progress.yaml",
+          message: expect.stringContaining("not declared"),
+        }),
+      ]);
     }
-    expect(outcomes.map((plan) => plan.entries.find((entry) => entry.source_identity.includes("undeclared_collection")))).toEqual(outcomes.map(() => expect.objectContaining({ source_identity: "progress:undeclared_collection:hidden", classification: "corrupt", proposed_target: null, source_paths: [".agentera/progress.yaml"] })));
+    expect(outcomes.map((plan) => plan.entries.find((entry) => entry.source_identity.includes("undeclared_collection")))).toEqual(
+      outcomes.map(() =>
+        expect.objectContaining({
+          source_identity: "progress:undeclared_collection:hidden",
+          classification: "corrupt",
+          proposed_target: null,
+          source_paths: [".agentera/progress.yaml"],
+        }),
+      ),
+    );
   });
 
   it("takes aggregate collection allowlists from the selected authority", () => {
     const root = project();
     const sourceRoot = project();
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), {
+      recursive: true,
+    });
     const authorityPath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
     const authority = YAML.parse(fs.readFileSync(authorityPath, "utf8"));
     authority.entity_target.entities.find((entry: any) => entry.boundary === "progress_summary").canonical_metadata.summary_migration_provenance.sources[0].collections.push("hidden");
@@ -1152,10 +1453,17 @@ describe("entity migration read-only preview", () => {
   it.each(["source", "authority", "filter", "order", "project"])("refuses a continuation after %s binding mutation with restart guidance", (mutation) => {
     const root = project();
     const sourceRoot = project();
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(sourceRoot, "references"), {
+      recursive: true,
+    });
     write(root, "TODO.md", "# TODO\n- [ ] one\n- [ ] two\n");
     const first = previewEntityMigration(root, sourceRoot, { limit: 1 });
-    const continuation = { limit: 1, after: first.next_after as string, sourceFingerprint: first.source_fingerprint, previewDigest: first.preview_digest };
+    const continuation = {
+      limit: 1,
+      after: first.next_after as string,
+      sourceFingerprint: first.source_fingerprint,
+      previewDigest: first.preview_digest,
+    };
     let selectedRoot = root;
     if (mutation === "source") write(root, "TODO.md", "# TODO\n- [ ] changed\n- [ ] two\n");
     if (mutation === "project") {
@@ -1177,13 +1485,22 @@ describe("entity migration read-only preview", () => {
 
   it("reports unresolved relationship sources as root blockers and recovers omitted diagnostics through continuation", () => {
     const root = project();
-    write(root, ".agentera/plan.yaml", `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: [\"${index + 20}\"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`);
+    write(
+      root,
+      ".agentera/plan.yaml",
+      `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: [\"${index + 20}\"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`,
+    );
     const diagnostics: EntityMigrationPreview["diagnostics"] = [];
     let page = previewEntityMigration(root, REPO_ROOT, { limit: 2 });
     do {
       diagnostics.push(...page.diagnostics);
       if (!page.next_after) break;
-      page = previewEntityMigration(root, REPO_ROOT, { limit: 2, after: page.next_after, sourceFingerprint: page.source_fingerprint, previewDigest: page.preview_digest });
+      page = previewEntityMigration(root, REPO_ROOT, {
+        limit: 2,
+        after: page.next_after,
+        sourceFingerprint: page.source_fingerprint,
+        previewDigest: page.preview_digest,
+      });
     } while (true);
     const unresolved = diagnostics.filter((diagnostic) => diagnostic.classification === "corrupt" && diagnostic.message.includes("unresolved target"));
     expect(unresolved).toHaveLength(8);
@@ -1210,13 +1527,29 @@ describe("entity migration read-only preview", () => {
     const source = plan.entries.find((entry) => entry.source_identity === "decisions:7")!;
     const dependent = plan.entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:7")!;
     expect(source).toMatchObject({ classification: "corrupt", proposed_target: null });
-    expect(dependent).toMatchObject({ classification: "verified_full", proposed_target: null, relationships: [expect.objectContaining({ status: "resolved", target_source_identity: "decisions:7" })] });
-    expect(plan.counts).toMatchObject({ corrupt: 1, root_blockers: 1, dependent_blockers: 1, blockers: 2 });
+    expect(dependent).toMatchObject({
+      classification: "verified_full",
+      proposed_target: null,
+      relationships: [expect.objectContaining({ status: "resolved", target_source_identity: "decisions:7" })],
+    });
+    expect(plan.counts).toMatchObject({
+      corrupt: 1,
+      root_blockers: 1,
+      dependent_blockers: 1,
+      blockers: 2,
+    });
     expect(plan.counts.blockers).toBe(plan.counts.root_blockers + plan.counts.dependent_blockers);
-    expect(plan.diagnostics).toEqual(expect.arrayContaining([
-      expect.objectContaining({ classification: "corrupt", source_identity: "decisions:7" }),
-      expect.objectContaining({ classification: "dependent_blocker", source_identity: "decision_satisfaction:decisions:7", root_source_identity: "decisions:7", relationship_field: "decision" }),
-    ]));
+    expect(plan.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ classification: "corrupt", source_identity: "decisions:7" }),
+        expect.objectContaining({
+          classification: "dependent_blocker",
+          source_identity: "decision_satisfaction:decisions:7",
+          root_source_identity: "decisions:7",
+          relationship_field: "decision",
+        }),
+      ]),
+    );
   });
 
   it("attributes multiple valid dependents to each of multiple corrupt roots", () => {
@@ -1231,10 +1564,21 @@ describe("entity migration read-only preview", () => {
     write(root, ".agentera/overlays/decisions.yaml", `decisions:7:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: first\ndecisions:8:\n  satisfaction:\n    state: provisionally_satisfied\n    evidence: second\n`);
 
     const plan = planEntityMigration(root, REPO_ROOT);
-    expect(plan.counts).toMatchObject({ corrupt: 2, root_blockers: 2, dependent_blockers: 2, blockers: 4 });
+    expect(plan.counts).toMatchObject({
+      corrupt: 2,
+      root_blockers: 2,
+      dependent_blockers: 2,
+      blockers: 4,
+    });
     expect(plan.diagnostics.filter((diagnostic) => diagnostic.classification === "dependent_blocker")).toEqual([
-      expect.objectContaining({ source_identity: "decision_satisfaction:decisions:7", root_source_identity: "decisions:7" }),
-      expect.objectContaining({ source_identity: "decision_satisfaction:decisions:8", root_source_identity: "decisions:8" }),
+      expect.objectContaining({
+        source_identity: "decision_satisfaction:decisions:7",
+        root_source_identity: "decisions:7",
+      }),
+      expect.objectContaining({
+        source_identity: "decision_satisfaction:decisions:8",
+        root_source_identity: "decisions:8",
+      }),
     ]);
   });
 
@@ -1245,12 +1589,28 @@ describe("entity migration read-only preview", () => {
     const plan = planEntityMigration(root, REPO_ROOT);
     const rootIdentity = `${ACTIVE_PLAN_ID}/task:1`;
     const dependentIdentity = `${ACTIVE_PLAN_ID}/task:2`;
-    expect(plan.entries.find((entry) => entry.source_identity === rootIdentity)).toMatchObject({ classification: "corrupt", proposed_target: null });
-    expect(plan.entries.find((entry) => entry.source_identity === dependentIdentity)).toMatchObject({ classification: "verified_full", proposed_target: null });
-    expect(plan.diagnostics).toEqual(expect.arrayContaining([
-      expect.objectContaining({ classification: "corrupt", source_identity: rootIdentity, message: expect.stringContaining("cycle") }),
-      expect.objectContaining({ classification: "dependent_blocker", source_identity: dependentIdentity, root_source_identity: rootIdentity }),
-    ]));
+    expect(plan.entries.find((entry) => entry.source_identity === rootIdentity)).toMatchObject({
+      classification: "corrupt",
+      proposed_target: null,
+    });
+    expect(plan.entries.find((entry) => entry.source_identity === dependentIdentity)).toMatchObject({
+      classification: "verified_full",
+      proposed_target: null,
+    });
+    expect(plan.diagnostics).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          classification: "corrupt",
+          source_identity: rootIdentity,
+          message: expect.stringContaining("cycle"),
+        }),
+        expect.objectContaining({
+          classification: "dependent_blocker",
+          source_identity: dependentIdentity,
+          root_source_identity: rootIdentity,
+        }),
+      ]),
+    );
   });
 
   it("rejects the retired entity migration route with one-command upgrade recovery", () => {

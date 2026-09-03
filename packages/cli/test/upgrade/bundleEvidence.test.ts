@@ -5,10 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  hasBundleRootEvidence,
-  readScriptHead,
-} from "../../src/upgrade/bundleEvidence.js";
+import { hasBundleRootEvidence, readScriptHead } from "../../src/upgrade/bundleEvidence.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { doctorRoots } from "../../src/upgrade/appModel.js";
 import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
@@ -49,10 +46,7 @@ function writeBundle(bundleRoot: string, opts: ManagedInstallOpts = {}): void {
     fs.writeFileSync(path.join(bundleRoot, "skills", "agentera", "SKILL.md"), "x");
   }
   if (opts.marker) {
-    fs.writeFileSync(
-      path.join(bundleRoot, ".agentera-bundle.json"),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "v9" }),
-    );
+    fs.writeFileSync(path.join(bundleRoot, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "v9" }));
   }
 }
 
@@ -125,21 +119,14 @@ describe("hasBundleRootEvidence — uniform application across current call site
 
     const appHome = path.join(tmp, "app-home");
     fs.mkdirSync(path.join(appHome, "app"), { recursive: true });
-    fs.cpSync(
-      path.join(bundleRoot, "scripts"),
-      path.join(appHome, "app", "scripts"),
-      { recursive: true },
-    );
-    fs.cpSync(
-      path.join(bundleRoot, "skills"),
-      path.join(appHome, "app", "skills"),
-      { recursive: true },
-    );
+    fs.cpSync(path.join(bundleRoot, "scripts"), path.join(appHome, "app", "scripts"), {
+      recursive: true,
+    });
+    fs.cpSync(path.join(bundleRoot, "skills"), path.join(appHome, "app", "skills"), {
+      recursive: true,
+    });
     if (fs.existsSync(path.join(bundleRoot, ".agentera-bundle.json"))) {
-      fs.copyFileSync(
-        path.join(bundleRoot, ".agentera-bundle.json"),
-        path.join(appHome, "app", ".agentera-bundle.json"),
-      );
+      fs.copyFileSync(path.join(bundleRoot, ".agentera-bundle.json"), path.join(appHome, "app", ".agentera-bundle.json"));
     }
 
     const roots = doctorRoots(appHome);
@@ -212,23 +199,13 @@ describe("hasBundleRootEvidence refactor surface (acceptance criterion 4)", () =
       }
     }
 
-    expect(definitions).toEqual([
-      path.join(REPO_ROOT, "packages/cli/src/upgrade/bundleEvidence.ts"),
-    ]);
+    expect(definitions).toEqual([path.join(REPO_ROOT, "packages/cli/src/upgrade/bundleEvidence.ts")]);
 
-    for (const relativePath of [
-      "packages/cli/src/upgrade/doctor.ts",
-      "packages/cli/src/upgrade/compatibility.ts",
-      "packages/cli/src/upgrade/appModel.ts",
-    ]) {
+    for (const relativePath of ["packages/cli/src/upgrade/doctor.ts", "packages/cli/src/upgrade/compatibility.ts", "packages/cli/src/upgrade/appModel.ts"]) {
       const source = readSource(relativePath);
-      expect(source).toMatch(
-        /import\s*\{[^}]*\bhasBundleRootEvidence\b[^}]*\}\s*from\s*["']\.\/bundleEvidence\.js["']/,
-      );
+      expect(source).toMatch(/import\s*\{[^}]*\bhasBundleRootEvidence\b[^}]*\}\s*from\s*["']\.\/bundleEvidence\.js["']/);
     }
 
-    expect(readSource("packages/cli/src/upgrade/bundleEvidence.ts")).toMatch(
-      /export\s+function\s+hasBundleRootEvidence/,
-    );
+    expect(readSource("packages/cli/src/upgrade/bundleEvidence.ts")).toMatch(/export\s+function\s+hasBundleRootEvidence/);
   });
 });

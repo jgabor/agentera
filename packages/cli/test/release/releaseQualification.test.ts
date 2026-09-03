@@ -25,10 +25,7 @@ import {
   validateCiAttestation,
   validateSourceReceipt,
 } from "../../scripts/release-qualification.mjs";
-import {
-  prepareReleaseMetadata,
-  prepareTargetMetadata,
-} from "../../scripts/publication-transaction.mjs";
+import { prepareReleaseMetadata, prepareTargetMetadata } from "../../scripts/publication-transaction.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
@@ -84,7 +81,11 @@ function overlapObservation() {
     participants: {
       source: { command: command("source"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
       package: { command: command("package"), elapsedMs: 1, files: 1, tests: 1, pending: [] },
-      build: { command: [...command("build"), "--", "--output-root", "/tmp/private-build/generation-a"], elapsedMs: 1, status: "pass" },
+      build: {
+        command: [...command("build"), "--", "--output-root", "/tmp/private-build/generation-a"],
+        elapsedMs: 1,
+        status: "pass",
+      },
     },
     reader: {
       observed: true,
@@ -108,7 +109,10 @@ function overlapObservation() {
       child_evidence: {
         source: { path: `source-owner-${"b".repeat(64)}.json`, digest: "b".repeat(64) },
         package: { path: `package-owner-${"c".repeat(64)}.json`, digest: "c".repeat(64) },
-        packageIdentity: { path: `package-identity-${packageIdentity().identityDigest}.json`, digest: packageIdentity().identityDigest },
+        packageIdentity: {
+          path: `package-identity-${packageIdentity().identityDigest}.json`,
+          digest: packageIdentity().identityDigest,
+        },
         generated: { path: "embedded:generated-owner", digest: "d".repeat(64) },
       },
     },
@@ -163,16 +167,8 @@ function gateRecord(gate: { name: string; command: string[] }) {
   }
   return {
     name: gate.name,
-    origin: [...RELEASE_CONTRACT.qualification.source.dag.generatedOverlapOrigins].includes(gate.name)
-      ? "generated-overlap"
-      : gate.name,
-    phase: barrier
-      ? "barrier-b"
-      : performanceBarrier
-        ? "performance-barrier"
-        : capacityBarrier
-          ? "capacity-barrier"
-          : "batch-a",
+    origin: [...RELEASE_CONTRACT.qualification.source.dag.generatedOverlapOrigins].includes(gate.name) ? "generated-overlap" : gate.name,
+    phase: barrier ? "barrier-b" : performanceBarrier ? "performance-barrier" : capacityBarrier ? "capacity-barrier" : "batch-a",
     outcome: "passed",
     elapsedMs: 1,
     executed: overlapParticipant ? "generated-overlap participant" : "command",
@@ -257,19 +253,35 @@ function fixture(): { repo: string; candidateDirectory: string; sourceCommit: st
   git(repo, "config", "commit.gpgsign", "false");
   write(repo, "pnpm-lock.yaml", "lockfileVersion: '9.0'\n");
   write(repo, "references/analysis/verification-policy.yaml", "schemaVersion: test\n");
-  write(repo, "packages/cli/package.json", JSON.stringify({
-    name: "agentera",
-    version: "3.0.0-dev.41",
-    agentera: { gitRef: HEAD },
-  }, null, 2));
+  write(
+    repo,
+    "packages/cli/package.json",
+    JSON.stringify(
+      {
+        name: "agentera",
+        version: "3.0.0-dev.41",
+        agentera: { gitRef: HEAD },
+      },
+      null,
+      2,
+    ),
+  );
   git(repo, "add", ".");
   git(repo, "commit", "--quiet", "-m", "source");
   const sourceCommit = git(repo, "rev-parse", "HEAD");
-  write(repo, "packages/cli/package.json", JSON.stringify({
-    name: "agentera",
-    version: "3.0.0-dev.41",
-    agentera: { gitRef: sourceCommit },
-  }, null, 2));
+  write(
+    repo,
+    "packages/cli/package.json",
+    JSON.stringify(
+      {
+        name: "agentera",
+        version: "3.0.0-dev.41",
+        agentera: { gitRef: sourceCommit },
+      },
+      null,
+      2,
+    ),
+  );
   git(repo, "add", "packages/cli/package.json");
   git(repo, "commit", "--quiet", "-m", "metadata");
   return { repo, candidateDirectory, sourceCommit };
@@ -288,19 +300,35 @@ function stableFixture(): { repo: string; sourceCommit: string } {
   write(repo, "packages/cli/shim/lib/backend.mjs", "export const backend = true;\n");
   write(repo, "packages/cli/shim/README.md", "# Stable shim\n");
   write(repo, "packages/cli/shim/LICENSE", "Apache-2.0\n");
-  write(repo, "packages/cli/shim/package.json", JSON.stringify({
-    name: "agentera",
-    version: "0.0.2",
-    agentera: { suiteVersion: "2.7.7", gitRef: HEAD },
-  }, null, 2));
+  write(
+    repo,
+    "packages/cli/shim/package.json",
+    JSON.stringify(
+      {
+        name: "agentera",
+        version: "0.0.2",
+        agentera: { suiteVersion: "2.7.7", gitRef: HEAD },
+      },
+      null,
+      2,
+    ),
+  );
   git(repo, "add", ".");
   git(repo, "commit", "--quiet", "-m", "stable source");
   const sourceCommit = git(repo, "rev-parse", "HEAD");
-  write(repo, "packages/cli/shim/package.json", JSON.stringify({
-    name: "agentera",
-    version: "0.0.2",
-    agentera: { suiteVersion: "2.7.7", gitRef: sourceCommit },
-  }, null, 2));
+  write(
+    repo,
+    "packages/cli/shim/package.json",
+    JSON.stringify(
+      {
+        name: "agentera",
+        version: "0.0.2",
+        agentera: { suiteVersion: "2.7.7", gitRef: sourceCommit },
+      },
+      null,
+      2,
+    ),
+  );
   git(repo, "add", "packages/cli/shim/package.json");
   git(repo, "commit", "--quiet", "-m", "stable metadata");
   return { repo, sourceCommit };
@@ -339,19 +367,11 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
   return {
     run: (_command: string, args: string[]) => {
       calls.constructions += 1;
-      expect(args).toEqual([
-        "scripts/pack-package.mjs",
-        "--output-dir",
-        candidateDirectory,
-        "--with-dry-run",
-        "--json",
-        "--git-ref",
-        expect.stringMatching(/^[0-9a-f]{40}$/),
-      ]);
+      expect(args).toEqual(["scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json", "--git-ref", expect.stringMatching(/^[0-9a-f]{40}$/)]);
       fs.writeFileSync(artifact, bytes);
       return JSON.stringify({ dry: observation, packed: { ...observation, artifact } });
     },
-    smokeRun: (command: string) => command === process.execPath ? `agentera ${version}` : "installed",
+    smokeRun: (command: string) => (command === process.execPath ? `agentera ${version}` : "installed"),
     constructionCalls: calls,
   };
 }
@@ -365,13 +385,7 @@ describe("release qualification receipts", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-candidate-construction-test-"));
     temporary.push(root);
     const outputDirectory = path.join(root, "candidate");
-    const result = spawnSync(process.execPath, [
-      "scripts/pack-package.mjs",
-      "--output-dir",
-      outputDirectory,
-      "--with-dry-run",
-      "--json",
-    ], {
+    const result = spawnSync(process.execPath, ["scripts/pack-package.mjs", "--output-dir", outputDirectory, "--with-dry-run", "--json"], {
       cwd: path.join(REPO_ROOT, "packages/cli"),
       encoding: "utf8",
       timeout: 120_000,
@@ -426,14 +440,7 @@ describe("release qualification receipts", () => {
     const before = fs.readFileSync(manifestPath);
     const sourceCommit = "a".repeat(40);
     const candidateVersion = "3.0.0-dev.86";
-    const result = spawnSync(process.execPath, [
-      "scripts/pack-package.mjs",
-      "--output-dir", outputDirectory,
-      "--with-dry-run",
-      "--json",
-      "--package-version", candidateVersion,
-      "--git-ref", sourceCommit,
-    ], { cwd: path.join(REPO_ROOT, "packages/cli"), encoding: "utf8", timeout: 120_000 });
+    const result = spawnSync(process.execPath, ["scripts/pack-package.mjs", "--output-dir", outputDirectory, "--with-dry-run", "--json", "--package-version", candidateVersion, "--git-ref", sourceCommit], { cwd: path.join(REPO_ROOT, "packages/cli"), encoding: "utf8", timeout: 120_000 });
 
     expect(result.status, result.stderr).toBe(0);
     const packed = JSON.parse(result.stdout).packed;
@@ -441,10 +448,15 @@ describe("release qualification receipts", () => {
     expect(packed.version).toBe(candidateVersion);
     const extraction = path.join(root, "extracted");
     fs.mkdirSync(extraction);
-    const extracted = spawnSync("tar", ["-xzf", packed.artifact, "-C", extraction], { encoding: "utf8" });
+    const extracted = spawnSync("tar", ["-xzf", packed.artifact, "-C", extraction], {
+      encoding: "utf8",
+    });
     expect(extracted.status, extracted.stderr).toBe(0);
-    expect(JSON.parse(fs.readFileSync(path.join(extraction, "package/package.json"), "utf8")))
-      .toEqual({ ...checkoutManifest, version: candidateVersion, agentera: { ...checkoutManifest.agentera, gitRef: sourceCommit } });
+    expect(JSON.parse(fs.readFileSync(path.join(extraction, "package/package.json"), "utf8"))).toEqual({
+      ...checkoutManifest,
+      version: candidateVersion,
+      agentera: { ...checkoutManifest.agentera, gitRef: sourceCommit },
+    });
     expect(fs.readFileSync(manifestPath)).toEqual(before);
   });
 
@@ -471,21 +483,19 @@ describe("release qualification receipts", () => {
     await sourceReceipt(repo, candidateDirectory);
     const head = git(repo, "rev-parse", "HEAD");
     const environment = developmentCandidateEnvironment(repo);
-    const issue = (sourceCommit: string, candidateEnvironment = environment) => issueCandidateReceipt({
-      repo,
-      candidateDirectory,
-      adapterName: "development",
-      sourceCommit,
-      environment: candidateEnvironment,
-      metadataRun: () => "{}",
-      ...candidateExecution(candidateDirectory, "3.0.0-dev.41"),
-    });
+    const issue = (sourceCommit: string, candidateEnvironment = environment) =>
+      issueCandidateReceipt({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        sourceCommit,
+        environment: candidateEnvironment,
+        metadataRun: () => "{}",
+        ...candidateExecution(candidateDirectory, "3.0.0-dev.41"),
+      });
 
     expect(() => issue("0".repeat(40))).toThrow("source commit must equal GITHUB_SHA");
-    expect(() => issue(
-      "0".repeat(40),
-      { ...environment, GITHUB_SHA: "0".repeat(40) },
-    )).toThrow("checkout HEAD must equal GITHUB_SHA");
+    expect(() => issue("0".repeat(40), { ...environment, GITHUB_SHA: "0".repeat(40) })).toThrow("checkout HEAD must equal GITHUB_SHA");
 
     const accepted = issue(head);
     expect(accepted.receipt).toMatchObject({
@@ -494,14 +504,24 @@ describe("release qualification receipts", () => {
       metadataCommit: head,
     });
     expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).not.toThrow();
-    expect(() => issueCandidateReceipt({ repo, candidateDirectory, adapterName: "development", targetVersion: "3.0.0-dev.42", sourceCommit: head })).toThrow("does not accept targetVersion");
+    expect(() =>
+      issueCandidateReceipt({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        targetVersion: "3.0.0-dev.42",
+        sourceCommit: head,
+      }),
+    ).toThrow("does not accept targetVersion");
     expect(issue(head)).toMatchObject({ reused: true });
-    expect(() => issueCiAttestation({
-      repo,
-      candidateDirectory,
-      adapterName: "development",
-      environment,
-    })).not.toThrow();
+    expect(() =>
+      issueCiAttestation({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        environment,
+      }),
+    ).not.toThrow();
   });
 
   it.runIf(process.platform !== "win32")("invalidates source receipt reuse after a committed executable-bit change", async () => {
@@ -513,20 +533,25 @@ describe("release qualification receipts", () => {
     fs.chmodSync(file, 0o755);
     commit(repo, "make source executable");
 
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("source receipt no longer matches current component inputs");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("source receipt no longer matches current component inputs");
     await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
   });
 
   it.runIf(process.platform !== "win32").each([
-    ["target", (file: string) => {
-      fs.rmSync(file);
-      fs.symlinkSync("target-b", file);
-    }],
-    ["mode", (file: string) => {
-      fs.rmSync(file);
-      fs.writeFileSync(file, "target-a");
-    }],
+    [
+      "target",
+      (file: string) => {
+        fs.rmSync(file);
+        fs.symlinkSync("target-b", file);
+      },
+    ],
+    [
+      "mode",
+      (file: string) => {
+        fs.rmSync(file);
+        fs.writeFileSync(file, "target-a");
+      },
+    ],
   ])("invalidates source receipt reuse after a committed symlink %s change", async (_kind, mutate) => {
     const { repo, candidateDirectory } = fixture();
     const file = path.join(repo, "source-link");
@@ -537,8 +562,7 @@ describe("release qualification receipts", () => {
     mutate(file);
     commit(repo, "change source symlink");
 
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("source receipt no longer matches current component inputs");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("source receipt no longer matches current component inputs");
   });
 
   it("reuses a source receipt for a clean core.symlinks=false surrogate and rejects target changes", async () => {
@@ -557,13 +581,14 @@ describe("release qualification receipts", () => {
       repo,
       candidateDirectory,
       gates: GOVERNED_GATES,
-      runDag: async () => { throw new Error("clean symlink surrogate must reuse its receipt"); },
+      runDag: async () => {
+        throw new Error("clean symlink surrogate must reuse its receipt");
+      },
     });
     expect(replay.reused).toBe(true);
 
     fs.writeFileSync(file, "target-b");
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("staged and working source inputs differ");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("staged and working source inputs differ");
   });
 
   it.runIf(process.platform !== "win32")("rejects a regular symlink replacement when core.symlinks is enabled", async () => {
@@ -576,8 +601,7 @@ describe("release qualification receipts", () => {
     git(repo, "config", "core.symlinks", "true");
     fs.rmSync(file);
     fs.writeFileSync(file, "target-a");
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("staged and working source inputs differ");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("staged and working source inputs differ");
   });
 
   it.runIf(process.platform !== "win32")("keeps source receipt reuse stable across irrelevant permission noise", async () => {
@@ -616,8 +640,7 @@ describe("release qualification receipts", () => {
     rewriteReceipt(receiptFile, legacy);
 
     expect(legacy.component.trackedTreeSha256).not.toBe(receipt.component.trackedTreeSha256);
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("source receipt no longer matches current component inputs");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("source receipt no longer matches current component inputs");
     await expect(sourceReceipt(repo, candidateDirectory)).rejects.toThrow("source receipt inputs changed");
   });
 
@@ -649,19 +672,21 @@ describe("release qualification receipts", () => {
 
   it.each([
     ["source change", (repo: string) => write(repo, "packages/cli/src/source-change.ts", "export const changed = true;\n")],
-    ["non-version package field", (repo: string) => {
-      const file = path.join(repo, "packages/cli/package.json");
-      const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
-      manifest.description = "changed source metadata";
-      fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
-    }],
+    [
+      "non-version package field",
+      (repo: string) => {
+        const file = path.join(repo, "packages/cli/package.json");
+        const manifest = JSON.parse(fs.readFileSync(file, "utf8"));
+        manifest.description = "changed source metadata";
+        fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
+      },
+    ],
   ])("invalidates source receipt reuse after a staged %s", async (_label, change) => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
     change(repo);
     git(repo, "add", ".");
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("source receipt no longer matches current component inputs");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("source receipt no longer matches current component inputs");
   });
 
   it("rejects staged source that differs from a receipt-matching working tree", async () => {
@@ -672,8 +697,7 @@ describe("release qualification receipts", () => {
     fs.writeFileSync(file, "schemaVersion: staged-change\n");
     git(repo, "add", "references/analysis/verification-policy.yaml");
     fs.writeFileSync(file, original);
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("staged and working source inputs differ");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("staged and working source inputs differ");
   });
 
   it("rejects staged package fields outside normalized metadata when the working file was restored", async () => {
@@ -686,8 +710,7 @@ describe("release qualification receipts", () => {
     fs.writeFileSync(file, `${JSON.stringify(manifest, null, 2)}\n`);
     git(repo, "add", "packages/cli/package.json");
     fs.writeFileSync(file, original);
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("staged and working package inputs differ outside version and agentera.gitRef");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("staged and working package inputs differ outside version and agentera.gitRef");
   });
 
   it("rejects one-field source receipt tampering in the read-only check", async () => {
@@ -705,21 +728,25 @@ describe("release qualification receipts", () => {
   it("fails closed when the external candidate has no source receipt", () => {
     const { repo, candidateDirectory } = fixture();
     fs.mkdirSync(candidateDirectory);
-    expect(() => checkSourceReceipt({ repo, candidateDirectory }))
-      .toThrow("source receipt is missing");
+    expect(() => checkSourceReceipt({ repo, candidateDirectory })).toThrow("source receipt is missing");
   });
 
   it("emits a redacted structured fallback when the source receipt check fails", () => {
     const { repo, candidateDirectory } = fixture();
     fs.mkdirSync(candidateDirectory);
     const emitted: any[] = [];
-    expect(() => runSourceReceiptCheckCommand(new Map([
-      ["--candidate-dir", candidateDirectory],
-      ["--json", true],
-    ]), {
-      repo,
-      emit: (record: any) => emitted.push(record),
-    })).toThrow("source receipt is missing");
+    expect(() =>
+      runSourceReceiptCheckCommand(
+        new Map([
+          ["--candidate-dir", candidateDirectory],
+          ["--json", true],
+        ]),
+        {
+          repo,
+          emit: (record: any) => emitted.push(record),
+        },
+      ),
+    ).toThrow("source receipt is missing");
     expect(emitted).toHaveLength(1);
     expect(emitted[0]).toMatchObject({
       phase: "source-receipt-check",
@@ -735,13 +762,16 @@ describe("release qualification receipts", () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
     const emitted: Array<{ result: any; json: boolean }> = [];
-    const result = runSourceReceiptCheckCommand(new Map([
-      ["--candidate-dir", candidateDirectory],
-      ["--json", true],
-    ]), {
-      repo,
-      emit: (record: any, json: boolean) => emitted.push({ result: record, json }),
-    });
+    const result = runSourceReceiptCheckCommand(
+      new Map([
+        ["--candidate-dir", candidateDirectory],
+        ["--json", true],
+      ]),
+      {
+        repo,
+        emit: (record: any, json: boolean) => emitted.push({ result: record, json }),
+      },
+    );
 
     expect(result).toMatchObject({
       package: "agentera",
@@ -769,17 +799,21 @@ describe("release qualification receipts", () => {
 
   it("does not issue a source receipt when the performance barrier fails", async () => {
     const { repo, candidateDirectory } = fixture();
-    await expect(issueSourceReceipt({
-      repo,
-      candidateDirectory,
-      environment: sourceQualificationEnvironment(repo),
-      gates: GOVERNED_GATES,
-      runDag: async () => {
-        const error = new Error("performance exceeded its remaining source deadline") as Error & { owner?: string };
-        error.owner = "performance";
-        throw error;
-      },
-    })).rejects.toMatchObject({ owner: "performance" });
+    await expect(
+      issueSourceReceipt({
+        repo,
+        candidateDirectory,
+        environment: sourceQualificationEnvironment(repo),
+        gates: GOVERNED_GATES,
+        runDag: async () => {
+          const error = new Error("performance exceeded its remaining source deadline") as Error & {
+            owner?: string;
+          };
+          error.owner = "performance";
+          throw error;
+        },
+      }),
+    ).rejects.toMatchObject({ owner: "performance" });
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
@@ -788,30 +822,39 @@ describe("release qualification receipts", () => {
     let invocations = 0;
     const runDag = async () => {
       invocations += 1;
-      return { gates: GOVERNED_GATES.map(gateRecord), execution: { strategy: "stub", elapsedMs: 1 } };
+      return {
+        gates: GOVERNED_GATES.map(gateRecord),
+        execution: { strategy: "stub", elapsedMs: 1 },
+      };
     };
 
-    await expect(issueSourceReceipt({
-      repo,
-      candidateDirectory,
-      gates: GOVERNED_GATES,
-      environment: {},
-      runDag,
-    })).rejects.toThrow("source receipt authority requires the contracted GitHub Actions verification workflow");
-    await expect(issueSourceReceipt({
-      repo,
-      candidateDirectory,
-      gates: GOVERNED_GATES,
-      environment: { ...sourceQualificationEnvironment(repo), GITHUB_WORKFLOW: "Other workflow" },
-      runDag,
-    })).rejects.toThrow("CI attestation must originate from the contracted verification repository, workflow, workflow ref, and run identity");
-    await expect(issueSourceReceipt({
-      repo,
-      candidateDirectory,
-      gates: GOVERNED_GATES,
-      environment: { ...sourceQualificationEnvironment(repo), GITHUB_SHA: "0".repeat(40) },
-      runDag,
-    })).rejects.toThrow("source receipt checkout SHA does not match the committed verification source");
+    await expect(
+      issueSourceReceipt({
+        repo,
+        candidateDirectory,
+        gates: GOVERNED_GATES,
+        environment: {},
+        runDag,
+      }),
+    ).rejects.toThrow("source receipt authority requires the contracted GitHub Actions verification workflow");
+    await expect(
+      issueSourceReceipt({
+        repo,
+        candidateDirectory,
+        gates: GOVERNED_GATES,
+        environment: { ...sourceQualificationEnvironment(repo), GITHUB_WORKFLOW: "Other workflow" },
+        runDag,
+      }),
+    ).rejects.toThrow("CI attestation must originate from the contracted verification repository, workflow, workflow ref, and run identity");
+    await expect(
+      issueSourceReceipt({
+        repo,
+        candidateDirectory,
+        gates: GOVERNED_GATES,
+        environment: { ...sourceQualificationEnvironment(repo), GITHUB_SHA: "0".repeat(40) },
+        runDag,
+      }),
+    ).rejects.toThrow("source receipt checkout SHA does not match the committed verification source");
     expect(invocations).toBe(0);
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
@@ -835,8 +878,7 @@ describe("release qualification receipts", () => {
       }),
     });
 
-    expect(issued.receipt.gates.map((gate: { name: string }) => gate.name))
-      .toEqual(governed.map((gate: { name: string }) => gate.name));
+    expect(issued.receipt.gates.map((gate: { name: string }) => gate.name)).toEqual(governed.map((gate: { name: string }) => gate.name));
     expect(issued.receipt.gates).toHaveLength(11);
     expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
@@ -844,8 +886,7 @@ describe("release qualification receipts", () => {
       generation: "generation-a",
       leasesAfterBarrier: 0,
     });
-    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8")))
-      .toEqual(issued.receipt);
+    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "source-receipt.json"), "utf8"))).toEqual(issued.receipt);
   });
 
   it("accepts the actual build command and rejects a missing output-root suffix", async () => {
@@ -853,42 +894,38 @@ describe("release qualification receipts", () => {
     const receipt = await sourceReceipt(repo, candidateDirectory);
     const build = receipt.gates.find((gate: { name: string }) => gate.name === "build");
     const governed = GOVERNED_GATES.find((gate: { name: string }) => gate.name === "build")!.command;
-    expect(build.observation.command).toEqual([
-      ...governed,
-      "--",
-      "--output-root",
-      "/tmp/private-build/generation-a",
-    ]);
+    expect(build.observation.command).toEqual([...governed, "--", "--output-root", "/tmp/private-build/generation-a"]);
 
     const invalid = structuredClone(receipt);
     invalid.gates.find((gate: { name: string }) => gate.name === "build").observation.command = governed;
     const { receiptSha256: _discarded, ...content } = invalid;
     invalid.receiptSha256 = sha256(canonicalJson(content));
-    expect(() => validateSourceReceipt({ repo, receipt: invalid }))
-      .toThrow("source receipt gate 'build' has the wrong command origin");
+    expect(() => validateSourceReceipt({ repo, receipt: invalid })).toThrow("source receipt gate 'build' has the wrong command origin");
   });
 
   it("rejects source authority from a non-pinned performance runner identity", async () => {
     const { repo, candidateDirectory } = fixture();
-    await expect(issueSourceReceipt({
-      repo,
-      candidateDirectory,
-      environment: sourceQualificationEnvironment(repo),
-      gates: GOVERNED_GATES,
-      runDag: async () => {
-        const gates = GOVERNED_GATES.map(gateRecord);
-        const performanceGate = gates.find((entry: any) => entry.name === "performance");
-        performanceGate.observation.evidence.runner.authority = {
-          authoritative: false,
-          provider: "unmanaged",
-          class: null,
-          identity: null,
-          actions: false,
-          workers: 1,
-        };
-        return { gates, execution: { strategy: "stub", elapsedMs: 1 } };
-      },
-    })).rejects.toThrow("source receipt performance observation is incomplete");
+    await expect(
+      issueSourceReceipt({
+        repo,
+        candidateDirectory,
+        environment: sourceQualificationEnvironment(repo),
+        gates: GOVERNED_GATES,
+        runDag: async () => {
+          const gates = GOVERNED_GATES.map(gateRecord);
+          const performanceGate = gates.find((entry: any) => entry.name === "performance");
+          performanceGate.observation.evidence.runner.authority = {
+            authoritative: false,
+            provider: "unmanaged",
+            class: null,
+            identity: null,
+            actions: false,
+            workers: 1,
+          };
+          return { gates, execution: { strategy: "stub", elapsedMs: 1 } };
+        },
+      }),
+    ).rejects.toThrow("source receipt performance observation is incomplete");
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
@@ -904,18 +941,29 @@ describe("release qualification receipts", () => {
       semanticTamper.gates[index].outcome = "failed";
       const { receiptSha256: _discarded, ...content } = semanticTamper;
       semanticTamper.receiptSha256 = sha256(canonicalJson(content));
-      expect(() => validateSourceReceipt({ repo, receipt: semanticTamper }))
-        .toThrow(`source receipt gate '${receipt.gates[index].name}' has invalid execution evidence`);
+      expect(() => validateSourceReceipt({ repo, receipt: semanticTamper })).toThrow(`source receipt gate '${receipt.gates[index].name}' has invalid execution evidence`);
     }
 
     const semanticMutations = [
       (candidate: any) => candidate.gates.pop(),
-      (candidate: any) => { candidate.gates[0].origin = "source"; },
-      (candidate: any) => { candidate.gates[0].phase = "barrier-b"; },
-      (candidate: any) => { candidate.gates[0].elapsedMs = Number.POSITIVE_INFINITY; },
-      (candidate: any) => { candidate.gates[0].executed = "none"; },
-      (candidate: any) => { candidate.gates[0].reused = true; },
-      (candidate: any) => { candidate.gates[0].observation = {}; },
+      (candidate: any) => {
+        candidate.gates[0].origin = "source";
+      },
+      (candidate: any) => {
+        candidate.gates[0].phase = "barrier-b";
+      },
+      (candidate: any) => {
+        candidate.gates[0].elapsedMs = Number.POSITIVE_INFINITY;
+      },
+      (candidate: any) => {
+        candidate.gates[0].executed = "none";
+      },
+      (candidate: any) => {
+        candidate.gates[0].reused = true;
+      },
+      (candidate: any) => {
+        candidate.gates[0].observation = {};
+      },
     ];
     for (const mutate of semanticMutations) {
       const semanticTamper = structuredClone(receipt);
@@ -954,10 +1002,8 @@ describe("release qualification receipts", () => {
       reconciled: true,
     });
     expect(candidate.constructionCalls.constructions).toBe(1);
-    expect(issued.receipt.gates.reduce((total: number, gate: any) => total + gate.elapsedMs, 0))
-      .toBeLessThanOrEqual(issued.receipt.execution.elapsedMs);
-    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8")))
-      .toEqual(issued.receipt);
+    expect(issued.receipt.gates.reduce((total: number, gate: any) => total + gate.elapsedMs, 0)).toBeLessThanOrEqual(issued.receipt.execution.elapsedMs);
+    expect(JSON.parse(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8"))).toEqual(issued.receipt);
 
     const artifact = path.join(candidateDirectory, issued.receipt.artifact.filename);
     const retained = {
@@ -970,11 +1016,20 @@ describe("release qualification receipts", () => {
       repo,
       candidateDirectory,
       adapterName: "development",
-      metadataRun: () => { throw new Error("candidate replay must not rerun metadata"); },
-      run: () => { throw new Error("candidate replay must not reconstruct bytes"); },
-      smokeRun: () => { throw new Error("candidate replay must not rerun smoke"); },
+      metadataRun: () => {
+        throw new Error("candidate replay must not rerun metadata");
+      },
+      run: () => {
+        throw new Error("candidate replay must not reconstruct bytes");
+      },
+      smokeRun: () => {
+        throw new Error("candidate replay must not rerun smoke");
+      },
     });
-    expect(replay).toMatchObject({ reused: true, receipt: { receiptSha256: issued.receipt.receiptSha256 } });
+    expect(replay).toMatchObject({
+      reused: true,
+      receipt: { receiptSha256: issued.receipt.receiptSha256 },
+    });
     expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
     expect(fs.statSync(artifact).mtimeMs).toBe(retained.artifactMtime);
     expect(fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"))).toEqual(retained.receipt);
@@ -983,8 +1038,7 @@ describe("release qualification receipts", () => {
     const artifactBacking = path.join(candidateDirectory, "candidate-artifact-backing.tgz");
     fs.renameSync(artifact, artifactBacking);
     fs.symlinkSync(artifactBacking, artifact);
-    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("package artifact must be a regular file");
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).toThrow("package artifact must be a regular file");
     fs.unlinkSync(artifact);
     fs.renameSync(artifactBacking, artifact);
 
@@ -992,8 +1046,7 @@ describe("release qualification receipts", () => {
     const outsideReceipt = path.join(path.dirname(candidateDirectory), "candidate-receipt-outside.json");
     fs.renameSync(candidateFile, outsideReceipt);
     fs.symlinkSync(outsideReceipt, candidateFile);
-    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("package receipt must be a regular file inside the artifact directory");
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).toThrow("package receipt must be a regular file inside the artifact directory");
     fs.unlinkSync(candidateFile);
     fs.renameSync(outsideReceipt, candidateFile);
 
@@ -1004,14 +1057,22 @@ describe("release qualification receipts", () => {
     fs.chmodSync(candidateFile, 0o600);
     fs.writeFileSync(candidateFile, canonicalJson(tampered));
     fs.chmodSync(candidateFile, 0o400);
-    expect(() => issueCandidateReceipt({
-      repo,
-      candidateDirectory,
-      adapterName: "development",
-      metadataRun: () => { throw new Error("invalid replay must not rerun metadata"); },
-      run: () => { throw new Error("invalid replay must not reconstruct bytes"); },
-      smokeRun: () => { throw new Error("invalid replay must not rerun smoke"); },
-    })).toThrow("package receipt gate 'release-metadata' has invalid execution evidence");
+    expect(() =>
+      issueCandidateReceipt({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        metadataRun: () => {
+          throw new Error("invalid replay must not rerun metadata");
+        },
+        run: () => {
+          throw new Error("invalid replay must not reconstruct bytes");
+        },
+        smokeRun: () => {
+          throw new Error("invalid replay must not rerun smoke");
+        },
+      }),
+    ).toThrow("package receipt gate 'release-metadata' has invalid execution evidence");
     expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
   });
 
@@ -1027,30 +1088,37 @@ describe("release qualification receipts", () => {
         adapterName: "development",
         metadataRun: () => "{}",
         run: execution.run,
-        smokeRun: () => { throw new Error("isolated smoke failed first"); },
+        smokeRun: () => {
+          throw new Error("isolated smoke failed first");
+        },
       });
     } catch (error) {
       failure = error;
     }
-    expect(failure).toMatchObject({ owner: "local-exact-artifact-smoke", message: "isolated smoke failed first" });
+    expect(failure).toMatchObject({
+      owner: "local-exact-artifact-smoke",
+      message: "isolated smoke failed first",
+    });
     expect(fs.existsSync(path.join(candidateDirectory, "candidate-receipt.json"))).toBe(false);
   });
 
   it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {
     const { repo } = fixture();
     let environment: NodeJS.ProcessEnv | undefined;
-    expect(toolVersion("npm", ["--version"], repo, {
-      environment: {
-        HOME: "/hostile/home",
-        NPM_TOKEN: "secret",
-        NODE_AUTH_TOKEN: "secret",
-        PNPM_HOME: "/hostile/pnpm",
-      },
-      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
-        environment = options.env;
-        return "10.30.3\n";
-      },
-    })).toBe("10.30.3");
+    expect(
+      toolVersion("npm", ["--version"], repo, {
+        environment: {
+          HOME: "/hostile/home",
+          NPM_TOKEN: "secret",
+          NODE_AUTH_TOKEN: "secret",
+          PNPM_HOME: "/hostile/pnpm",
+        },
+        run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+          environment = options.env;
+          return "10.30.3\n";
+        },
+      }),
+    ).toBe("10.30.3");
     expect(environment).toMatchObject({
       HOME: expect.stringContaining("agentera-release-tool-version-"),
       NPM_CONFIG_USERCONFIG: expect.any(String),
@@ -1068,11 +1136,15 @@ describe("release qualification receipts", () => {
     write(repo, "packages/cli/shim/lib/resolve.mjs", "export {};\n");
     write(repo, "packages/cli/shim/README.md", "# Shim\n");
     write(repo, "packages/cli/shim/LICENSE", "Apache-2.0\n");
-    write(repo, "packages/cli/shim/package.json", JSON.stringify({
-      name: "agentera",
-      version: "0.0.2",
-      agentera: { gitRef: HEAD },
-    }));
+    write(
+      repo,
+      "packages/cli/shim/package.json",
+      JSON.stringify({
+        name: "agentera",
+        version: "0.0.2",
+        agentera: { gitRef: HEAD },
+      }),
+    );
     git(repo, "add", ".");
     git(repo, "commit", "--quiet", "-m", "shim source");
     const sourceCommit = git(repo, "rev-parse", "HEAD");
@@ -1084,27 +1156,30 @@ describe("release qualification receipts", () => {
     git(repo, "add", manifestPath);
     git(repo, "commit", "--quiet", "-m", "shim preparation");
 
-    expect(() => validateAdapterSourceProvenance({
-      repo,
-      adapter: RELEASE_CONTRACT.packages.stable,
-      manifest,
-    })).not.toThrow();
+    expect(() =>
+      validateAdapterSourceProvenance({
+        repo,
+        adapter: RELEASE_CONTRACT.packages.stable,
+        manifest,
+      }),
+    ).not.toThrow();
 
     write(repo, "packages/cli/shim/lib/resolve.mjs", "export const changed = true;\n");
     git(repo, "add", "packages/cli/shim/lib/resolve.mjs");
     git(repo, "commit", "--quiet", "-m", "unrelated historical gitRef");
-    expect(() => validateAdapterSourceProvenance({
-      repo,
-      adapter: RELEASE_CONTRACT.packages.stable,
-      manifest,
-    })).toThrow("does not match the stable shim packaged inputs");
+    expect(() =>
+      validateAdapterSourceProvenance({
+        repo,
+        adapter: RELEASE_CONTRACT.packages.stable,
+        manifest,
+      }),
+    ).toThrow("does not match the stable shim packaged inputs");
   });
 
   it("rejects a missing external artifact directory without creating it", () => {
     const { repo, candidateDirectory } = fixture();
 
-    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" }))
-      .toThrow("artifact directory is missing");
+    expect(() => validateCandidateReceipt({ repo, candidateDirectory, adapterName: "development" })).toThrow("artifact directory is missing");
     expect(fs.existsSync(candidateDirectory)).toBe(false);
   });
 
@@ -1143,8 +1218,20 @@ describe("release qualification receipts", () => {
         dryPackEquivalent: true,
       },
       gates: [
-        { name: "release-metadata", outcome: "passed", elapsedMs: 1, executed: "ordered", reused: false },
-        { name: "dry-pack-observation-equivalence", outcome: "passed", elapsedMs: 1, executed: "ordered", reused: false },
+        {
+          name: "release-metadata",
+          outcome: "passed",
+          elapsedMs: 1,
+          executed: "ordered",
+          reused: false,
+        },
+        {
+          name: "dry-pack-observation-equivalence",
+          outcome: "passed",
+          elapsedMs: 1,
+          executed: "ordered",
+          reused: false,
+        },
         {
           name: "local-exact-artifact-smoke",
           outcome: "passed",
@@ -1172,7 +1259,9 @@ describe("release qualification receipts", () => {
     });
     expect(checked.artifact).toBe(path.join(candidateDirectory, filename));
 
-    fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), canonicalJson(candidate), { mode: 0o400 });
+    fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), canonicalJson(candidate), {
+      mode: 0o400,
+    });
     const approval = issueCandidateApproval({
       environment: {},
       repo,
@@ -1186,36 +1275,47 @@ describe("release qualification receipts", () => {
     });
     const environment = sourceQualificationEnvironment(repo);
     issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
-    expect(validateCiAttestation({
-      repo,
-      candidateDirectory,
-      candidate: checked,
-      sourceRunId: "123",
-      environment,
-    })).toMatchObject({ candidateReceiptSha256: candidate.receiptSha256 });
-    expect(() => issueCandidateApproval({
-      repo,
-      candidateDirectory,
-      adapterName: "development",
-      approvedBy: "release-owner",
-      environment,
-      sourceRunId: "456",
-    })).toThrow("CI attestation is not bound");
+    expect(
+      validateCiAttestation({
+        repo,
+        candidateDirectory,
+        candidate: checked,
+        sourceRunId: "123",
+        environment,
+      }),
+    ).toMatchObject({ candidateReceiptSha256: candidate.receiptSha256 });
+    expect(() =>
+      issueCandidateApproval({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        approvedBy: "release-owner",
+        environment,
+        sourceRunId: "456",
+      }),
+    ).toThrow("CI attestation is not bound");
 
     const mismatchedSource = structuredClone(candidate);
     mismatchedSource.sourceCommit = sourceCommit;
     mismatchedSource.receiptSha256 = sha256(canonicalJson({ ...mismatchedSource, receiptSha256: undefined }));
     delete mismatchedSource.receiptSha256;
     mismatchedSource.receiptSha256 = sha256(canonicalJson(mismatchedSource));
-    expect(() => issueCiAttestation({
+    expect(() =>
+      issueCiAttestation({
+        repo,
+        candidateDirectory,
+        adapterName: "development",
+        environment,
+        receipt: mismatchedSource,
+      }),
+    ).toThrow("package receipt commits");
+
+    const attestation = issueCiAttestation({
       repo,
       candidateDirectory,
       adapterName: "development",
       environment,
-      receipt: mismatchedSource,
-    })).toThrow("package receipt commits");
-
-    const attestation = issueCiAttestation({ repo, candidateDirectory, adapterName: "development", environment });
+    });
     for (const [field, value] of Object.entries({
       repository: "other/repository",
       workflow: "Other workflow",
@@ -1223,30 +1323,46 @@ describe("release qualification receipts", () => {
       runId: "456",
     })) {
       const substituted = { ...attestation, [field]: value };
-      substituted.receiptSha256 = sha256(canonicalJson({
-        ...substituted,
-        receiptSha256: undefined,
-      }));
+      substituted.receiptSha256 = sha256(
+        canonicalJson({
+          ...substituted,
+          receiptSha256: undefined,
+        }),
+      );
       delete substituted.receiptSha256;
       substituted.receiptSha256 = sha256(canonicalJson(substituted));
-      expect(() => validateCiAttestation({
-        repo,
-        candidateDirectory,
-        candidate: checked,
-        sourceRunId: "123",
-        environment,
-        attestation: substituted,
-      })).toThrow("CI attestation is not bound");
+      expect(() =>
+        validateCiAttestation({
+          repo,
+          candidateDirectory,
+          candidate: checked,
+          sourceRunId: "123",
+          environment,
+          attestation: substituted,
+        }),
+      ).toThrow("CI attestation is not bound");
     }
 
     fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
-    expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
-      .toThrow("package artifact permissions changed after verification");
+    expect(() =>
+      validateCandidateReceipt({
+        repo,
+        candidateDirectory,
+        receipt: candidate,
+        adapterName: "development",
+      }),
+    ).toThrow("package artifact permissions changed after verification");
     fs.chmodSync(path.join(candidateDirectory, filename), 0o644);
     fs.appendFileSync(path.join(candidateDirectory, filename), "changed");
     fs.chmodSync(path.join(candidateDirectory, filename), 0o444);
-    expect(() => validateCandidateReceipt({ repo, candidateDirectory, receipt: candidate, adapterName: "development" }))
-      .toThrow("package artifact changed after verification");
+    expect(() =>
+      validateCandidateReceipt({
+        repo,
+        candidateDirectory,
+        receipt: candidate,
+        adapterName: "development",
+      }),
+    ).toThrow("package artifact changed after verification");
   });
 });
 
@@ -1266,12 +1382,7 @@ describe("explicit preparation", () => {
   };
 
   it("changes only the stable requested next version and source commit", () => {
-    const prepared = prepareTargetMetadata(
-      "stable",
-      stableManifest,
-      "0.0.2",
-      "abcdef0123456789abcdef0123456789abcdef01",
-    );
+    const prepared = prepareTargetMetadata("stable", stableManifest, "0.0.2", "abcdef0123456789abcdef0123456789abcdef01");
     expect(prepared.changed).toBe(true);
     expect(prepared.manifest).toEqual({
       ...stableManifest,
@@ -1282,19 +1393,12 @@ describe("explicit preparation", () => {
 
   it("makes the exact stable target a no-op and rejects stale or skipped targets", () => {
     expect(prepareTargetMetadata("stable", stableManifest, stableManifest.version, stableManifest.agentera.gitRef).changed).toBe(false);
-    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.1", "abcdef0123456789abcdef0123456789abcdef01"))
-      .toThrow("not the next");
-    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.3", "abcdef0123456789abcdef0123456789abcdef01"))
-      .toThrow("not the next");
+    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.1", "abcdef0123456789abcdef0123456789abcdef01")).toThrow("not the next");
+    expect(() => prepareTargetMetadata("stable", stableManifest, "0.0.3", "abcdef0123456789abcdef0123456789abcdef01")).toThrow("not the next");
   });
 
   it("rejects development target metadata overrides", () => {
-    expect(() => prepareTargetMetadata(
-      "development",
-      developmentManifest,
-      "3.0.0-dev.42",
-      "abcdef0123456789abcdef0123456789abcdef01",
-    )).toThrow("available only for stable releases");
+    expect(() => prepareTargetMetadata("development", developmentManifest, "3.0.0-dev.42", "abcdef0123456789abcdef0123456789abcdef01")).toThrow("available only for stable releases");
   });
 
   it("fails development preparation before metadata effects when source evidence is absent", () => {
@@ -1302,16 +1406,28 @@ describe("explicit preparation", () => {
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const before = fs.readFileSync(manifestPath);
 
-    expect(() => prepareReleaseMetadata("development", {
-      sourceCommit,
-    }, { repo })).toThrow("requires --candidate-dir");
+    expect(() =>
+      prepareReleaseMetadata(
+        "development",
+        {
+          sourceCommit,
+        },
+        { repo },
+      ),
+    ).toThrow("requires --candidate-dir");
     expect(fs.readFileSync(manifestPath)).toEqual(before);
 
     fs.mkdirSync(candidateDirectory);
-    expect(() => prepareReleaseMetadata("development", {
-      sourceCommit,
-      candidateDirectory,
-    }, { repo })).toThrow("source receipt is missing");
+    expect(() =>
+      prepareReleaseMetadata(
+        "development",
+        {
+          sourceCommit,
+          candidateDirectory,
+        },
+        { repo },
+      ),
+    ).toThrow("source receipt is missing");
 
     expect(fs.readFileSync(manifestPath)).toEqual(before);
     expect(git(repo, "status", "--porcelain=v1")).toBe("");
@@ -1323,10 +1439,14 @@ describe("explicit preparation", () => {
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const before = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
 
-    const preparation = prepareReleaseMetadata("development", {
-      sourceCommit,
-      candidateDirectory,
-    }, { repo });
+    const preparation = prepareReleaseMetadata(
+      "development",
+      {
+        sourceCommit,
+        candidateDirectory,
+      },
+      { repo },
+    );
 
     expect(preparation).toMatchObject({
       package: "development",
@@ -1356,10 +1476,16 @@ describe("explicit preparation", () => {
     const manifestPath = path.join(repo, "packages/cli/package.json");
     const before = fs.readFileSync(manifestPath);
 
-    expect(() => prepareReleaseMetadata("development", {
-      sourceCommit,
-      candidateDirectory,
-    }, { repo })).toThrow("digest does not match");
+    expect(() =>
+      prepareReleaseMetadata(
+        "development",
+        {
+          sourceCommit,
+          candidateDirectory,
+        },
+        { repo },
+      ),
+    ).toThrow("digest does not match");
 
     expect(fs.readFileSync(manifestPath)).toEqual(before);
     expect(git(repo, "status", "--porcelain=v1")).toBe("");
@@ -1374,10 +1500,16 @@ describe("explicit preparation", () => {
     fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
     const before = fs.readFileSync(manifestPath);
 
-    expect(() => prepareReleaseMetadata("development", {
-      sourceCommit,
-      candidateDirectory,
-    }, { repo })).toThrow("staged and working package inputs differ outside version and agentera.gitRef");
+    expect(() =>
+      prepareReleaseMetadata(
+        "development",
+        {
+          sourceCommit,
+          candidateDirectory,
+        },
+        { repo },
+      ),
+    ).toThrow("staged and working package inputs differ outside version and agentera.gitRef");
 
     expect(fs.readFileSync(manifestPath)).toEqual(before);
     expect(JSON.parse(fs.readFileSync(manifestPath, "utf8"))).toMatchObject({
@@ -1389,10 +1521,14 @@ describe("explicit preparation", () => {
   it("keeps stable preparation independent of development source receipts", () => {
     const { repo, sourceCommit } = stableFixture();
 
-    const preparation = prepareReleaseMetadata("stable", {
-      targetVersion: "0.0.3",
-      sourceCommit,
-    }, { repo });
+    const preparation = prepareReleaseMetadata(
+      "stable",
+      {
+        targetVersion: "0.0.3",
+        sourceCommit,
+      },
+      { repo },
+    );
 
     expect(preparation).toMatchObject({
       package: "stable",

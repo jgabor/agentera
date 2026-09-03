@@ -50,7 +50,14 @@ function runPrecommitVitest(...stagedPaths: string[]): Route {
 }
 
 function targeted(...targets: string[]): Route {
-  return { mode: "targeted", targets: targets.toSorted(), ciOwners: [], workerLimit: 2, budgetMs: 60_000, typecheck: true };
+  return {
+    mode: "targeted",
+    targets: targets.toSorted(),
+    ciOwners: [],
+    workerLimit: 2,
+    budgetMs: 60_000,
+    typecheck: true,
+  };
 }
 
 function ciOwned(ciOwners = ["source", "stress", "performance", "capacity", "package"]): Route {
@@ -82,24 +89,10 @@ function normalizeLocalGitConfig(config: string): string {
 
 describe("scripts/precommit-vitest.sh staged routing", () => {
   it("ignores only complete volatile Worktrunk marker records", () => {
-    const visibleConfig = [
-      "user.name=Test User",
-      "core.bare=false",
-      "worktrunk.state.feat/test.vars={}",
-      "worktrunk.state.feat/test.vars=payload.marker=changed",
-      "worktrunk.state.feat/test.marker-extra=keep",
-      "worktrunk.state..marker=keep",
-      "xworktrunk.state.feat/test.marker=keep",
-    ].join("\n");
+    const visibleConfig = ["user.name=Test User", "core.bare=false", "worktrunk.state.feat/test.vars={}", "worktrunk.state.feat/test.vars=payload.marker=changed", "worktrunk.state.feat/test.marker-extra=keep", "worktrunk.state..marker=keep", "xworktrunk.state.feat/test.marker=keep"].join("\n");
 
-    expect(normalizeLocalGitConfig([
-      visibleConfig,
-      'worktrunk.state.feat/test.marker={"marker":"🤖","set_at":100,"status":"active"}',
-    ].join("\n"))).toBe(visibleConfig);
-    expect(normalizeLocalGitConfig([
-      'worktrunk.state.feat/test.marker={"marker":"💬","set_at":200,"status":"idle"}',
-      visibleConfig,
-    ].join("\n"))).toBe(visibleConfig);
+    expect(normalizeLocalGitConfig([visibleConfig, 'worktrunk.state.feat/test.marker={"marker":"🤖","set_at":100,"status":"active"}'].join("\n"))).toBe(visibleConfig);
+    expect(normalizeLocalGitConfig(['worktrunk.state.feat/test.marker={"marker":"💬","set_at":200,"status":"idle"}', visibleConfig].join("\n"))).toBe(visibleConfig);
     expect(normalizeLocalGitConfig(visibleConfig)).toBe(visibleConfig);
   });
 
@@ -108,7 +101,9 @@ describe("scripts/precommit-vitest.sh staged routing", () => {
     const binDir = path.join(tempDir, "bin");
     const envLog = path.join(tempDir, "verification-env");
     fs.mkdirSync(binDir);
-    fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+    fs.writeFileSync(
+      path.join(binDir, "node"),
+      `#!/usr/bin/env bash
 set -euo pipefail
 if [[ "$2" == route ]]; then
   printf 'precommit\\n'
@@ -122,7 +117,8 @@ for name in GIT_DIR GIT_WORK_TREE GIT_INDEX_FILE GIT_COMMON_DIR; do
     printf '%s=absent\\n' "$name"
   fi
 done > "$PRECOMMIT_VITEST_ENV_LOG"
-`);
+`,
+    );
     fs.chmodSync(path.join(binDir, "node"), 0o755);
     fs.writeFileSync(path.join(binDir, "pnpm"), "#!/usr/bin/env bash\nexit 0\n");
     fs.chmodSync(path.join(binDir, "pnpm"), 0o755);
@@ -144,13 +140,7 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
       });
 
       expect(result.status, result.stderr || result.stdout).toBe(0);
-      expect(fs.readFileSync(envLog, "utf8")).toBe([
-        "GIT_DIR=absent",
-        "GIT_WORK_TREE=absent",
-        "GIT_INDEX_FILE=absent",
-        "GIT_COMMON_DIR=absent",
-        "",
-      ].join("\n"));
+      expect(fs.readFileSync(envLog, "utf8")).toBe(["GIT_DIR=absent", "GIT_WORK_TREE=absent", "GIT_INDEX_FILE=absent", "GIT_COMMON_DIR=absent", ""].join("\n"));
     } finally {
       fs.rmSync(tempDir, { recursive: true, force: true });
     }
@@ -163,12 +153,15 @@ done > "$PRECOMMIT_VITEST_ENV_LOG"
     fs.mkdirSync(binDir);
     fs.mkdirSync(childRepo);
     expect(spawnSync("git", ["init", "--quiet", childRepo], { encoding: "utf8" }).status).toBe(0);
-    fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+    fs.writeFileSync(
+      path.join(binDir, "node"),
+      `#!/usr/bin/env bash
 set -euo pipefail
 if [[ "$2" == route ]]; then printf 'precommit\n'; exit 0; fi
 [[ "$2" == policy ]]
 git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
-`);
+`,
+    );
     fs.writeFileSync(path.join(binDir, "pnpm"), "#!/usr/bin/env bash\nexit 0\n");
     for (const executable of ["node", "pnpm"]) fs.chmodSync(path.join(binDir, executable), 0o755);
     const before = {
@@ -192,9 +185,11 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
       });
 
       expect(result.status, result.stderr || result.stdout).toBe(0);
-      expect(spawnSync("git", ["-C", childRepo, "config", "--local", "precommit.fixture"], {
-        encoding: "utf8",
-      }).stdout.trim()).toBe("child");
+      expect(
+        spawnSync("git", ["-C", childRepo, "config", "--local", "precommit.fixture"], {
+          encoding: "utf8",
+        }).stdout.trim(),
+      ).toBe("child");
       expect({
         head: gitOutput("rev-parse", "HEAD"),
         localConfig: normalizeLocalGitConfig(gitOutput("config", "--local", "--list")),
@@ -204,9 +199,7 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
     }
   });
   it("routes ordinary source changes to one deterministic source test with typecheck", () => {
-    expect(runPrecommitVitest("packages/cli/src/cli/commands/prime.ts")).toEqual(
-      targeted("test/cli/prime.test.ts"),
-    );
+    expect(runPrecommitVitest("packages/cli/src/cli/commands/prime.ts")).toEqual(targeted("test/cli/prime.test.ts"));
   });
 
   it.each([
@@ -243,28 +236,16 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
   });
 
   it("keeps all runtime-matrix helper changes on the CI-owned route together", () => {
-    expect(runPrecommitVitest(
-      "packages/cli/test/helpers/runtimeBootstrapMatrix.ts",
-      "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
-      "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs",
-      "packages/cli/test/helpers/runtimeProofCliBoundary.mjs",
-    )).toEqual(ciOwned());
+    expect(runPrecommitVitest("packages/cli/test/helpers/runtimeBootstrapMatrix.ts", "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs", "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs", "packages/cli/test/helpers/runtimeProofCliBoundary.mjs")).toEqual(ciOwned());
   });
 
   it("keeps unrelated test helpers on targeted source feedback", () => {
-    expect(runPrecommitVitest("packages/cli/test/helpers/entityAuthorityFixture.ts")).toEqual(
-      targeted("test/registries/evaluatorHandoffContract.test.ts"),
-    );
+    expect(runPrecommitVitest("packages/cli/test/helpers/entityAuthorityFixture.ts")).toEqual(targeted("test/registries/evaluatorHandoffContract.test.ts"));
   });
 
   it("declares every non-TypeScript lane surface in the lefthook test glob", () => {
     const lefthook = fs.readFileSync(path.join(REPO_ROOT, ".lefthook.yml"), "utf8");
-    for (const surface of [
-      "packages/cli/package.json",
-      "packages/cli/scripts/*.mjs",
-      "packages/cli/test/packaging/**",
-      "scripts/precommit-vitest.sh",
-    ]) expect(lefthook, surface).toContain(`- \"${surface}\"`);
+    for (const surface of ["packages/cli/package.json", "packages/cli/scripts/*.mjs", "packages/cli/test/packaging/**", "scripts/precommit-vitest.sh"]) expect(lefthook, surface).toContain(`- \"${surface}\"`);
     expect(lefthook).toContain("timeout --foreground 10s npx -y agentera@next check compact");
     expect(lefthook).toContain('- ".agentera/**"');
     expect(lefthook).toContain('- "TODO.md"');
@@ -294,23 +275,13 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
   });
 
   it("deduplicates filters when targeted routing remains valid", () => {
-    expect(runPrecommitVitest(
-      "packages/cli/test/cli/help.test.ts",
-      "packages/cli/test/cli/help.test.ts",
-      "packages/cli/test/cli/schema.test.ts",
-    )).toEqual(targeted("test/cli/help.test.ts", "test/cli/schema.test.ts"));
+    expect(runPrecommitVitest("packages/cli/test/cli/help.test.ts", "packages/cli/test/cli/help.test.ts", "packages/cli/test/cli/schema.test.ts")).toEqual(targeted("test/cli/help.test.ts", "test/cli/schema.test.ts"));
   });
 
   it.each([
     ["invalid-input-envelope.json", ["test/cli/invalidInputEnvelope.test.ts"]],
     ["npm-cli-surface.json", ["test/cli/npmParityMatrix.test.ts"]],
-    ["parity-remaining-families.json", [
-      "test/cli/npmParityMatrix.test.ts",
-      "test/cli/validateParity.test.ts",
-      "test/cli/compactParity.test.ts",
-      "test/cli/doctorUpgradeParity.test.ts",
-      "test/scripts/pyTsParity.test.ts",
-    ]],
+    ["parity-remaining-families.json", ["test/cli/npmParityMatrix.test.ts", "test/cli/validateParity.test.ts", "test/cli/compactParity.test.ts", "test/cli/doctorUpgradeParity.test.ts", "test/scripts/pyTsParity.test.ts"]],
     ["source-contract.json", ["test/cli/sourceContractOracles.test.ts"]],
     ["validate-family.json", ["test/cli/validateVerifyOracles.test.ts", "test/cli/validateParity.test.ts"]],
     ["verify-eval-family.json", ["test/cli/validateVerifyOracles.test.ts"]],
@@ -352,20 +323,26 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
     const calls = path.join(tempDir, "calls");
     const clock = path.join(tempDir, "clock");
     fs.mkdirSync(binDir);
-    fs.writeFileSync(path.join(binDir, "node"), `#!/usr/bin/env bash
+    fs.writeFileSync(
+      path.join(binDir, "node"),
+      `#!/usr/bin/env bash
 set -euo pipefail
 if [[ "\${2:-}" == route ]]; then printf 'precommit\\n'; exit 0; fi
 printf 'tests\\n' >> ${JSON.stringify(calls)}
-`);
+`,
+    );
     fs.writeFileSync(path.join(binDir, "pnpm"), `#!/usr/bin/env bash\nprintf 'typecheck\\n' >> ${JSON.stringify(calls)}\n`);
-    fs.writeFileSync(path.join(binDir, "date"), `#!/usr/bin/env bash
+    fs.writeFileSync(
+      path.join(binDir, "date"),
+      `#!/usr/bin/env bash
 set -euo pipefail
 count=0
 if [[ -f ${JSON.stringify(clock)} ]]; then read -r count < ${JSON.stringify(clock)}; fi
 count=$((count + 1))
 printf '%s\\n' "$count" > ${JSON.stringify(clock)}
 if [[ "$count" -lt 4 ]]; then printf '1000\\n'; else printf '62001\\n'; fi
-`);
+`,
+    );
     for (const executable of ["node", "pnpm", "date"]) fs.chmodSync(path.join(binDir, executable), 0o755);
     try {
       const result = spawnSync("bash", [PRECOMMIT_SCRIPT, "packages/cli/src/cli/commands/prime.ts"], {

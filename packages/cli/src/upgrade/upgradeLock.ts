@@ -47,13 +47,7 @@ function lockRecord(lockPath: string): UpgradeLockRecord | null {
     const stat = fs.lstatSync(lockPath);
     if (!stat.isFile() || stat.isSymbolicLink() || stat.size > MAX_LOCK_BYTES) return null;
     const value: unknown = JSON.parse(fs.readFileSync(lockPath, "utf8"));
-    if (
-      value === null
-      || typeof value !== "object"
-      || Object.keys(value).length !== 1
-      || typeof (value as { token?: unknown }).token !== "string"
-      || (value as { token: string }).token.length === 0
-    ) return null;
+    if (value === null || typeof value !== "object" || Object.keys(value).length !== 1 || typeof (value as { token?: unknown }).token !== "string" || (value as { token: string }).token.length === 0) return null;
     return value as UpgradeLockRecord;
   } catch {
     return null;

@@ -18,7 +18,10 @@ const roots: string[] = [];
 function todoId(index: number): string {
   let value = index;
   let suffix = "";
-  for (let digit = 0; digit < 6; digit += 1) { suffix = String.fromCharCode(97 + value % 26) + suffix; value = Math.floor(value / 26); }
+  for (let digit = 0; digit < 6; digit += 1) {
+    suffix = String.fromCharCode(97 + (value % 26)) + suffix;
+    value = Math.floor(value / 26);
+  }
   return `item${suffix}`;
 }
 
@@ -59,11 +62,27 @@ describe("entity cutover capacity", () => {
       const id = todoId(index);
       const resolved = index % 3 === 1;
       rows.push(`${index % 2 ? "  " : ""}- [${resolved ? "x" : " "}] Task ${index}`);
-      fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
-        id,
-        artifact: "todo",
-        record: { severity: "critical", status: "open", description: `Task ${index}`, readiness: { capability: "build", reason: "Preserve operational state", dependencies: [], blocked: null, gate: null, queue_rank: index + 1, order_reason: "Fixture order" } },
-      }));
+      fs.writeFileSync(
+        path.join(directory, `${id}.yaml`),
+        YAML.stringify({
+          id,
+          artifact: "todo",
+          record: {
+            severity: "critical",
+            status: "open",
+            description: `Task ${index}`,
+            readiness: {
+              capability: "build",
+              reason: "Preserve operational state",
+              dependencies: [],
+              blocked: null,
+              gate: null,
+              queue_rank: index + 1,
+              order_reason: "Fixture order",
+            },
+          },
+        }),
+      );
     }
     rows.push("", "Unrelated closing note.", "");
     fs.writeFileSync(path.join(root, "TODO.md"), rows.join("\n"));
@@ -78,7 +97,10 @@ describe("entity cutover capacity", () => {
     expect(apply()).toBe(0);
     const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
     expect([...markdown.matchAll(/\[id:([a-z]{10})\]/g)].map((match) => match[1])).toEqual(Array.from({ length: 161 }, (_, index) => todoId(index)));
-    const records = fs.readdirSync(directory).sort().map((name) => YAML.parse(fs.readFileSync(path.join(directory, name), "utf8")).record);
+    const records = fs
+      .readdirSync(directory)
+      .sort()
+      .map((name) => YAML.parse(fs.readFileSync(path.join(directory, name), "utf8")).record);
     expect(records).toHaveLength(161);
     expect(records.filter((record) => record.status === "resolved")).toHaveLength(54);
     expect(new Set(records.map((record) => record.description)).size).toBe(161);

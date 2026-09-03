@@ -6,10 +6,7 @@ import { createHash } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import YAML from "yaml";
 
-import {
-  LIFECYCLE_LEDGER_SCHEMA,
-  type LifecycleOwnershipLedger,
-} from "../../src/runtime/lifecycleOperations.js";
+import { LIFECYCLE_LEDGER_SCHEMA, type LifecycleOwnershipLedger } from "../../src/runtime/lifecycleOperations.js";
 import { appendLifecycleOwnershipJournal } from "../../src/runtime/lifecycleOwnershipJournal.js";
 import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
 import {
@@ -60,11 +57,7 @@ const resourceCases = [
   },
 ] as const;
 
-const codexConfigurationIds = [
-  "codex.config.shell_environment_policy.set.AGENTERA_HOME",
-  "codex.config.agents.max_depth",
-  "codex.config.features.multi_agent_v2",
-];
+const codexConfigurationIds = ["codex.config.shell_environment_policy.set.AGENTERA_HOME", "codex.config.agents.max_depth", "codex.config.features.multi_agent_v2"];
 
 const retiredResourceClasses = [
   ["claude.skill-link", "legacy_skill_link"],
@@ -78,38 +71,30 @@ const retiredResourceClasses = [
   ["agentera.registration", "registration"],
 ] as const;
 
-const codexDescriptors = [
-  "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
-  "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera",
-] as const;
+const codexDescriptors = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate", "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera"] as const;
 
 function contractData(): Record<string, unknown> {
-  return YAML.parse(fs.readFileSync(
-    path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"),
-    "utf8",
-  )) as Record<string, unknown>;
+  return YAML.parse(fs.readFileSync(path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"), "utf8")) as Record<string, unknown>;
 }
 
-function ledgerFor(
-  id: string,
-  status: "legacy" | "managed",
-  destination: string,
-): LifecycleOwnershipLedger {
+function ledgerFor(id: string, status: "legacy" | "managed", destination: string): LifecycleOwnershipLedger {
   const observation = observeLifecyclePath(destination, [home]);
   expect(observation.identity).toBeDefined();
   expect(observation.fingerprint).toBeDefined();
   return {
     schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
     owner: "agentera",
-    records: [{
-      resourceId: id,
-      destination,
-      kind: observation.kind as "file" | "symlink",
-      scope: "whole",
-      status,
-      fingerprint: observation.fingerprint as string,
-      identity: observation.identity as { device: string; inode: string },
-    }],
+    records: [
+      {
+        resourceId: id,
+        destination,
+        kind: observation.kind as "file" | "symlink",
+        scope: "whole",
+        status,
+        fingerprint: observation.fingerprint as string,
+        identity: observation.identity as { device: string; inode: string },
+      },
+    ],
   };
 }
 
@@ -117,24 +102,22 @@ describe("native resource cleanup contract", () => {
   it("loads ledger-gated automatic retirement only for the proven OpenCode plugin", () => {
     const contract = loadNativeResourceCleanupContract();
 
-    expect(contract.automaticRetirement).toEqual([expect.objectContaining({
-      id: "opencode.plugin.agentera.lifecycle-20260710",
-      resourceId: "opencode.plugin.agentera",
-      ownershipResourceId: "opencode.plugin",
-      sizeBytes: 29253,
-      sha256: "b75c17e44340a30624071567a461a6a7dcf1a426bc9dc2881d813ac0e802a20a",
-    })]);
+    expect(contract.automaticRetirement).toEqual([
+      expect.objectContaining({
+        id: "opencode.plugin.agentera.lifecycle-20260710",
+        resourceId: "opencode.plugin.agentera",
+        ownershipResourceId: "opencode.plugin",
+        sizeBytes: 29253,
+        sha256: "b75c17e44340a30624071567a461a6a7dcf1a426bc9dc2881d813ac0e802a20a",
+      }),
+    ]);
   });
 
   it("rejects automatic retirement authority for any additional resource", () => {
     const data = contractData();
-    (data.automatic_retirement as Record<string, unknown>).enabled_resource_ids = [
-      "opencode.plugin.agentera", "opencode.command.agentera",
-    ];
+    (data.automatic_retirement as Record<string, unknown>).enabled_resource_ids = ["opencode.plugin.agentera", "opencode.command.agentera"];
 
-    expect(validateNativeResourceCleanupContractData(data)).toContain(
-      "automatic_retirement must enable only opencode.plugin.agentera and fail closed",
-    );
+    expect(validateNativeResourceCleanupContractData(data)).toContain("automatic_retirement must enable only opencode.plugin.agentera and fail closed");
   });
 
   it("rejects automatic retirement authority without the historical installer ledger", () => {
@@ -142,17 +125,12 @@ describe("native resource cleanup contract", () => {
     const automatic = data.automatic_retirement as Record<string, unknown>;
     (automatic.ownership_evidence as Record<string, unknown>).match = "file_equality";
 
-    expect(validateNativeResourceCleanupContractData(data)).toContain(
-      "automatic_retirement must require the matching historical installer ownership journal",
-    );
+    expect(validateNativeResourceCleanupContractData(data)).toContain("automatic_retirement must require the matching historical installer ownership journal");
   });
 
   it("records accepted supported-host evidence without retiring supported hosts", () => {
     const contract = loadNativeResourceCleanupContract();
-    const source = fs.readFileSync(
-      path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"),
-      "utf8",
-    );
+    const source = fs.readFileSync(path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"), "utf8");
 
     expect(nativeResourceCleanupIds(contract)).toContain("codex.agent-descriptor.build");
     expect(nativeResourceCleanupIds(contract)).toContain("claude.agentera-skill-link");
@@ -175,22 +153,16 @@ describe("native resource cleanup contract", () => {
 
   it.each(retiredResourceClasses)("fails closed when the %s resource vocabulary class is missing", (id, resourceClass) => {
     const data = contractData();
-    data.resource_vocabulary = (data.resource_vocabulary as Array<Record<string, unknown>>)
-      .filter((entry) => entry.id !== id);
+    data.resource_vocabulary = (data.resource_vocabulary as Array<Record<string, unknown>>).filter((entry) => entry.id !== id);
 
-    expect(validateNativeResourceCleanupContractData(data)).toContain(
-      `resource_vocabulary must retain ${id} as ${resourceClass}`,
-    );
+    expect(validateNativeResourceCleanupContractData(data)).toContain(`resource_vocabulary must retain ${id} as ${resourceClass}`);
   });
 
   it("fails closed when an exact diagnostic identity is omitted or added", () => {
     const omitted = contractData();
     const omittedInventory = omitted.diagnostic_inventory as Record<string, unknown>;
-    omittedInventory.resources = (omittedInventory.resources as Array<Record<string, unknown>>)
-      .filter((entry) => entry.id !== "opencode.plugin.agentera");
-    expect(validateNativeResourceCleanupContractData(omitted)).toContain(
-      "diagnostic_inventory must define opencode.plugin.agentera",
-    );
+    omittedInventory.resources = (omittedInventory.resources as Array<Record<string, unknown>>).filter((entry) => entry.id !== "opencode.plugin.agentera");
+    expect(validateNativeResourceCleanupContractData(omitted)).toContain("diagnostic_inventory must define opencode.plugin.agentera");
 
     const extra = contractData();
     const extraInventory = extra.diagnostic_inventory as Record<string, unknown>;
@@ -205,9 +177,7 @@ describe("native resource cleanup contract", () => {
       focused_preview: "manual_review_only",
       destinations: ["{home}/.config/opencode/plugins/unowned.js"],
     });
-    expect(validateNativeResourceCleanupContractData(extra)).toContain(
-      "diagnostic_inventory opencode.plugin.unowned must map to its exact declared vocabulary identity",
-    );
+    expect(validateNativeResourceCleanupContractData(extra)).toContain("diagnostic_inventory opencode.plugin.unowned must map to its exact declared vocabulary identity");
   });
 
   it("bounds the managed marker exception to canonical forms on declared pre-ledger files", () => {
@@ -216,16 +186,12 @@ describe("native resource cleanup contract", () => {
     const exception = policy.migration_only_managed_marker_exception as Record<string, unknown>;
     exception.scope = "all_managed_markers";
 
-    expect(validateNativeResourceCleanupContractData(data)).toContain(
-      "policy must declare the closed migration-only managed-marker regular-file exception",
-    );
+    expect(validateNativeResourceCleanupContractData(data)).toContain("policy must declare the closed migration-only managed-marker regular-file exception");
 
     const malformed = contractData();
     const malformedException = (malformed.policy as Record<string, any>).migration_only_managed_marker_exception;
     malformedException.expected_structural_marker_forms.first_line_exact = "agentera_managed = true";
-    expect(validateNativeResourceCleanupContractData(malformed)).toContain(
-      "policy must declare the closed migration-only managed-marker regular-file exception",
-    );
+    expect(validateNativeResourceCleanupContractData(malformed)).toContain("policy must declare the closed migration-only managed-marker regular-file exception");
   });
 
   it("derives Swedish Codex aliases and every focused selector from authority", () => {
@@ -234,16 +200,11 @@ describe("native resource cleanup contract", () => {
       id: "codex.agent-descriptor.hej",
       aliases: ["codex.agents.hej"],
     });
-    expect(loadNativeResourceCleanupContract().diagnosticResources.every((resource) =>
-      resource.roots.length > 0 && resource.ownershipEvidence.length > 0,
-    )).toBe(true);
+    expect(loadNativeResourceCleanupContract().diagnosticResources.every((resource) => resource.roots.length > 0 && resource.ownershipEvidence.length > 0)).toBe(true);
   });
 
   it("keeps every shared Codex configuration unit action-required without key-level ownership", () => {
-    const source = fs.readFileSync(
-      path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"),
-      "utf8",
-    );
+    const source = fs.readFileSync(path.join(import.meta.dirname, "../../../..", "references/adapters/runtime-retired-resources.yaml"), "utf8");
 
     expect(source).toContain("ownership_available: false");
     expect(source.match(/result_without_proof: action_required/g)).toHaveLength(3);
@@ -257,14 +218,16 @@ describe("automatic retirement classification", () => {
     const content = Buffer.from("proven installer output\n");
     fs.writeFileSync(proven, content);
     const contract = loadNativeResourceCleanupContract();
-    contract.automaticRetirement = [{
-      id: "proven",
-      resourceId: "opencode.plugin.agentera",
-      ownershipResourceId: "opencode.plugin",
-      kind: "file",
-      sizeBytes: content.length,
-      sha256: createHash("sha256").update(content).digest("hex"),
-    }];
+    contract.automaticRetirement = [
+      {
+        id: "proven",
+        resourceId: "opencode.plugin.agentera",
+        ownershipResourceId: "opencode.plugin",
+        kind: "file",
+        sizeBytes: content.length,
+        sha256: createHash("sha256").update(content).digest("hex"),
+      },
+    ];
     const journal = path.join(home, "ownership-journal");
 
     expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, null, contract)).toEqual({
@@ -283,8 +246,7 @@ describe("automatic retirement classification", () => {
 
     fs.renameSync(proven, `${proven}.owned`);
     fs.writeFileSync(proven, content);
-    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, journal, contract).reason)
-      .toBe("ownership_evidence_mismatch");
+    expect(classifyAutomaticRetirement("opencode.plugin.agentera", proven, journal, contract).reason).toBe("ownership_evidence_mismatch");
   });
 
   it("rejects altered, unknown, non-regular, unreadable, and other resources", () => {
@@ -299,7 +261,9 @@ describe("automatic retirement classification", () => {
     expect(classifyAutomaticRetirement("opencode.command.agentera", altered).reason).toBe("resource_not_enabled");
 
     const contract = loadNativeResourceCleanupContract();
-    const read = vi.spyOn(fs, "readFileSync").mockImplementationOnce(() => { throw new Error("denied"); });
+    const read = vi.spyOn(fs, "readFileSync").mockImplementationOnce(() => {
+      throw new Error("denied");
+    });
     expect(classifyAutomaticRetirement("opencode.plugin.agentera", altered, null, contract).reason).toBe("unreadable");
     read.mockRestore();
   });
@@ -317,9 +281,7 @@ describe("native resource cleanup ownership", () => {
       action: "remove",
       ownership: resource.status === "legacy" ? "legacy" : "managed",
     });
-    expect(preview.configurationUnits.map((unit) => unit.id)).toEqual(
-      resource.id.startsWith("codex.") ? codexConfigurationIds : [],
-    );
+    expect(preview.configurationUnits.map((unit) => unit.id)).toEqual(resource.id.startsWith("codex.") ? codexConfigurationIds : []);
     expect(preview.configurationUnits.every((unit) => unit.status === "action_required")).toBe(true);
     expect(fs.lstatSync(destination).ino).toBe(before);
     expect(applyNativeResourceCleanup(preview, { approved: false }).operations[0]?.status).toBe("action_required");
@@ -365,10 +327,7 @@ describe("native resource cleanup ownership", () => {
     const ledger: LifecycleOwnershipLedger = {
       schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
       owner: "agentera",
-      records: [
-        ledgerFor("codex.agent-descriptor.status", "managed", statusDestination).records[0]!,
-        ledgerFor("codex.agent-descriptor.vision", "managed", visionDestination).records[0]!,
-      ],
+      records: [ledgerFor("codex.agent-descriptor.status", "managed", statusDestination).records[0]!, ledgerFor("codex.agent-descriptor.vision", "managed", visionDestination).records[0]!],
     };
 
     const preview = previewNativeResourceCleanup({ resourceId: selected.id, home, ledger });
@@ -471,14 +430,12 @@ describe("native resource cleanup ownership", () => {
     owned.install(ownedDestination);
     const ledger = ledgerFor(owned.id, owned.status, ownedDestination);
 
-    const preserved = applyNativeResourceCleanup(
-      previewNativeResourceCleanup({ resourceId: unowned.id, home }),
-      { approved: true },
-    );
-    const removed = applyNativeResourceCleanup(
-      previewNativeResourceCleanup({ resourceId: owned.id, home, ledger }),
-      { approved: true },
-    );
+    const preserved = applyNativeResourceCleanup(previewNativeResourceCleanup({ resourceId: unowned.id, home }), {
+      approved: true,
+    });
+    const removed = applyNativeResourceCleanup(previewNativeResourceCleanup({ resourceId: owned.id, home, ledger }), {
+      approved: true,
+    });
 
     expect(preserved.operations[0]?.status).toBe("action_required");
     expect(removed.operations[0]?.status).toBe("applied");
@@ -497,11 +454,16 @@ describe("native resource cleanup ownership", () => {
     expect(resolveNativeResourceCleanupId(historicalId)?.id).toBe(canonicalId);
 
     const preview = previewNativeResourceCleanup({ resourceId: historicalId, home, ledger });
-    expect(preview).toMatchObject({ resourceId: canonicalId, ledgerAuthorization: "match_or_absent_noop" });
-    expect(preview.plan.operations[0]).toMatchObject({ id: canonicalId, action: "remove", ownership: "managed" });
-    expect(preview.plan.request.ledger?.records).toEqual([
-      expect.objectContaining({ resourceId: canonicalId, destination }),
-    ]);
+    expect(preview).toMatchObject({
+      resourceId: canonicalId,
+      ledgerAuthorization: "match_or_absent_noop",
+    });
+    expect(preview.plan.operations[0]).toMatchObject({
+      id: canonicalId,
+      action: "remove",
+      ownership: "managed",
+    });
+    expect(preview.plan.request.ledger?.records).toEqual([expect.objectContaining({ resourceId: canonicalId, destination })]);
 
     const applied = applyNativeResourceCleanup(preview, { approved: true });
     expect(applied.operations[0]?.status).toBe("applied");
@@ -513,10 +475,16 @@ describe("native resource cleanup ownership", () => {
     const destination = path.join(home, ".codex", "agents", `${descriptor}.toml`);
     resourceCases[1].install(destination);
 
-    const preview = previewNativeResourceCleanup({ resourceId: `codex.agents.${descriptor}`, home });
+    const preview = previewNativeResourceCleanup({
+      resourceId: `codex.agents.${descriptor}`,
+      home,
+    });
     const applied = applyNativeResourceCleanup(preview, { approved: true });
 
-    expect(preview.plan.operations[0]).toMatchObject({ action: "action_required", ownership: "unowned" });
+    expect(preview.plan.operations[0]).toMatchObject({
+      action: "action_required",
+      ownership: "unowned",
+    });
     expect(applied.operations[0]?.status).toBe("action_required");
     expect(fs.existsSync(destination)).toBe(true);
   });

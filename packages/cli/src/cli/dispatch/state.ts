@@ -57,7 +57,10 @@ export function runState(command: string, argv: string[], io: Io, prog: string):
   }
   return emitInvalidInput(io, {
     format: detectTopLevelFormat(argv),
-    body: { class: "unsupported_target", message: `unsupported state artifact or operation '${command} ${argv[0] ?? ""}'`.trim() },
+    body: {
+      class: "unsupported_target",
+      message: `unsupported state artifact or operation '${command} ${argv[0] ?? ""}'`.trim(),
+    },
   });
 }
 
@@ -74,9 +77,13 @@ export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
     fields: null,
   };
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;

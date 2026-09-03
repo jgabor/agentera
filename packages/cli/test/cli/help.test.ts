@@ -1,14 +1,7 @@
 import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
-import {
-  printCommandHelp,
-  stateCommandNames,
-  printStateHelp,
-  printTopLevelHelp,
-  printUpgradeHelp,
-  wantsHelp,
-} from "../../src/cli/help.js";
+import { printCommandHelp, stateCommandNames, printStateHelp, printTopLevelHelp, printUpgradeHelp, wantsHelp } from "../../src/cli/help.js";
 import { describeRouteReceipt } from "../../src/registries/hybridRoute.js";
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
@@ -55,9 +48,7 @@ describe("cli help", () => {
   });
 
   it("points state help at the live writer discovery contract", () => {
-    expect(printStateHelp()).toContain(
-      "agentera state <artifact> explain",
-    );
+    expect(printStateHelp()).toContain("agentera state <artifact> explain");
     const decisions = printStateHelp("decisions");
     expect(decisions).toContain("{append,update,amend,explain}");
     expect(decisions).toContain("agentera state decisions explain");
@@ -84,7 +75,11 @@ describe("cli help", () => {
   it("makes the nullable semantic receipt contract and stdin round trip discoverable", () => {
     const receipt = describeRouteReceipt();
     const { rc, out } = capture((io) => main(["node", "agentera", "route", "receipt", "--help"], io));
-    const rendered = (value: unknown) => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`).join("\n");
+    const rendered = (value: unknown) =>
+      JSON.stringify(value, null, 2)
+        .split("\n")
+        .map((line) => `  ${line}`)
+        .join("\n");
 
     expect(rc).toBe(0);
     expect(receipt.stdin_command).toBe("npx -y agentera@next route receipt --input -");

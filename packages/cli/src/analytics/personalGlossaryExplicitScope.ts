@@ -38,9 +38,5 @@ function adjacentSentence(text: string, start: number, direction: -1 | 1): strin
 }
 
 export function adjacentScopeTexts(text: string, cue: RawCue): string[] {
-  return [
-    adjacentSentence(text, cue.sentenceStart, -1),
-    contextText(text, cue),
-    adjacentSentence(text, cue.sentenceEnd, 1),
-  ];
+  return [adjacentSentence(text, cue.sentenceStart, -1), contextText(text, cue), adjacentSentence(text, cue.sentenceEnd, 1)];
 }

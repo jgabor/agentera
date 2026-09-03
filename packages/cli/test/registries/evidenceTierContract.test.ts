@@ -6,10 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  ADAPTER_VERSION,
-  FAMILIES,
-} from "../../src/analytics/extractCorpus/core.js";
+import { ADAPTER_VERSION, FAMILIES } from "../../src/analytics/extractCorpus/core.js";
 import {
   compatibilityStates,
   consumerMap,
@@ -34,14 +31,7 @@ const RELATIVE_CONTRACT = "references/analysis/evidence-tier-authority.yaml";
 
 // Runtime source products emitted by resolveRuntimeStoreConfigs (coverageAudit.ts).
 // The contract must cover every one without silent omission.
-const RUNTIME_SOURCE_PRODUCTS = [
-  "codex",
-  "cursor",
-  "cursor-agent",
-  "opencode",
-  "github-copilot",
-  "claude-code",
-] as const;
+const RUNTIME_SOURCE_PRODUCTS = ["codex", "cursor", "cursor-agent", "opencode", "github-copilot", "claude-code"] as const;
 
 // signalType() (core.ts) yields these kinds; the contract must reserve them.
 const RUNTIME_SIGNAL_TYPES = ["correction", "question", "decision"] as const;
@@ -115,8 +105,16 @@ function validContractObject(): Record<string, unknown> {
     schema_version: "agentera.evidenceTierAuthority.v1",
     status: "active_authority",
     tiers: {
-      full_evidence: { tier_id: "full_evidence", rank: 1, stored_fields: { required: ["source_id"], optional: [] } },
-      signal: { tier_id: "signal", rank: 2, stored_fields: { required: ["source_id"], optional: [] } },
+      full_evidence: {
+        tier_id: "full_evidence",
+        rank: 1,
+        stored_fields: { required: ["source_id"], optional: [] },
+      },
+      signal: {
+        tier_id: "signal",
+        rank: 2,
+        stored_fields: { required: ["source_id"], optional: [] },
+      },
     },
     source_families: { families },
     consumer_map: {
@@ -163,7 +161,6 @@ describe("evidence tier authority — production contract", () => {
     expect(model.tierIds).toEqual(["full_evidence", "signal"]);
     expect(validateEvidenceTierContract(PRODUCTION_CONTRACT)).toEqual([]);
   });
-
 });
 
 describe("AC1 — one bounded input contract supplies every required field with source identity", () => {
@@ -280,9 +277,7 @@ describe("AC3 — signal semantics required meaning available to current and def
         consumers.glossary.excluded_evidence_classes = [];
       }),
     );
-    expect(errors).toContain(
-      "active glossary evidence must use bounded personal history and exclude project files",
-    );
+    expect(errors).toContain("active glossary evidence must use bounded personal history and exclude project files");
   });
 
   it("rejects a contract that drops a reserved signal semantic", () => {
@@ -297,8 +292,7 @@ describe("AC3 — signal semantics required meaning available to current and def
   it("rejects a contract that drops conversation content fingerprints", () => {
     const errors = validateEvidenceTierContract(
       writeFixture((obj) => {
-        delete ((obj.signal_semantics as Record<string, unknown>).kinds as Record<string, unknown>)
-          .content_fingerprint;
+        delete ((obj.signal_semantics as Record<string, unknown>).kinds as Record<string, unknown>).content_fingerprint;
       }),
     );
     expect(errors.some((e) => e.includes("content_fingerprint") && e.includes("omitted"))).toBe(true);

@@ -14,7 +14,11 @@ export function writeMigratedDecisionAndProgressSummaries(root: string): {
       artifact: "decisions",
       boundary: "decision_summary",
       id: "aaaaaaaaaa",
-      physical: { number: 1, summary: "retained decision evidence", satisfaction: { state: "user_confirmed_satisfied" } },
+      physical: {
+        number: 1,
+        summary: "retained decision evidence",
+        satisfaction: { state: "user_confirmed_satisfied" },
+      },
     },
     {
       artifact: "progress",
@@ -29,18 +33,21 @@ export function writeMigratedDecisionAndProgressSummaries(root: string): {
     fs.writeFileSync(sourcePath, dumpYamlMapping({ archive: [fixture.physical] }));
     const entityPath = path.join(root, `.agentera/entities/${fixture.artifact}/${fixture.boundary}/${fixture.id}.yaml`);
     fs.mkdirSync(path.dirname(entityPath), { recursive: true });
-    fs.writeFileSync(entityPath, dumpYamlMapping({
-      id: fixture.id,
-      artifact: fixture.artifact,
-      record: {
-        summary: fixture.physical.summary,
-        ...(fixture.artifact === "decisions" ? { satisfaction: fixture.physical.satisfaction } : {}),
-        migration_provenance: {
-          source_path: `.agentera/${fixture.artifact}.yaml`,
-          source_record_sha256: createHash("sha256").update(canonicalRecordJson(fixture.physical)).digest("hex"),
+    fs.writeFileSync(
+      entityPath,
+      dumpYamlMapping({
+        id: fixture.id,
+        artifact: fixture.artifact,
+        record: {
+          summary: fixture.physical.summary,
+          ...(fixture.artifact === "decisions" ? { satisfaction: fixture.physical.satisfaction } : {}),
+          migration_provenance: {
+            source_path: `.agentera/${fixture.artifact}.yaml`,
+            source_record_sha256: createHash("sha256").update(canonicalRecordJson(fixture.physical)).digest("hex"),
+          },
         },
-      },
-    }));
+      }),
+    );
     sources.set(fixture.artifact, sourcePath);
   }
   return { decisionSource: sources.get("decisions")!, progressSource: sources.get("progress")! };

@@ -18,19 +18,22 @@ function requestedFormat(argv: string[]): "text" | "json" | "yaml" {
 function failure(message: string, id?: string, artifact = "progress"): StateRetrievalFailure {
   const runtime = runtimeGenericEntityListFamily(artifact);
   const family = runtime ? entityListFamily(runtime.key as EntityListRuntimeFamilyKey) : undefined;
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "invalid_request",
-      message,
-      syntax: family?.get ?? `agentera state ${artifact} get --id ID`,
-      example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"}`,
-      recovery: `Use a bare ten-letter ${artifact} ID returned by append or list; no state was changed.`,
-      artifact,
-      ...(id ? { id } : {}),
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "invalid_request",
+        message,
+        syntax: family?.get ?? `agentera state ${artifact} get --id ID`,
+        example: `agentera state ${artifact} get --id ${id ?? "qjtrmnpvka"}`,
+        recovery: `Use a bare ten-letter ${artifact} ID returned by append or list; no state was changed.`,
+        artifact,
+        ...(id ? { id } : {}),
+      },
     },
-  }, 2);
+    2,
+  );
 }
 
 function readValue(argv: string[], index: number, name: string): { value: string; next: number } {
@@ -46,12 +49,7 @@ function emitFailure(error: StateRetrievalFailure, _format: "text" | "json" | "y
   return error.exitCode;
 }
 
-export function runStateGet(
-  artifactId: string,
-  argv: string[],
-  io: Io,
-  projectRoot = process.cwd(),
-): number {
+export function runStateGet(artifactId: string, argv: string[], io: Io, projectRoot = process.cwd()): number {
   const format = requestedFormat(argv);
   const sourceRoot = resolveSourceRoot();
   try {
@@ -59,15 +57,18 @@ export function runStateGet(
     let id: string | undefined;
     let entityFormat: "text" | "json" | "yaml" = "json";
     let formatSupplied = false;
-    for (let index = 0; index < argv.length; ) {
+    for (let index = 0; index < argv.length;) {
       const token = argv[index];
       if (token !== "--id" && !token.startsWith("--id=") && token !== "--format" && !token.startsWith("--format=")) {
         throw failure(`unrecognized argument '${token}'; entity-mode ${artifactId} retrieval requires --id ID`, id, artifactId);
       }
       const name = token.startsWith("--id") ? "--id" : "--format";
       let parsed: { value: string; next: number };
-      try { parsed = readValue(argv, index, name); }
-      catch (error) { throw failure((error as Error).message, id, artifactId); }
+      try {
+        parsed = readValue(argv, index, name);
+      } catch (error) {
+        throw failure((error as Error).message, id, artifactId);
+      }
       index = parsed.next;
       if (name === "--id") {
         if (id !== undefined) throw failure("--id may only be supplied once", id, artifactId);
@@ -80,15 +81,16 @@ export function runStateGet(
       }
     }
     if (!id) throw failure(`--id is required for entity-mode ${artifactId} retrieval`, id, artifactId);
-    const response = artifactId === "progress"
-      ? getProgressEntity(projectRoot, id, sourceRoot)
-      : artifactId === "decisions"
-        ? getDecisionEntity(projectRoot, id, sourceRoot)
-        : artifactId === "health"
-          ? getHealthEntity(projectRoot, id, sourceRoot)
-          : artifactId === "objective"
-            ? getObjectiveEntity(projectRoot, id, sourceRoot)
-            : getTodoDocsEntity(projectRoot, artifactId as "todo" | "docs", id, sourceRoot);
+    const response =
+      artifactId === "progress"
+        ? getProgressEntity(projectRoot, id, sourceRoot)
+        : artifactId === "decisions"
+          ? getDecisionEntity(projectRoot, id, sourceRoot)
+          : artifactId === "health"
+            ? getHealthEntity(projectRoot, id, sourceRoot)
+            : artifactId === "objective"
+              ? getObjectiveEntity(projectRoot, id, sourceRoot)
+              : getTodoDocsEntity(projectRoot, artifactId as "todo" | "docs", id, sourceRoot);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     emitStructured(response, "json", output);
     return 0;

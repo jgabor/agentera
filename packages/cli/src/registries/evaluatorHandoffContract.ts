@@ -67,16 +67,12 @@ export function loadEvaluatorHandoffContract(contractPath: string): EvaluatorHan
     path: contractPath,
     status: asString(handoff.status) || "unknown",
     reportSchemaVersion: asString(handoff.report_schema_version) || EVALUATOR_HANDOFF_REPORT_SCHEMA_VERSION,
-    citationRequiredFor: Array.isArray(rowSchema.citation_required_for)
-      ? rowSchema.citation_required_for.map((v) => String(v))
-      : ["WARN", "FAIL"],
+    citationRequiredFor: Array.isArray(rowSchema.citation_required_for) ? rowSchema.citation_required_for.map((v) => String(v)) : ["WARN", "FAIL"],
     fileLinePattern: new RegExp(patternSource),
     notApplicablePrefix: asString(notApplicable.prefix) || "not-applicable:",
     minNotApplicableReasonLength: Number(notApplicable.min_reason_length) || 8,
     warnVerifyCommandRequired: warnVerify.required_when === "file_line_citation",
-    warnVerifyCommandPrefixes: Array.isArray(warnVerify.allowed_prefixes)
-      ? warnVerify.allowed_prefixes.map((v) => String(v))
-      : ["grep", "git show"],
+    warnVerifyCommandPrefixes: Array.isArray(warnVerify.allowed_prefixes) ? warnVerify.allowed_prefixes.map((v) => String(v)) : ["grep", "git show"],
   };
 }
 
@@ -107,11 +103,7 @@ export function isAllowedVerifyCommand(command: string, contract: EvaluatorHando
   return contract.warnVerifyCommandPrefixes.some((prefix) => trimmed.startsWith(prefix));
 }
 
-export function validateEvaluationReportRow(
-  row: EvaluationReportRow,
-  index: number,
-  contract: EvaluatorHandoffContract,
-): string[] {
+export function validateEvaluationReportRow(row: EvaluationReportRow, index: number, contract: EvaluatorHandoffContract): string[] {
   const errors: string[] = [];
   const label = `rows[${index}]`;
   const status = asString(row.status).toUpperCase();
@@ -130,9 +122,7 @@ export function validateEvaluationReportRow(
     return errors;
   }
   if (!isValidCitation(citation, contract)) {
-    errors.push(
-      `${label}: citation must be file:line (e.g. TODO.md:15) or not-applicable: <reason> (min ${contract.minNotApplicableReasonLength} chars)`,
-    );
+    errors.push(`${label}: citation must be file:line (e.g. TODO.md:15) or not-applicable: <reason> (min ${contract.minNotApplicableReasonLength} chars)`);
     return errors;
   }
 
@@ -148,10 +138,7 @@ export function validateEvaluationReportRow(
   return errors;
 }
 
-export function validateEvaluationReport(
-  report: EvaluationReport,
-  contract: EvaluatorHandoffContract,
-): string[] {
+export function validateEvaluationReport(report: EvaluationReport, contract: EvaluatorHandoffContract): string[] {
   const errors: string[] = [];
   const schemaVersion = asString(report.schemaVersion);
   if (schemaVersion && schemaVersion !== contract.reportSchemaVersion) {
@@ -175,10 +162,7 @@ function readCitedLine(repoRoot: string, file: string, line: number): string {
   return (lines[line - 1] ?? "").trim();
 }
 
-export function verifyWarnCitationAtLine(
-  row: EvaluationReportRow,
-  repoRoot: string,
-): { ok: boolean; message: string } {
+export function verifyWarnCitationAtLine(row: EvaluationReportRow, repoRoot: string): { ok: boolean; message: string } {
   const citation = asString(row.citation);
   const verifyCommand = asString(row.verify_command);
   const parsed = parseFileLineCitation(citation);
@@ -187,14 +171,20 @@ export function verifyWarnCitationAtLine(
   }
   const citedLine = readCitedLine(repoRoot, parsed.file, parsed.line);
   if (!citedLine) {
-    return { ok: false, message: `cited line ${parsed.line} is missing or empty in ${parsed.file}` };
+    return {
+      ok: false,
+      message: `cited line ${parsed.line} is missing or empty in ${parsed.file}`,
+    };
   }
   if (!verifyCommand) {
     return { ok: false, message: "missing verify_command for file:line citation" };
   }
   try {
-    const output = execSync(verifyCommand, { cwd: repoRoot, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] })
-      .trim();
+    const output = execSync(verifyCommand, {
+      cwd: repoRoot,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+    }).trim();
     if (output.includes(citedLine)) {
       return { ok: true, message: "verify_command output includes cited line text" };
     }

@@ -1,8 +1,5 @@
 import { asList } from "../stateQuery.js";
-import {
-  evaluatorHandoffOutputRequirements,
-  loadEvaluatorHandoffContract,
-} from "../../registries/evaluatorHandoffContract.js";
+import { evaluatorHandoffOutputRequirements, loadEvaluatorHandoffContract } from "../../registries/evaluatorHandoffContract.js";
 import { capabilityInstructionContractPath } from "./contract.js";
 import { hasRecordedValue, isFile, sourceProvenance, taskRef } from "./shared.js";
 import { STATE_FAMILY_LIST_COMMANDS } from "./types.js";
@@ -27,11 +24,7 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
   const verified = latest.verified;
   const latestVerification = progress.latest_verification;
-  const projectedVerifiedPresent =
-    latest.verified_present === true ||
-    (latestVerification && typeof latestVerification === "object" && !Array.isArray(latestVerification)
-      ? latestVerification.present === true
-      : hasRecordedValue(latestVerification));
+  const projectedVerifiedPresent = latest.verified_present === true || (latestVerification && typeof latestVerification === "object" && !Array.isArray(latestVerification) ? latestVerification.present === true : hasRecordedValue(latestVerification));
   const verifiedPresent = hasRecordedValue(verified) || projectedVerifiedPresent;
   const cycle: JsonObject = {};
   for (const key of ["number", "timestamp", "type", "phase"]) {
@@ -62,12 +55,7 @@ export function retryState(selected: JsonObject | null = null, tasks: JsonObject
       return Boolean(evaluation && typeof evaluation === "object" && !Array.isArray(evaluation));
     }) ??
     null;
-  const evaluation =
-    task && task.evaluation_state && typeof task.evaluation_state === "object" && !Array.isArray(task.evaluation_state)
-      ? (task.evaluation_state as JsonObject)
-      : task && task.evaluation && typeof task.evaluation === "object" && !Array.isArray(task.evaluation)
-        ? (task.evaluation as JsonObject)
-        : null;
+  const evaluation = task && task.evaluation_state && typeof task.evaluation_state === "object" && !Array.isArray(task.evaluation_state) ? (task.evaluation_state as JsonObject) : task && task.evaluation && typeof task.evaluation === "object" && !Array.isArray(task.evaluation) ? (task.evaluation as JsonObject) : null;
   const source = {
     source_family: "plan",
     command: "agentera state plan record-evaluation --id ID --attempt-id ID --verdict {pass,fail}",
@@ -130,18 +118,12 @@ export function evaluatorHandoff(selected: JsonObject | null, progressVerificati
       output_requirements: outputRequirements,
     };
   }
-  const evidenceSummary =
-    selected.evidence_summary && typeof selected.evidence_summary === "object" && !Array.isArray(selected.evidence_summary)
-      ? (selected.evidence_summary as JsonObject)
-      : null;
+  const evidenceSummary = selected.evidence_summary && typeof selected.evidence_summary === "object" && !Array.isArray(selected.evidence_summary) ? (selected.evidence_summary as JsonObject) : null;
   const evidenceRequirements = (evidenceSummary?.items ?? []) as any[];
   if (evidenceRequirements.length === 0) {
     caveats.push("Selected task has no explicit evidence requirements recorded in plan state.");
   }
-  const acceptanceSummary =
-    selected.acceptance_summary && typeof selected.acceptance_summary === "object" && !Array.isArray(selected.acceptance_summary)
-      ? (selected.acceptance_summary as JsonObject)
-      : null;
+  const acceptanceSummary = selected.acceptance_summary && typeof selected.acceptance_summary === "object" && !Array.isArray(selected.acceptance_summary) ? (selected.acceptance_summary as JsonObject) : null;
   return {
     status: "ready",
     task: taskRef(selected),

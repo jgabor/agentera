@@ -104,11 +104,7 @@ describe("doctor smoke failure", () => {
     fs.writeFileSync(path.join(root, "registry.json"), "{}");
     const report = smokeChecks.runNpmSmokeChecks(root, process.env);
     expect(report.summary.fail).toBeGreaterThan(0);
-    expect(
-      (report.checks as Record<string, unknown>[]).some(
-        (check) => check.name === "npm.validate_capability" && check.status === "fail",
-      ),
-    ).toBe(true);
+    expect((report.checks as Record<string, unknown>[]).some((check) => check.name === "npm.validate_capability" && check.status === "fail")).toBe(true);
     fs.rmSync(root, { recursive: true, force: true });
   });
 

@@ -46,7 +46,10 @@ function project(): string {
 function todoId(index: number): string {
   let value = index;
   let suffix = "";
-  for (let digit = 0; digit < 6; digit += 1) { suffix = String.fromCharCode(97 + value % 26) + suffix; value = Math.floor(value / 26); }
+  for (let digit = 0; digit < 6; digit += 1) {
+    suffix = String.fromCharCode(97 + (value % 26)) + suffix;
+    value = Math.floor(value / 26);
+  }
   return `item${suffix}`;
 }
 
@@ -62,11 +65,27 @@ function precreatedTodoProject(count: number, options: { explicit?: boolean; dup
     const resolved = index % 3 === 1;
     const indent = index % 2 ? "  " : "";
     rows.push(`${indent}- [${resolved ? "x" : " "}] ${options.explicit ? `[id:${id}] ` : ""}${description}`);
-    fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
-      id,
-      artifact: "todo",
-      record: { severity: "critical", status: "open", description, readiness: { capability: "build", reason: "Preserve operational state", dependencies: [], blocked: null, gate: null, queue_rank: index + 1, order_reason: "Fixture order" } },
-    }));
+    fs.writeFileSync(
+      path.join(directory, `${id}.yaml`),
+      YAML.stringify({
+        id,
+        artifact: "todo",
+        record: {
+          severity: "critical",
+          status: "open",
+          description,
+          readiness: {
+            capability: "build",
+            reason: "Preserve operational state",
+            dependencies: [],
+            blocked: null,
+            gate: null,
+            queue_rank: index + 1,
+            order_reason: "Fixture order",
+          },
+        },
+      }),
+    );
   }
   rows.push("", "Unrelated closing note.", "");
   fs.writeFileSync(path.join(root, "TODO.md"), rows.join("\n"));
@@ -83,7 +102,9 @@ function compactedProject(): string {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.copyFileSync(source, target);
   }
-  fs.cpSync(path.join(V2_COMPACTION_OUTPUT, ".agentera/optimera"), path.join(root, ".agentera/optimera"), { recursive: true });
+  fs.cpSync(path.join(V2_COMPACTION_OUTPUT, ".agentera/optimera"), path.join(root, ".agentera/optimera"), {
+    recursive: true,
+  });
   return root;
 }
 
@@ -101,24 +122,38 @@ function initializeGit(root: string): void {
   git(root, ...gitCommitArgs("--quiet", "-m", "v2 state"));
 }
 
-function applyUpgrade(
-  root: string,
-  appHome: string,
-  home: string,
-  only?: readonly ("artifacts" | "runtime" | "cleanup")[],
-  format: "text" | "json" = "text",
-  verification?: Parameters<typeof cmdUpgrade>[2],
-): { code: number; out: string; err: string } {
+function applyUpgrade(root: string, appHome: string, home: string, only?: readonly ("artifacts" | "runtime" | "cleanup")[], format: "text" | "json" = "text", verification?: Parameters<typeof cmdUpgrade>[2]): { code: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", yes: true, only, format }, { out: (value) => { out += value; }, err: (value) => { err += value; } }, verification);
+  const code = cmdUpgrade(
+    { installRoot: appHome, home, project: root, channel: "development", yes: true, only, format },
+    {
+      out: (value) => {
+        out += value;
+      },
+      err: (value) => {
+        err += value;
+      },
+    },
+    verification,
+  );
   return { code, out, err };
 }
 
 function previewUpgrade(root: string, appHome: string, home: string): { code: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const code = cmdUpgrade({ installRoot: appHome, home, project: root, channel: "development", format: "json" }, { out: (value) => { out += value; }, err: (value) => { err += value; } });
+  const code = cmdUpgrade(
+    { installRoot: appHome, home, project: root, channel: "development", format: "json" },
+    {
+      out: (value) => {
+        out += value;
+      },
+      err: (value) => {
+        err += value;
+      },
+    },
+  );
   return { code, out, err };
 }
 
@@ -137,7 +172,15 @@ function capture(root: string, args: string[], stdin = ""): { code: number; out:
   let err = "";
   process.chdir(root);
   try {
-    const code = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; }, stdin: () => stdin });
+    const code = main(["node", "agentera", ...args], {
+      out: (value) => {
+        out += value;
+      },
+      err: (value) => {
+        err += value;
+      },
+      stdin: () => stdin,
+    });
     return { code, out, err };
   } finally {
     process.chdir(previous);
@@ -188,32 +231,39 @@ describe("one-way Git entity cutover", () => {
     const preview = previewUpgrade(root, managedV2(home), home);
 
     expect(preview.code, `${preview.out}\n${preview.err}`).toBe(1);
-    expect(JSON.parse(preview.out)).toMatchObject({ schemaVersion: "agentera.upgrade.v2", mode: "plan" });
+    expect(JSON.parse(preview.out)).toMatchObject({
+      schemaVersion: "agentera.upgrade.v2",
+      mode: "plan",
+    });
   });
 
-  it("reconciles a compact hierarchical TODO without duplicate projection or resurrection", () => {
-    const root = precreatedTodoProject(4);
-    initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-compact-"));
-    roots.push(home);
-    const applied = applyUpgrade(root, managedV2(home), home);
+  it(
+    "reconciles a compact hierarchical TODO without duplicate projection or resurrection",
+    () => {
+      const root = precreatedTodoProject(4);
+      initializeGit(root);
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-compact-"));
+      roots.push(home);
+      const applied = applyUpgrade(root, managedV2(home), home);
 
-    expect(applied, `${applied.out}\n${applied.err}`).toMatchObject({ code: 0, err: "" });
-    const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
-    expect([...markdown.matchAll(/\[id:([a-z]{10})\]/g)].map((match) => match[1])).toEqual([0, 1, 2, 3].map(todoId));
-    expect(markdown.match(/^- \[[ x]\]/gm)).toHaveLength(2);
-    expect(markdown).not.toContain("## → Normal");
-    expect(markdown).toContain("Unrelated project note.");
-    expect(markdown).toContain("## Client-specific work");
-    const records = fs.readdirSync(path.join(root, ".agentera/entities/todo/todo_item")).map((name) => YAML.parse(fs.readFileSync(path.join(root, ".agentera/entities/todo/todo_item", name), "utf8")).record);
-    expect(records).toHaveLength(4);
-    expect(records.map((record) => record.status).sort()).toEqual(["open", "open", "open", "resolved"]);
-    expect(records.map((record) => record.description).sort()).toEqual(["Task 0", "Task 1", "Task 2", "Task 3"]);
-    expect(records.map((record) => record.readiness?.queue_rank).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
-    expect(records.every((record) => record.readiness?.reason === "Preserve operational state")).toBe(true);
-    expect(applyUpgrade(root, managedV2(home), home).code).toBe(0);
-    expect(fs.readdirSync(path.join(root, ".agentera/entities/todo/todo_item"))).toHaveLength(4);
-  }, LARGE_CUTOVER_TIMEOUT_MS);
+      expect(applied, `${applied.out}\n${applied.err}`).toMatchObject({ code: 0, err: "" });
+      const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect([...markdown.matchAll(/\[id:([a-z]{10})\]/g)].map((match) => match[1])).toEqual([0, 1, 2, 3].map(todoId));
+      expect(markdown.match(/^- \[[ x]\]/gm)).toHaveLength(2);
+      expect(markdown).not.toContain("## → Normal");
+      expect(markdown).toContain("Unrelated project note.");
+      expect(markdown).toContain("## Client-specific work");
+      const records = fs.readdirSync(path.join(root, ".agentera/entities/todo/todo_item")).map((name) => YAML.parse(fs.readFileSync(path.join(root, ".agentera/entities/todo/todo_item", name), "utf8")).record);
+      expect(records).toHaveLength(4);
+      expect(records.map((record) => record.status).sort()).toEqual(["open", "open", "open", "resolved"]);
+      expect(records.map((record) => record.description).sort()).toEqual(["Task 0", "Task 1", "Task 2", "Task 3"]);
+      expect(records.map((record) => record.readiness?.queue_rank).sort((a, b) => a - b)).toEqual([1, 2, 3, 4]);
+      expect(records.every((record) => record.readiness?.reason === "Preserve operational state")).toBe(true);
+      expect(applyUpgrade(root, managedV2(home), home).code).toBe(0);
+      expect(fs.readdirSync(path.join(root, ".agentera/entities/todo/todo_item"))).toHaveLength(4);
+    },
+    LARGE_CUTOVER_TIMEOUT_MS,
+  );
 
   it("uses an explicit row ID while importing stale public entity values", () => {
     const root = precreatedTodoProject(1, { explicit: true });
@@ -222,7 +272,8 @@ describe("one-way Git entity cutover", () => {
     envelope.record.description = "Stale entity text";
     fs.writeFileSync(entityPath, YAML.stringify(envelope));
     initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-explicit-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-explicit-"));
+    roots.push(home);
     const applied = applyUpgrade(root, managedV2(home), home);
     expect(applied.code, `${applied.out}\n${applied.err}`).toBe(0);
     expect(YAML.parse(fs.readFileSync(entityPath, "utf8")).record.description).toBe("Task 0");
@@ -234,9 +285,12 @@ describe("one-way Git entity cutover", () => {
     ["ambiguous", () => precreatedTodoProject(2, { duplicateDescription: true }), (_root: string) => {}],
     ["stale activation", () => precreatedTodoProject(1), (root: string) => fs.writeFileSync(path.join(root, ".agentera/todo-reconciliation-activation.json"), '{"schema_version":"agentera.todoReconciliationActivation.v1","retained_legacy_rows":[]}\n')],
   ])("rejects %s cutover evidence before tracked or activation effects", (_name, makeRoot, mutate) => {
-    const root = makeRoot(); mutate(root); initializeGit(root);
+    const root = makeRoot();
+    mutate(root);
+    initializeGit(root);
     const before = treeBytes(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-reject-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-reject-"));
+    roots.push(home);
     const failed = applyUpgrade(root, managedV2(home), home);
     expect(failed.code).not.toBe(0);
     expect(treeBytes(root)).toEqual(before);
@@ -246,7 +300,8 @@ describe("one-way Git entity cutover", () => {
   it("recovers an interrupted TODO cutover with the same IDs and final public state", () => {
     const root = precreatedTodoProject(4);
     initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-retry-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-retry-"));
+    roots.push(home);
     const appHome = managedV2(home);
     process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET = "2";
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
@@ -264,7 +319,8 @@ describe("one-way Git entity cutover", () => {
     const root = precreatedTodoProject(2, { explicit: true });
     initializeGit(root);
     const markdownBefore = fs.readFileSync(path.join(root, "TODO.md"));
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-explicit-retry-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-explicit-retry-"));
+    roots.push(home);
     const appHome = managedV2(home);
     process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET = "1";
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
@@ -282,7 +338,8 @@ describe("one-way Git entity cutover", () => {
   it("rejects unmatched entity drift before resuming an interrupted TODO cutover", () => {
     const root = precreatedTodoProject(4);
     initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-drift-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-todo-drift-"));
+    roots.push(home);
     const appHome = managedV2(home);
     process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET = "2";
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
@@ -290,18 +347,41 @@ describe("one-way Git entity cutover", () => {
 
     const extraId = "extratodoa";
     const extraPath = path.join(root, `.agentera/entities/todo/todo_item/${extraId}.yaml`);
-    fs.writeFileSync(extraPath, YAML.stringify({
-      id: extraId,
-      artifact: "todo",
-      record: {
-        severity: "critical",
-        status: "open",
-        description: "Unmatched interrupted-cutover drift",
-        readiness: { capability: "build", reason: "Injected regression evidence", dependencies: [], blocked: null, gate: null, queue_rank: 5, order_reason: "Injected after interruption" },
-        reconciliation: { schema_version: "agentera.todoReconciliation.v1", public: { present: true, description: "Unmatched interrupted-cutover drift", severity: "critical", status: "open", order: 5 } },
-      },
-    }));
-    const driftValidation = validateEntityState(root, SOURCE_ROOT, { kind: "migration_preview", projectRoot: root });
+    fs.writeFileSync(
+      extraPath,
+      YAML.stringify({
+        id: extraId,
+        artifact: "todo",
+        record: {
+          severity: "critical",
+          status: "open",
+          description: "Unmatched interrupted-cutover drift",
+          readiness: {
+            capability: "build",
+            reason: "Injected regression evidence",
+            dependencies: [],
+            blocked: null,
+            gate: null,
+            queue_rank: 5,
+            order_reason: "Injected after interruption",
+          },
+          reconciliation: {
+            schema_version: "agentera.todoReconciliation.v1",
+            public: {
+              present: true,
+              description: "Unmatched interrupted-cutover drift",
+              severity: "critical",
+              status: "open",
+              order: 5,
+            },
+          },
+        },
+      }),
+    );
+    const driftValidation = validateEntityState(root, SOURCE_ROOT, {
+      kind: "migration_preview",
+      projectRoot: root,
+    });
     expect(driftValidation.valid, JSON.stringify(driftValidation.issues)).toBe(true);
     const beforeRetry = treeBytes(root);
     const journalBefore = treeBytes(root, ".agentera/.todo-reconciliation");
@@ -328,7 +408,8 @@ describe("one-way Git entity cutover", () => {
   it("rejects an added non-TODO entity before resuming an interrupted TODO cutover", () => {
     const root = precreatedTodoProject(4);
     initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-non-todo-add-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-non-todo-add-"));
+    roots.push(home);
     const appHome = managedV2(home);
     process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET = "2";
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
@@ -341,7 +422,10 @@ describe("one-way Git entity cutover", () => {
     const extra = YAML.parse(fs.readFileSync(originalPlan, "utf8"));
     extra.id = extraId;
     fs.writeFileSync(extraPath, YAML.stringify(extra));
-    const driftValidation = validateEntityState(root, SOURCE_ROOT, { kind: "migration_preview", projectRoot: root });
+    const driftValidation = validateEntityState(root, SOURCE_ROOT, {
+      kind: "migration_preview",
+      projectRoot: root,
+    });
     expect(driftValidation.valid, JSON.stringify(driftValidation.issues)).toBe(true);
     const beforeRetry = treeBytes(root);
     const journalBefore = treeBytes(root, ".agentera/.todo-reconciliation");
@@ -367,7 +451,8 @@ describe("one-way Git entity cutover", () => {
   it("rejects a missing non-TODO entity before resuming an interrupted TODO cutover", () => {
     const root = precreatedTodoProject(4);
     initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-non-todo-missing-")); roots.push(home);
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-non-todo-missing-"));
+    roots.push(home);
     const appHome = managedV2(home);
     process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET = "2";
     expect(applyUpgrade(root, appHome, home).code).not.toBe(0);
@@ -377,7 +462,10 @@ describe("one-way Git entity cutover", () => {
     const planPath = path.join(planDirectory, fs.readdirSync(planDirectory)[0]!);
     const planBytes = fs.readFileSync(planPath);
     fs.rmSync(planPath);
-    const driftValidation = validateEntityState(root, SOURCE_ROOT, { kind: "migration_preview", projectRoot: root });
+    const driftValidation = validateEntityState(root, SOURCE_ROOT, {
+      kind: "migration_preview",
+      projectRoot: root,
+    });
     expect(driftValidation.valid, JSON.stringify(driftValidation.issues)).toBe(true);
     const beforeRetry = treeBytes(root);
     const journalBefore = treeBytes(root, ".agentera/.todo-reconciliation");
@@ -430,31 +518,49 @@ describe("one-way Git entity cutover", () => {
     fs.writeFileSync(path.join(root, ".agentera/health.yaml"), "audits:\n  - number: 1\n    summary: Retained health summary only.\n");
     initializeGit(root);
     const prepared = prepareEntityCutoverForUpgrade(root, SOURCE_ROOT);
-    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: false, mutation_performed: true });
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({
+      status: "complete",
+      idempotent: false,
+      mutation_performed: true,
+    });
     expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
-    for (const [artifact, boundary] of [["progress", "progress_summary"], ["decisions", "decision_summary"], ["health", "health_summary"]]) {
+    for (const [artifact, boundary] of [
+      ["progress", "progress_summary"],
+      ["decisions", "decision_summary"],
+      ["health", "health_summary"],
+    ]) {
       const files = fs.readdirSync(path.join(root, `.agentera/entities/${artifact}/${boundary}`));
       expect(files).toHaveLength(1);
       expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
     }
-    const decision = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision_summary"))
-      .map((name) => fs.readFileSync(path.join(root, ".agentera/entities/decisions/decision_summary", name), "utf8"))[0];
+    const decision = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision_summary")).map((name) => fs.readFileSync(path.join(root, ".agentera/entities/decisions/decision_summary", name), "utf8"))[0];
     expect(decision).toContain("satisfaction:");
     expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_satisfaction"))).toBe(false);
-    expect(applyPreparedEntityCutover(prepared)).toMatchObject({ status: "complete", idempotent: true, mutation_performed: false });
+    expect(applyPreparedEntityCutover(prepared)).toMatchObject({
+      status: "complete",
+      idempotent: true,
+      mutation_performed: false,
+    });
   }, 30_000);
 
   it.each([
     ["project", (root: string, _prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => fs.appendFileSync(path.join(root, ".agentera/progress.yaml"), "# drift\n")],
-    ["source", (_root: string, prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => {
-      const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-source-drift-"));
-      roots.push(sourceRoot);
-      fs.cpSync(path.join(SOURCE_ROOT, "references/artifacts"), path.join(sourceRoot, "references/artifacts"), { recursive: true });
-      fs.cpSync(path.join(SOURCE_ROOT, "skills/agentera"), path.join(sourceRoot, "skills/agentera"), { recursive: true });
-      const authority = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
-      fs.appendFileSync(authority, "# drift\n");
-      prepared.sourceRoot = sourceRoot;
-    }],
+    [
+      "source",
+      (_root: string, prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => {
+        const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-source-drift-"));
+        roots.push(sourceRoot);
+        fs.cpSync(path.join(SOURCE_ROOT, "references/artifacts"), path.join(sourceRoot, "references/artifacts"), {
+          recursive: true,
+        });
+        fs.cpSync(path.join(SOURCE_ROOT, "skills/agentera"), path.join(sourceRoot, "skills/agentera"), {
+          recursive: true,
+        });
+        const authority = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
+        fs.appendFileSync(authority, "# drift\n");
+        prepared.sourceRoot = sourceRoot;
+      },
+    ],
     ["Git", (root: string, _prepared: ReturnType<typeof prepareEntityCutoverForUpgrade>) => git(root, ...gitCommitArgs("--quiet", "--allow-empty", "-m", "drift"))],
   ])("rejects %s drift after preparation before the first effect", (_kind, mutate) => {
     const root = project();
@@ -467,68 +573,89 @@ describe("one-way Git entity cutover", () => {
     expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
   });
 
-  it("completes the pinned v2 compaction lifecycle without changing preserved aggregate bytes", () => {
-    const root = compactedProject();
-    const rawTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
-    expect(rawTodo).toMatch(/^## Resolved$/m);
-    expect(rawTodo).not.toMatch(/^## ✓ Resolved$/m);
-    const protectedExperiments = treeBytes(root, ".agentera/optimera");
-    initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-home-"));
-    roots.push(home);
-    const appHome = managedV2(home);
-    const { "TODO.md": todoBefore, ...aggregateBefore } = aggregateHashes(root);
-    const assertSourcesUnchanged = (expectedTodo: string | null = todoBefore) => {
-      const { "TODO.md": _todo, ...current } = aggregateHashes(root);
-      expect(current).toEqual(aggregateBefore);
-      if (expectedTodo) expect(sha256(fs.readFileSync(path.join(root, "TODO.md")))).toBe(expectedTodo);
-      expect(treeBytes(root, ".agentera/optimera")).toEqual(protectedExperiments);
-    };
-    const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
-    const previewEntries = [...preview.entries];
-    let previewPage = preview;
-    while (previewPage.next_after) {
-      previewPage = previewEntityMigration(root, SOURCE_ROOT, {
-        limit: 1000,
-        after: previewPage.next_after,
-        sourceFingerprint: previewPage.source_fingerprint,
-        previewDigest: previewPage.preview_digest,
+  it(
+    "completes the pinned v2 compaction lifecycle without changing preserved aggregate bytes",
+    () => {
+      const root = compactedProject();
+      const rawTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect(rawTodo).toMatch(/^## Resolved$/m);
+      expect(rawTodo).not.toMatch(/^## ✓ Resolved$/m);
+      const protectedExperiments = treeBytes(root, ".agentera/optimera");
+      initializeGit(root);
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v2-compaction-home-"));
+      roots.push(home);
+      const appHome = managedV2(home);
+      const { "TODO.md": todoBefore, ...aggregateBefore } = aggregateHashes(root);
+      const assertSourcesUnchanged = (expectedTodo: string | null = todoBefore) => {
+        const { "TODO.md": _todo, ...current } = aggregateHashes(root);
+        expect(current).toEqual(aggregateBefore);
+        if (expectedTodo) expect(sha256(fs.readFileSync(path.join(root, "TODO.md")))).toBe(expectedTodo);
+        expect(treeBytes(root, ".agentera/optimera")).toEqual(protectedExperiments);
+      };
+      const preview = previewEntityMigration(root, SOURCE_ROOT, { limit: 1000 });
+      const previewEntries = [...preview.entries];
+      let previewPage = preview;
+      while (previewPage.next_after) {
+        previewPage = previewEntityMigration(root, SOURCE_ROOT, {
+          limit: 1000,
+          after: previewPage.next_after,
+          sourceFingerprint: previewPage.source_fingerprint,
+          previewDigest: previewPage.preview_digest,
+        });
+        previewEntries.push(...previewPage.entries);
+      }
+      expect(preview).toMatchObject({
+        status: "ready",
+        read_only: true,
+        mutation_performed: false,
       });
-      previewEntries.push(...previewPage.entries);
-    }
-    expect(preview).toMatchObject({ status: "ready", read_only: true, mutation_performed: false });
-    expect(preview.counts).toMatchObject({ blockers: 0, root_blockers: 0, dependent_blockers: 0 });
-    expect(preview.counts.valid_compacted_summary).toBeGreaterThan(0);
-    const targets = previewEntries.filter((entry) => entry.proposed_target !== null);
-    expect(new Set(previewEntries.map((entry) => entry.source_identity)).size).toBe(previewEntries.length);
-    expect(previewEntries).toHaveLength(preview.counts.total);
-    expect(new Set(targets.map((entry) => entry.proposed_target!.id)).size).toBe(targets.length);
-    assertSourcesUnchanged();
-    const applied = applyUpgrade(root, appHome, home);
-    expect(applied).toMatchObject({ code: 0, err: "" });
-    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
-    expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
-    const marker = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
-    expect(marker).toEqual(Buffer.from(dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", source_fingerprint: preview.source_fingerprint, preview_digest: preview.preview_digest })));
-    const finalEntities = treeBytes(root, ".agentera/entities");
-    expect(Object.keys(finalEntities)).toHaveLength(preview.counts.publishable_entities);
-    const entityIds = new Set<string>();
-    for (const entry of targets) {
-      const target = entry.proposed_target!;
-      const bytes = fs.readFileSync(path.join(root, target.path));
-      expect(sha256(bytes)).toBe(entry.target_sha256);
-      const envelope = YAML.parse(bytes.toString("utf8"));
-      expect(envelope).toMatchObject({ id: target.id, artifact: entry.artifact });
-      expect(entityIds.has(envelope.id)).toBe(false);
-      entityIds.add(envelope.id);
-    }
-    expect(entityIds.size).toBe(targets.length);
-    assertSourcesUnchanged(null);
-    const migratedTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
-    expect(migratedTodo).toMatch(/^## ✓ Resolved$/m);
-    expect(migratedTodo).not.toMatch(/^## Resolved$/m);
-    expect(sha256(Buffer.from(migratedTodo))).not.toBe(todoBefore);
-  }, LARGE_CUTOVER_TIMEOUT_MS);
+      expect(preview.counts).toMatchObject({
+        blockers: 0,
+        root_blockers: 0,
+        dependent_blockers: 0,
+      });
+      expect(preview.counts.valid_compacted_summary).toBeGreaterThan(0);
+      const targets = previewEntries.filter((entry) => entry.proposed_target !== null);
+      expect(new Set(previewEntries.map((entry) => entry.source_identity)).size).toBe(previewEntries.length);
+      expect(previewEntries).toHaveLength(preview.counts.total);
+      expect(new Set(targets.map((entry) => entry.proposed_target!.id)).size).toBe(targets.length);
+      assertSourcesUnchanged();
+      const applied = applyUpgrade(root, appHome, home);
+      expect(applied).toMatchObject({ code: 0, err: "" });
+      expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+      expect(capture(root, ["check", "validate", "state", "--format", "json"]).code).toBe(0);
+      const marker = fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"));
+      expect(marker).toEqual(
+        Buffer.from(
+          dumpYamlMapping({
+            schemaVersion: "agentera.stateMode.v1",
+            mode: "entities",
+            source_fingerprint: preview.source_fingerprint,
+            preview_digest: preview.preview_digest,
+          }),
+        ),
+      );
+      const finalEntities = treeBytes(root, ".agentera/entities");
+      expect(Object.keys(finalEntities)).toHaveLength(preview.counts.publishable_entities);
+      const entityIds = new Set<string>();
+      for (const entry of targets) {
+        const target = entry.proposed_target!;
+        const bytes = fs.readFileSync(path.join(root, target.path));
+        expect(sha256(bytes)).toBe(entry.target_sha256);
+        const envelope = YAML.parse(bytes.toString("utf8"));
+        expect(envelope).toMatchObject({ id: target.id, artifact: entry.artifact });
+        expect(entityIds.has(envelope.id)).toBe(false);
+        entityIds.add(envelope.id);
+      }
+      expect(entityIds.size).toBe(targets.length);
+      assertSourcesUnchanged(null);
+      const migratedTodo = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect(migratedTodo).toMatch(/^## ✓ Resolved$/m);
+      expect(migratedTodo).not.toMatch(/^## Resolved$/m);
+      expect(sha256(Buffer.from(migratedTodo))).not.toBe(todoBefore);
+    },
+    LARGE_CUTOVER_TIMEOUT_MS,
+  );
 
   it("refuses authority-undeclared aggregate collections before any cutover effect", () => {
     const root = project();
@@ -553,33 +680,91 @@ describe("one-way Git entity cutover", () => {
   });
 
   it.each([
-    ["ignored migration input", (root: string) => { fs.writeFileSync(path.join(root, ".gitignore"), ".agentera/progress.yaml\n"); initializeGit(root); }],
-    ["untracked migration input", (root: string) => { const file = path.join(root, ".agentera/progress.yaml"); const bytes = fs.readFileSync(file); fs.rmSync(file); initializeGit(root); fs.writeFileSync(file, bytes); }],
-    ["staged migration input", (root: string) => { initializeGit(root); fs.appendFileSync(path.join(root, ".agentera/plan.yaml"), "# staged\n"); git(root, "add", ".agentera/plan.yaml"); }],
-    ["modified migration input", (root: string) => { initializeGit(root); fs.appendFileSync(path.join(root, ".agentera/plan.yaml"), "# modified\n"); }],
-    ["renamed migration input", (root: string) => { initializeGit(root); git(root, "mv", ".agentera/progress.yaml", ".agentera/progress-renamed.yaml"); }],
-    ["unsafe migration input", (root: string) => { initializeGit(root); fs.rmSync(path.join(root, ".agentera/progress.yaml")); fs.symlinkSync("plan.yaml", path.join(root, ".agentera/progress.yaml")); }],
-    ["unsupported tracked source", (root: string) => { fs.mkdirSync(path.join(root, ".agentera/archive/progress"), { recursive: true }); fs.writeFileSync(path.join(root, ".agentera/archive/progress/not-a-number.yaml"), "record: {}\n"); initializeGit(root); }],
-    ["unrelated dirty checkout", (root: string) => { initializeGit(root); fs.writeFileSync(path.join(root, "notes.txt"), "dirty\n"); }],
-  ])("refuses %s before every selected effect", (_label, arrange) => {
-    const root = project();
-    arrange(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-refusal-"));
-    roots.push(home);
-    const appHome = managedV2(home);
-    const projectBefore = treeBytes(root);
-    const appBefore = treeBytes(appHome);
+    [
+      "ignored migration input",
+      (root: string) => {
+        fs.writeFileSync(path.join(root, ".gitignore"), ".agentera/progress.yaml\n");
+        initializeGit(root);
+      },
+    ],
+    [
+      "untracked migration input",
+      (root: string) => {
+        const file = path.join(root, ".agentera/progress.yaml");
+        const bytes = fs.readFileSync(file);
+        fs.rmSync(file);
+        initializeGit(root);
+        fs.writeFileSync(file, bytes);
+      },
+    ],
+    [
+      "staged migration input",
+      (root: string) => {
+        initializeGit(root);
+        fs.appendFileSync(path.join(root, ".agentera/plan.yaml"), "# staged\n");
+        git(root, "add", ".agentera/plan.yaml");
+      },
+    ],
+    [
+      "modified migration input",
+      (root: string) => {
+        initializeGit(root);
+        fs.appendFileSync(path.join(root, ".agentera/plan.yaml"), "# modified\n");
+      },
+    ],
+    [
+      "renamed migration input",
+      (root: string) => {
+        initializeGit(root);
+        git(root, "mv", ".agentera/progress.yaml", ".agentera/progress-renamed.yaml");
+      },
+    ],
+    [
+      "unsafe migration input",
+      (root: string) => {
+        initializeGit(root);
+        fs.rmSync(path.join(root, ".agentera/progress.yaml"));
+        fs.symlinkSync("plan.yaml", path.join(root, ".agentera/progress.yaml"));
+      },
+    ],
+    [
+      "unsupported tracked source",
+      (root: string) => {
+        fs.mkdirSync(path.join(root, ".agentera/archive/progress"), { recursive: true });
+        fs.writeFileSync(path.join(root, ".agentera/archive/progress/not-a-number.yaml"), "record: {}\n");
+        initializeGit(root);
+      },
+    ],
+    [
+      "unrelated dirty checkout",
+      (root: string) => {
+        initializeGit(root);
+        fs.writeFileSync(path.join(root, "notes.txt"), "dirty\n");
+      },
+    ],
+  ])(
+    "refuses %s before every selected effect",
+    (_label, arrange) => {
+      const root = project();
+      arrange(root);
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-refusal-"));
+      roots.push(home);
+      const appHome = managedV2(home);
+      const projectBefore = treeBytes(root);
+      const appBefore = treeBytes(appHome);
 
-    const refused = applyUpgrade(root, appHome, home);
+      const refused = applyUpgrade(root, appHome, home);
 
-    expect(refused.code).not.toBe(0);
-    expect(refused.err).toContain("Recover the tracked v2 checkout with Git and retry");
-    expect(refused.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
-    expect(treeBytes(root)).toEqual(projectBefore);
-    expect(treeBytes(appHome)).toEqual(appBefore);
-    expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
-    expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
-  }, 30_000);
+      expect(refused.code).not.toBe(0);
+      expect(refused.err).toContain("Recover the tracked v2 checkout with Git and retry");
+      expect(refused.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
+      expect(treeBytes(root)).toEqual(projectBefore);
+      expect(treeBytes(appHome)).toEqual(appBefore);
+      expect(fs.existsSync(path.join(root, ".agentera/state-mode.yaml"))).toBe(false);
+      expect(fs.existsSync(path.join(root, FORWARD_MANIFEST))).toBe(false);
+    },
+    30_000,
+  );
 
   it("refuses non-Git and every partial cross-major apply", () => {
     for (const only of [undefined, ["artifacts"] as const, ["runtime"] as const, ["cleanup"] as const]) {
@@ -736,8 +921,22 @@ describe("one-way Git entity cutover", () => {
     let err = "";
 
     const code = cmdUpgrade(
-      { installRoot: appHome, home, project: root, channel: "development", runtime: "all", yes: true },
-      { out: (value) => { out += value; }, err: (value) => { err += value; } },
+      {
+        installRoot: appHome,
+        home,
+        project: root,
+        channel: "development",
+        runtime: "all",
+        yes: true,
+      },
+      {
+        out: (value) => {
+          out += value;
+        },
+        err: (value) => {
+          err += value;
+        },
+      },
     );
 
     expect(code, out).toBe(2);
@@ -774,25 +973,45 @@ describe("one-way Git entity cutover", () => {
   }, 30_000);
 
   it.each([
-    ["state", { state_validation: { status: "failed", entity_count: 2, issue_count: 1 }, startup_validation: { status: "passed" } }],
-    ["startup", { state_validation: { status: "passed", entity_count: 2, issue_count: 0 }, startup_validation: { status: "failed" } }],
-  ])("exits nonzero with bounded forward guidance when %s validation fails", (_name, result) => {
-    const root = project();
-    initializeGit(root);
-    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-verify-failure-"));
-    roots.push(home);
-    const appHome = managedV2(home);
+    [
+      "state",
+      {
+        state_validation: { status: "failed", entity_count: 2, issue_count: 1 },
+        startup_validation: { status: "passed" },
+      },
+    ],
+    [
+      "startup",
+      {
+        state_validation: { status: "passed", entity_count: 2, issue_count: 0 },
+        startup_validation: { status: "failed" },
+      },
+    ],
+  ])(
+    "exits nonzero with bounded forward guidance when %s validation fails",
+    (_name, result) => {
+      const root = project();
+      initializeGit(root);
+      const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-upgrade-verify-failure-"));
+      roots.push(home);
+      const appHome = managedV2(home);
 
-    const failed = applyUpgrade(root, appHome, home, undefined, "json", {
-      verifyOneWayUpgrade: () => result,
-    });
+      const failed = applyUpgrade(root, appHome, home, undefined, "json", {
+        verifyOneWayUpgrade: () => result,
+      });
 
-    expect(failed.code).toBe(1);
-    expect(JSON.parse(failed.out)).toEqual({ phase: "verification", status: "failed", ...result });
-    expect(failed.err).toContain("Rerun the same upgrade command to continue forward");
-    expect(failed.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
-    expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
-  }, 30_000);
+      expect(failed.code).toBe(1);
+      expect(JSON.parse(failed.out)).toEqual({
+        phase: "verification",
+        status: "failed",
+        ...result,
+      });
+      expect(failed.err).toContain("Rerun the same upgrade command to continue forward");
+      expect(failed.err).not.toMatch(/rollback|migration[_ -]?id|manifest|receipt|snapshot/i);
+      expect(detectStateMode(root, SOURCE_ROOT)).toBe("entities");
+    },
+    30_000,
+  );
 
   it("does not let successful verification mask missing entity authority", () => {
     const root = project();

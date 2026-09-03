@@ -6,10 +6,7 @@ import path from "node:path";
 import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { expanduser } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  loadNativeResourceCleanupContract,
-  type NativeResourceCleanupContract,
-} from "../runtime/nativeResourceCleanup.js";
+import { loadNativeResourceCleanupContract, type NativeResourceCleanupContract } from "../runtime/nativeResourceCleanup.js";
 import { defaultAppHome } from "../state/installRoot.js";
 import { classifyProjectState } from "../state/stateMode.js";
 import { applyAppContentRefresh } from "./appContentRefresh.js";
@@ -53,8 +50,18 @@ export interface ProductV1ResetResult {
 
 export interface ProductV1ResetValidatedScope {
   roots: Record<string, string>;
-  deletions: Array<{ id: string; owner: string; root: string; targets: ProductV1ResetScopeTarget[] }>;
-  recreations: Array<{ id: string; owner: string; root: string; targets: ProductV1ResetScopeTarget[] }>;
+  deletions: Array<{
+    id: string;
+    owner: string;
+    root: string;
+    targets: ProductV1ResetScopeTarget[];
+  }>;
+  recreations: Array<{
+    id: string;
+    owner: string;
+    root: string;
+    targets: ProductV1ResetScopeTarget[];
+  }>;
 }
 
 export interface ProductV1ResetPreview {
@@ -75,7 +82,9 @@ function hash(bytes: string | Buffer): string {
 }
 
 function lstat(target: string): fs.Stats | null {
-  try { return fs.lstatSync(target); } catch (error) {
+  try {
+    return fs.lstatSync(target);
+  } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return null;
     throw error;
   }
@@ -104,8 +113,7 @@ function resolvedRoots(options: ProductV1ResetOptions): Record<string, string> {
   const env = options.env ?? process.env;
   const home = safeRoot("runtime home", options.home ?? os.homedir());
   const project = safeRoot("project root", options.project ?? process.cwd());
-  const installCandidate = options.installRoot ?? env.AGENTERA_HOME ?? env.AGENTERA_DEFAULT_INSTALL_ROOT
-    ?? defaultAppHome(env, home);
+  const installCandidate = options.installRoot ?? env.AGENTERA_HOME ?? env.AGENTERA_DEFAULT_INSTALL_ROOT ?? defaultAppHome(env, home);
   const installRoot = safeRoot("install root", installCandidate);
   const profileRoot = safeRoot("profile root", resolveProfileDirOverride(env) ?? installRoot);
   return { project, profile_root: profileRoot, install_root: installRoot, runtime_home: home };
@@ -159,35 +167,34 @@ function inFileState(target: string): { type: "absent" | "file"; sha256?: string
 }
 
 function expandTemplate(template: string, roots: Record<string, string>): string {
-  return path.resolve(template
-    .replaceAll("{project}", roots.project)
-    .replaceAll("{home}", roots.runtime_home)
-    .replaceAll("{install_root}", roots.install_root));
+  return path.resolve(template.replaceAll("{project}", roots.project).replaceAll("{home}", roots.runtime_home).replaceAll("{install_root}", roots.install_root));
 }
 
 function runtimeTargets(roots: Record<string, string>, contract: NativeResourceCleanupContract): ProductV1ResetScopeTarget[] {
   const targets: ProductV1ResetScopeTarget[] = [];
   for (const resource of contract.diagnosticResources) {
     const names = resource.names.length > 0 ? resource.names : [null];
-    for (const name of names) for (const destination of resource.destinations) {
-      // Product-v1 reset remains bound to its own declared roots; configured
-      // OpenCode migration roots belong only to retired-resource cleanup.
-      if (destination.includes("{opencode_config}")) continue;
-      const declared = name === null ? destination : destination.replaceAll("{name}", name);
-      const target = expandTemplate(declared, roots);
-      const root = declared.startsWith("{project}") ? roots.project
-        : declared.startsWith("{install_root}") ? roots.install_root : roots.runtime_home;
-      assertContained(root, target);
-      targets.push(resource.contains === null
-        ? { declared, operation: "remove_path", path: target, entries: snapshot(target) }
-        : {
-            declared,
-            operation: "remove_in_file_selector",
-            path: target,
-            selector: { kind: "contains", value: resource.contains },
-            file_state: inFileState(target),
-          });
-    }
+    for (const name of names)
+      for (const destination of resource.destinations) {
+        // Product-v1 reset remains bound to its own declared roots; configured
+        // OpenCode migration roots belong only to retired-resource cleanup.
+        if (destination.includes("{opencode_config}")) continue;
+        const declared = name === null ? destination : destination.replaceAll("{name}", name);
+        const target = expandTemplate(declared, roots);
+        const root = declared.startsWith("{project}") ? roots.project : declared.startsWith("{install_root}") ? roots.install_root : roots.runtime_home;
+        assertContained(root, target);
+        targets.push(
+          resource.contains === null
+            ? { declared, operation: "remove_path", path: target, entries: snapshot(target) }
+            : {
+                declared,
+                operation: "remove_in_file_selector",
+                path: target,
+                selector: { kind: "contains", value: resource.contains },
+                file_state: inFileState(target),
+              },
+        );
+      }
   }
   for (const unit of contract.configuration) {
     const target = expandTemplate(unit.destination, roots);
@@ -205,23 +212,22 @@ function runtimeTargets(roots: Record<string, string>, contract: NativeResourceC
 
 function evidence(project: string, installRoot: string, manifest: string): string[] {
   const authority = loadProductV1ResetAuthority();
-  const found = authority.projectArtifacts
-    .filter((item) => item.triggersReset && fs.existsSync(path.join(project, item.path)))
-    .map((item) => path.join(project, item.path));
+  const found = authority.projectArtifacts.filter((item) => item.triggersReset && fs.existsSync(path.join(project, item.path))).map((item) => path.join(project, item.path));
   const registryPath = path.join(installRoot, manifest);
   if (fs.existsSync(registryPath)) {
     try {
-      const value = JSON.parse(fs.readFileSync(registryPath, "utf8")) as { skills?: Array<{ version?: unknown }> };
+      const value = JSON.parse(fs.readFileSync(registryPath, "utf8")) as {
+        skills?: Array<{ version?: unknown }>;
+      };
       if (typeof value.skills?.[0]?.version === "string" && /^1\./.test(value.skills[0].version)) found.push(registryPath);
-    } catch { /* malformed state is not product-generation evidence */ }
+    } catch {
+      /* malformed state is not product-generation evidence */
+    }
   }
   return found.sort();
 }
 
-export function previewProductV1Reset(
-  options: ProductV1ResetOptions = {},
-  dependencies: ProductV1ResetDependencies = {},
-): ProductV1ResetPreview {
+export function previewProductV1Reset(options: ProductV1ResetOptions = {}, dependencies: ProductV1ResetDependencies = {}): ProductV1ResetPreview {
   const roots = resolvedRoots(options);
   const project = roots.project!;
   const installRoot = roots.install_root!;
@@ -229,25 +235,35 @@ export function previewProductV1Reset(
   const foundEvidence = evidence(project, installRoot, authority.installationPackage.manifest);
   if (foundEvidence.length === 0) throw new Error("product-v1 reset requires declared product-v1 generation evidence");
 
-  const rootFor = (name: string): string => name === "runtime_declared_roots" ? roots.runtime_home! : roots[name]!;
-  const deletions = authority.scope.filter((item) => item.action === "delete").map((item) => ({
-    id: item.id,
-    owner: item.owner,
-    root: rootFor(item.boundedRoot),
-    targets: item.boundedRoot === "runtime_declared_roots"
-      ? runtimeTargets(roots, dependencies.runtimeContract ?? loadNativeResourceCleanupContract())
-      : item.targets.map((declared) => {
-      const target = path.resolve(rootFor(item.boundedRoot), declared);
-      assertContained(rootFor(item.boundedRoot), target);
-      return { declared, operation: "remove_path" as const, path: target, entries: snapshot(target) };
-    }),
-  }));
-  const recreations = authority.scope.filter((item) => item.action === "recreate").map((item) => ({
-    id: item.id,
-    owner: item.owner,
-    root: rootFor(item.boundedRoot),
-    targets: item.targets.map((declared) => ({ declared })),
-  }));
+  const rootFor = (name: string): string => (name === "runtime_declared_roots" ? roots.runtime_home! : roots[name]!);
+  const deletions = authority.scope
+    .filter((item) => item.action === "delete")
+    .map((item) => ({
+      id: item.id,
+      owner: item.owner,
+      root: rootFor(item.boundedRoot),
+      targets:
+        item.boundedRoot === "runtime_declared_roots"
+          ? runtimeTargets(roots, dependencies.runtimeContract ?? loadNativeResourceCleanupContract())
+          : item.targets.map((declared) => {
+              const target = path.resolve(rootFor(item.boundedRoot), declared);
+              assertContained(rootFor(item.boundedRoot), target);
+              return {
+                declared,
+                operation: "remove_path" as const,
+                path: target,
+                entries: snapshot(target),
+              };
+            }),
+    }));
+  const recreations = authority.scope
+    .filter((item) => item.action === "recreate")
+    .map((item) => ({
+      id: item.id,
+      owner: item.owner,
+      root: rootFor(item.boundedRoot),
+      targets: item.targets.map((declared) => ({ declared })),
+    }));
   const unsigned = {
     schemaVersion: "agentera.productV1ResetPreview.v1" as const,
     mode: "preview" as const,
@@ -338,7 +354,11 @@ function writeJournal(project: string, journal: ResetJournal): void {
 
 function journalFor(preview: ProductV1ResetPreview, stage: ResetStage): ResetJournal {
   const selector_states = selectorStates(validatedScope(preview));
-  const base = { schemaVersion: "agentera.productV1ResetJournal.v1" as const, preview, selector_states };
+  const base = {
+    schemaVersion: "agentera.productV1ResetJournal.v1" as const,
+    preview,
+    selector_states,
+  };
   return { ...base, stage, digest: journalDigest(base) };
 }
 
@@ -384,11 +404,12 @@ function transformedSelectors(original: string, selectors: NonNullable<ProductV1
 
 function selectorGroups(scope: ProductV1ResetValidatedScope): Map<string, NonNullable<ProductV1ResetScopeTarget["selector"]>[]> {
   const groups = new Map<string, NonNullable<ProductV1ResetScopeTarget["selector"]>[]>();
-  for (const deletion of scope.deletions) for (const target of deletion.targets) {
-    if (target.operation === "remove_in_file_selector" && target.path && target.selector) {
-      groups.set(target.path, [...(groups.get(target.path) ?? []), target.selector]);
+  for (const deletion of scope.deletions)
+    for (const target of deletion.targets) {
+      if (target.operation === "remove_in_file_selector" && target.path && target.selector) {
+        groups.set(target.path, [...(groups.get(target.path) ?? []), target.selector]);
+      }
     }
-  }
   return groups;
 }
 
@@ -398,10 +419,13 @@ function selectorStates(scope: ProductV1ResetValidatedScope): SelectorState[] {
     if (stat === null) return { path: target, before: "absent", after: "absent" };
     if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`in-file reset target must be a regular file: ${target}`);
     const original = fs.readFileSync(target, "utf8");
-    const approved = scope.deletions.flatMap((deletion) => deletion.targets)
-      .find((candidate) => candidate.path === target)?.file_state?.sha256;
+    const approved = scope.deletions.flatMap((deletion) => deletion.targets).find((candidate) => candidate.path === target)?.file_state?.sha256;
     if (approved !== hash(original)) throw new Error("product-v1 reset scope changed after preview; run a new preview and review its authorization");
-    return { path: target, before: hash(original), after: hash(transformedSelectors(original, selectors)) };
+    return {
+      path: target,
+      before: hash(original),
+      after: hash(transformedSelectors(original, selectors)),
+    };
   });
 }
 
@@ -409,11 +433,7 @@ function cleanSelectorStaging(states: SelectorState[]): void {
   for (const state of states) fs.rmSync(selectorStagingPath(state.path), { force: true });
 }
 
-function removeSelectors(
-  target: string,
-  selectors: NonNullable<ProductV1ResetScopeTarget["selector"]>[],
-  afterEffect?: ProductV1ResetDependencies["afterEffect"],
-): void {
+function removeSelectors(target: string, selectors: NonNullable<ProductV1ResetScopeTarget["selector"]>[], afterEffect?: ProductV1ResetDependencies["afterEffect"]): void {
   const stat = lstat(target);
   if (stat === null) return;
   if (!stat.isFile() || stat.isSymbolicLink()) throw new Error(`in-file reset target must remain a regular file: ${target}`);
@@ -463,25 +483,21 @@ function validateSelectorState(state: SelectorState, stage: ResetStage): void {
 function validateRetryState(journal: ResetJournal): void {
   const scope = validatedScope(journal.preview);
   const exact = journal.stage === "prepared";
-  for (const deletion of scope.deletions) for (const target of deletion.targets) {
-    if (target.operation === "remove_path" && target.path) {
-      if (journal.stage === "initializing") {
-        const current = snapshot(target.path);
-        if (!(current.length === 1 && current[0]!.type === "absent")) {
-          throw new Error(`reset retry target reappeared after deletion: ${target.path}`);
-        }
-      } else validateRemovePath(target, exact);
+  for (const deletion of scope.deletions)
+    for (const target of deletion.targets) {
+      if (target.operation === "remove_path" && target.path) {
+        if (journal.stage === "initializing") {
+          const current = snapshot(target.path);
+          if (!(current.length === 1 && current[0]!.type === "absent")) {
+            throw new Error(`reset retry target reappeared after deletion: ${target.path}`);
+          }
+        } else validateRemovePath(target, exact);
+      }
     }
-  }
   for (const state of journal.selector_states) validateSelectorState(state, journal.stage);
 }
 
-function loadResetJournal(
-  options: ProductV1ResetOptions,
-  authorization: string,
-  dependencies: ProductV1ResetDependencies,
-  project: string,
-): { journal: ResetJournal; retry: boolean } {
+function loadResetJournal(options: ProductV1ResetOptions, authorization: string, dependencies: ProductV1ResetDependencies, project: string): { journal: ResetJournal; retry: boolean } {
   const target = journalPath(project);
   const staging = journalStagingPath(project);
   const hasTarget = lstat(target) !== null;
@@ -524,11 +540,7 @@ function initializeFreshV3(scope: ProductV1ResetValidatedScope): void {
   }
 }
 
-export function applyProductV1Reset(
-  options: ProductV1ResetOptions,
-  authorization: string,
-  dependencies: ProductV1ResetDependencies = {},
-): ProductV1ResetResult {
+export function applyProductV1Reset(options: ProductV1ResetOptions, authorization: string, dependencies: ProductV1ResetDependencies = {}): ProductV1ResetResult {
   const roots = resolvedRoots(options);
   let { journal, retry } = loadResetJournal(options, authorization, dependencies, roots.project!);
   if (JSON.stringify(journal.preview.roots) !== JSON.stringify(roots)) {
@@ -543,19 +555,22 @@ export function applyProductV1Reset(
 
   if (journal.stage === "prepared") journal = setJournalStage(roots.project!, journal, "deleting");
   if (journal.stage === "deleting") {
-    for (const deletion of scope.deletions) for (const target of deletion.targets) {
-      const targetRoot = target.declared.startsWith("{project}") ? scope.roots.project!
-        : target.declared.startsWith("{install_root}") ? scope.roots.install_root!
-          : deletion.id === "runtime.resources" ? scope.roots.runtime_home! : deletion.root;
-      if (target.path) assertContained(targetRoot, target.path);
-      if (target.operation === "remove_path" && target.path) {
-        if (retry) validateRemovePath(target, false);
-        fs.rmSync(target.path, { recursive: true, force: true });
-        dependencies.afterEffect?.(`delete:${deletion.id}:${target.declared}`);
+    for (const deletion of scope.deletions)
+      for (const target of deletion.targets) {
+        const targetRoot = target.declared.startsWith("{project}") ? scope.roots.project! : target.declared.startsWith("{install_root}") ? scope.roots.install_root! : deletion.id === "runtime.resources" ? scope.roots.runtime_home! : deletion.root;
+        if (target.path) assertContained(targetRoot, target.path);
+        if (target.operation === "remove_path" && target.path) {
+          if (retry) validateRemovePath(target, false);
+          fs.rmSync(target.path, { recursive: true, force: true });
+          dependencies.afterEffect?.(`delete:${deletion.id}:${target.declared}`);
+        }
       }
-    }
     for (const [target, approvedSelectors] of selectorGroups(scope)) {
-      if (retry) validateSelectorState(journal.selector_states.find((state) => state.path === target)!, "deleting");
+      if (retry)
+        validateSelectorState(
+          journal.selector_states.find((state) => state.path === target)!,
+          "deleting",
+        );
       removeSelectors(target, approvedSelectors, dependencies.afterEffect);
       dependencies.afterEffect?.(`selectors:${target}`);
     }
@@ -600,11 +615,7 @@ export function authorizeProductV1Reset(
   };
 }
 
-function approvedProductV1ResetPreview(
-  options: ProductV1ResetOptions,
-  authorization: string,
-  dependencies: ProductV1ResetDependencies,
-): ProductV1ResetPreview {
+function approvedProductV1ResetPreview(options: ProductV1ResetOptions, authorization: string, dependencies: ProductV1ResetDependencies): ProductV1ResetPreview {
   const current = previewProductV1Reset(options, dependencies);
   if (authorization !== current.authorization) {
     throw new Error("product-v1 reset scope changed after preview; run a new preview and review its authorization");

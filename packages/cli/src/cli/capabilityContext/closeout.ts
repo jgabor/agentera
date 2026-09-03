@@ -42,11 +42,14 @@ export function closeoutVersionPolicy(docs: JsonObject): JsonObject {
 }
 
 export function closeoutTodoBlockers(schemas: Record<string, SchemaInfo>, todoItems: JsonObject[], selectedTargetVersion: string | null = null): JsonObject {
-  const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
+  const info: SchemaInfo = schemas.todo ?? {
+    path: "TODO.md",
+    record: undefined,
+    schema: {},
+    fields: {},
+  };
   const exists = fs.existsSync(artifactPath(info, "todo"));
-  const blockers = selectedTargetVersion === null
-    ? []
-    : todoItems.filter((item) => item.status === "open" && item.release_blocker === true && item.target_version === selectedTargetVersion);
+  const blockers = selectedTargetVersion === null ? [] : todoItems.filter((item) => item.status === "open" && item.release_blocker === true && item.target_version === selectedTargetVersion);
   return {
     status: exists ? "available" : "unavailable",
     source_provenance: sourceProvenance("todo", STATE_FAMILY_FALLBACK_COMMANDS.todo),
@@ -86,26 +89,62 @@ export function closeoutBenchmarkEvidence(docs: JsonObject): JsonObject {
 
 export function localGitTagEvidence(targetVersion: string | null): JsonObject {
   const tag = targetVersion ? `v${targetVersion}` : null;
-  const source = { source_family: "local_git", command: "git tag --list <target-tag>", remote: false };
+  const source = {
+    source_family: "local_git",
+    command: "git tag --list <target-tag>",
+    remote: false,
+  };
   if (!tag) {
-    return { status: "unavailable", tag: null, source_provenance: source, object_type: null, caveats: ["No selected target version is available for local tag evidence."] };
+    return {
+      status: "unavailable",
+      tag: null,
+      source_provenance: source,
+      object_type: null,
+      caveats: ["No selected target version is available for local tag evidence."],
+    };
   }
   let stdout: string;
   try {
-    stdout = execFileSync("git", ["tag", "--list", tag], { cwd: process.cwd(), encoding: "utf8", timeout: 2000 });
+    stdout = execFileSync("git", ["tag", "--list", tag], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      timeout: 2000,
+    });
   } catch (exc) {
     const e = exc as { status?: number };
     if (typeof e.status === "number" && e.status !== 0) {
-      return { status: "unavailable", tag, source_provenance: source, object_type: null, caveats: ["Local git tag evidence is unavailable because this project is not a git worktree."] };
+      return {
+        status: "unavailable",
+        tag,
+        source_provenance: source,
+        object_type: null,
+        caveats: ["Local git tag evidence is unavailable because this project is not a git worktree."],
+      };
     }
-    return { status: "unavailable", tag, source_provenance: source, object_type: null, caveats: [`Local git tag evidence is unavailable: ${(exc as Error).message}`] };
+    return {
+      status: "unavailable",
+      tag,
+      source_provenance: source,
+      object_type: null,
+      caveats: [`Local git tag evidence is unavailable: ${(exc as Error).message}`],
+    };
   }
   if (!stdout.split(/\r\n|\r|\n/).includes(tag)) {
-    return { status: "absent", tag, source_provenance: source, object_type: null, caveats: [`Local tag ${tag} is not present.`] };
+    return {
+      status: "absent",
+      tag,
+      source_provenance: source,
+      object_type: null,
+      caveats: [`Local tag ${tag} is not present.`],
+    };
   }
   let objectType: string | null = null;
   try {
-    const out = execFileSync("git", ["cat-file", "-t", tag], { cwd: process.cwd(), encoding: "utf8", timeout: 2000 });
+    const out = execFileSync("git", ["cat-file", "-t", tag], {
+      cwd: process.cwd(),
+      encoding: "utf8",
+      timeout: 2000,
+    });
     objectType = out.trim() || null;
   } catch {
     objectType = null;
@@ -155,18 +194,7 @@ export function closeoutReleaseBoundary(changelogBoundary: JsonObject, bundle: J
   };
 }
 
-export function documentCloseoutContext(
-  capability: string | null,
-  schemas: Record<string, SchemaInfo>,
-  plan: JsonObject,
-  progress: JsonObject,
-  todoItems: JsonObject[],
-  docs: JsonObject,
-  profile: JsonObject,
-  bundle: JsonObject,
-  decisionHistory: JsonObject,
-  projectRoot: string,
-): JsonObject | null {
+export function documentCloseoutContext(capability: string | null, schemas: Record<string, SchemaInfo>, plan: JsonObject, progress: JsonObject, todoItems: JsonObject[], docs: JsonObject, profile: JsonObject, bundle: JsonObject, decisionHistory: JsonObject, projectRoot: string): JsonObject | null {
   if (capability !== "document") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const artifactMappings = closeoutArtifactMappings(docs);
@@ -186,7 +214,9 @@ export function documentCloseoutContext(
     benchmark_evidence_or_caveat: benchmarkEvidence.status === "available" || ((benchmarkEvidence.caveats ?? []) as string[]).length > 0,
     decision_review_pressure: reviewPressure.status === "available",
   };
-  const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);
+  const missingRequired = Object.entries(requiredState)
+    .filter(([, present]) => !present)
+    .map(([k]) => k);
   let stateCaveats: string[] = [];
   for (const family of deferredStartupFamilies(capabilityContract)) {
     stateCaveats.push(`${family} detail is deferred from prime --context startup.`);
@@ -198,13 +228,7 @@ export function documentCloseoutContext(
   if (profile.status !== "valid") stateCaveats.push("profile-derived state is unavailable in prime --context response.");
   else if (profile.stale === true) stateCaveats.push("profile-derived state is stale; this is a caveat, not approval to refresh profile state.");
   stateCaveats = uniqueList(stateCaveats);
-  const fallbackCommands = uniqueList([
-    STATE_FAMILY_FALLBACK_COMMANDS.todo,
-    STATE_FAMILY_FALLBACK_COMMANDS.docs,
-    STATE_FAMILY_FALLBACK_COMMANDS.progress,
-    preCutoverCommand("state query changelog"),
-    preCutoverCommand("state query --list-artifacts"),
-  ]);
+  const fallbackCommands = uniqueList([STATE_FAMILY_FALLBACK_COMMANDS.todo, STATE_FAMILY_FALLBACK_COMMANDS.docs, STATE_FAMILY_FALLBACK_COMMANDS.progress, preCutoverCommand("state query changelog"), preCutoverCommand("state query --list-artifacts")]);
   return {
     capability: "document",
     artifact_mappings: artifactMappings,
@@ -221,9 +245,7 @@ export function documentCloseoutContext(
       complete_for_closeout_context: missingRequired.length === 0,
       caveated: stateCaveats.length > 0,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy:
-        "Use this closeout_context and included status state first. Run listed routine/query CLI fallback commands " +
-        "for missing or incomplete closeout state; raw artifact reads are last-resort diagnostics, not normal closeout behavior.",
+      raw_artifact_read_policy: "Use this closeout_context and included status state first. Run listed routine/query CLI fallback commands " + "for missing or incomplete closeout state; raw artifact reads are last-resort diagnostics, not normal closeout behavior.",
       closeout_state_families: ["docs", "todo", "changelog", "progress", "benchmark_evidence", "decisions"],
       required_closeout_state: requiredState,
       missing_required_closeout_state: missingRequired,

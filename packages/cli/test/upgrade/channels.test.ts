@@ -5,16 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  UPDATE_CHANNEL_ENV,
-  assertStableNpmUpdateCommand,
-  loadUpdateChannelsAuthority,
-  parseConfigUpdateChannel,
-  resetUpdateChannelsAuthorityCache,
-  resolveInvokedUpdateChannel,
-  resolveSelectedChannel,
-  resolveUpdateChannel,
-} from "../../src/upgrade/channels.js";
+import { UPDATE_CHANNEL_ENV, assertStableNpmUpdateCommand, loadUpdateChannelsAuthority, parseConfigUpdateChannel, resetUpdateChannelsAuthorityCache, resolveInvokedUpdateChannel, resolveSelectedChannel, resolveUpdateChannel } from "../../src/upgrade/channels.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -133,26 +124,18 @@ describe("resolveUpdateChannel", () => {
 
 describe("stable channel npm guard", () => {
   it("rejects 3.x pre-release tags in stable update commands", () => {
-    expect(() => assertStableNpmUpdateCommand("stable", "npx -y agentera@next", "latest")).toThrow(
-      /3\.x pre-release/,
-    );
-    expect(() => assertStableNpmUpdateCommand("stable", "npx -y agentera@3.0.0-alpha.1", "latest")).toThrow(
-      /3\.x pre-release/,
-    );
+    expect(() => assertStableNpmUpdateCommand("stable", "npx -y agentera@next", "latest")).toThrow(/3\.x pre-release/);
+    expect(() => assertStableNpmUpdateCommand("stable", "npx -y agentera@3.0.0-alpha.1", "latest")).toThrow(/3\.x pre-release/);
   });
 
   it("allows development channel next commands", () => {
-    expect(() =>
-      assertStableNpmUpdateCommand("development", "npx -y agentera@next", "next"),
-    ).not.toThrow();
+    expect(() => assertStableNpmUpdateCommand("development", "npx -y agentera@next", "next")).not.toThrow();
   });
 });
 
 describe("resolveSelectedChannel", () => {
   it("rejects invalid channel values", () => {
-    expect(() =>
-      resolveSelectedChannel({ channel: "beta", env: env(), sourceRoot: REPO_ROOT }),
-    ).toThrow(/invalid update channel/);
+    expect(() => resolveSelectedChannel({ channel: "beta", env: env(), sourceRoot: REPO_ROOT })).toThrow(/invalid update channel/);
   });
 });
 
@@ -167,11 +150,10 @@ describe("resolveInvokedUpdateChannel", () => {
     const root = path.join(home, "v2-source");
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(root, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
-    );
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
+    fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), {
+      recursive: true,
+    });
     return root;
   }
 
@@ -218,10 +200,21 @@ describe("resolveInvokedUpdateChannel", () => {
 
   it("derives npm bundle authority from the bundled suite major", () => {
     const stable = resolveInvokedUpdateChannel({ env: env(), sourceRoot: npxBundle("2.7.7") });
-    const development = resolveInvokedUpdateChannel({ env: env(), sourceRoot: npxBundle("3.0.0-dev.16") });
+    const development = resolveInvokedUpdateChannel({
+      env: env(),
+      sourceRoot: npxBundle("3.0.0-dev.16"),
+    });
 
-    expect(stable).toMatchObject({ channel: "stable", distTag: "latest", updateCommand: "npx -y agentera@latest" });
-    expect(development).toMatchObject({ channel: "development", distTag: "next", updateCommand: "npx -y agentera@next" });
+    expect(stable).toMatchObject({
+      channel: "stable",
+      distTag: "latest",
+      updateCommand: "npx -y agentera@latest",
+    });
+    expect(development).toMatchObject({
+      channel: "development",
+      distTag: "next",
+      updateCommand: "npx -y agentera@next",
+    });
   });
 
   it("honors an explicit channel even when the npm bundle major suggests another line", () => {

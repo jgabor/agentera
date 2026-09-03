@@ -6,12 +6,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import {
-  generatedSourceIdentity,
-  readGeneratedSourceIdentity,
-  sameGeneratedSourceIdentity,
-  validateRegularTree,
-} from "./generated-output.mjs";
+import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 
@@ -62,7 +57,10 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
   const manifest = assembled.manifest;
   const target = path.join(generationRoot, evidence.ACTIVATION_EVIDENCE_FILE);
   const temporary = `${target}.${process.pid}.tmp`;
-  fs.writeFileSync(temporary, `${artifacts.canonicalObservationJson(manifest)}\n`, { flag: "wx", mode: 0o600 });
+  fs.writeFileSync(temporary, `${artifacts.canonicalObservationJson(manifest)}\n`, {
+    flag: "wx",
+    mode: 0o600,
+  });
   fs.renameSync(temporary, target);
   return {
     path: target,
@@ -71,10 +69,22 @@ export async function writeActivationEvidence({ repoRoot, generationRoot, genera
     packageIdentity,
     packageSnapshot,
     childEvidence: {
-      source: { path: path.basename(fs.readdirSync(sourceEvidenceDirectory)[0]), digest: sourceEvidence.evidenceDigest },
-      package: { path: path.basename(fs.readdirSync(packageEvidenceDirectory)[0]), digest: packageEvidence.evidenceDigest },
-      packageIdentity: { path: path.basename(fs.readdirSync(packageIdentityDirectory)[0]), digest: packageIdentity.identityDigest },
-      generated: { path: "embedded:generated-owner", digest: manifest.producers.generated.evidenceDigest },
+      source: {
+        path: path.basename(fs.readdirSync(sourceEvidenceDirectory)[0]),
+        digest: sourceEvidence.evidenceDigest,
+      },
+      package: {
+        path: path.basename(fs.readdirSync(packageEvidenceDirectory)[0]),
+        digest: packageEvidence.evidenceDigest,
+      },
+      packageIdentity: {
+        path: path.basename(fs.readdirSync(packageIdentityDirectory)[0]),
+        digest: packageIdentity.identityDigest,
+      },
+      generated: {
+        path: "embedded:generated-owner",
+        digest: manifest.producers.generated.evidenceDigest,
+      },
     },
   };
 }
@@ -83,11 +93,10 @@ export function killGroup(child, signal, { platform = process.platform, run = sp
   if (!child.pid) return;
   try {
     if (platform === "win32") {
-      const tree = run(
-        "taskkill",
-        ["/PID", String(child.pid), "/T", ...(signal === "SIGKILL" ? ["/F"] : [])],
-        { windowsHide: true, stdio: "ignore" },
-      );
+      const tree = run("taskkill", ["/PID", String(child.pid), "/T", ...(signal === "SIGKILL" ? ["/F"] : [])], {
+        windowsHide: true,
+        stdio: "ignore",
+      });
       if (!tree.error && tree.status === 0) return;
       child.kill(signal);
     } else {
@@ -119,16 +128,20 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
   const cache = path.join(stateRoot, "cache");
   const userConfig = path.join(stateRoot, "user.npmrc");
   const globalConfig = path.join(stateRoot, "global.npmrc");
-  const childTmp = process.env.AGENTERA_ISOLATION_TMP_ROOT
-    ? path.join(process.env.AGENTERA_ISOLATION_TMP_ROOT, `.go-${createHash("sha256").update(root).digest("hex").slice(0, 8)}-${name}`)
-    : path.join(stateRoot, "tmp");
+  const childTmp = process.env.AGENTERA_ISOLATION_TMP_ROOT ? path.join(process.env.AGENTERA_ISOLATION_TMP_ROOT, `.go-${createHash("sha256").update(root).digest("hex").slice(0, 8)}-${name}`) : path.join(stateRoot, "tmp");
   const offline = process.env.AGENTERA_OFFLINE === "1";
   for (const directory of [home, cache, path.join(stateRoot, "data"), path.join(stateRoot, "config"), path.join(stateRoot, "state"), childTmp, path.join(stateRoot, "agentera"), path.join(stateRoot, "reports"), path.join(stateRoot, "output")]) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   }
   const registry = offline ? `file://${path.join(stateRoot, "registry")}` : "https://registry.npmjs.org/";
-  fs.writeFileSync(userConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, { mode: 0o600, flag: "wx" });
-  fs.writeFileSync(globalConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, { mode: 0o600, flag: "wx" });
+  fs.writeFileSync(userConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, {
+    mode: 0o600,
+    flag: "wx",
+  });
+  fs.writeFileSync(globalConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, {
+    mode: 0o600,
+    flag: "wx",
+  });
   const child = spawn(command[0], command.slice(1), {
     cwd: repoRoot,
     env: {
@@ -149,10 +162,26 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
       AGENTERA_VERIFICATION_PARTICIPANT: name,
       ...generatedOverlapParticipantEnvironment(name),
       ...(name === "build" || name === "invocation" ? {} : { AGENTERA_VERIFICATION_RESULT: path.join(root, `${name}.json`) }),
-      ...(name === "source" ? { AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "source") } : {}),
-      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "package") } : {}),
-      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT: path.join(root, "activation-owner-evidence", "package-identity") } : {}),
-      ...(name === "package" ? { AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT: path.join(root, "activation-package-snapshot") } : {}),
+      ...(name === "source"
+        ? {
+            AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "source"),
+          }
+        : {}),
+      ...(name === "package"
+        ? {
+            AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT: path.join(root, "activation-owner-evidence", "package"),
+          }
+        : {}),
+      ...(name === "package"
+        ? {
+            AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT: path.join(root, "activation-owner-evidence", "package-identity"),
+          }
+        : {}),
+      ...(name === "package"
+        ? {
+            AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT: path.join(root, "activation-package-snapshot"),
+          }
+        : {}),
     },
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
@@ -173,9 +202,12 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
   const cancel = () => {
     if (closed) return;
     killGroup(child, "SIGTERM");
-    forceTimer ??= setTimeout(() => {
-      if (!closed) killGroup(child, "SIGKILL");
-    }, Math.min(2000, Math.max(1, Math.floor(cleanupMarginMs / 2))));
+    forceTimer ??= setTimeout(
+      () => {
+        if (!closed) killGroup(child, "SIGKILL");
+      },
+      Math.min(2000, Math.max(1, Math.floor(cleanupMarginMs / 2))),
+    );
   };
   const promise = new Promise((resolve, reject) => {
     child.on("error", reject);
@@ -198,7 +230,19 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
           failures = (report.testResults ?? [])
             .filter((suite) => suite.status === "failed")
             .slice(0, 5)
-            .map((suite) => `${path.relative(repoRoot, suite.name)}: ${(suite.assertionResults ?? []).filter((assertion) => assertion.status === "failed").slice(0, 3).map((assertion) => `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail").replace(/\s+/g, " ").slice(0, 240)}]`).join(" | ")}`)
+            .map(
+              (suite) =>
+                `${path.relative(repoRoot, suite.name)}: ${(suite.assertionResults ?? [])
+                  .filter((assertion) => assertion.status === "failed")
+                  .slice(0, 3)
+                  .map(
+                    (assertion) =>
+                      `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail")
+                        .replace(/\s+/g, " ")
+                        .slice(0, 240)}]`,
+                  )
+                  .join(" | ")}`,
+            )
             .join("; ");
         } catch {
           failures = "";
@@ -244,48 +288,37 @@ export async function runGeneratedOverlap(options = {}) {
   const cleanupMarginMs = contract.qualification.source.dag.overlapCleanupMarginMs;
   const parentReconciliationMarginMs = contract.qualification.source.dag.overlapParentReconciliationMarginMs;
   const suppliedMargin = options.environment?.AGENTERA_SOURCE_CLEANUP_MARGIN_MS ?? process.env.AGENTERA_SOURCE_CLEANUP_MARGIN_MS;
-  if (
-    !Number.isInteger(cleanupMarginMs)
-    || cleanupMarginMs <= 0
-    || !Number.isInteger(parentReconciliationMarginMs)
-    || parentReconciliationMarginMs <= 0
-    || parentReconciliationMarginMs >= cleanupMarginMs
-    || (suppliedMargin !== undefined && Number(suppliedMargin) !== cleanupMarginMs)
-  ) {
+  if (!Number.isInteger(cleanupMarginMs) || cleanupMarginMs <= 0 || !Number.isInteger(parentReconciliationMarginMs) || parentReconciliationMarginMs <= 0 || parentReconciliationMarginMs >= cleanupMarginMs || (suppliedMargin !== undefined && Number(suppliedMargin) !== cleanupMarginMs)) {
     throw overlapFailure("generated-overlap cleanup margin does not match the release contract");
   }
   const suppliedDeadline = options.environment?.AGENTERA_SOURCE_DEADLINE_EPOCH_MS ?? process.env.AGENTERA_SOURCE_DEADLINE_EPOCH_MS;
-  const overallDeadline = suppliedDeadline === undefined
-    ? now() + contract.benchmark.timeouts.sourceQualificationMs
-    : Number(suppliedDeadline);
+  const overallDeadline = suppliedDeadline === undefined ? now() + contract.benchmark.timeouts.sourceQualificationMs : Number(suppliedDeadline);
   if (!Number.isFinite(overallDeadline) || overallDeadline - now() <= cleanupMarginMs) {
     throw overlapFailure("generated-overlap received no safe source qualification deadline");
   }
   const operationDeadline = overallDeadline - cleanupMarginMs;
   const handoffDeadline = overallDeadline - parentReconciliationMarginMs;
-  const ownedSettlementDeadline = operationDeadline
-    + Math.floor((cleanupMarginMs - parentReconciliationMarginMs) / 2);
+  const ownedSettlementDeadline = operationDeadline + Math.floor((cleanupMarginMs - parentReconciliationMarginMs) / 2);
   const root = options.workRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
   const buildId = sourceIdentity.identitySha256;
   const buildRoot = path.join(root, "private-build", buildId);
   const barrier = path.join(root, "barrier");
-  const withDeadline = options.withDeadline
-    ?? ((promise, deadline, label) => defaultWithDeadline(promise, deadline, label, now));
-  const start = options.startParticipant
-    ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }));
-  const loadInventory = options.loadInventory
-    ?? (() => readInventory(packageRoot, operationDeadline - now()));
-  const ready = options.waitForReady
-    ?? ((names) => waitForReady(names, barrier, operationDeadline, now));
-  const policyBytes = options.policyBytes
-    ?? fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
+  const withDeadline = options.withDeadline ?? ((promise, deadline, label) => defaultWithDeadline(promise, deadline, label, now));
+  const start = options.startParticipant ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }));
+  const loadInventory = options.loadInventory ?? (() => readInventory(packageRoot, operationDeadline - now()));
+  const ready = options.waitForReady ?? ((names) => waitForReady(names, barrier, operationDeadline, now));
+  const policyBytes = options.policyBytes ?? fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
   const handles = [];
   const observations = [];
   let primaryFailure;
   let failureResolve;
   let stopResolve;
-  const failureSignal = new Promise((resolve) => { failureResolve = resolve; });
-  const stopSignal = new Promise((resolve) => { stopResolve = resolve; });
+  const failureSignal = new Promise((resolve) => {
+    failureResolve = resolve;
+  });
+  const stopSignal = new Promise((resolve) => {
+    stopResolve = resolve;
+  });
   const setPrimaryFailure = (error) => {
     if (primaryFailure) return;
     primaryFailure = error?.owner ? error : overlapFailure(error instanceof Error ? error.message : String(error));
@@ -294,20 +327,26 @@ export async function runGeneratedOverlap(options = {}) {
   const cancelAll = () => {
     for (const handle of handles) handle.cancel();
   };
-  const observe = (handle) => handle.promise.then(
-    (value) => ({ status: "fulfilled", value }),
-    (error) => {
-      setPrimaryFailure(error);
-      cancelAll();
-      return { status: "rejected", reason: error };
-    },
-  );
+  const observe = (handle) =>
+    handle.promise.then(
+      (value) => ({ status: "fulfilled", value }),
+      (error) => {
+        setPrimaryFailure(error);
+        cancelAll();
+        return { status: "rejected", reason: error };
+      },
+    );
   const settlement = () => Promise.all(observations);
-  const awaitWork = (promise, deadline, label) => Promise.race([
-    withDeadline(promise, deadline, label),
-    failureSignal.then((error) => { throw error; }),
-    stopSignal.then((error) => { throw error; }),
-  ]);
+  const awaitWork = (promise, deadline, label) =>
+    Promise.race([
+      withDeadline(promise, deadline, label),
+      failureSignal.then((error) => {
+        throw error;
+      }),
+      stopSignal.then((error) => {
+        throw error;
+      }),
+    ]);
   const onSigterm = () => stopResolve(overlapFailure("generated-overlap received its cooperative deadline stop"));
   if (options.handleSignals !== false) process.once("SIGTERM", onSigterm);
   try {
@@ -332,12 +371,18 @@ export async function runGeneratedOverlap(options = {}) {
     if (failed) throw primaryFailure ?? failed.reason;
     const completed = {};
     for (let index = 0; index < handles.length; index += 1) completed[handles[index].name] = settled[index].value;
-    const readOwnerResult = options.readOwnerResult ?? ((owner) => {
-      const bytes = fs.readFileSync(path.join(root, `${owner}.json`));
-      const expectedFiles = inventory.files[owner];
-      const pending = validatePendingTests(owner, bytes, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
-      return { files: expectedFiles.length, tests: JSON.parse(bytes.toString("utf8")).numTotalTests, pending };
-    });
+    const readOwnerResult =
+      options.readOwnerResult ??
+      ((owner) => {
+        const bytes = fs.readFileSync(path.join(root, `${owner}.json`));
+        const expectedFiles = inventory.files[owner];
+        const pending = validatePendingTests(owner, bytes, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
+        return {
+          files: expectedFiles.length,
+          tests: JSON.parse(bytes.toString("utf8")).numTotalTests,
+          pending,
+        };
+      });
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading source evidence");
     const source = readOwnerResult("source");
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading package evidence");
@@ -364,15 +409,19 @@ export async function runGeneratedOverlap(options = {}) {
       };
       fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(buildRoot, "node_modules"), "dir");
     }
-    const activationEvidence = await withDeadline((options.writeActivationEvidence ?? writeActivationEvidence)({
-      repoRoot,
-      generationRoot,
-      generation: selectedBuildId,
-      sourceEvidenceDirectory: path.join(root, "activation-owner-evidence", "source"),
-      packageEvidenceDirectory: path.join(root, "activation-owner-evidence", "package"),
-      packageIdentityDirectory: path.join(root, "activation-owner-evidence", "package-identity"),
-      packageSnapshotDirectory: path.join(root, "activation-package-snapshot"),
-    }), operationDeadline, "activation evidence manifest");
+    const activationEvidence = await withDeadline(
+      (options.writeActivationEvidence ?? writeActivationEvidence)({
+        repoRoot,
+        generationRoot,
+        generation: selectedBuildId,
+        sourceEvidenceDirectory: path.join(root, "activation-owner-evidence", "source"),
+        packageEvidenceDirectory: path.join(root, "activation-owner-evidence", "package"),
+        packageIdentityDirectory: path.join(root, "activation-owner-evidence", "package-identity"),
+        packageSnapshotDirectory: path.join(root, "activation-package-snapshot"),
+      }),
+      operationDeadline,
+      "activation evidence manifest",
+    );
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selected CLI invocation");
     const invocation = start("invocation", [process.execPath, path.join(generationRoot, "dist/bin/agentera.js"), "--version"]);
     handles.push(invocation);
@@ -386,9 +435,21 @@ export async function runGeneratedOverlap(options = {}) {
       source_identity: sourceIdentity,
       inventory: inventory.counts,
       participants: {
-        source: { ...source, command: completed.source.command, elapsedMs: completed.source.elapsedMs },
-        package: { ...packageResult, command: completed.package.command, elapsedMs: completed.package.elapsedMs },
-        build: { command: completed.build.command, elapsedMs: completed.build.elapsedMs, status: "pass" },
+        source: {
+          ...source,
+          command: completed.source.command,
+          elapsedMs: completed.source.elapsedMs,
+        },
+        package: {
+          ...packageResult,
+          command: completed.package.command,
+          elapsedMs: completed.package.elapsedMs,
+        },
+        build: {
+          command: completed.build.command,
+          elapsedMs: completed.build.elapsedMs,
+          status: "pass",
+        },
       },
       reader: {
         observed: true,

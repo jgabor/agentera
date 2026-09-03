@@ -20,10 +20,14 @@ function entity(artifact: string, boundary: string, id: string, record: Record<s
 
 function capture(args: string[]): { rc: number; output: unknown; stderr: string } {
   const previous = process.cwd();
-  let stdout = "", stderr = "";
+  let stdout = "",
+    stderr = "";
   process.chdir(project);
   try {
-    const rc = main(["node", "agentera", ...args], { out: (text) => stdout += text, err: (text) => stderr += text });
+    const rc = main(["node", "agentera", ...args], {
+      out: (text) => (stdout += text),
+      err: (text) => (stderr += text),
+    });
     const trimmed = stdout.trim();
     return { rc, output: trimmed.startsWith("{") ? JSON.parse(trimmed) : trimmed, stderr };
   } finally {
@@ -35,8 +39,19 @@ beforeAll(() => {
   project = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-active-protocol-"));
   fs.mkdirSync(path.join(project, ".agentera"));
   fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-  entity("progress", "progress_cycle", "aaaaaaaaaa", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "scan", context: { intent: "test" } });
-  entity("plan", "plan", "bbbbbbbbbb", { header: { level: "light", created: "2026-07-17", status: "open", title: "Scan plan" }, what: "test", why: "test", scope: { included: ["state"], excluded: [] } });
+  entity("progress", "progress_cycle", "aaaaaaaaaa", {
+    timestamp: "2026-07-17 12:00",
+    type: "fix",
+    phase: "build",
+    what: "scan",
+    context: { intent: "test" },
+  });
+  entity("plan", "plan", "bbbbbbbbbb", {
+    header: { level: "light", created: "2026-07-17", status: "open", title: "Scan plan" },
+    what: "test",
+    why: "test",
+    scope: { included: ["state"], excluded: [] },
+  });
 });
 
 afterAll(() => fs.rmSync(project, { recursive: true, force: true }));
@@ -55,7 +70,16 @@ describe("public runtime vocabulary", () => {
     expect(explain.rc).toBe(0);
     expect(error.rc).toBe(1);
     expect(prime.rc).toBe(0);
-    expect(semanticFindings("runtime://public-cli", { rootHelp, stateHelp, schema, explain, error, prime })).toEqual([]);
+    expect(
+      semanticFindings("runtime://public-cli", {
+        rootHelp,
+        stateHelp,
+        schema,
+        explain,
+        error,
+        prime,
+      }),
+    ).toEqual([]);
   });
 
   it("keeps the two-phase routing boundary and receipt authorization current", () => {
@@ -65,14 +89,8 @@ describe("public runtime vocabulary", () => {
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
     const enrichment = fs.readFileSync(path.join(REPO_ROOT, "references/cli/trigger-schema-enrichment.md"), "utf8");
     const triggerContract = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capability_schema_contract.yaml"), "utf8");
-    const routingVocabulary = vocabulary.slice(
-      vocabulary.indexOf("## Invocation and routing grammar"),
-      vocabulary.indexOf("CLI-visible `agentera prime` labels"),
-    );
-    const descriptionExample = enrichment.slice(
-      enrichment.indexOf("### 1.1 `description`"),
-      enrichment.indexOf("### 1.2 `disambiguates_against`"),
-    );
+    const routingVocabulary = vocabulary.slice(vocabulary.indexOf("## Invocation and routing grammar"), vocabulary.indexOf("CLI-visible `agentera prime` labels"));
+    const descriptionExample = enrichment.slice(enrichment.indexOf("### 1.1 `description`"), enrichment.indexOf("### 1.2 `disambiguates_against`"));
 
     expect(skill).toContain("The CLI first applies deterministic explicit and curated route tiers.");
     expect(skill).toContain("Only after the shared route contract returns `semantic_required`");

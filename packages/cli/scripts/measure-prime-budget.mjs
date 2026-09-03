@@ -20,19 +20,16 @@ const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 const defaultRepoRoot = path.resolve(scriptDirectory, "../../..");
 
 function budgetAuthority(repoRoot) {
-  const manifest = YAML.parse(fs.readFileSync(
-    path.join(repoRoot, "scripts/json_output_surface_manifest.yaml"),
-    "utf8",
-  ));
+  const manifest = YAML.parse(fs.readFileSync(path.join(repoRoot, "scripts/json_output_surface_manifest.yaml"), "utf8"));
   const surface = manifest.surfaces.find(({ id }) => id === "prime-briefing");
-  const packageManifest = JSON.parse(fs.readFileSync(
-    path.join(repoRoot, "packages/cli/package.json"),
-    "utf8",
-  ));
-  if (JSON.stringify(manifest.measurement?.tokens) !== JSON.stringify({
-    ...GPT5_TOKENIZER,
-    count: "encode(stdout).length",
-  })) {
+  const packageManifest = JSON.parse(fs.readFileSync(path.join(repoRoot, "packages/cli/package.json"), "utf8"));
+  if (
+    JSON.stringify(manifest.measurement?.tokens) !==
+    JSON.stringify({
+      ...GPT5_TOKENIZER,
+      count: "encode(stdout).length",
+    })
+  ) {
     throw new Error("prime token measurement metadata does not match the pinned GPT-5 tokenizer");
   }
   if (packageManifest.devDependencies?.[GPT5_TOKENIZER.package] !== GPT5_TOKENIZER.version) {
@@ -67,22 +64,18 @@ export function runPrimeBudget(repoRoot = defaultRepoRoot) {
     const profile = path.join(temporaryRoot, "profile");
     for (const directory of [home, appHome, profile]) fs.mkdirSync(directory, { recursive: true });
 
-    const result = spawnSync(
-      process.execPath,
-      [path.join(repoRoot, "packages/cli/dist/bin/agentera.js"), "prime"],
-      {
-        cwd: repoRoot,
-        encoding: "utf8",
-        env: {
-          ...process.env,
-          HOME: home,
-          AGENTERA_HOME: appHome,
-          AGENTERA_PROFILE_DIR: profile,
-          PROFILERA_PROFILE_DIR: profile,
-          AGENTERA_BOOTSTRAP_SOURCE_ROOT: repoRoot,
-        },
+    const result = spawnSync(process.execPath, [path.join(repoRoot, "packages/cli/dist/bin/agentera.js"), "prime"], {
+      cwd: repoRoot,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        HOME: home,
+        AGENTERA_HOME: appHome,
+        AGENTERA_PROFILE_DIR: profile,
+        PROFILERA_PROFILE_DIR: profile,
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: repoRoot,
       },
-    );
+    });
     if (result.status !== 0 || result.stderr !== "") {
       throw new Error(`prime measurement failed: exit=${result.status} stderr=${result.stderr.trim()}`);
     }

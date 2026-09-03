@@ -21,7 +21,8 @@ function sha256(bytes: string | Buffer): string {
 }
 
 function files(root: string, relative = ""): string[] {
-  return fs.readdirSync(path.join(root, relative), { withFileTypes: true })
+  return fs
+    .readdirSync(path.join(root, relative), { withFileTypes: true })
     .flatMap((entry) => {
       const child = path.join(relative, entry.name);
       return entry.isDirectory() ? files(root, child) : [child];
@@ -90,18 +91,42 @@ describe("pinned v2.7.11 compaction evidence", () => {
     const health = yaml("output/.agentera/health.yaml");
     const decisions = yaml("output/.agentera/decisions.yaml");
 
-    expect(progress).toMatchObject({ cycles: expect.any(Array), archive: [{ summary: expect.stringContaining("Cycle 1") }] });
-    expect(health).toMatchObject({ audits: expect.any(Array), archive: [{ summary: expect.stringContaining("Audit 1") }] });
-    expect(decisions.archive).toEqual(expect.arrayContaining([
-      expect.objectContaining({ number: 1, summary: expect.stringContaining("Decision 1"), satisfaction: expect.any(Object) }),
-      expect.objectContaining({ number: 0, summary: expect.stringContaining("without satisfaction") }),
-    ]));
+    expect(progress).toMatchObject({
+      cycles: expect.any(Array),
+      archive: [{ summary: expect.stringContaining("Cycle 1") }],
+    });
+    expect(health).toMatchObject({
+      audits: expect.any(Array),
+      archive: [{ summary: expect.stringContaining("Audit 1") }],
+    });
+    expect(decisions.archive).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          number: 1,
+          summary: expect.stringContaining("Decision 1"),
+          satisfaction: expect.any(Object),
+        }),
+        expect.objectContaining({
+          number: 0,
+          summary: expect.stringContaining("without satisfaction"),
+        }),
+      ]),
+    );
     expect(decisions.archive.find((entry: any) => entry.number === 0)).not.toHaveProperty("satisfaction");
 
-    for (const [label, withoutSatisfaction, withSatisfaction] of [["high", 6, 7], ["medium", 8, 9], ["low", 10, 11]]) {
-      expect(decisions.decisions.find((entry: any) => entry.number === withoutSatisfaction)).toMatchObject({ confidence: label });
+    for (const [label, withoutSatisfaction, withSatisfaction] of [
+      ["high", 6, 7],
+      ["medium", 8, 9],
+      ["low", 10, 11],
+    ]) {
+      expect(decisions.decisions.find((entry: any) => entry.number === withoutSatisfaction)).toMatchObject({
+        confidence: label,
+      });
       expect(decisions.decisions.find((entry: any) => entry.number === withoutSatisfaction)).not.toHaveProperty("satisfaction");
-      expect(decisions.decisions.find((entry: any) => entry.number === withSatisfaction)).toMatchObject({ confidence: label, satisfaction: expect.any(Object) });
+      expect(decisions.decisions.find((entry: any) => entry.number === withSatisfaction)).toMatchObject({
+        confidence: label,
+        satisfaction: expect.any(Object),
+      });
     }
   });
 
@@ -148,12 +173,54 @@ describe("pinned v2.7.11 compaction evidence", () => {
       blockers: 0,
     });
 
-    expect(baseline.entries.find((entry) => entry.artifact === "progress" && entry.classification === "valid_compacted_summary")).toMatchObject({ boundary: "progress_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object), record: { summary: expect.any(String), migration_provenance: { source_path: ".agentera/progress.yaml", source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } } });
-    expect(baseline.entries.find((entry) => entry.artifact === "health" && entry.classification === "valid_compacted_summary")).toMatchObject({ boundary: "health_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object), record: { summary: expect.any(String), migration_provenance: { source_path: ".agentera/health.yaml", source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } } });
+    expect(baseline.entries.find((entry) => entry.artifact === "progress" && entry.classification === "valid_compacted_summary")).toMatchObject({
+      boundary: "progress_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      proposed_target: expect.any(Object),
+      record: {
+        summary: expect.any(String),
+        migration_provenance: {
+          source_path: ".agentera/progress.yaml",
+          source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
+      },
+    });
+    expect(baseline.entries.find((entry) => entry.artifact === "health" && entry.classification === "valid_compacted_summary")).toMatchObject({
+      boundary: "health_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      proposed_target: expect.any(Object),
+      record: {
+        summary: expect.any(String),
+        migration_provenance: {
+          source_path: ".agentera/health.yaml",
+          source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
+      },
+    });
     const summaryDecision = baseline.entries.find((entry) => entry.source_identity === "decisions:1");
-    expect(summaryDecision).toMatchObject({ boundary: "decision_summary", classification: "valid_compacted_summary", detail_availability: "summary", compatibility: "degraded", proposed_target: expect.any(Object), record: { summary: expect.any(String), satisfaction: expect.any(Object), migration_provenance: { source_path: ".agentera/decisions.yaml", source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } } });
+    expect(summaryDecision).toMatchObject({
+      boundary: "decision_summary",
+      classification: "valid_compacted_summary",
+      detail_availability: "summary",
+      compatibility: "degraded",
+      proposed_target: expect.any(Object),
+      record: {
+        summary: expect.any(String),
+        satisfaction: expect.any(Object),
+        migration_provenance: {
+          source_path: ".agentera/decisions.yaml",
+          source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
+      },
+    });
     expect(baseline.entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:1")).toBeUndefined();
-    expect(baseline.entries.find((entry) => entry.source_identity === "decisions:archive[1]")).toMatchObject({ boundary: "decision_summary", classification: "valid_compacted_summary", proposed_target: expect.any(Object) });
+    expect(baseline.entries.find((entry) => entry.source_identity === "decisions:archive[1]")).toMatchObject({
+      boundary: "decision_summary",
+      classification: "valid_compacted_summary",
+      proposed_target: expect.any(Object),
+    });
     for (const [entry, source] of [
       [baseline.entries.find((candidate) => candidate.artifact === "progress" && candidate.classification === "valid_compacted_summary"), yaml("output/.agentera/progress.yaml").archive[0]],
       [summaryDecision, yaml("output/.agentera/decisions.yaml").archive.find((candidate: any) => candidate.number === 1)],
@@ -162,13 +229,35 @@ describe("pinned v2.7.11 compaction evidence", () => {
       expect(entry?.record.migration_provenance.source_record_sha256).toBe(sha256(canonicalRecordJson(source)));
       expect(entry?.record).not.toHaveProperty("number");
     }
-    for (const [label, withoutSatisfaction, withSatisfaction] of [["high", 6, 7], ["medium", 8, 9], ["low", 10, 11]]) {
+    for (const [label, withoutSatisfaction, withSatisfaction] of [
+      ["high", 6, 7],
+      ["medium", 8, 9],
+      ["low", 10, 11],
+    ]) {
       const without = baseline.entries.find((entry) => entry.source_identity === `decisions:${withoutSatisfaction}`)!;
       const satisfied = baseline.entries.find((entry) => entry.source_identity === `decisions:${withSatisfaction}`)!;
-      expect(without).toMatchObject({ classification: "recoverable_degraded_full_projection", proposed_target: expect.any(Object), record: { confidence: label } });
-      expect(satisfied).toMatchObject({ classification: "recoverable_degraded_full_projection", proposed_target: expect.any(Object), record: { confidence: label } });
-      expect(without.canonical_migration_provenance).toMatchObject({ kind: "inherited_decision_confidence", source: "current_projection", source_path: ".agentera/decisions.yaml", confidence: label, source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) });
-      expect(satisfied.canonical_migration_provenance).toMatchObject({ kind: "inherited_decision_confidence", source: "current_projection", confidence: label });
+      expect(without).toMatchObject({
+        classification: "recoverable_degraded_full_projection",
+        proposed_target: expect.any(Object),
+        record: { confidence: label },
+      });
+      expect(satisfied).toMatchObject({
+        classification: "recoverable_degraded_full_projection",
+        proposed_target: expect.any(Object),
+        record: { confidence: label },
+      });
+      expect(without.canonical_migration_provenance).toMatchObject({
+        kind: "inherited_decision_confidence",
+        source: "current_projection",
+        source_path: ".agentera/decisions.yaml",
+        confidence: label,
+        source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      });
+      expect(satisfied.canonical_migration_provenance).toMatchObject({
+        kind: "inherited_decision_confidence",
+        source: "current_projection",
+        confidence: label,
+      });
       expect(baseline.entries.find((entry) => entry.source_identity === `decision_satisfaction:decisions:${withSatisfaction}`)).toMatchObject({
         classification: "recoverable_degraded_full_projection",
         proposed_target: expect.any(Object),
@@ -182,13 +271,16 @@ describe("pinned v2.7.11 compaction evidence", () => {
     fs.mkdirSync(archiveRoot, { recursive: true });
     for (const number of [6, 7, 8, 9, 10, 11]) {
       const record = archivedDecisions.decisions.find((entry: any) => entry.number === number);
-      fs.writeFileSync(path.join(archiveRoot, `${number}.yaml`), YAML.stringify({
-        schemaVersion: "agentera.stateArchiveEntry.v1",
-        artifact_id: "decisions",
-        entry_number: number,
-        record,
-        record_sha256: sha256(canonicalRecordJson(record)),
-      }));
+      fs.writeFileSync(
+        path.join(archiveRoot, `${number}.yaml`),
+        YAML.stringify({
+          schemaVersion: "agentera.stateArchiveEntry.v1",
+          artifact_id: "decisions",
+          entry_number: number,
+          record,
+          record_sha256: sha256(canonicalRecordJson(record)),
+        }),
+      );
     }
     const inherited = archivedDecisions.decisions.find((entry: any) => entry.number === 6);
     for (const [number, change] of [
@@ -197,36 +289,53 @@ describe("pinned v2.7.11 compaction evidence", () => {
     ] as const) {
       const record = { ...inherited, ...change, number };
       if (record.reasoning === undefined) delete record.reasoning;
-      fs.writeFileSync(path.join(archiveRoot, `${number}.yaml`), YAML.stringify({
-        schemaVersion: "agentera.stateArchiveEntry.v1",
-        artifact_id: "decisions",
-        entry_number: number,
-        record,
-        record_sha256: sha256(canonicalRecordJson(record)),
-      }));
+      fs.writeFileSync(
+        path.join(archiveRoot, `${number}.yaml`),
+        YAML.stringify({
+          schemaVersion: "agentera.stateArchiveEntry.v1",
+          artifact_id: "decisions",
+          entry_number: number,
+          record,
+          record_sha256: sha256(canonicalRecordJson(record)),
+        }),
+      );
     }
-    archivedDecisions.decisions.push(
-      { ...inherited, number: 14, confidence: "certain" },
-      { ...inherited, number: 15, reasoning: undefined },
-    );
+    archivedDecisions.decisions.push({ ...inherited, number: 14, confidence: "certain" }, { ...inherited, number: 15, reasoning: undefined });
     fs.writeFileSync(path.join(archivedLegacy, ".agentera/decisions.yaml"), YAML.stringify(archivedDecisions));
     fs.copyFileSync(path.join(FIXTURE_ROOT, "cases/non-confidence-corruption.progress.yaml"), path.join(archivedLegacy, ".agentera/progress.yaml"));
     const archivedPlan = planEntityMigration(archivedLegacy, REPO_ROOT);
-    for (const [label, withoutSatisfaction, withSatisfaction] of [["high", 6, 7], ["medium", 8, 9], ["low", 10, 11]]) {
+    for (const [label, withoutSatisfaction, withSatisfaction] of [
+      ["high", 6, 7],
+      ["medium", 8, 9],
+      ["low", 10, 11],
+    ]) {
       for (const number of [withoutSatisfaction, withSatisfaction]) {
         expect(archivedPlan.entries.find((entry) => entry.source_identity === `decisions:${number}`)).toMatchObject({
           classification: "verified_full",
           proposed_target: expect.any(Object),
           record: { confidence: label },
-          canonical_migration_provenance: { kind: "inherited_decision_confidence", source: "verified_archive", source_path: `.agentera/archive/decisions/${number}.yaml`, confidence: label },
+          canonical_migration_provenance: {
+            kind: "inherited_decision_confidence",
+            source: "verified_archive",
+            source_path: `.agentera/archive/decisions/${number}.yaml`,
+            confidence: label,
+          },
         });
       }
-      expect(archivedPlan.entries.find((entry) => entry.source_identity === `decision_satisfaction:decisions:${withSatisfaction}`)).toMatchObject({ classification: "verified_full", proposed_target: expect.any(Object) });
+      expect(archivedPlan.entries.find((entry) => entry.source_identity === `decision_satisfaction:decisions:${withSatisfaction}`)).toMatchObject({
+        classification: "verified_full",
+        proposed_target: expect.any(Object),
+      });
     }
     for (const identity of ["decisions:12", "decisions:13", "decisions:14", "decisions:15"]) {
-      expect(archivedPlan.entries.find((entry) => entry.source_identity === identity)).toMatchObject({ classification: "corrupt", proposed_target: null });
+      expect(archivedPlan.entries.find((entry) => entry.source_identity === identity)).toMatchObject({
+        classification: "corrupt",
+        proposed_target: null,
+      });
     }
-    expect(archivedPlan.entries.find((entry) => entry.source_identity === "progress:99")).toMatchObject({ classification: "corrupt" });
+    expect(archivedPlan.entries.find((entry) => entry.source_identity === "progress:99")).toMatchObject({
+      classification: "corrupt",
+    });
 
     const backed = focusedProject("output/.agentera/decisions.yaml", ".agentera/decisions.yaml");
     const archivePath = path.join(backed, ".agentera/archive/decisions/1.yaml");
@@ -234,18 +343,24 @@ describe("pinned v2.7.11 compaction evidence", () => {
     fs.copyFileSync(path.join(FIXTURE_ROOT, "backed-summary/decisions-1.archive.yaml"), archivePath);
     const backedPlan = planEntityMigration(backed, REPO_ROOT);
     const backedEntry = backedPlan.entries.find((entry) => entry.source_identity === "decisions:1");
-    expect(backedEntry).toMatchObject({ boundary: "decision", classification: "verified_full", detail_availability: "full", compatibility: "current" });
+    expect(backedEntry).toMatchObject({
+      boundary: "decision",
+      classification: "verified_full",
+      detail_availability: "full",
+      compatibility: "current",
+    });
     expect(backedEntry?.record).not.toHaveProperty("migration_provenance");
     expect(backedPlan.entries.find((entry) => entry.source_identity === "decision_satisfaction:decisions:1")).toMatchObject({
       classification: "verified_full",
       relationships: [{ field: "decision", target_id: backedEntry?.proposed_target?.id, status: "resolved" }],
     });
-
   }, 60_000);
 
   it("removes every authority-prohibited persisted alias from canonical migration records", () => {
     const forbiddenAliases = entityForbiddenCanonicalAliases(REPO_ROOT);
     const source = Object.fromEntries(forbiddenAliases.map((alias) => [alias, `forbidden ${alias}`]));
-    expect(canonicalMigrationRecord("progress_summary", { ...source, summary: "retained" }, forbiddenAliases)).toEqual({ summary: "retained" });
+    expect(canonicalMigrationRecord("progress_summary", { ...source, summary: "retained" }, forbiddenAliases)).toEqual({
+      summary: "retained",
+    });
   });
 });

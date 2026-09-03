@@ -12,26 +12,13 @@ import { boundedRuntimeStatus } from "./threshold.js";
 import { classifyStartupRecords } from "./records.js";
 import { aggregateStartupMetrics } from "./metrics.js";
 import { renderStartupReport } from "./report.js";
-import {
-  tiersDirForCorpusPath,
-  assessTiers,
-  readBoundedMetadata,
-  iterBoundedRecords,
-  legacyCorpusReadable,
-  recoveryForState,
-} from "../../analytics/extractCorpus/index.js";
+import { tiersDirForCorpusPath, assessTiers, readBoundedMetadata, iterBoundedRecords, legacyCorpusReadable, recoveryForState } from "../../analytics/extractCorpus/index.js";
 
 export const STARTUP_INTERMEDIATE_ENVELOPE = "startup_state_analysis_v1";
 export const BENCHMARK_HISTORY_JSONL = "runs.jsonl";
 export const BENCHMARK_LATEST_REPORT_JSON = "latest-report.json";
 export const BENCHMARK_LATEST_REPORT_MARKDOWN = "latest-report.md";
-const TOKEN_AGGREGATE_FIELDS = new Set([
-  "token_estimator_version",
-  "estimated_raw_after_cli_tokens",
-  "estimated_redundant_raw_tokens",
-  "estimated_raw_after_cli_tokens_by_artifact",
-  "estimated_redundant_raw_tokens_by_artifact",
-]);
+const TOKEN_AGGREGATE_FIELDS = new Set(["token_estimator_version", "estimated_raw_after_cli_tokens", "estimated_redundant_raw_tokens", "estimated_raw_after_cli_tokens_by_artifact", "estimated_redundant_raw_tokens_by_artifact"]);
 
 function maxRecordTimestamp(records: unknown[], after: Date | null = null): Date | null {
   let latest: Date | null = null;
@@ -182,10 +169,7 @@ function withEstimatedTokensSaved(metrics: JsonObject, benchmarkDir: string, sco
     reason = "runtime_scope_mismatch";
   } else if (previous.token_estimator_version !== currentVersion) {
     reason = "estimator_version_mismatch";
-  } else if (
-    !(typeof previous.estimated_redundant_raw_tokens === "number" && Number.isInteger(previous.estimated_redundant_raw_tokens)) ||
-    !(typeof currentRedundant === "number" && Number.isInteger(currentRedundant))
-  ) {
+  } else if (!(typeof previous.estimated_redundant_raw_tokens === "number" && Number.isInteger(previous.estimated_redundant_raw_tokens)) || !(typeof currentRedundant === "number" && Number.isInteger(currentRedundant))) {
     reason = "previous_missing_token_estimates";
   } else {
     saved = previous.estimated_redundant_raw_tokens - currentRedundant;
@@ -196,10 +180,7 @@ function withEstimatedTokensSaved(metrics: JsonObject, benchmarkDir: string, sco
 }
 
 export function buildBenchmarkHistoryRow(metrics: JsonObject, scope: string[] | null = null): JsonObject {
-  const recommendation =
-    metrics && typeof metrics === "object" && metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation)
-      ? metrics.startup_recommendation
-      : {};
+  const recommendation = metrics && typeof metrics === "object" && metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation) ? metrics.startup_recommendation : {};
   return {
     contract_version: metrics.contract_version ?? null,
     generated_at: metrics.generated_at ?? null,
@@ -243,11 +224,7 @@ function temporaryPeerPath(p: string): string {
   return path.join(dir, `.${base}.${process.pid}.${ts}.tmp`);
 }
 
-export function persistStartupBenchmark(
-  metrics: JsonObject,
-  benchmarkDir: string,
-  scope: string[] | null = null,
-): Record<string, string> {
+export function persistStartupBenchmark(metrics: JsonObject, benchmarkDir: string, scope: string[] | null = null): Record<string, string> {
   const resolvedDir = path.resolve(benchmarkDir);
   if (!path.isAbsolute(resolvedDir)) {
     throw new Error("benchmark directory must be an absolute path");
@@ -301,8 +278,7 @@ export function buildStartupIntermediate(corpus: JsonObject, opts: BuildIntermed
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) metadata = {};
   let runtimeStatuses = metadata.runtime_statuses;
   if (!Array.isArray(runtimeStatuses)) runtimeStatuses = [];
-  const boundaryInfo =
-    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundaryInfo = loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
   const boundary = parseTimestamp(boundaryInfo.committed_at);
   const windowStartedAfter = opts.benchmarkWindowStartedAfter ?? boundary;
   const watermarkAt = opts.benchmarkWatermarkAt ?? maxRecordTimestamp(records, windowStartedAfter);
@@ -310,9 +286,7 @@ export function buildStartupIntermediate(corpus: JsonObject, opts: BuildIntermed
   const classified = classifyStartupRecords(corpus, { salt, contract: loaded });
   const sequences = (Array.isArray(classified.state_gathering_sequences) ? classified.state_gathering_sequences : []) as JsonObject[];
   const degradations = classified.degradations;
-  const runtimeCoverage = runtimeStatuses
-    .filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s)))
-    .map((s) => boundedRuntimeStatus(s));
+  const runtimeCoverage = runtimeStatuses.filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s))).map((s) => boundedRuntimeStatus(s));
   return {
     output_envelope: STARTUP_INTERMEDIATE_ENVELOPE,
     contract_version: loaded.version ?? null,
@@ -331,17 +305,19 @@ export function buildStartupIntermediate(corpus: JsonObject, opts: BuildIntermed
     artifact_label_counts: artifactLabelCounts(sequences),
     state_gathering_sequences: sequences,
     degradations,
-    compatibility_note:
-      "Section 22 corpus records are read-only; startup state data is emitted only in startup_state_analysis_v1.",
+    compatibility_note: "Section 22 corpus records are read-only; startup state data is emitted only in startup_state_analysis_v1.",
   };
 }
 
 export function buildNoRuntimeStartupIntermediate(
-  opts: { contract?: JsonObject | null; benchmarkMode?: string; benchmarkPreviousWatermarkAt?: Date | null } = {},
+  opts: {
+    contract?: JsonObject | null;
+    benchmarkMode?: string;
+    benchmarkPreviousWatermarkAt?: Date | null;
+  } = {},
 ): JsonObject {
   const loaded = opts.contract ?? loadContract();
-  const boundaryInfo =
-    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundaryInfo = loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
   const boundary = parseTimestamp(boundaryInfo.committed_at);
   const windowStartedAfter = opts.benchmarkPreviousWatermarkAt ?? boundary;
   return {
@@ -387,10 +363,7 @@ function degradeEnvelope(reason: string, recovery?: string): JsonObject {
   };
 }
 
-export function extractStartupIntermediateFromCorpusFile(
-  corpusPath: string,
-  opts: { salt: string; outputPath?: string | null; contract?: JsonObject | null },
-): JsonObject {
+export function extractStartupIntermediateFromCorpusFile(corpusPath: string, opts: { salt: string; outputPath?: string | null; contract?: JsonObject | null }): JsonObject {
   const tiersDir = tiersDirForCorpusPath(corpusPath);
   const assessment = assessTiers(tiersDir, corpusPath);
   let corpus: JsonObject;
@@ -405,10 +378,7 @@ export function extractStartupIntermediateFromCorpusFile(
       metadata: {
         runtime_statuses: (meta.corpusMetadata?.runtime_statuses as JsonObject[] | undefined) ?? [],
         adapter_version: (meta.manifest?.adapter_version as string | undefined) ?? null,
-        extracted_at:
-          (meta.corpusMetadata?.extracted_at as string | undefined) ??
-          (meta.manifest?.published_at as string | undefined) ??
-          null,
+        extracted_at: (meta.corpusMetadata?.extracted_at as string | undefined) ?? (meta.manifest?.published_at as string | undefined) ?? null,
       },
       records,
     };
@@ -418,9 +388,7 @@ export function extractStartupIntermediateFromCorpusFile(
     // preserves compatibility-state reasons (no_evidence, oversized,
     // unreadable_or_schema_divergent, legacy_monolithic_state) and passes
     // through the recovery field for self-service correction.
-    corpus = degradeEnvelope(assessment.state === "corrupt"
-      ? "unreadable_or_schema_divergent"
-      : "oversized", assessment.recovery);
+    corpus = degradeEnvelope(assessment.state === "corrupt" ? "unreadable_or_schema_divergent" : "oversized", assessment.recovery);
   } else if (assessment.state === "missing") {
     // No evidence artifact or tier exists at the resolved path. Degrade with
     // the contract's missing reason and recovery; never auto-build or scan.
@@ -441,7 +409,10 @@ export function extractStartupIntermediateFromCorpusFile(
       }
     }
   }
-  const intermediate = buildStartupIntermediate(corpus, { salt: opts.salt, contract: opts.contract ?? null });
+  const intermediate = buildStartupIntermediate(corpus, {
+    salt: opts.salt,
+    contract: opts.contract ?? null,
+  });
   if (opts.outputPath) {
     fs.mkdirSync(path.dirname(opts.outputPath), { recursive: true });
     fs.writeFileSync(opts.outputPath, pyJsonIndent(intermediate) + "\n");

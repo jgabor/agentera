@@ -18,14 +18,14 @@ const routeModule = await import(pathToFileURL(path.join(runtimeRoot, "dist/cli/
 const development = await import(pathToFileURL(path.join(runtimeRoot, "dist/core/developmentInvocation.js")).href);
 const authority = await import(pathToFileURL(path.join(runtimeRoot, "dist/validate/bootstrapAuthority.js")).href);
 const upgrade = await import(pathToFileURL(path.join(runtimeRoot, "dist/upgrade/upgradeCommands.js")).href);
-const capabilityIds = tuples.ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability").map((tuple) => tuple.surface_id).sort();
+const capabilityIds = tuples.ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability")
+  .map((tuple) => tuple.surface_id)
+  .sort();
 
 const modules = {};
 for (const capability of capabilityIds) {
   const module = await import(pathToFileURL(path.join(runtimeRoot, `dist/capabilities/${capability}/instructions.js`)).href);
-  const instructionBody = typeof module.servedInstructions === "function"
-    ? module.servedInstructions()
-    : module.default;
+  const instructionBody = typeof module.servedInstructions === "function" ? module.servedInstructions() : module.default;
   if (typeof instructionBody !== "string") throw new Error(`runtime capability '${capability}' has no default instruction body`);
   const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
   modules[capability] = preCutover.preCutoverInstructionBody(body);
@@ -77,19 +77,31 @@ for (const entry of matrix.rejections) {
   const source = preCutover.preCutoverCommand("prime --context status");
   try {
     development.bindDevelopmentInvocation({ owner: `activation.${entry.id}`, source }, entry.candidate);
-    rows.push({ id: entry.id, states: entry.states, classification: "unexpected_accept", diagnostic: null });
+    rows.push({
+      id: entry.id,
+      states: entry.states,
+      classification: "unexpected_accept",
+      diagnostic: null,
+    });
   } catch (error) {
-    rows.push({ id: entry.id, states: entry.states, classification: error?.classification ?? "invalid_authority", diagnostic: String(error?.message ?? error).replaceAll(entry.candidate ?? "", "<candidate>") });
+    rows.push({
+      id: entry.id,
+      states: entry.states,
+      classification: error?.classification ?? "invalid_authority",
+      diagnostic: String(error?.message ?? error).replaceAll(entry.candidate ?? "", "<candidate>"),
+    });
   }
 }
 
-process.stdout.write(`${JSON.stringify({
-  capabilities: {
-    modules,
-    runtimeRegistry: runtime.CAPABILITY_INSTRUCTIONS,
-    served,
-    routes: ["status", ...routeModule.CAPABILITY_ROUTING_NAMES],
-    startupProducers: commandValues(statusPayload).sort((left, right) => `${left.path}\0${left.value}`.localeCompare(`${right.path}\0${right.value}`)),
-  },
-  bootstrap: { matrix, rows },
-})}\n`);
+process.stdout.write(
+  `${JSON.stringify({
+    capabilities: {
+      modules,
+      runtimeRegistry: runtime.CAPABILITY_INSTRUCTIONS,
+      served,
+      routes: ["status", ...routeModule.CAPABILITY_ROUTING_NAMES],
+      startupProducers: commandValues(statusPayload).sort((left, right) => `${left.path}\0${left.value}`.localeCompare(`${right.path}\0${right.value}`)),
+    },
+    bootstrap: { matrix, rows },
+  })}\n`,
+);

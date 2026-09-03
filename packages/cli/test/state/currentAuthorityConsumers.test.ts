@@ -27,23 +27,9 @@ const CURRENT_STATE_CONSUMERS = [
   "packages/cli/src/state/write/transaction.ts",
 ] as const;
 
-const LEGACY_SELECTOR_CALLS = [
-  "listStateEntries(",
-  "retrieveStateEntry(",
-  "listPlans(",
-  "getPlan(",
-  "listPlanTasks(",
-  "getPlanTask(",
-  "listExperiments(",
-  "getExperiment(",
-  "scanStartupArtifact(",
-] as const;
+const LEGACY_SELECTOR_CALLS = ["listStateEntries(", "retrieveStateEntry(", "listPlans(", "getPlan(", "listPlanTasks(", "getPlanTask(", "listExperiments(", "getExperiment(", "scanStartupArtifact("] as const;
 
-const MIGRATION_READERS = [
-  "packages/cli/src/state/entityMigrationPreview.ts",
-  "packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts",
-  "packages/cli/src/migrate/v2HandoffManifest.ts",
-] as const;
+const MIGRATION_READERS = ["packages/cli/src/state/entityMigrationPreview.ts", "packages/cli/src/upgrade/migrateArtifactsV2ToV3.ts", "packages/cli/src/migrate/v2HandoffManifest.ts"] as const;
 
 const LEGACY_AGGREGATES = ["decisions", "plan", "progress", "health", "todo", "docs", "objectives", "experiments"] as const;
 const PATH_CONSTRUCTORS = ["path.join", "path.resolve", "resolvePath", "fs.readFileSync", "fs.existsSync", "fs.writeFileSync"] as const;
@@ -54,7 +40,8 @@ function source(relative: string): string {
 
 function productionTypeScript(): string[] {
   const root = path.join(ROOT, "packages/cli/src");
-  return fs.readdirSync(root, { recursive: true, withFileTypes: true })
+  return fs
+    .readdirSync(root, { recursive: true, withFileTypes: true })
     .filter((entry) => entry.isFile() && entry.name.endsWith(".ts"))
     .map((entry) => path.join(entry.parentPath, entry.name));
 }
@@ -70,12 +57,27 @@ function callBodies(text: string, callee: string): string[] {
     const bodyStart = start + match[0].length;
     for (let index = bodyStart; index < text.length; index += 1) {
       const char = text[index];
-      if (escaped) { escaped = false; continue; }
-      if (char === "\\") { escaped = true; continue; }
-      if (quote) { if (char === quote) quote = ""; continue; }
-      if (char === '"' || char === "'" || char === "`") { quote = char; continue; }
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        escaped = true;
+        continue;
+      }
+      if (quote) {
+        if (char === quote) quote = "";
+        continue;
+      }
+      if (char === '"' || char === "'" || char === "`") {
+        quote = char;
+        continue;
+      }
       if (char === "(") depth += 1;
-      else if (char === ")" && --depth === 0) { bodies.push(text.slice(bodyStart, index)); break; }
+      else if (char === ")" && --depth === 0) {
+        bodies.push(text.slice(bodyStart, index));
+        break;
+      }
     }
   }
   return bodies;
@@ -93,24 +95,52 @@ function legacyReaderCalls(text: string): string[] {
   return findings;
 }
 
-interface SourceLiteral { quote: string; value: string; start: number; end: number }
+interface SourceLiteral {
+  quote: string;
+  value: string;
+  start: number;
+  end: number;
+}
 
 function stringLiterals(text: string): SourceLiteral[] {
   const literals: SourceLiteral[] = [];
   for (let index = 0; index < text.length;) {
-    if (text.startsWith("//", index)) { index = text.indexOf("\n", index + 2); if (index < 0) break; continue; }
-    if (text.startsWith("/*", index)) { index = text.indexOf("*/", index + 2); if (index < 0) break; index += 2; continue; }
+    if (text.startsWith("//", index)) {
+      index = text.indexOf("\n", index + 2);
+      if (index < 0) break;
+      continue;
+    }
+    if (text.startsWith("/*", index)) {
+      index = text.indexOf("*/", index + 2);
+      if (index < 0) break;
+      index += 2;
+      continue;
+    }
     const quote = text[index];
-    if (quote !== '"' && quote !== "'" && quote !== "`") { index += 1; continue; }
+    if (quote !== '"' && quote !== "'" && quote !== "`") {
+      index += 1;
+      continue;
+    }
     const start = index;
     let value = "";
     let escaped = false;
     index += 1;
     for (; index < text.length; index += 1) {
       const char = text[index];
-      if (escaped) { value += char; escaped = false; continue; }
-      if (char === "\\") { value += char; escaped = true; continue; }
-      if (char === quote) { index += 1; break; }
+      if (escaped) {
+        value += char;
+        escaped = false;
+        continue;
+      }
+      if (char === "\\") {
+        value += char;
+        escaped = true;
+        continue;
+      }
+      if (char === quote) {
+        index += 1;
+        break;
+      }
       value += char;
     }
     literals.push({ quote, value, start, end: index });
@@ -129,19 +159,21 @@ function isStandaloneLiteral(text: string, literal: SourceLiteral): boolean {
 
 function aggregateConstructions(text: string): string[] {
   const findings = new Set<string>();
-  for (const literal of stringLiterals(text)) for (const aggregate of LEGACY_AGGREGATES) {
-    if ((isStandaloneLiteral(text, literal) || (literal.quote === "`" && literal.value.includes("${"))) && literal.value.includes(`.agentera/${aggregate}.yaml`)) {
-      findings.add(`aggregate path ${aggregate}.yaml`);
-    }
-  }
-  for (const callee of PATH_CONSTRUCTORS) for (const body of callBodies(text, callee)) {
-    const compact = body.replace(/\s+/g, "").replace(/["'`]/g, "");
+  for (const literal of stringLiterals(text))
     for (const aggregate of LEGACY_AGGREGATES) {
-      if (compact.includes(`.agentera/${aggregate}.yaml`) || compact.includes(`.agentera,${aggregate}.yaml`) || compact.includes(`.agentera/+${aggregate}.yaml`)) {
+      if ((isStandaloneLiteral(text, literal) || (literal.quote === "`" && literal.value.includes("${"))) && literal.value.includes(`.agentera/${aggregate}.yaml`)) {
         findings.add(`aggregate path ${aggregate}.yaml`);
       }
     }
-  }
+  for (const callee of PATH_CONSTRUCTORS)
+    for (const body of callBodies(text, callee)) {
+      const compact = body.replace(/\s+/g, "").replace(/["'`]/g, "");
+      for (const aggregate of LEGACY_AGGREGATES) {
+        if (compact.includes(`.agentera/${aggregate}.yaml`) || compact.includes(`.agentera,${aggregate}.yaml`) || compact.includes(`.agentera/+${aggregate}.yaml`)) {
+          findings.add(`aggregate path ${aggregate}.yaml`);
+        }
+      }
+    }
   return [...findings].sort();
 }
 
@@ -189,12 +221,7 @@ describe("current entity authority consumer inventory", () => {
   it("preserves the closed read-only migration and handoff reader inventory", () => {
     for (const relative of MIGRATION_READERS) expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(true);
     const migration = source(MIGRATION_READERS[0]);
-    for (const aggregate of [
-      ".agentera/progress.yaml",
-      ".agentera/decisions.yaml",
-      ".agentera/health.yaml",
-      ".agentera/plan.yaml",
-    ]) expect(migration, aggregate).toContain(aggregate);
+    for (const aggregate of [".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml"]) expect(migration, aggregate).toContain(aggregate);
     expect(migration).toContain("read_only: true");
     expect(migration).toContain("mutation_performed: false");
   });

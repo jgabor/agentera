@@ -17,8 +17,7 @@ export const EXIT_STATUSES = new Set(["complete", "flagged", "stuck", "waiting"]
 export const TRIGGER_SLASH = "slash";
 export const TRIGGER_NATURAL = "natural";
 
-const MARKER_RE =
-  /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
+const MARKER_RE = /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
 
 export interface Marker {
   kind: string;
@@ -260,7 +259,12 @@ export interface CorpusAnalysis {
   project_filter: string | null;
   per_project: Record<string, Record<string, Record<string, number>>>;
   source_view: "active" | "all";
-  source_provenance: Array<{ source_class: string; source_product: string; active_runtime: boolean; records: number }>;
+  source_provenance: Array<{
+    source_class: string;
+    source_product: string;
+    active_runtime: boolean;
+    records: number;
+  }>;
 }
 
 function emptySkillBucket(): Record<string, number> {
@@ -278,11 +282,7 @@ function activeAnalyticsRecord(record: JsonObject): boolean {
   return record.runtime !== "claude" && record.runtime !== "claude-code";
 }
 
-export function analyzeCorpus(
-  corpus: JsonObject,
-  projectFilter: string | null = null,
-  sourceView: "active" | "all" = "active",
-): CorpusAnalysis {
+export function analyzeCorpus(corpus: JsonObject, projectFilter: string | null = null, sourceView: "active" | "all" = "active"): CorpusAnalysis {
   const rawRecords = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown as Iterable<JsonObject>; // cast: corpus records from JSON.parse IO boundary
   return analyzeRecords(rawRecords, projectFilter, sourceView);
 }
@@ -294,11 +294,7 @@ export function analyzeCorpus(
  * rather than materialized; only conversation turns are retained as the analysis
  * working set. Mirrors `analyzeCorpus` exactly when given the full record array.
  */
-export function analyzeRecords(
-  records: Iterable<JsonObject>,
-  projectFilter: string | null = null,
-  sourceView: "active" | "all" = "active",
-): CorpusAnalysis {
+export function analyzeRecords(records: Iterable<JsonObject>, projectFilter: string | null = null, sourceView: "active" | "all" = "active"): CorpusAnalysis {
   const provenanceCounts = new Map<string, { source_class: string; source_product: string; active_runtime: boolean; records: number }>();
   const userTurnsByConv = new Map<string, JsonObject[]>();
   const assistantByConv = new Map<string, JsonObject[]>();
@@ -314,7 +310,12 @@ export function analyzeRecords(
     const sourceProduct = String(record.source_product ?? record.runtime ?? "unknown");
     const activeRuntime = isActive;
     const key = `${sourceClass}\0${sourceProduct}\0${activeRuntime}`;
-    const current = provenanceCounts.get(key) ?? { source_class: sourceClass, source_product: sourceProduct, active_runtime: activeRuntime, records: 0 };
+    const current = provenanceCounts.get(key) ?? {
+      source_class: sourceClass,
+      source_product: sourceProduct,
+      active_runtime: activeRuntime,
+      records: 0,
+    };
     current.records += 1;
     provenanceCounts.set(key, current);
 
@@ -374,8 +375,7 @@ export function analyzeRecords(
     project_filter: projectFilter,
     per_project: perProject,
     source_view: sourceView,
-    source_provenance: [...provenanceCounts.values()].sort((a, b) =>
-      `${a.source_class}:${a.source_product}`.localeCompare(`${b.source_class}:${b.source_product}`)),
+    source_provenance: [...provenanceCounts.values()].sort((a, b) => `${a.source_class}:${a.source_product}`.localeCompare(`${b.source_class}:${b.source_product}`)),
   };
 }
 
@@ -451,21 +451,14 @@ export function loadCorpusOrRaise(corpusPath: string): JsonObject {
     throw new CorpusUnavailable(`corpus is not readable JSON: ${(exc as Error).message}`);
   }
   const records = (isMapping(corpus) ? (corpus.records ?? []) : []) as unknown[]; // cast: corpus records from JSON.parse IO boundary
-  const hasTurn = Array.isArray(records) && records.some(
-    (r: unknown) => isMapping(r) && r.source_kind === "conversation_turn",
-  );
+  const hasTurn = Array.isArray(records) && records.some((r: unknown) => isMapping(r) && r.source_kind === "conversation_turn");
   if (!hasTurn) {
-    throw new CorpusUnavailable(
-      `corpus at ${corpusPath} contains no conversation_turn records. ${CORPUS_GUIDANCE}`,
-    );
+    throw new CorpusUnavailable(`corpus at ${corpusPath} contains no conversation_turn records. ${CORPUS_GUIDANCE}`);
   }
   return corpus as JsonObject; // cast: corpus from JSON.parse IO boundary
 }
 
-export function buildJsonPayload(
-  analysis: CorpusAnalysis,
-  opts: { generatedAt: string; extractedAt: string | null },
-): JsonObject {
+export function buildJsonPayload(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null }): JsonObject {
   return {
     generated_at: opts.generatedAt,
     extracted_at: opts.extractedAt,
@@ -478,10 +471,7 @@ export function buildJsonPayload(
   };
 }
 
-export function renderJson(
-  analysis: CorpusAnalysis,
-  opts: { generatedAt: string; extractedAt: string | null },
-): string {
+export function renderJson(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null }): string {
   return JSON.stringify(buildJsonPayload(analysis, opts), null, 2);
 }
 
@@ -496,24 +486,18 @@ function exitStatusCounts(analysis: CorpusAnalysis, skill: string): Record<strin
 }
 
 function lastSeen(analysis: CorpusAnalysis, skill: string): string {
-  const timestamps = analysis.invocations
-    .filter((inv) => inv.skill === skill)
-    .map((inv) => inv.intro_timestamp);
+  const timestamps = analysis.invocations.filter((inv) => inv.skill === skill).map((inv) => inv.intro_timestamp);
   return timestamps.length ? timestamps.reduce((a, b) => (a > b ? a : b)) : "-";
 }
 
-export function renderMarkdown(
-  analysis: CorpusAnalysis,
-  opts: { generatedAt: string; extractedAt: string | null },
-): string {
+export function renderMarkdown(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null }): string {
   const scope = analysis.project_filter || "all projects";
   const extractedLine = opts.extractedAt || "unknown (corpus omitted extracted_at)";
 
   const lines: string[] = [];
   lines.push("# Suite Usage", "", `- Generated: ${opts.generatedAt}`, `- Corpus extracted: ${extractedLine}`, `- Scope: ${scope}`, `- Sources: ${analysis.source_view}`, "");
   if (analysis.source_view === "all") {
-    lines.push("## Source provenance", "", "| Source class | Source product | Active runtime | Records |", "| --- | --- | --- | --- |", ...analysis.source_provenance.map((item) =>
-      `| ${item.source_class} | ${item.source_product} | ${item.active_runtime ? "yes" : "no"} | ${item.records} |`), "");
+    lines.push("## Source provenance", "", "| Source class | Source product | Active runtime | Records |", "| --- | --- | --- | --- |", ...analysis.source_provenance.map((item) => `| ${item.source_class} | ${item.source_product} | ${item.active_runtime ? "yes" : "no"} | ${item.records} |`), "");
   }
 
   if (Object.keys(analysis.skills).length === 0) {
@@ -523,22 +507,10 @@ export function renderMarkdown(
 
   const totalInvocations = Object.values(analysis.skills).reduce((s, b) => s + b.total, 0);
   const totalCompleted = Object.values(analysis.skills).reduce((s, b) => s + b.completed, 0);
-  lines.push(
-    `- Skills observed: ${Object.keys(analysis.skills).length} · ` +
-      `Invocations: ${totalInvocations} · Completed: ${totalCompleted}`,
-    "",
-  );
+  lines.push(`- Skills observed: ${Object.keys(analysis.skills).length} · ` + `Invocations: ${totalInvocations} · Completed: ${totalCompleted}`, "");
 
   const statuses = [...EXIT_STATUSES].sort();
-  const headerCols = [
-    "Skill",
-    "Invocations",
-    ...statuses.map((s) => s.charAt(0).toUpperCase() + s.slice(1)),
-    "Incomplete",
-    "Slash",
-    "Natural",
-    "Last seen",
-  ];
+  const headerCols = ["Skill", "Invocations", ...statuses.map((s) => s.charAt(0).toUpperCase() + s.slice(1)), "Incomplete", "Slash", "Natural", "Last seen"];
   lines.push("| " + headerCols.join(" | ") + " |");
   lines.push("| " + headerCols.map(() => "---").join(" | ") + " |");
 
@@ -548,15 +520,7 @@ export function renderMarkdown(
   });
   for (const [skill, bucket] of skillOrder) {
     const statusCounts = exitStatusCounts(analysis, skill);
-    const row = [
-      skill,
-      String(bucket.total),
-      ...statuses.map((s) => String(statusCounts[s])),
-      String(bucket.incomplete),
-      String(bucket.trigger_slash),
-      String(bucket.trigger_natural),
-      lastSeen(analysis, skill),
-    ];
+    const row = [skill, String(bucket.total), ...statuses.map((s) => String(statusCounts[s])), String(bucket.incomplete), String(bucket.trigger_slash), String(bucket.trigger_natural), lastSeen(analysis, skill)];
     lines.push("| " + row.join(" | ") + " |");
   }
 
@@ -574,32 +538,20 @@ export function renderMarkdown(
   return lines.join("\n").replace(/\s+$/, "") + "\n";
 }
 
-export function writeMarkdown(
-  analysis: CorpusAnalysis,
-  opts: { generatedAt: string; extractedAt: string | null; outputDir: string },
-): string {
+export function writeMarkdown(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null; outputDir: string }): string {
   fs.mkdirSync(opts.outputDir, { recursive: true });
   const outPath = path.join(opts.outputDir, "USAGE.md");
   fs.writeFileSync(outPath, renderMarkdown(analysis, opts));
   return outPath;
 }
 
-export function renderStdoutSummary(
-  analysis: CorpusAnalysis,
-  opts: { generatedAt: string; extractedAt: string | null; reportPath: string },
-): string {
+export function renderStdoutSummary(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null; reportPath: string }): string {
   const total = Object.values(analysis.skills).reduce((s, b) => s + b.total, 0);
   const completed = Object.values(analysis.skills).reduce((s, b) => s + b.completed, 0);
   const rate = total ? `${Math.round((completed / total) * 100)}%` : "n/a";
   const scope = analysis.project_filter || "all projects";
   const extractedLine = opts.extractedAt || "unknown";
-  return [
-    `Suite usage · scope: ${scope}`,
-    `Skills observed: ${Object.keys(analysis.skills).length}`,
-    `Invocations: ${total} · completed: ${completed} (${rate})`,
-    `Report: ${opts.reportPath}`,
-    `Run-at: ${opts.generatedAt} · Corpus extracted-at: ${extractedLine}`,
-  ].join("\n");
+  return [`Suite usage · scope: ${scope}`, `Skills observed: ${Object.keys(analysis.skills).length}`, `Invocations: ${total} · completed: ${completed} (${rate})`, `Report: ${opts.reportPath}`, `Run-at: ${opts.generatedAt} · Corpus extracted-at: ${extractedLine}`].join("\n");
 }
 
 export function nowIso(): string {
@@ -687,8 +639,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
     }
     analysis = analyzeCorpus(corpusData, project, sourceView);
     const md = (corpusData as JsonObject).metadata;
-    extractedAt =
-      md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
+    extractedAt = md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
   }
 
   const generatedAt = nowIso();

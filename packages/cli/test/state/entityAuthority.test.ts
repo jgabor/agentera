@@ -61,16 +61,16 @@ describe("Decision 94 entity authority", () => {
         shared_primitives: {
           status: "implemented",
           canonical_root: ".agentera/entities",
-           canonical_path_template: ".agentera/entities/<artifact>/<boundary>/<id>.yaml",
-           publication: "exclusive_immutable_file",
-           publication_context: {
-             scope: "shared_by_all_entity_families",
-             binding: "validated_project_root_and_exact_cutover_marker_snapshot",
-             lifetime: "mode_detection_through_writer_lock_and_final_publication_validation",
-             marker_change_after_detection: "conflict_without_legacy_fallback",
-             successor_preservation: "never_remove_unmatched_or_unrelated_identity",
-           },
-           identical_replay: "idempotent",
+          canonical_path_template: ".agentera/entities/<artifact>/<boundary>/<id>.yaml",
+          publication: "exclusive_immutable_file",
+          publication_context: {
+            scope: "shared_by_all_entity_families",
+            binding: "validated_project_root_and_exact_cutover_marker_snapshot",
+            lifetime: "mode_detection_through_writer_lock_and_final_publication_validation",
+            marker_change_after_detection: "conflict_without_legacy_fallback",
+            successor_preservation: "never_remove_unmatched_or_unrelated_identity",
+          },
+          identical_replay: "idempotent",
           divergent_same_id: "reject_without_overwrite",
           state_validation: {
             canonical_command: "npx -y agentera@next check validate state",
@@ -95,14 +95,7 @@ describe("Decision 94 entity authority", () => {
         remaining_families: "declared_not_implemented",
       },
     });
-    expect(target.identity.prohibited_components).toEqual([
-      "prefix",
-      "sequence",
-      "timestamp",
-      "branch",
-      "writer",
-      "git_reference",
-    ]);
+    expect(target.identity.prohibited_components).toEqual(["prefix", "sequence", "timestamp", "branch", "writer", "git_reference"]);
     expect(target.storage_boundary.shared_primitives.publication_context.filesystem_contract).toEqual({
       primitives: ["node_fs_linkSync", "node_fs_renameSync"],
       replacement_visibility: "complete_old_or_new_bytes_per_file",
@@ -111,8 +104,7 @@ describe("Decision 94 entity authority", () => {
       late_racer: "outside_contract_after_final_successful_validation",
       unsupported_result: "structured_unsupported_target_before_target_effects",
     });
-    expect(target.storage_boundary.shared_primitives.publication_context.pathname_race_contract)
-      .toMatch(/project-relative standard Node paths.*link.*complete-file rename.*structured conflict.*not a global multi-file snapshot.*races after the final successful validation is outside this contract/s);
+    expect(target.storage_boundary.shared_primitives.publication_context.pathname_race_contract).toMatch(/project-relative standard Node paths.*link.*complete-file rename.*structured conflict.*not a global multi-file snapshot.*races after the final successful validation is outside this contract/s);
     expect(target.entities[0]).toMatchObject({
       boundary: "progress_cycle",
       artifact: "progress",
@@ -166,9 +158,17 @@ describe("Decision 94 entity authority", () => {
         },
         public_replacement: expect.stringMatching(/standard Node filesystem operations.*complete old or new bytes.*not a global multi-file atomic snapshot.*validation boundary.*rolls back every attempted target/s),
         semantics: expect.stringMatching(/Interrupted create retry.*original created ID.*without allocating another entity.*Missing post-activation baselines.*reject before effects/s),
-        bounds: { managed_items: 256, retained_pre_activation_legacy_rows: 256, transaction_targets: 258, activation_utf8_bytes: 32768 },
+        bounds: {
+          managed_items: 256,
+          retained_pre_activation_legacy_rows: 256,
+          transaction_targets: 258,
+          activation_utf8_bytes: 32768,
+        },
       },
-      retrieval: { exact: "npx -y agentera@next state todo get --id ID", ordering: "severity_then_status_then_markdown_order_then_id" },
+      retrieval: {
+        exact: "npx -y agentera@next state todo get --id ID",
+        ordering: "severity_then_status_then_markdown_order_then_id",
+      },
     });
     const todoSchema = YAML.parse(fs.readFileSync(TODO_SCHEMA_PATH, "utf8"));
     expect(todoSchema.READINESS.ordering.modes.projected_startup).toEqual({
@@ -233,63 +233,44 @@ describe("Decision 94 entity authority", () => {
         },
       },
     });
-    expect(
-      keysNamed(
-        { entities: target.entities, relationships: target.relationships, views: target.views },
-        new Set(target.public_schema.forbidden_canonical_aliases),
-      ),
-    ).toEqual([]);
+    expect(keysNamed({ entities: target.entities, relationships: target.relationships, views: target.views }, new Set(target.public_schema.forbidden_canonical_aliases))).toEqual([]);
   });
 
   it("enumerates every entity, relationship, and intentional singleton boundary", () => {
     const target = loadAuthority().entity_target;
     const entities = new Map(target.entities.map((entity: any) => [entity.boundary, entity]));
 
-    expect([...entities.keys()]).toEqual([
-      "progress_cycle",
-      "progress_summary",
-      "decision",
-      "decision_satisfaction",
-      "decision_summary",
-      "decision_revision",
-      "health_audit",
-      "health_summary",
-      "plan",
-      "plan_task",
-      "objective",
-      "experiment",
-      "todo_item",
-      "documentation_inventory_entry",
-    ]);
-    expect(new Set([...entities.values()].map((entity: any) => entity.artifact))).toEqual(
-      new Set(["progress", "decisions", "health", "plan", "objective", "experiments", "todo", "docs"]),
-    );
+    expect([...entities.keys()]).toEqual(["progress_cycle", "progress_summary", "decision", "decision_satisfaction", "decision_summary", "decision_revision", "health_audit", "health_summary", "plan", "plan_task", "objective", "experiment", "todo_item", "documentation_inventory_entry"]);
+    expect(new Set([...entities.values()].map((entity: any) => entity.artifact))).toEqual(new Set(["progress", "decisions", "health", "plan", "objective", "experiments", "todo", "docs"]));
     expect([...entities.values()].filter((entity: any) => !entity.boundary.endsWith("_summary")).every((entity: any) => entity.independently_mutable)).toBe(true);
     expect(["progress_summary", "decision_summary", "health_summary"].map((boundary) => entities.get(boundary))).toEqual([
-      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
-      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
-      expect.objectContaining({ independently_mutable: false, publication: "immutable", mutation: "forbidden" }),
+      expect.objectContaining({
+        independently_mutable: false,
+        publication: "immutable",
+        mutation: "forbidden",
+      }),
+      expect.objectContaining({
+        independently_mutable: false,
+        publication: "immutable",
+        mutation: "forbidden",
+      }),
+      expect.objectContaining({
+        independently_mutable: false,
+        publication: "immutable",
+        mutation: "forbidden",
+      }),
     ]);
 
     for (const relationship of target.relationships.declarations) {
       expect(entities.has(relationship.source), relationship.source).toBe(true);
       expect(entities.has(relationship.target), relationship.target).toBe(true);
-      expect(entities.get(relationship.source).relationships).toContain(
-        relationship.field === "depends_on" ? "depends_on_tasks" : relationship.field,
-      );
+      expect(entities.get(relationship.source).relationships).toContain(relationship.field === "depends_on" ? "depends_on_tasks" : relationship.field);
     }
     expect(target.intentional_singletons).toMatchObject({
       exhaustive: true,
       additions_require_authority_amendment: true,
     });
-    expect(target.intentional_singletons.boundaries.map((entry: any) => entry.boundary)).toEqual([
-      "vision",
-      "design",
-      "changelog",
-      "profile",
-      "runtime_local_session_state",
-      "docs_mapping",
-    ]);
+    expect(target.intentional_singletons.boundaries.map((entry: any) => entry.boundary)).toEqual(["vision", "design", "changelog", "profile", "runtime_local_session_state", "docs_mapping"]);
     expect(target.excluded_from_entity_migration).toContain("all intentional_singletons");
   });
 
@@ -305,24 +286,9 @@ describe("Decision 94 entity authority", () => {
       source_outcomes: { status: "implemented" },
     });
     for (const [boundary, artifact, command, ordering] of [
-      [
-        "progress_summary",
-        "progress",
-        "npx -y agentera@next state progress get --id ID",
-        "full_timestamp_desc_then_publication_order_desc_then_id_asc_then_summary_id_asc",
-      ],
-      [
-        "decision_summary",
-        "decisions",
-        "npx -y agentera@next state decisions get --id ID",
-        "full_date_desc_then_id_asc_then_summary_id_asc",
-      ],
-      [
-        "health_summary",
-        "health",
-        "npx -y agentera@next state health get --id ID",
-        "full_date_desc_then_id_asc_then_summary_id_asc",
-      ],
+      ["progress_summary", "progress", "npx -y agentera@next state progress get --id ID", "full_timestamp_desc_then_publication_order_desc_then_id_asc_then_summary_id_asc"],
+      ["decision_summary", "decisions", "npx -y agentera@next state decisions get --id ID", "full_date_desc_then_id_asc_then_summary_id_asc"],
+      ["health_summary", "health", "npx -y agentera@next state health get --id ID", "full_date_desc_then_id_asc_then_summary_id_asc"],
     ]) {
       const summary = declared.boundaries.find((entry: any) => entry.boundary === boundary);
       expect(summary).toMatchObject({
@@ -366,17 +332,8 @@ describe("Decision 94 entity authority", () => {
     target.relationships.declarations[0].target = "missing_decision";
     const boundaries = new Set(target.entities.map((entity: any) => entity.boundary));
 
-    expect(
-      keysNamed(
-        { entities: target.entities, relationships: target.relationships, views: target.views },
-        new Set(target.public_schema.forbidden_canonical_aliases),
-      ),
-    ).toEqual(["stable_id"]);
-    expect(
-      target.relationships.declarations
-        .filter((relationship: any) => !boundaries.has(relationship.source) || !boundaries.has(relationship.target))
-        .map((relationship: any) => relationship.target),
-    ).toEqual(["missing_decision"]);
+    expect(keysNamed({ entities: target.entities, relationships: target.relationships, views: target.views }, new Set(target.public_schema.forbidden_canonical_aliases))).toEqual(["stable_id"]);
+    expect(target.relationships.declarations.filter((relationship: any) => !boundaries.has(relationship.source) || !boundaries.has(relationship.target)).map((relationship: any) => relationship.target)).toEqual(["missing_decision"]);
   });
 
   it("defines non-fabricating one-way cutover and measurable target gates", () => {
@@ -439,11 +396,7 @@ describe("Decision 94 entity authority", () => {
         forbidden_fields: expect.arrayContaining(["operation_id", "snapshots", "inode_receipts", "rollback_state"]),
       },
     });
-    expect(
-      Object.fromEntries(
-        Object.entries(migration.source_outcomes).map(([key, value]: [string, any]) => [key, value.outcome]),
-      ),
-    ).toEqual({
+    expect(Object.fromEntries(Object.entries(migration.source_outcomes).map(([key, value]: [string, any]) => [key, value.outcome]))).toEqual({
       valid_full: "ready",
       canonical_mirror: "ready_with_mirrored_provenance",
       degraded_recoverable: "ready_with_provenance",
@@ -454,25 +407,23 @@ describe("Decision 94 entity authority", () => {
       corrupt_or_unresolved_relationship: "blocked",
       unsupported: "blocked",
     });
-    expect(migration.lifecycle.map((phase: any) => phase.phase)).toEqual([
-      "inventory",
-      "preview",
-      "git_preflight",
-      "publishing_entities",
-      "entities_published",
-      "marker",
-    ]);
+    expect(migration.lifecycle.map((phase: any) => phase.phase)).toEqual(["inventory", "preview", "git_preflight", "publishing_entities", "entities_published", "marker"]);
     expect(migration).not.toHaveProperty("resume");
     expect(migration).not.toHaveProperty("recovery");
-    expect(migration.non_fabrication.forbidden).toEqual(
-      expect.arrayContaining(["synthetic entities for missing source detail", "guessed relationship targets"]),
-    );
+    expect(migration.non_fabrication.forbidden).toEqual(expect.arrayContaining(["synthetic entities for missing source detail", "guessed relationship targets"]));
 
     expect(measurement).toMatchObject({
       status: "implemented",
-      sampling: { repetitions: 5, pass_rule: "every repetition stays within every applicable limit" },
+      sampling: {
+        repetitions: 5,
+        pass_rule: "every repetition stays within every applicable limit",
+      },
       targets: {
-        exact_get: { max_latency_ms: 1000, max_heap_delta_bytes: 67108864, max_utf8_bytes: 1048576 },
+        exact_get: {
+          max_latency_ms: 1000,
+          max_heap_delta_bytes: 67108864,
+          max_utf8_bytes: 1048576,
+        },
         bounded_list_small: { max_latency_ms: 5000, max_utf8_bytes: 32768 },
         bounded_list_large: { max_latency_ms: 15000, max_utf8_bytes: 32768 },
         startup_small: { max_latency_ms: 5000 },
@@ -497,7 +448,11 @@ describe("Decision 94 entity authority", () => {
       health: [{ summary: "health mapping", retained: { z: 1, a: ["second", "first"] } }, "health scalar"],
     } as const;
     const collections = { progress: "cycles", decisions: "decisions", health: "audits" } as const;
-    const boundaries = { progress: "progress_summary", decisions: "decision_summary", health: "health_summary" } as const;
+    const boundaries = {
+      progress: "progress_summary",
+      decisions: "decision_summary",
+      health: "health_summary",
+    } as const;
 
     expect(semantic).toMatchObject({
       semantic_id: "v2_compacted_summary_physical_row.v1",
@@ -533,7 +488,11 @@ describe("Decision 94 entity authority", () => {
             },
           });
           if (typeof physical === "string") {
-            expect(sourceDigest).not.toBe(createHash("sha256").update(canonicalRecordJson({ summary: physical })).digest("hex"));
+            expect(sourceDigest).not.toBe(
+              createHash("sha256")
+                .update(canonicalRecordJson({ summary: physical }))
+                .digest("hex"),
+            );
           }
         }
       }

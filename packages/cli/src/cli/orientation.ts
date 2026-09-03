@@ -2,35 +2,15 @@ import fs from "node:fs";
 import path from "node:path";
 import { preCutoverCommand } from "./preCutoverCommand.js";
 
-import {
-  ArtifactRecord,
-  loadArtifactRecord,
-  resolveArtifactPath,
-} from "../registries/artifactRegistry.js";
-import {
-  activeObjectiveName,
-  artifactPath,
-  resolveRegistryModelPath,
-  SchemaInfo,
-} from "./appContext.js";
-import {
-  asList,
-  extractEntries,
-  firstPresent,
-  loadArtifact,
-  recentCycles,
-  truncate,
-} from "./stateQuery.js";
+import { ArtifactRecord, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
+import { activeObjectiveName, artifactPath, resolveRegistryModelPath, SchemaInfo } from "./appContext.js";
+import { asList, extractEntries, firstPresent, loadArtifact, recentCycles, truncate } from "./stateQuery.js";
 import { normalizeSeverity } from "./commands/state/index.js";
 import { isResolvedTodoMarkdownStatus, parseTodoMarkdownListItem } from "./todoMarkdown.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { truncateCodePoints } from "../core/text.js";
 import { TODO_SEVERITY_ORDER_KEYS } from "./todoSeverity.js";
-import {
-  evaluateTodoReadinessQueue,
-  type TodoReadinessEntity,
-  type TodoReadinessQueueSelection,
-} from "./todoReadinessSelection.js";
+import { evaluateTodoReadinessQueue, type TodoReadinessEntity, type TodoReadinessQueueSelection } from "./todoReadinessSelection.js";
 import { capabilityStartupComplete, type StartupCompletenessInput } from "./startupCompletenessContract.js";
 import { discoverPlanArtifacts, planCatalogEntry, planDocumentParts } from "./planArtifacts.js";
 import { planLifecycleState } from "./planLifecycleState.js";
@@ -39,20 +19,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { entityListFamily } from "../state/entityRetrievalHelp.js";
 import { scanYamlCollection } from "../state/startupProjection.js";
 import { numberedArchiveContract } from "../state/archiveDiscovery.js";
-import type {
-  DecisionFollowUp,
-  DecisionReviewAttention,
-  DecisionReviewEntry,
-  DocsSummary,
-  HealthSummary,
-  IssueCounts,
-  NextAction,
-  ObjectiveSummary,
-  PlanSummary,
-  ProgressSummary,
-  ReadinessHint,
-  StatePresenceSummary,
-} from "./contracts/orientationState.js";
+import type { DecisionFollowUp, DecisionReviewAttention, DecisionReviewEntry, DocsSummary, HealthSummary, IssueCounts, NextAction, ObjectiveSummary, PlanSummary, ProgressSummary, ReadinessHint, StatePresenceSummary } from "./contracts/orientationState.js";
 
 const PLAN_FAMILY = entityListFamily("plans");
 const PLAN_TASK_FAMILY = entityListFamily("plan_tasks");
@@ -74,20 +41,7 @@ function objectiveGetCommand(objectiveId?: unknown): string {
   return preCutoverCommand(`state ${OBJECTIVE_FAMILY.commandTokens.join(" ")} get --id ${selector}`);
 }
 
-export type {
-  DecisionFollowUp,
-  DecisionReviewAttention,
-  DecisionReviewEntry,
-  DocsSummary,
-  HealthSummary,
-  IssueCounts,
-  NextAction,
-  ObjectiveSummary,
-  PlanSummary,
-  ProgressSummary,
-  ReadinessHint,
-  StatePresenceSummary,
-} from "./contracts/orientationState.js";
+export type { DecisionFollowUp, DecisionReviewAttention, DecisionReviewEntry, DocsSummary, HealthSummary, IssueCounts, NextAction, ObjectiveSummary, PlanSummary, ProgressSummary, ReadinessHint, StatePresenceSummary } from "./contracts/orientationState.js";
 
 /**
  * Orientation summaries layer for prime/status. Faithful port of the
@@ -98,9 +52,7 @@ export type {
 export const DONE_STATUSES = new Set(["complete", "completed", "closed", "done", "resolved", "retired"]);
 export const BLOCKED_STATUSES = new Set(["blocked", "stuck"]);
 export const DECISION_ATTENTION_MAX_ENTRIES = 3;
-const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(
-  TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]),
-);
+const TODO_SECTION_SEVERITIES: Record<string, string> = Object.fromEntries(TODO_SEVERITY_ORDER_KEYS.map((key) => [key, key]));
 
 const AUDIT_STALE_DAYS_ENV = "AGENTERA_AUDIT_MAX_AGE_DAYS";
 const DEFAULT_AUDIT_STALE_DAYS = 30;
@@ -156,12 +108,7 @@ export function loadNamedArtifact(schemas: Record<string, SchemaInfo>, name: str
   return loadArtifact(artifactPath(info, name));
 }
 
-export function registryArtifactPath(
-  artifactId: string,
-  schemasDir: string,
-  env: Record<string, string | undefined> = process.env,
-  options: { warn?: boolean } = {},
-): string {
+export function registryArtifactPath(artifactId: string, schemasDir: string, env: Record<string, string | undefined> = process.env, options: { warn?: boolean } = {}): string {
   // Targeted lookup: resolving a single identity (e.g. `profile` against a
   // v2-shaped install) must not walk the full registry and warn about every
   // required schema that happens to be absent from this install. Only the
@@ -225,14 +172,15 @@ function progressEntryDate(entry: JsonObject): number | null {
 function scanSchemaArtifact(
   schemas: Record<string, SchemaInfo>,
   artifactId: "progress" | "decisions" | "health",
-): { active: ReturnType<typeof scanYamlCollection>; archive: ReturnType<typeof scanYamlCollection> } {
+): {
+  active: ReturnType<typeof scanYamlCollection>;
+  archive: ReturnType<typeof scanYamlCollection>;
+} {
   const info = schemas[artifactId];
   const contract = numberedArchiveContract(artifactId, resolveSourceRoot());
   const currentPath = info ? artifactPath(info, artifactId) : path.join(process.cwd(), ".agentera", `${artifactId}.yaml`);
   const primary = scanYamlCollection(currentPath, contract.entryCollection, artifactId, contract.entryNumberField);
-  const active = artifactId === "progress" && !primary.collection_found
-    ? scanYamlCollection(currentPath, "progress", artifactId, contract.entryNumberField)
-    : primary;
+  const active = artifactId === "progress" && !primary.collection_found ? scanYamlCollection(currentPath, "progress", artifactId, contract.entryNumberField) : primary;
   return {
     active,
     archive: scanYamlCollection(currentPath, "archive", artifactId, contract.entryNumberField),
@@ -253,12 +201,7 @@ function cyclesSinceHealthAudit(schemas: Record<string, SchemaInfo>, auditDate: 
   return count;
 }
 
-function checkAuditStaleness(
-  schemas: Record<string, SchemaInfo>,
-  latest: JsonObject | null,
-  auditDate: number | null,
-  env: Env = process.env,
-): Partial<HealthSummary> | null {
+function checkAuditStaleness(schemas: Record<string, SchemaInfo>, latest: JsonObject | null, auditDate: number | null, env: Env = process.env): Partial<HealthSummary> | null {
   if (latest === null || auditDate === null) return null;
   const staleDaysThreshold = intEnv(env, AUDIT_STALE_DAYS_ENV, DEFAULT_AUDIT_STALE_DAYS);
   const staleCyclesThreshold = intEnv(env, AUDIT_STALE_CYCLES_ENV, DEFAULT_AUDIT_STALE_CYCLES);
@@ -288,7 +231,12 @@ function checkAuditStaleness(
 // ── todo items + issue counts ───────────────────────────────────────
 
 export function loadTodoItems(schemas: Record<string, SchemaInfo>): JsonObject[] {
-  const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
+  const info: SchemaInfo = schemas.todo ?? {
+    path: "TODO.md",
+    record: undefined,
+    schema: {},
+    fields: {},
+  };
   const todoPath = artifactPath(info, "todo");
   if (!fs.existsSync(todoPath)) return [];
   const data = loadArtifact(todoPath);
@@ -331,7 +279,7 @@ export function loadTodoItems(schemas: Record<string, SchemaInfo>): JsonObject[]
       const parsed = parseTodoMarkdownListItem(stripped);
       if (!parsed || isResolvedTodoMarkdownStatus(parsed.status)) continue;
       if (!parsed.description) continue;
-       items.push({ severity: currentSeverity, status: parsed.status, text: parsed.description });
+      items.push({ severity: currentSeverity, status: parsed.status, text: parsed.description });
     }
   }
   return items;
@@ -367,9 +315,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
     return summary;
   }
   const discovery = discoverPlanArtifacts(artifactPath(info, "plan"));
-  const activeDiagnostics = discovery.diagnostics.filter(
-    (diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy",
-  );
+  const activeDiagnostics = discovery.diagnostics.filter((diagnostic) => diagnostic.path === discovery.activePath && diagnostic.category !== "legacy");
   const archivedPlans = discovery.archived.map((artifact) => planCatalogEntry(artifact, discovery.activePath));
   if (!discovery.active) {
     const summary: PlanSummary = {
@@ -379,12 +325,7 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
       status: activeDiagnostics.length > 0 ? "invalid" : archivedPlans.length > 0 ? "archived" : "absent",
       title: "",
       active_path: discovery.activePath,
-      absence_reason:
-        activeDiagnostics.length > 0
-          ? "Current plan artifact is invalid; see diagnostics."
-          : archivedPlans.length > 0
-          ? "No active plan artifact is available; archived plan state is history only."
-          : "No active plan artifact is available from agentera state plan.",
+      absence_reason: activeDiagnostics.length > 0 ? "Current plan artifact is invalid; see diagnostics." : archivedPlans.length > 0 ? "No active plan artifact is available; archived plan state is history only." : "No active plan artifact is available from agentera state plan.",
       complete: 0,
       total: 0,
       complete_plan: false,
@@ -403,15 +344,11 @@ export function planSummary(schemas: Record<string, SchemaInfo>): PlanSummary {
   const parts = planDocumentParts(d);
   const tasks = parts.tasks;
   const status = parts.legacyEntries ? entryStatusPy(tasks[0], "") : parts.status;
-  const title = parts.legacyEntries
-    ? String(firstPresent(tasks[0] ?? {}, ["title", "name"], ""))
-    : parts.title;
+  const title = parts.legacyEntries ? String(firstPresent(tasks[0] ?? {}, ["title", "name"], "")) : parts.title;
   const complete = tasks.filter((task) => DONE_STATUSES.has(entryStatusPy(task, ""))).length;
   const total = tasks.length;
   const completePlan = DONE_STATUSES.has(status.toLowerCase()) && complete === total;
-  const firstPending = completePlan
-    ? null
-    : firstActionablePlanTask(tasks);
+  const firstPending = completePlan ? null : firstActionablePlanTask(tasks);
   const summary: PlanSummary = {
     exists: true,
     status,
@@ -444,18 +381,21 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
       if (!(key in task)) continue;
       if (key === "acceptance_summary" || key === "evidence_summary") {
         const summary = task[key];
-        item[key] = summary && typeof summary === "object" && !Array.isArray(summary)
-          ? { count: (summary as JsonObject).count ?? asList((summary as JsonObject).items).length }
-          : null;
+        item[key] =
+          summary && typeof summary === "object" && !Array.isArray(summary)
+            ? {
+                count: (summary as JsonObject).count ?? asList((summary as JsonObject).items).length,
+              }
+            : null;
       } else if (key === "evaluation_state") {
         const evaluation = task[key];
-        item[key] = evaluation && typeof evaluation === "object" && !Array.isArray(evaluation)
-          ? Object.fromEntries(Object.entries(evaluation as JsonObject).filter(([name]) => ["attempt_count", "failure_count", "last_verdict"].includes(name)))
-          : null;
+        item[key] = evaluation && typeof evaluation === "object" && !Array.isArray(evaluation) ? Object.fromEntries(Object.entries(evaluation as JsonObject).filter(([name]) => ["attempt_count", "failure_count", "last_verdict"].includes(name))) : null;
       } else if (key === "depends_on") {
         item[key] = asList(task[key]).slice(0, 20);
       } else if (key === "blocked_reasons") {
-        item[key] = asList(task[key]).slice(0, 3).map((reason) => truncateCodePoints(String(reason), 160));
+        item[key] = asList(task[key])
+          .slice(0, 3)
+          .map((reason) => truncateCodePoints(String(reason), 160));
       } else {
         item[key] = typeof task[key] === "string" ? truncateCodePoints(task[key], 256) : task[key];
       }
@@ -465,36 +405,42 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
   const archived = asList(plan.archived_plans).slice(0, 10);
   const diagnostics = asList(plan.diagnostics).slice(0, 10);
   const totalTasks = Number(plan.total ?? tasks.length);
-  const taskOmission = plan.task_omission && typeof plan.task_omission === "object" && !Array.isArray(plan.task_omission) ? plan.task_omission as JsonObject : {};
+  const taskOmission = plan.task_omission && typeof plan.task_omission === "object" && !Array.isArray(plan.task_omission) ? (plan.task_omission as JsonObject) : {};
   const finalTaskOmission = {
     ...taskOmission,
     omitted: totalTasks > boundedTasks.length,
     total: totalTasks,
     returned_count: boundedTasks.length,
     omitted_count: Math.max(0, totalTasks - boundedTasks.length),
-    omission_reason: totalTasks > boundedTasks.length ? taskOmission.omission_reason ?? "startup_detail_capacity" : "none",
-    retrieval: taskOmission.retrieval ?? { list: planTaskListCommand(plan.id), restart: planTaskListCommand(plan.id), get: PLAN_TASK_FAMILY.get },
+    omission_reason: totalTasks > boundedTasks.length ? (taskOmission.omission_reason ?? "startup_detail_capacity") : "none",
+    retrieval: taskOmission.retrieval ?? {
+      list: planTaskListCommand(plan.id),
+      restart: planTaskListCommand(plan.id),
+      get: PLAN_TASK_FAMILY.get,
+    },
   };
-  const pending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending)
-    ? plan.first_pending as JsonObject
-    : null;
+  const pending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending) ? (plan.first_pending as JsonObject) : null;
   const pendingDependencies = pending ? asList(pending.depends_on).slice(0, 20).map(String) : [];
   const pendingAcceptance = pending
-    ? asList(pending.acceptance).slice(0, 10).map((item) => truncateCodePoints(String(item), 200, "…"))
+    ? asList(pending.acceptance)
+        .slice(0, 10)
+        .map((item) => truncateCodePoints(String(item), 200, "…"))
     : [];
-  const firstPending = pending ? {
-    id: pending.id ?? null,
-    artifact: pending.artifact ?? "plan",
-    name: truncateCodePoints(String(pending.name ?? pending.title ?? ""), 256, "…"),
-    status: pending.status ?? "pending",
-    depends_on: pendingDependencies,
-    dependency_count: asList(pending.depends_on).length,
-    omitted_dependency_count: Math.max(0, asList(pending.depends_on).length - pendingDependencies.length),
-    acceptance: pendingAcceptance,
-    acceptance_count: asList(pending.acceptance).length,
-    omitted_acceptance_count: Math.max(0, asList(pending.acceptance).length - pendingAcceptance.length),
-    retrieval: { get: planTaskGetCommand(pending.id) },
-  } : null;
+  const firstPending = pending
+    ? {
+        id: pending.id ?? null,
+        artifact: pending.artifact ?? "plan",
+        name: truncateCodePoints(String(pending.name ?? pending.title ?? ""), 256, "…"),
+        status: pending.status ?? "pending",
+        depends_on: pendingDependencies,
+        dependency_count: asList(pending.depends_on).length,
+        omitted_dependency_count: Math.max(0, asList(pending.depends_on).length - pendingDependencies.length),
+        acceptance: pendingAcceptance,
+        acceptance_count: asList(pending.acceptance).length,
+        omitted_acceptance_count: Math.max(0, asList(pending.acceptance).length - pendingAcceptance.length),
+        retrieval: { get: planTaskGetCommand(pending.id) },
+      }
+    : null;
   return {
     id: plan.id ?? null,
     artifact: plan.artifact ?? "plan",
@@ -527,20 +473,25 @@ export function startupPlanSummary(plan: PlanSummary): JsonObject {
   };
 }
 
-export function docsSummary(
-  schemas: Record<string, SchemaInfo>,
-  startupInput: StartupCompletenessInput = {},
-): DocsSummary {
+export function docsSummary(schemas: Record<string, SchemaInfo>, startupInput: StartupCompletenessInput = {}): DocsSummary {
   const info = schemas.docs;
   if (!info) {
-    return { exists: false, status: "absent", absence_reason: "No docs mapping artifact is available from agentera state docs." };
+    return {
+      exists: false,
+      status: "absent",
+      absence_reason: "No docs mapping artifact is available from agentera state docs.",
+    };
   }
   const docsPath = artifactPath(info, "docs");
   const mapping = scanYamlCollection(docsPath, "mapping", "docs", "artifact");
   const index = scanYamlCollection(docsPath, "index", "docs", "artifact");
   const exists = fs.existsSync(docsPath);
   const header = exists ? truncateCodePoints(fs.readFileSync(docsPath, "utf8"), 4096) : "";
-  const lastAudit = /^last_audit:\s*(.+)$/m.exec(header)?.[1]?.trim().replace(/^['"]|['"]$/g, "") ?? null;
+  const lastAudit =
+    /^last_audit:\s*(.+)$/m
+      .exec(header)?.[1]
+      ?.trim()
+      .replace(/^['"]|['"]$/g, "") ?? null;
   return {
     exists,
     status: "available",
@@ -565,11 +516,20 @@ export function docsSummary(
 
 export function progressSummary(schemas: Record<string, SchemaInfo>): ProgressSummary {
   const info = schemas.progress;
-  if (!info) return { exists: false, status: "absent", absence_reason: "No progress cycles are available from agentera progress." };
+  if (!info)
+    return {
+      exists: false,
+      status: "absent",
+      absence_reason: "No progress cycles are available from agentera progress.",
+    };
   const scan = scanSchemaArtifact(schemas, "progress").active;
   const entries = scan.entries.map((entry) => entry.fields);
   if (entries.length === 0) {
-    return { exists: false, status: "absent", absence_reason: "No progress cycles are available from agentera progress." };
+    return {
+      exists: false,
+      status: "absent",
+      absence_reason: "No progress cycles are available from agentera progress.",
+    };
   }
   const latest = recentCycles(entries, 1)[0] ?? {};
   const latestCycle: JsonObject = {};
@@ -614,9 +574,7 @@ export function healthSummary(schemas: Record<string, SchemaInfo>, env: Env = pr
     trajectory,
     grade: worst ? worst[1] : "",
     worst,
-    degrading:
-      ["degrading", "declining", "worse"].includes(trajectory.toLowerCase()) ||
-      (worst !== null && worst[2] >= gradeRank.D),
+    degrading: ["degrading", "declining", "worse"].includes(trajectory.toLowerCase()) || (worst !== null && worst[2] >= gradeRank.D),
   };
   const staleness = checkAuditStaleness(schemas, latest, auditDate, env);
   if (staleness !== null) Object.assign(summary, staleness);
@@ -634,9 +592,7 @@ function isoFromUtc(utc: number): string {
 function objectiveStatus(data: JsonObject): string {
   const header = data.header && typeof data.header === "object" && !Array.isArray(data.header) ? data.header : {};
   const objective = data.objective && typeof data.objective === "object" && !Array.isArray(data.objective) ? data.objective : {};
-  return String(
-    firstPresent(header, ["status"], data.status ?? objective.status ?? "") || "",
-  ).toLowerCase();
+  return String(firstPresent(header, ["status"], data.status ?? objective.status ?? "") || "").toLowerCase();
 }
 
 export function activeObjectiveSummary(): ObjectiveSummary {
@@ -687,13 +643,7 @@ export function activeObjectiveSummary(): ObjectiveSummary {
   };
 }
 
-export function statePresence(
-  plan: PlanSummary,
-  docs: DocsSummary,
-  progress: ProgressSummary,
-  health: HealthSummary,
-  objective: ObjectiveSummary,
-): StatePresenceSummary {
+export function statePresence(plan: PlanSummary, docs: DocsSummary, progress: ProgressSummary, health: HealthSummary, objective: ObjectiveSummary): StatePresenceSummary {
   const active = { plan: Boolean(plan.active), objective: Boolean(objective.active) };
   const available = {
     plan: Boolean(plan.exists),
@@ -725,8 +675,7 @@ export function statePresence(
 export function decisionFollowUp(schemas: Record<string, SchemaInfo>): DecisionFollowUp | null {
   for (const entry of startupDecisionEntries(schemas)) {
     const satisfaction = entry.satisfaction;
-    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
-      continue;
+    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed) continue;
     const number = typeof entry.number === "string" || typeof entry.number === "number" ? entry.number : "?";
     const title = firstPresent(entry, ["question", "choice"], "decision follow-up");
     return { object: `DECISION ${number} follow-up`, title: String(title) };
@@ -757,8 +706,7 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
   const stateCounts: Record<string, number> = {};
   for (const entry of startupDecisionEntries(schemas)) {
     const satisfaction = entry.satisfaction;
-    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed)
-      continue;
+    if (!satisfaction || typeof satisfaction !== "object" || Array.isArray(satisfaction) || !satisfaction.review_needed) continue;
     const state = decisionAttentionState(satisfaction);
     stateCounts[state] = (stateCounts[state] ?? 0) + 1;
     reviewEntries.push({
@@ -791,23 +739,13 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
 
 export function formatNextAction(action: NextAction | Record<string, string> | null): string {
   if (!action) return "object=VISION refresh | capability=vision | reason=no executable follow-up | phase=envision";
-  const fields = [
-    `object=${truncate(action.object)}`,
-    `capability=${action.capability}`,
-    `reason=${action.reason}`,
-  ];
+  const fields = [`object=${truncate(action.object)}`, `capability=${action.capability}`, `reason=${action.reason}`];
   if ("phase" in action && action.phase) fields.push(`phase=${action.phase}`);
   if ("id" in action && action.id) fields.push(`id=${action.id}`);
   if ("artifact" in action && action.artifact) fields.push(`artifact=${action.artifact}`);
   if ("outcome" in action && action.outcome) fields.push(`outcome=${action.outcome}`);
   if ("eligible" in action && typeof action.eligible === "boolean") fields.push(`eligible=${String(action.eligible)}`);
-  if (
-    "retrieval" in action
-    && action.retrieval
-    && typeof action.retrieval === "object"
-    && "exact" in action.retrieval
-    && typeof action.retrieval.exact === "string"
-  ) fields.push(`retrieval=${action.retrieval.exact}`);
+  if ("retrieval" in action && action.retrieval && typeof action.retrieval === "object" && "exact" in action.retrieval && typeof action.retrieval.exact === "string") fields.push(`retrieval=${action.retrieval.exact}`);
   return fields.join(" | ");
 }
 
@@ -817,15 +755,7 @@ export function formatNextAction(action: NextAction | Record<string, string> | n
  * envision → PH5 audit). Position 1 (`recommended`) is the branch that would
  * have won under the legacy early-return cascade.
  */
-export function selectStatusReadiness(
-  plan: PlanSummary,
-  health: HealthSummary,
-  objective: ObjectiveSummary,
-  todoItems: JsonObject[],
-  decision: DecisionFollowUp | null,
-  savedContext: boolean,
-  completeTodoReadiness?: TodoReadinessQueueSelection,
-): ReadinessHint {
+export function selectStatusReadiness(plan: PlanSummary, health: HealthSummary, objective: ObjectiveSummary, todoItems: JsonObject[], decision: DecisionFollowUp | null, savedContext: boolean, completeTodoReadiness?: TodoReadinessQueueSelection): ReadinessHint {
   const candidates: NextAction[] = [];
 
   const pending = plan.first_pending;
@@ -838,13 +768,15 @@ export function selectStatusReadiness(
       capability: "orchestrate",
       reason: "first pending plan task",
       phase: "build",
-      ...(id ? {
-        id,
-        artifact: typeof pending.artifact === "string" ? pending.artifact : "plan",
-        outcome: String(pending.status ?? "pending"),
-        eligible: true,
-        retrieval: { exact: planTaskGetCommand(id) },
-      } : {}),
+      ...(id
+        ? {
+            id,
+            artifact: typeof pending.artifact === "string" ? pending.artifact : "plan",
+            outcome: String(pending.status ?? "pending"),
+            eligible: true,
+            retrieval: { exact: planTaskGetCommand(id) },
+          }
+        : {}),
     });
   }
   if (health.degrading) {
@@ -864,20 +796,26 @@ export function selectStatusReadiness(
       capability: "optimize",
       reason: "active non-closed objective",
       phase: "build",
-      ...(id ? {
-        id,
-        artifact: typeof objective.artifact === "string" ? objective.artifact : "objective",
-        outcome: objective.status ?? "active",
-        eligible: true,
-        retrieval: { exact: objectiveGetCommand(id) },
-      } : {}),
+      ...(id
+        ? {
+            id,
+            artifact: typeof objective.artifact === "string" ? objective.artifact : "objective",
+            outcome: objective.status ?? "active",
+            eligible: true,
+            retrieval: { exact: objectiveGetCommand(id) },
+          }
+        : {}),
     });
   }
-  const todoReadiness = completeTodoReadiness ?? evaluateTodoReadinessQueue(todoItems.map((item) => ({
-    id: String(item.id ?? ""),
-    artifact: String(item.artifact ?? "todo"),
-    record: { ...item, description: item.text },
-  })) as TodoReadinessEntity[]);
+  const todoReadiness =
+    completeTodoReadiness ??
+    evaluateTodoReadinessQueue(
+      todoItems.map((item) => ({
+        id: String(item.id ?? ""),
+        artifact: String(item.artifact ?? "todo"),
+        record: { ...item, description: item.text },
+      })) as TodoReadinessEntity[],
+    );
   if (todoReadiness.selected) {
     const item = todoReadiness.selected;
     candidates.push({
@@ -929,15 +867,35 @@ export function selectStatusReadiness(
   }
   const visionExists = fs.existsSync(path.join(process.cwd(), ".agentera", "vision.yaml"));
   if ((plan.exists && !plan.complete_plan) || visionExists) {
-    candidates.push({ object: "VISION refresh", capability: "plan", reason: "no executable follow-up", phase: "envision" });
+    candidates.push({
+      object: "VISION refresh",
+      capability: "plan",
+      reason: "no executable follow-up",
+      phase: "envision",
+    });
   }
   if (savedContext && !visionExists) {
-    candidates.push({ object: "Direction clarification", capability: "discuss", reason: "saved context without vision", phase: "envision" });
+    candidates.push({
+      object: "Direction clarification",
+      capability: "discuss",
+      reason: "saved context without vision",
+      phase: "envision",
+    });
   }
-  candidates.push({ object: "VISION refresh", capability: "vision", reason: "fresh project direction", phase: "envision" });
+  candidates.push({
+    object: "VISION refresh",
+    capability: "vision",
+    reason: "fresh project direction",
+    phase: "envision",
+  });
   // Guarantee at least one alternative so the hint never collapses to a single entry.
   if (candidates.length < 2) {
-    candidates.push({ object: "Direction clarification", capability: "discuss", reason: "clarify project direction", phase: "envision" });
+    candidates.push({
+      object: "Direction clarification",
+      capability: "discuss",
+      reason: "clarify project direction",
+      phase: "envision",
+    });
   }
 
   const [recommended, ...alternatives] = candidates;
@@ -946,15 +904,11 @@ export function selectStatusReadiness(
 
 /** Legacy single-entry projection of {@link selectStatusReadiness}: the
  *  top-priority candidate as `{object, capability, reason}` (no `phase`). */
-export function selectStatusNextAction(
-  plan: PlanSummary,
-  health: HealthSummary,
-  objective: ObjectiveSummary,
-  todoItems: JsonObject[],
-  decision: DecisionFollowUp | null,
-  savedContext: boolean,
-  completeTodoReadiness?: TodoReadinessQueueSelection,
-): Record<string, string> {
+export function selectStatusNextAction(plan: PlanSummary, health: HealthSummary, objective: ObjectiveSummary, todoItems: JsonObject[], decision: DecisionFollowUp | null, savedContext: boolean, completeTodoReadiness?: TodoReadinessQueueSelection): Record<string, string> {
   const { recommended } = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, completeTodoReadiness);
-  return { object: recommended.object, capability: recommended.capability, reason: recommended.reason };
+  return {
+    object: recommended.object,
+    capability: recommended.capability,
+    reason: recommended.reason,
+  };
 }

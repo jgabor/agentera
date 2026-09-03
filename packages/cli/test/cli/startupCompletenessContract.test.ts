@@ -5,10 +5,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import {
-  STARTUP_COMPLETENESS_CLI_FALLBACK,
-  startupCompletenessContract,
-} from "../../src/cli/startupCompletenessContract.js";
+import { STARTUP_COMPLETENESS_CLI_FALLBACK, startupCompletenessContract } from "../../src/cli/startupCompletenessContract.js";
 
 const roots: string[] = [];
 
@@ -41,11 +38,10 @@ describe("startup completeness recovery", () => {
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const planDir = path.join(root, ".agentera/entities/plan/plan");
     fs.mkdirSync(planDir, { recursive: true });
-    fs.writeFileSync(path.join(planDir, "aaaaaaaaaa.yaml"), [
-      "id: aaaaaaaaaa", "artifact: plan", "record:", "  header:", "    level: light",
-      "    created: 2026-07-17", "    status: open", "    title: Startup fallback",
-      "  what: test", "  why: test", "  scope:", "    included: [state]", "    excluded: []", "",
-    ].join("\n"));
+    fs.writeFileSync(
+      path.join(planDir, "aaaaaaaaaa.yaml"),
+      ["id: aaaaaaaaaa", "artifact: plan", "record:", "  header:", "    level: light", "    created: 2026-07-17", "    status: open", "    title: Startup fallback", "  what: test", "  why: test", "  scope:", "    included: [state]", "    excluded: []", ""].join("\n"),
+    );
 
     expect(startupCompletenessContract().cli_fallback).toEqual([...STARTUP_COMPLETENESS_CLI_FALLBACK]);
     for (const command of STARTUP_COMPLETENESS_CLI_FALLBACK) {

@@ -2,12 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { parseYaml } from "../core/yaml.js";
-import {
-  ArtifactRecord,
-  loadArtifactRegistry,
-  registryModelPath,
-  resolveArtifactPath,
-} from "../registries/artifactRegistry.js";
+import { ArtifactRecord, loadArtifactRegistry, registryModelPath, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { resolveActiveAppModel, ActiveAppModel } from "../upgrade/appModel.js";
 import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import os from "node:os";
@@ -27,17 +22,11 @@ export interface SchemaInfo {
 
 function isLocalAgenteraCheckout(root: string): boolean {
   // Node checkout/app marker: the data surfaces the CLI reads (no Python script).
-  return ["skills/agentera/SKILL.md", "registry.json"].every((rel) =>
-    fs.existsSync(path.join(root, rel)),
-  );
+  return ["skills/agentera/SKILL.md", "registry.json"].every((rel) => fs.existsSync(path.join(root, rel)));
 }
 
 function isInstalledManagedApp(root: string): boolean {
-  return (
-    path.basename(root) === "app" &&
-    isFileSafe(path.join(root, ".agentera-bundle.json")) &&
-    isLocalAgenteraCheckout(root)
-  );
+  return path.basename(root) === "app" && isFileSafe(path.join(root, ".agentera-bundle.json")) && isLocalAgenteraCheckout(root);
 }
 
 /** Faithful port of scripts/agentera `_active_app_model` (CLI-level wrapper). */
@@ -117,16 +106,7 @@ export function resolveRegistryModelPath(schemasDir: string): string {
   return registryModelPath();
 }
 
-const FIELD_SKIP = new Set([
-  "meta",
-  "GROUP_PREFIXES",
-  "BUDGET",
-  "COMPACTION",
-  "VALIDATION",
-  "ARCHIVE",
-  "CONVENTION",
-  "CONVENTIONS",
-]);
+const FIELD_SKIP = new Set(["meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "ARCHIVE", "CONVENTION", "CONVENTIONS"]);
 
 export function discoverFields(schema: Record<string, any>): Record<string, any> {
   const fields: Record<string, any> = {};
@@ -233,11 +213,7 @@ export function activeObjectiveName(projectRoot: string = process.cwd()): string
   return path.basename(pool[0]);
 }
 
-export function resolveArtifactPathLocal(
-  artifactRelPath: string,
-  _schemaName: string | null = null,
-  record: ArtifactRecord | null = null,
-): string {
+export function resolveArtifactPathLocal(artifactRelPath: string, _schemaName: string | null = null, record: ArtifactRecord | null = null): string {
   if (record !== null) {
     return resolveArtifactPath(record, process.cwd(), activeObjectiveName());
   }

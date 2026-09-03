@@ -1,19 +1,13 @@
 import { isDeepStrictEqual } from "node:util";
 
-import {
-  isExactArchiveReplay,
-  recoverArchivedEntry,
-} from "../archiveReplay.js";
+import { isExactArchiveReplay, recoverArchivedEntry } from "../archiveReplay.js";
 import { localDate, localTimestamp, nextEntryNumber, nextTaskNumber } from "./assign.js";
 import { reject } from "./errors.js";
 import { array, findByNumber, mapping, mappingPath } from "./helpers.js";
 import type { StateWriteRequest } from "./operations.js";
 import { mutatePlanTaskEvaluation } from "./planEvaluation.js";
 
-function buildProgress(
-  doc: Record<string, unknown>,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
+function buildProgress(doc: Record<string, unknown>, values: Record<string, unknown>): Record<string, unknown> {
   const entry: Record<string, unknown> = {
     number: nextEntryNumber(doc, "cycles"),
     timestamp: values.timestamp ?? localTimestamp(),
@@ -21,8 +15,7 @@ function buildProgress(
     phase: values.phase,
     what: values.what,
   };
-  for (const field of ["inspiration", "discovered", "verified", "next"])
-    if (values[field] !== undefined) entry[field] = values[field];
+  for (const field of ["inspiration", "discovered", "verified", "next"]) if (values[field] !== undefined) entry[field] = values[field];
   const context: Record<string, unknown> = { intent: mappingPath(values, "context.intent") };
   for (const field of ["constraints", "unknowns", "scope"]) {
     const value = mappingPath(values, `context.${field}`);
@@ -32,10 +25,7 @@ function buildProgress(
   return entry;
 }
 
-function buildDecision(
-  doc: Record<string, unknown>,
-  values: Record<string, unknown>,
-): Record<string, unknown> {
+function buildDecision(doc: Record<string, unknown>, values: Record<string, unknown>): Record<string, unknown> {
   const alternatives = mapping(values.alternatives);
   const rejected = Array.isArray(alternatives.rejected) ? alternatives.rejected : [];
   const entry: Record<string, unknown> = {
@@ -43,10 +33,7 @@ function buildDecision(
     date: values.date ?? localDate(),
     question: values.question,
     context: values.context,
-    alternatives: [
-      { name: alternatives.chosen, status: "chosen" },
-      ...rejected.map((name) => ({ name, status: "rejected" })),
-    ],
+    alternatives: [{ name: alternatives.chosen, status: "chosen" }, ...rejected.map((name) => ({ name, status: "rejected" }))],
     choice: values.choice,
     reasoning: values.reasoning,
     confidence: values.confidence,
@@ -203,25 +190,16 @@ export function mutateCandidate(
       name: req.values.name,
       status: req.values.status ?? "pending",
     };
-    for (const field of ["depends_on", "acceptance"])
-      if (req.values[field] !== undefined) entry[field] = req.values[field];
+    for (const field of ["depends_on", "acceptance"]) if (req.values[field] !== undefined) entry[field] = req.values[field];
     candidate.tasks = [...tasks, entry];
     return { candidate, written: entry, assigned: { number: entry.number }, replay: false };
   }
   if (req.spec.verb === "update") {
     const number = Number(req.values.task);
     const entry = findByNumber(tasks, number);
-    if (!entry)
-      reject({ class: "unsupported_target", message: `no plan task with number ${number}` });
+    if (!entry) reject({ class: "unsupported_target", message: `no plan task with number ${number}` });
     let changed = false;
-    for (const field of [
-      "name",
-      "depends_on",
-      "acceptance",
-      "status",
-      "evidence",
-      "blocked_reason",
-    ]) {
+    for (const field of ["name", "depends_on", "acceptance", "status", "evidence", "blocked_reason"]) {
       if (req.values[field] !== undefined && !isDeepStrictEqual(entry[field], req.values[field])) {
         entry[field] = req.values[field];
         changed = true;
@@ -261,8 +239,7 @@ export function mutateCandidate(
         valid_values: ["complete", "in_progress", "pending", "blocked"],
       });
     const entry = findByNumber(tasks, taskNumber);
-    if (!entry)
-      reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
+    if (!entry) reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
     const replay = entry.status === status;
     entry.status = status;
     return { candidate, written: entry, assigned: { number: taskNumber }, replay };
@@ -270,8 +247,7 @@ export function mutateCandidate(
   if (req.spec.verb === "record-evaluation") {
     const taskNumber = Number(req.values.task);
     const entry = findByNumber(tasks, taskNumber);
-    if (!entry)
-      reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
+    if (!entry) reject({ class: "unsupported_target", message: `no plan task with number ${taskNumber}` });
     const mutation = mutatePlanTaskEvaluation(entry, req.values.evaluation, `plan task ${taskNumber}`);
     return {
       candidate,

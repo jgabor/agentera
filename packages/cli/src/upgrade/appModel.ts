@@ -5,14 +5,7 @@ import path from "node:path";
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  Classification,
-  SOURCE_LABELS,
-  classifyResolvedRoot,
-  defaultAppHome,
-  isForeignPlatformDefaultAppHome,
-  resolveCandidate,
-} from "../state/installRoot.js";
+import { Classification, SOURCE_LABELS, classifyResolvedRoot, defaultAppHome, isForeignPlatformDefaultAppHome, resolveCandidate } from "../state/installRoot.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 import type { JsonObject } from "../core/jsonValue.js";
@@ -50,11 +43,7 @@ function runtimeRoot(): string {
   return resolveSourceRoot();
 }
 
-const SETUP_EVIDENCE = [
-  "skills",
-  "skills/agentera/SKILL.md",
-  "registry.json",
-] as const;
+const SETUP_EVIDENCE = ["skills", "skills/agentera/SKILL.md", "registry.json"] as const;
 
 function sourceRootMissing(root: string): string[] {
   // Self-contained npx bundle: the published package ships app data without the
@@ -62,9 +51,7 @@ function sourceRootMissing(root: string): string[] {
   // sufficient evidence of a complete app root. (Sentinel never exists in a repo
   // checkout or installed app, so checkout/app-home behavior is unchanged.)
   if (pathExists(path.join(root, ".agentera-npx-bundle.json"))) {
-    return ["skills/agentera/SKILL.md", "registry.json"].filter(
-      (entry) => !pathExists(path.join(root, entry)),
-    );
+    return ["skills/agentera/SKILL.md", "registry.json"].filter((entry) => !pathExists(path.join(root, entry)));
   }
   return SETUP_EVIDENCE.filter((entry) => !pathExists(path.join(root, entry)));
 }
@@ -131,11 +118,7 @@ function platformDefaultAppHome(home: string, env: Env): string {
   return resolvePath(root);
 }
 
-function classifyRoot(
-  root: string,
-  source = "explicit",
-  expectedVersion: string | null = null,
-): Classification {
+function classifyRoot(root: string, source = "explicit", expectedVersion: string | null = null): Classification {
   return classifyResolvedRoot(root, { source, expectedVersion });
 }
 
@@ -166,12 +149,7 @@ export function resolveSourceRootStrict(env: Env = process.env): string {
   return root;
 }
 
-export function resolveInstallRoot(
-  value: string | null,
-  sourceRoot: string,
-  home: string,
-  env: Env = process.env,
-): string {
+export function resolveInstallRoot(value: string | null, sourceRoot: string, home: string, env: Env = process.env): string {
   const platformDefault = platformDefaultAppHome(home, env);
   if (value !== null && value !== undefined) {
     return resolvePath(value);
@@ -213,10 +191,7 @@ export function resolvePlatformAppHome(home: string, env: Env = process.env): st
   return platformDefaultAppHome(home, env);
 }
 
-export function resolveDoctorInstallRoot(
-  value: string | null,
-  opts: { home: string; env?: Env; sourceRoot?: string | null },
-): [string, string] {
+export function resolveDoctorInstallRoot(value: string | null, opts: { home: string; env?: Env; sourceRoot?: string | null }): [string, string] {
   const env = opts.env ?? process.env;
   const home = opts.home;
   if (opts.sourceRoot !== undefined && opts.sourceRoot !== null) {
@@ -231,10 +206,7 @@ export function resolveDoctorInstallRoot(
   return [root, sourceLabel(source)];
 }
 
-export function resolveActiveAppModel(
-  value: string | null = null,
-  opts: { home?: string; env?: Env } = {},
-): ActiveAppModel {
+export function resolveActiveAppModel(value: string | null = null, opts: { home?: string; env?: Env } = {}): ActiveAppModel {
   const resolvedHome = opts.home ?? os.homedir();
   const [appHome, appHomeSource] = resolveDoctorInstallRoot(value, {
     home: resolvedHome,

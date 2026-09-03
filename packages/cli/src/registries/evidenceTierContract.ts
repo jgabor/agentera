@@ -14,12 +14,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 export type TierId = "full_evidence" | "signal";
 export type CompatibilityOutcome = "recover" | "degrade";
-export type CompatibilityStateId =
-  | "oversized"
-  | "legacy"
-  | "missing"
-  | "corrupt"
-  | "incomplete";
+export type CompatibilityStateId = "oversized" | "legacy" | "missing" | "corrupt" | "incomplete";
 
 export interface EvidenceTierDefinition {
   tier_id: TierId;
@@ -104,38 +99,13 @@ export class EvidenceTierContractError extends Error {
 }
 
 /** Supported source families the contract must never silently omit. */
-export const REQUIRED_SOURCE_FAMILIES = [
-  "codex",
-  "cursor",
-  "opencode",
-  "copilot",
-  "claude-code",
-] as const;
+export const REQUIRED_SOURCE_FAMILIES = ["codex", "cursor", "opencode", "copilot", "claude-code"] as const;
 
 /** Signal semantics whose required meaning must remain available. */
-export const REQUIRED_SIGNAL_KINDS = [
-  "correction",
-  "decision",
-  "question",
-  "instruction",
-  "configuration",
-  "record_identity",
-  "date",
-  "evidence_anchor",
-  "session_id",
-  "origin_id",
-  "content_fingerprint",
-  "author_class",
-] as const;
+export const REQUIRED_SIGNAL_KINDS = ["correction", "decision", "question", "instruction", "configuration", "record_identity", "date", "evidence_anchor", "session_id", "origin_id", "content_fingerprint", "author_class"] as const;
 
 /** Compatibility states that must have deterministic, actionable outcomes. */
-export const REQUIRED_COMPATIBILITY_STATES = [
-  "oversized",
-  "legacy",
-  "missing",
-  "corrupt",
-  "incomplete",
-] as const;
+export const REQUIRED_COMPATIBILITY_STATES = ["oversized", "legacy", "missing", "corrupt", "incomplete"] as const;
 
 /** Latent startup-analysis reader that must appear in the consumer map. */
 export const STARTUP_ANALYSIS_CONSUMER = "startup_analysis";
@@ -144,22 +114,14 @@ export const STARTUP_ANALYSIS_CONSUMER = "startup_analysis";
 export const PROFILE_SYNTHESIS_CONSUMER = "profile_synthesis";
 
 /** Signal types the profile_synthesis consumer reads for bounded synthesis. */
-export const PROFILE_SIGNAL_TYPES = [
-  "decision",
-  "question",
-  "correction",
-  "instruction",
-  "configuration",
-] as const;
+export const PROFILE_SIGNAL_TYPES = ["decision", "question", "correction", "instruction", "configuration"] as const;
 
 export function evidenceTierAuthorityPath(root: string = resolveSourceRoot()): string {
   return path.join(root, "references", "analysis", "evidence-tier-authority.yaml");
 }
 
 function mapping(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function asRecord(value: unknown, label: string): Record<string, unknown> {
@@ -170,10 +132,7 @@ function asRecord(value: unknown, label: string): Record<string, unknown> {
   return m;
 }
 
-function asMappingMap(
-  value: unknown,
-  label: string,
-): Map<string, Record<string, unknown>> {
+function asMappingMap(value: unknown, label: string): Map<string, Record<string, unknown>> {
   const m = mapping(value);
   const out = new Map<string, Record<string, unknown>>();
   if (m === null) {
@@ -231,23 +190,17 @@ function resolveSourceProduct(entry: Record<string, unknown>, label: string): st
 }
 
 /** Load and structurally validate the evidence-tier authority YAML. */
-export function loadEvidenceTierContract(
-  contractPath: string = evidenceTierAuthorityPath(),
-): ContractModel {
+export function loadEvidenceTierContract(contractPath: string = evidenceTierAuthorityPath()): ContractModel {
   let raw: Record<string, unknown>;
   try {
     raw = loadYamlMappingFile(contractPath);
   } catch (error) {
-    throw new EvidenceTierContractError(
-      `evidence tier authority ${contractPath} is unreadable or malformed: ${(error as Error).message}`,
-    );
+    throw new EvidenceTierContractError(`evidence tier authority ${contractPath} is unreadable or malformed: ${(error as Error).message}`);
   }
 
   const schemaVersion = asString(raw.schema_version, "schema_version");
   if (schemaVersion !== "agentera.evidenceTierAuthority.v1") {
-    throw new EvidenceTierContractError(
-      `evidence tier authority ${contractPath} has unsupported schema_version: ${schemaVersion}`,
-    );
+    throw new EvidenceTierContractError(`evidence tier authority ${contractPath} has unsupported schema_version: ${schemaVersion}`);
   }
 
   const tiersMap = asMappingMap(raw.tiers, "tiers");
@@ -261,17 +214,12 @@ export function loadEvidenceTierContract(
     asStringArray(stored.required, `tiers.${key}.stored_fields.required`);
   }
 
-  const familiesMap = asMappingMap(
-    asRecord(raw.source_families, "source_families").families,
-    "source_families.families",
-  );
+  const familiesMap = asMappingMap(asRecord(raw.source_families, "source_families").families, "source_families.families");
   const families = new Map<string, SourceFamilyDefinition>();
   for (const [familyId, entry] of familiesMap) {
     const sourceClass = asString(entry.source_class, `source_families.families.${familyId}.source_class`);
     if (sourceClass !== "active_runtime" && sourceClass !== "historical_import") {
-      throw new EvidenceTierContractError(
-        `source_families.families.${familyId}.source_class must be active_runtime or historical_import`,
-      );
+      throw new EvidenceTierContractError(`source_families.families.${familyId}.source_class must be active_runtime or historical_import`);
     }
     families.set(familyId, {
       family_id: familyId,
@@ -288,9 +236,7 @@ export function loadEvidenceTierContract(
   for (const [consumerId, entry] of consumersMap) {
     const tier = asString(entry.tier, `consumer_map.consumers.${consumerId}.tier`);
     if (tier !== "full_evidence" && tier !== "signal") {
-      throw new EvidenceTierContractError(
-        `consumer_map.consumers.${consumerId}.tier must be full_evidence or signal`,
-      );
+      throw new EvidenceTierContractError(`consumer_map.consumers.${consumerId}.tier must be full_evidence or signal`);
     }
     consumers.set(consumerId, {
       consumer_id: consumerId,
@@ -310,23 +256,12 @@ export function loadEvidenceTierContract(
       tier: asString(entry.tier, `consumer_map.semantic_consumers.${consumerId}.tier`) as TierId,
       status: asString(entry.status, `consumer_map.semantic_consumers.${consumerId}.status`),
       input_scope: typeof entry.input_scope === "string" ? entry.input_scope : undefined,
-      excluded_evidence_classes: Array.isArray(entry.excluded_evidence_classes)
-        ? asStringArray(
-            entry.excluded_evidence_classes,
-            `consumer_map.semantic_consumers.${consumerId}.excluded_evidence_classes`,
-          )
-        : [],
-      required_semantics: asStringArray(
-        entry.required_semantics,
-        `consumer_map.semantic_consumers.${consumerId}.required_semantics`,
-      ),
+      excluded_evidence_classes: Array.isArray(entry.excluded_evidence_classes) ? asStringArray(entry.excluded_evidence_classes, `consumer_map.semantic_consumers.${consumerId}.excluded_evidence_classes`) : [],
+      required_semantics: asStringArray(entry.required_semantics, `consumer_map.semantic_consumers.${consumerId}.required_semantics`),
     });
   }
 
-  const semanticsMap = asMappingMap(
-    asRecord(raw.signal_semantics, "signal_semantics").kinds,
-    "signal_semantics.kinds",
-  );
+  const semanticsMap = asMappingMap(asRecord(raw.signal_semantics, "signal_semantics").kinds, "signal_semantics.kinds");
   const signalSemantics = new Map<string, SignalSemanticDefinition>();
   for (const [kind, entry] of semanticsMap) {
     signalSemantics.set(kind, {
@@ -338,10 +273,7 @@ export function loadEvidenceTierContract(
     });
   }
 
-  const statesMap = asMappingMap(
-    asRecord(raw.compatibility_states, "compatibility_states").states,
-    "compatibility_states.states",
-  );
+  const statesMap = asMappingMap(asRecord(raw.compatibility_states, "compatibility_states").states, "compatibility_states.states");
   const compatibilityStates = new Map<CompatibilityStateId, CompatibilityStateDefinition>();
   for (const [key, entry] of statesMap) {
     if (!REQUIRED_COMPATIBILITY_STATES.includes(key as CompatibilityStateId)) {
@@ -350,9 +282,7 @@ export function loadEvidenceTierContract(
     const stateId = key as CompatibilityStateId;
     const outcome = asString(entry.outcome, `compatibility_states.states.${key}.outcome`);
     if (outcome !== "recover" && outcome !== "degrade") {
-      throw new EvidenceTierContractError(
-        `compatibility_states.states.${key}.outcome must be recover or degrade`,
-      );
+      throw new EvidenceTierContractError(`compatibility_states.states.${key}.outcome must be recover or degrade`);
     }
     compatibilityStates.set(stateId, {
       state_id: stateId,
@@ -375,14 +305,8 @@ export function loadEvidenceTierContract(
 
   const suffRoot = asRecord(raw.profile_sufficiency, "profile_sufficiency");
   const profileSufficiency: ProfileSufficiencyDefinition = {
-    profileSignalTypes: asStringArray(
-      suffRoot.profile_signal_types,
-      "profile_sufficiency.profile_signal_types",
-    ),
-    minimumFamilyRetention: asPositiveNumber(
-      suffRoot.minimum_family_retention,
-      "profile_sufficiency.minimum_family_retention",
-    ),
+    profileSignalTypes: asStringArray(suffRoot.profile_signal_types, "profile_sufficiency.profile_signal_types"),
+    minimumFamilyRetention: asPositiveNumber(suffRoot.minimum_family_retention, "profile_sufficiency.minimum_family_retention"),
   };
 
   return {
@@ -396,37 +320,27 @@ export function loadEvidenceTierContract(
     compatibilityStates,
     bounds,
     profileSufficiency,
-    decisionNumber: typeof reconciliation.decision_number === "number"
-      ? reconciliation.decision_number
-      : 0,
+    decisionNumber: typeof reconciliation.decision_number === "number" ? reconciliation.decision_number : 0,
   };
 }
 
 /** All declared source family ids (no family is silently omitted). */
-export function supportedSourceFamilies(
-  contractPath: string = evidenceTierAuthorityPath(),
-): string[] {
+export function supportedSourceFamilies(contractPath: string = evidenceTierAuthorityPath()): string[] {
   return [...loadEvidenceTierContract(contractPath).families.keys()];
 }
 
 /** All declared consumers with their bounded input contract and required fields. */
-export function consumerMap(
-  contractPath: string = evidenceTierAuthorityPath(),
-): ConsumerDefinition[] {
+export function consumerMap(contractPath: string = evidenceTierAuthorityPath()): ConsumerDefinition[] {
   return [...loadEvidenceTierContract(contractPath).consumers.values()];
 }
 
 /** All declared signal semantics available to current consumers. */
-export function signalSemantics(
-  contractPath: string = evidenceTierAuthorityPath(),
-): SignalSemanticDefinition[] {
+export function signalSemantics(contractPath: string = evidenceTierAuthorityPath()): SignalSemanticDefinition[] {
   return [...loadEvidenceTierContract(contractPath).signalSemantics.values()];
 }
 
 /** All declared compatibility states with deterministic, actionable outcomes. */
-export function compatibilityStates(
-  contractPath: string = evidenceTierAuthorityPath(),
-): CompatibilityStateDefinition[] {
+export function compatibilityStates(contractPath: string = evidenceTierAuthorityPath()): CompatibilityStateDefinition[] {
   return [...loadEvidenceTierContract(contractPath).compatibilityStates.values()];
 }
 
@@ -435,9 +349,7 @@ export function compatibilityStates(
  * the bounds the publication writer and direct retriever enforce; they are read
  * from the authority rather than duplicated in callers.
  */
-export function evidenceTierBounds(
-  contractPath: string = evidenceTierAuthorityPath(),
-): EvidenceTierBounds {
+export function evidenceTierBounds(contractPath: string = evidenceTierAuthorityPath()): EvidenceTierBounds {
   return loadEvidenceTierContract(contractPath).bounds;
 }
 
@@ -447,9 +359,7 @@ export function evidenceTierBounds(
  * profile reader projects when comparing the retained signal distribution
  * against the intended distribution. Callers must not re-declare these.
  */
-export function profileSufficiency(
-  contractPath: string = evidenceTierAuthorityPath(),
-): ProfileSufficiencyDefinition {
+export function profileSufficiency(contractPath: string = evidenceTierAuthorityPath()): ProfileSufficiencyDefinition {
   return loadEvidenceTierContract(contractPath).profileSufficiency;
 }
 
@@ -459,9 +369,7 @@ export function profileSufficiency(
  * invariant. Used by tests for both passing (production contract) and failing
  * (mutated fixture) checks.
  */
-export function validateEvidenceTierContract(
-  contractPath: string = evidenceTierAuthorityPath(),
-): string[] {
+export function validateEvidenceTierContract(contractPath: string = evidenceTierAuthorityPath()): string[] {
   const errors: string[] = [];
   let model: ContractModel;
   try {
@@ -514,14 +422,8 @@ export function validateEvidenceTierContract(
     }
   }
   const glossary = model.semanticConsumers.get("glossary");
-  if (
-    glossary?.status !== "active" ||
-    glossary.input_scope !== "bounded_personal_history" ||
-    !glossary.excluded_evidence_classes.includes("project_file")
-  ) {
-    errors.push(
-      "active glossary evidence must use bounded personal history and exclude project files",
-    );
+  if (glossary?.status !== "active" || glossary.input_scope !== "bounded_personal_history" || !glossary.excluded_evidence_classes.includes("project_file")) {
+    errors.push("active glossary evidence must use bounded personal history and exclude project files");
   }
 
   // AC4: every compatibility state is deterministic and actionable.

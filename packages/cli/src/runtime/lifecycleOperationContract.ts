@@ -3,12 +3,7 @@ import path from "node:path";
 
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
-import {
-  LIFECYCLE_APPLY_STATUSES,
-  LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH,
-  LIFECYCLE_PLAN_ACTIONS,
-  LIFECYCLE_RESOURCE_STATES,
-} from "./lifecycleOperations.js";
+import { LIFECYCLE_APPLY_STATUSES, LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH, LIFECYCLE_PLAN_ACTIONS, LIFECYCLE_RESOURCE_STATES } from "./lifecycleOperations.js";
 
 function sameList(value: unknown, expected: readonly string[]): boolean {
   return Array.isArray(value) && JSON.stringify(value) === JSON.stringify(expected);
@@ -43,36 +38,17 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (typeof ownership?.removal_rule !== "string" || !ownership.removal_rule.includes("identity and fingerprint")) {
     errors.push("ownership.removal_rule must require matching identity and fingerprint");
   }
-  if (
-    ownership?.manual_review_guidance !==
-    "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality."
-  ) {
+  if (ownership?.manual_review_guidance !== "The destination is not ledger-owned; review the collision manually. Agentera will not adopt it by name or equality.") {
     errors.push("ownership.manual_review_guidance must provide the exact no-adoption review guidance");
   }
-  if (
-    typeof ownership?.journal_rule !== "string"
-    || !ownership.journal_rule.includes("append-only")
-    || !ownership.journal_rule.includes("atomically at final names")
-    || !ownership.journal_rule.includes("contiguous sequence-one hash chain")
-  ) {
+  if (typeof ownership?.journal_rule !== "string" || !ownership.journal_rule.includes("append-only") || !ownership.journal_rule.includes("atomically at final names") || !ownership.journal_rule.includes("contiguous sequence-one hash chain")) {
     errors.push("ownership.journal_rule must require atomic append-only publication and a strict contiguous hash chain");
   }
   const journalStatuses = ownership?.journal_statuses as Record<string, unknown> | undefined;
-  if (
-    !journalStatuses
-    || !["absent", "clean", "recoverable_terminal_tail", "corrupt"]
-      .every((state) => typeof journalStatuses[state] === "string")
-    || !(journalStatuses.recoverable_terminal_tail as string).includes("every mutation is blocked")
-    || !(journalStatuses.corrupt as string).includes("digest mismatch")
-  ) {
+  if (!journalStatuses || !["absent", "clean", "recoverable_terminal_tail", "corrupt"].every((state) => typeof journalStatuses[state] === "string") || !(journalStatuses.recoverable_terminal_tail as string).includes("every mutation is blocked") || !(journalStatuses.corrupt as string).includes("digest mismatch")) {
     errors.push("ownership.journal_statuses must define the four strict read and mutation states");
   }
-  if (
-    typeof ownership?.recovery_rule !== "string"
-    || !ownership.recovery_rule.includes("non-authoritative publication temporaries")
-    || !ownership.recovery_rule.includes("rolled-back prefix")
-    || !ownership.recovery_rule.includes("re-observes each resource")
-  ) {
+  if (typeof ownership?.recovery_rule !== "string" || !ownership.recovery_rule.includes("non-authoritative publication temporaries") || !ownership.recovery_rule.includes("rolled-back prefix") || !ownership.recovery_rule.includes("re-observes each resource")) {
     errors.push("ownership.recovery_rule must ignore only publication temporaries, block rollback append, and re-observe resources");
   }
   const publication = data.publication_policy as Record<string, unknown> | undefined;
@@ -82,26 +58,13 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   if (publication?.unsupported_platform_result !== "action_required") {
     errors.push("publication_policy.unsupported_platform_result must be action_required");
   }
-  if (
-    typeof publication?.apply_serialization !== "string"
-    || !publication.apply_serialization.includes("complete live preparation blocks contenders")
-    || !publication.apply_serialization.includes("Linux boot ID")
-    || !publication.apply_serialization.includes("process start ticks")
-  ) {
+  if (typeof publication?.apply_serialization !== "string" || !publication.apply_serialization.includes("complete live preparation blocks contenders") || !publication.apply_serialization.includes("Linux boot ID") || !publication.apply_serialization.includes("process start ticks")) {
     errors.push("publication_policy.apply_serialization must atomically publish a complete strong-identity lock");
   }
-  if (
-    typeof publication?.lock_recovery !== "string"
-    || !publication.lock_recovery.includes("Malformed or incomplete final locks fail closed")
-    || !publication.lock_recovery.includes("full identity and token")
-  ) {
+  if (typeof publication?.lock_recovery !== "string" || !publication.lock_recovery.includes("Malformed or incomplete final locks fail closed") || !publication.lock_recovery.includes("full identity and token")) {
     errors.push("publication_policy.lock_recovery must fail closed and verify identity on stale recovery and release");
   }
-  if (
-    typeof publication?.journal_publication !== "string"
-    || !publication.journal_publication.includes("non-authoritative temporary name")
-    || !publication.journal_publication.includes("hard-linked atomically")
-  ) {
+  if (typeof publication?.journal_publication !== "string" || !publication.journal_publication.includes("non-authoritative temporary name") || !publication.journal_publication.includes("hard-linked atomically")) {
     errors.push("publication_policy.journal_publication must atomically publish durable complete final events");
   }
   if (publication?.destructive_path_mutations !== "owned_removal_only") {
@@ -120,9 +83,7 @@ export function validateLifecycleOperationContractData(value: unknown): string[]
   return errors;
 }
 
-export function loadLifecycleOperationContract(
-  contractPath = path.join(resolveSourceRoot(), LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH),
-): Record<string, unknown> {
+export function loadLifecycleOperationContract(contractPath = path.join(resolveSourceRoot(), LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH)): Record<string, unknown> {
   const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
   const errors = validateLifecycleOperationContractData(data);
   if (errors.length > 0) {
@@ -140,8 +101,6 @@ export function validateLifecycleOperationContractRoot(root: string): string[] {
     loadLifecycleOperationContract(contractPath);
     return [];
   } catch (error) {
-    return [
-      `${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}: could not load contract: ${(error as Error).message}`,
-    ];
+    return [`${LIFECYCLE_OPERATION_CONTRACT_RELATIVE_PATH}: could not load contract: ${(error as Error).message}`];
   }
 }

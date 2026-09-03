@@ -34,31 +34,92 @@ const field = (
   path: string,
   type: StructuredInputFieldType,
   description: string,
-  options: Omit<StructuredInputFieldDescriptor, "path" | "type" | "description"> = { required: false, update: "replace" },
+  options: Omit<StructuredInputFieldDescriptor, "path" | "type" | "description"> = {
+    required: false,
+    update: "replace",
+  },
 ): StructuredInputFieldDescriptor => ({ path, type, description, ...options });
 
 const PROGRESS_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   root: "one progress cycle record",
   fields: [
-    field("timestamp", "datetime", "Writer-defaulted cycle timestamp.", { required: false, update: "defaulted" }),
-    field("type", "string", "Conventional change type.", { required: true, enum: ["feat", "fix", "docs", "refactor", "chore", "test"], update: "replace" }),
-    field("phase", "string", "Lifecycle phase.", { required: true, enum: ["envision", "deliberate", "plan", "build", "audit"], update: "replace" }),
-    field("what", "string", "Non-empty summary of the cycle.", { required: true, update: "replace" }),
-    field("inspiration", "string", "Optional inspiration evidence.", { required: false, update: "replace" }),
-    field("discovered", "string", "Optional discovery evidence.", { required: false, update: "replace" }),
-    field("verified", "string", "Optional verification evidence.", { required: false, update: "replace" }),
+    field("timestamp", "datetime", "Writer-defaulted cycle timestamp.", {
+      required: false,
+      update: "defaulted",
+    }),
+    field("type", "string", "Conventional change type.", {
+      required: true,
+      enum: ["feat", "fix", "docs", "refactor", "chore", "test"],
+      update: "replace",
+    }),
+    field("phase", "string", "Lifecycle phase.", {
+      required: true,
+      enum: ["envision", "deliberate", "plan", "build", "audit"],
+      update: "replace",
+    }),
+    field("what", "string", "Non-empty summary of the cycle.", {
+      required: true,
+      update: "replace",
+    }),
+    field("inspiration", "string", "Optional inspiration evidence.", {
+      required: false,
+      update: "replace",
+    }),
+    field("discovered", "string", "Optional discovery evidence.", {
+      required: false,
+      update: "replace",
+    }),
+    field("verified", "string", "Optional verification evidence.", {
+      required: false,
+      update: "replace",
+    }),
     field("next", "string", "Optional next-step evidence.", { required: false, update: "replace" }),
-    field("context", "mapping", "Required context mapping.", { required: true, shape: "intent:string, constraints?:string, unknowns?:string, scope?:string", update: "replace" }),
-    field("context.intent", "string", "Required cycle intent.", { required: true, update: "replace" }),
-    field("context.constraints", "string", "Optional constraints.", { required: false, update: "replace" }),
-    field("context.unknowns", "string", "Optional unknowns.", { required: false, update: "replace" }),
+    field("context", "mapping", "Required context mapping.", {
+      required: true,
+      shape: "intent:string, constraints?:string, unknowns?:string, scope?:string",
+      update: "replace",
+    }),
+    field("context.intent", "string", "Required cycle intent.", {
+      required: true,
+      update: "replace",
+    }),
+    field("context.constraints", "string", "Optional constraints.", {
+      required: false,
+      update: "replace",
+    }),
+    field("context.unknowns", "string", "Optional unknowns.", {
+      required: false,
+      update: "replace",
+    }),
     field("context.scope", "string", "Optional scope.", { required: false, update: "replace" }),
-    field("glossary_caveat", "mapping", "Optional bounded glossary-caveat lifecycle envelope.", { required: false, shape: "event, reason, ownership_state, caveat_id?, transition_id?", update: "replace" }),
-    field("glossary_caveat.event", "string", "Caveat lifecycle event.", { required: false, enum: caveat.events, update: "replace" }),
-    field("glossary_caveat.reason", "string", "Authority-declared caveat reason.", { required: false, enum: caveat.reasons, update: "replace" }),
-    field("glossary_caveat.ownership_state", "string", "Authority-declared ownership state.", { required: false, enum: caveat.ownershipStates, update: "replace" }),
-    field("glossary_caveat.caveat_id", "string", "Existing opaque caveat selector for terminal events.", { required: false, update: "replace" }),
-    field("glossary_caveat.transition_id", "string", "Existing opaque successor selector for supersession.", { required: false, update: "replace" }),
+    field("glossary_caveat", "mapping", "Optional bounded glossary-caveat lifecycle envelope.", {
+      required: false,
+      shape: "event, reason, ownership_state, caveat_id?, transition_id?",
+      update: "replace",
+    }),
+    field("glossary_caveat.event", "string", "Caveat lifecycle event.", {
+      required: false,
+      enum: caveat.events,
+      update: "replace",
+    }),
+    field("glossary_caveat.reason", "string", "Authority-declared caveat reason.", {
+      required: false,
+      enum: caveat.reasons,
+      update: "replace",
+    }),
+    field("glossary_caveat.ownership_state", "string", "Authority-declared ownership state.", {
+      required: false,
+      enum: caveat.ownershipStates,
+      update: "replace",
+    }),
+    field("glossary_caveat.caveat_id", "string", "Existing opaque caveat selector for terminal events.", {
+      required: false,
+      update: "replace",
+    }),
+    field("glossary_caveat.transition_id", "string", "Existing opaque successor selector for supersession.", {
+      required: false,
+      update: "replace",
+    }),
   ],
   semantics: {
     mode: "append_record",
@@ -76,16 +137,41 @@ const PROGRESS_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
 const DECISION_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   root: "one decision record",
   fields: [
-    field("date", "date", "Writer-defaulted decision date.", { required: false, update: "defaulted" }),
-    field("question", "string", "Question under deliberation.", { required: true, update: "replace" }),
+    field("date", "date", "Writer-defaulted decision date.", {
+      required: false,
+      update: "defaulted",
+    }),
+    field("question", "string", "Question under deliberation.", {
+      required: true,
+      update: "replace",
+    }),
     field("context", "string", "Decision context.", { required: true, update: "replace" }),
-    field("alternatives", "mapping", "Alternatives mapping or ordered canonical alternative list.", { required: true, acceptedForms: ["mapping", "ordered_alternative_list"], shape: "chosen:string, rejected?:string[]", update: "replace" }),
-    field("alternatives.chosen", "string", "Exactly one chosen alternative.", { required: true, update: "replace" }),
-    field("alternatives.rejected", "list", "Optional rejected alternatives in caller order.", { required: false, itemType: "string", update: "replace" }),
+    field("alternatives", "mapping", "Alternatives mapping or ordered canonical alternative list.", {
+      required: true,
+      acceptedForms: ["mapping", "ordered_alternative_list"],
+      shape: "chosen:string, rejected?:string[]",
+      update: "replace",
+    }),
+    field("alternatives.chosen", "string", "Exactly one chosen alternative.", {
+      required: true,
+      update: "replace",
+    }),
+    field("alternatives.rejected", "list", "Optional rejected alternatives in caller order.", {
+      required: false,
+      itemType: "string",
+      update: "replace",
+    }),
     field("choice", "string", "Selected choice.", { required: true, update: "replace" }),
     field("reasoning", "string", "Decision reasoning.", { required: true, update: "replace" }),
-    field("confidence", "string", "Current confidence vocabulary.", { required: true, enum: ["firm", "provisional", "exploratory"], update: "replace" }),
-    field("feeds_into", "string", "Optional downstream relationship.", { required: false, update: "replace" }),
+    field("confidence", "string", "Current confidence vocabulary.", {
+      required: true,
+      enum: ["firm", "provisional", "exploratory"],
+      update: "replace",
+    }),
+    field("feeds_into", "string", "Optional downstream relationship.", {
+      required: false,
+      update: "replace",
+    }),
   ],
   semantics: {
     mode: "append_record",
@@ -102,7 +188,11 @@ const DECISION_AMEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   root: "amendable decision content",
   fields: DECISION_APPEND_INPUT_SCHEMA.fields
     .filter((entry) => entry.path !== "date")
-    .map((entry) => ({ ...entry, required: entry.path === "alternatives.chosen" ? false : false, update: entry.path === "alternatives.rejected" ? "append_unique" : "patch" })),
+    .map((entry) => ({
+      ...entry,
+      required: entry.path === "alternatives.chosen" ? false : false,
+      update: entry.path === "alternatives.rejected" ? "append_unique" : "patch",
+    })),
   semantics: {
     mode: "patch",
     omitted_fields: "preserve the effective record",
@@ -119,10 +209,25 @@ const PLAN_TASK_APPEND_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   root: "one plan task record",
   fields: [
     field("name", "string", "Short task name.", { required: true, update: "replace" }),
-    field("depends_on", "list", "Bare ten-letter task IDs in the same plan; use an empty list for a root task.", { required: true, itemType: "string", update: "replace" }),
-    field("acceptance", "list", "Task acceptance criteria.", { required: true, itemType: "string", update: "replace" }),
-    field("evidence", "string", "Optional task evidence as a string or list of strings.", { required: false, acceptedForms: ["string", "list"], update: "replace" }),
-    field("blocked_reason", "string", "Optional task blocker explanation.", { required: false, update: "replace" }),
+    field("depends_on", "list", "Bare ten-letter task IDs in the same plan; use an empty list for a root task.", {
+      required: true,
+      itemType: "string",
+      update: "replace",
+    }),
+    field("acceptance", "list", "Task acceptance criteria.", {
+      required: true,
+      itemType: "string",
+      update: "replace",
+    }),
+    field("evidence", "string", "Optional task evidence as a string or list of strings.", {
+      required: false,
+      acceptedForms: ["string", "list"],
+      update: "replace",
+    }),
+    field("blocked_reason", "string", "Optional task blocker explanation.", {
+      required: false,
+      update: "replace",
+    }),
   ],
   semantics: {
     mode: "append_record",
@@ -141,10 +246,24 @@ const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   fields: [
     field("name", "string", "Replacement task name.", { required: false, update: "patch" }),
     field("depends_on", "list", "Replacement list of bare ten-letter task IDs in the same plan; null clears to an empty list.", { required: false, itemType: "string", update: "patch" }),
-    field("acceptance", "list", "Replacement task acceptance criteria; null clears to an empty list.", { required: false, itemType: "string", update: "patch" }),
-    field("evidence", "string", "Replacement task evidence as a string or list of strings; null clears it.", { required: false, acceptedForms: ["string", "list"], update: "patch" }),
-    field("blocked_reason", "string", "Replacement blocker explanation; null clears it.", { required: false, update: "patch" }),
-    field("surprise", "string", "Plan-level surprise; it is not written to the task entity.", { required: false, update: "patch" }),
+    field("acceptance", "list", "Replacement task acceptance criteria; null clears to an empty list.", {
+      required: false,
+      itemType: "string",
+      update: "patch",
+    }),
+    field("evidence", "string", "Replacement task evidence as a string or list of strings; null clears it.", {
+      required: false,
+      acceptedForms: ["string", "list"],
+      update: "patch",
+    }),
+    field("blocked_reason", "string", "Replacement blocker explanation; null clears it.", {
+      required: false,
+      update: "patch",
+    }),
+    field("surprise", "string", "Plan-level surprise; it is not written to the task entity.", {
+      required: false,
+      update: "patch",
+    }),
   ],
   semantics: {
     mode: "patch",
@@ -163,10 +282,25 @@ const PLAN_TASK_UPDATE_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
 const TODO_OWNER_CORRECTION_INPUT_SCHEMA: StructuredInputSchemaDescriptor = {
   root: "one unsafe TODO owner mapping",
   fields: [
-    field("schema_version", "string", "Exact owner-correction input schema version.", { required: true, enum: ["agentera.todoOwnerCorrection.v1"], update: "replace" }),
-    field("owners", "list", "Complete one-to-one canonical TODO ID to current Markdown source-line mapping.", { required: true, itemType: "mapping", shape: "id:string, source_line:integer", update: "replace" }),
-    field("owners.id", "string", "Canonical bare ten-letter TODO ID claimed by this row.", { required: true, update: "replace" }),
-    field("owners.source_line", "integer", "Current one-based Markdown line claimed by this TODO ID.", { required: true, update: "replace" }),
+    field("schema_version", "string", "Exact owner-correction input schema version.", {
+      required: true,
+      enum: ["agentera.todoOwnerCorrection.v1"],
+      update: "replace",
+    }),
+    field("owners", "list", "Complete one-to-one canonical TODO ID to current Markdown source-line mapping.", {
+      required: true,
+      itemType: "mapping",
+      shape: "id:string, source_line:integer",
+      update: "replace",
+    }),
+    field("owners.id", "string", "Canonical bare ten-letter TODO ID claimed by this row.", {
+      required: true,
+      update: "replace",
+    }),
+    field("owners.source_line", "integer", "Current one-based Markdown line claimed by this TODO ID.", {
+      required: true,
+      update: "replace",
+    }),
   ],
   semantics: {
     mode: "exact_owner_mapping",
@@ -219,22 +353,15 @@ function mapping(value: unknown): value is Record<string, unknown> {
 }
 
 function requiredString(value: unknown, field: string, violations: string[]): void {
-  if (typeof value !== "string" || value.length === 0)
-    violations.push(`${field} must be a non-empty string`);
+  if (typeof value !== "string" || value.length === 0) violations.push(`${field} must be a non-empty string`);
 }
 
 function optionalString(value: unknown, field: string, violations: string[]): void {
-  if (value !== undefined && (typeof value !== "string" || value.length === 0))
-    violations.push(`${field} must be a non-empty string when present`);
+  if (value !== undefined && (typeof value !== "string" || value.length === 0)) violations.push(`${field} must be a non-empty string when present`);
 }
 
-function unknownFields(
-  input: Record<string, unknown>,
-  allowed: ReadonlySet<string>,
-  violations: string[],
-): void {
-  for (const field of Object.keys(input))
-    if (!allowed.has(field)) violations.push(`input field '${field}' is not accepted for this mutation`);
+function unknownFields(input: Record<string, unknown>, allowed: ReadonlySet<string>, violations: string[]): void {
+  for (const field of Object.keys(input)) if (!allowed.has(field)) violations.push(`input field '${field}' is not accepted for this mutation`);
 }
 
 function descriptorsFor(schema: StructuredInputSchemaDescriptor, prefix: string): StructuredInputFieldDescriptor[] {
@@ -255,19 +382,10 @@ function enumValues(schema: StructuredInputSchemaDescriptor, path: string): read
   return descriptor(schema, path).enum ?? [];
 }
 
-function alternativesViolations(
-  value: unknown,
-  violations: string[],
-  requireChosen: boolean,
-  schema: StructuredInputSchemaDescriptor,
-): void {
+function alternativesViolations(value: unknown, violations: string[], requireChosen: boolean, schema: StructuredInputSchemaDescriptor): void {
   if (Array.isArray(value)) {
-    const chosen = value.filter(
-      (entry) => mapping(entry) && entry.status === "chosen",
-    );
-    if (chosen.length !== 1 || value.some(
-      (entry) => !mapping(entry) || typeof entry.name !== "string" || entry.name.length === 0 || !["chosen", "rejected"].includes(String(entry.status)),
-    )) {
+    const chosen = value.filter((entry) => mapping(entry) && entry.status === "chosen");
+    if (chosen.length !== 1 || value.some((entry) => !mapping(entry) || typeof entry.name !== "string" || entry.name.length === 0 || !["chosen", "rejected"].includes(String(entry.status)))) {
       violations.push("alternatives must be a mapping or a list with exactly one named chosen alternative");
     }
     if (!requireChosen && value.length === 0) violations.push("alternatives must not be empty");
@@ -280,8 +398,7 @@ function alternativesViolations(
   unknownFields(value, new Set(descriptorsFor(schema, "alternatives").map((entry) => entry.path.split(".").at(-1) as string)), violations);
   if (requireChosen) requiredString(value.chosen, "alternatives.chosen", violations);
   else if (value.chosen !== undefined) optionalString(value.chosen, "alternatives.chosen", violations);
-  if (value.rejected !== undefined && (!Array.isArray(value.rejected) || value.rejected.some((entry) => typeof entry !== "string" || entry.length === 0)))
-    violations.push("alternatives.rejected must be a list of non-empty strings when present");
+  if (value.rejected !== undefined && (!Array.isArray(value.rejected) || value.rejected.some((entry) => typeof entry !== "string" || entry.length === 0))) violations.push("alternatives.rejected must be a list of non-empty strings when present");
 }
 
 function progressInputViolations(input: Record<string, unknown>): string[] {
@@ -291,28 +408,24 @@ function progressInputViolations(input: Record<string, unknown>): string[] {
   requiredString(input.type, "type", violations);
   requiredString(input.phase, "phase", violations);
   requiredString(input.what, "what", violations);
-  if (typeof input.type === "string" && !enumValues(schema, "type").includes(input.type))
-    violations.push(`type must be one of ${enumValues(schema, "type").join(", ")}`);
-  if (typeof input.phase === "string" && !enumValues(schema, "phase").includes(input.phase))
-    violations.push(`phase must be one of ${enumValues(schema, "phase").join(", ")}`);
-  if (input.timestamp !== undefined && (typeof input.timestamp !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(input.timestamp)))
-    violations.push("timestamp must use YYYY-MM-DD HH:MM when present");
-  for (const field of ["inspiration", "discovered", "verified", "next"])
-    optionalString(input[field], field, violations);
+  if (typeof input.type === "string" && !enumValues(schema, "type").includes(input.type)) violations.push(`type must be one of ${enumValues(schema, "type").join(", ")}`);
+  if (typeof input.phase === "string" && !enumValues(schema, "phase").includes(input.phase)) violations.push(`phase must be one of ${enumValues(schema, "phase").join(", ")}`);
+  if (input.timestamp !== undefined && (typeof input.timestamp !== "string" || !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(input.timestamp))) violations.push("timestamp must use YYYY-MM-DD HH:MM when present");
+  for (const field of ["inspiration", "discovered", "verified", "next"]) optionalString(input[field], field, violations);
   if (!mapping(input.context)) violations.push("context must be a mapping with intent");
   else {
     unknownFields(input.context, new Set(descriptorsFor(schema, "context").map((entry) => entry.path.split(".").at(-1) as string)), violations);
     requiredString(input.context.intent, "context.intent", violations);
-    for (const field of ["constraints", "unknowns", "scope"])
-      optionalString(input.context[field], `context.${field}`, violations);
+    for (const field of ["constraints", "unknowns", "scope"]) optionalString(input.context[field], `context.${field}`, violations);
   }
   if (input.glossary_caveat !== undefined) {
     if (!mapping(input.glossary_caveat)) violations.push("glossary_caveat must be a mapping");
     else {
       unknownFields(input.glossary_caveat, new Set(descriptorsFor(schema, "glossary_caveat").map((entry) => entry.path.split(".").at(-1) as string)), violations);
-      for (const field of descriptorsFor(schema, "glossary_caveat").map((entry) => entry.path.split(".").at(-1) as string).filter((entry) => entry !== "glossary_caveat"))
-        if (input.glossary_caveat[field] !== undefined && input.glossary_caveat[field] !== null)
-          optionalString(input.glossary_caveat[field], `glossary_caveat.${field}`, violations);
+      for (const field of descriptorsFor(schema, "glossary_caveat")
+        .map((entry) => entry.path.split(".").at(-1) as string)
+        .filter((entry) => entry !== "glossary_caveat"))
+        if (input.glossary_caveat[field] !== undefined && input.glossary_caveat[field] !== null) optionalString(input.glossary_caveat[field], `glossary_caveat.${field}`, violations);
     }
   }
   return violations;
@@ -328,15 +441,12 @@ function decisionInputViolations(input: Record<string, unknown>, verb: "append" 
     requiredString(input.choice, "choice", violations);
     requiredString(input.reasoning, "reasoning", violations);
     requiredString(input.confidence, "confidence", violations);
-    if (input.date !== undefined && (typeof input.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.date)))
-      violations.push("date must use YYYY-MM-DD when present");
+    if (input.date !== undefined && (typeof input.date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(input.date))) violations.push("date must use YYYY-MM-DD when present");
   } else {
     if (Object.keys(input).length === 0) violations.push("decision amendment requires at least one content field");
-    for (const field of ["question", "context", "choice", "reasoning", "confidence", "feeds_into"])
-      optionalString(input[field], field, violations);
+    for (const field of ["question", "context", "choice", "reasoning", "confidence", "feeds_into"]) optionalString(input[field], field, violations);
   }
-  if (input.confidence !== undefined && (typeof input.confidence !== "string" || !enumValues(schema, "confidence").includes(input.confidence)))
-    violations.push(`confidence must be one of ${enumValues(schema, "confidence").join(", ")}`);
+  if (input.confidence !== undefined && (typeof input.confidence !== "string" || !enumValues(schema, "confidence").includes(input.confidence))) violations.push(`confidence must be one of ${enumValues(schema, "confidence").join(", ")}`);
   if (input.alternatives !== undefined) alternativesViolations(input.alternatives, violations, verb === "append", schema);
   else if (verb === "append") violations.push("alternatives is required");
   return violations;
@@ -354,8 +464,7 @@ function stringList(value: unknown, field: string, violations: string[], options
     violations.push(`${field} must be a list of strings${options.ids ? " containing bare ten-letter IDs" : ""}`);
     return;
   }
-  if (options.ids && value.some((entry) => !BARE_ID.test(entry)))
-    violations.push(`${field} must contain only bare ten-letter task IDs`);
+  if (options.ids && value.some((entry) => !BARE_ID.test(entry))) violations.push(`${field} must contain only bare ten-letter task IDs`);
 }
 
 function planTaskInputViolations(input: Record<string, unknown>, verb: "append" | "update"): string[] {
@@ -369,33 +478,22 @@ function planTaskInputViolations(input: Record<string, unknown>, verb: "append" 
   } else if (Object.keys(input).length === 0) {
     violations.push("plan task patch requires at least one content field");
   }
-  if (input.name !== undefined && (typeof input.name !== "string" || input.name.length === 0))
-    violations.push("name must be a non-empty string when present");
+  if (input.name !== undefined && (typeof input.name !== "string" || input.name.length === 0)) violations.push("name must be a non-empty string when present");
   stringList(input.depends_on, "depends_on", violations, { required: false, ids: true });
   stringList(input.acceptance, "acceptance", violations, { required: false });
-  if (input.evidence !== undefined && input.evidence !== null && typeof input.evidence !== "string" && (!Array.isArray(input.evidence) || input.evidence.some((entry) => typeof entry !== "string")))
-    violations.push("evidence must be a string, list of strings, or null when present");
-  if (input.blocked_reason !== undefined && input.blocked_reason !== null && typeof input.blocked_reason !== "string")
-    violations.push("blocked_reason must be a string or null when present");
-  if (verb === "append" && (input.evidence === null || input.blocked_reason === null))
-    violations.push("null clears are available only for plan task updates");
-  if (verb === "update" && input.surprise !== undefined && (typeof input.surprise !== "string" || input.surprise.length === 0))
-    violations.push("surprise must be a non-empty string when present");
+  if (input.evidence !== undefined && input.evidence !== null && typeof input.evidence !== "string" && (!Array.isArray(input.evidence) || input.evidence.some((entry) => typeof entry !== "string"))) violations.push("evidence must be a string, list of strings, or null when present");
+  if (input.blocked_reason !== undefined && input.blocked_reason !== null && typeof input.blocked_reason !== "string") violations.push("blocked_reason must be a string or null when present");
+  if (verb === "append" && (input.evidence === null || input.blocked_reason === null)) violations.push("null clears are available only for plan task updates");
+  if (verb === "update" && input.surprise !== undefined && (typeof input.surprise !== "string" || input.surprise.length === 0)) violations.push("surprise must be a non-empty string when present");
   if (verb === "append" && input.surprise !== undefined) violations.push("surprise is plan-level content and is not accepted when appending a task");
   return violations;
 }
 
-export function structuredRecordInputViolations(
-  artifact: string,
-  verb: string,
-  input: Record<string, unknown> | null,
-): string[] {
+export function structuredRecordInputViolations(artifact: string, verb: string, input: Record<string, unknown> | null): string[] {
   if (!input || (artifact !== "progress" && artifact !== "decisions" && artifact !== "plan" && artifact !== "todo")) return [];
   if (artifact === "progress" && verb === "append") return progressInputViolations(input);
-  if (artifact === "decisions" && (verb === "append" || verb === "amend"))
-    return decisionInputViolations(input, verb);
-  if (artifact === "plan" && (verb === "append" || verb === "update"))
-    return planTaskInputViolations(input, verb);
+  if (artifact === "decisions" && (verb === "append" || verb === "amend")) return decisionInputViolations(input, verb);
+  if (artifact === "plan" && (verb === "append" || verb === "update")) return planTaskInputViolations(input, verb);
   if (artifact === "todo" && verb === "correct-owners") return todoOwnerCorrectionInputViolations(input);
   return [];
 }
@@ -407,32 +505,24 @@ export function normalizeDecisionRecordInput(input: Record<string, unknown>): Re
   const chosen = alternatives.find((entry) => mapping(entry) && entry.status === "chosen") as Record<string, unknown> | undefined;
   result.alternatives = {
     chosen: chosen?.name,
-    rejected: alternatives
-      .filter((entry) => mapping(entry) && entry.status === "rejected")
-      .map((entry) => (entry as Record<string, unknown>).name),
+    rejected: alternatives.filter((entry) => mapping(entry) && entry.status === "rejected").map((entry) => (entry as Record<string, unknown>).name),
   };
   return result;
 }
 
-export function loadStructuredInput(
-  source: string,
-  readStdin: () => string | Buffer,
-  maxBytes?: number,
-): Record<string, unknown> {
+export function loadStructuredInput(source: string, readStdin: () => string | Buffer, maxBytes?: number): Record<string, unknown> {
   let bytes: Buffer;
   if (source === "-") {
     const input = readStdin();
     bytes = Buffer.isBuffer(input) ? input : Buffer.from(input, "utf8");
-  }
-  else {
+  } else {
     try {
       bytes = fs.readFileSync(source);
     } catch {
       throw new Error(`input file '${source}' is not readable`);
     }
   }
-  if (maxBytes !== undefined && maxBytes > 0 && bytes.byteLength > maxBytes)
-    throw new Error(`input exceeds the ${maxBytes}-byte UTF-8 limit`);
+  if (maxBytes !== undefined && maxBytes > 0 && bytes.byteLength > maxBytes) throw new Error(`input exceeds the ${maxBytes}-byte UTF-8 limit`);
   let text: string;
   try {
     text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);

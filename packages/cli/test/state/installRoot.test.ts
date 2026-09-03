@@ -6,16 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  classifyInstallRoot,
-  classifyResolvedRoot,
-  defaultAppHome,
-  formatDiagnostic,
-  formatResolvedAppHome,
-  isForeignPlatformDefaultAppHome,
-  knownPlatformDefaultAppHomes,
-  toDict,
-} from "../../src/state/installRoot.js";
+import { classifyInstallRoot, classifyResolvedRoot, defaultAppHome, formatDiagnostic, formatResolvedAppHome, isForeignPlatformDefaultAppHome, knownPlatformDefaultAppHomes, toDict } from "../../src/state/installRoot.js";
 import { resolvePath } from "../../src/core/paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -40,38 +31,21 @@ function writeSetupRoot(root: string): void {
   }
 }
 
-function writeUpgradeRoot(
-  root: string,
-  opts: { markerVersion?: string | null; commands?: string[] } = {},
-): void {
+function writeUpgradeRoot(root: string, opts: { markerVersion?: string | null; commands?: string[] } = {}): void {
   const markerVersion = opts.markerVersion === undefined ? "current" : opts.markerVersion;
   const commands = opts.commands ?? ["hej"];
   const script = path.join(root, "scripts", "agentera");
   fs.mkdirSync(path.dirname(script), { recursive: true });
   const commandLines = commands.map((name) => `sub.add_parser(${JSON.stringify(name)})\n`).join("");
-  fs.writeFileSync(
-    script,
-    "#!/usr/bin/env python3\n" +
-      "import argparse\n" +
-      "parser = argparse.ArgumentParser(prog='agentera')\n" +
-      "sub = parser.add_subparsers(dest='command')\n" +
-      commandLines +
-      "parser.parse_args()\n",
-  );
+  fs.writeFileSync(script, "#!/usr/bin/env python3\n" + "import argparse\n" + "parser = argparse.ArgumentParser(prog='agentera')\n" + "sub = parser.add_subparsers(dest='command')\n" + commandLines + "parser.parse_args()\n");
   fs.chmodSync(script, 0o755);
   fs.mkdirSync(path.join(root, "hooks"), { recursive: true });
   const skill = path.join(root, "skills", "agentera", "SKILL.md");
   fs.mkdirSync(path.dirname(skill), { recursive: true });
   fs.writeFileSync(skill, "---\nname: agentera\n---\n");
-  fs.writeFileSync(
-    path.join(root, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
   if (markerVersion !== null) {
-    fs.writeFileSync(
-      path.join(root, ".agentera-bundle.json"),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: markerVersion }),
-    );
+    fs.writeFileSync(path.join(root, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: markerVersion }));
   }
 }
 
@@ -171,8 +145,14 @@ describe("install-root classification", () => {
     const missing = path.join(tmp, "missing-default");
     const before = snapshot(existing);
 
-    const stale = classifyResolvedRoot(existing, { source: "explicit", expectedVersion: "current" });
-    const missingResult = classifyResolvedRoot(missing, { source: "default", expectedVersion: "current" });
+    const stale = classifyResolvedRoot(existing, {
+      source: "explicit",
+      expectedVersion: "current",
+    });
+    const missingResult = classifyResolvedRoot(missing, {
+      source: "default",
+      expectedVersion: "current",
+    });
 
     expect(stale.kind).toBe("managed_stale");
     expect(missingResult.kind).toBe("missing_default");
@@ -200,10 +180,7 @@ describe("install-root classification", () => {
   it("falls back to pyproject.toml when marker version is non-semver", () => {
     const root = path.join(tmp, "v2-install");
     writeUpgradeRoot(root, { markerVersion: "v1" });
-    fs.writeFileSync(
-      path.join(root, "pyproject.toml"),
-      '[project]\nname = "agentera"\nversion = "2.7.9"\n',
-    );
+    fs.writeFileSync(path.join(root, "pyproject.toml"), '[project]\nname = "agentera"\nversion = "2.7.9"\n');
 
     const result = classifyResolvedRoot(root, { source: "explicit", expectedVersion: "3.0.0" });
 
@@ -216,10 +193,7 @@ describe("install-root classification", () => {
   it("falls back to pyproject.toml when marker version is placeholder 'current'", () => {
     const root = path.join(tmp, "v2-current");
     writeUpgradeRoot(root, { markerVersion: "current" });
-    fs.writeFileSync(
-      path.join(root, "pyproject.toml"),
-      '[project]\nname = "agentera"\nversion = "2.7.9"\n',
-    );
+    fs.writeFileSync(path.join(root, "pyproject.toml"), '[project]\nname = "agentera"\nversion = "2.7.9"\n');
 
     const result = classifyResolvedRoot(root, { source: "explicit", expectedVersion: "3.0.0" });
 

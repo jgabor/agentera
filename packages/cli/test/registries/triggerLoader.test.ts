@@ -7,31 +7,13 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadCapabilitySchemaContract } from "../../src/registries/capabilityContract.js";
-import {
-  TriggerLoaderError,
-  capabilitiesBaseDir,
-  loadTriggerModel,
-  triggersYamlPath,
-} from "../../src/registries/triggerLoader.js";
+import { TriggerLoaderError, capabilitiesBaseDir, loadTriggerModel, triggersYamlPath } from "../../src/registries/triggerLoader.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const CONTRACT_PATH = path.join(REPO_ROOT, "skills", "agentera", "capability_schema_contract.yaml");
 
-const CAPABILITY_IDS = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-] as const;
+const CAPABILITY_IDS = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"] as const;
 
 let tmp: string;
 beforeEach(() => {
@@ -63,18 +45,13 @@ describe("trigger schema loader — live repo fixtures", () => {
 
   it("uses checked-in triggers as LLM intent metadata rather than legacy matcher inputs", () => {
     const model = loadTriggerModel(contract, { sourceRoot: REPO_ROOT });
-    const inertCompatibilityFields = [
-      "patterns",
-      ...Object.keys(contract.triggerEnrichment.fields).filter((field) => field !== "disambiguates_against"),
-    ];
+    const inertCompatibilityFields = ["patterns", ...Object.keys(contract.triggerEnrichment.fields).filter((field) => field !== "disambiguates_against")];
 
     for (const capability of CAPABILITY_IDS) {
       const entries = checkedInEntries(capability);
       for (const entry of entries) {
         expect(entry.description, `${capability} trigger description`).toEqual(expect.any(String));
-        expect(entry.priority, `${capability} trigger priority`).toBeOneOf(
-          contract.triggerPriorityRules.allowedValues,
-        );
+        expect(entry.priority, `${capability} trigger priority`).toBeOneOf(contract.triggerPriorityRules.allowedValues);
         for (const field of inertCompatibilityFields) {
           expect(entry, `${capability} ${String(entry.id)} must not present inert ${field}`).not.toHaveProperty(field);
         }
@@ -108,7 +85,6 @@ describe("trigger schema loader — live repo fixtures", () => {
     expect(buildRef!.hint.length).toBeGreaterThan(0);
     expect(model.capabilities.get(buildRef!.capability)!.capability).toBe("build");
   });
-
 });
 
 describe("trigger schema loader — temp fixture", () => {
@@ -275,14 +251,10 @@ describe("trigger schema loader — temp fixture", () => {
 
 describe("trigger schema loader — path helpers", () => {
   it("capabilitiesBaseDir joins the canonical skills path", () => {
-    expect(capabilitiesBaseDir("/repo")).toBe(
-      path.join("/repo", "skills", "agentera", "capabilities"),
-    );
+    expect(capabilitiesBaseDir("/repo")).toBe(path.join("/repo", "skills", "agentera", "capabilities"));
   });
 
   it("triggersYamlPath targets the canonical schema file", () => {
-    expect(triggersYamlPath("status", "/repo")).toBe(
-      path.join("/repo", "skills", "agentera", "capabilities", "status", "schemas", "triggers.yaml"),
-    );
+    expect(triggersYamlPath("status", "/repo")).toBe(path.join("/repo", "skills", "agentera", "capabilities", "status", "schemas", "triggers.yaml"));
   });
 });

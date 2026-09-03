@@ -22,29 +22,13 @@ const RETIRED_CURRENT_IMPLEMENTATIONS = [
   "packages/cli/src/registries/runtimeAdapterRegistry.ts",
 ] as const;
 
-const RETIRED_PACKAGE_SURFACES = [
-  ".agents/plugins/marketplace.json",
-  ".codex-plugin/plugin.json",
-  ".cursor-plugin/plugin.json",
-  ".github/plugin/plugin.json",
-  ".opencode/plugins/agentera.js",
-  "agents/openai.yaml",
-  "plugin.json",
-  "plugins/agentera",
-] as const;
+const RETIRED_PACKAGE_SURFACES = [".agents/plugins/marketplace.json", ".codex-plugin/plugin.json", ".cursor-plugin/plugin.json", ".github/plugin/plugin.json", ".opencode/plugins/agentera.js", "agents/openai.yaml", "plugin.json", "plugins/agentera"] as const;
 
-const LOCAL_OPENCODE_DEPENDENCY_SURFACES = [
-  ".opencode/package.json",
-  ".opencode/package-lock.json",
-] as const;
+const LOCAL_OPENCODE_DEPENDENCY_SURFACES = [".opencode/package.json", ".opencode/package-lock.json"] as const;
 
 const RETIRED_CURRENT_DESCRIPTOR_DIRECTORY = "skills/agentera/agents";
 
-const CANONICAL_SHARED_SKILL_DATA = [
-  "skills/agentera/SKILL.md",
-  "skills/agentera/capabilities/build/schemas/artifacts.yaml",
-  "skills/agentera/schemas/artifacts/plan.yaml",
-] as const;
+const CANONICAL_SHARED_SKILL_DATA = ["skills/agentera/SKILL.md", "skills/agentera/capabilities/build/schemas/artifacts.yaml", "skills/agentera/schemas/artifacts/plan.yaml"] as const;
 
 const PRESERVED_MIGRATION_AND_HISTORY = [
   ".agentera/archive",
@@ -58,12 +42,7 @@ const PRESERVED_MIGRATION_AND_HISTORY = [
   "packages/cli/test/upgrade/fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json",
 ] as const;
 
-const RETAINED_LIFECYCLE_REFERENCES = [
-  "references/adapters/runtime-lifecycle-authority.yaml",
-  "references/adapters/runtime-lifecycle-adapters.yaml",
-  "references/adapters/runtime-lifecycle-operation-contract.yaml",
-  "references/adapters/runtime-retired-resources.yaml",
-] as const;
+const RETAINED_LIFECYCLE_REFERENCES = ["references/adapters/runtime-lifecycle-authority.yaml", "references/adapters/runtime-lifecycle-adapters.yaml", "references/adapters/runtime-lifecycle-operation-contract.yaml", "references/adapters/runtime-retired-resources.yaml"] as const;
 
 const RETIRED_ADAPTER_REFERENCES = [
   "references/adapters/runtime-adapter-characterization.md",
@@ -156,7 +135,9 @@ describe("repository-native retirement inventory", () => {
   it("flags a reintroduced current descriptor directory while allowing migration-only history", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "native-descriptor-"));
     try {
-      fs.mkdirSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents"), { recursive: true });
+      fs.mkdirSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents"), {
+        recursive: true,
+      });
       fs.writeFileSync(path.join(root, ".agentera/archive/legacy/skills/agentera/agents/build.toml"), "historical\n");
       expect(hasCurrentDescriptorDirectory(root)).toBe(false);
 
@@ -177,9 +158,7 @@ describe("repository-native retirement inventory", () => {
     for (const relative of PRESERVED_MIGRATION_AND_HISTORY) {
       expect(fs.existsSync(path.join(ROOT, relative)), relative).toBe(true);
     }
-    expect(fs.readFileSync(path.join(ROOT, "CHANGELOG.md"), "utf8")).toContain(
-      ".agents/plugins/marketplace.json",
-    );
+    expect(fs.readFileSync(path.join(ROOT, "CHANGELOG.md"), "utf8")).toContain(".agents/plugins/marketplace.json");
   });
 
   it("retains only the closed migration lifecycle reference set", () => {
@@ -216,11 +195,7 @@ describe("repository-native retirement inventory", () => {
       },
     });
     const deletionEntries = cleanup.cutover_deletion_inventory.entries as Array<{ path: string }>;
-    expect(deletionEntries).toEqual(expect.arrayContaining([
-      expect.objectContaining({ path: "packages/cli/src/upgrade/runtimeMigration.ts" }),
-      expect.objectContaining({ path: "packages/cli/shim/lib/exec.mjs" }),
-      expect.objectContaining({ path: "packages/cli/test/upgrade/fixtures/v2-*" }),
-    ]));
+    expect(deletionEntries).toEqual(expect.arrayContaining([expect.objectContaining({ path: "packages/cli/src/upgrade/runtimeMigration.ts" }), expect.objectContaining({ path: "packages/cli/shim/lib/exec.mjs" }), expect.objectContaining({ path: "packages/cli/test/upgrade/fixtures/v2-*" })]));
     for (const entry of deletionEntries) {
       if (entry.path.endsWith("*")) continue;
       expect(fs.existsSync(path.join(ROOT, entry.path)), entry.path).toBe(true);
@@ -229,17 +204,16 @@ describe("repository-native retirement inventory", () => {
 
   it("closes normal entrypoints to exact migration, cleanup, and ownership edges", () => {
     const files = sourceFiles();
-    const edges = files.flatMap((file) => {
-      const importer = relative(file);
-      if (importer.startsWith("packages/cli/src/runtime/")) return [];
-      return moduleReferences(fs.readFileSync(file, "utf8"))
-        .map((specifier) => resolveTypeScriptImport(file, specifier))
-        .filter((target): target is string => target !== null && (
-          /^packages\/cli\/src\/runtime\/(?:lifecycle[^/]+|nativeResourceCleanup)\.ts$/.test(target)
-          || target === "packages/cli/src/upgrade/lifecycleUpgrade.ts"
-        ))
-        .map((target) => `${importer} -> ${target}`);
-    }).sort();
+    const edges = files
+      .flatMap((file) => {
+        const importer = relative(file);
+        if (importer.startsWith("packages/cli/src/runtime/")) return [];
+        return moduleReferences(fs.readFileSync(file, "utf8"))
+          .map((specifier) => resolveTypeScriptImport(file, specifier))
+          .filter((target): target is string => target !== null && (/^packages\/cli\/src\/runtime\/(?:lifecycle[^/]+|nativeResourceCleanup)\.ts$/.test(target) || target === "packages/cli/src/upgrade/lifecycleUpgrade.ts"))
+          .map((target) => `${importer} -> ${target}`);
+      })
+      .sort();
     expect(edges).toEqual([
       "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
@@ -263,26 +237,20 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/validate/activationConjunction.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
     ]);
 
-    const referenceOwners = Object.fromEntries(RETAINED_LIFECYCLE_REFERENCES.map((reference) => [
-      reference,
-      files.filter((file) => fs.readFileSync(file, "utf8").includes(reference)).map(relative).sort(),
-    ]));
+    const referenceOwners = Object.fromEntries(
+      RETAINED_LIFECYCLE_REFERENCES.map((reference) => [
+        reference,
+        files
+          .filter((file) => fs.readFileSync(file, "utf8").includes(reference))
+          .map(relative)
+          .sort(),
+      ]),
+    );
     expect(referenceOwners).toEqual({
-      "references/adapters/runtime-lifecycle-authority.yaml": [
-        "packages/cli/src/runtime/lifecycleAuthority.ts",
-        "packages/cli/src/upgrade/productV1ResetAuthority.ts",
-        "packages/cli/src/validate/activationConjunction.ts",
-      ],
-      "references/adapters/runtime-lifecycle-adapters.yaml": [
-        "packages/cli/src/runtime/lifecycleAuthority.ts",
-      ],
-      "references/adapters/runtime-lifecycle-operation-contract.yaml": [
-        "packages/cli/src/runtime/lifecycleOperations.ts",
-      ],
-      "references/adapters/runtime-retired-resources.yaml": [
-        "packages/cli/src/runtime/lifecycleAuthority.ts",
-        "packages/cli/src/validate/activationConjunction.ts",
-      ],
+      "references/adapters/runtime-lifecycle-authority.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/upgrade/productV1ResetAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
+      "references/adapters/runtime-lifecycle-adapters.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts"],
+      "references/adapters/runtime-lifecycle-operation-contract.yaml": ["packages/cli/src/runtime/lifecycleOperations.ts"],
+      "references/adapters/runtime-retired-resources.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
     });
 
     for (const file of files) {
@@ -290,9 +258,7 @@ describe("repository-native retirement inventory", () => {
       for (const stale of RETIRED_ADAPTER_REFERENCES) {
         expect(source, `${relative(file)} reads ${stale}`).not.toContain(stale);
       }
-      expect(source, `${relative(file)} references retired RuntimeAdapter registry`).not.toContain(
-        "runtimeAdapterRegistry",
-      );
+      expect(source, `${relative(file)} references retired RuntimeAdapter registry`).not.toContain("runtimeAdapterRegistry");
     }
   });
 });

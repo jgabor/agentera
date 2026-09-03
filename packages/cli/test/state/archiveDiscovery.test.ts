@@ -23,12 +23,7 @@ afterEach(() => {
 });
 
 function canonicalJson(value: JsonValue): string {
-  if (
-    value === null ||
-    typeof value === "string" ||
-    typeof value === "boolean" ||
-    typeof value === "number"
-  ) {
+  if (value === null || typeof value === "string" || typeof value === "boolean" || typeof value === "number") {
     return JSON.stringify(value) ?? "null";
   }
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
@@ -85,24 +80,14 @@ function envelope(artifact: "progress" | "decisions" | "health", number: number)
   };
 }
 
-function writeEnvelope(
-  root: string,
-  artifact: "progress" | "decisions" | "health",
-  filename: string,
-  value: JsonObject | string,
-): string {
+function writeEnvelope(root: string, artifact: "progress" | "decisions" | "health", filename: string, value: JsonObject | string): string {
   const target = path.join(root, ".agentera", "archive", artifact, filename);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(target, typeof value === "string" ? value : `${JSON.stringify(value)}\n`);
   return target;
 }
 
-function writeEntry(
-  root: string,
-  artifact: "progress" | "decisions" | "health",
-  number: number,
-  filename = `${number}.yaml`,
-): string {
+function writeEntry(root: string, artifact: "progress" | "decisions" | "health", number: number, filename = `${number}.yaml`): string {
   return writeEnvelope(root, artifact, filename, envelope(artifact, number));
 }
 
@@ -128,24 +113,21 @@ describe("numbered archive discovery", () => {
     });
   });
 
-  it.each(["progress", "decisions", "health"] as const)(
-    "rejects a malformed %s filename fixture",
-    (artifact) => {
-      const root = project();
-      const malformedPath = writeEntry(root, artifact, 1, "not-a-number.yaml");
+  it.each(["progress", "decisions", "health"] as const)("rejects a malformed %s filename fixture", (artifact) => {
+    const root = project();
+    const malformedPath = writeEntry(root, artifact, 1, "not-a-number.yaml");
 
-      const discovered = discoverNumberedArchives(root, { sourceRoot: REPO_ROOT });
+    const discovered = discoverNumberedArchives(root, { sourceRoot: REPO_ROOT });
 
-      expect(discovered.entries).toEqual([]);
-      expect(discovered.rejected).toContainEqual(
-        expect.objectContaining({
-          path: malformedPath,
-          reason: "malformed_name",
-          class: "corrupt",
-        }),
-      );
-    },
-  );
+    expect(discovered.entries).toEqual([]);
+    expect(discovered.rejected).toContainEqual(
+      expect.objectContaining({
+        path: malformedPath,
+        reason: "malformed_name",
+        class: "corrupt",
+      }),
+    );
+  });
 
   it("orders accepted records numerically and attributes each record to one supported artifact", () => {
     const root = project();
@@ -156,15 +138,8 @@ describe("numbered archive discovery", () => {
 
     const discovered = discoverNumberedArchives(root, { sourceRoot: REPO_ROOT });
 
-    expect(discovered.entries.map((entry) => entry.stableId)).toEqual([
-      "progress:10",
-      "decisions:2",
-      "progress:2",
-      "health:1",
-    ]);
-    expect(new Set(discovered.entries.map((entry) => entry.artifactId))).toEqual(
-      new Set(["progress", "decisions", "health"]),
-    );
+    expect(discovered.entries.map((entry) => entry.stableId)).toEqual(["progress:10", "decisions:2", "progress:2", "health:1"]);
+    expect(new Set(discovered.entries.map((entry) => entry.artifactId))).toEqual(new Set(["progress", "decisions", "health"]));
   });
 
   it("rejects malformed envelopes, hashes, record identities, and duplicate IDs", () => {
@@ -183,9 +158,7 @@ describe("numbered archive discovery", () => {
 
     const invalidRecord = envelope("progress", 7);
     invalidRecord.record = { number: 7 };
-    invalidRecord.record_sha256 = createHash("sha256")
-      .update(canonicalJson(invalidRecord.record), "utf8")
-      .digest("hex");
+    invalidRecord.record_sha256 = createHash("sha256").update(canonicalJson(invalidRecord.record), "utf8").digest("hex");
     const invalidRecordPath = writeEnvelope(root, "progress", "7.yaml", invalidRecord);
 
     writeEntry(root, "progress", 1);
@@ -250,20 +223,7 @@ describe("numbered archive discovery", () => {
     const archiveRoot = path.join(root, ".agentera", "archive");
     fs.mkdirSync(archiveRoot, { recursive: true });
     const planPath = path.join(archiveRoot, "PLAN-2026-07-13-history.yaml");
-    fs.writeFileSync(
-      planPath,
-      [
-        "header:",
-        "  title: Historical plan",
-        "  status: complete",
-        "  created: '2026-07-13'",
-        "tasks:",
-        "  - number: 1",
-        "    name: Preserve archive",
-        "    status: complete",
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(planPath, ["header:", "  title: Historical plan", "  status: complete", "  created: '2026-07-13'", "tasks:", "  - number: 1", "    name: Preserve archive", "    status: complete", ""].join("\n"));
     const visionPath = path.join(archiveRoot, "vision-2026-07-13.yaml");
     fs.writeFileSync(visionPath, "identity:\n  voice: direct\n");
     const unrelatedPath = path.join(archiveRoot, "notes.yaml");
@@ -274,9 +234,7 @@ describe("numbered archive discovery", () => {
     const planCatalog = discoverPlanArtifacts(path.join(root, ".agentera", "plan.yaml"));
 
     expect(discovered.entries.map((entry) => entry.stableId)).toEqual(["progress:1"]);
-    expect(discovered.ignored).toEqual(
-      expect.arrayContaining([planPath, visionPath, unrelatedPath]),
-    );
+    expect(discovered.ignored).toEqual(expect.arrayContaining([planPath, visionPath, unrelatedPath]));
     expect(planCatalog.archived.map((archive) => archive.path)).toEqual([planPath]);
     expect(planCatalog.archived[0]?.data.header).toMatchObject({
       title: "Historical plan",

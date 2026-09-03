@@ -1,14 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  classifyDrift,
-  DriftDirection,
-  effectiveDriftDirection,
-  expectedShapeLiteralPins,
-  expectedShapeRequiredKeys,
-  normalizeEnvelope,
-  ParityRow,
-} from "./parityOracle.js";
+import { classifyDrift, DriftDirection, effectiveDriftDirection, expectedShapeLiteralPins, expectedShapeRequiredKeys, normalizeEnvelope, ParityRow } from "./parityOracle.js";
 
 const RULES = {
   timestamp: {
@@ -50,17 +42,15 @@ describe("normalizeEnvelope() — hash rule", () => {
 
 describe("normalizeEnvelope() — path rule", () => {
   it("normalizes backslashes to forward slashes on path-allowlisted keys", () => {
-    expect((normalizeEnvelope({ path: "C:\\Users\\me\\repo" }, null, RULES) as { path: string }).path).toBe(
-      "C:/Users/me/repo",
-    );
+    expect((normalizeEnvelope({ path: "C:\\Users\\me\\repo" }, null, RULES) as { path: string }).path).toBe("C:/Users/me/repo");
   });
 
   it("normalizes multiple path-allowlisted keys in one envelope", () => {
-    const out = normalizeEnvelope(
-      { path: "a\\b", file: "c\\d\\e.md", app_home: "f\\g" },
-      null,
-      RULES,
-    ) as { path: string; file: string; app_home: string };
+    const out = normalizeEnvelope({ path: "a\\b", file: "c\\d\\e.md", app_home: "f\\g" }, null, RULES) as {
+      path: string;
+      file: string;
+      app_home: string;
+    };
     expect(out.path).toBe("a/b");
     expect(out.file).toBe("c/d/e.md");
     expect(out.app_home).toBe("f/g");
@@ -76,7 +66,11 @@ describe("normalizeEnvelope() — recursion", () => {
   it("recurses through arrays of objects", () => {
     const input = {
       commands: [
-        { command: "x", extracted_at: "2026-06-04T11:45:30Z", trust_hash: "sha256:deadbeefcafebabe" },
+        {
+          command: "x",
+          extracted_at: "2026-06-04T11:45:30Z",
+          trust_hash: "sha256:deadbeefcafebabe",
+        },
       ],
     };
     const out = normalizeEnvelope(input, null, RULES) as typeof input;
@@ -113,45 +107,25 @@ describe("classifyDrift() — four-valued taxonomy", () => {
   });
 
   it("classifies an extra undeclared key as python_smaller", () => {
-    const cls = classifyDrift(
-      { command: "validate", status: "pass", brand_new: "x" },
-      ["command", "status"],
-      {},
-      [],
-    );
+    const cls = classifyDrift({ command: "validate", status: "pass", brand_new: "x" }, ["command", "status"], {}, []);
     expect(cls.direction).toBe("python_smaller");
     expect(cls.extraKeys).toEqual(["brand_new"]);
   });
 
   it("classifies a forbidden-substring hit as python_smaller", () => {
-    const cls = classifyDrift(
-      { command: "validate", status: "pass", error_msg: "internal compiler error" },
-      ["command", "status", "error_msg"],
-      {},
-      ["internal compiler error"],
-    );
+    const cls = classifyDrift({ command: "validate", status: "pass", error_msg: "internal compiler error" }, ["command", "status", "error_msg"], {}, ["internal compiler error"]);
     expect(cls.direction).toBe("python_smaller");
     expect(cls.forbiddenHits).toEqual(["internal compiler error"]);
   });
 
   it("classifies a literal pin mismatch as python_smaller", () => {
-    const cls = classifyDrift(
-      { command: "validate_x", status: "pass" },
-      ["command", "status"],
-      { command: "validate" },
-      [],
-    );
+    const cls = classifyDrift({ command: "validate_x", status: "pass" }, ["command", "status"], { command: "validate" }, []);
     expect(cls.direction).toBe("python_smaller");
     expect(cls.literalMismatches.length).toBe(1);
   });
 
   it("prefers ts_smaller when both missing and extra keys are present", () => {
-    const cls = classifyDrift(
-      { command: "validate", extra: "x" },
-      ["command", "status"],
-      {},
-      [],
-    );
+    const cls = classifyDrift({ command: "validate", extra: "x" }, ["command", "status"], {}, []);
     expect(cls.direction).toBe("ts_smaller");
   });
 });
@@ -172,16 +146,18 @@ describe("expectedShapeRequiredKeys()", () => {
       safety: "object",
       safetyModeUnion: ["dry-run"],
     });
-    expect(keys).toEqual(
-      expect.arrayContaining(["command", "status", "family", "target", "format", "engine", "diagnostics", "safety"]),
-    );
+    expect(keys).toEqual(expect.arrayContaining(["command", "status", "family", "target", "format", "engine", "diagnostics", "safety"]));
     expect(keys).not.toContain("command_value");
     expect(keys).not.toContain("engineRequiredKeys");
   });
 
   it("extracts literal pins from command_value and family_value", () => {
     expect(
-      expectedShapeLiteralPins({ command_value: "verify", family_value: "eval", gate_value: "compaction" }),
+      expectedShapeLiteralPins({
+        command_value: "verify",
+        family_value: "eval",
+        gate_value: "compaction",
+      }),
     ).toEqual({ command: "verify", family: "eval", gate: "compaction" });
   });
 });

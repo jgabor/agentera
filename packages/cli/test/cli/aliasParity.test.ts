@@ -3,11 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  buildSchemaPayload,
-  REMOVED_TOP_LEVEL_CORRECTIONS,
-  TRANSITIONAL_TOP_LEVEL_ALIASES,
-} from "../../src/cli/commands/schema.js";
+import { buildSchemaPayload, REMOVED_TOP_LEVEL_CORRECTIONS, TRANSITIONAL_TOP_LEVEL_ALIASES } from "../../src/cli/commands/schema.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { main } from "../../src/cli/dispatch.js";
 import { printTopLevelHelp } from "../../src/cli/help.js";
@@ -29,8 +25,12 @@ function capture(argv: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...argv], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
   });
   return { rc, out, err };
 }
@@ -63,8 +63,10 @@ afterEach(() => {
 
 describe("schema-advertised alias/runtime parity", () => {
   it("advertises exactly the authority-owned transitional aliases", () => {
-    const expected = TRANSITIONAL_TOP_LEVEL_ALIASES
-      .map(({ legacy, canonical }) => ({ legacy, canonical }));
+    const expected = TRANSITIONAL_TOP_LEVEL_ALIASES.map(({ legacy, canonical }) => ({
+      legacy,
+      canonical,
+    }));
     const actual = advertisedAliases().map(({ legacy, canonical }) => ({ legacy, canonical }));
     expect(actual).toEqual(expected);
     expect(new Set(actual.map(({ legacy }) => legacy)).size).toBe(actual.length);
@@ -84,9 +86,7 @@ describe("schema-advertised alias/runtime parity", () => {
       const canonical = capture(canonicalArgv(alias, argv));
       expect(legacy.rc, alias.legacy).toBe(canonical.rc);
       expect(parseStructured(legacy, alias.legacy)).toEqual(parseStructured(canonical, alias.canonical));
-      expect(legacy.err).toBe(QUIET_CHECK_ALIASES.has(alias.legacy)
-        ? ""
-        : `Deprecation: agentera ${alias.legacy} is deprecated; use agentera ${alias.canonical}\n`);
+      expect(legacy.err).toBe(QUIET_CHECK_ALIASES.has(alias.legacy) ? "" : `Deprecation: agentera ${alias.legacy} is deprecated; use agentera ${alias.canonical}\n`);
       expect(canonical.err, alias.canonical).toBe("");
     }
   });
@@ -106,12 +106,17 @@ describe("schema-advertised alias/runtime parity", () => {
   });
 
   it("does not advertise retired names and returns an executable structured correction for each", () => {
-    const corrections = Object.entries(REMOVED_TOP_LEVEL_CORRECTIONS)
-      .map(([legacy, canonical]) => ({ legacy, canonical }));
+    const corrections = Object.entries(REMOVED_TOP_LEVEL_CORRECTIONS).map(([legacy, canonical]) => ({
+      legacy,
+      canonical,
+    }));
 
     const advertised = advertisedAliases();
     for (const { legacy, canonical } of corrections) {
-      expect(advertised.some((alias) => alias.legacy === legacy), legacy).toBe(false);
+      expect(
+        advertised.some((alias) => alias.legacy === legacy),
+        legacy,
+      ).toBe(false);
       const rejected = capture([legacy, "--format", "json"]);
       expect(rejected.rc, legacy).toBe(2);
       expect(rejected.err, legacy).toBe("");
@@ -144,9 +149,7 @@ describe("schema-advertised alias/runtime parity", () => {
       command: string;
       source_provenance: unknown;
     }>;
-    expect(expected).toEqual([
-      expect.objectContaining({ command: "pnpm run verify", source_provenance: expect.any(Array) }),
-    ]);
+    expect(expected).toEqual([expect.objectContaining({ command: "pnpm run verify", source_provenance: expect.any(Array) })]);
     expect(expected.some(({ command }) => command.split(/\s+/).includes("gate"))).toBe(false);
     expect(JSON.stringify(prime)).not.toContain("agentera gate");
 
@@ -176,17 +179,17 @@ describe("schema-advertised alias/runtime parity", () => {
 function capturePrimeBuild(): Record<string, any> {
   const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-build-verification-"));
   temporaryProjects.push(project);
-  fs.writeFileSync(path.join(project, "AGENTS.md"), [
-    "| When | Command |",
-    "| ---- | ------- |",
-    "| Verification | `pnpm verify` |",
-    "",
-  ].join("\n"));
+  fs.writeFileSync(path.join(project, "AGENTS.md"), ["| When | Command |", "| ---- | ------- |", "| Verification | `pnpm verify` |", ""].join("\n"));
   fs.writeFileSync(path.join(project, "package.json"), JSON.stringify({ scripts: { verify: "node verify.mjs" } }));
   let out = "";
   const rc = cmdPrime(
     { command: "prime", context: "build", format: "json", projectRoot: project },
-    { out: (text) => { out += text; }, err: () => {} },
+    {
+      out: (text) => {
+        out += text;
+      },
+      err: () => {},
+    },
   );
   expect(rc).toBe(0);
   return JSON.parse(out).capability_context.context;

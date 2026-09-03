@@ -2,35 +2,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 
-import {
-  loadDocsPathOverrides,
-  resolveArtifactPath,
-  ArtifactRecord,
-} from "../../registries/artifactRegistry.js";
-import {
-  activeObjectiveName,
-  artifactPath,
-  discoverSchemasDir,
-  loadSchemas,
-  resolveArtifactPathLocal,
-  SchemaInfo,
-} from "../appContext.js";
+import { loadDocsPathOverrides, resolveArtifactPath, ArtifactRecord } from "../../registries/artifactRegistry.js";
+import { activeObjectiveName, artifactPath, discoverSchemasDir, loadSchemas, resolveArtifactPathLocal, SchemaInfo } from "../appContext.js";
 import { validateAgentString } from "../argvalidate.js";
 import { emitStructured } from "../structured.js";
-import {
-  COMMAND_FILTERS,
-  emitStateStructured,
-  extractEntries,
-  filterByFieldValue,
-  filterByTopic,
-  formatEntry,
-  loadArtifact,
-  missingSchemaError,
-  recentCycles,
-  sourceMetadata,
-  structuredState,
-  validateFilterValues,
-} from "../stateQuery.js";
+import { COMMAND_FILTERS, emitStateStructured, extractEntries, filterByFieldValue, filterByTopic, formatEntry, loadArtifact, missingSchemaError, recentCycles, sourceMetadata, structuredState, validateFilterValues } from "../stateQuery.js";
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -41,26 +17,9 @@ import { readChangelog } from "../../state/changelog.js";
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
 const ENCODED_TRAVERSAL_RE = /%(?:2e|2f|5c)/i;
-const ALLOWED_RAW_ARTIFACT_USES = [
-  "artifact writes",
-  "artifact archival",
-  "artifact validation",
-  "corruption diagnostics",
-  "CLI defects",
-  "unavailable or incomplete CLI state after CLI fallbacks",
-  "benchmark analysis",
-];
+const ALLOWED_RAW_ARTIFACT_USES = ["artifact writes", "artifact archival", "artifact validation", "corruption diagnostics", "CLI defects", "unavailable or incomplete CLI state after CLI fallbacks", "benchmark analysis"];
 const BENCHMARK_CONTEXT_COMMAND = preCutoverCommand("prime --context optimize");
-const STATE_COMMAND_NAMES = new Set([
-  "decisions",
-  "docs",
-  "experiments",
-  "health",
-  "objective",
-  "plan",
-  "progress",
-  "todo",
-]);
+const STATE_COMMAND_NAMES = new Set(["decisions", "docs", "experiments", "health", "objective", "plan", "progress", "todo"]);
 
 export interface QueryArgs {
   query?: string | null;
@@ -91,15 +50,10 @@ function projectRelativeOrAbsolute(p: string): string {
 function artifactReadInterfaces(name: string, record: ArtifactRecord | null): JsonObject {
   const artifactId = record !== null ? record.artifactId : name;
   const retrieval = (entityPublicRetrieval().commands ?? {}) as Record<string, Record<string, string>>;
-  const experimentList = retrieval.experiments.list
-    .replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
-  const routineCommand = artifactId === "experiments"
-    ? experimentList
-    : STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera state ${artifactId}` : null);
+  const experimentList = retrieval.experiments.list.replace(" [--limit N] [--cursor TOKEN]", " --limit 20");
+  const routineCommand = artifactId === "experiments" ? experimentList : (STATE_FAMILY_LIST_COMMANDS[artifactId] ?? (STATE_COMMAND_NAMES.has(artifactId) ? `agentera state ${artifactId}` : null));
   const requiredSelectors = artifactId === "experiments" ? ["--objective OBJECTIVE_ID"] : [];
-  const detailCommand = artifactId === "experiments"
-    ? retrieval.experiments.get
-    : STATE_FAMILY_GET_COMMANDS[artifactId] ?? null;
+  const detailCommand = artifactId === "experiments" ? retrieval.experiments.get : (STATE_FAMILY_GET_COMMANDS[artifactId] ?? null);
   let advancedCommand: string | null;
   if (artifactId === "benchmark_context") advancedCommand = BENCHMARK_CONTEXT_COMMAND;
   else if (STATE_COMMAND_NAMES.has(artifactId)) advancedCommand = null;
@@ -123,11 +77,7 @@ function artifactReadInterfaces(name: string, record: ArtifactRecord | null): Js
   };
 }
 
-function artifactLocationRecord(
-  name: string,
-  info: SchemaInfo,
-  schemasDir: string,
-): JsonObject {
+function artifactLocationRecord(name: string, info: SchemaInfo, schemasDir: string): JsonObject {
   const record = info.record ?? null;
   const schema = info.schema && typeof info.schema === "object" ? info.schema : {};
   // cast: schema.meta is read from a parsed artifact schema (YAML IO boundary)
@@ -137,12 +87,8 @@ function artifactLocationRecord(
   const displayName = record !== null ? record.displayName : String(meta.name ?? name);
   const defaultPath = record !== null ? record.defaultPath : String(info.path ?? "");
   const docsOverrides = record !== null ? loadDocsPathOverrides(process.cwd()) : {};
-  const mappedPath = record !== null && record.docsYamlCanOverridePath && record.displayName in docsOverrides
-    ? docsOverrides[record.displayName]!
-    : defaultPath;
-  const resolutionSource = record !== null
-    ? mappedPath === defaultPath ? "registry default" : "docs mapping for registry identity"
-    : "schema metadata";
+  const mappedPath = record !== null && record.docsYamlCanOverridePath && record.displayName in docsOverrides ? docsOverrides[record.displayName]! : defaultPath;
+  const resolutionSource = record !== null ? (mappedPath === defaultPath ? "registry default" : "docs mapping for registry identity") : "schema metadata";
   const caveats: string[] = [];
   const objectiveName = activeObjectiveName();
   let resolvedPath: string | null = null;
@@ -150,8 +96,7 @@ function artifactLocationRecord(
     caveats.push("Path template contains <name>; no active objective name was available for resolution.");
   } else {
     try {
-      resolvedPath =
-        record !== null ? resolveArtifactPath(record, process.cwd(), objectiveName) : resolveArtifactPathLocal(mappedPath);
+      resolvedPath = record !== null ? resolveArtifactPath(record, process.cwd(), objectiveName) : resolveArtifactPathLocal(mappedPath);
     } catch (exc) {
       caveats.push((exc as Error).message);
     }
@@ -170,12 +115,11 @@ function artifactLocationRecord(
     artifact: artifactId,
     name: artifactId,
     display_name: displayName,
-    artifact_type: record !== null ? record.artifactType : meta.artifact_type ?? "unknown",
-    implementation_status:
-      record !== null ? record.implementationStatus : meta.implementation_status ?? "implemented",
-    format: typeof meta === "object" ? meta.format ?? "unknown" : "unknown",
-    producer: record !== null ? [...record.producers].sort() : meta.producer ?? "unknown",
-    consumers: record !== null ? [...record.consumers].sort() : meta.consumers ?? "unknown",
+    artifact_type: record !== null ? record.artifactType : (meta.artifact_type ?? "unknown"),
+    implementation_status: record !== null ? record.implementationStatus : (meta.implementation_status ?? "implemented"),
+    format: typeof meta === "object" ? (meta.format ?? "unknown") : "unknown",
+    producer: record !== null ? [...record.producers].sort() : (meta.producer ?? "unknown"),
+    consumers: record !== null ? [...record.consumers].sort() : (meta.consumers ?? "unknown"),
     schema_file: fileExists(schemaFile) ? schemaFile : null,
     path: pathPayload,
     ...artifactReadInterfaces(name, record),
@@ -205,10 +149,8 @@ export function artifactLocationContract(schemasDir: string, schemas: Record<str
     },
     source_contract: {
       raw_artifact_reads_required_for_discovery: false,
-      normal_content_policy:
-        "Use routine state commands when normal_read_command is present; use query only for advanced/custom artifact inspection.",
-      raw_artifact_read_policy:
-        "Raw artifact reads remain valid only for explicit writes, archival, validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state after fallbacks, and benchmark analysis.",
+      normal_content_policy: "Use routine state commands when normal_read_command is present; use query only for advanced/custom artifact inspection.",
+      raw_artifact_read_policy: "Raw artifact reads remain valid only for explicit writes, archival, validation, corruption diagnostics, CLI defects, unavailable/incomplete CLI state after fallbacks, and benchmark analysis.",
       allowed_raw_artifact_uses: ALLOWED_RAW_ARTIFACT_USES,
     },
     artifacts: records,
@@ -274,16 +216,28 @@ function queryGeneric(args: QueryArgs, schemas: Record<string, SchemaInfo>, name
 
 function matchedSchemaName(schemas: Record<string, SchemaInfo>, query: string): string | null {
   if (query in schemas) return query;
-  return Object.keys(schemas).find((name) =>
-    query === name.replace(/s$/, "") || query === `${name}s`
-  ) ?? null;
+  return Object.keys(schemas).find((name) => query === name.replace(/s$/, "") || query === `${name}s`) ?? null;
 }
 
 function rejectEntityAggregateQuery(args: QueryArgs, name: string, query: string, io: Io): number {
   const format = args.format ?? "text";
   const command = `agentera state ${name} --format ${format}`;
   if (format !== "text") {
-    emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_target", message: `routine artifact alias '${query}' is not available through state query`, syntax: command, example: command, recovery: `Use the canonical entity-aware command: ${command}` } }, format as "json" | "yaml", out(io));
+    emitStructured(
+      {
+        schemaVersion: "agentera.stateFailure.v1",
+        status: "fail",
+        error: {
+          class: "unsupported_target",
+          message: `routine artifact alias '${query}' is not available through state query`,
+          syntax: command,
+          example: command,
+          recovery: `Use the canonical entity-aware command: ${command}`,
+        },
+      },
+      format as "json" | "yaml",
+      out(io),
+    );
   } else {
     err(io)(`Unsupported routine query: ${query}. Use \`${command}\` instead.\n`);
   }
@@ -293,12 +247,29 @@ function rejectEntityAggregateQuery(args: QueryArgs, name: string, query: string
 function queryLastPhase(args: QueryArgs, schemas: Record<string, SchemaInfo>, io: Io): number {
   const o = out(io);
   const format = args.format ?? "text";
-  const response = listProgressEntities(process.cwd(), 1, {}, undefined, { format: format as "text" | "json" | "yaml" });
-  const entry = Array.isArray(response.entries) ? response.entries[0] as JsonObject | undefined : undefined;
+  const response = listProgressEntities(process.cwd(), 1, {}, undefined, {
+    format: format as "text" | "json" | "yaml",
+  });
+  const entry = Array.isArray(response.entries) ? (response.entries[0] as JsonObject | undefined) : undefined;
   const record = entry?.record as JsonObject | undefined;
   const phase = String(record?.phase ?? "");
-  if (format === "text") { if (phase) o(`${phase}\n`); }
-  else emitStructured(entry ? { phase, id: entry.id, artifact: entry.artifact, provenance: entry.provenance, snapshot: response.snapshot, retrieval: { get: `agentera state progress get --id ${entry.id}` } } : null, format, o);
+  if (format === "text") {
+    if (phase) o(`${phase}\n`);
+  } else
+    emitStructured(
+      entry
+        ? {
+            phase,
+            id: entry.id,
+            artifact: entry.artifact,
+            provenance: entry.provenance,
+            snapshot: response.snapshot,
+            retrieval: { get: `agentera state progress get --id ${entry.id}` },
+          }
+        : null,
+      format,
+      o,
+    );
   return 0;
 }
 

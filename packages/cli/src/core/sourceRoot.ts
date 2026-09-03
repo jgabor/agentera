@@ -17,18 +17,11 @@ export const NPX_BUNDLE_SENTINEL = ".agentera-npx-bundle.json";
  * The sentinel never exists in a repo checkout or an installed managed app.
  */
 export function isNpxBundleRoot(root: string): boolean {
-  return (
-    fs.existsSync(path.join(root, NPX_BUNDLE_SENTINEL)) &&
-    fs.existsSync(path.join(root, "skills", "agentera", "SKILL.md")) &&
-    fs.existsSync(path.join(root, "registry.json"))
-  );
+  return fs.existsSync(path.join(root, NPX_BUNDLE_SENTINEL)) && fs.existsSync(path.join(root, "skills", "agentera", "SKILL.md")) && fs.existsSync(path.join(root, "registry.json"));
 }
 
 /** Markers that identify an Agentera app source root (repo checkout or bundle). */
-const SOURCE_MARKERS = [
-  path.join("skills", "agentera", "SKILL.md"),
-  "registry.json",
-];
+const SOURCE_MARKERS = [path.join("skills", "agentera", "SKILL.md"), "registry.json"];
 
 function hasSourceMarker(dir: string): boolean {
   return SOURCE_MARKERS.some((marker) => fs.existsSync(path.join(dir, marker)));
@@ -54,9 +47,7 @@ function walkUp(start: string): string | null {
  * checkout containing the executing module, a self-contained package bundle,
  * and finally a walk-up from the working directory.
  */
-export function resolveSourceRoot(
-  env: Record<string, string | undefined> = process.env,
-): string {
+export function resolveSourceRoot(env: Record<string, string | undefined> = process.env): string {
   const configured = env[BOOTSTRAP_SOURCE_ROOT_ENV];
   if (configured) {
     return path.resolve(expanduser(configured));

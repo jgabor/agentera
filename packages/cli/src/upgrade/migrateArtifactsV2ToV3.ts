@@ -8,40 +8,16 @@ import { loadYamlMapping } from "../core/yaml.js";
 import { loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
-import {
-  applyAppContentRefreshItems,
-  planAppContentRefreshItems,
-} from "./appContentRefresh.js";
+import { applyAppContentRefreshItems, planAppContentRefreshItems } from "./appContentRefresh.js";
 import { doctorRoots } from "./appModel.js";
-import {
-  AGENTERA_USER_STATE_NAMES,
-} from "./doctor.js";
-import {
-  appHomeHasUnrecognizedEntriesWithPreflight,
-  handoffCatalogMessage,
-  resolveMigrationUserStatePreflight,
-} from "../migrate/v2HandoffManifest.js";
-import {
-  applyLegacyAgentCleanupItems,
-  planLegacyDirectoryCleanupItems,
-  planLegacyAgentCleanupItems,
-  planLegacyCapabilityAgentCleanupItems,
-} from "./legacyAgentCleanup.js";
-import {
-  applyRuntimeMigrationItems,
-  planRuntimeMigrationItems,
-} from "./runtimeMigration.js";
+import { AGENTERA_USER_STATE_NAMES } from "./doctor.js";
+import { appHomeHasUnrecognizedEntriesWithPreflight, handoffCatalogMessage, resolveMigrationUserStatePreflight } from "../migrate/v2HandoffManifest.js";
+import { applyLegacyAgentCleanupItems, planLegacyDirectoryCleanupItems, planLegacyAgentCleanupItems, planLegacyCapabilityAgentCleanupItems } from "./legacyAgentCleanup.js";
+import { applyRuntimeMigrationItems, planRuntimeMigrationItems } from "./runtimeMigration.js";
 import { writeFileAtomic } from "./atomicWriter.js";
 import { bindMigrationTree, cloneMigrationItem, removeBoundMigrationTree } from "./migrationPublication.js";
-import {
-  applyInstalledHooksRetirementItems,
-  planInstalledHooksRetirementItems,
-} from "./installedHooksRetirement.js";
-import {
-  applyDeclaredRetiredResourceCleanupItems,
-  planDeclaredRetiredResourceCleanupItems,
-  resolveDeclaredMarkerManagedResource,
-} from "./declaredRetiredResourceCleanup.js";
+import { applyInstalledHooksRetirementItems, planInstalledHooksRetirementItems } from "./installedHooksRetirement.js";
+import { applyDeclaredRetiredResourceCleanupItems, planDeclaredRetiredResourceCleanupItems, resolveDeclaredMarkerManagedResource } from "./declaredRetiredResourceCleanup.js";
 import type { ResolvedUpdateChannel } from "./channels.js";
 
 /**
@@ -105,9 +81,7 @@ function planTaskList(data: Record<string, unknown>): unknown[] | null {
 }
 
 function completedTasksOnly(tasks: unknown[]): boolean {
-  return tasks.every(
-    (task) => isMapping(task) && (task.status === "complete" || task.status === "completed"),
-  );
+  return tasks.every((task) => isMapping(task) && (task.status === "complete" || task.status === "completed"));
 }
 
 function rewritePlanStatus(text: string, status: "open" | "complete"): string {
@@ -157,9 +131,7 @@ function lifecycleMigrationItem(project: string, artifactPath: string): Migratio
     }
 
     const collisions: string[] = [];
-    const targetStatus: "open" | "complete" = status === "active" || !completedTasksOnly(tasks)
-      ? "open"
-      : "complete";
+    const targetStatus: "open" | "complete" = status === "active" || !completedTasksOnly(tasks) ? "open" : "complete";
     if (status === "completed" && targetStatus === "open") {
       collisions.push("header.status=completed conflicts with unfinished task evidence; preserving task evidence and migrating status to open");
     }
@@ -192,11 +164,13 @@ function lifecyclePlanArtifacts(project: string): MigrationPhaseItem[] {
     if (!record) throw new Error("plan artifact is not registered");
     activePath = resolveArtifactPath(record, root, { strictWrite: true });
   } catch (error) {
-    return [{
-      status: "blocked",
-      action: PLAN_LIFECYCLE_ACTION,
-      message: `cannot resolve docs-mapped plan path: ${(error as Error).message}`,
-    }];
+    return [
+      {
+        status: "blocked",
+        action: PLAN_LIFECYCLE_ACTION,
+        message: `cannot resolve docs-mapped plan path: ${(error as Error).message}`,
+      },
+    ];
   }
 
   const artifacts = isFile(activePath) ? [activePath] : [];
@@ -240,11 +214,7 @@ function emptySummary(): MigrationPhaseSummary {
   return { pending: 0, applied: 0, noop: 0, blocked: 0, failed: 0 };
 }
 
-export function summarizePhase(
-  name: MigrationPhase["name"],
-  items: MigrationPhaseItem[],
-  message = "",
-): MigrationPhase {
+export function summarizePhase(name: MigrationPhase["name"], items: MigrationPhaseItem[], message = ""): MigrationPhase {
   const summary = emptySummary();
   for (const item of items) {
     summary[item.status] += 1;
@@ -302,16 +272,16 @@ export function planArtifactsPhase(project: string): MigrationPhase {
     return summarizePhase("artifacts", [], "no project artifacts found");
   }
 
-  const lifecycleSources = new Set(
-    lifecycleItems.flatMap((item) => item.source ? [item.source] : []),
-  );
+  const lifecycleSources = new Set(lifecycleItems.flatMap((item) => (item.source ? [item.source] : [])));
   const items: MigrationPhaseItem[] = [
-    ...yamlArtifacts.filter((source) => !lifecycleSources.has(source)).map((source) => ({
-      status: "noop" as const,
-      action: "preserve",
-      source,
-      message: "v2 YAML artifact preserved; no v2→v3 schema migration required",
-    })),
+    ...yamlArtifacts
+      .filter((source) => !lifecycleSources.has(source))
+      .map((source) => ({
+        status: "noop" as const,
+        action: "preserve",
+        source,
+        message: "v2 YAML artifact preserved; no v2→v3 schema migration required",
+      })),
     ...lifecycleItems,
   ];
   return summarizePhase("artifacts", items);
@@ -359,25 +329,20 @@ export function delegatePlanLifecycleToEntityCutover(phase: MigrationPhase): voi
   phase.summary = updated.summary;
 }
 
-export function planRuntimeRetirementPhase(
-  ctx: MigrationContext,
-  _resolvedChannel?: ResolvedUpdateChannel,
-): MigrationPhase {
+export function planRuntimeRetirementPhase(ctx: MigrationContext, _resolvedChannel?: ResolvedUpdateChannel): MigrationPhase {
   const items = planRuntimeMigrationItems(ctx);
-  const blockedPaths = new Set(items
-    .filter((item) => item.status === "blocked")
-    .flatMap((item) => [item.source, item.target])
-    .filter((value): value is string => typeof value === "string"));
+  const blockedPaths = new Set(
+    items
+      .filter((item) => item.status === "blocked")
+      .flatMap((item) => [item.source, item.target])
+      .filter((value): value is string => typeof value === "string"),
+  );
   for (const item of items) {
     if (item.status !== "pending" || ![item.source, item.target].some((value) => value && blockedPaths.has(value))) continue;
     item.status = "blocked";
     item.message = "action required before Agentera can modify this runtime resource";
   }
-  return summarizePhase(
-    "runtime",
-    items,
-    items.length === 0 ? "no retired native Agentera hooks found" : "",
-  );
+  return summarizePhase("runtime", items, items.length === 0 ? "no retired native Agentera hooks found" : "");
 }
 
 export function applyRuntimeRetirementPhase(phase: MigrationPhase, ctx?: MigrationContext): void {
@@ -438,13 +403,7 @@ function markedBundleInventoryViolations(managedAppRoot: string): string[] {
       const destination = path.join(directory, name);
       const relative = prefix ? `${prefix}/${name}` : name;
       const stat = fs.lstatSync(destination);
-      const kind = stat.isSymbolicLink()
-        ? "symlink"
-        : stat.isFile()
-          ? "file"
-          : stat.isDirectory()
-            ? "directory"
-            : "other";
+      const kind = stat.isSymbolicLink() ? "symlink" : stat.isFile() ? "file" : stat.isDirectory() ? "directory" : "other";
       actual.set(relative, kind);
       if (kind === "directory") walk(destination, relative);
     }
@@ -498,32 +457,16 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     env: ctx.env,
   });
   const preserved = preflight.preservedAbsolutePaths;
-  const installedHookItems = planInstalledHooksRetirementItems(ctx).filter((item) =>
-    item.status !== "noop"
-    && item.source !== undefined
-    && !item.source.startsWith(`${managedAppRoot}${path.sep}`)
-  );
-  const hasOwnedRootHooks = installedHookItems.some((item) =>
-    item.source?.startsWith(`${path.join(appHome, "hooks")}${path.sep}`)
-  );
-  const unknown = packageInternalAppRoot ? [] : appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight)
-    .filter((name) => !(name === "hooks" && hasOwnedRootHooks));
+  const installedHookItems = planInstalledHooksRetirementItems(ctx).filter((item) => item.status !== "noop" && item.source !== undefined && !item.source.startsWith(`${managedAppRoot}${path.sep}`));
+  const hasOwnedRootHooks = installedHookItems.some((item) => item.source?.startsWith(`${path.join(appHome, "hooks")}${path.sep}`));
+  const unknown = packageInternalAppRoot ? [] : appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight).filter((name) => !(name === "hooks" && hasOwnedRootHooks));
   const managedBundle = !packageInternalAppRoot && hasManagedBundleEvidence(managedAppRoot);
-  const refreshAuthorized = !packageInternalAppRoot && (managedBundle
-    || hasBundleRootEvidence(roots.activeBundleRoot)
-    || (pathExists(appHome) && fs.readdirSync(appHome).length === 0));
+  const refreshAuthorized = !packageInternalAppRoot && (managedBundle || hasBundleRootEvidence(roots.activeBundleRoot) || (pathExists(appHome) && fs.readdirSync(appHome).length === 0));
   const appRootUnknown = managedBundle ? markedBundleInventoryViolations(managedAppRoot) : [];
-  const installedHookPaths = new Set(installedHookItems.flatMap((item) =>
-    item.source ? [path.resolve(item.source)] : []));
+  const installedHookPaths = new Set(installedHookItems.flatMap((item) => (item.source ? [path.resolve(item.source)] : [])));
   const declaredItems = planDeclaredRetiredResourceCleanupItems(ctx, installedHookPaths);
-  const declaredMarkerPaths = new Set(declaredItems.flatMap((item) =>
-    item.resourceId && resolveDeclaredMarkerManagedResource(item.resourceId)
-      ? item.source ? [path.resolve(item.source)] : []
-      : []));
-  const legacyAgentItems = [
-    ...planLegacyAgentCleanupItems(ctx),
-    ...planLegacyCapabilityAgentCleanupItems(ctx),
-  ].filter((item) => !item.source || !declaredMarkerPaths.has(path.resolve(item.source)));
+  const declaredMarkerPaths = new Set(declaredItems.flatMap((item) => (item.resourceId && resolveDeclaredMarkerManagedResource(item.resourceId) ? (item.source ? [path.resolve(item.source)] : []) : [])));
+  const legacyAgentItems = [...planLegacyAgentCleanupItems(ctx), ...planLegacyCapabilityAgentCleanupItems(ctx)].filter((item) => !item.source || !declaredMarkerPaths.has(path.resolve(item.source)));
   const items: MigrationPhaseItem[] = [
     ...preflight.handoffCatalog.map((entry) => ({
       status: "noop" as const,
@@ -536,9 +479,7 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     ...declaredItems,
     ...planLegacyDirectoryCleanupItems(ctx, [...legacyAgentItems, ...declaredItems]),
     ...installedHookItems,
-    ...(refreshAuthorized
-      ? planAppContentRefreshItems(ctx).filter((item) => item.action === "refresh-app-content")
-      : []),
+    ...(refreshAuthorized ? planAppContentRefreshItems(ctx).filter((item) => item.action === "refresh-app-content") : []),
   ];
 
   if (unknown.length > 0 && !ctx.force) {
@@ -593,8 +534,7 @@ export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
     target: appHome,
     preserved,
     removedPreview,
-    message:
-      "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
+    message: "will remove managed Python app-home bundle under app/ while preserving user state at app-home root",
   };
   const evidenceError = bindMigrationTree(cleanupItem, managedAppRoot, [appHome]);
   if (evidenceError) {
@@ -643,11 +583,7 @@ export function dryRunMigration(ctx: MigrationContext): DryRunMigrationResult {
 
 export type MigrationPhaseName = "artifacts" | "runtime" | "cleanup";
 
-export function applyMigrationPhases(
-  ctx: MigrationContext,
-  preview: DryRunMigrationResult,
-  only: readonly MigrationPhaseName[] = ["artifacts", "runtime", "cleanup"],
-): DryRunMigrationResult {
+export function applyMigrationPhases(ctx: MigrationContext, preview: DryRunMigrationResult, only: readonly MigrationPhaseName[] = ["artifacts", "runtime", "cleanup"]): DryRunMigrationResult {
   const result: DryRunMigrationResult = {
     artifacts: { ...preview.artifacts, items: preview.artifacts.items.map(cloneMigrationItem) },
     runtime: { ...preview.runtime, items: preview.runtime.items.map(cloneMigrationItem) },

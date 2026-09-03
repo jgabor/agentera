@@ -34,10 +34,7 @@ export function createEntityAuthorityFixture(
 } {
   fs.rmSync(path.join(project, ".agentera"), { recursive: true, force: true });
   fs.mkdirSync(path.join(project, ".agentera"));
-  fs.writeFileSync(
-    path.join(project, ".agentera", "state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   const entities: FixtureEntity[] = [];
   const add = (artifact: string, boundary: string, record: Record<string, any>): string => {
     const id = entityId(entities.length);
@@ -55,11 +52,7 @@ export function createEntityAuthorityFixture(
       what: `Fixture ${index}`,
       context: { intent: "Measure" },
     });
-  const summary = (
-    artifact: "progress" | "decisions" | "health",
-    boundary: "progress_summary" | "decision_summary" | "health_summary",
-    collection: "cycles" | "decisions" | "audits",
-  ): string => {
+  const summary = (artifact: "progress" | "decisions" | "health", boundary: "progress_summary" | "decision_summary" | "health_summary", collection: "cycles" | "decisions" | "audits"): string => {
     const physical = { number: 1, summary: `${artifact} retained summary` };
     const sourcePath = `.agentera/${artifact}.yaml`;
     fs.writeFileSync(path.join(project, sourcePath), dumpYamlMapping({ [collection]: [physical] }));
@@ -165,25 +158,16 @@ export function createEntityAuthorityFixture(
     exactId ||= id;
   }
   const byId = new Map(entities.map((entity) => [entity.id, entity]));
-  const relationshipEdges = (
-    contract.entity_target.relationships.declarations as Array<Record<string, string>>
-  )
+  const relationshipEdges = (contract.entity_target.relationships.declarations as Array<Record<string, string>>)
     .filter((declaration) =>
       entities.some((entity) => {
         if (entity.boundary !== declaration.source) return false;
-        const values = Array.isArray(entity.record[declaration.field])
-          ? entity.record[declaration.field]
-          : [entity.record[declaration.field]];
+        const values = Array.isArray(entity.record[declaration.field]) ? entity.record[declaration.field] : [entity.record[declaration.field]];
         return values.some((id) => byId.get(id)?.boundary === declaration.target);
       }),
     )
     .map((declaration) => `${declaration.source}.${declaration.field}->${declaration.target}`);
-  const boundaryCounts = Object.fromEntries(
-    (contract.entity_target.entities as Array<Record<string, string>>).map(({ boundary }) => [
-      boundary,
-      entities.filter((entity) => entity.boundary === boundary).length,
-    ]),
-  );
+  const boundaryCounts = Object.fromEntries((contract.entity_target.entities as Array<Record<string, string>>).map(({ boundary }) => [boundary, entities.filter((entity) => entity.boundary === boundary).length]));
   return {
     exactId,
     progressCount: boundaryCounts.progress_cycle + boundaryCounts.progress_summary,

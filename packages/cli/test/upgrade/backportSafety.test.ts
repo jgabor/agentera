@@ -7,11 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import {
-  STATUS_READY_TO_APPLY,
-  UPGRADE_PREVIEW_SCHEMA,
-  previewCrossMajorGuard,
-} from "../../src/upgrade/compatibility.js";
+import { STATUS_READY_TO_APPLY, UPGRADE_PREVIEW_SCHEMA, previewCrossMajorGuard } from "../../src/upgrade/compatibility.js";
 import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -42,14 +38,8 @@ function managedV2(appHome: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 describe("stable channel backport safety", () => {
@@ -79,7 +69,11 @@ describe("stable channel backport safety", () => {
         format: "json",
         channel: "stable",
       },
-      { out: (t) => { stdout += t; } },
+      {
+        out: (t) => {
+          stdout += t;
+        },
+      },
     );
     expect(code).not.toBe(2);
     const payload = JSON.parse(stdout);

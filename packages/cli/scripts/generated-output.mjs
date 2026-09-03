@@ -25,14 +25,20 @@ function git(repo, args) {
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonical(value[key])]),
+    );
   }
   return value;
 }
 
 function sourceIdentityDigest(value) {
   const { identitySha256: _identitySha256, ...unsigned } = value;
-  return createHash("sha256").update(JSON.stringify(canonical(unsigned))).digest("hex");
+  return createHash("sha256")
+    .update(JSON.stringify(canonical(unsigned)))
+    .digest("hex");
 }
 
 export function sealGeneratedSourceIdentity(unsigned) {
@@ -40,12 +46,7 @@ export function sealGeneratedSourceIdentity(unsigned) {
 }
 
 export function validateGeneratedSourceIdentity(value, label = "generated build source identity") {
-  if (value?.schemaVersion !== sourceIdentitySchema
-    || !/^[0-9a-f]{40}$/.test(value?.commit ?? "")
-    || !/^[0-9a-f]{40}$/.test(value?.tree ?? "")
-    || !Number.isInteger(value?.files) || value.files < 1
-    || !/^[0-9a-f]{64}$/.test(value?.workingTreeSha256 ?? "")
-    || value?.identitySha256 !== sourceIdentityDigest(value)) {
+  if (value?.schemaVersion !== sourceIdentitySchema || !/^[0-9a-f]{40}$/.test(value?.commit ?? "") || !/^[0-9a-f]{40}$/.test(value?.tree ?? "") || !Number.isInteger(value?.files) || value.files < 1 || !/^[0-9a-f]{64}$/.test(value?.workingTreeSha256 ?? "") || value?.identitySha256 !== sourceIdentityDigest(value)) {
     throw new Error(`${label} is malformed or self-inconsistent`);
   }
   return value;
@@ -57,7 +58,10 @@ export function generatedSourceIdentity(packageRoot) {
   if (fs.realpathSync(repoRoot) !== fs.realpathSync(repo)) {
     throw new Error(`generated-output package root is not inside its expected repository: ${packageRoot}`);
   }
-  const workingTree = gitSourceTreeDigest(repo, { includeUntracked: true, label: "generated-output source identity" });
+  const workingTree = gitSourceTreeDigest(repo, {
+    includeUntracked: true,
+    label: "generated-output source identity",
+  });
   return sealGeneratedSourceIdentity({
     schemaVersion: sourceIdentitySchema,
     commit: String(git(repo, ["rev-parse", "HEAD"])).trim(),

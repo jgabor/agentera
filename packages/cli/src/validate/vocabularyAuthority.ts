@@ -5,13 +5,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
-import {
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_MIGRATION_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-} from "../upgrade/doctor.js";
+import { APP_MANUAL_REVIEW_NEEDED, APP_MIGRATION_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "../upgrade/doctor.js";
 import { validateGlossaryEntryContract } from "../registries/glossaryEntryContract.js";
 
 /**
@@ -20,16 +14,7 @@ import { validateGlossaryEntryContract } from "../registries/glossaryEntryContra
  * Emits the same delegated validate envelope shape as lifecycle-adapters.
  */
 
-const EXPECTED_STATUSES = [
-  "up_to_date",
-  "outdated",
-  "repair_needed",
-  "migration_needed",
-  "manual_review_needed",
-  "ready_to_apply",
-  "applied",
-  "no_changes_needed",
-] as const;
+const EXPECTED_STATUSES = ["up_to_date", "outdated", "repair_needed", "migration_needed", "manual_review_needed", "ready_to_apply", "applied", "no_changes_needed"] as const;
 
 const EXPECTED_VERBS = ["install", "repair", "update", "migrate", "upgrade", "refresh"] as const;
 const EXPECTED_LIFECYCLE_CONSUMERS = ["doctor", "status", "upgrade", "docs", "tests"] as const;
@@ -73,9 +58,7 @@ function validateLifecycleAuthority(root: string): string[] {
 
   if (!Array.isArray(authority.canonical_status_order) || authority.canonical_status_order.length === 0) {
     errors.push("app-lifecycle-vocabulary.yaml: canonical_status_order is required");
-  } else if (
-    JSON.stringify(authority.canonical_status_order) !== JSON.stringify([...EXPECTED_STATUSES])
-  ) {
+  } else if (JSON.stringify(authority.canonical_status_order) !== JSON.stringify([...EXPECTED_STATUSES])) {
     errors.push("app-lifecycle-vocabulary.yaml: canonical_status_order drifted from Decision 54 pin");
   }
 
@@ -110,16 +93,8 @@ function validateLifecycleAuthority(root: string): string[] {
     }
   }
 
-  const doctorAllowed = new Set(
-    ((authority.consumers as JsonObject).doctor as JsonObject).may_emit_statuses as string[],
-  );
-  const observed = [
-    APP_UP_TO_DATE,
-    APP_OUTDATED,
-    APP_REPAIR_NEEDED,
-    APP_MIGRATION_NEEDED,
-    APP_MANUAL_REVIEW_NEEDED,
-  ];
+  const doctorAllowed = new Set(((authority.consumers as JsonObject).doctor as JsonObject).may_emit_statuses as string[]);
+  const observed = [APP_UP_TO_DATE, APP_OUTDATED, APP_REPAIR_NEEDED, APP_MIGRATION_NEEDED, APP_MANUAL_REVIEW_NEEDED];
   for (const status of observed) {
     if (!canonicalStatuses(authority).has(status)) {
       errors.push(`doctor constant '${status}' is not a canonical lifecycle status`);
@@ -132,9 +107,7 @@ function validateLifecycleAuthority(root: string): string[] {
 
   if (!Array.isArray(authority.consumer_order) || authority.consumer_order.length === 0) {
     errors.push("app-lifecycle-vocabulary.yaml: consumer_order is required");
-  } else if (
-    JSON.stringify(authority.consumer_order) !== JSON.stringify([...EXPECTED_LIFECYCLE_CONSUMERS])
-  ) {
+  } else if (JSON.stringify(authority.consumer_order) !== JSON.stringify([...EXPECTED_LIFECYCLE_CONSUMERS])) {
     errors.push("app-lifecycle-vocabulary.yaml: consumer_order drifted from Decision 54 pin");
   }
 
@@ -162,11 +135,7 @@ function validateLifecycleAuthority(root: string): string[] {
   }
 
   const delegation = authority.docs_delegation as JsonObject | undefined;
-  if (
-    delegation?.document !== "references/cli/vocabulary.md" ||
-    delegation?.required_anchor !== "App lifecycle status vocabulary" ||
-    delegation?.authority_path !== "references/cli/app-lifecycle-vocabulary.yaml"
-  ) {
+  if (delegation?.document !== "references/cli/vocabulary.md" || delegation?.required_anchor !== "App lifecycle status vocabulary" || delegation?.authority_path !== "references/cli/app-lifecycle-vocabulary.yaml") {
     errors.push("app-lifecycle-vocabulary.yaml: docs_delegation contract drifted");
   }
 
@@ -216,18 +185,12 @@ function validateUpdateChannelsAuthority(root: string): string[] {
 
   if (!Array.isArray(authority.consumer_order)) {
     errors.push("update-channels.yaml: consumer_order is required");
-  } else if (
-    JSON.stringify(authority.consumer_order) !== JSON.stringify([...EXPECTED_CHANNEL_CONSUMERS])
-  ) {
+  } else if (JSON.stringify(authority.consumer_order) !== JSON.stringify([...EXPECTED_CHANNEL_CONSUMERS])) {
     errors.push("update-channels.yaml: consumer_order drifted");
   }
 
   const delegation = authority.docs_delegation as JsonObject | undefined;
-  if (
-    delegation?.document !== "references/cli/vocabulary.md" ||
-    delegation?.required_anchor !== "Update channels" ||
-    delegation?.authority_path !== "references/cli/update-channels.yaml"
-  ) {
+  if (delegation?.document !== "references/cli/vocabulary.md" || delegation?.required_anchor !== "Update channels" || delegation?.authority_path !== "references/cli/update-channels.yaml") {
     errors.push("update-channels.yaml: docs_delegation contract drifted");
   }
 
@@ -270,11 +233,7 @@ function validateInstructionContract(root: string): string[] {
   }
 
   const delegation = authority.docs_delegation as JsonObject | undefined;
-  if (
-    delegation?.document !== "references/cli/vocabulary.md" ||
-    delegation?.required_anchor !== "Capability instruction contract" ||
-    delegation?.authority_path !== "references/cli/capability-instruction-contract.yaml"
-  ) {
+  if (delegation?.document !== "references/cli/vocabulary.md" || delegation?.required_anchor !== "Capability instruction contract" || delegation?.authority_path !== "references/cli/capability-instruction-contract.yaml") {
     errors.push("capability-instruction-contract.yaml: docs_delegation contract drifted");
   }
 
@@ -311,21 +270,13 @@ function validateVocabularyIndex(root: string): string[] {
   }
 
   const vocabulary = fs.readFileSync(vocabularyMd, "utf8");
-  const lifecycleSection =
-    vocabulary.split("### App lifecycle status vocabulary")[1]?.split("### Update channels", 1)[0] ?? "";
-  if (
-    !lifecycleSection.includes("references/cli/app-lifecycle-vocabulary.yaml") ||
-    !lifecycleSection.includes("machine-readable authority")
-  ) {
+  const lifecycleSection = vocabulary.split("### App lifecycle status vocabulary")[1]?.split("### Update channels", 1)[0] ?? "";
+  if (!lifecycleSection.includes("references/cli/app-lifecycle-vocabulary.yaml") || !lifecycleSection.includes("machine-readable authority")) {
     errors.push("references/cli/vocabulary.md: app lifecycle section must delegate to YAML authority");
   }
 
-  const channelsSection =
-    vocabulary.split("### Update channels")[1]?.split("## Evaluation and evidence grammar", 1)[0] ?? "";
-  if (
-    !channelsSection.includes("references/cli/update-channels.yaml") ||
-    !channelsSection.includes("machine-readable authority")
-  ) {
+  const channelsSection = vocabulary.split("### Update channels")[1]?.split("## Evaluation and evidence grammar", 1)[0] ?? "";
+  if (!channelsSection.includes("references/cli/update-channels.yaml") || !channelsSection.includes("machine-readable authority")) {
     errors.push("references/cli/vocabulary.md: update channels section must delegate to YAML authority");
   }
 
@@ -334,15 +285,7 @@ function validateVocabularyIndex(root: string): string[] {
 
 export function validateVocabularyAuthority(root: string = rootDefault()): string[] {
   const resolved = resolvePath(root);
-  return [
-    ...validateLifecycleAuthority(resolved),
-    ...validateUpdateChannelsAuthority(resolved),
-    ...validateInstructionContract(resolved),
-    ...validateVocabularyIndex(resolved),
-    ...validateGlossaryEntryContract(
-      authorityPath(resolved, "references/artifacts/glossary-entry-contract.yaml"),
-    ),
-  ];
+  return [...validateLifecycleAuthority(resolved), ...validateUpdateChannelsAuthority(resolved), ...validateInstructionContract(resolved), ...validateVocabularyIndex(resolved), ...validateGlossaryEntryContract(authorityPath(resolved, "references/artifacts/glossary-entry-contract.yaml"))];
 }
 
 export interface VocabularyAuthorityMainOptions {

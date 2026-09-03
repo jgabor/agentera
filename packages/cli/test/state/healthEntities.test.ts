@@ -9,11 +9,7 @@ import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
 import { runStateWrite } from "../../src/cli/commands/state/write.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
-import {
-  appendHealthEntity,
-  getHealthEntity,
-  listHealthEntities,
-} from "../../src/state/healthEntities.js";
+import { appendHealthEntity, getHealthEntity, listHealthEntities } from "../../src/state/healthEntities.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { buildExplain } from "../../src/state/write/explain.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
@@ -39,20 +35,24 @@ function audit(date = "2026-07-17", trajectory = "stable"): Record<string, unkno
     findings_summary: { critical: 0, warning: 1, info: 0, filtered_by_confidence: 0 },
     trajectory,
     grades: { architecture_alignment: "B" },
-    dimensions_detail: [{
-      name: "architecture_alignment",
-      grade: "B",
-      summary: "Entity authority is explicit.",
-      findings: [{
-        heading: "Repair evidence retained",
-        location: "state health",
-        evidence: "validator output and exact command",
-        impact: "operators can recover without guessed history",
-        suggested_action: "run agentera check validate state",
-        severity: "warning",
-        confidence: "high",
-      }],
-    }],
+    dimensions_detail: [
+      {
+        name: "architecture_alignment",
+        grade: "B",
+        summary: "Entity authority is explicit.",
+        findings: [
+          {
+            heading: "Repair evidence retained",
+            location: "state health",
+            evidence: "validator output and exact command",
+            impact: "operators can recover without guessed history",
+            suggested_action: "run agentera check validate state",
+            severity: "warning",
+            confidence: "high",
+          },
+        ],
+      },
+    ],
   };
 }
 
@@ -83,8 +83,15 @@ function legacy(root: string, id: string, date = "2026-07-17", trajectory = "sta
 
 function git(root: string, ...args: string[]): string {
   const env = { ...process.env };
-  delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE;
-  return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], { cwd: root, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_INDEX_FILE;
+  return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+    cwd: root,
+    env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
 }
 
 afterEach(() => {
@@ -99,19 +106,30 @@ describe("health entity authority", () => {
     fs.writeFileSync(input, dumpYamlMapping(supplied));
     let out = "";
     let err = "";
-    expect(runStateWrite("health", ["append", "--input", input, "--project", root, "--format", "json"], {
-      out: (text) => { out += text; },
-      err: (text) => { err += text; },
-    })).toBe(0);
+    expect(
+      runStateWrite("health", ["append", "--input", input, "--project", root, "--format", "json"], {
+        out: (text) => {
+          out += text;
+        },
+        err: (text) => {
+          err += text;
+        },
+      }),
+    ).toBe(0);
     expect(err).toBe("");
     const published = JSON.parse(out);
-    expect(published).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), artifact: "health" });
-    expect(published.record).toEqual({ ...supplied, appended_at: expect.any(String) });
-    expect((getHealthEntity(root, published.id) as any).entry).toEqual(expect.objectContaining({
-      id: published.id,
+    expect(published).toMatchObject({
+      id: expect.stringMatching(/^[a-z]{10}$/),
       artifact: "health",
-      record: { ...supplied, appended_at: expect.any(String) },
-    }));
+    });
+    expect(published.record).toEqual({ ...supplied, appended_at: expect.any(String) });
+    expect((getHealthEntity(root, published.id) as any).entry).toEqual(
+      expect.objectContaining({
+        id: published.id,
+        artifact: "health",
+        record: { ...supplied, appended_at: expect.any(String) },
+      }),
+    );
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
 
@@ -130,10 +148,12 @@ describe("health entity authority", () => {
       const rejectedRoot = project();
       const rejectedInput = path.join(rejectedRoot, "audit.yaml");
       fs.writeFileSync(rejectedInput, dumpYamlMapping(forbidden));
-      expect(runStateWrite("health", ["append", "--input", rejectedInput, "--project", rejectedRoot, "--format", "json"], {
-        out: () => {},
-        err: () => {},
-      })).not.toBe(0);
+      expect(
+        runStateWrite("health", ["append", "--input", rejectedInput, "--project", rejectedRoot, "--format", "json"], {
+          out: () => {},
+          err: () => {},
+        }),
+      ).not.toBe(0);
       expect(fs.existsSync(path.join(rejectedRoot, ".agentera/entities"))).toBe(false);
       expect(fs.existsSync(path.join(rejectedRoot, ".agentera/health.yaml"))).toBe(false);
       expect(fs.existsSync(path.join(rejectedRoot, ".agentera/archive"))).toBe(false);
@@ -143,7 +163,11 @@ describe("health entity authority", () => {
   it("publishes one immutable canonical audit with no projection, archive, or numeric vocabulary", () => {
     const root = project();
     const result = executeStateWrite(request(root, "append", audit())) as any;
-    expect(result).toMatchObject({ artifact: "health", id: expect.stringMatching(/^[a-z]{10}$/), record: { date: "2026-07-17", appended_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) } });
+    expect(result).toMatchObject({
+      artifact: "health",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { date: "2026-07-17", appended_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T/) },
+    });
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
@@ -172,7 +196,18 @@ describe("health entity authority", () => {
     expect(exact.entry).toMatchObject({
       id: "aaaaaaaaaa",
       artifact: "health",
-      record: { dimensions_detail: [{ findings: [{ evidence: "validator output and exact command", suggested_action: "run agentera check validate state" }] }] },
+      record: {
+        dimensions_detail: [
+          {
+            findings: [
+              {
+                evidence: "validator output and exact command",
+                suggested_action: "run agentera check validate state",
+              },
+            ],
+          },
+        ],
+      },
       provenance: { storage: "canonical_entity_file", boundary: "health_audit", detail: "full" },
       retrieval: { get: "agentera state health get --id aaaaaaaaaa" },
     });
@@ -194,26 +229,64 @@ describe("health entity authority", () => {
 
       const listed = listHealthEntities(root, 20) as any;
       expect(listed.entries.map((entry: any) => entry.id)).toEqual(["mmmmmmmmmm", "zzzzzzzzzz", "aaaaaaaaaa"]);
-      expect(listed.entries.map((entry: any) => entry.record.appended_at)).toEqual([
-        "2026-07-17T11:00:00.000Z",
-        "2026-07-17T11:00:00.000Z",
-        "2026-07-17T10:00:00.000Z",
-      ]);
+      expect(listed.entries.map((entry: any) => entry.record.appended_at)).toEqual(["2026-07-17T11:00:00.000Z", "2026-07-17T11:00:00.000Z", "2026-07-17T10:00:00.000Z"]);
     } finally {
       vi.useRealTimers();
     }
   });
 
   it("routes public get/list to entity authority and preserves whole-entry bounds with exact recovery", () => {
-    const root = project(); legacy(root, "aaaaaaaaaa"); legacy(root, "bbbbbbbbbb", "2026-07-16");
+    const root = project();
+    legacy(root, "aaaaaaaaaa");
+    legacy(root, "bbbbbbbbbb", "2026-07-16");
     let out = "";
-    expect(runStateGet("health", ["--id", "aaaaaaaaaa", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
-    expect(JSON.parse(out).entry.id).toBe("aaaaaaaaaa"); out = "";
-    expect(runStateList("health", ["--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
+    expect(
+      runStateGet(
+        "health",
+        ["--id", "aaaaaaaaaa", "--format", "json"],
+        {
+          out: (text) => {
+            out += text;
+          },
+        },
+        root,
+      ),
+    ).toBe(0);
+    expect(JSON.parse(out).entry.id).toBe("aaaaaaaaaa");
+    out = "";
+    expect(
+      runStateList(
+        "health",
+        ["--limit", "1", "--format", "json"],
+        {
+          out: (text) => {
+            out += text;
+          },
+        },
+        root,
+      ),
+    ).toBe(0);
     const first = JSON.parse(out);
-    expect(first).toMatchObject({ omitted: true, omitted_count: 1, omission_reason: "page_limit", retrieval: { get: "agentera state health get --id ID" } });
-    expect(JSON.stringify(first.entries[0])).toContain("validator output and exact command"); out = "";
-    expect(runStateList("health", ["--limit", "1", "--cursor", first.next_cursor, "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
+    expect(first).toMatchObject({
+      omitted: true,
+      omitted_count: 1,
+      omission_reason: "page_limit",
+      retrieval: { get: "agentera state health get --id ID" },
+    });
+    expect(JSON.stringify(first.entries[0])).toContain("validator output and exact command");
+    out = "";
+    expect(
+      runStateList(
+        "health",
+        ["--limit", "1", "--cursor", first.next_cursor, "--format", "json"],
+        {
+          out: (text) => {
+            out += text;
+          },
+        },
+        root,
+      ),
+    ).toBe(0);
     expect(JSON.parse(out).entries[0].id).toBe("bbbbbbbbbb");
     expect(runStateGet("health", ["--number", "1", "--format", "json"], { out: () => {} }, root)).toBe(2);
   });
@@ -221,7 +294,10 @@ describe("health entity authority", () => {
   it("preserves and shell-quotes dimension filters in executable continuations", () => {
     const root = project();
     const dimension = "architecture alignment '$HOME'; $(printf injected) $PATH";
-    for (const [id, date] of [["aaaaaaaaaa", "2026-07-17"], ["bbbbbbbbbb", "2026-07-16"]]) {
+    for (const [id, date] of [
+      ["aaaaaaaaaa", "2026-07-17"],
+      ["bbbbbbbbbb", "2026-07-16"],
+    ]) {
       const record = audit(date) as any;
       record.dimensions_detail[0].summary = dimension;
       const directory = path.join(root, ".agentera/entities/health/health_audit");
@@ -229,20 +305,47 @@ describe("health entity authority", () => {
       fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "health", record }));
     }
     let out = "";
-    expect(runStateList("health", ["--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--format", "json"], { out: (text) => { out += text; } }, root)).toBe(0);
+    expect(
+      runStateList(
+        "health",
+        ["--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--format", "json"],
+        {
+          out: (text) => {
+            out += text;
+          },
+        },
+        root,
+      ),
+    ).toBe(0);
     const first = JSON.parse(out);
     const argv = shellCommandArgs(first.retrieval.continue);
     expect(argv).toEqual(["state", "health", "list", "--dimension", dimension, "--fields", "trajectory", "--limit", "1", "--cursor", first.next_cursor]);
     out = "";
-    expect(runStateList("health", argv.slice(3), { out: (text) => { out += text; } }, root)).toBe(0);
+    expect(
+      runStateList(
+        "health",
+        argv.slice(3),
+        {
+          out: (text) => {
+            out += text;
+          },
+        },
+        root,
+      ),
+    ).toBe(0);
     const second = JSON.parse(out);
     expect(new Set([first.entries[0].id, second.entries[0].id])).toEqual(new Set(["aaaaaaaaaa", "bbbbbbbbbb"]));
-    expect(second).toMatchObject({ filters: { dimension }, counts: { candidate: 2, returned: 1, omitted: 0, continuation: 0 } });
+    expect(second).toMatchObject({
+      filters: { dimension },
+      counts: { candidate: 2, returned: 1, omitted: 0, continuation: 0 },
+    });
   });
 
   it("binds cursors to an exact snapshot", () => {
     for (const mutation of ["add", "remove", "change"] as const) {
-      const root = project(); legacy(root, "aaaaaaaaaa"); legacy(root, "bbbbbbbbbb", "2026-07-16");
+      const root = project();
+      legacy(root, "aaaaaaaaaa");
+      legacy(root, "bbbbbbbbbb", "2026-07-16");
       const first = listHealthEntities(root, 1) as any;
       if (mutation === "add") append(root, "cccccccccc", "2026-07-15");
       if (mutation === "remove") fs.rmSync(path.join(root, ".agentera/entities/health/health_audit/bbbbbbbbbb.yaml"));
@@ -264,39 +367,99 @@ describe("health entity authority", () => {
     fs.writeFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "not: [valid\n");
     expect(() => getHealthEntity(root, "aaaaaaaaaa")).toThrow(/corrupt|canonical/);
     expect(() => listHealthEntities(root, 20)).toThrow(/corrupt|canonical/);
-    const conflict = path.join(root, ".agentera/entities/progress/progress_cycle"); fs.mkdirSync(conflict, { recursive: true });
-    fs.writeFileSync(path.join(conflict, "aaaaaaaaaa.yaml"), dumpYamlMapping({ id: "aaaaaaaaaa", artifact: "progress", record: { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "conflict", context: { intent: "conflict" } } }));
+    const conflict = path.join(root, ".agentera/entities/progress/progress_cycle");
+    fs.mkdirSync(conflict, { recursive: true });
+    fs.writeFileSync(
+      path.join(conflict, "aaaaaaaaaa.yaml"),
+      dumpYamlMapping({
+        id: "aaaaaaaaaa",
+        artifact: "progress",
+        record: {
+          timestamp: "2026-07-17 12:00",
+          type: "fix",
+          phase: "build",
+          what: "conflict",
+          context: { intent: "conflict" },
+        },
+      }),
+    );
     expect(() => getHealthEntity(root, "aaaaaaaaaa")).toThrow(/multiple canonical candidates|ambiguous/);
   });
 
   it("rejects entity repair and marker-absent repair before effects", () => {
-    const root = project(); append(root, "aaaaaaaaaa");
+    const root = project();
+    append(root, "aaaaaaaaaa");
     const before = fs.readFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "utf8");
     expect(() => request(root, "repair" as never, { number: 1, keep: "first" })).toThrow(/health repair spec missing/i);
     expect(fs.readFileSync(path.join(root, ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml"), "utf8")).toBe(before);
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
 
-    const legacy = project(false); const target = path.join(legacy, ".agentera/health.yaml"); fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(target, dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
+    const legacy = project(false);
+    const target = path.join(legacy, ".agentera/health.yaml");
+    fs.mkdirSync(path.dirname(target), { recursive: true });
+    fs.writeFileSync(
+      target,
+      dumpYamlMapping({
+        audits: [{ number: 20, ...audit() }],
+        archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"],
+      }),
+    );
     expect(() => request(legacy, "repair" as never, { number: 14, keep: "first" })).toThrow(/health repair spec missing/i);
-    expect(fs.readFileSync(target, "utf8")).toBe(dumpYamlMapping({ audits: [{ number: 20, ...audit() }], archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"] }));
+    expect(fs.readFileSync(target, "utf8")).toBe(
+      dumpYamlMapping({
+        audits: [{ number: 20, ...audit() }],
+        archive: ["Audit 14 (2026-04-26): first", "Audit 14 (2026-04-26): duplicate"],
+      }),
+    );
   });
 
   it("rejects marker-absent append without publishing an aggregate", () => {
-    const root = project(false); expect(() => executeStateWrite(request(root, "append", audit()))).toThrow(/durable entity-state marker/);
+    const root = project(false);
+    expect(() => executeStateWrite(request(root, "append", audit()))).toThrow(/durable entity-state marker/);
     expect(fs.existsSync(path.join(root, ".agentera/health.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/entities"))).toBe(false);
   });
 
   it("lets Git merge unrelated audits and exposes same-ID conflicts", () => {
-    const root = project(); git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", ".agentera/state-mode.yaml"); git(root, "commit", "-m", "base");
-    const left = `${root}-left`, right = `${root}-right`; roots.push(left, right); git(root, "worktree", "add", "-b", "left", left, "main"); git(root, "worktree", "add", "-b", "right", right, "main");
-    append(left, "aaaaaaaaaa"); append(right, "bbbbbbbbbb", "2026-07-16"); git(left, "add", ".agentera/entities"); git(left, "commit", "-m", "left"); git(right, "add", ".agentera/entities"); git(right, "commit", "-m", "right"); git(root, "merge", "--ff-only", "left"); git(root, "merge", "--no-edit", "right");
+    const root = project();
+    git(root, "init", "-b", "main");
+    git(root, "config", "user.name", "Fixture");
+    git(root, "config", "user.email", "fixture@example.test");
+    git(root, "add", ".agentera/state-mode.yaml");
+    git(root, "commit", "-m", "base");
+    const left = `${root}-left`,
+      right = `${root}-right`;
+    roots.push(left, right);
+    git(root, "worktree", "add", "-b", "left", left, "main");
+    git(root, "worktree", "add", "-b", "right", right, "main");
+    append(left, "aaaaaaaaaa");
+    append(right, "bbbbbbbbbb", "2026-07-16");
+    git(left, "add", ".agentera/entities");
+    git(left, "commit", "-m", "left");
+    git(right, "add", ".agentera/entities");
+    git(right, "commit", "-m", "right");
+    git(root, "merge", "--ff-only", "left");
+    git(root, "merge", "--no-edit", "right");
     expect((listHealthEntities(root, 20) as any).entries.map((entry: any) => entry.id).sort()).toEqual(["aaaaaaaaaa", "bbbbbbbbbb"]);
 
-    const conflict = project(); git(conflict, "init", "-b", "main"); git(conflict, "config", "user.name", "Fixture"); git(conflict, "config", "user.email", "fixture@example.test"); git(conflict, "add", ".agentera/state-mode.yaml"); git(conflict, "commit", "-m", "base");
-    const conflictLeft = `${conflict}-left`, conflictRight = `${conflict}-right`; roots.push(conflictLeft, conflictRight); git(conflict, "worktree", "add", "-b", "conflict-left", conflictLeft, "main"); git(conflict, "worktree", "add", "-b", "conflict-right", conflictRight, "main");
-    append(conflictLeft, "aaaaaaaaaa"); append(conflictRight, "aaaaaaaaaa", "2026-07-16"); git(conflictLeft, "add", ".agentera/entities"); git(conflictLeft, "commit", "-m", "left"); git(conflictRight, "add", ".agentera/entities"); git(conflictRight, "commit", "-m", "right"); git(conflict, "merge", "--ff-only", "conflict-left");
+    const conflict = project();
+    git(conflict, "init", "-b", "main");
+    git(conflict, "config", "user.name", "Fixture");
+    git(conflict, "config", "user.email", "fixture@example.test");
+    git(conflict, "add", ".agentera/state-mode.yaml");
+    git(conflict, "commit", "-m", "base");
+    const conflictLeft = `${conflict}-left`,
+      conflictRight = `${conflict}-right`;
+    roots.push(conflictLeft, conflictRight);
+    git(conflict, "worktree", "add", "-b", "conflict-left", conflictLeft, "main");
+    git(conflict, "worktree", "add", "-b", "conflict-right", conflictRight, "main");
+    append(conflictLeft, "aaaaaaaaaa");
+    append(conflictRight, "aaaaaaaaaa", "2026-07-16");
+    git(conflictLeft, "add", ".agentera/entities");
+    git(conflictLeft, "commit", "-m", "left");
+    git(conflictRight, "add", ".agentera/entities");
+    git(conflictRight, "commit", "-m", "right");
+    git(conflict, "merge", "--ff-only", "conflict-left");
     expect(() => git(conflict, "merge", "--no-edit", "conflict-right")).toThrow();
   });
 });

@@ -18,11 +18,7 @@ function utcTimestamp(): string {
 }
 
 export function evaluateFixture(fixture: SemanticFixture, source = "<fixture>"): JsonObject {
-  const facts = [
-    ...checkOutputFacts(fixture),
-    ...checkToolTraceFacts(fixture),
-    ...checkSeededArtifactFacts(fixture),
-  ];
+  const facts = [...checkOutputFacts(fixture), ...checkToolTraceFacts(fixture), ...checkSeededArtifactFacts(fixture)];
   const failing = facts.find((fact) => fact.status === "fail") ?? null;
   return {
     fixture: source,
@@ -123,7 +119,8 @@ function checkToolTraceFacts(fixture: SemanticFixture): CheckedFact[] {
   });
   const toolCallCounts = expected.tool_call_counts;
   if (toolCallCounts && typeof toolCallCounts === "object" && !Array.isArray(toolCallCounts)) {
-    for (const [text, expectedCount] of Object.entries(toolCallCounts as JsonObject)) { // cast: JSON.parse fixture IO boundary
+    for (const [text, expectedCount] of Object.entries(toolCallCounts as JsonObject)) {
+      // cast: JSON.parse fixture IO boundary
       const actual = callList.filter((call) => call.includes(text)).length;
       facts.push({
         fact: `tool_call_counts[${text}]`,
@@ -155,27 +152,47 @@ function checkSeededArtifactFacts(fixture: SemanticFixture): CheckedFact[] {
   requiredArtifactsArr.forEach((expected: unknown, index: number) => {
     const factName = `required_artifacts[${index}]`;
     if (!expected || typeof expected !== "object" || Array.isArray(expected)) {
-      facts.push({ fact: factName, status: "fail", detail: "expected artifact fact must be an object" });
+      facts.push({
+        fact: factName,
+        status: "fail",
+        detail: "expected artifact fact must be an object",
+      });
       return;
     }
     const expectedObj = expected as JsonObject; // cast: JSON.parse fixture IO boundary
     const path = expectedObj.path;
     if (typeof path !== "string" || !path.trim()) {
-      facts.push({ fact: factName, status: "fail", detail: "expected artifact fact must name a path" });
+      facts.push({
+        fact: factName,
+        status: "fail",
+        detail: "expected artifact fact must name a path",
+      });
       return;
     }
     const content = byPath[path];
     if (content === undefined) {
-      facts.push({ fact: factName, status: "fail", detail: `seeded artifact ${pyRepr(path)} is missing` });
+      facts.push({
+        fact: factName,
+        status: "fail",
+        detail: `seeded artifact ${pyRepr(path)} is missing`,
+      });
       return;
     }
     const containsRaw = expectedObj.contains;
     const containsArr: string[] = Array.isArray(containsRaw) ? (containsRaw as string[]) : []; // cast: JSON.parse fixture IO boundary
     const missing = containsArr.filter((text: string) => !content.includes(text));
     if (missing.length > 0) {
-      facts.push({ fact: factName, status: "fail", detail: `seeded artifact ${pyRepr(path)} lacks ${pyRepr(missing[0])}` });
+      facts.push({
+        fact: factName,
+        status: "fail",
+        detail: `seeded artifact ${pyRepr(path)} lacks ${pyRepr(missing[0])}`,
+      });
     } else {
-      facts.push({ fact: factName, status: "pass", detail: `seeded artifact ${pyRepr(path)} matched` });
+      facts.push({
+        fact: factName,
+        status: "pass",
+        detail: `seeded artifact ${pyRepr(path)} matched`,
+      });
     }
   });
   return facts;

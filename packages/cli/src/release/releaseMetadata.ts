@@ -69,43 +69,15 @@ export interface ReleaseMetadataSnapshot {
   bundleSuiteVersion: string | null;
 }
 
-export const RELEASE_METADATA_AUTHORITY_FILES = [
-  "registry.json",
-  "packages/cli/package.json",
-  "references/cli/update-channels.yaml",
-] as const;
+export const RELEASE_METADATA_AUTHORITY_FILES = ["registry.json", "packages/cli/package.json", "references/cli/update-channels.yaml"] as const;
 
-export const RELEASE_METADATA_ADVISORY_FILES = [
-  "packages/cli/bundle/.agentera-npx-bundle.json",
-] as const;
+export const RELEASE_METADATA_ADVISORY_FILES = ["packages/cli/bundle/.agentera-npx-bundle.json"] as const;
 
-export const RELEASE_PROVENANCE_PATHS = [
-  "packages/cli/src",
-  "packages/cli/scripts",
-  "packages/cli/README.md",
-  "packages/cli/tsconfig.json",
-  "skills",
-  "references",
-  "README.md",
-  "UPGRADE.md",
-  "CHANGELOG.md",
-  "DESIGN.md",
-  "LICENSE",
-  "registry.json",
-  "fixtures/routing/hybrid-corpus.yaml",
-] as const;
+export const RELEASE_PROVENANCE_PATHS = ["packages/cli/src", "packages/cli/scripts", "packages/cli/README.md", "packages/cli/tsconfig.json", "skills", "references", "README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE", "registry.json", "fixtures/routing/hybrid-corpus.yaml"] as const;
 
-export const RELEASE_PROVENANCE_EXCLUSIONS = [
-  "packages/cli/src/release/releaseMetadata.ts",
-  "references/adapters/package-surface-characterization.md",
-] as const;
+export const RELEASE_PROVENANCE_EXCLUSIONS = ["packages/cli/src/release/releaseMetadata.ts", "references/adapters/package-surface-characterization.md"] as const;
 
-export const STABLE_SHIM_PROVENANCE_PATHS = [
-  "packages/cli/shim/bin",
-  "packages/cli/shim/lib",
-  "packages/cli/shim/README.md",
-  "packages/cli/shim/LICENSE",
-] as const;
+export const STABLE_SHIM_PROVENANCE_PATHS = ["packages/cli/shim/bin", "packages/cli/shim/lib", "packages/cli/shim/README.md", "packages/cli/shim/LICENSE"] as const;
 
 const SEMVER_CORE_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?(?:\+[0-9A-Za-z.-]+)?$/;
 const SEMVER_STRICT_RE = /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/;
@@ -149,41 +121,26 @@ function validateGitRefProvenance(root: string, gitRef: string): string[] {
     return [`packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} is not a commit in the local repository`];
   }
 
-  const pathspec = [
-    ...RELEASE_PROVENANCE_PATHS,
-    ...RELEASE_PROVENANCE_EXCLUSIONS.map((entry) => `:(exclude)${entry}`),
-  ];
+  const pathspec = [...RELEASE_PROVENANCE_PATHS, ...RELEASE_PROVENANCE_EXCLUSIONS.map((entry) => `:(exclude)${entry}`)];
   const diff = runGit(root, ["diff", "--quiet", gitRef, "--", ...pathspec]);
   if (diff.status !== 0) {
     if (diff.status === 1) {
-      return [
-        `packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} does not match the governed package source tree; ` +
-        "select the last substantive package-source commit, excluding approved release metadata",
-      ];
+      return [`packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} does not match the governed package source tree; ` + "select the last substantive package-source commit, excluding approved release metadata"];
     }
     return [`packages/cli/package.json: unable to compare agentera.gitRef ${JSON.stringify(gitRef)} with the governed package source tree`];
   }
 
   const status = runGit(root, ["status", "--porcelain=v1", "--untracked-files=all", "--", ...pathspec]);
   if (status.status !== 0 || String(status.stdout).trim() !== "") {
-    return [
-      "packages/cli/package.json: governed package source has uncommitted or untracked changes outside approved release metadata",
-    ];
+    return ["packages/cli/package.json: governed package source has uncommitted or untracked changes outside approved release metadata"];
   }
 
   const selectedPackage = runGit(root, ["show", `${gitRef}:packages/cli/package.json`]);
   const currentPackage = readPackageJson(root);
   try {
     const selected = JSON.parse(String(selectedPackage.stdout)) as JsonObject;
-    if (
-      selectedPackage.status !== 0 ||
-      currentPackage === null ||
-      !isDeepStrictEqual(normalizedPackageMetadata(selected), normalizedPackageMetadata(currentPackage))
-    ) {
-      return [
-        `packages/cli/package.json: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` +
-        "outside the permitted version and gitRef fields",
-      ];
+    if (selectedPackage.status !== 0 || currentPackage === null || !isDeepStrictEqual(normalizedPackageMetadata(selected), normalizedPackageMetadata(currentPackage))) {
+      return [`packages/cli/package.json: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` + "outside the permitted version and gitRef fields"];
     }
   } catch {
     return [`packages/cli/package.json: unable to read package contract from agentera.gitRef ${JSON.stringify(gitRef)}`];
@@ -202,37 +159,18 @@ export function validateStableShimGitRefProvenance(root: string, gitRef: string)
   }
   const diff = runGit(root, ["diff", "--quiet", gitRef, "--", ...STABLE_SHIM_PROVENANCE_PATHS]);
   if (diff.status !== 0) {
-    return [
-      `${manifestPath}: agentera.gitRef ${JSON.stringify(gitRef)} does not match the stable shim packaged inputs; ` +
-        "select the last substantive shim-source commit",
-    ];
+    return [`${manifestPath}: agentera.gitRef ${JSON.stringify(gitRef)} does not match the stable shim packaged inputs; ` + "select the last substantive shim-source commit"];
   }
-  const status = runGit(root, [
-    "status",
-    "--porcelain=v1",
-    "--untracked-files=all",
-    "--",
-    manifestPath,
-    ...STABLE_SHIM_PROVENANCE_PATHS,
-  ]);
+  const status = runGit(root, ["status", "--porcelain=v1", "--untracked-files=all", "--", manifestPath, ...STABLE_SHIM_PROVENANCE_PATHS]);
   if (status.status !== 0 || String(status.stdout).trim() !== "") {
-    return [
-      `${manifestPath}: stable shim packaged inputs have uncommitted or untracked changes outside approved release metadata`,
-    ];
+    return [`${manifestPath}: stable shim packaged inputs have uncommitted or untracked changes outside approved release metadata`];
   }
   const selected = runGit(root, ["show", `${gitRef}:${manifestPath}`]);
   const current = readJson(path.join(root, manifestPath));
   try {
     const selectedManifest = JSON.parse(String(selected.stdout)) as JsonObject;
-    if (
-      selected.status !== 0 ||
-      current === null ||
-      !isDeepStrictEqual(normalizedPackageMetadata(selectedManifest), normalizedPackageMetadata(current))
-    ) {
-      return [
-        `${manifestPath}: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` +
-          "outside the permitted version and gitRef fields",
-      ];
+    if (selected.status !== 0 || current === null || !isDeepStrictEqual(normalizedPackageMetadata(selectedManifest), normalizedPackageMetadata(current))) {
+      return [`${manifestPath}: package contract differs from agentera.gitRef ${JSON.stringify(gitRef)} ` + "outside the permitted version and gitRef fields"];
     }
   } catch {
     return [`${manifestPath}: unable to read package contract from agentera.gitRef ${JSON.stringify(gitRef)}`];
@@ -319,10 +257,7 @@ function pickChannelDefaults(authority: JsonObject | null): {
   };
 }
 
-export function readReleaseMetadata(
-  root: string = rootDefault(),
-  packageOverride?: { version: string; gitRef: string },
-): ReleaseMetadataSnapshot {
+export function readReleaseMetadata(root: string = rootDefault(), packageOverride?: { version: string; gitRef: string }): ReleaseMetadataSnapshot {
   const resolved = resolvePath(root);
   const registry = readRegistryVersion(resolved);
   const pkg = readPackageJson(resolved);
@@ -330,15 +265,9 @@ export function readReleaseMetadata(
   const bundle = readBundleSentinel(resolved);
 
   const topVersion = packageOverride?.version ?? (pkg && typeof pkg.version === "string" ? pkg.version : null);
-  const agenteraBlock = pkg && typeof pkg.agentera === "object" && pkg.agentera !== null
-    ? (pkg.agentera as JsonObject)
-    : null;
-  const suiteVersion = agenteraBlock && typeof agenteraBlock.suiteVersion === "string"
-    ? agenteraBlock.suiteVersion
-    : null;
-  const gitRef = packageOverride?.gitRef ?? (agenteraBlock && typeof agenteraBlock.gitRef === "string"
-    ? agenteraBlock.gitRef
-    : null);
+  const agenteraBlock = pkg && typeof pkg.agentera === "object" && pkg.agentera !== null ? (pkg.agentera as JsonObject) : null;
+  const suiteVersion = agenteraBlock && typeof agenteraBlock.suiteVersion === "string" ? agenteraBlock.suiteVersion : null;
+  const gitRef = packageOverride?.gitRef ?? (agenteraBlock && typeof agenteraBlock.gitRef === "string" ? agenteraBlock.gitRef : null);
   const { development, stable } = pickChannelDefaults(channels);
 
   return {
@@ -357,19 +286,13 @@ export function readReleaseMetadata(
  * Validate release-metadata coherence. Returns an empty array when the
  * source-tree version surfaces agree on a single release train.
  */
-export function validateReleaseMetadata(
-  root: string = rootDefault(),
-  adapter: "development" | "stable" = "development",
-  packageOverride?: { version: string; gitRef: string },
-): string[] {
+export function validateReleaseMetadata(root: string = rootDefault(), adapter: "development" | "stable" = "development", packageOverride?: { version: string; gitRef: string }): string[] {
   if (adapter === "stable") {
     const manifestPath = "packages/cli/shim/package.json";
     const shim = readJson(path.join(resolvePath(root), manifestPath));
     if (shim === null) return [`${manifestPath}: missing or unreadable; cannot validate release-metadata`];
     const agentera = shim.agentera;
-    const gitRef = agentera && typeof agentera === "object" && !Array.isArray(agentera)
-      ? (agentera as JsonObject).gitRef
-      : null;
+    const gitRef = agentera && typeof agentera === "object" && !Array.isArray(agentera) ? (agentera as JsonObject).gitRef : null;
     if (typeof gitRef !== "string" || !GIT_REF_HEX_RE.test(gitRef)) {
       return [`${manifestPath}: agentera.gitRef must be a 40-character hex SHA for stable shim provenance`];
     }
@@ -385,15 +308,11 @@ export function validateReleaseMetadata(
   } else {
     const parsed = parseSemverCore(snap.authoritativeVersion);
     if (parsed === null) {
-      errors.push(
-        `registry.json: skills[0].version ${JSON.stringify(snap.authoritativeVersion)} is not a valid semver`,
-      );
+      errors.push(`registry.json: skills[0].version ${JSON.stringify(snap.authoritativeVersion)} is not a valid semver`);
     } else if (parsed.preRelease !== null) {
       // registry.json is the suite authority and stays on the released core;
       // pre-release suffixes belong only to packages/cli/package.json.
-      errors.push(
-        `registry.json: skills[0].version must be a released core version (no pre-release suffix); got ${JSON.stringify(snap.authoritativeVersion)}`,
-      );
+      errors.push(`registry.json: skills[0].version must be a released core version (no pre-release suffix); got ${JSON.stringify(snap.authoritativeVersion)}`);
     }
   }
 
@@ -407,13 +326,8 @@ export function validateReleaseMetadata(
     } else {
       const parsed = parseSemverCore(snap.packageVersion);
       if (parsed === null) {
-        errors.push(
-          `packages/cli/package.json: top-level version ${JSON.stringify(snap.packageVersion)} is not a valid semver`,
-        );
-      } else if (
-        snap.authoritativeVersion !== null &&
-        parseSemverCore(snap.authoritativeVersion)?.core !== parsed.core
-      ) {
+        errors.push(`packages/cli/package.json: top-level version ${JSON.stringify(snap.packageVersion)} is not a valid semver`);
+      } else if (snap.authoritativeVersion !== null && parseSemverCore(snap.authoritativeVersion)?.core !== parsed.core) {
         errors.push(
           `release-metadata divergence: registry.json skills[0].version core is ${JSON.stringify(parseSemverCore(snap.authoritativeVersion)?.core)} ` +
             `but packages/cli/package.json top-level version core is ${JSON.stringify(parsed.core)}; ` +
@@ -425,29 +339,17 @@ export function validateReleaseMetadata(
     // 2b. `agentera.suiteVersion` must match registry exactly.
     if (snap.packageSuiteVersion === null) {
       errors.push("packages/cli/package.json: `agentera.suiteVersion` is required");
-    } else if (
-      snap.authoritativeVersion !== null &&
-      snap.packageSuiteVersion !== snap.authoritativeVersion
-    ) {
-      errors.push(
-        `release-metadata divergence: registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)} ` +
-          `but packages/cli/package.json agentera.suiteVersion is ${JSON.stringify(snap.packageSuiteVersion)}; ` +
-          `the agentera.suiteVersion mirror must equal the registry version exactly`,
-      );
+    } else if (snap.authoritativeVersion !== null && snap.packageSuiteVersion !== snap.authoritativeVersion) {
+      errors.push(`release-metadata divergence: registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)} ` + `but packages/cli/package.json agentera.suiteVersion is ${JSON.stringify(snap.packageSuiteVersion)}; ` + `the agentera.suiteVersion mirror must equal the registry version exactly`);
     } else if (!SEMVER_STRICT_RE.test(snap.packageSuiteVersion)) {
-      errors.push(
-        `packages/cli/package.json: agentera.suiteVersion ${JSON.stringify(snap.packageSuiteVersion)} is not a released core semver`,
-      );
+      errors.push(`packages/cli/package.json: agentera.suiteVersion ${JSON.stringify(snap.packageSuiteVersion)} is not a released core semver`);
     }
 
     // 2c. `agentera.gitRef` must identify the governed package source tree.
     if (snap.packageGitRef === null || snap.packageGitRef === "") {
       errors.push("packages/cli/package.json: `agentera.gitRef` is required for release-metadata validation");
     } else if (!GIT_REF_HEX_RE.test(snap.packageGitRef)) {
-      errors.push(
-        `packages/cli/package.json: agentera.gitRef ${JSON.stringify(snap.packageGitRef)} must be a 40-character hex SHA; ` +
-          `short SHAs and branch names are not reproducible release references`,
-      );
+      errors.push(`packages/cli/package.json: agentera.gitRef ${JSON.stringify(snap.packageGitRef)} must be a 40-character hex SHA; ` + `short SHAs and branch names are not reproducible release references`);
     } else {
       errors.push(...validateGitRefProvenance(resolvePath(root), snap.packageGitRef));
     }
@@ -455,18 +357,9 @@ export function validateReleaseMetadata(
 
   // 3. update-channels.yaml development default must equal the registry version.
   if (snap.developmentChannelDefault === null) {
-    errors.push(
-      "references/cli/update-channels.yaml: version_resolution.latest_on_channel.offline_defaults.development is required",
-    );
-  } else if (
-    snap.authoritativeVersion !== null &&
-    snap.developmentChannelDefault !== snap.authoritativeVersion
-  ) {
-    errors.push(
-      `release-metadata divergence: registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)} ` +
-        `but update-channels.yaml offline_defaults.development is ${JSON.stringify(snap.developmentChannelDefault)}; ` +
-        `the development channel default must match the registry version exactly`,
-    );
+    errors.push("references/cli/update-channels.yaml: version_resolution.latest_on_channel.offline_defaults.development is required");
+  } else if (snap.authoritativeVersion !== null && snap.developmentChannelDefault !== snap.authoritativeVersion) {
+    errors.push(`release-metadata divergence: registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)} ` + `but update-channels.yaml offline_defaults.development is ${JSON.stringify(snap.developmentChannelDefault)}; ` + `the development channel default must match the registry version exactly`);
   }
 
   // 4. Stable channel default is informational on the @next branch; the
@@ -478,10 +371,7 @@ export function validateReleaseMetadata(
 
   // 5. Advisory check on the local bundle sentinel.
   if (snap.bundleSuiteVersion !== null) {
-    if (
-      snap.authoritativeVersion !== null &&
-      snap.bundleSuiteVersion !== snap.authoritativeVersion
-    ) {
+    if (snap.authoritativeVersion !== null && snap.bundleSuiteVersion !== snap.authoritativeVersion) {
       errors.push(
         `release-metadata drift (advisory): packages/cli/bundle/.agentera-npx-bundle.json suiteVersion is ${JSON.stringify(snap.bundleSuiteVersion)} ` +
           `but registry.json skills[0].version is ${JSON.stringify(snap.authoritativeVersion)}; ` +
@@ -511,11 +401,7 @@ export function releaseMetadataMain(opts: ReleaseMetadataMainOptions = {}): numb
     out("- AGENTERA_RELEASE_PACKAGE_VERSION and AGENTERA_RELEASE_GIT_REF must be supplied together");
     return 1;
   }
-  const errors = validateReleaseMetadata(
-    root,
-    opts.adapter,
-    overrideVersion === undefined ? undefined : { version: overrideVersion, gitRef: overrideGitRef! },
-  );
+  const errors = validateReleaseMetadata(root, opts.adapter, overrideVersion === undefined ? undefined : { version: overrideVersion, gitRef: overrideGitRef! });
   if (errors.length > 0) {
     out("release-metadata validation failed:");
     for (const message of errors) out(`- ${message}`);

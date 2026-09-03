@@ -7,11 +7,7 @@ import { opencodeConfigDir } from "../setup/opencode.js";
 import { loadNativeResourceCleanupContract } from "../runtime/nativeResourceCleanup.js";
 import type { MigrationContext, MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
 import { bindMigrationResource, removeBoundMigrationResource } from "./migrationPublication.js";
-import {
-  diagnoseRetiredResources,
-  expandRetiredResourcePath,
-  resolveRetiredResourceRoots,
-} from "./retiredResourceDiagnostics.js";
+import { diagnoseRetiredResources, expandRetiredResourcePath, resolveRetiredResourceRoots } from "./retiredResourceDiagnostics.js";
 
 export const REMOVE_LEGACY_AGENT_ACTION = "remove-legacy-agent";
 export const PRUNE_LEGACY_DIRECTORY_ACTION = "prune-legacy-directory";
@@ -20,20 +16,7 @@ export const PRUNE_LEGACY_DIRECTORY_ACTION = "prune-legacy-directory";
 const MANAGED_AGENT_MARKER = "<!-- agentera: managed -->";
 
 /** Closed set of v2 Swedish-verb agent files left orphaned after v3 single-agent copy (#20). */
-export const V2_SWEDISH_VERB_AGENT_FILES = [
-  "dokumentera.md",
-  "hej.md",
-  "inspektera.md",
-  "inspirera.md",
-  "optimera.md",
-  "orkestrera.md",
-  "planera.md",
-  "profilera.md",
-  "realisera.md",
-  "resonera.md",
-  "visionera.md",
-  "visualisera.md",
-] as const;
+export const V2_SWEDISH_VERB_AGENT_FILES = ["dokumentera.md", "hej.md", "inspektera.md", "inspirera.md", "optimera.md", "orkestrera.md", "planera.md", "profilera.md", "realisera.md", "resonera.md", "visionera.md", "visualisera.md"] as const;
 
 const V2_SWEDISH_VERB_AGENT_SET = new Set<string>(V2_SWEDISH_VERB_AGENT_FILES);
 
@@ -46,20 +29,7 @@ export function isV2SwedishVerbAgentFile(name: string): boolean {
  * single v3 `agentera.md` primary agent. These shipped under `.cursor/agents`
  * and `.opencode/agents` and must be removed when the managed marker is present.
  */
-export const V2_ENGLISH_CAPABILITY_AGENT_FILES = [
-  "audit.md",
-  "build.md",
-  "design.md",
-  "discuss.md",
-  "document.md",
-  "optimize.md",
-  "orchestrate.md",
-  "plan.md",
-  "profile.md",
-  "research.md",
-  "status.md",
-  "vision.md",
-] as const;
+export const V2_ENGLISH_CAPABILITY_AGENT_FILES = ["audit.md", "build.md", "design.md", "discuss.md", "document.md", "optimize.md", "orchestrate.md", "plan.md", "profile.md", "research.md", "status.md", "vision.md"] as const;
 
 /** Primary runtime-native agent replaced by the shared skill plus CLI. */
 export const V2_PRIMARY_AGENT_FILES = ["agentera.md"] as const;
@@ -94,7 +64,13 @@ function managedAgentOwnership(filePath: string): MigrationPhaseItem["ownership"
     return null;
   }
   const frontmatter = /^---\r?\n[\s\S]*?\r?\n---(?:\r?\n|$)/.exec(body);
-  if (body.slice(frontmatter?.[0].length ?? 0).split(/\r?\n/).find((line) => line.trim() !== "") !== MANAGED_AGENT_MARKER) return null;
+  if (
+    body
+      .slice(frontmatter?.[0].length ?? 0)
+      .split(/\r?\n/)
+      .find((line) => line.trim() !== "") !== MANAGED_AGENT_MARKER
+  )
+    return null;
   return {
     kind: "managed-marker-file",
     identity,
@@ -102,10 +78,7 @@ function managedAgentOwnership(filePath: string): MigrationPhaseItem["ownership"
   };
 }
 
-function planDeclaredAgentItems(
-  ctx: MigrationContext,
-  select: (resourceId: string) => boolean,
-): MigrationPhaseItem[] {
+function planDeclaredAgentItems(ctx: MigrationContext, select: (resourceId: string) => boolean): MigrationPhaseItem[] {
   const diagnosis = diagnoseRetiredResources({
     home: ctx.home,
     project: ctx.project,
@@ -115,32 +88,34 @@ function planDeclaredAgentItems(
   });
   return diagnosis.resources
     .filter((resource) => resource.ownershipMode === "managed_marker_regular_file" && select(resource.id))
-    .flatMap((resource) => resource.evidence.paths.map((source) => {
-      const ownership = managedAgentOwnership(source);
-      let regularFile = false;
-      try { regularFile = fs.lstatSync(source).isFile(); } catch { /* diagnosis already recorded the path */ }
-      const item: MigrationPhaseItem = {
-        resourceId: resource.id,
-        status: ownership ? "pending" : "blocked",
-        action: REMOVE_LEGACY_AGENT_ACTION,
-        runtime: resource.id.startsWith("cursor.") ? "cursor" : "opencode",
-        source,
-        ...(ownership ? { ownership } : {}),
-        message: ownership
-          ? `will remove marker-owned v2 agent ${path.basename(source)}`
-          : regularFile
-            ? `preserved ${source}: the legacy filename does not prove Agentera ownership; the managed marker is required`
-            : `preserved ${source}: unsafe resource; only an exact declared regular file is eligible`,
-      };
-      if (ownership) {
-        const evidenceError = bindMigrationResource(item, "source", source, [path.dirname(source)], "file");
-        if (evidenceError) {
-          item.status = "blocked";
-          item.message = `preserved ${source}: ${evidenceError}; review the unsafe path manually`;
+    .flatMap((resource) =>
+      resource.evidence.paths.map((source) => {
+        const ownership = managedAgentOwnership(source);
+        let regularFile = false;
+        try {
+          regularFile = fs.lstatSync(source).isFile();
+        } catch {
+          /* diagnosis already recorded the path */
         }
-      }
-      return item;
-    }));
+        const item: MigrationPhaseItem = {
+          resourceId: resource.id,
+          status: ownership ? "pending" : "blocked",
+          action: REMOVE_LEGACY_AGENT_ACTION,
+          runtime: resource.id.startsWith("cursor.") ? "cursor" : "opencode",
+          source,
+          ...(ownership ? { ownership } : {}),
+          message: ownership ? `will remove marker-owned v2 agent ${path.basename(source)}` : regularFile ? `preserved ${source}: the legacy filename does not prove Agentera ownership; the managed marker is required` : `preserved ${source}: unsafe resource; only an exact declared regular file is eligible`,
+        };
+        if (ownership) {
+          const evidenceError = bindMigrationResource(item, "source", source, [path.dirname(source)], "file");
+          if (evidenceError) {
+            item.status = "blocked";
+            item.message = `preserved ${source}: ${evidenceError}; review the unsafe path manually`;
+          }
+        }
+        return item;
+      }),
+    );
 }
 
 export function legacyAgentScanTargets(ctx: MigrationContext): LegacyAgentScanTarget[] {
@@ -215,10 +190,7 @@ export function scanLegacyCapabilityAgentPaths(agentsDir: string): string[] {
 export function scanLegacySwedishVerbAgentViolations(root: string): string[] {
   const resolved = resolvePath(root);
   const violations: string[] = [];
-  const agentDirs = [
-    path.join(resolved, ".cursor", "agents"),
-    path.join(resolved, ".opencode", "agents"),
-  ];
+  const agentDirs = [path.join(resolved, ".cursor", "agents"), path.join(resolved, ".opencode", "agents")];
   for (const agentsDir of agentDirs) {
     for (const filePath of scanLegacySwedishVerbAgentPaths(agentsDir)) {
       violations.push(path.relative(resolved, filePath));
@@ -228,17 +200,11 @@ export function scanLegacySwedishVerbAgentViolations(root: string): string[] {
 }
 
 export function planLegacyAgentCleanupItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  return planDeclaredAgentItems(ctx, (resourceId) =>
-    (resourceId.startsWith("cursor.agent.") || resourceId.startsWith("opencode.agent."))
-      && V2_SWEDISH_VERB_AGENT_SET.has(`${resourceId.split(".").at(-1)}.md`),
-  );
+  return planDeclaredAgentItems(ctx, (resourceId) => (resourceId.startsWith("cursor.agent.") || resourceId.startsWith("opencode.agent.")) && V2_SWEDISH_VERB_AGENT_SET.has(`${resourceId.split(".").at(-1)}.md`));
 }
 
 export function planLegacyCapabilityAgentCleanupItems(ctx: MigrationContext): MigrationPhaseItem[] {
-  return planDeclaredAgentItems(ctx, (resourceId) =>
-    (resourceId.startsWith("cursor.agent.") || resourceId.startsWith("opencode.agent."))
-      && !V2_SWEDISH_VERB_AGENT_SET.has(`${resourceId.split(".").at(-1)}.md`),
-  );
+  return planDeclaredAgentItems(ctx, (resourceId) => (resourceId.startsWith("cursor.agent.") || resourceId.startsWith("opencode.agent.")) && !V2_SWEDISH_VERB_AGENT_SET.has(`${resourceId.split(".").at(-1)}.md`));
 }
 
 function declaredLegacyDirectories(ctx: MigrationContext): Array<{ resourceId: string; directory: string }> {
@@ -263,16 +229,8 @@ function declaredLegacyDirectories(ctx: MigrationContext): Array<{ resourceId: s
     .sort((a, b) => b.directory.split(path.sep).length - a.directory.split(path.sep).length);
 }
 
-export function planLegacyDirectoryCleanupItems(
-  ctx: MigrationContext,
-  leafItems: readonly MigrationPhaseItem[] = [
-    ...planLegacyAgentCleanupItems(ctx),
-    ...planLegacyCapabilityAgentCleanupItems(ctx),
-  ],
-): MigrationPhaseItem[] {
-  const plannedRemovals = new Set(leafItems
-    .filter((item) => item.status === "pending" && item.source)
-    .map((item) => path.resolve(item.source!)));
+export function planLegacyDirectoryCleanupItems(ctx: MigrationContext, leafItems: readonly MigrationPhaseItem[] = [...planLegacyAgentCleanupItems(ctx), ...planLegacyCapabilityAgentCleanupItems(ctx)]): MigrationPhaseItem[] {
+  const plannedRemovals = new Set(leafItems.filter((item) => item.status === "pending" && item.source).map((item) => path.resolve(item.source!)));
   return declaredLegacyDirectories(ctx).map(({ resourceId, directory }) => {
     let stat: fs.Stats;
     try {
@@ -283,26 +241,39 @@ export function planLegacyDirectoryCleanupItems(
         status: (error as NodeJS.ErrnoException).code === "ENOENT" ? "noop" : "blocked",
         action: PRUNE_LEGACY_DIRECTORY_ACTION,
         source: directory,
-        message: (error as NodeJS.ErrnoException).code === "ENOENT"
-          ? `declared legacy directory already absent at ${directory}`
-          : `preserved ${directory}: declared legacy directory could not be inspected`,
+        message: (error as NodeJS.ErrnoException).code === "ENOENT" ? `declared legacy directory already absent at ${directory}` : `preserved ${directory}: declared legacy directory could not be inspected`,
       } as MigrationPhaseItem;
     }
     if (!stat.isDirectory()) {
-      return { resourceId, status: "blocked", action: PRUNE_LEGACY_DIRECTORY_ACTION, source: directory,
-        message: `preserved ${directory}: declared legacy directory is not a real directory` } as MigrationPhaseItem;
+      return {
+        resourceId,
+        status: "blocked",
+        action: PRUNE_LEGACY_DIRECTORY_ACTION,
+        source: directory,
+        message: `preserved ${directory}: declared legacy directory is not a real directory`,
+      } as MigrationPhaseItem;
     }
     let entries: string[];
     try {
       entries = fs.readdirSync(directory);
     } catch {
-      return { resourceId, status: "blocked", action: PRUNE_LEGACY_DIRECTORY_ACTION, source: directory,
-        message: `preserved ${directory}: declared legacy directory could not be read` } as MigrationPhaseItem;
+      return {
+        resourceId,
+        status: "blocked",
+        action: PRUNE_LEGACY_DIRECTORY_ACTION,
+        source: directory,
+        message: `preserved ${directory}: declared legacy directory could not be read`,
+      } as MigrationPhaseItem;
     }
     const remaining = entries.filter((name) => !plannedRemovals.has(path.resolve(directory, name)));
     if (remaining.length > 0) {
-      return { resourceId, status: "noop", action: PRUNE_LEGACY_DIRECTORY_ACTION, source: directory,
-        message: `preserved non-empty declared legacy directory ${directory}` } as MigrationPhaseItem;
+      return {
+        resourceId,
+        status: "noop",
+        action: PRUNE_LEGACY_DIRECTORY_ACTION,
+        source: directory,
+        message: `preserved non-empty declared legacy directory ${directory}`,
+      } as MigrationPhaseItem;
     }
     return {
       resourceId,
@@ -344,19 +315,12 @@ export function applyLegacyAgentCleanupItems(items: MigrationPhaseItem[], ctx: M
         }
         continue;
       }
-      if (
-        item.ownership?.kind !== "managed-marker-file"
-        || item.ownership.identity !== ownership.identity
-        || item.ownership.fingerprint !== ownership.fingerprint
-      ) {
+      if (item.ownership?.kind !== "managed-marker-file" || item.ownership.identity !== ownership.identity || item.ownership.fingerprint !== ownership.fingerprint) {
         item.status = "blocked";
         item.message = `preserved ${item.source}: ownership identity or fingerprint changed after preview; rerun migration and review the resource`;
         continue;
       }
-      if (
-        (!isV2SwedishVerbAgentFile(basename) && !isV2EnglishCapabilityAgentFile(basename) && basename !== "agentera.md") ||
-        !regularFileIdentity(item.source)
-      ) {
+      if ((!isV2SwedishVerbAgentFile(basename) && !isV2EnglishCapabilityAgentFile(basename) && basename !== "agentera.md") || !regularFileIdentity(item.source)) {
         item.status = "noop";
         item.message = `legacy agent already absent at ${item.source}`;
         continue;

@@ -44,11 +44,11 @@ function crashAt(project: string, point: string): Promise<number | null> {
     });
     let stderr = "";
     child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
     child.on("error", reject);
-    child.on("exit", (code, signal) => fs.existsSync(path.join(project, `.lock-crash-${point}`))
-      ? resolve(86)
-      : reject(new Error(`crash worker exited ${code} (${signal ?? "no signal"}): ${stderr}`)));
+    child.on("exit", (code, signal) => (fs.existsSync(path.join(project, `.lock-crash-${point}`)) ? resolve(86) : reject(new Error(`crash worker exited ${code} (${signal ?? "no signal"}): ${stderr}`))));
   });
 }
 
@@ -65,11 +65,11 @@ function removableLivePreparation(project: string, readyPath: string, removePath
     });
     let stderr = "";
     child.stderr.setEncoding("utf8");
-    child.stderr.on("data", (chunk) => { stderr += chunk; });
+    child.stderr.on("data", (chunk) => {
+      stderr += chunk;
+    });
     child.on("error", reject);
-    child.on("exit", (code) => code === 0
-      ? resolve()
-      : reject(new Error(`live preparation worker exited ${code}: ${stderr}`)));
+    child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`live preparation worker exited ${code}: ${stderr}`))));
   });
 }
 
@@ -174,11 +174,14 @@ describe("project writer lock", () => {
       if (!replaced && String(args[0]).endsWith("/.reclaim.json")) {
         replaced = true;
         fs.unlinkSync(ownerPath);
-        fs.writeFileSync(ownerPath, `${JSON.stringify({
-          pid: process.pid,
-          token: "malformed-successor",
-          created_at: new Date().toISOString(),
-        })}\n`);
+        fs.writeFileSync(
+          ownerPath,
+          `${JSON.stringify({
+            pid: process.pid,
+            token: "malformed-successor",
+            created_at: new Date().toISOString(),
+          })}\n`,
+        );
       }
       return result;
     }) as typeof fs.openSync);
@@ -189,7 +192,9 @@ describe("project writer lock", () => {
       open.mockRestore();
     }
     expect(replaced).toBe(true);
-    expect(JSON.parse(fs.readFileSync(ownerPath, "utf8"))).toMatchObject({ token: "malformed-successor" });
+    expect(JSON.parse(fs.readFileSync(ownerPath, "utf8"))).toMatchObject({
+      token: "malformed-successor",
+    });
   });
 
   it("does not reclaim a successor that replaced the stale instance it inspected", () => {
@@ -345,9 +350,7 @@ describe("project writer lock", () => {
       write.mockRestore();
     }
     const agenteraDirectory = path.join(project, ".agentera");
-    expect(fs.existsSync(agenteraDirectory)
-      ? fs.readdirSync(agenteraDirectory).filter((name) => name.startsWith(".writer."))
-      : []).toEqual([]);
+    expect(fs.existsSync(agenteraDirectory) ? fs.readdirSync(agenteraDirectory).filter((name) => name.startsWith(".writer.")) : []).toEqual([]);
   });
 
   it("times out on paused owner initialization without deleting private state", async () => {
@@ -359,8 +362,7 @@ describe("project writer lock", () => {
 
     try {
       expect(() => acquireWriterLock(project, 75)).toThrow(/writer lock timeout.*retry/i);
-      const privateName = fs.readdirSync(path.join(project, ".agentera"))
-        .find((name) => name.startsWith(".writer.") && name.endsWith(".tmp"));
+      const privateName = fs.readdirSync(path.join(project, ".agentera")).find((name) => name.startsWith(".writer.") && name.endsWith(".tmp"));
       expect(privateName).toBeDefined();
       expect(fs.readdirSync(path.join(project, ".agentera", privateName!))).toEqual([".owner.json.tmp"]);
     } finally {
@@ -412,14 +414,7 @@ describe("project writer lock", () => {
   });
 
   it("recovers in a fresh process after every stale-claim transition crash", async () => {
-    for (const point of [
-      "private-created",
-      "claim-created",
-      "claim-published",
-      "owner-transitioned",
-      "private-removed",
-      "claim-removed",
-    ]) {
+    for (const point of ["private-created", "claim-created", "claim-published", "owner-transitioned", "private-removed", "claim-removed"]) {
       const project = root();
       const lockPath = seedLock(project, {
         pid: 999_999_999,
@@ -451,10 +446,7 @@ describe("project writer lock", () => {
     const preparedPath = privateDirectory(project, privateToken);
     fs.mkdirSync(preparedPath);
     fs.linkSync(path.join(lockPath, "owner.json"), path.join(preparedPath, "owner.json"));
-    fs.linkSync(
-      path.join(lockPath, "owner.json"),
-      path.join(lockPath, ".writer.77777777-7777-4777-8777-777777777777.claim"),
-    );
+    fs.linkSync(path.join(lockPath, "owner.json"), path.join(lockPath, ".writer.77777777-7777-4777-8777-777777777777.claim"));
 
     const lock = acquireWriterLock(project, 500);
     expect(fs.existsSync(preparedPath)).toBe(false);
@@ -542,11 +534,14 @@ describe("project writer lock", () => {
     const residue = privateDirectory(project, token);
     fs.mkdirSync(residue, { recursive: true });
     const ownerPath = path.join(residue, "owner.json");
-    fs.writeFileSync(ownerPath, `${JSON.stringify({
-      pid: 999_999_999,
-      token,
-      created_at: "2020-01-01T00:00:00Z",
-    })}\n`);
+    fs.writeFileSync(
+      ownerPath,
+      `${JSON.stringify({
+        pid: 999_999_999,
+        token,
+        created_at: "2020-01-01T00:00:00Z",
+      })}\n`,
+    );
 
     expectPrivateResidueFailure(project);
     expect(fs.existsSync(residue)).toBe(true);
@@ -617,9 +612,7 @@ describe("project writer lock", () => {
     fs.writeFileSync(lockPath, contents);
     fs.symlinkSync(outside, path.join(project, ".agentera"), "dir");
 
-    expect(() => acquireWriterLock(project, 100)).toThrow(
-      /writer lock.*escapes the project boundary/,
-    );
+    expect(() => acquireWriterLock(project, 100)).toThrow(/writer lock.*escapes the project boundary/);
     expect(fs.readFileSync(lockPath, "utf8")).toBe(contents);
   });
 });

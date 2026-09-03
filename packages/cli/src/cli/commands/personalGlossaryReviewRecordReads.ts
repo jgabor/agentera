@@ -1,9 +1,4 @@
-import {
-  currentPersonalGlossaryReviewRecords,
-  personalGlossaryReviewRecordsPath,
-  readPersonalGlossaryReviewRecords,
-  type PersonalGlossaryReviewReadRecord,
-} from "../../analytics/personalGlossaryReviewRecords.js";
+import { currentPersonalGlossaryReviewRecords, personalGlossaryReviewRecordsPath, readPersonalGlossaryReviewRecords, type PersonalGlossaryReviewReadRecord } from "../../analytics/personalGlossaryReviewRecords.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { shellQuoteArgument } from "../../core/shell.js";
 import { canonicalGlossaryJson, compareGlossaryUnicodeStrings } from "../../registries/glossaryTermIdentity.js";
@@ -115,40 +110,34 @@ function listFlags(options: ListOptions): string {
 function currentRecords(io: Io, value: ReviewRecordsReadContract, operation: "list" | "get") {
   const result = currentPersonalGlossaryReviewRecords();
   if (result.status === "current") return result;
-  return failure(
-    io,
-    value.retrievalSchemaVersion,
-    `${value.command} ${operation}`,
-    operation === "list" ? listSyntax(value) : exactSyntax(value),
-    operation === "list" ? `${value.command} list --limit ${value.defaultLimit}` : exactSyntax(value),
-    {
-      class: result.status === "projection_unavailable" ? "current_binding_mismatch" : "review_records_unavailable",
-      message: result.status === "projection_unavailable"
-        ? "current review metadata cannot bind the current candidate projection"
-        : "the private current-user review records are unavailable or invalid",
-      recovery: result.status === "projection_unavailable"
-        ? "Create or repair the current candidate projection, then retry; no review metadata was changed."
-        : "Create or repair the private current-user review records, then retry; no review metadata was changed.",
-    },
-  );
+  return failure(io, value.retrievalSchemaVersion, `${value.command} ${operation}`, operation === "list" ? listSyntax(value) : exactSyntax(value), operation === "list" ? `${value.command} list --limit ${value.defaultLimit}` : exactSyntax(value), {
+    class: result.status === "projection_unavailable" ? "current_binding_mismatch" : "review_records_unavailable",
+    message: result.status === "projection_unavailable" ? "current review metadata cannot bind the current candidate projection" : "the private current-user review records are unavailable or invalid",
+    recovery: result.status === "projection_unavailable" ? "Create or repair the current candidate projection, then retry; no review metadata was changed." : "Create or repair the private current-user review records, then retry; no review metadata was changed.",
+  });
 }
 
 /** Emit the bounded read-only list view for private review records. */
-export function listPersonalGlossaryReviewRecords(
-  io: Io,
-  options: ListOptions,
-  value: ReviewRecordsReadContract,
-): number {
+export function listPersonalGlossaryReviewRecords(io: Io, options: ListOptions, value: ReviewRecordsReadContract): number {
   const view = currentRecords(io, value, "list");
   if (typeof view === "number") return view;
   const selectedFilters = filters(options);
   const records = view.records.filter((record) => !options.status || record.status === options.status).sort(reviewOrder);
-  const snapshotId = projectedListSnapshot({ schemaVersion: value.retrievalSchemaVersion, command: `${value.command} list`, collection: COLLECTION, owner: value.owner, filters: selectedFilters as JsonObject, order: value.order, records: records.map((record) => record.record_sha256) });
+  const snapshotId = projectedListSnapshot({
+    schemaVersion: value.retrievalSchemaVersion,
+    command: `${value.command} list`,
+    collection: COLLECTION,
+    owner: value.owner,
+    filters: selectedFilters as JsonObject,
+    order: value.order,
+    records: records.map((record) => record.record_sha256),
+  });
   let start = 0;
   if (options.cursor) {
     let cursor: Mapping;
-    try { cursor = decodeListCursor(options.cursor, personalGlossaryReviewRecordsPath(), glossaryEntryAuthorityPath()); }
-    catch {
+    try {
+      cursor = decodeListCursor(options.cursor, personalGlossaryReviewRecordsPath(), glossaryEntryAuthorityPath());
+    } catch {
       return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
         class: "cursor_invalid",
         message: "review-list cursor is malformed or belongs to another local profile",
@@ -181,19 +170,50 @@ export function listPersonalGlossaryReviewRecords(
   }
   const entries = records.slice(start, start + options.limit);
   const remaining = records.length - start - entries.length;
-  const nextCursor = remaining > 0 && entries.length > 0
-    ? encodeListCursor({ version: CURSOR_VERSION, collection: COLLECTION, owner: value.owner, filters: selectedFilters as JsonObject, limit: options.limit, order: value.order, snapshot_id: snapshotId, after: entries.at(-1)!.review_id }, personalGlossaryReviewRecordsPath(), glossaryEntryAuthorityPath())
-    : undefined;
+  const nextCursor =
+    remaining > 0 && entries.length > 0
+      ? encodeListCursor(
+          {
+            version: CURSOR_VERSION,
+            collection: COLLECTION,
+            owner: value.owner,
+            filters: selectedFilters as JsonObject,
+            limit: options.limit,
+            order: value.order,
+            snapshot_id: snapshotId,
+            after: entries.at(-1)!.review_id,
+          },
+          personalGlossaryReviewRecordsPath(),
+          glossaryEntryAuthorityPath(),
+        )
+      : undefined;
   const response: Mapping = {
     schemaVersion: value.retrievalSchemaVersion,
     command: `${value.command} list`,
     status: view.expired_records > 0 || view.stale_records > 0 ? "degraded" : "ok",
     owner: value.owner,
     entries: entries.map(reviewSummary),
-    counts: { total: records.length, candidate: records.length, returned: entries.length, remaining, omitted: remaining, continuation: remaining },
+    counts: {
+      total: records.length,
+      candidate: records.length,
+      returned: entries.length,
+      remaining,
+      omitted: remaining,
+      continuation: remaining,
+    },
     filters: selectedFilters,
-    snapshot: { id: snapshotId, first_page: !options.cursor, order: value.order, has_more: remaining > 0, candidate_count: records.length },
-    retention: { expired_records: view.expired_records, stale_records: view.stale_records, mutation: "forbidden" },
+    snapshot: {
+      id: snapshotId,
+      first_page: !options.cursor,
+      order: value.order,
+      has_more: remaining > 0,
+      candidate_count: records.length,
+    },
+    retention: {
+      expired_records: view.expired_records,
+      stale_records: view.stale_records,
+      mutation: "forbidden",
+    },
     source: { kind: "user_local_review_records", owner: value.owner },
     source_contract: {
       authority: "references/artifacts/glossary-entry-contract.yaml",
@@ -205,9 +225,20 @@ export function listPersonalGlossaryReviewRecords(
     },
     retrieval: {
       get: `${value.command} get --review-id ID --candidate-id ID --candidate-revision REVISION --generation GENERATION --policy-version POLICY`,
-      ...(nextCursor ? { continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor}` } : {}),
+      ...(nextCursor
+        ? {
+            continue: `${value.command} list${listFlags(options)} --limit ${options.limit} --cursor ${nextCursor}`,
+          }
+        : {}),
     },
-    ...(remaining > 0 ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: nextCursor } : {}),
+    ...(remaining > 0
+      ? {
+          omitted: true,
+          omitted_count: remaining,
+          omission_reason: "page_limit",
+          next_cursor: nextCursor,
+        }
+      : {}),
   };
   if (serializedBytes(response) > value.listMaxSerializedUtf8Bytes) {
     return failure(io, value.retrievalSchemaVersion, `${value.command} list`, listSyntax(value), `${value.command} list --limit ${value.defaultLimit}`, {
@@ -221,11 +252,7 @@ export function listPersonalGlossaryReviewRecords(
 }
 
 /** Emit one bounded exact read after rechecking the current projection binding. */
-export function getPersonalGlossaryReviewRecord(
-  io: Io,
-  options: ExactOptions,
-  value: ReviewRecordsReadContract,
-): number {
+export function getPersonalGlossaryReviewRecord(io: Io, options: ExactOptions, value: ReviewRecordsReadContract): number {
   const view = currentRecords(io, value, "get");
   if (typeof view === "number") return view;
   const raw = readPersonalGlossaryReviewRecords().store?.records.find((record) => record.review_id === options.reviewId);

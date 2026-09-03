@@ -28,14 +28,7 @@ export function wordCount(text: string): number {
   return (text.match(/\S+/g) ?? []).length;
 }
 
-const SKIP_META = new Set([
-  "meta",
-  "GROUP_PREFIXES",
-  "BUDGET",
-  "COMPACTION",
-  "VALIDATION",
-  "CONVENTION",
-]);
+const SKIP_META = new Set(["meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "CONVENTION"]);
 const LIST_INDICATORS = new Set(["number", "entry", "summary"]);
 const SEQUENCE_KEYS_BY_ARTIFACT: Record<string, Record<string, string>> = {
   decisions: { DECISION: "decisions", ARCHIVE: "archive" },
@@ -47,9 +40,7 @@ const SEQUENCE_KEYS_BY_ARTIFACT: Record<string, Record<string, string>> = {
   session: { BOOKMARK: "bookmarks" },
   vision: { PERSONA: "personas", PRINCIPLE: "principles" },
 };
-const NESTED_SEQUENCE_KEYS: Array<[[string, string], string]> = [
-  [["DECISION", "ALTERNATIVE"], "alternatives"],
-];
+const NESTED_SEQUENCE_KEYS: Array<[[string, string], string]> = [[["DECISION", "ALTERNATIVE"], "alternatives"]];
 const SEQUENCE_ORDER_BY_ARTIFACT: Record<string, string> = { "progress\0cycles": "descending" };
 
 export function collectSingletonGroups(schema: JsonObject): Array<[string, string, string[]]> {
@@ -89,13 +80,7 @@ export function* iterGroupEntries(schema: JsonObject, group: string): Generator<
   }
 }
 
-export function validateField(
-  violations: string[],
-  name: string,
-  scope: JsonObject,
-  field: string,
-  p: string,
-): void {
+export function validateField(violations: string[], name: string, scope: JsonObject, field: string, p: string): void {
   const fullPath = p ? `${p}.${field}` : field;
   if (!(field in scope)) {
     violations.push(`${name}: missing required field '${fullPath}'`);
@@ -117,31 +102,17 @@ export function allowedValues(entry: JsonObject): string[] {
   return [];
 }
 
-export function validateAllowedValue(
-  violations: string[],
-  name: string,
-  scope: JsonObject,
-  entry: JsonObject,
-  p: string,
-): void {
+export function validateAllowedValue(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): void {
   const field = String(entry.field);
   const allowed = allowedValues(entry);
   if (!field || allowed.length === 0 || !(field in scope) || isEmptyRequired(scope[field])) return;
   const value = scope[field];
   if (typeof value === "string" && !allowed.includes(value)) {
-    violations.push(
-      `${name}: invalid value '${value}' for '${p}.${field}' (expected one of: ${allowed.join(", ")})`,
-    );
+    violations.push(`${name}: invalid value '${value}' for '${p}.${field}' (expected one of: ${allowed.join(", ")})`);
   }
 }
 
-export function validateFieldType(
-  violations: string[],
-  name: string,
-  scope: JsonObject,
-  entry: JsonObject,
-  p: string,
-): boolean {
+export function validateFieldType(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): boolean {
   const field = String(entry.field);
   if (!field || !(field in scope)) return true;
   const value = scope[field];
@@ -170,8 +141,7 @@ export function validateFieldType(
       isValid = false;
     }
   } else if (expectedType === "list[integer|string]") {
-    if (!Array.isArray(value) || !value.every((x) =>
-      typeof x === "string" || (typeof x === "number" && Number.isInteger(x)))) {
+    if (!Array.isArray(value) || !value.every((x) => typeof x === "string" || (typeof x === "number" && Number.isInteger(x)))) {
       violations.push(`${name}: '${fullPath}' must be a list of integers or strings`);
       isValid = false;
     }
@@ -184,13 +154,7 @@ export function validateFieldType(
   return isValid;
 }
 
-export function validateFieldConstraints(
-  violations: string[],
-  name: string,
-  scope: JsonObject,
-  entry: JsonObject,
-  p: string,
-): void {
+export function validateFieldConstraints(violations: string[], name: string, scope: JsonObject, entry: JsonObject, p: string): void {
   const field = String(entry.field);
   if (!field || !(field in scope)) return;
   const value = scope[field];
@@ -198,11 +162,7 @@ export function validateFieldConstraints(
   for (const rule of (entry.validation as string[]) ?? []) {
     if (typeof rule !== "string") continue;
     if (rule === "Must be a positive integer") {
-      if (
-        typeof value === "boolean" ||
-        !(typeof value === "number" && Number.isInteger(value)) ||
-        value <= 0
-      ) {
+      if (typeof value === "boolean" || !(typeof value === "number" && Number.isInteger(value)) || value <= 0) {
         const fullPath = p ? `${p}.${field}` : field;
         violations.push(`${name}: '${fullPath}' must be a positive integer`);
       }
@@ -210,14 +170,7 @@ export function validateFieldConstraints(
   }
 }
 
-export function validateRequiredFields(
-  violations: string[],
-  name: string,
-  schema: JsonObject,
-  group: string,
-  scope: JsonObject,
-  p: string,
-): void {
+export function validateRequiredFields(violations: string[], name: string, schema: JsonObject, group: string, scope: JsonObject, p: string): void {
   for (const entry of iterGroupEntries(schema, group)) {
     const field = String(entry.field);
     if (entry.parent || field === "entry") continue;
@@ -248,14 +201,7 @@ export function validateRequiredFields(
   }
 }
 
-export function validateSingletonGroup(
-  violations: string[],
-  name: string,
-  schema: JsonObject,
-  group: string,
-  scope: JsonObject,
-  p: string,
-): void {
+export function validateSingletonGroup(violations: string[], name: string, schema: JsonObject, group: string, scope: JsonObject, p: string): void {
   for (const entry of iterGroupEntries(schema, group)) {
     const field = String(entry.field);
     if (entry.parent || field === "entry") continue;
@@ -277,13 +223,7 @@ export function schemaFieldNames(schema: JsonObject, group: string): Set<string>
   return out;
 }
 
-export function validateUnknownFields(
-  violations: string[],
-  name: string,
-  scope: JsonObject,
-  allowed: Set<string>,
-  p: string,
-): void {
+export function validateUnknownFields(violations: string[], name: string, scope: JsonObject, allowed: Set<string>, p: string): void {
   for (const field of Object.keys(scope)) {
     if (!allowed.has(field)) {
       const fullPath = p ? `${p}.${field}` : field;
@@ -292,18 +232,10 @@ export function validateUnknownFields(
   }
 }
 
-export function validatePlanKnownFields(
-  data: JsonObject,
-  schema: JsonObject,
-  violations: string[],
-): void {
+export function validatePlanKnownFields(data: JsonObject, schema: JsonObject, violations: string[]): void {
   const groupedScopes: Record<string, string> = { header: "HEADER", scope: "SCOPE" };
   const sequenceKeys = new Set(Object.values(SEQUENCE_KEYS_BY_ARTIFACT.plan ?? {}));
-  const allowedTopLevel = new Set<string>([
-    ...schemaFieldNames(schema, "PLAN"),
-    ...Object.keys(groupedScopes),
-    ...sequenceKeys,
-  ]);
+  const allowedTopLevel = new Set<string>([...schemaFieldNames(schema, "PLAN"), ...Object.keys(groupedScopes), ...sequenceKeys]);
   validateUnknownFields(violations, "plan", data, allowedTopLevel, "");
   for (const [key, group] of Object.entries(groupedScopes)) {
     const scope = data[key];
@@ -326,21 +258,14 @@ export function validateFullPlanContract(data: JsonObject, violations: string[])
   }
   const criticIssues = header.critic_issues;
   if (!isEmptyRequired(criticIssues)) {
-    const match = /^\s*(\d+)\s+found,\s*(\d+)\s+addressed,\s*(\d+)\s+dismissed\s*$/.exec(
-      String(criticIssues),
-    );
+    const match = /^\s*(\d+)\s+found,\s*(\d+)\s+addressed,\s*(\d+)\s+dismissed\s*$/.exec(String(criticIssues));
     if (!match) {
       violations.push("plan: header.critic_issues must match 'N found, M addressed, K dismissed'");
     } else {
-      const [found, addressed, dismissed] = [match[1], match[2], match[3]].map((v) =>
-        parseInt(v, 10),
-      );
-      if (found < 1)
-        violations.push("plan: header.critic_issues must record at least 1 found issue");
+      const [found, addressed, dismissed] = [match[1], match[2], match[3]].map((v) => parseInt(v, 10));
+      if (found < 1) violations.push("plan: header.critic_issues must record at least 1 found issue");
       if (addressed + dismissed !== found) {
-        violations.push(
-          "plan: header.critic_issues counts must satisfy addressed + dismissed == found",
-        );
+        violations.push("plan: header.critic_issues counts must satisfy addressed + dismissed == found");
       }
     }
   }
@@ -358,23 +283,14 @@ export function entryMinCount(schema: JsonObject, group: string): number | null 
   return null;
 }
 
-export function parentRequirements(
-  schema: JsonObject,
-  parentGroup: string,
-): Record<string, string[]> {
+export function parentRequirements(schema: JsonObject, parentGroup: string): Record<string, string[]> {
   const requirements: Record<string, string[]> = {};
   const prefix = `${parentGroup}.`;
   for (const group of Object.keys(schema)) {
     if (SKIP_META.has(group)) continue;
     for (const entry of iterGroupEntries(schema, group)) {
       const parent = entry.parent;
-      if (
-        typeof parent === "string" &&
-        parent.startsWith(prefix) &&
-        parent !== `${group}.entry` &&
-        entry.required &&
-        entry.field
-      ) {
+      if (typeof parent === "string" && parent.startsWith(prefix) && parent !== `${group}.entry` && entry.required && entry.field) {
         const parentField = parent.slice(prefix.length);
         const fields = requirements[parentField] ?? [];
         fields.push(String(entry.field));
@@ -394,12 +310,7 @@ export function entryRequirements(schema: JsonObject, group: string): string[] {
   return out;
 }
 
-export function validateSequences(
-  data: JsonObject,
-  schema: JsonObject,
-  name: string,
-  violations: string[],
-): void {
+export function validateSequences(data: JsonObject, schema: JsonObject, name: string, violations: string[]): void {
   for (const [group, key] of Object.entries(SEQUENCE_KEYS_BY_ARTIFACT[name] ?? {})) {
     const seq = data[key];
     if (seq === null || seq === undefined) continue;
@@ -467,9 +378,7 @@ export function validatePlanDependencies(data: JsonObject, violations: string[])
       const dependencyRef = String(dependency);
       const target = byRef.get(dependencyRef);
       if (target === undefined) {
-        violations.push(
-          `plan: 'tasks[${index}].depends_on' references unknown task '${dependencyRef}' (PV4)`,
-        );
+        violations.push(`plan: 'tasks[${index}].depends_on' references unknown task '${dependencyRef}' (PV4)`);
       } else {
         edges[index].push(target);
       }
@@ -485,9 +394,7 @@ export function validatePlanDependencies(data: JsonObject, violations: string[])
       if (state[target] === 0 && visit(target)) return true;
       if (state[target] === 1) {
         const cycleStart = stack.indexOf(target);
-        const cycle = [...stack.slice(cycleStart), target]
-          .map((taskIndex) => String(tasks[taskIndex]?.number ?? taskIndex + 1))
-          .join(" -> ");
+        const cycle = [...stack.slice(cycleStart), target].map((taskIndex) => String(tasks[taskIndex]?.number ?? taskIndex + 1)).join(" -> ");
         violations.push(`plan: circular dependency chain ${cycle} (PV4)`);
         return true;
       }
@@ -510,9 +417,7 @@ export function validateDecisionAlternatives(data: JsonObject, name: string): st
     if (!Array.isArray(alternatives)) return;
     const chosen = alternatives.filter((alt) => isMapping(alt) && alt.status === "chosen");
     if (chosen.length !== 1) {
-      violations.push(
-        `${name}: 'decisions[${index}].alternatives' must have exactly one chosen entry`,
-      );
+      violations.push(`${name}: 'decisions[${index}].alternatives' must have exactly one chosen entry`);
     }
   });
   return violations;
@@ -521,16 +426,7 @@ export function validateDecisionAlternatives(data: JsonObject, name: string): st
 export function validateDecisionSatisfaction(data: JsonObject, name: string): string[] {
   const violations: string[] = [];
   const allowedStates = new Set(["open", "provisionally_satisfied", "user_confirmed_satisfied"]);
-  const entries: Array<[string, unknown]> = [
-    ...((data.decisions as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [
-      `decisions[${i}]`,
-      d,
-    ]),
-    ...((data.archive as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [
-      `archive[${i}]`,
-      d,
-    ]),
-  ];
+  const entries: Array<[string, unknown]> = [...((data.decisions as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [`decisions[${i}]`, d]), ...((data.archive as unknown[]) ?? []).map((d: unknown, i: number): [string, unknown] => [`archive[${i}]`, d])];
   for (const [entryPath, decision] of entries) {
     if (!isMapping(decision) || !("satisfaction" in decision)) continue;
     const p = `${entryPath}.satisfaction`;
@@ -539,22 +435,14 @@ export function validateDecisionSatisfaction(data: JsonObject, name: string): st
       violations.push(`${name}: '${p}' must be a mapping`);
       continue;
     }
-    validateUnknownFields(
-      violations,
-      name,
-      satisfaction,
-      new Set(["state", "evidence", "user_confirmation"]),
-      p,
-    );
+    validateUnknownFields(violations, name, satisfaction, new Set(["state", "evidence", "user_confirmation"]), p);
     const state = satisfaction.state;
     if (typeof state !== "string" || !state.trim()) {
       violations.push(`${name}: missing required field '${p}.state'`);
       continue;
     }
     if (!allowedStates.has(state)) {
-      violations.push(
-        `${name}: invalid value '${state}' for '${p}.state' (expected one of: open, provisionally_satisfied, user_confirmed_satisfied)`,
-      );
+      violations.push(`${name}: invalid value '${state}' for '${p}.state' (expected one of: open, provisionally_satisfied, user_confirmed_satisfied)`);
       continue;
     }
     if (state === "provisionally_satisfied" && isEmptyRequired(satisfaction.evidence)) {
@@ -563,15 +451,11 @@ export function validateDecisionSatisfaction(data: JsonObject, name: string): st
     if (state === "user_confirmed_satisfied") {
       const confirmation = satisfaction.user_confirmation;
       if (confirmation === null || confirmation === undefined) {
-        violations.push(
-          `${name}: '${p}.user_confirmation' is required for user_confirmed_satisfied`,
-        );
+        violations.push(`${name}: '${p}.user_confirmation' is required for user_confirmed_satisfied`);
         continue;
       }
       if (!isMapping(confirmation)) {
-        violations.push(
-          `${name}: '${p}.user_confirmation' must be a mapping with confirmed_by and confirmed_at, got ${pyTypeName(confirmation)}`,
-        );
+        violations.push(`${name}: '${p}.user_confirmation' must be a mapping with confirmed_by and confirmed_at, got ${pyTypeName(confirmation)}`);
         continue;
       }
       for (const field of ["confirmed_by", "confirmed_at"]) {

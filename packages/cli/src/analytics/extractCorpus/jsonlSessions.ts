@@ -2,24 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { resolvePath } from "../../core/paths.js";
-import {
-  claudeContentItems,
-  authorClassForRole,
-  eventKind,
-  eventTimestamp,
-  inspectTransportProvenance,
-  isPlainObject,
-  isoFromMtime,
-  iterJsonl,
-  payloadItem,
-  record,
-  rglob,
-  signalType,
-  textFromContent,
-  transportProvenance,
-  toolCallRecord,
-  toolCallRecordFromItem,
-} from "./core.js";
+import { claudeContentItems, authorClassForRole, eventKind, eventTimestamp, inspectTransportProvenance, isPlainObject, isoFromMtime, iterJsonl, payloadItem, record, rglob, signalType, textFromContent, transportProvenance, toolCallRecord, toolCallRecordFromItem } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { InspectedTransportProvenance, TransportProvenance } from "./core.js";
 
@@ -29,10 +12,7 @@ function pathStem(p: string): string {
   return ext ? base.slice(0, -ext.length) : base;
 }
 
-function updateSessionProvenance(
-  current: TransportProvenance,
-  update: InspectedTransportProvenance,
-): TransportProvenance {
+function updateSessionProvenance(current: TransportProvenance, update: InspectedTransportProvenance): TransportProvenance {
   if (update.originState === "invalid") return current;
   const originId = update.originState === "valid" ? update.originId : current.originId;
   const originChanged = update.originState === "valid" && originId !== current.originId;
@@ -48,20 +28,12 @@ function updateSessionProvenance(
   return { originId, authorClass: current.authorClass };
 }
 
-function codexMessageProvenance(
-  role: string,
-  message: InspectedTransportProvenance,
-  session: TransportProvenance,
-): TransportProvenance {
+function codexMessageProvenance(role: string, message: InspectedTransportProvenance, session: TransportProvenance): TransportProvenance {
   const originId = message.originState === "valid" ? message.originId : session.originId;
   if (message.originState === "invalid" || message.authorState === "invalid") {
     return { originId, authorClass: null };
   }
-  const explicitAuthorClass = message.authorState === "valid"
-    ? message.authorClass
-    : originId !== null && originId === session.originId
-      ? session.authorClass
-      : null;
+  const explicitAuthorClass = message.authorState === "valid" ? message.authorClass : originId !== null && originId === session.originId ? session.authorClass : null;
   return {
     originId,
     authorClass: authorClassForRole(role, explicitAuthorClass, originId),
@@ -85,10 +57,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       if (kind === "session_meta") {
         const sid = payload.id || event.id;
         if (typeof sid === "string" && sid) sessionId = sid;
-        sessionProvenance = updateSessionProvenance(
-          sessionProvenance,
-          inspectTransportProvenance(event, payload),
-        );
+        sessionProvenance = updateSessionProvenance(sessionProvenance, inspectTransportProvenance(event, payload));
         const cwd = payload.cwd || payload.working_directory;
         if (typeof cwd === "string" && cwd) projectPath = cwd;
         continue;
@@ -98,7 +67,15 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
         if (typeof cwd === "string" && cwd) projectPath = cwd;
         continue;
       }
-      const toolRecord = toolCallRecord({ event, fallbackTimestamp, projectPath, runtime: "codex", sourcePath: p, index, sessionId });
+      const toolRecord = toolCallRecord({
+        event,
+        fallbackTimestamp,
+        projectPath,
+        runtime: "codex",
+        sourcePath: p,
+        index,
+        sessionId,
+      });
       if (toolRecord !== null) {
         records.push(toolRecord);
         continue;
@@ -114,11 +91,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       const content = textFromContent(item.content || item.text || item.message);
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
-      const transport = codexMessageProvenance(
-        role,
-        inspectTransportProvenance(event, item),
-        sessionProvenance,
-      );
+      const transport = codexMessageProvenance(role, inspectTransportProvenance(event, item), sessionProvenance);
       const data: JsonObject = { actor: role, content };
       if (role === "user") {
         if (previousAssistant) data.preceding_context = previousAssistant.slice(-2000);
@@ -238,19 +211,19 @@ export function extractClaudeProjectSessions(projectsDir: string | null, errors:
       }
       records.push(
         record({
-           sourceKind: "conversation_turn",
-           timestamp,
-           projectPath,
-           runtime: null,
-           sourceClass: "historical_import",
-           sourceProduct: "claude-code",
-           activeRuntime: false,
-           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
-           sessionId,
-           originId,
-           authorClass,
-           content,
-           data,
+          sourceKind: "conversation_turn",
+          timestamp,
+          projectPath,
+          runtime: null,
+          sourceClass: "historical_import",
+          sourceProduct: "claude-code",
+          activeRuntime: false,
+          sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
+          sessionId,
+          originId,
+          authorClass,
+          content,
+          data,
         }),
       );
       if (role === "user") {

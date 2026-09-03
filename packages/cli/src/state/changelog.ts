@@ -1,11 +1,7 @@
 import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
-import {
-  docsPathOverridesFromBytes,
-  loadArtifactRecord,
-  resolveArtifactPath,
-} from "../registries/artifactRegistry.js";
+import { docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { ARTIFACT_PROTOCOL_PATHS } from "../registries/artifactProtocolIds.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
@@ -49,7 +45,10 @@ const RECOVERY: JsonObject = {
 
 /** Classify release-level headings without depending on paths, line endings, or project state. */
 export function scanChangelogHeadings(text: string): ChangelogHeadingScan {
-  const h2 = text.split(/\r\n|\r|\n/).filter((line) => line.startsWith("## ")).map((line) => line.trim());
+  const h2 = text
+    .split(/\r\n|\r|\n/)
+    .filter((line) => line.startsWith("## "))
+    .map((line) => line.trim());
   const boundedH2 = h2.filter((heading) => Buffer.byteLength(heading, "utf8") <= CHANGELOG_MAX_HEADING_BYTES);
   const identityBoundExceeded = boundedH2.length !== h2.length;
   const unreleased = boundedH2.filter((heading) => UNRELEASED_RE.test(heading));
@@ -63,16 +62,11 @@ export function scanChangelogHeadings(text: string): ChangelogHeadingScan {
   }
   const releaseVersions = releases.map(({ version }) => version);
   const duplicateRelease = new Set(releaseVersions).size !== releaseVersions.length;
-  const available = malformedCount === 0
-    && unreleased.length <= 1
-    && !duplicateRelease
-    && releases.length > 0;
+  const available = malformedCount === 0 && unreleased.length <= 1 && !duplicateRelease && releases.length > 0;
   const unreleasedHeading = unreleased.length === 1 ? unreleased[0]! : null;
   const latestReleaseHeading = releases[0]?.heading ?? null;
   const boundary = available ? (unreleasedHeading ?? latestReleaseHeading) : null;
-  const recognizedHeadings = available
-    ? [unreleasedHeading, latestReleaseHeading].filter((heading): heading is string => heading !== null)
-    : [];
+  const recognizedHeadings = available ? [unreleasedHeading, latestReleaseHeading].filter((heading): heading is string => heading !== null) : [];
   return {
     status: available ? "available" : "incomplete",
     recognizedHeadings,
@@ -113,9 +107,7 @@ function projectionResult(projection: JsonObject, recognizedReleaseVersions: str
   return fixedBoundFailure();
 }
 
-export function boundedChangelogUnavailable(
-  caveat = "CHANGELOG state is unavailable because its bounded identity projection exceeds the supported output limit.",
-): ChangelogReadResult {
+export function boundedChangelogUnavailable(caveat = "CHANGELOG state is unavailable because its bounded identity projection exceeds the supported output limit."): ChangelogReadResult {
   const projection: JsonObject = {
     schemaVersion: "agentera.changelogRead.v1",
     command: "changelog",
@@ -181,12 +173,7 @@ export function readChangelog(projectRootInput: string): ChangelogReadResult {
   }
 
   let overrides: Record<string, string> = {};
-  const docsSnapshot = readProjectFileSnapshot(
-    projectRoot,
-    ARTIFACT_PROTOCOL_PATHS.docs,
-    undefined,
-    CHANGELOG_DOCS_MAX_READ_BYTES,
-  );
+  const docsSnapshot = readProjectFileSnapshot(projectRoot, ARTIFACT_PROTOCOL_PATHS.docs, undefined, CHANGELOG_DOCS_MAX_READ_BYTES);
   if (docsSnapshot.kind === "unsafe") {
     return unavailable(null, "CHANGELOG state is unavailable because the configured docs path authority is unsafe, unreadable, or over its read limit.");
   }
@@ -208,7 +195,10 @@ export function readChangelog(projectRootInput: string): ChangelogReadResult {
   try {
     const record = loadArtifactRecord("changelog");
     if (!record) return unavailable(relativePath, "CHANGELOG state is unavailable because its artifact registry entry could not be resolved.");
-    const absolute = resolveArtifactPath(record, projectRoot.path, { docsPathOverrides: overrides, strictWrite: true });
+    const absolute = resolveArtifactPath(record, projectRoot.path, {
+      docsPathOverrides: overrides,
+      strictWrite: true,
+    });
     const resolvedRelative = relativeArtifactPath(projectRoot.path, absolute);
     if (resolvedRelative === null) return unavailable(relativePath, "CHANGELOG state is unavailable because its configured path is unsafe.");
     if (Buffer.byteLength(resolvedRelative, "utf8") > CHANGELOG_MAX_SOURCE_PATH_BYTES) return fixedBoundFailure();
@@ -222,9 +212,7 @@ export function readChangelog(projectRootInput: string): ChangelogReadResult {
     return unavailable(relativePath, "CHANGELOG state is unavailable because the configured artifact is missing.");
   }
   if (snapshot.kind === "unsafe") {
-    const caveat = snapshot.reason === "over_limit"
-      ? "CHANGELOG state is unavailable because the configured artifact exceeds the bounded read limit."
-      : "CHANGELOG state is unavailable because the configured artifact is not a safe readable regular file.";
+    const caveat = snapshot.reason === "over_limit" ? "CHANGELOG state is unavailable because the configured artifact exceeds the bounded read limit." : "CHANGELOG state is unavailable because the configured artifact is not a safe readable regular file.";
     return unavailable(relativePath, caveat);
   }
 
@@ -250,9 +238,7 @@ export function readChangelog(projectRootInput: string): ChangelogReadResult {
       boundary: scan.boundary,
       source: source(relativePath),
       source_provenance: provenance(),
-      caveats: incomplete
-        ? ["CHANGELOG headings are incomplete or ambiguous; use one optional Unreleased heading and distinct Keep a Changelog release headings only."]
-        : [],
+      caveats: incomplete ? ["CHANGELOG headings are incomplete or ambiguous; use one optional Unreleased heading and distinct Keep a Changelog release headings only."] : [],
       recovery: incomplete ? RECOVERY : null,
     },
     scan.recognizedReleaseVersions,

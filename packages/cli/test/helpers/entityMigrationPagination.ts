@@ -1,6 +1,9 @@
 import { previewEntityMigration, type EntityMigrationPreview } from "../../src/state/entityMigrationPreview.js";
 
-export function collectMigrationPreviewPages(projectRoot: string, sourceRoot: string): {
+export function collectMigrationPreviewPages(
+  projectRoot: string,
+  sourceRoot: string,
+): {
   identities: string[];
   pages: EntityMigrationPreview[];
 } {

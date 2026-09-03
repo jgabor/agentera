@@ -3,10 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { resolveCandidate } from "../state/installRoot.js";
-import {
-  isProductV1PackageVersion,
-  loadProductV1ResetAuthority,
-} from "../upgrade/productV1ResetAuthority.js";
+import { isProductV1PackageVersion, loadProductV1ResetAuthority } from "../upgrade/productV1ResetAuthority.js";
 import type { Io } from "./dispatch/shared.js";
 import { emitStructured } from "./structured.js";
 
@@ -29,9 +26,7 @@ function installedProductV1Evidence(): string | null {
 }
 
 export function productV1Evidence(projectRoot: string): string[] {
-  const evidence = authority.projectArtifacts
-    .filter(({ triggersReset, path: relativePath }) => triggersReset && fs.existsSync(path.join(projectRoot, relativePath)))
-    .map(({ path: relativePath }) => path.join(projectRoot, relativePath));
+  const evidence = authority.projectArtifacts.filter(({ triggersReset, path: relativePath }) => triggersReset && fs.existsSync(path.join(projectRoot, relativePath))).map(({ path: relativePath }) => path.join(projectRoot, relativePath));
   const installation = installedProductV1Evidence();
   if (installation) evidence.push(installation);
   return evidence;
@@ -46,11 +41,7 @@ export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io 
     class: "product_v1_eol",
     message: "Agentera product v1 is end-of-life and cannot be used by the v3 CLI.",
     evidence,
-    reset_workflow: [
-      "Run agentera upgrade --reset-product-v1 --dry-run.",
-      "Review every deletion, recreation, and irreversible loss in that preview.",
-      "Explicitly approve apply to remove scoped Agentera state and initialize fresh v3 state.",
-    ],
+    reset_workflow: ["Run agentera upgrade --reset-product-v1 --dry-run.", "Review every deletion, recreation, and irreversible loss in that preview.", "Explicitly approve apply to remove scoped Agentera state and initialize fresh v3 state."],
     recovery: "Preview the product-v1 reset, then apply with --yes and the preview authorization; this command did not change state.",
   };
   if (format === "json" || format === "yaml") {

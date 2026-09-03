@@ -11,12 +11,13 @@ export interface BootstrapSpec {
   readonly candidate?: string;
 }
 
-const spec = (
-  id: string,
-  states: readonly BootstrapProjectState[],
-  classification: BootstrapSpec["classification"],
-  candidate?: string,
-): BootstrapSpec => Object.freeze({ id, states: Object.freeze([...states]), classification, ...(candidate ? { candidate } : {}) });
+const spec = (id: string, states: readonly BootstrapProjectState[], classification: BootstrapSpec["classification"], candidate?: string): BootstrapSpec =>
+  Object.freeze({
+    id,
+    states: Object.freeze([...states]),
+    classification,
+    ...(candidate ? { candidate } : {}),
+  });
 
 export const BOOTSTRAP_ACCEPTED_SPECS = Object.freeze([
   spec("prime-quoted-lf", ["clean"], "accepted"),

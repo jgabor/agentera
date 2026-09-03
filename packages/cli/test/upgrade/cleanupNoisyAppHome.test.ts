@@ -5,15 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  applyCleanupPhase,
-  planCleanupPhase,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import {
-  assertChecksumsUnchanged,
-  checksumManifest,
-  listPreservedAppHomeRelPaths,
-} from "./helpers/preservation.js";
+import { applyCleanupPhase, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { assertChecksumsUnchanged, checksumManifest, listPreservedAppHomeRelPaths } from "./helpers/preservation.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
@@ -29,7 +22,6 @@ afterEach(() => {
 });
 
 describe("cleanupNoisyAppHome", () => {
-
   it("applies cleanup without force on realistic app-home user dirs", () => {
     const appHome = fs.cpSync(path.join(FIXTURES, "v2-app-home-realistic"), path.join(tmp, "realistic"), {
       recursive: true,
@@ -80,11 +72,9 @@ describe("cleanupNoisyAppHome", () => {
   });
 
   it("does not block v3 app home with managed content at root (skills, references, registry.json, dist)", () => {
-    const copied = fs.cpSync(
-      path.join(FIXTURES, "v3-app-home-managed-content"),
-      path.join(tmp, "v3-managed"),
-      { recursive: true },
-    );
+    const copied = fs.cpSync(path.join(FIXTURES, "v3-app-home-managed-content"), path.join(tmp, "v3-managed"), {
+      recursive: true,
+    });
     void copied;
     const appHome = path.join(tmp, "v3-managed");
     const before = checksumManifest(appHome, listPreservedAppHomeRelPaths(appHome));

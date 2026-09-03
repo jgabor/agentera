@@ -4,7 +4,7 @@ record:
   name: Select and prove the unified toolchain baseline
   depends_on:
     []
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN current supported runtimes and package policy WHEN versions are selected THEN one exact Vite+ and setup-vp pair has retained provenance and compatibility evidence.
     - GIVEN fresh and installed environments WHEN ownership is probed THEN bootstrap hands off to the exact root toolchain and stale global tooling cannot own project commands.
@@ -20,3 +20,6 @@ record:
       source: "Independent correction audit: criteria 2/3 pass; evidence audit pass; overall fail because no acceptable exact setup pair exists."
       recorded_at: 2026-09-03 19:45
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - gwedzsstko
+  superseded_reason: Replaced after the user explicitly accepted setup-vp installer fallback risk only in non-OIDC setup jobs; the replacement retained the same compatibility and install proofs.

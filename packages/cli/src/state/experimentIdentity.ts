@@ -11,7 +11,7 @@ export const LEGACY_OBJECTIVE_ID = /^legacy-objective:[0-9a-f]{64}$/;
 export const OBJECTIVE_ID = /^(objective:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-objective:[0-9a-f]{64})$/;
 
 function mapping(value: unknown): JsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
 function list(value: unknown): JsonObject[] {
@@ -84,22 +84,19 @@ interface InspectedObjective extends ObjectiveIdentity {
   root: "optimize" | "optimera";
 }
 
-export function discoverObjectiveArtifacts(
-  projectRoot: string,
-  sourceBytes?: ReadonlyMap<string, Buffer>,
-): ObjectiveArtifactDiscovery {
+export function discoverObjectiveArtifacts(projectRoot: string, sourceBytes?: ReadonlyMap<string, Buffer>): ObjectiveArtifactDiscovery {
   const inspected: InspectedObjective[] = [];
   const diagnostics: ObjectiveIdentityDiagnostic[] = [];
   for (const root of ["optimize", "optimera"] as const) {
     const directory = path.join(projectRoot, ".agentera", root);
     let sources: Array<{ slug: string; objectivePath: string; bytes?: Buffer }> = [];
     if (sourceBytes) {
-      sources = [...sourceBytes.entries()].flatMap(([objectivePath, bytes]) => {
-        const candidate = path.relative(directory, objectivePath).split(path.sep);
-        return candidate.length === 2 && candidate[1] === "objective.yaml"
-          ? [{ slug: candidate[0], objectivePath, bytes }]
-          : [];
-      }).sort((left, right) => left.slug.localeCompare(right.slug));
+      sources = [...sourceBytes.entries()]
+        .flatMap(([objectivePath, bytes]) => {
+          const candidate = path.relative(directory, objectivePath).split(path.sep);
+          return candidate.length === 2 && candidate[1] === "objective.yaml" ? [{ slug: candidate[0], objectivePath, bytes }] : [];
+        })
+        .sort((left, right) => left.slug.localeCompare(right.slug));
     } else {
       let slugs: string[] = [];
       try {
@@ -201,31 +198,33 @@ export function inspectExperimentIdentities(objectiveId: string, document: JsonO
     }
   }
   const caveats: string[] = [];
-  const entries = collections.flatMap(([collection, values]) => values.map((data, index): ExperimentIdentityEntry => {
-    const number = Number.isInteger(data.number) && Number(data.number) >= 0 ? Number(data.number) : null;
-    let compatibility: ExperimentCompatibility = "canonical";
-    const entryCaveats: string[] = [];
-    if (data.number === undefined || data.number === null) {
-      compatibility = "legacy_missing_identity";
-      entryCaveats.push(`legacy ${collection}[${index}] is missing experiment number and remains visible but unaddressable`);
-    } else if (number === null) {
-      compatibility = "legacy_invalid_identity";
-      entryCaveats.push(`legacy ${collection}[${index}] has invalid experiment number and remains visible but unaddressable`);
-    } else if ((counts.get(number) ?? 0) > 1) {
-      compatibility = "legacy_duplicate_identity";
-      entryCaveats.push(`duplicate experiment number ${number} remains visible but ambiguous and unaddressable`);
-    }
-    caveats.push(...entryCaveats);
-    return {
-      stableId: number === null ? null : `${objectiveId}/experiment:${number}`,
-      number,
-      addressable: compatibility === "canonical",
-      compatibility,
-      provenance: { collection, index },
-      data,
-      caveats: entryCaveats,
-    };
-  }));
+  const entries = collections.flatMap(([collection, values]) =>
+    values.map((data, index): ExperimentIdentityEntry => {
+      const number = Number.isInteger(data.number) && Number(data.number) >= 0 ? Number(data.number) : null;
+      let compatibility: ExperimentCompatibility = "canonical";
+      const entryCaveats: string[] = [];
+      if (data.number === undefined || data.number === null) {
+        compatibility = "legacy_missing_identity";
+        entryCaveats.push(`legacy ${collection}[${index}] is missing experiment number and remains visible but unaddressable`);
+      } else if (number === null) {
+        compatibility = "legacy_invalid_identity";
+        entryCaveats.push(`legacy ${collection}[${index}] has invalid experiment number and remains visible but unaddressable`);
+      } else if ((counts.get(number) ?? 0) > 1) {
+        compatibility = "legacy_duplicate_identity";
+        entryCaveats.push(`duplicate experiment number ${number} remains visible but ambiguous and unaddressable`);
+      }
+      caveats.push(...entryCaveats);
+      return {
+        stableId: number === null ? null : `${objectiveId}/experiment:${number}`,
+        number,
+        addressable: compatibility === "canonical",
+        compatibility,
+        provenance: { collection, index },
+        data,
+        caveats: entryCaveats,
+      };
+    }),
+  );
   return { objectiveId, entries, caveats: [...new Set(caveats)] };
 }
 
@@ -241,12 +240,7 @@ export class ExperimentIdentityError extends Error {
 }
 
 /** Pure preflight used by later publication work; this function never changes project state. */
-export function validateExperimentPublicationIdentity(
-  discovery: ObjectiveArtifactDiscovery,
-  projection: ExperimentIdentityProjection,
-  objectiveId: string,
-  number: number,
-): string {
+export function validateExperimentPublicationIdentity(discovery: ObjectiveArtifactDiscovery, projection: ExperimentIdentityProjection, objectiveId: string, number: number): string {
   if (!OBJECTIVE_ID.test(objectiveId) || !Number.isInteger(number) || number < 0) {
     throw new ExperimentIdentityError("invalid_request", "publication requires a valid objective identity and non-negative integer experiment number");
   }

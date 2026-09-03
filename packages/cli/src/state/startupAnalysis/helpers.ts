@@ -46,12 +46,7 @@ const BARE_CAPABILITY_ROUTE_RE = /^\s*\/(status|vision|discuss|research|plan|bui
 const XML_ROUTE_RE = /<command-name>\s*\/(?:agentera\s+)?([A-Za-z0-9._:-]+)\s*<\/command-name>/;
 
 export const THRESHOLD_WARNING_PATTERNS: Array<[string, string, string, RegExp]> = [
-  [
-    "self_audit",
-    "verbosity",
-    "self_audit.verbosity",
-    /verbosity(?: mismatch)?|exceeds(?: the)?(?: advisory| compact)?(?: prose| word| entry)? budget|\b\d+\s+words?\s+exceeds\s+\d+\s+budget\b|full plans? exceed/i,
-  ],
+  ["self_audit", "verbosity", "self_audit.verbosity", /verbosity(?: mismatch)?|exceeds(?: the)?(?: advisory| compact)?(?: prose| word| entry)? budget|\b\d+\s+words?\s+exceeds\s+\d+\s+budget\b|full plans? exceed/i],
   ["self_audit", "abstraction", "self_audit.abstraction", /abstraction creep/i],
   ["self_audit", "filler", "self_audit.filler", /\bfiller\s*:/i],
   ["compaction", "over_limit", "compaction.uniform_10_40_50", /over(?:\s+|_)limit|uniform_(?:10_40_50|20_50_100)/i],
@@ -218,10 +213,7 @@ export function thresholdWarnings(text: string): Array<JsonObject> {
   }
   return warnings;
 }
-export function detailLossStatus(
-  before: { word_count: number; anchor_count: number },
-  after: { word_count: number; anchor_count: number },
-): string {
+export function detailLossStatus(before: { word_count: number; anchor_count: number }, after: { word_count: number; anchor_count: number }): string {
   if (before.word_count === 0 || after.word_count === 0) return "not_assessed";
   const wordDrop = after.word_count < before.word_count * 0.75;
   const anchorDrop = after.anchor_count < before.anchor_count;

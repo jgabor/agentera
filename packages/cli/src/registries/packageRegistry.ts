@@ -10,33 +10,16 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 
 export const EXPECTED_PACKAGE_ORDER = ["agentera"] as const;
 
-export const REQUIRED_GROUPS = [
-  "identity",
-  "version_authority",
-  "version_surfaces",
-  "bundle_surfaces",
-  "bootstrap_command_authority",
-  "docs_targets",
-  "release_policy",
-] as const;
+export const REQUIRED_GROUPS = ["identity", "version_authority", "version_surfaces", "bundle_surfaces", "bootstrap_command_authority", "docs_targets", "release_policy"] as const;
 
 const REQUIRED_FIELDS: Record<string, string[]> = {
   identity: ["id", "name", "skill_path", "expected_capabilities"],
-  version_authority: [
-    "persisted_authority",
-    "selector",
-    "access_interface",
-    "future_authority_change_requires",
-  ],
+  version_authority: ["persisted_authority", "selector", "access_interface", "future_authority_change_requires"],
   version_surfaces: ["surfaces"],
   bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
   bootstrap_command_authority: ["scanned_formats", "scalar_classifications", "emitted_producers", "constructor_non_producers"],
   docs_targets: ["version_files_source", "version_files", "index_targets"],
-  release_policy: [
-    "semver_policy_source",
-    "version_bump_required_for_interface_only_change",
-    "release_publication_in_scope",
-  ],
+  release_policy: ["semver_policy_source", "version_bump_required_for_interface_only_change", "release_publication_in_scope"],
 };
 
 const CONSUMER_GROUPS: Record<string, readonly string[]> = {
@@ -46,23 +29,8 @@ const CONSUMER_GROUPS: Record<string, readonly string[]> = {
   tests: REQUIRED_GROUPS,
 };
 
-const FORBIDDEN_INSTALL_ROOT_FIELDS = new Set([
-  "install_root",
-  "install_root_classification",
-  "AGENTERA_HOME_precedence",
-  "default_durable_root",
-  "managed_classification",
-  "root_diagnostics",
-]);
-const FORBIDDEN_RUNTIME_ADAPTER_FIELDS = new Set([
-  "runtime_discovery",
-  "host_detection",
-  "lifecycle_events",
-  "artifact_validation",
-  "config_targets",
-  "diagnostics",
-  "documentation_claims",
-]);
+const FORBIDDEN_INSTALL_ROOT_FIELDS = new Set(["install_root", "install_root_classification", "AGENTERA_HOME_precedence", "default_durable_root", "managed_classification", "root_diagnostics"]);
+const FORBIDDEN_RUNTIME_ADAPTER_FIELDS = new Set(["runtime_discovery", "host_detection", "lifecycle_events", "artifact_validation", "config_targets", "diagnostics", "documentation_claims"]);
 
 export class RegistryError extends Error {
   constructor(message: string) {
@@ -94,7 +62,12 @@ interface PackageRegistrySurface extends JsonObject {
 }
 
 interface PackageRegistryRecord extends JsonObject {
-  identity: { id: string; name: string; skill_path: string; expected_capabilities: number } & JsonObject;
+  identity: {
+    id: string;
+    name: string;
+    skill_path: string;
+    expected_capabilities: number;
+  } & JsonObject;
   version_authority: {
     persisted_authority: string;
     selector: string;
@@ -155,10 +128,7 @@ export class PackageRegistry {
   suiteVersion(packageId = "agentera"): string {
     const record = this.get(packageId);
     const authority = record.version_authority;
-    if (
-      authority.persisted_authority !== "registry.json" ||
-      authority.selector !== "skills[0].version"
-    ) {
+    if (authority.persisted_authority !== "registry.json" || authority.selector !== "skills[0].version") {
       throw new RegistryError("unsupported suite version authority selector");
     }
     let data: any; // cast: JSON.parse IO boundary
@@ -202,13 +172,9 @@ export class PackageRegistry {
     }
     return values;
   }
-
 }
 
-export function loadRegistry(
-  registryPath: string = defaultRegistryPath(),
-  root: string = defaultRoot(),
-): PackageRegistry {
+export function loadRegistry(registryPath: string = defaultRegistryPath(), root: string = defaultRoot()): PackageRegistry {
   const data = loadYamlMapping(fs.readFileSync(registryPath, "utf8"));
   const errors = validateRegistryData(data, root);
   if (errors.length > 0) {
@@ -217,10 +183,7 @@ export function loadRegistry(
   return new PackageRegistry(data.records as PackageRegistryRecord[], root); // cast: parsed registry IO boundary
 }
 
-export function validateRegistryFile(
-  registryPath: string = defaultRegistryPath(),
-  root: string = defaultRoot(),
-): string[] {
+export function validateRegistryFile(registryPath: string = defaultRegistryPath(), root: string = defaultRoot()): string[] {
   return validateRegistryData(loadYamlMapping(fs.readFileSync(registryPath, "utf8")), root);
 }
 
@@ -399,10 +362,7 @@ function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
       if (typeof entryId === "string" && entryId.length > 0) {
         const previous = ids.get(entryId);
         if (previous !== undefined) {
-          errors.push(
-            `${entryPrefix}.id ${JSON.stringify(entryId)} duplicates ${previous}.id; ` +
-              "correction: use a unique id across bundle directories and files",
-          );
+          errors.push(`${entryPrefix}.id ${JSON.stringify(entryId)} duplicates ${previous}.id; ` + "correction: use a unique id across bundle directories and files");
         } else {
           ids.set(entryId, entryPrefix);
         }
@@ -412,10 +372,7 @@ function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
       if (typeof entryPath === "string" && entryPath.length > 0) {
         const previous = paths.get(entryPath);
         if (previous !== undefined) {
-          errors.push(
-            `${entryPrefix}.path ${JSON.stringify(entryPath)} for id ${JSON.stringify(entryId)} ` +
-              `duplicates ${previous}.path; correction: use a unique path across bundle directories and files`,
-          );
+          errors.push(`${entryPrefix}.path ${JSON.stringify(entryPath)} for id ${JSON.stringify(entryId)} ` + `duplicates ${previous}.path; correction: use a unique path across bundle directories and files`);
         } else {
           paths.set(entryPath, entryPrefix);
         }
@@ -499,14 +456,7 @@ function validateBootstrapCommandAuthority(prefix: string, value: JsonObject, ro
         errors.push(`${entryPrefix} must be an object`);
         return;
       }
-      errors.push(...validateRequiredObjectFields(entryPrefix, entry, [
-        "path",
-        "region",
-        "category",
-        "classification",
-        "normalized_sha256",
-        "reason",
-      ]));
+      errors.push(...validateRequiredObjectFields(entryPrefix, entry, ["path", "region", "category", "classification", "normalized_sha256", "reason"]));
       errors.push(...validateRepoPath(`${entryPrefix}.path`, entry.path, root));
       if (typeof entry.region !== "string" || !entry.region) errors.push(`${entryPrefix}.region must be a non-empty string`);
       if (!["identity_only", "argument_bearing", "other_vocabulary"].includes(String(entry.category))) errors.push(`${entryPrefix}.category is invalid`);
@@ -528,23 +478,9 @@ function validateBootstrapCommandAuthority(prefix: string, value: JsonObject, ro
 function validateBundlePath(prefix: string, id: unknown, value: unknown): string[] {
   const segments = typeof value === "string" ? value.split("/") : [];
   const invalid =
-    typeof value !== "string" ||
-    value.length === 0 ||
-    path.posix.isAbsolute(value) ||
-    path.win32.isAbsolute(value) ||
-    /^[A-Za-z]:/.test(value) ||
-    value.includes("\\") ||
-    value.startsWith("./") ||
-    value.endsWith("/") ||
-    segments.includes(".") ||
-    segments.includes("..") ||
-    path.posix.normalize(value) !== value;
+    typeof value !== "string" || value.length === 0 || path.posix.isAbsolute(value) || path.win32.isAbsolute(value) || /^[A-Za-z]:/.test(value) || value.includes("\\") || value.startsWith("./") || value.endsWith("/") || segments.includes(".") || segments.includes("..") || path.posix.normalize(value) !== value;
   if (!invalid) return [];
-  return [
-    `${prefix}.path ${JSON.stringify(value)} for id ${JSON.stringify(id)} is invalid; ` +
-      "correction: use a non-empty normalized relative POSIX path without absolute roots, " +
-      "drive prefixes, backslashes, leading './', trailing separators, or '.'/'..' segments",
-  ];
+  return [`${prefix}.path ${JSON.stringify(value)} for id ${JSON.stringify(id)} is invalid; ` + "correction: use a non-empty normalized relative POSIX path without absolute roots, " + "drive prefixes, backslashes, leading './', trailing separators, or '.'/'..' segments"];
 }
 
 function validateDocsTargets(prefix: string, value: JsonObject, root: string): string[] {
@@ -563,10 +499,7 @@ function validateReleasePolicy(prefix: string, value: JsonObject): string[] {
   if (typeof value.semver_policy_source !== "string" || !value.semver_policy_source) {
     errors.push(`${prefix}.semver_policy_source must be a non-empty string`);
   }
-  for (const field of [
-    "version_bump_required_for_interface_only_change",
-    "release_publication_in_scope",
-  ]) {
+  for (const field of ["version_bump_required_for_interface_only_change", "release_publication_in_scope"]) {
     if (typeof value[field] !== "boolean") {
       errors.push(`${prefix}.${field} must be a boolean`);
     }

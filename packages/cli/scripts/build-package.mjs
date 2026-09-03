@@ -5,12 +5,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import {
-  generatedSourceIdentity,
-  sameGeneratedSourceIdentity,
-  validateRegularTree,
-  writeGeneratedSourceIdentity,
-} from "./generated-output.mjs";
+import { generatedSourceIdentity, sameGeneratedSourceIdentity, validateRegularTree, writeGeneratedSourceIdentity } from "./generated-output.mjs";
 import { waitForVerificationBarrier } from "./verification-barrier.mjs";
 
 const here = path.dirname(fileURLToPath(import.meta.url));
@@ -88,10 +83,7 @@ export function synchronizeTree(source, destination) {
       continue;
     }
     const mode = sourceStat.mode & 0o777;
-    const unchanged = destinationStat?.isFile()
-      && (destinationStat.mode & 0o777) === mode
-      && sourceStat.size === destinationStat.size
-      && fs.readFileSync(from).equals(fs.readFileSync(to));
+    const unchanged = destinationStat?.isFile() && (destinationStat.mode & 0o777) === mode && sourceStat.size === destinationStat.size && fs.readFileSync(from).equals(fs.readFileSync(to));
     if (unchanged) continue;
     if (destinationStat) fs.rmSync(to, { recursive: true, force: true });
     fs.copyFileSync(from, to);

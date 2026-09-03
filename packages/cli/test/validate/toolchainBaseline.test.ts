@@ -5,17 +5,11 @@ import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
-const baseline = YAML.parse(
-  fs.readFileSync(path.join(ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"),
-);
+const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
-const publicationWorkflow = YAML.parse(
-  fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"),
-);
-const cliPackage = JSON.parse(
-  fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"),
-);
+const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
+const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
 
 const setupVpReleases = [
   ["1.0.0", "4a524139920f87f9f7080d3b8545acac019e1852"],
@@ -44,13 +38,7 @@ const setupVpReleases = [
 describe("toolchain baseline", () => {
   it("retains every exact setup-vp release and the accepted risk boundary", () => {
     expect(Object.entries(baseline.selection.setup_vp.release_inventory)).toEqual(setupVpReleases);
-    expect(Object.values(baseline.selection.setup_vp.implementations)).toSatisfy(
-      (implementations: any[]) =>
-        implementations.every(
-          (implementation) =>
-            implementation.integrity_verified === false && implementation.fail_closed === false,
-        ),
-    );
+    expect(Object.values(baseline.selection.setup_vp.implementations)).toSatisfy((implementations: any[]) => implementations.every((implementation) => implementation.integrity_verified === false && implementation.fail_closed === false));
     expect(baseline.selection.setup_vp.selected).toEqual({
       version: "1.18.0",
       action_commit: "1b32467adbe183473499fd9d5d372c3ed9641754",
@@ -58,9 +46,7 @@ describe("toolchain baseline", () => {
       boundary: "non_oidc_install_or_build_jobs_only",
       compatibility: "requests the exact Vite+ 0.3.0 release before fallback",
     });
-    expect(baseline.selection.setup_vp.upstream_head.commit).toBe(
-      "5af416ede120848958d85c9720e61b921ac7bca6",
-    );
+    expect(baseline.selection.setup_vp.upstream_head.commit).toBe("5af416ede120848958d85c9720e61b921ac7bca6");
   });
 
   it("keeps setup actions out of the OIDC publisher", () => {
@@ -74,8 +60,6 @@ describe("toolchain baseline", () => {
     expect(baseline.selection.vite_plus.version).toBe("0.3.0");
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
     expect(workspace.onlyBuiltDependencies).toEqual(["esbuild"]);
-    expect(cliPackage.scripts["test:toolchain-baseline"]).toBe(
-      "node scripts/verify-toolchain-baseline.mjs",
-    );
+    expect(cliPackage.scripts["test:toolchain-baseline"]).toBe("node scripts/verify-toolchain-baseline.mjs");
   });
 });

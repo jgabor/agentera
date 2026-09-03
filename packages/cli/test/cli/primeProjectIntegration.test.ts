@@ -12,38 +12,20 @@ import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import type { ProjectIntegrationSummary } from "../../src/upgrade/projectIntegration.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const FIXTURES = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "../upgrade/fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json",
-);
+const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../upgrade/fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json");
 
 let tmp: string;
 let home: string;
 let prevCwd: string;
 let previousEnv: Record<string, string | undefined>;
 
-const SANDBOXED_ENVIRONMENT = [
-  "AGENTERA_BOOTSTRAP_SOURCE_ROOT",
-  "AGENTERA_DEFAULT_INSTALL_ROOT",
-  "AGENTERA_HOME",
-  "AGENTERA_PROFILE_DIR",
-  "PROFILERA_PROFILE_DIR",
-  "AGENTERA_VISIBLE_SKILL_ROOT",
-  "HOME",
-  "XDG_CACHE_HOME",
-  "XDG_CONFIG_HOME",
-  "XDG_DATA_HOME",
-  "XDG_STATE_HOME",
-] as const;
+const SANDBOXED_ENVIRONMENT = ["AGENTERA_BOOTSTRAP_SOURCE_ROOT", "AGENTERA_DEFAULT_INSTALL_ROOT", "AGENTERA_HOME", "AGENTERA_PROFILE_DIR", "PROFILERA_PROFILE_DIR", "AGENTERA_VISIBLE_SKILL_ROOT", "HOME", "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"] as const;
 
 function seedNpxBundle(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
   fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "3.0.0-next.1" }] }));
-  fs.writeFileSync(
-    path.join(root, NPX_BUNDLE_SENTINEL),
-    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
-  );
+  fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }));
   fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
 }
 
@@ -156,5 +138,4 @@ describe("prime project_integration", () => {
 
     expect(nextAction.recommended).toEqual(readiness.recommended);
   });
-
 });

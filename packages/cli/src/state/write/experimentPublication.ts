@@ -6,17 +6,8 @@ import { splitLinesKeepEnds, unifiedDiff } from "../../core/difflib.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
 import { compactYamlFile, type CompactResult } from "../../hooks/compaction/index.js";
 import { assertRealpathBoundary } from "../../registries/artifactRegistry.js";
-import {
-  assertExperimentArchiveReplay,
-  prepareExperimentArchive,
-  type ExperimentArchivePublication,
-} from "../experimentArchive.js";
-import {
-  ExperimentIdentityError,
-  discoverObjectiveArtifacts,
-  inspectExperimentIdentities,
-  validateExperimentPublicationIdentity,
-} from "../experimentIdentity.js";
+import { assertExperimentArchiveReplay, prepareExperimentArchive, type ExperimentArchivePublication } from "../experimentArchive.js";
+import { ExperimentIdentityError, discoverObjectiveArtifacts, inspectExperimentIdentities, validateExperimentPublicationIdentity } from "../experimentIdentity.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./transaction.js";
 import type { StateMutationTransaction } from "./mutation.js";
@@ -25,10 +16,7 @@ import { schemaViolation } from "./helpers.js";
 import { validateArtifactBytes } from "./validate.js";
 
 function array(doc: Record<string, unknown>, key: string): Record<string, unknown>[] {
-  return Array.isArray(doc[key])
-    ? (doc[key] as unknown[]).filter((value): value is Record<string, unknown> =>
-        Boolean(value && typeof value === "object" && !Array.isArray(value)))
-    : [];
+  return Array.isArray(doc[key]) ? (doc[key] as unknown[]).filter((value): value is Record<string, unknown> => Boolean(value && typeof value === "object" && !Array.isArray(value))) : [];
 }
 
 function readExisting(target: string): { doc: Record<string, unknown>; bytes: string } {
@@ -37,9 +25,7 @@ function readExisting(target: string): { doc: Record<string, unknown>; bytes: st
   try {
     return { doc: loadYamlMapping(bytes), bytes };
   } catch (error) {
-    throw new Error(
-      `cannot parse existing artifact '${target}': ${(error as Error).message}; run agentera check validate artifact before retrying`,
-    );
+    throw new Error(`cannot parse existing artifact '${target}': ${(error as Error).message}; run agentera check validate artifact before retrying`);
   }
 }
 
@@ -49,11 +35,7 @@ function diffText(before: string, after: string, target: string): string {
 
 function rejectIdentity(error: ExperimentIdentityError): never {
   reject({
-    class: error.className === "invalid_request"
-      ? "invalid_request"
-      : error.className === "not_found"
-        ? "unsupported_target"
-        : "conflict",
+    class: error.className === "invalid_request" ? "invalid_request" : error.className === "not_found" ? "unsupported_target" : "conflict",
     message: error.message,
     syntax: "agentera state experiments publish --objective OBJECTIVE_ID --number N --input EXPERIMENT.yaml",
     example: "agentera state experiments publish --objective objective:123e4567-e89b-42d3-a456-426614174000 --number 0 --input experiment.yaml",
@@ -87,23 +69,22 @@ function envelope(
     },
     validation: { status: "pass", violations: [] },
     compaction,
-    ...(archive ? {
-      archive: {
-        path: archive.target,
-        stable_id: archive.stableId,
-        record_sha256: archive.recordSha256,
-        provenance: archive.provenance,
-        idempotent_replay: archive.replay,
-      },
-    } : {}),
+    ...(archive
+      ? {
+          archive: {
+            path: archive.target,
+            stable_id: archive.stableId,
+            record_sha256: archive.recordSha256,
+            provenance: archive.provenance,
+            idempotent_replay: archive.replay,
+          },
+        }
+      : {}),
     ...(preview ?? {}),
   };
 }
 
-export function executeExperimentPublication(
-  req: StateWriteRequest,
-  transaction?: StateMutationTransaction,
-): StateWriteEnvelope {
+export function executeExperimentPublication(req: StateWriteRequest, transaction?: StateMutationTransaction): StateWriteEnvelope {
   const objectiveId = String(req.values.objective ?? "");
   const number = Number(req.values.number);
   const input = structuredClone(req.input ?? {});
@@ -122,13 +103,8 @@ export function executeExperimentPublication(
     if (error instanceof ExperimentIdentityError) rejectIdentity(error);
     throw error;
   }
-  const canonicalPaths = objective?.paths.filter((candidate) =>
-    candidate.includes(`${path.sep}.agentera${path.sep}optimize${path.sep}`)) ?? [];
-  const objectivePath = objective?.paths.length === 1
-    ? objective.paths[0]
-    : canonicalPaths.length === 1
-      ? canonicalPaths[0]
-      : null;
+  const canonicalPaths = objective?.paths.filter((candidate) => candidate.includes(`${path.sep}.agentera${path.sep}optimize${path.sep}`)) ?? [];
+  const objectivePath = objective?.paths.length === 1 ? objective.paths[0] : canonicalPaths.length === 1 ? canonicalPaths[0] : null;
   if (!objectivePath)
     reject({
       class: "conflict",
@@ -140,8 +116,7 @@ export function executeExperimentPublication(
   const existing = readExisting(target);
   if (existing.bytes) {
     const violations = validateArtifactBytes("experiments", existing.bytes);
-    if (violations.length)
-      throw new Error(`existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`);
+    if (violations.length) throw new Error(`existing artifact '${target}' is schema-invalid: ${violations.join("; ")}; repair it before retrying`);
   }
 
   const projection = inspectExperimentIdentities(objectiveId, existing.doc as JsonObject);
@@ -150,37 +125,18 @@ export function executeExperimentPublication(
   const assigned = { objective: objectiveId, number, stable_id: stableId };
   const retained = projection.entries.filter((entry) => entry.stableId === stableId);
   if (retained.length === 1 && retained[0].addressable && isDeepStrictEqual(retained[0].data, written)) {
-    const archive = prepareExperimentArchive(
-      req.projectRoot,
-      objectivePath,
-      objectiveId,
-      number,
-      written as JsonObject,
-    );
+    const archive = prepareExperimentArchive(req.projectRoot, objectivePath, objectiveId, number, written as JsonObject);
     const archiveExists = fs.existsSync(archive.target);
     let archiveReplay = archiveExists;
     if (archiveExists) {
       assertExperimentArchiveReplay(archive);
     } else if (!req.dryRun) {
-      const published = transaction?.publishExperimentArchive(
-        archive,
-        () => assertExperimentArchiveReplay(archive),
-      );
+      const published = transaction?.publishExperimentArchive(archive, () => assertExperimentArchiveReplay(archive));
       if (published === undefined) throw new Error("state mutation transaction is unavailable");
       archiveReplay = !published;
     }
     const preview = req.dryRun ? { diff: "", before: existing.doc, after: existing.doc } : undefined;
-    return envelope(
-      req,
-      target,
-      existing.doc,
-      written,
-      assigned,
-      true,
-      null,
-      { ...archive, replay: archiveReplay },
-      preview,
-    );
+    return envelope(req, target, existing.doc, written, assigned, true, null, { ...archive, replay: archiveReplay }, preview);
   }
   try {
     validateExperimentPublicationIdentity(discovery, projection, objectiveId, number);
@@ -196,17 +152,9 @@ export function executeExperimentPublication(
   const candidateBytes = dumpYamlMapping(candidate);
   const candidateViolations = validateArtifactBytes("experiments", candidateBytes);
   if (candidateViolations.length) schemaViolation(candidateViolations);
-  const archive = prepareExperimentArchive(
-    req.projectRoot,
-    objectivePath,
-    objectiveId,
-    number,
-    written as JsonObject,
-  );
+  const archive = prepareExperimentArchive(req.projectRoot, objectivePath, objectiveId, number, written as JsonObject);
 
-  const stage = req.dryRun
-    ? path.join(path.dirname(target), `.${path.basename(target)}.writer.${process.pid}.${Date.now()}.tmp`)
-    : transaction?.stageProjection(target, candidateBytes);
+  const stage = req.dryRun ? path.join(path.dirname(target), `.${path.basename(target)}.writer.${process.pid}.${Date.now()}.tmp`) : transaction?.stageProjection(target, candidateBytes);
   if (!stage) throw new Error("state mutation transaction is unavailable");
   let compaction: CompactResult | null = null;
   try {
@@ -214,43 +162,23 @@ export function executeExperimentPublication(
     if (req.spec.compacts) compaction = compactYamlFile(stage, "experiments", req.projectRoot);
     const finalBytes = fs.readFileSync(stage, "utf8");
     const finalViolations = validateArtifactBytes("experiments", finalBytes);
-    if (finalViolations.length)
-      throw new Error(`writer/compactor invariant failure: ${finalViolations.join("; ")}`);
+    if (finalViolations.length) throw new Error(`writer/compactor invariant failure: ${finalViolations.join("; ")}`);
     const finalDoc = loadYamlMapping(finalBytes);
     const preview = req.dryRun
-      ? { diff: diffText(existing.bytes, finalBytes, target), before: existing.doc, after: finalDoc }
+      ? {
+          diff: diffText(existing.bytes, finalBytes, target),
+          before: existing.doc,
+          after: finalDoc,
+        }
       : undefined;
     if (!req.dryRun) {
       transaction?.syncStaged(stage);
-      const published = transaction?.publishExperimentArchive(
-        archive,
-        () => assertExperimentArchiveReplay(archive),
-      );
+      const published = transaction?.publishExperimentArchive(archive, () => assertExperimentArchiveReplay(archive));
       if (published === undefined) throw new Error("state mutation transaction is unavailable");
       transaction?.publishProjection(stage, target, existing.bytes);
-      return envelope(
-        req,
-        target,
-        finalDoc,
-        written,
-        assigned,
-        false,
-        compaction,
-        { ...archive, replay: !published },
-        preview,
-      );
+      return envelope(req, target, finalDoc, written, assigned, false, compaction, { ...archive, replay: !published }, preview);
     }
-    return envelope(
-      req,
-      target,
-      finalDoc,
-      written,
-      assigned,
-      false,
-      compaction,
-      { ...archive, replay: false },
-      preview,
-    );
+    return envelope(req, target, finalDoc, written, assigned, false, compaction, { ...archive, replay: false }, preview);
   } finally {
     try {
       if (req.dryRun) fs.unlinkSync(stage);

@@ -10,7 +10,7 @@ export const LEGACY_PLAN_ID = /^legacy-plan:[0-9a-f]{64}$/;
 export const PLAN_ID = /^(plan:[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}|legacy-plan:[0-9a-f]{64})$/;
 
 function mapping(value: unknown): JsonObject {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
 function normalizeStatus(value: JsonValue): JsonValue {
@@ -23,9 +23,7 @@ function normalizeStatus(value: JsonValue): JsonValue {
 export function canonicalPlanIdentityDocument(document: JsonObject): JsonObject {
   const normalized = structuredClone(document);
   const header = mapping(normalized.header);
-  normalized.header = header.status === undefined
-    ? { ...header }
-    : { ...header, status: normalizeStatus(header.status) };
+  normalized.header = header.status === undefined ? { ...header } : { ...header, status: normalizeStatus(header.status) };
   if (Array.isArray(normalized.entries)) {
     normalized.tasks = normalized.entries;
     delete normalized.entries;

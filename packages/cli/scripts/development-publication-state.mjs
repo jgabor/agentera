@@ -17,9 +17,7 @@ function compareVersions(left, right) {
 
 export function allocateDevelopmentVersion(manifestVersion, runNumber) {
   const [major, minor, patch] = parseDevelopmentVersion(manifestVersion, "package manifest version");
-  const parsedRunNumber = typeof runNumber === "string" && /^(?:0|[1-9]\d*)$/.test(runNumber)
-    ? Number(runNumber)
-    : runNumber;
+  const parsedRunNumber = typeof runNumber === "string" && /^(?:0|[1-9]\d*)$/.test(runNumber) ? Number(runNumber) : runNumber;
   if (!Number.isSafeInteger(parsedRunNumber) || parsedRunNumber <= 0) {
     throw new Error("GitHub run number must be a positive safe integer");
   }
@@ -29,10 +27,7 @@ export function allocateDevelopmentVersion(manifestVersion, runNumber) {
 }
 
 export function classifyDevelopmentPublication({ version, integrity, source, currentNext, published }) {
-  const order = compareVersions(
-    parseDevelopmentVersion(version, "candidate package version"),
-    parseDevelopmentVersion(currentNext, "npm @next version"),
-  );
+  const order = compareVersions(parseDevelopmentVersion(version, "candidate package version"), parseDevelopmentVersion(currentNext, "npm @next version"));
   const exists = published?.integrity != null || published?.source != null;
   const matches = published?.integrity === integrity && published?.source === source;
 

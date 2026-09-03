@@ -89,12 +89,8 @@ export function evaluateHybridRoute(sourceRoot: string = resolveSourceRoot()): M
     const observed = resolveRouteRequest(routeCase.request, sourceRoot);
     const elapsed = elapsedMs(start);
     deterministicTimings.push(elapsed);
-    const passed = observed.outcome === routeCase.expected.phase1
-      && (observed.outcome !== "deterministic_selection" || (
-        observed.tier === routeCase.expected.tier && observed.capability === routeCase.expected.capability
-      ));
-    const harmfulMisroute = observed.outcome === "deterministic_selection"
-      && (routeCase.expected.phase1 !== "deterministic_selection" || observed.capability !== routeCase.expected.capability);
+    const passed = observed.outcome === routeCase.expected.phase1 && (observed.outcome !== "deterministic_selection" || (observed.tier === routeCase.expected.tier && observed.capability === routeCase.expected.capability));
+    const harmfulMisroute = observed.outcome === "deterministic_selection" && (routeCase.expected.phase1 !== "deterministic_selection" || observed.capability !== routeCase.expected.capability);
     results.push({
       case_id: routeCase.id,
       partition: routeCase.partition,
@@ -173,8 +169,16 @@ export function evaluateHybridRoute(sourceRoot: string = resolveSourceRoot()): M
       distributions: {},
     },
     latency: {
-      deterministic_phase1: { sample_count: deterministicTimings.length, p95_ms: percentile(deterministicTimings), target: targetGates.deterministic_phase1_p95 },
-      receipt_validation: { sample_count: receiptTimings.length, p95_ms: percentile(receiptTimings), target: targetGates.receipt_validation_p95 },
+      deterministic_phase1: {
+        sample_count: deterministicTimings.length,
+        p95_ms: percentile(deterministicTimings),
+        target: targetGates.deterministic_phase1_p95,
+      },
+      receipt_validation: {
+        sample_count: receiptTimings.length,
+        p95_ms: percentile(receiptTimings),
+        target: targetGates.receipt_validation_p95,
+      },
       semantic_model: { status: "unmeasured", reason: "host_dependent" },
       end_to_end: { status: "unmeasured", reason: "host_dependent" },
     },

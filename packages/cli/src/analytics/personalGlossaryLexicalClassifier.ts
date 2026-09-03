@@ -49,72 +49,11 @@ const COMMON_GRAMMAR_TERMS = new Set([
   "three",
 ]);
 
-const ROUTINE_FREQUENCY_TERMS = new Set([
-  "always",
-  "frequently",
-  "generally",
-  "never",
-  "normally",
-  "occasionally",
-  "often",
-  "rarely",
-  "regularly",
-  "routinely",
-  "seldom",
-  "sometimes",
-  "typically",
-  "usually",
-]);
+const ROUTINE_FREQUENCY_TERMS = new Set(["always", "frequently", "generally", "never", "normally", "occasionally", "often", "rarely", "regularly", "routinely", "seldom", "sometimes", "typically", "usually"]);
 
-const GENERIC_WORKFLOW_TERMS = new Set([
-  "change",
-  "check",
-  "choose",
-  "command",
-  "configuration",
-  "continue",
-  "correction",
-  "decision",
-  "file",
-  "keep",
-  "make",
-  "name",
-  "package",
-  "personal",
-  "project",
-  "repository",
-  "run",
-  "script",
-  "scripts",
-]);
+const GENERIC_WORKFLOW_TERMS = new Set(["change", "check", "choose", "command", "configuration", "continue", "correction", "decision", "file", "keep", "make", "name", "package", "personal", "project", "repository", "run", "script", "scripts"]);
 
-const KNOWN_COMMAND_WORDS = new Set([
-  "agentera",
-  "bash",
-  "build",
-  "cargo",
-  "cat",
-  "cd",
-  "check",
-  "ci",
-  "curl",
-  "git",
-  "install",
-  "lint",
-  "ls",
-  "make",
-  "node",
-  "npm",
-  "npx",
-  "pnpm",
-  "python",
-  "sh",
-  "tcsh",
-  "test",
-  "tsc",
-  "tsx",
-  "yarn",
-]);
+const KNOWN_COMMAND_WORDS = new Set(["agentera", "bash", "build", "cargo", "cat", "cd", "check", "ci", "curl", "git", "install", "lint", "ls", "make", "node", "npm", "npx", "pnpm", "python", "sh", "tcsh", "test", "tsc", "tsx", "yarn"]);
 
 const KNOWN_COMMAND_INVOCATIONS: Readonly<Record<string, readonly string[]>> = {
   agentera: ["build", "check"],
@@ -125,30 +64,11 @@ const KNOWN_COMMAND_INVOCATIONS: Readonly<Record<string, readonly string[]>> = {
   yarn: ["build", "install", "lint", "test"],
 };
 
-const KNOWN_COMMAND_SPELLINGS = new Set(
-  Object.entries(KNOWN_COMMAND_INVOCATIONS).flatMap(([command, actions]) =>
-    actions.map((action) => `${command}${action}`),
-  ),
-);
+const KNOWN_COMMAND_SPELLINGS = new Set(Object.entries(KNOWN_COMMAND_INVOCATIONS).flatMap(([command, actions]) => actions.map((action) => `${command}${action}`)));
 
-const KNOWN_COMMAND_COMPONENTS = new Set([
-  ...KNOWN_COMMAND_WORDS,
-  ...Object.keys(KNOWN_COMMAND_INVOCATIONS),
-  ...Object.values(KNOWN_COMMAND_INVOCATIONS).flat(),
-]);
+const KNOWN_COMMAND_COMPONENTS = new Set([...KNOWN_COMMAND_WORDS, ...Object.keys(KNOWN_COMMAND_INVOCATIONS), ...Object.values(KNOWN_COMMAND_INVOCATIONS).flat()]);
 
-const PATH_COMPONENTS = new Set([
-  "dist",
-  "home",
-  "lib",
-  "modules",
-  "node",
-  "node_modules",
-  "path",
-  "repo",
-  "src",
-  "tmp",
-]);
+const PATH_COMPONENTS = new Set(["dist", "home", "lib", "modules", "node", "node_modules", "path", "repo", "src", "tmp"]);
 
 function isKnownCommandSpelling(value: string): boolean {
   const lower = value.toLowerCase();
@@ -161,8 +81,7 @@ function isDirectPathToken(value: string, text: string, start: number, end: numb
   if (/[\\/]/u.test(value)) return true;
   const previous = text[start - 1] ?? "";
   const next = text[end] ?? "";
-  const dotIsPathPunctuation =
-    previous === "." || (next === "." && /[\p{L}\p{N}]/u.test(text[end + 1] ?? ""));
+  const dotIsPathPunctuation = previous === "." || (next === "." && /[\p{L}\p{N}]/u.test(text[end + 1] ?? ""));
   return ["/", "\\"].includes(previous) || ["/", "\\"].includes(next) || dotIsPathPunctuation;
 }
 
@@ -175,18 +94,9 @@ function isApprovedDerivedPathSpelling(value: string): boolean {
 }
 
 /** Classify one complete cue without rewriting it or matching arbitrary substrings. */
-export function classifyRecurringLexicalToken(
-  value: string,
-  text: string,
-  start: number,
-  end: number,
-): RecurringLexicalClass | null {
+export function classifyRecurringLexicalToken(value: string, text: string, start: number, end: number): RecurringLexicalClass | null {
   const lower = value.toLowerCase();
-  if (
-    COMMON_GRAMMAR_TERMS.has(lower) ||
-    ROUTINE_FREQUENCY_TERMS.has(lower) ||
-    GENERIC_WORKFLOW_TERMS.has(lower)
-  ) {
+  if (COMMON_GRAMMAR_TERMS.has(lower) || ROUTINE_FREQUENCY_TERMS.has(lower) || GENERIC_WORKFLOW_TERMS.has(lower)) {
     return "common_term";
   }
   if (isKnownCommandSpelling(value)) return "known_command";

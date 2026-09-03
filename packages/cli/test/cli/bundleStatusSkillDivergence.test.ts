@@ -17,10 +17,7 @@ let prevCwd: string;
 
 function writeSkill(root: string, version: string): string {
   fs.mkdirSync(root, { recursive: true });
-  fs.writeFileSync(
-    path.join(root, "SKILL.md"),
-    `---\nname: agentera\nversion: "${version}"\n---\n# agentera\n`,
-  );
+  fs.writeFileSync(path.join(root, "SKILL.md"), `---\nname: agentera\nversion: "${version}"\n---\n# agentera\n`);
   return root;
 }
 
@@ -30,14 +27,8 @@ function managedV2(appHome: string, marker = "2.7.7"): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
-  fs.writeFileSync(
-    path.join(appHome, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
+  fs.writeFileSync(path.join(appHome, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 beforeEach(() => {

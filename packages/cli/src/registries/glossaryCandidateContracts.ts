@@ -1,27 +1,8 @@
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { glossaryCandidateContractsAuthorityPath } from "./glossaryCandidateContractPaths.js";
-import {
-  canonicalGlossaryJson,
-  compareGlossaryUnicodeStrings,
-  glossaryCandidateRevision,
-  glossaryCanonicalSha256,
-  isGlossaryCandidateScope,
-  stableGlossaryTermIdentity,
-  type GlossaryCandidateEvidenceIdentity,
-  type GlossaryCandidateScope,
-} from "./glossaryTermIdentity.js";
-import {
-  glossaryEvidenceSetDigest,
-  PERSONAL_REVIEW_DISPOSITIONS,
-  type PersonalReviewDisposition,
-} from "./glossaryMiningAuthority.js";
-import {
-  GLOSSARY_ADMISSION_OUTCOMES,
-  GLOSSARY_ADMISSION_REASONS,
-  hasGlossaryAdmissionReasonCodesByOutcome,
-  validateGlossaryCandidateDecisionAuthority,
-  type GlossaryAdmissionReason,
-} from "./glossaryCandidateDecisionAuthority.js";
+import { canonicalGlossaryJson, compareGlossaryUnicodeStrings, glossaryCandidateRevision, glossaryCanonicalSha256, isGlossaryCandidateScope, stableGlossaryTermIdentity, type GlossaryCandidateEvidenceIdentity, type GlossaryCandidateScope } from "./glossaryTermIdentity.js";
+import { glossaryEvidenceSetDigest, PERSONAL_REVIEW_DISPOSITIONS, type PersonalReviewDisposition } from "./glossaryMiningAuthority.js";
+import { GLOSSARY_ADMISSION_OUTCOMES, GLOSSARY_ADMISSION_REASONS, hasGlossaryAdmissionReasonCodesByOutcome, validateGlossaryCandidateDecisionAuthority, type GlossaryAdmissionReason } from "./glossaryCandidateDecisionAuthority.js";
 
 export { GLOSSARY_ADMISSION_REASONS, type GlossaryAdmissionReason } from "./glossaryCandidateDecisionAuthority.js";
 export { glossaryCandidateContractsAuthorityPath } from "./glossaryCandidateContractPaths.js";
@@ -29,22 +10,11 @@ export { glossaryCandidateContractsAuthorityPath } from "./glossaryCandidateCont
 export type GlossaryContractRecord = Record<string, unknown>;
 
 type Mapping = GlossaryContractRecord;
-type CandidateLayer =
-  | "evidence_capsule"
-  | "host_classification_receipt"
-  | "cli_decision"
-  | "review_record"
-  | "publication_result";
+type CandidateLayer = "evidence_capsule" | "host_classification_receipt" | "cli_decision" | "review_record" | "publication_result";
 
 const CANDIDATE_CONTRACTS_SCHEMA = "agentera.personalGlossaryCandidateContracts.v1";
 const CANDIDATE_CONTRACTS_AUTHORITY = "candidate_contracts";
-const LAYERS: readonly CandidateLayer[] = [
-  "evidence_capsule",
-  "host_classification_receipt",
-  "cli_decision",
-  "review_record",
-  "publication_result",
-];
+const LAYERS: readonly CandidateLayer[] = ["evidence_capsule", "host_classification_receipt", "cli_decision", "review_record", "publication_result"];
 
 const LAYER_OWNERS = {
   evidence_capsule: "deterministic_discovery_projection",
@@ -71,30 +41,11 @@ const BODY_DIGEST_FIELDS = {
 } as const;
 
 const LAYER_REQUIRED_FIELDS = {
-  evidence_capsule: [
-    "schema_version", "owner", "candidate_id", "candidate_revision", "term", "meaning", "scope",
-    "provenance_kind", "evidence", "evidence_complete", "evidence_set_sha256", "policy_version",
-    "generation", "capsule_sha256",
-  ],
-  host_classification_receipt: [
-    "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "candidate_projection_sha256", "generation", "policy_version", "classification", "semantic_fingerprint", "receipt_sha256",
-  ],
-  cli_decision: [
-    "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "candidate_projection_sha256", "host_receipt_sha256", "classification_contract_version", "semantic_fingerprint",
-    "generation", "policy_version", "outcome", "reason", "decision_sha256",
-  ],
-  review_record: [
-    "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version",
-    "disposition", "corrected_meaning", "corrected_scope", "disposed_at", "expires_at", "record_sha256",
-  ],
-  publication_result: [
-    "schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256",
-    "decision_sha256", "review_record_sha256", "generation", "policy_version", "status",
-    "profile_section_sha256", "published_at", "result_sha256",
-  ],
+  evidence_capsule: ["schema_version", "owner", "candidate_id", "candidate_revision", "term", "meaning", "scope", "provenance_kind", "evidence", "evidence_complete", "evidence_set_sha256", "policy_version", "generation", "capsule_sha256"],
+  host_classification_receipt: ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "generation", "policy_version", "classification", "semantic_fingerprint", "receipt_sha256"],
+  cli_decision: ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "classification_contract_version", "semantic_fingerprint", "generation", "policy_version", "outcome", "reason", "decision_sha256"],
+  review_record: ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "disposition", "corrected_meaning", "corrected_scope", "disposed_at", "expires_at", "record_sha256"],
+  publication_result: ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "decision_sha256", "review_record_sha256", "generation", "policy_version", "status", "profile_section_sha256", "published_at", "result_sha256"],
 } as const;
 
 const LAYER_BINDING_FIELDS = {
@@ -105,14 +56,7 @@ const LAYER_BINDING_FIELDS = {
   publication_result: ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "decision_sha256", "generation", "policy_version"],
 } as const;
 
-const HOST_CLASSIFICATION_FIELDS = [
-  "term",
-  "meaning",
-  "scope",
-  "permanence",
-  "consistency",
-  "confidence",
-] as const;
+const HOST_CLASSIFICATION_FIELDS = ["term", "meaning", "scope", "permanence", "consistency", "confidence"] as const;
 
 const ADMISSION_OUTCOMES = GLOSSARY_ADMISSION_OUTCOMES;
 const CONSISTENCY_VALUES = ["consistent", "inconsistent", "uncertain"] as const;
@@ -210,9 +154,7 @@ export interface GlossaryPublicationResult extends Mapping {
 }
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function strings(value: unknown): string[] {
@@ -278,7 +220,11 @@ function loadCandidateAuthority(pathname: string): { authority: Mapping; candida
   }
 }
 
-function loadedContract(pathname: string): { authority: Mapping; candidate: Mapping; errors: string[] } {
+function loadedContract(pathname: string): {
+  authority: Mapping;
+  candidate: Mapping;
+  errors: string[];
+} {
   const loaded = loadCandidateAuthority(pathname);
   if (!loaded) {
     return {
@@ -330,12 +276,7 @@ function validateBoundedIdentityFields(value: Mapping, candidate: Mapping, label
   return errors;
 }
 
-function validateSharedClassification(
-  classification: Mapping,
-  authority: Mapping,
-  candidate: Mapping,
-  label: string,
-): string[] {
+function validateSharedClassification(classification: Mapping, authority: Mapping, candidate: Mapping, label: string): string[] {
   const classificationAuthority = mapping(contractLayer(candidate, "host_classification_receipt")?.classification);
   const fields = strings(classificationAuthority?.fields);
   const errors = exactFields(classification, fields, label);
@@ -362,11 +303,7 @@ function validateSharedClassification(
   return errors;
 }
 
-function validateProvenanceEvidence(
-  capsule: Mapping,
-  authority: Mapping,
-  candidate: Mapping,
-): string[] {
+function validateProvenanceEvidence(capsule: Mapping, authority: Mapping, candidate: Mapping): string[] {
   const errors: string[] = [];
   const kind = capsule.provenance_kind;
   const allowedKinds = strings(mapping(mapping(authority.ownership_contracts)?.personal)?.allowed_provenance);
@@ -459,10 +396,7 @@ function validateCapsuleIdentity(capsule: Mapping): string[] {
   return errors;
 }
 
-export function validateGlossaryEvidenceCapsule(
-  capsule: Mapping,
-  pathname: string = glossaryCandidateContractsAuthorityPath(),
-): string[] {
+export function validateGlossaryEvidenceCapsule(capsule: Mapping, pathname: string = glossaryCandidateContractsAuthorityPath()): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
   const layerAuthority = contractLayer(loaded.candidate, "evidence_capsule");
@@ -495,15 +429,7 @@ export function validateGlossaryEvidenceCapsule(
   return errors;
 }
 
-export function createGlossaryEvidenceCapsule(input: {
-  term: string;
-  meaning: string;
-  scope: GlossaryCandidateScope;
-  provenance_kind: string;
-  evidence: readonly Mapping[];
-  policy_version: string;
-  generation: string;
-}): GlossaryEvidenceCapsule {
+export function createGlossaryEvidenceCapsule(input: { term: string; meaning: string; scope: GlossaryCandidateScope; provenance_kind: string; evidence: readonly Mapping[]; policy_version: string; generation: string }): GlossaryEvidenceCapsule {
   const evidence = sortEvidence(input.evidence);
   const candidateId = stableGlossaryTermIdentity(input.term);
   const candidateRevision = glossaryCandidateRevision({
@@ -525,7 +451,10 @@ export function createGlossaryEvidenceCapsule(input: {
     provenance_kind: input.provenance_kind,
     evidence,
     evidence_complete: true,
-    evidence_set_sha256: glossaryEvidenceSetDigest(input.generation, evidence.map((item) => String(item.evidence_anchor))),
+    evidence_set_sha256: glossaryEvidenceSetDigest(
+      input.generation,
+      evidence.map((item) => String(item.evidence_anchor)),
+    ),
     policy_version: input.policy_version,
     generation: input.generation,
   } as GlossaryContractRecord;
@@ -539,25 +468,12 @@ export interface GlossaryHostReceiptValidationContext {
   candidateProjectionSha256: string;
 }
 
-function validateHostBindings(
-  receipt: Mapping,
-  capsule: Mapping,
-  layerAuthority: Mapping,
-  context: GlossaryHostReceiptValidationContext,
-): string[] {
+function validateHostBindings(receipt: Mapping, capsule: Mapping, layerAuthority: Mapping, context: GlossaryHostReceiptValidationContext): string[] {
   const errors: string[] = [];
   for (const field of strings(layerAuthority.binding_fields)) {
-    const expected = field === "candidate_capsule_sha256"
-      ? capsule.capsule_sha256
-      : field === "candidate_projection_sha256"
-        ? context.candidateProjectionSha256
-        : capsule[field];
+    const expected = field === "candidate_capsule_sha256" ? capsule.capsule_sha256 : field === "candidate_projection_sha256" ? context.candidateProjectionSha256 : capsule[field];
     if (receipt[field] !== expected) {
-      errors.push(
-        field === "candidate_projection_sha256"
-          ? "host_classification_receipt.candidate_projection_sha256 does not match the current projection"
-          : `host_classification_receipt.${field} does not match the capsule`,
-      );
+      errors.push(field === "candidate_projection_sha256" ? "host_classification_receipt.candidate_projection_sha256 does not match the current projection" : `host_classification_receipt.${field} does not match the capsule`);
     }
   }
   return errors;
@@ -567,12 +483,7 @@ export function glossaryHostSemanticFingerprint(classification: Mapping): string
   return glossaryCanonicalSha256(classification);
 }
 
-export function validateGlossaryHostClassificationReceipt(
-  receipt: Mapping,
-  capsule: Mapping,
-  context: GlossaryHostReceiptValidationContext,
-  pathname: string = glossaryCandidateContractsAuthorityPath(),
-): string[] {
+export function validateGlossaryHostClassificationReceipt(receipt: Mapping, capsule: Mapping, context: GlossaryHostReceiptValidationContext, pathname: string = glossaryCandidateContractsAuthorityPath()): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
   const errors = validateGlossaryEvidenceCapsule(capsule, pathname);
@@ -600,7 +511,7 @@ export function validateGlossaryHostClassificationReceipt(
     if (nonEmpty(classification.term) && stableGlossaryTermIdentity(classification.term) !== capsule.candidate_id) {
       errors.push("host_classification_receipt.classification.term changes stable term identity");
     }
-  if (digest(receipt.semantic_fingerprint) && receipt.semantic_fingerprint !== glossaryHostSemanticFingerprint(classification)) {
+    if (digest(receipt.semantic_fingerprint) && receipt.semantic_fingerprint !== glossaryHostSemanticFingerprint(classification)) {
       errors.push("host_classification_receipt.semantic_fingerprint does not match classification");
     }
     if (!digest(receipt.semantic_fingerprint)) errors.push("host_classification_receipt.semantic_fingerprint must be lowercase SHA-256");
@@ -618,11 +529,7 @@ export function validateGlossaryHostClassificationReceipt(
   return errors;
 }
 
-export function createGlossaryHostClassificationReceipt(input: {
-  capsule: GlossaryEvidenceCapsule;
-  candidate_projection_sha256: string;
-  classification: GlossaryHostClassification;
-}): GlossaryHostClassificationReceipt {
+export function createGlossaryHostClassificationReceipt(input: { capsule: GlossaryEvidenceCapsule; candidate_projection_sha256: string; classification: GlossaryHostClassification }): GlossaryHostClassificationReceipt {
   const receipt = {
     schema_version: LAYER_SCHEMAS.host_classification_receipt,
     owner: LAYER_OWNERS.host_classification_receipt,
@@ -643,19 +550,19 @@ export function createGlossaryHostClassificationReceipt(input: {
   return receipt as GlossaryHostClassificationReceipt;
 }
 
-export function validateGlossaryAdmissionDecision(
-  decision: Mapping,
-  capsule: Mapping,
-  receipt: Mapping,
-  pathname: string = glossaryCandidateContractsAuthorityPath(),
-): string[] {
+export function validateGlossaryAdmissionDecision(decision: Mapping, capsule: Mapping, receipt: Mapping, pathname: string = glossaryCandidateContractsAuthorityPath()): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
   const errors = [
     ...validateGlossaryEvidenceCapsule(capsule, pathname),
-    ...validateGlossaryHostClassificationReceipt(receipt, capsule, {
-      candidateProjectionSha256: String(decision.candidate_projection_sha256),
-    }, pathname),
+    ...validateGlossaryHostClassificationReceipt(
+      receipt,
+      capsule,
+      {
+        candidateProjectionSha256: String(decision.candidate_projection_sha256),
+      },
+      pathname,
+    ),
   ];
   const layerAuthority = contractLayer(loaded.candidate, "cli_decision");
   if (!layerAuthority) return [...errors, "candidate_contracts.layers.cli_decision is missing"];
@@ -696,12 +603,7 @@ export function validateGlossaryAdmissionDecision(
       errors.push("cli_decision automatic_admission is disabled for inferred provenance");
     }
     const classification = mapping(receipt.classification);
-    if (
-      classification?.scope !== automaticClassification?.scope ||
-      classification?.consistency !== automaticClassification?.consistency ||
-      classification?.term !== capsule.term ||
-      classification?.meaning !== capsule.meaning
-    ) {
+    if (classification?.scope !== automaticClassification?.scope || classification?.consistency !== automaticClassification?.consistency || classification?.term !== capsule.term || classification?.meaning !== capsule.meaning) {
       errors.push("cli_decision automatic_admission requires the exact personal consistent capsule classification");
     }
   }
@@ -714,12 +616,7 @@ export function validateGlossaryAdmissionDecision(
   return errors;
 }
 
-export function createGlossaryAdmissionDecision(input: {
-  capsule: GlossaryEvidenceCapsule;
-  receipt: GlossaryHostClassificationReceipt;
-  outcome: (typeof ADMISSION_OUTCOMES)[number];
-  reason: GlossaryAdmissionReason;
-}): GlossaryAdmissionDecision {
+export function createGlossaryAdmissionDecision(input: { capsule: GlossaryEvidenceCapsule; receipt: GlossaryHostClassificationReceipt; outcome: (typeof ADMISSION_OUTCOMES)[number]; reason: GlossaryAdmissionReason }): GlossaryAdmissionDecision {
   const decision = {
     schema_version: LAYER_SCHEMAS.cli_decision,
     owner: LAYER_OWNERS.cli_decision,
@@ -751,13 +648,7 @@ function validateReviewTimeFields(record: Mapping): string[] {
   return errors;
 }
 
-export function validateGlossaryReviewRecord(
-  record: Mapping,
-  capsule: Mapping,
-  receipt: Mapping,
-  decision: Mapping,
-  pathname: string = glossaryCandidateContractsAuthorityPath(),
-): string[] {
+export function validateGlossaryReviewRecord(record: Mapping, capsule: Mapping, receipt: Mapping, decision: Mapping, pathname: string = glossaryCandidateContractsAuthorityPath()): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
   const errors = validateGlossaryAdmissionDecision(decision, capsule, receipt, pathname);
@@ -831,14 +722,7 @@ export function createGlossaryReviewRecord(input: {
   return record as GlossaryReviewRecord;
 }
 
-export function validateGlossaryPublicationResult(
-  result: Mapping,
-  capsule: Mapping,
-  receipt: Mapping,
-  decision: Mapping,
-  review: Mapping | null,
-  pathname: string = glossaryCandidateContractsAuthorityPath(),
-): string[] {
+export function validateGlossaryPublicationResult(result: Mapping, capsule: Mapping, receipt: Mapping, decision: Mapping, review: Mapping | null, pathname: string = glossaryCandidateContractsAuthorityPath()): string[] {
   const loaded = loadedContract(pathname);
   if (loaded.errors.length > 0) return loaded.errors;
   const errors = validateGlossaryAdmissionDecision(decision, capsule, receipt, pathname);
@@ -885,15 +769,7 @@ export function validateGlossaryPublicationResult(
   return errors;
 }
 
-export function createGlossaryPublicationResult(input: {
-  capsule: GlossaryEvidenceCapsule;
-  receipt: GlossaryHostClassificationReceipt;
-  decision: GlossaryAdmissionDecision;
-  review: GlossaryReviewRecord | null;
-  status: string;
-  profile_section_sha256: string;
-  published_at: string | null;
-}): GlossaryPublicationResult {
+export function createGlossaryPublicationResult(input: { capsule: GlossaryEvidenceCapsule; receipt: GlossaryHostClassificationReceipt; decision: GlossaryAdmissionDecision; review: GlossaryReviewRecord | null; status: string; profile_section_sha256: string; published_at: string | null }): GlossaryPublicationResult {
   const result = {
     schema_version: LAYER_SCHEMAS.publication_result,
     owner: LAYER_OWNERS.publication_result,
@@ -924,7 +800,9 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
     errors.push("candidate_contracts must scope runtime to validation, deterministic decisions, and explicit personal publication");
   }
   if (!exactStrings(candidate.layers && Object.keys(mapping(candidate.layers) ?? {}), LAYERS)) errors.push("candidate_contracts.layers must contain exactly the five candidate layers");
-  const owners = LAYERS.map((name) => mapping(candidate.layers)?.[name]).map(mapping).map((item) => String(item?.owner ?? ""));
+  const owners = LAYERS.map((name) => mapping(candidate.layers)?.[name])
+    .map(mapping)
+    .map((item) => String(item?.owner ?? ""));
   if (new Set(owners).size !== LAYERS.length || LAYERS.some((name, index) => owners[index] !== LAYER_OWNERS[name])) errors.push("candidate contract layer owners must be distinct and authoritative");
   for (const name of LAYERS) {
     const current = mapping(mapping(candidate.layers)?.[name]);
@@ -945,7 +823,14 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
     if (current.body_digest !== BODY_DIGEST_FIELDS[name]) errors.push(`candidate_contracts.layers.${name}.body_digest is invalid`);
   }
   const canonicalization = mapping(candidate.canonicalization);
-  if (canonicalization?.algorithm !== "sha256" || canonicalization?.encoding !== "lowercase_hex" || canonicalization?.input !== "canonical_utf8_json" || canonicalization?.object_keys !== "unicode_code_point_sorted" || canonicalization?.evidence_records !== "canonical_json_sorted" || canonicalization?.digest_field_rule !== "exclude_digest_field_from_body") {
+  if (
+    canonicalization?.algorithm !== "sha256" ||
+    canonicalization?.encoding !== "lowercase_hex" ||
+    canonicalization?.input !== "canonical_utf8_json" ||
+    canonicalization?.object_keys !== "unicode_code_point_sorted" ||
+    canonicalization?.evidence_records !== "canonical_json_sorted" ||
+    canonicalization?.digest_field_rule !== "exclude_digest_field_from_body"
+  ) {
     errors.push("candidate_contracts.canonicalization must reuse canonical UTF-8 JSON and lowercase SHA-256");
   }
   const bounds = candidateBounds(candidate);
@@ -959,7 +844,13 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   const layers = mapping(candidate.layers);
   const host = mapping(layers?.host_classification_receipt);
   const classification = mapping(mapping(host)?.classification);
-  if (!exactStrings(classification?.fields, HOST_CLASSIFICATION_FIELDS) || classification?.term !== "shared_primitive.fields.term" || classification?.meaning !== "shared_primitive.fields.meaning" || classification?.scope !== "packages/cli/src/registries/glossaryTermIdentity.ts#GlossaryCandidateScope" || !exactStrings(classification?.consistency_values, CONSISTENCY_VALUES)) {
+  if (
+    !exactStrings(classification?.fields, HOST_CLASSIFICATION_FIELDS) ||
+    classification?.term !== "shared_primitive.fields.term" ||
+    classification?.meaning !== "shared_primitive.fields.meaning" ||
+    classification?.scope !== "packages/cli/src/registries/glossaryTermIdentity.ts#GlossaryCandidateScope" ||
+    !exactStrings(classification?.consistency_values, CONSISTENCY_VALUES)
+  ) {
     errors.push("host classification must expose only the approved semantic fields and consistency vocabulary");
   }
   errors.push(...validateGlossaryCandidateDecisionAuthority(authority));
@@ -970,7 +861,12 @@ export function validatePersonalCandidateContracts(authority: Mapping): string[]
   }
   const profileOutput = mapping(mapping(mapping(authority.ownership_contracts)?.personal)?.profile_output);
   const publicationLayer = mapping(layers?.publication_result);
-  if (publicationLayer?.owner !== "personal_profile_publication" || publicationLayer?.command !== "ownership_contracts.personal.profile_output.command.canonical" || !exactStrings(publicationLayer?.status_values_from, ["ownership_contracts.personal.profile_output.command.output_statuses"]) || !exactStrings(mapping(profileOutput?.command)?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"])) {
+  if (
+    publicationLayer?.owner !== "personal_profile_publication" ||
+    publicationLayer?.command !== "ownership_contracts.personal.profile_output.command.canonical" ||
+    !exactStrings(publicationLayer?.status_values_from, ["ownership_contracts.personal.profile_output.command.output_statuses"]) ||
+    !exactStrings(mapping(profileOutput?.command)?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"])
+  ) {
     errors.push("publication results must reuse the personal Profile output contract");
   }
   const invariance = mapping(candidate.shared_invariance);

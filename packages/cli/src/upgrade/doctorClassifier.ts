@@ -3,22 +3,10 @@ import path from "node:path";
 import type { Classification } from "../state/installRoot.js";
 import type { DoctorSignal } from "../cli/contracts/bundleStatus.js";
 import type { DoctorRoots } from "./appModel.js";
-import {
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_MIGRATION_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-} from "./doctor.js";
+import { APP_MANUAL_REVIEW_NEEDED, APP_MIGRATION_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED } from "./doctor.js";
 
 /** Install-root kinds produced by classifyResolvedRoot. */
-export type InstallRootKind =
-  | "missing_default"
-  | "missing_explicit_or_environment"
-  | "file_valued_root"
-  | "invalid_bundle"
-  | "unmanaged_directory"
-  | "managed_fresh"
-  | "managed_stale";
+export type InstallRootKind = "missing_default" | "missing_explicit_or_environment" | "file_valued_root" | "invalid_bundle" | "unmanaged_directory" | "managed_fresh" | "managed_stale";
 
 export interface ClassifierContext {
   installRoot: string;
@@ -48,8 +36,7 @@ function recoverableStaleDefaultSignal(appHome: string, roots: DoctorRoots): Doc
   return {
     status: APP_REPAIR_NEEDED,
     kind: "recoverable_stale_default",
-    message:
-      "Agentera found an old app directory and can repair it without asking you to edit shell settings",
+    message: "Agentera found an old app directory and can repair it without asking you to edit shell settings",
     deprecatedDefaultAppHome: appHome,
     managedAppRoot: roots.managedAppRoot,
   };
@@ -59,8 +46,7 @@ function userDataOnlySignal(appHome: string, roots: DoctorRoots): DoctorSignal {
   return {
     status: APP_REPAIR_NEEDED,
     kind: "user_data_only_app_home",
-    message:
-      "This Agentera directory only has your Agentera data, so Agentera can safely add fresh app files under app/",
+    message: "This Agentera directory only has your Agentera data, so Agentera can safely add fresh app files under app/",
     appHome,
     managedAppRoot: roots.managedAppRoot,
   };
@@ -95,9 +81,7 @@ function classifyMissingExplicitOrEnvironment(ctx: ClassifierContext): Classifie
       {
         status: APP_MANUAL_REVIEW_NEEDED,
         kind: "invalid_install_root",
-        message:
-          "Agentera was told to use a directory that does not exist. " +
-          "Choose an existing Agentera directory, or install into the normal Agentera directory.",
+        message: "Agentera was told to use a directory that does not exist. " + "Choose an existing Agentera directory, or install into the normal Agentera directory.",
       },
     ],
   };

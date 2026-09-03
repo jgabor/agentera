@@ -6,11 +6,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  assessTerminologyDrift,
-  terminologyProposalDigest,
-  type TerminologyDriftFinding,
-} from "../../../src/audit/terminologyDrift.js";
+import { assessTerminologyDrift, terminologyProposalDigest, type TerminologyDriftFinding } from "../../../src/audit/terminologyDrift.js";
 import { main } from "../../../src/cli/dispatch.js";
 
 const roots: string[] = [];
@@ -19,10 +15,7 @@ function project(): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-glossary-publish-"));
   roots.push(root);
   fs.mkdirSync(path.join(root, ".agentera"));
-  fs.writeFileSync(
-    path.join(root, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return root;
 }
 
@@ -33,33 +26,33 @@ function auditedProposal(root: string): TerminologyDriftFinding {
   fs.writeFileSync(path.join(root, file), `export type ${term} = Legacy${term};\n`);
   return assessTerminologyDrift({
     projectRoot: root,
-    concepts: [{
-      concept,
-      confidence: 84,
-      severity: "warning",
-      terms: [
-        { term, evidence: [{ source_path: file, line: 1 }] },
-        { term: `Legacy${term}`, evidence: [{ source_path: file, line: 1 }] },
-      ],
-    }],
+    concepts: [
+      {
+        concept,
+        confidence: 84,
+        severity: "warning",
+        terms: [
+          { term, evidence: [{ source_path: file, line: 1 }] },
+          { term: `Legacy${term}`, evidence: [{ source_path: file, line: 1 }] },
+        ],
+      },
+    ],
     deliberateDecisionConcepts: new Set(),
     trackedIssueConcepts: new Set(),
   })[0]!;
 }
 
-function proposal(
-  root: string,
-  canonical = "JsonValue",
-  concept = "structured value",
-  variant = `Legacy${canonical}`,
-): TerminologyDriftFinding {
+function proposal(root: string, canonical = "JsonValue", concept = "structured value", variant = `Legacy${canonical}`): TerminologyDriftFinding {
   const sourcePath = `${concept.replaceAll(" ", "-")}.ts`;
   const lines = [`export type ${canonical} = ${variant};`, `export type CanonicalAlias = ${canonical};`];
   fs.writeFileSync(path.join(root, sourcePath), `${lines.join("\n")}\n`);
   const evidence = (line: number) => ({
     source_path: sourcePath,
     line,
-    source_record_sha256: crypto.createHash("sha256").update(lines[line - 1]!).digest("hex"),
+    source_record_sha256: crypto
+      .createHash("sha256")
+      .update(lines[line - 1]!)
+      .digest("hex"),
   });
   const value: Omit<TerminologyDriftFinding, "proposal_digest"> = {
     family: "terminology_drift",
@@ -88,10 +81,15 @@ function request(proposal: TerminologyDriftFinding, confirmedBy = "user"): Recor
 function run(root: string, document: Record<string, unknown>, extra: string[] = []) {
   let out = "";
   let err = "";
-  const rc = main(
-    ["node", "agentera", "state", "glossary", "publish", "--input", "-", ...extra, "--format", "json", "--project", root],
-    { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify(document) },
-  );
+  const rc = main(["node", "agentera", "state", "glossary", "publish", "--input", "-", ...extra, "--format", "json", "--project", root], {
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
+    stdin: () => JSON.stringify(document),
+  });
   return { rc, err, json: out.trim() ? JSON.parse(out) : null };
 }
 
@@ -103,7 +101,9 @@ function reverseMappingKeys(value: any): any {
   if (Array.isArray(value)) return value.map(reverseMappingKeys);
   if (!value || typeof value !== "object") return value;
   return Object.fromEntries(
-    Object.entries(value).reverse().map(([key, item]) => [key, reverseMappingKeys(item)]),
+    Object.entries(value)
+      .reverse()
+      .map(([key, item]) => [key, reverseMappingKeys(item)]),
   );
 }
 
@@ -115,10 +115,12 @@ describe("typed project glossary publication", () => {
   it("discovers build-owned publication with a versioned working input example", () => {
     const root = project();
     let out = "";
-    const rc = main(
-      ["node", "agentera", "state", "glossary", "explain", "--verb", "publish", "--format", "json", "--project", root],
-      { out: (text) => { out += text; }, err: () => {} },
-    );
+    const rc = main(["node", "agentera", "state", "glossary", "explain", "--verb", "publish", "--format", "json", "--project", root], {
+      out: (text) => {
+        out += text;
+      },
+      err: () => {},
+    });
     const explained = JSON.parse(out);
     expect(rc).toBe(0);
     expect(explained).toMatchObject({
@@ -139,21 +141,24 @@ describe("typed project glossary publication", () => {
     const result = run(root, request(audited));
 
     expect(result.rc, result.err).toBe(0);
-    expect(result.json).toMatchObject({ artifact: "glossary", operation: { dry_run: false, idempotent_replay: false } });
+    expect(result.json).toMatchObject({
+      artifact: "glossary",
+      operation: { dry_run: false, idempotent_replay: false },
+    });
     const document = glossary(root);
     expect(document).toMatchObject({ schema_version: "agentera.projectGlossary.v1" });
-    expect(document.approvals).toEqual([{
-      proposal_digest: audited.proposal_digest,
-      proposal: audited,
-      confirmation: {
+    expect(document.approvals).toEqual([
+      {
         proposal_digest: audited.proposal_digest,
-        confirmed_by: "user",
-        confirmed_at: "2026-07-26T14:00:00Z",
+        proposal: audited,
+        confirmation: {
+          proposal_digest: audited.proposal_digest,
+          confirmed_by: "user",
+          confirmed_at: "2026-07-26T14:00:00Z",
+        },
       },
-    }]);
-    expect(Object.keys(document.entries[0])).toEqual([
-      "term", "meaning", "confidence", "permanence", "temporal", "provenance",
     ]);
+    expect(Object.keys(document.entries[0])).toEqual(["term", "meaning", "confidence", "permanence", "temporal", "provenance"]);
     expect(document.entries[0]).toMatchObject({
       term: "JsonValue",
       meaning: "structured value",
@@ -175,10 +180,12 @@ describe("typed project glossary publication", () => {
     let out = "";
     try {
       process.chdir(root);
-      const rc = main(
-        ["node", "agentera", "state", "query", "--list-artifacts", "--format", "json"],
-        { out: (text) => { out += text; }, err: () => {} },
-      );
+      const rc = main(["node", "agentera", "state", "query", "--list-artifacts", "--format", "json"], {
+        out: (text) => {
+          out += text;
+        },
+        err: () => {},
+      });
       expect(rc).toBe(0);
     } finally {
       process.chdir(previousCwd);
@@ -200,21 +207,52 @@ describe("typed project glossary publication", () => {
   });
 
   it.each([
-    ["missing confirmation", (value: any) => { delete value.confirmation; }],
-    ["non-user confirmation", (value: any) => { value.confirmation.confirmed_by = "agent"; }],
-    ["invalid confirmation timestamp", (value: any) => { value.confirmation.confirmed_at = "today"; }],
-    ["digest mismatch", (value: any) => { value.confirmation.proposal_digest = "0".repeat(64); }],
-    ["malformed request", (value: any) => { value.extra = true; }],
-    ["malformed provenance", (value: any) => {
-      value.proposal.canonical_evidence[0].source_record_sha256 = "INVALID";
-      value.proposal.proposal_digest = terminologyProposalDigest(value.proposal);
-      value.confirmation.proposal_digest = value.proposal.proposal_digest;
-    }],
-    ["noncanonical source identity", (value: any) => {
-      value.proposal.canonical_evidence[0].source_path = `./${value.proposal.canonical_evidence[0].source_path}`;
-      value.proposal.proposal_digest = terminologyProposalDigest(value.proposal);
-      value.confirmation.proposal_digest = value.proposal.proposal_digest;
-    }],
+    [
+      "missing confirmation",
+      (value: any) => {
+        delete value.confirmation;
+      },
+    ],
+    [
+      "non-user confirmation",
+      (value: any) => {
+        value.confirmation.confirmed_by = "agent";
+      },
+    ],
+    [
+      "invalid confirmation timestamp",
+      (value: any) => {
+        value.confirmation.confirmed_at = "today";
+      },
+    ],
+    [
+      "digest mismatch",
+      (value: any) => {
+        value.confirmation.proposal_digest = "0".repeat(64);
+      },
+    ],
+    [
+      "malformed request",
+      (value: any) => {
+        value.extra = true;
+      },
+    ],
+    [
+      "malformed provenance",
+      (value: any) => {
+        value.proposal.canonical_evidence[0].source_record_sha256 = "INVALID";
+        value.proposal.proposal_digest = terminologyProposalDigest(value.proposal);
+        value.confirmation.proposal_digest = value.proposal.proposal_digest;
+      },
+    ],
+    [
+      "noncanonical source identity",
+      (value: any) => {
+        value.proposal.canonical_evidence[0].source_path = `./${value.proposal.canonical_evidence[0].source_path}`;
+        value.proposal.proposal_digest = terminologyProposalDigest(value.proposal);
+        value.confirmation.proposal_digest = value.proposal.proposal_digest;
+      },
+    ],
   ])("rejects %s before effects with recovery", (_label, mutate) => {
     const root = project();
     const value: any = request(proposal(root));
@@ -226,22 +264,28 @@ describe("typed project glossary publication", () => {
   });
 
   it.each([
-    ["weaker canonical term", (value: any) => {
-      const canonical = value.proposal.proposed_canonical_term;
-      const canonicalEvidence = value.proposal.canonical_evidence;
-      const weaker = value.proposal.variants[0].term;
-      const weakerEvidence = value.proposal.variants[0].evidence;
-      value.proposal.proposed_canonical_term = weaker;
-      value.proposal.canonical_evidence = weakerEvidence;
-      value.proposal.variants[0] = { term: canonical, evidence: [
-        ...canonicalEvidence,
-        { ...weakerEvidence[0], source_path: "extra.ts" },
-      ] };
-    }],
-    ["impossible severity", (value: any) => {
-      value.proposal.confidence = 60;
-      value.proposal.severity = "warning";
-    }],
+    [
+      "weaker canonical term",
+      (value: any) => {
+        const canonical = value.proposal.proposed_canonical_term;
+        const canonicalEvidence = value.proposal.canonical_evidence;
+        const weaker = value.proposal.variants[0].term;
+        const weakerEvidence = value.proposal.variants[0].evidence;
+        value.proposal.proposed_canonical_term = weaker;
+        value.proposal.canonical_evidence = weakerEvidence;
+        value.proposal.variants[0] = {
+          term: canonical,
+          evidence: [...canonicalEvidence, { ...weakerEvidence[0], source_path: "extra.ts" }],
+        };
+      },
+    ],
+    [
+      "impossible severity",
+      (value: any) => {
+        value.proposal.confidence = 60;
+        value.proposal.severity = "warning";
+      },
+    ],
   ])("rejects an Audit-inemittable %s even when self-digested", (_label, mutate) => {
     const root = project();
     const value: any = request(proposal(root));
@@ -348,9 +392,24 @@ describe("typed project glossary publication", () => {
   });
 
   it.each([
-    ["approval without entry", (document: any) => { document.entries = []; }],
-    ["entry with approval data", (document: any) => { document.entries[0].proposal_digest = document.approvals[0].proposal_digest; }],
-    ["changed matching entry", (document: any) => { document.entries[0].meaning = "changed"; }],
+    [
+      "approval without entry",
+      (document: any) => {
+        document.entries = [];
+      },
+    ],
+    [
+      "entry with approval data",
+      (document: any) => {
+        document.entries[0].proposal_digest = document.approvals[0].proposal_digest;
+      },
+    ],
+    [
+      "changed matching entry",
+      (document: any) => {
+        document.entries[0].meaning = "changed";
+      },
+    ],
   ])("rejects malformed existing %s instead of repairing it", (_label, mutate) => {
     const root = project();
     const first = request(proposal(root));

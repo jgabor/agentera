@@ -12,11 +12,7 @@ function healthIdentityNumber(value: unknown): number | null {
   return match ? Number(match[1]) : null;
 }
 
-export function repairHealthDuplicates(
-  doc: Record<string, unknown>,
-  number: number,
-  keep: "first" | "last",
-): { candidate: Record<string, unknown>; removed: number } {
+export function repairHealthDuplicates(doc: Record<string, unknown>, number: number, keep: "first" | "last"): { candidate: Record<string, unknown>; removed: number } {
   const candidate = structuredClone(doc);
   let removed = 0;
   for (const key of ["audits", "archive"]) {
@@ -30,11 +26,7 @@ export function repairHealthDuplicates(
   return { candidate, removed };
 }
 
-export function repairHealthProjectionBytes(
-  bytes: string,
-  number: number,
-  keep: "first" | "last",
-): { bytes: string; removed: number } {
+export function repairHealthProjectionBytes(bytes: string, number: number, keep: "first" | "last"): { bytes: string; removed: number } {
   const document = YAML.parseDocument(bytes);
   const removals: Array<[number, number]> = [];
   let removed = 0;
@@ -43,9 +35,7 @@ export function repairHealthProjectionBytes(
     const items = sequence?.items ?? [];
     const sequenceEnd = sequence?.range?.[1];
     const matches = items.flatMap((item, index) => {
-      const value = typeof (item as { toJSON?: () => unknown })?.toJSON === "function"
-        ? (item as { toJSON: () => unknown }).toJSON()
-        : item;
+      const value = typeof (item as { toJSON?: () => unknown })?.toJSON === "function" ? (item as { toJSON: () => unknown }).toJSON() : item;
       return healthIdentityNumber(value) === number ? [index] : [];
     });
     if (matches.length < 2) continue;

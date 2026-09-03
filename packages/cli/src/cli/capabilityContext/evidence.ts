@@ -46,10 +46,7 @@ export function evidenceDocsState(docs: JsonObject): JsonObject {
     current_state: currentState,
     non_empty_evidence_present: nonEmptyFields.length > 0,
     non_empty_evidence_fields: nonEmptyFields,
-    caveats: [
-      ...(available ? [] : ["Docs state is unavailable in CLI docs state."]),
-      ...(available && currentStateCaveat ? [currentStateCaveat] : []),
-    ],
+    caveats: [...(available ? [] : ["Docs state is unavailable in CLI docs state."]), ...(available && currentStateCaveat ? [currentStateCaveat] : [])],
   };
 }
 
@@ -60,7 +57,7 @@ export function evidenceHealthState(health: JsonObject): JsonObject {
   const [currentState, currentStateCaveat] = currentStateStatus(auditDate, "Health");
   return {
     status: available ? "available" : "unavailable",
-     source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
+    source_provenance: sourceProvenance("health", STATE_FAMILY_LIST_COMMANDS.health),
     id: health.id ?? null,
     artifact: health.artifact ?? "health",
     date: auditDate,
@@ -71,15 +68,17 @@ export function evidenceHealthState(health: JsonObject): JsonObject {
     current_state: currentState,
     non_empty_evidence_present: nonEmptyFields.length > 0,
     non_empty_evidence_fields: nonEmptyFields,
-    caveats: [
-      ...(available ? [] : ["Health state is unavailable in CLI health state."]),
-      ...(available && currentStateCaveat ? [currentStateCaveat] : []),
-    ],
+    caveats: [...(available ? [] : ["Health state is unavailable in CLI health state."]), ...(available && currentStateCaveat ? [currentStateCaveat] : [])],
   };
 }
 
 export function evidenceTodoState(schemas: Record<string, SchemaInfo>, todoItems: JsonObject[]): JsonObject {
-  const info: SchemaInfo = schemas.todo ?? { path: "TODO.md", record: undefined, schema: {}, fields: {} };
+  const info: SchemaInfo = schemas.todo ?? {
+    path: "TODO.md",
+    record: undefined,
+    schema: {},
+    fields: {},
+  };
   const exists = fs.existsSync(artifactPath(info, "todo"));
   return {
     status: exists ? "available" : "unavailable",
@@ -203,14 +202,19 @@ function decisionHistoryEntries(history: JsonObject): JsonObject[] {
     const entry = value as JsonObject;
     const record = entry.record;
     if (!record || typeof record !== "object" || Array.isArray(record)) return [];
-    return [{ ...record as JsonObject, id: entry.id ?? null, artifact: entry.artifact ?? "decisions", retrieval: entry.retrieval ?? null }];
+    return [
+      {
+        ...(record as JsonObject),
+        id: entry.id ?? null,
+        artifact: entry.artifact ?? "decisions",
+        retrieval: entry.retrieval ?? null,
+      },
+    ];
   });
 }
 
 function decisionHistoryCounts(history: JsonObject): JsonObject {
-  return history.counts && typeof history.counts === "object" && !Array.isArray(history.counts)
-    ? history.counts as JsonObject
-    : {};
+  return history.counts && typeof history.counts === "object" && !Array.isArray(history.counts) ? (history.counts as JsonObject) : {};
 }
 
 export function decisionContextRisk(history: JsonObject): JsonObject {
@@ -283,7 +287,13 @@ export function isoFromUtcMs(utc: number): string {
 export function decisionReviewPressure(history: JsonObject): JsonObject {
   const sp = sourceProvenance("decisions", STATE_FAMILY_LIST_COMMANDS.decisions);
   if (history.command !== "state decisions list") {
-    return { status: "unavailable", source_provenance: sp, summary: null, stale_protected_decisions: [], caveats: [] };
+    return {
+      status: "unavailable",
+      source_provenance: sp,
+      summary: null,
+      stale_protected_decisions: [],
+      caveats: [],
+    };
   }
   const activeEntries = decisionHistoryEntries(history);
   const counts = decisionHistoryCounts(history);
@@ -292,30 +302,37 @@ export function decisionReviewPressure(history: JsonObject): JsonObject {
   const protectedArchive: JsonObject[] = [];
   const today = todayUtcMs();
   const stale: JsonObject[] = [];
-  let caveats: string[] = omitted > 0
-    ? [`Decision review pressure is bounded with ${omitted} decision(s) omitted; continue with ${STATE_FAMILY_LIST_COMMANDS.decisions}.`]
-    : [];
-  for (const [collection, entries] of [["decisions", protectedActive], ["archive", protectedArchive]] as Array<[string, JsonObject[]]>) {
+  let caveats: string[] = omitted > 0 ? [`Decision review pressure is bounded with ${omitted} decision(s) omitted; continue with ${STATE_FAMILY_LIST_COMMANDS.decisions}.`] : [];
+  for (const [collection, entries] of [
+    ["decisions", protectedActive],
+    ["archive", protectedArchive],
+  ] as Array<[string, JsonObject[]]>) {
     for (const entry of entries) {
       const [field, reviewDate] = decisionReviewDue(entry);
       if (reviewDate === null || reviewDate > today) continue;
       const label = decisionLabel(entry);
       const message = `${label} requires protected decision review because ${field} elapsed on ${isoFromUtcMs(reviewDate)}.`;
-      stale.push({ label, collection, reason: "review_date_elapsed", review_date: isoFromUtcMs(reviewDate), source_field: field, message });
+      stale.push({
+        label,
+        collection,
+        reason: "review_date_elapsed",
+        review_date: isoFromUtcMs(reviewDate),
+        source_field: field,
+        message,
+      });
       caveats.push(message);
     }
   }
-  const protectedOverflowCount = Math.max(
-    protectedActive.length - 10,
-    protectedArchive.length - 40,
-    protectedActive.length + protectedArchive.length - 50,
-    0,
-  );
+  const protectedOverflowCount = Math.max(protectedActive.length - 10, protectedArchive.length - 40, protectedActive.length + protectedArchive.length - 50, 0);
   if (protectedOverflowCount) {
-    const message =
-      "Protected decisions exceed the 10/40/50 compaction budget; " +
-      `${protectedOverflowCount} protected decision(s) require review before compaction can complete.`;
-    stale.push({ label: "decisions", collection: "decisions/archive", reason: "protected_compaction_budget_pressure", protected_overflow_count: protectedOverflowCount, message });
+    const message = "Protected decisions exceed the 10/40/50 compaction budget; " + `${protectedOverflowCount} protected decision(s) require review before compaction can complete.`;
+    stale.push({
+      label: "decisions",
+      collection: "decisions/archive",
+      reason: "protected_compaction_budget_pressure",
+      protected_overflow_count: protectedOverflowCount,
+      message,
+    });
     caveats.push(message);
   }
   caveats = uniqueList(caveats);
@@ -336,18 +353,7 @@ export function decisionReviewPressure(history: JsonObject): JsonObject {
   };
 }
 
-export function auditEvidenceContext(
-  capability: string | null,
-  schemas: Record<string, SchemaInfo>,
-  plan: JsonObject,
-  progress: JsonObject,
-  health: JsonObject,
-  todoItems: JsonObject[],
-  docs: JsonObject,
-  profile: JsonObject,
-  bundle: JsonObject,
-  decisionHistory: JsonObject,
-): JsonObject | null {
+export function auditEvidenceContext(capability: string | null, schemas: Record<string, SchemaInfo>, plan: JsonObject, progress: JsonObject, health: JsonObject, todoItems: JsonObject[], docs: JsonObject, profile: JsonObject, bundle: JsonObject, decisionHistory: JsonObject): JsonObject | null {
   if (capability !== "audit") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const evaluationTarget = selectEvidenceTarget(plan);
@@ -422,15 +428,10 @@ export function auditEvidenceContext(
     todo_state: todoState.status === "available",
     source_contract: true,
   };
-  const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
-  const fallbackCommands = uniqueList([
-    STATE_FAMILY_FALLBACK_COMMANDS.plan,
-    STATE_FAMILY_FALLBACK_COMMANDS.progress,
-    STATE_FAMILY_FALLBACK_COMMANDS.docs,
-    STATE_FAMILY_FALLBACK_COMMANDS.health,
-    STATE_FAMILY_FALLBACK_COMMANDS.todo,
-    preCutoverCommand("state query --list-artifacts"),
-  ]);
+  const missingRequired = Object.entries(requiredState)
+    .filter(([, present]) => !present)
+    .map(([name]) => name);
+  const fallbackCommands = uniqueList([STATE_FAMILY_FALLBACK_COMMANDS.plan, STATE_FAMILY_FALLBACK_COMMANDS.progress, STATE_FAMILY_FALLBACK_COMMANDS.docs, STATE_FAMILY_FALLBACK_COMMANDS.health, STATE_FAMILY_FALLBACK_COMMANDS.todo, preCutoverCommand("state query --list-artifacts")]);
   return {
     capability: "audit",
     evaluation_target: evaluationTarget,
@@ -455,9 +456,7 @@ export function auditEvidenceContext(
       complete_for_evidence_context: missingRequired.length === 0,
       caveated: stateCaveats.length > 0,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy:
-        "Use this evidence_context and included status state first. Run listed routine/query CLI fallback commands " +
-        "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior.",
+      raw_artifact_read_policy: "Use this evidence_context and included status state first. Run listed routine/query CLI fallback commands " + "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior.",
       required_evidence_state: requiredState,
       missing_required_evidence_state: missingRequired,
       fallback_commands: fallbackCommands,

@@ -9,12 +9,7 @@ import { cmdState } from "../../src/cli/commands/state/index.js";
 import { runPrime } from "../../src/cli/dispatch/prime.js";
 import { runQuery, runState } from "../../src/cli/dispatch/state.js";
 
-const SOURCE_CONTRACT_ORACLE_PATH = path.join(
-  __dirname,
-  "fixtures",
-  "oracle",
-  "source-contract.json",
-);
+const SOURCE_CONTRACT_ORACLE_PATH = path.join(__dirname, "fixtures", "oracle", "source-contract.json");
 
 type ValueType = "string" | "number" | "boolean" | "array" | "object" | "null";
 type FieldTypeMap = Record<string, ValueType | "string|null" | "array<string>" | "array<object>">;
@@ -130,21 +125,15 @@ interface SourceContractOracle {
   };
 }
 
-const SOURCE_CONTRACT_ORACLE = JSON.parse(
-  fs.readFileSync(SOURCE_CONTRACT_ORACLE_PATH, "utf8"),
-) as SourceContractOracle;
+const SOURCE_CONTRACT_ORACLE = JSON.parse(fs.readFileSync(SOURCE_CONTRACT_ORACLE_PATH, "utf8")) as SourceContractOracle;
 
-const REPO_ROOT = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "..",
-  "..",
-  "..",
-  "..",
-);
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
-function capture(
-  fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number,
-): { rc: number; out: string; err: string } {
+function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
+  rc: number;
+  out: string;
+  err: string;
+} {
   let out = "";
   let err = "";
   const rc = fn({ out: (t) => (out += t), err: (t) => (err += t) });
@@ -170,82 +159,51 @@ function typeMatches(actual: unknown, expected: FieldTypeMap[string]): boolean {
   return typeOf(actual) === expected;
 }
 
-function assertRequiredKeys(
-  payload: Record<string, unknown>,
-  required: string[],
-  family: string,
-  oraclePath: string,
-): void {
+function assertRequiredKeys(payload: Record<string, unknown>, required: string[], family: string, oraclePath: string): void {
   for (const key of required) {
     if (!(key in payload)) {
-      throw new Error(
-        `oracle contract drift on command '${family}': required key '${key}' is missing from the live source_contract. Update ${oraclePath} with an intentional key addition or revert the field change.`,
-      );
+      throw new Error(`oracle contract drift on command '${family}': required key '${key}' is missing from the live source_contract. Update ${oraclePath} with an intentional key addition or revert the field change.`);
     }
     expect(payload, `command '${family}'`).toHaveProperty(key);
   }
 }
 
-function assertValueTypes(
-  payload: Record<string, unknown>,
-  expected: FieldTypeMap,
-  family: string,
-  oraclePath: string,
-): void {
+function assertValueTypes(payload: Record<string, unknown>, expected: FieldTypeMap, family: string, oraclePath: string): void {
   for (const [key, type] of Object.entries(expected)) {
     if (!(key in payload)) continue;
     const v = payload[key];
     if (!typeMatches(v, type)) {
       const actual = typeOf(v);
-      throw new Error(
-        `oracle contract drift on command '${family}': key '${key}' expected type '${type}' but live source_contract has '${actual}'. Update ${oraclePath} with an intentional type change or revert the field.`,
-      );
+      throw new Error(`oracle contract drift on command '${family}': key '${key}' expected type '${type}' but live source_contract has '${actual}'. Update ${oraclePath} with an intentional type change or revert the field.`);
     }
   }
 }
 
-function assertExactKeys(
-  payload: Record<string, unknown>,
-  required: string[],
-  family: string,
-  oraclePath: string,
-): void {
+function assertExactKeys(payload: Record<string, unknown>, required: string[], family: string, oraclePath: string): void {
   const expected = new Set<string>(required);
   const actual = new Set(Object.keys(payload));
   const missing: string[] = [...expected].filter((k) => !actual.has(k)).sort();
   const extra: string[] = [...actual].filter((k) => !expected.has(k)).sort();
   if (missing.length > 0 || extra.length > 0) {
-    const lines: string[] = [
-      `oracle contract drift on command '${family}': key set does not match the frozen contract.`,
-    ];
+    const lines: string[] = [`oracle contract drift on command '${family}': key set does not match the frozen contract.`];
     if (missing.length > 0) {
-      lines.push(
-        `  missing keys: [${missing.join(", ")}] (the oracle requires these but the live source_contract does not emit them — likely a regression).`,
-      );
+      lines.push(`  missing keys: [${missing.join(", ")}] (the oracle requires these but the live source_contract does not emit them — likely a regression).`);
     }
     if (extra.length > 0) {
-      lines.push(
-        `  extra keys: [${extra.join(", ")}] (the live source_contract emits these but the oracle does not declare them — update ${oraclePath} with an intentional key addition or revert the field).`,
-      );
+      lines.push(`  extra keys: [${extra.join(", ")}] (the live source_contract emits these but the oracle does not declare them — update ${oraclePath} with an intentional key addition or revert the field).`);
     }
     throw new Error(lines.join("\n"));
   }
 }
 
 function runDispatch(argv: string[]): { rc: number; payload: Record<string, unknown> } {
-  const { rc, out } = capture((io) => argv[0] === "prime"
-    ? runPrime("prime", argv.slice(1), io, "agentera prime")
-    : argv[0] === "state" && argv[1] === "query"
-      ? runQuery(argv.slice(2), io, "agentera state query")
-      : runState(argv[1], argv.slice(2), io, `agentera state ${argv[1]}`));
+  const { rc, out } = capture((io) => (argv[0] === "prime" ? runPrime("prime", argv.slice(1), io, "agentera prime") : argv[0] === "state" && argv[1] === "query" ? runQuery(argv.slice(2), io, "agentera state query") : runState(argv[1], argv.slice(2), io, `agentera state ${argv[1]}`)));
   return { rc, payload: readJson(out) };
 }
 
 describe("source_contract oracle (parity)", () => {
   it("retains the frozen source-contract inventory, including retired aggregate shapes", () => {
-    expect(new Set(Object.keys(SOURCE_CONTRACT_ORACLE.commands))).toEqual(
-      new Set(["prime", "prime_context", "state_plan", "state_todo", "state_query_list_artifacts"]),
-    );
+    expect(new Set(Object.keys(SOURCE_CONTRACT_ORACLE.commands))).toEqual(new Set(["prime", "prime_context", "state_plan", "state_todo", "state_query_list_artifacts"]));
   });
 
   it("schemaVersion is pinned to the source-contract oracle version", () => {
@@ -254,18 +212,10 @@ describe("source_contract oracle (parity)", () => {
   });
 
   it("cites the existing oracle family without duplicating content", () => {
-    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.invalidInputEnvelope).toBe(
-      "packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json",
-    );
-    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.validateFamily).toBe(
-      "packages/cli/test/cli/fixtures/oracle/validate-family.json",
-    );
-    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.verifyEvalFamily).toBe(
-      "packages/cli/test/cli/fixtures/oracle/verify-eval-family.json",
-    );
-    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.npmCliSurface).toBe(
-      "packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json",
-    );
+    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.invalidInputEnvelope).toBe("packages/cli/test/cli/fixtures/oracle/invalid-input-envelope.json");
+    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.validateFamily).toBe("packages/cli/test/cli/fixtures/oracle/validate-family.json");
+    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.verifyEvalFamily).toBe("packages/cli/test/cli/fixtures/oracle/verify-eval-family.json");
+    expect(SOURCE_CONTRACT_ORACLE.relatedOracles.npmCliSurface).toBe("packages/cli/test/cli/fixtures/oracle/npm-cli-surface.json");
   });
 
   it("pins the single availability projection fields", () => {
@@ -328,7 +278,10 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
   const BESPOKE_CAPABILITIES = ["orchestrate", "build", "audit", "optimize", "document"];
   const NON_BESPOKE_CAPABILITIES = ["status", "plan", "discuss", "research", "vision", "design", "profile"];
 
-  function capturePrimeContext(capability: string): { rc: number; payload: Record<string, unknown> } {
+  function capturePrimeContext(capability: string): {
+    rc: number;
+    payload: Record<string, unknown>;
+  } {
     return runDispatch(["prime", "--context", capability, "--format", "json"]);
   }
 
@@ -355,10 +308,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
       // The top-level source_contract is intentionally absent on the --context path;
       // `command`, `status`, bounded `runtime_lifecycle`, and
       // `capability_context` are at the top level.
-      expect(
-        "source_contract" in payload,
-        `${capability} top-level source_contract is absent`,
-      ).toBe(false);
+      expect("source_contract" in payload, `${capability} top-level source_contract is absent`).toBe(false);
     }
   });
 
@@ -375,9 +325,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
     const completenessKey = spec.completenessKeyByCapability[capability];
     expect(completenessKey, `${capability} has a pinned completeness key`).toBeTypeOf("string");
     expect(sc!, `${capability} has its completeness key`).toHaveProperty(completenessKey!);
-    expect(typeof (sc as Record<string, unknown>)[completenessKey!], `${completenessKey} is boolean`).toBe(
-      "boolean",
-    );
+    expect(typeof (sc as Record<string, unknown>)[completenessKey!], `${completenessKey} is boolean`).toBe("boolean");
     // `caveated` key is present on 4 of 5 capabilities (not orkestrera).
     const caveatedExpected = spec.caveatedKeyPresent.present.includes(capability);
     const hasCaveated = "caveated" in sc!;
@@ -392,9 +340,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
       expect(sc!, `${capability} has context-specific field '${fieldName}'`).toHaveProperty(fieldName);
       const actualValue = (sc as Record<string, unknown>)[fieldName];
       if (!typeMatches(actualValue, expectedType)) {
-        throw new Error(
-          `oracle contract drift on prime_context.${capability}: field '${fieldName}' expected type '${expectedType}' but live source_contract has '${typeOf(actualValue)}'. Update source-contract.json with an intentional type change or revert the field.`,
-        );
+        throw new Error(`oracle contract drift on prime_context.${capability}: field '${fieldName}' expected type '${expectedType}' but live source_contract has '${typeOf(actualValue)}'. Update source-contract.json with an intentional type change or revert the field.`);
       }
     }
   });
@@ -430,16 +376,12 @@ describe("state query --list-artifacts source_contract (oracle parity)", () => {
     assertExactKeys(sc, spec.requiredTopLevelKeys, "state_query_list_artifacts", "source-contract.json");
     assertValueTypes(sc, spec.fieldTypes, "state_query_list_artifacts", "source-contract.json");
     // The discovery-mode raw-reads-required default is false.
-    expect(sc.raw_artifact_reads_required_for_discovery, "raw_artifact_reads_required_for_discovery default").toBe(
-      false,
-    );
+    expect(sc.raw_artifact_reads_required_for_discovery, "raw_artifact_reads_required_for_discovery default").toBe(false);
     // allowed_raw_artifact_uses is a string array of at least the pinned cardinality
     // (content is not pinned per AC4).
     const uses = sc.allowed_raw_artifact_uses as unknown[];
     expect(Array.isArray(uses), "allowed_raw_artifact_uses is an array").toBe(true);
-    expect(uses.length, "allowed_raw_artifact_uses has at least the pinned cardinality").toBeGreaterThanOrEqual(
-      spec.allowedRawArtifactUsesCardinalityAtLeast,
-    );
+    expect(uses.length, "allowed_raw_artifact_uses has at least the pinned cardinality").toBeGreaterThanOrEqual(spec.allowedRawArtifactUsesCardinalityAtLeast);
   });
 });
 
@@ -449,7 +391,11 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
     // 'is raw reads required' field (named differently per command but always present),
     // every emission has at least one string policy field, and most have an array
     // of caveats/fallbacks. Content is NOT pinned (per AC4).
-    const samples: Array<{ label: string; payload: Record<string, unknown>; readsRequiredKey: string }> = [
+    const samples: Array<{
+      label: string;
+      payload: Record<string, unknown>;
+      readsRequiredKey: string;
+    }> = [
       {
         label: "prime.startup",
         payload: runDispatch(["prime", "--format", "json"]).payload.startup as Record<string, unknown>,
@@ -468,13 +414,8 @@ describe("shared source_contract pattern (cross-cutting structural contract)", (
     ];
     for (const sample of samples) {
       expect(typeof sample.payload, `${sample.label} source_contract is an object`).toBe("object");
-      expect(sample.payload, `${sample.label} has '${sample.readsRequiredKey}'`).toHaveProperty(
-        sample.readsRequiredKey,
-      );
-      expect(
-        typeof (sample.payload as Record<string, unknown>)[sample.readsRequiredKey],
-        `${sample.label}.${sample.readsRequiredKey} is boolean`,
-      ).toBe("boolean");
+      expect(sample.payload, `${sample.label} has '${sample.readsRequiredKey}'`).toHaveProperty(sample.readsRequiredKey);
+      expect(typeof (sample.payload as Record<string, unknown>)[sample.readsRequiredKey], `${sample.label}.${sample.readsRequiredKey} is boolean`).toBe("boolean");
     }
   });
 
@@ -521,34 +462,29 @@ function readBespokeInPayload(payload: Record<string, unknown>): Record<string, 
 
 describe("source_contract drift detector (AC3)", () => {
   it("fails with a named diff when an undeclared key is added", () => {
-    const baseRequired = [
-      "fields",
-      "render",
-      "access",
-      "empty_state",
-      "capability_context",
-    ];
+    const baseRequired = ["fields", "render", "access", "empty_state", "capability_context"];
     const matching = {
       fields: [],
       render: "x",
       access: "x",
       empty_state: "x",
-      capability_context: { capability: "x", fetch_command: "x", required_before_rendering: true, note: "x" },
+      capability_context: {
+        capability: "x",
+        fetch_command: "x",
+        required_before_rendering: true,
+        note: "x",
+      },
     };
     expect(() => assertExactKeys(matching, baseRequired, "prime", "source-contract.json")).not.toThrow();
     const extra = { ...matching, brand_new_field: "x" };
-    expect(() => assertExactKeys(extra, baseRequired, "prime", "source-contract.json")).toThrow(
-      /brand_new_field/,
-    );
+    expect(() => assertExactKeys(extra, baseRequired, "prime", "source-contract.json")).toThrow(/brand_new_field/);
     const missing = {
       fields: [],
       render: "x",
       access: "x",
       empty_state: "x",
     };
-    expect(() => assertExactKeys(missing, baseRequired, "prime", "source-contract.json")).toThrow(
-      /capability_context/,
-    );
+    expect(() => assertExactKeys(missing, baseRequired, "prime", "source-contract.json")).toThrow(/capability_context/);
   });
 
   it("typeMatches accepts the pinned union of types", () => {

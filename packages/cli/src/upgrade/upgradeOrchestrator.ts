@@ -3,69 +3,18 @@ import path from "node:path";
 
 import { expanduser, resolvePath } from "../core/paths.js";
 import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "./appModel.js";
-import {
-  MAJOR_BOUNDARY_ITEM_TAG,
-  STATUS_APPLIED,
-  STATUS_MANUAL_REVIEW_NEEDED,
-  STATUS_NO_CHANGES_NEEDED,
-  STATUS_READY_TO_APPLY,
-  UPGRADE_PREVIEW_SCHEMA,
-  classifyInstall,
-  crossMajorBoundaryApplies,
-  type InstallClassification,
-} from "./compatibility.js";
-import {
-  classifyUpgradeOutcome,
-  isBlockedUpgradeOutcome,
-  shouldIncludeCrossMajorPlanItems,
-  type UpgradeOutcome,
-} from "./versionResolution.js";
+import { MAJOR_BOUNDARY_ITEM_TAG, STATUS_APPLIED, STATUS_MANUAL_REVIEW_NEEDED, STATUS_NO_CHANGES_NEEDED, STATUS_READY_TO_APPLY, UPGRADE_PREVIEW_SCHEMA, classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
+import { classifyUpgradeOutcome, isBlockedUpgradeOutcome, shouldIncludeCrossMajorPlanItems, type UpgradeOutcome } from "./versionResolution.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { buildUpgradeCommands, type UpgradeOnlyPhase } from "./upgradeCommands.js";
 import { pendingRuntimeMigrationItems } from "./projectIntegration.js";
-import {
-  REMOVE_LEGACY_AGENT_ACTION,
-  PRUNE_LEGACY_DIRECTORY_ACTION,
-  applyLegacyAgentCleanupItems,
-  planLegacyAgentCleanupItems,
-  planLegacyCapabilityAgentCleanupItems,
-  planLegacyDirectoryCleanupItems,
-} from "./legacyAgentCleanup.js";
-import {
-  RETIRE_DECLARED_RESOURCE_ACTION,
-  REVIEW_DECLARED_RESOURCE_ACTION,
-  applyDeclaredRetiredResourceCleanupItems,
-  planDeclaredRetiredResourceCleanupItems,
-  resolveDeclaredMarkerManagedResource,
-} from "./declaredRetiredResourceCleanup.js";
-import {
-  RETIRE_INSTALLED_HOOKS_ACTION,
-  applyInstalledHooksRetirementItems,
-  planInstalledHooksRetirementItems,
-} from "./installedHooksRetirement.js";
-import {
-  MIGRATION_STATUSES,
-  applyMigrationPhases,
-  delegatePlanLifecycleToEntityCutover,
-  dryRunMigration,
-  hasPendingPlanLifecycleMigration,
-  type MigrationPhase,
-  type MigrationPhaseItem,
-  type MigrationPhaseSummary,
-  type MigrationStatus,
-} from "./migrateArtifactsV2ToV3.js";
-import {
-  runLifecycleUpgrade,
-  isLifecycleCleanupResource,
-  type LifecycleUpgradeResult,
-} from "./lifecycleUpgrade.js";
+import { REMOVE_LEGACY_AGENT_ACTION, PRUNE_LEGACY_DIRECTORY_ACTION, applyLegacyAgentCleanupItems, planLegacyAgentCleanupItems, planLegacyCapabilityAgentCleanupItems, planLegacyDirectoryCleanupItems } from "./legacyAgentCleanup.js";
+import { RETIRE_DECLARED_RESOURCE_ACTION, REVIEW_DECLARED_RESOURCE_ACTION, applyDeclaredRetiredResourceCleanupItems, planDeclaredRetiredResourceCleanupItems, resolveDeclaredMarkerManagedResource } from "./declaredRetiredResourceCleanup.js";
+import { RETIRE_INSTALLED_HOOKS_ACTION, applyInstalledHooksRetirementItems, planInstalledHooksRetirementItems } from "./installedHooksRetirement.js";
+import { MIGRATION_STATUSES, applyMigrationPhases, delegatePlanLifecycleToEntityCutover, dryRunMigration, hasPendingPlanLifecycleMigration, type MigrationPhase, type MigrationPhaseItem, type MigrationPhaseSummary, type MigrationStatus } from "./migrateArtifactsV2ToV3.js";
+import { runLifecycleUpgrade, isLifecycleCleanupResource, type LifecycleUpgradeResult } from "./lifecycleUpgrade.js";
 import { acquireUpgradeLock, releaseUpgradeLock } from "./upgradeLock.js";
-import {
-  applyPreparedEntityCutover,
-  inspectEntityCutoverForUpgrade,
-  prepareEntityCutoverForUpgrade,
-  type PreparedEntityCutover,
-} from "../state/entityCutover.js";
+import { applyPreparedEntityCutover, inspectEntityCutoverForUpgrade, prepareEntityCutoverForUpgrade, type PreparedEntityCutover } from "../state/entityCutover.js";
 import { detectStateMode } from "../state/stateMode.js";
 
 /**
@@ -105,11 +54,7 @@ export interface UpgradePlanV2 {
   schemaVersion: typeof UPGRADE_PREVIEW_SCHEMA;
   mode: "plan" | "apply";
   status: MigrationStatus;
-  lifecycleStatus:
-    | typeof STATUS_MANUAL_REVIEW_NEEDED
-    | typeof STATUS_NO_CHANGES_NEEDED
-    | typeof STATUS_READY_TO_APPLY
-    | typeof STATUS_APPLIED;
+  lifecycleStatus: typeof STATUS_MANUAL_REVIEW_NEEDED | typeof STATUS_NO_CHANGES_NEEDED | typeof STATUS_READY_TO_APPLY | typeof STATUS_APPLIED;
   channel: ResolvedUpdateChannel;
   install: InstallClassification;
   upgradeOutcome: UpgradeOutcome;
@@ -175,11 +120,7 @@ function selectedPhases(only: readonly UpgradeOnlyPhase[] | null | undefined): S
   return selected;
 }
 
-function summarizeOrchestratorPhase(
-  name: UpgradePhaseName,
-  items: MigrationPhaseItem[],
-  message = "",
-): UpgradeOrchestratorPhase {
+function summarizeOrchestratorPhase(name: UpgradePhaseName, items: MigrationPhaseItem[], message = ""): UpgradeOrchestratorPhase {
   const summary = emptySummary();
   for (const item of items) {
     summary[item.status] += 1;
@@ -193,12 +134,7 @@ function summarizeOrchestratorPhase(
   return { name, status, summary, items, message };
 }
 
-function buildDetectPhase(
-  install: InstallClassification,
-  crossMajorBoundary: boolean,
-  outcome: UpgradeOutcome,
-  channel: ResolvedUpdateChannel,
-): UpgradeOrchestratorPhase {
+function buildDetectPhase(install: InstallClassification, crossMajorBoundary: boolean, outcome: UpgradeOutcome, channel: ResolvedUpdateChannel): UpgradeOrchestratorPhase {
   const items: MigrationPhaseItem[] = [
     {
       status: "noop",
@@ -217,9 +153,7 @@ function buildDetectPhase(
     items.push({
       status: "blocked",
       action: "major-boundary",
-      message:
-        outcome.message ??
-        "v2→v3 migration requires the development channel while stable tracks 2.x; rerun with --channel development after preview",
+      message: outcome.message ?? "v2→v3 migration requires the development channel while stable tracks 2.x; rerun with --channel development after preview",
     });
   } else if (outcome.message && outcome.kind !== "up_to_date") {
     items.push({
@@ -244,59 +178,65 @@ function migrationPhaseToOrchestrator(phase: MigrationPhase): UpgradeOrchestrato
 
 function readyEntityCutoverPhase(entityCount: number, todoReconciliation: boolean): UpgradeOrchestratorPhase {
   const empty = entityCount === 0;
-  return summarizeOrchestratorPhase("entities", [{
-    status: empty ? "blocked" : "pending",
-    action: empty ? "unsupported-state-source" : "entity-cutover",
-    message: empty
-      ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
-      : `${entityCount} entity record(s) are ready for marker-last Git cutover${todoReconciliation ? "; apply also journals TODO visible IDs, Markdown-owned public baselines, activation, canonical Markdown, and the authority marker" : ""}`,
-  }]);
+  return summarizeOrchestratorPhase("entities", [
+    {
+      status: empty ? "blocked" : "pending",
+      action: empty ? "unsupported-state-source" : "entity-cutover",
+      message: empty
+        ? "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md"
+        : `${entityCount} entity record(s) are ready for marker-last Git cutover${todoReconciliation ? "; apply also journals TODO visible IDs, Markdown-owned public baselines, activation, canonical Markdown, and the authority marker" : ""}`,
+    },
+  ]);
 }
 
-function entityReadinessPhase(
-  project: string,
-  sourceRoot: string,
-  selected: boolean,
-  apply: boolean,
-  activeUpgradeLockPaths: readonly string[],
-): UpgradeOrchestratorPhase {
+function entityReadinessPhase(project: string, sourceRoot: string, selected: boolean, apply: boolean, activeUpgradeLockPaths: readonly string[]): UpgradeOrchestratorPhase {
   try {
     const cutover = inspectEntityCutoverForUpgrade(project, sourceRoot, apply && selected, activeUpgradeLockPaths);
     if (cutover.phase === "active") {
-      return summarizeOrchestratorPhase("entities", [{
-        status: "noop",
-        action: "entity-state-active",
-        message: "validated entity authority is already active",
-      }]);
+      return summarizeOrchestratorPhase("entities", [
+        {
+          status: "noop",
+          action: "entity-state-active",
+          message: "validated entity authority is already active",
+        },
+      ]);
     }
     if (cutover.phase !== "ready") {
       if (!selected) {
-        return summarizeOrchestratorPhase("entities", [{
-          status: "blocked",
-          action: "entity-cutover-required",
-          message: "a forward entity cutover must complete inside one full upgrade before any filtered effects",
-        }]);
+        return summarizeOrchestratorPhase("entities", [
+          {
+            status: "blocked",
+            action: "entity-cutover-required",
+            message: "a forward entity cutover must complete inside one full upgrade before any filtered effects",
+          },
+        ]);
       }
-      return summarizeOrchestratorPhase("entities", [{
-        status: "pending",
-        action: "entity-cutover",
-        message: "validated forward entity publication is ready to complete without deleting canonical entities",
-      }]);
+      return summarizeOrchestratorPhase("entities", [
+        {
+          status: "pending",
+          action: "entity-cutover",
+          message: "validated forward entity publication is ready to complete without deleting canonical entities",
+        },
+      ]);
     }
     if (!selected) {
-      return summarizeOrchestratorPhase("entities", [{
-        status: "blocked",
-        action: "entity-cutover-required",
-        message: "marker-absent projects require one full cross-major upgrade; filtered apply is unavailable",
-      }]);
+      return summarizeOrchestratorPhase("entities", [
+        {
+          status: "blocked",
+          action: "entity-cutover-required",
+          message: "marker-absent projects require one full cross-major upgrade; filtered apply is unavailable",
+        },
+      ]);
     }
     return readyEntityCutoverPhase(cutover.entityCount, cutover.todoReconciliation);
   } catch (error) {
-    return summarizeOrchestratorPhase("entities", [{
-      status: "blocked",
-      action: "validate-entity-state",
-      message: (error as Error).message,
-    }]);
+    return summarizeOrchestratorPhase("entities", [
+      {
+        status: "blocked",
+        action: "validate-entity-state",
+        message: (error as Error).message,
+      },
+    ]);
   }
 }
 
@@ -319,21 +259,12 @@ function lifecyclePhase(result: LifecycleUpgradeResult): UpgradeOrchestratorPhas
 }
 
 function isIndependentRetiredCleanupBlocker(phase: UpgradeOrchestratorPhase, item: MigrationPhaseItem): boolean {
-  return phase.name === "cleanup" && item.status === "blocked" && [
-    REMOVE_LEGACY_AGENT_ACTION,
-    PRUNE_LEGACY_DIRECTORY_ACTION,
-    RETIRE_DECLARED_RESOURCE_ACTION,
-    REVIEW_DECLARED_RESOURCE_ACTION,
-    RETIRE_INSTALLED_HOOKS_ACTION,
-    "retire-hooks",
-  ].includes(item.action);
+  return phase.name === "cleanup" && item.status === "blocked" && [REMOVE_LEGACY_AGENT_ACTION, PRUNE_LEGACY_DIRECTORY_ACTION, RETIRE_DECLARED_RESOURCE_ACTION, REVIEW_DECLARED_RESOURCE_ACTION, RETIRE_INSTALLED_HOOKS_ACTION, "retire-hooks"].includes(item.action);
 }
 
 export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   if (args.runtime) {
-    throw new Error(
-      `--runtime ${args.runtime} is retired; use the shared skill at ~/.agents/skills/agentera plus the CLI and remove --runtime`,
-    );
+    throw new Error(`--runtime ${args.runtime} is retired; use the shared skill at ~/.agents/skills/agentera plus the CLI and remove --runtime`);
   }
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
@@ -352,12 +283,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   }
 }
 
-function buildUpgradePlanUnlocked(
-  args: UpgradeOrchestratorArgs,
-  home: string,
-  project: string,
-  activeUpgradeLockPaths: readonly string[],
-): UpgradePlanV2 {
+function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, project: string, activeUpgradeLockPaths: readonly string[]): UpgradePlanV2 {
   const sourceRoot = resolveSourceRootStrict();
   const homeScopedPath = (value: string | undefined): string | null => {
     if (!value) return null;
@@ -365,8 +291,7 @@ function buildUpgradePlanUnlocked(
     // resolved path is checked. The home itself and its descendants are valid.
     const resolved = resolvePath(value);
     const relative = path.relative(home, resolved);
-    const withinHome = relative === ""
-      || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
+    const withinHome = relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
     return withinHome ? resolved : null;
   };
   const xdgConfigHome = homeScopedPath(process.env.XDG_CONFIG_HOME) ?? path.join(home, ".config");
@@ -393,19 +318,24 @@ function buildUpgradePlanUnlocked(
     channel,
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
-  const markerManagedResource = args.legacyCleanup
-    ? resolveDeclaredMarkerManagedResource(args.legacyCleanup)
-    : null;
+  const markerManagedResource = args.legacyCleanup ? resolveDeclaredMarkerManagedResource(args.legacyCleanup) : null;
   if (args.legacyCleanup && (markerManagedResource || !isLifecycleCleanupResource(args.legacyCleanup))) {
-    const targetedContext = { appHome: installRoot, project, home, force: args.force, sourceRoot,
-      channel: args.channel ?? null, env, installAppContentIfMissing: false };
+    const targetedContext = {
+      appHome: installRoot,
+      project,
+      home,
+      force: args.force,
+      sourceRoot,
+      channel: args.channel ?? null,
+      env,
+      installAppContentIfMissing: false,
+    };
     const match = /^(cursor|opencode)\.agent\.(.+)$/.exec(args.legacyCleanup);
     let items: MigrationPhaseItem[];
     if (markerManagedResource) {
       items = planDeclaredRetiredResourceCleanupItems(targetedContext, new Set(), args.legacyCleanup, true);
-      const selectedDirectories = new Set(items.flatMap((item) => item.source ? [path.dirname(item.source)] : []));
-      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items)
-        .filter((item) => item.source && selectedDirectories.has(item.source)));
+      const selectedDirectories = new Set(items.flatMap((item) => (item.source ? [path.dirname(item.source)] : [])));
+      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items).filter((item) => item.source && selectedDirectories.has(item.source)));
       if (args.yes) {
         applyDeclaredRetiredResourceCleanupItems(items, targetedContext);
         applyLegacyAgentCleanupItems(items, targetedContext);
@@ -413,11 +343,9 @@ function buildUpgradePlanUnlocked(
     } else if (match) {
       const runtime = match[1]!;
       const filename = `${match[2]!}.md`;
-      items = [...planLegacyAgentCleanupItems(targetedContext), ...planLegacyCapabilityAgentCleanupItems(targetedContext)]
-        .filter((item) => item.runtime === runtime && item.source && path.basename(item.source) === filename);
-      const selectedDirectories = new Set(items.flatMap((item) => item.source ? [path.dirname(item.source)] : []));
-      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items)
-        .filter((item) => item.source && selectedDirectories.has(item.source)));
+      items = [...planLegacyAgentCleanupItems(targetedContext), ...planLegacyCapabilityAgentCleanupItems(targetedContext)].filter((item) => item.runtime === runtime && item.source && path.basename(item.source) === filename);
+      const selectedDirectories = new Set(items.flatMap((item) => (item.source ? [path.dirname(item.source)] : [])));
+      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items).filter((item) => item.source && selectedDirectories.has(item.source)));
       if (args.yes) applyLegacyAgentCleanupItems(items, targetedContext);
     } else if (args.legacyCleanup.startsWith("agentera.installed-hook.")) {
       const filename = args.legacyCleanup.slice("agentera.installed-hook.".length);
@@ -432,30 +360,48 @@ function buildUpgradePlanUnlocked(
       }
     } else {
       items = planDeclaredRetiredResourceCleanupItems(targetedContext, new Set(), args.legacyCleanup, true);
-      const selectedDirectories = new Set(items.flatMap((item) => item.source ? [path.dirname(item.source)] : []));
-      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items)
-        .filter((item) => item.source && selectedDirectories.has(item.source)));
+      const selectedDirectories = new Set(items.flatMap((item) => (item.source ? [path.dirname(item.source)] : [])));
+      items.push(...planLegacyDirectoryCleanupItems(targetedContext, items).filter((item) => item.source && selectedDirectories.has(item.source)));
       if (args.yes) {
         applyDeclaredRetiredResourceCleanupItems(items, targetedContext);
         applyLegacyAgentCleanupItems(items, targetedContext);
       }
     }
-    if (items.length === 0) items.push({
-      resourceId: markerManagedResource?.id ?? args.legacyCleanup,
-      status: "noop",
-      action: "retired-resource-already-absent",
-      message: `declared retired resource ${args.legacyCleanup} is already absent`,
-    });
+    if (items.length === 0)
+      items.push({
+        resourceId: markerManagedResource?.id ?? args.legacyCleanup,
+        status: "noop",
+        action: "retired-resource-already-absent",
+        message: `declared retired resource ${args.legacyCleanup} is already absent`,
+      });
     const phases = [summarizeOrchestratorPhase("cleanup", items, "focused retired-resource cleanup")];
     const summary = aggregateSummary(phases);
     const status = workflowStatus(summary);
-    const commands = buildUpgradeCommands({ project, installRoot: crossMajorBoundary ? installRoot : null,
-      channel, legacyCleanup: args.legacyCleanup, cwdDefault: true });
-    return { schemaVersion: UPGRADE_PREVIEW_SCHEMA, mode: args.yes ? "apply" : "plan", status,
-      lifecycleStatus: lifecycleStatusFromWorkflow(status, args.yes ? "apply" : "plan"), channel, install,
-      upgradeOutcome, crossMajorBoundary, project, appHome: installRoot, home, phases, lifecycle: null, summary,
+    const commands = buildUpgradeCommands({
+      project,
+      installRoot: crossMajorBoundary ? installRoot : null,
+      channel,
+      legacyCleanup: args.legacyCleanup,
+      cwdDefault: true,
+    });
+    return {
+      schemaVersion: UPGRADE_PREVIEW_SCHEMA,
+      mode: args.yes ? "apply" : "plan",
+      status,
+      lifecycleStatus: lifecycleStatusFromWorkflow(status, args.yes ? "apply" : "plan"),
+      channel,
+      install,
+      upgradeOutcome,
+      crossMajorBoundary,
+      project,
+      appHome: installRoot,
+      home,
+      phases,
+      lifecycle: null,
+      summary,
       dryRunCommand: summary.pending > 0 ? commands.dryRunCommand : null,
-      applyCommand: summary.pending > 0 ? commands.applyCommand : null };
+      applyCommand: summary.pending > 0 ? commands.applyCommand : null,
+    };
   }
   if (args.legacyCleanup) {
     const lifecycle = runLifecycleUpgrade({
@@ -507,21 +453,11 @@ function buildUpgradePlanUnlocked(
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingPlanLifecycleMigration = hasPendingPlanLifecycleMigration(project);
-  const crossMajorMigration =
-    crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+  const crossMajorMigration = crossMajorBoundary && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const entityAuthorityActive = detectStateMode(project, sourceRoot) === "entities";
-  const projectEntityCutover = !entityAuthorityActive
-    && channel.distributionMajor >= 3
-    && !args.only
-    && !args.legacyCleanup;
-  const pendingCleanup = [
-    ...planLegacyAgentCleanupItems(migrationCtx),
-    ...planLegacyCapabilityAgentCleanupItems(migrationCtx),
-    ...planLegacyDirectoryCleanupItems(migrationCtx),
-    ...planDeclaredRetiredResourceCleanupItems(migrationCtx),
-  ].some((item) => item.status !== "noop");
-  const runMigration =
-    crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingPlanLifecycleMigration || pendingCleanup;
+  const projectEntityCutover = !entityAuthorityActive && channel.distributionMajor >= 3 && !args.only && !args.legacyCleanup;
+  const pendingCleanup = [...planLegacyAgentCleanupItems(migrationCtx), ...planLegacyCapabilityAgentCleanupItems(migrationCtx), ...planLegacyDirectoryCleanupItems(migrationCtx), ...planDeclaredRetiredResourceCleanupItems(migrationCtx)].some((item) => item.status !== "noop");
+  const runMigration = crossMajorMigration || projectEntityCutover || pendingRuntimeSync || pendingPlanLifecycleMigration || pendingCleanup;
 
   const phases: UpgradeOrchestratorPhase[] = [];
 
@@ -542,11 +478,13 @@ function buildUpgradePlanUnlocked(
         preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
         entityPhase = readyEntityCutoverPhase(preparedEntityMigration.entityCount, preparedEntityMigration.todoReconciliation);
       } catch (error) {
-        entityPhase = summarizeOrchestratorPhase("entities", [{
-          status: "blocked",
-          action: "validate-entity-state",
-          message: (error as Error).message,
-        }]);
+        entityPhase = summarizeOrchestratorPhase("entities", [
+          {
+            status: "blocked",
+            action: "validate-entity-state",
+            message: (error as Error).message,
+          },
+        ]);
       }
     } else {
       entityPhase = entityReadinessPhase(project, sourceRoot, entitySelected, Boolean(args.yes), activeUpgradeLockPaths);
@@ -557,8 +495,11 @@ function buildUpgradePlanUnlocked(
     delegatePlanLifecycleToEntityCutover(migrationPreview.artifacts);
   }
   const lifecycleArgs = {
-    home, appHome: installRoot, apply: false,
-    resourceCleanup: "opencode.plugin.agentera", automaticRetirement: true,
+    home,
+    appHome: installRoot,
+    apply: false,
+    resourceCleanup: "opencode.plugin.agentera",
+    automaticRetirement: true,
   };
   let lifecycle = runLifecycleUpgrade(lifecycleArgs);
 
@@ -575,20 +516,18 @@ function buildUpgradePlanUnlocked(
 
   if (preparedEntityMigration && !entityPreflightBlocked) {
     const result = applyPreparedEntityCutover(preparedEntityMigration, activeUpgradeLockPaths);
-    entityPhase = summarizeOrchestratorPhase("entities", [{
-      status: "applied",
-      action: "entity-cutover",
-      message: `${result.entity_count} entity record(s) published and validated; authority marker written last`,
-    }]);
+    entityPhase = summarizeOrchestratorPhase("entities", [
+      {
+        status: "applied",
+        action: "entity-cutover",
+        message: `${result.entity_count} entity record(s) published and validated; authority marker written last`,
+      },
+    ]);
   }
 
   if (args.yes && migrationPreview && !entityPreflightBlocked) {
     const applyPhases = args.only ?? MIGRATION_ONLY_PHASES;
-    migrationPreview = applyMigrationPhases(
-      migrationCtx,
-      migrationPreview,
-      applyPhases,
-    );
+    migrationPreview = applyMigrationPhases(migrationCtx, migrationPreview, applyPhases);
   }
   if (migrationPreview) {
     if (phaseFilter.has("artifacts")) {
@@ -611,12 +550,7 @@ function buildUpgradePlanUnlocked(
 
   const summary = aggregateSummary(phases);
   const status = workflowStatus(summary);
-  const appApplyBlocked = phases
-    .filter((phase) => phase.name !== "lifecycle")
-    .some((phase) => phase.items.some((item) =>
-      (item.status === "blocked" || item.status === "failed")
-      && !isIndependentRetiredCleanupBlocker(phase, item),
-    ));
+  const appApplyBlocked = phases.filter((phase) => phase.name !== "lifecycle").some((phase) => phase.items.some((item) => (item.status === "blocked" || item.status === "failed") && !isIndependentRetiredCleanupBlocker(phase, item)));
   const mode = args.yes ? "apply" : "plan";
   const lifecycleStatus = lifecycleStatusFromWorkflow(status, mode);
   const hasPending = summary.pending > 0;
@@ -664,26 +598,13 @@ export function validateUpgradeApply(args: UpgradeOrchestratorArgs, plan: Upgrad
   }
   const appPhases = plan.phases.filter((phase) => phase.name !== "lifecycle");
   const entityImportPending = appPhases.some((phase) => phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending"));
-  const applyBlockingPhases = entityImportPending
-    ? appPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name))
-    : appPhases;
-  const blockingItems = applyBlockingPhases.flatMap((phase) => phase.items.filter((item) =>
-    (item.status === "blocked" || item.status === "failed") && !isIndependentRetiredCleanupBlocker(phase, item),
-  ));
+  const applyBlockingPhases = entityImportPending ? appPhases.filter((phase) => ["detect", "artifacts", "entities"].includes(phase.name)) : appPhases;
+  const blockingItems = applyBlockingPhases.flatMap((phase) => phase.items.filter((item) => (item.status === "blocked" || item.status === "failed") && !isIndependentRetiredCleanupBlocker(phase, item)));
   if (blockingItems.length > 0) {
-    return blockingItems[0]?.message
-      ?? "upgrade preflight is blocked; no changes were applied";
+    return blockingItems[0]?.message ?? "upgrade preflight is blocked; no changes were applied";
   }
-  if (
-    !args.legacyCleanup
-    &&
-    plan.crossMajorBoundary &&
-    !shouldIncludeCrossMajorPlanItems(plan.channel, plan.upgradeOutcome)
-  ) {
-    return (
-      "cross-major v2→v3 migration requires the development channel while stable tracks 2.x; " +
-      "run the same command with --dry-run on --channel development, then apply with --yes"
-    );
+  if (!args.legacyCleanup && plan.crossMajorBoundary && !shouldIncludeCrossMajorPlanItems(plan.channel, plan.upgradeOutcome)) {
+    return "cross-major v2→v3 migration requires the development channel while stable tracks 2.x; " + "run the same command with --dry-run on --channel development, then apply with --yes";
   }
   return null;
 }
@@ -722,13 +643,9 @@ export function renderUpgradePlan(plan: UpgradePlanV2): string {
     lines.push("native Agentera resource cleanup:");
     lines.push(`  ownership journal: ${plan.lifecycle.ownershipJournal.state} at ${plan.lifecycle.ownershipJournal.path}`);
     lines.push(`  secure publication: ${plan.lifecycle.platform.securePublication ? "available" : "unavailable"} (${plan.lifecycle.platform.requirement})`);
-    lines.push(
-      `  scope: ownership-proven native Agentera resource ${plan.lifecycle.nativeResourceCleanup.resourceId}; unrelated user-owned data excluded`,
-    );
+    lines.push(`  scope: ownership-proven native Agentera resource ${plan.lifecycle.nativeResourceCleanup.resourceId}; unrelated user-owned data excluded`);
     const cleanup = plan.lifecycle.cleanupSummary;
-    lines.push(
-      `  counts: pending=${cleanup.pending}, applied=${cleanup.applied}, noop=${cleanup.noop}, blocked=${cleanup.blocked_unowned + cleanup.action_required}`,
-    );
+    lines.push(`  counts: pending=${cleanup.pending}, applied=${cleanup.applied}, noop=${cleanup.noop}, blocked=${cleanup.blocked_unowned + cleanup.action_required}`);
     if (cleanup.applied > 0 && plan.lifecycle.nativeResourceCleanup.resourceId === "opencode.plugin.agentera") {
       lines.push("  Next: restart OpenCode to finish removing the retired plugin.");
     }

@@ -5,15 +5,7 @@ import { execFileSync } from "node:child_process";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  RELEASE_METADATA_ADVISORY_FILES,
-  RELEASE_METADATA_AUTHORITY_FILES,
-  RELEASE_PROVENANCE_PATHS,
-  STABLE_SHIM_PROVENANCE_PATHS,
-  readReleaseMetadata,
-  releaseMetadataMain,
-  validateReleaseMetadata,
-} from "../../src/release/releaseMetadata.js";
+import { RELEASE_METADATA_ADVISORY_FILES, RELEASE_METADATA_AUTHORITY_FILES, RELEASE_PROVENANCE_PATHS, STABLE_SHIM_PROVENANCE_PATHS, readReleaseMetadata, releaseMetadataMain, validateReleaseMetadata } from "../../src/release/releaseMetadata.js";
 
 const VALID_REGISTRY = (version: string) => ({
   version: "1",
@@ -78,7 +70,10 @@ const VALID_CHANNELS = (dev = "3.0.0", stable = "2.7.7") => ({
       distribution_major: 2,
       resolution: {
         npm: { dist_tag: "latest", update_command: "npx -y agentera@latest" },
-        git: { ref: "main", update_command: "uvx --from git+https://github.com/jgabor/agentera@main agentera" },
+        git: {
+          ref: "main",
+          update_command: "uvx --from git+https://github.com/jgabor/agentera@main agentera",
+        },
       },
     },
     development: {
@@ -108,7 +103,10 @@ const VALID_CHANNELS = (dev = "3.0.0", stable = "2.7.7") => ({
       offline_defaults: { stable, development: dev },
     },
     irreversibility: { downgrade_to_v2: "permanently_blocked", supported_downgrade_lines: [] },
-    forward_major_gate: { mechanism: "semver_compare", apply_requires: ["dry_run_preview", "yes_flag"] },
+    forward_major_gate: {
+      mechanism: "semver_compare",
+      apply_requires: ["dry_run_preview", "yes_flag"],
+    },
     outcome_concepts: ["same_major_update", "forward_major_upgrade"],
   },
   docs_delegation: {
@@ -148,18 +146,7 @@ function initializeGitFixture(root: string): string {
   writeFile(root, "fixtures/routing/hybrid-corpus.yaml", "cases: []\n");
   git(root, "init", "-q");
   git(root, "add", ".");
-  git(
-    root,
-    "-c",
-    "user.name=Agentera Test",
-    "-c",
-    "user.email=agentera@example.invalid",
-    "-c",
-    "commit.gpgsign=false",
-    "commit",
-    "-qm",
-    "fixture",
-  );
+  git(root, "-c", "user.name=Agentera Test", "-c", "user.email=agentera@example.invalid", "-c", "commit.gpgsign=false", "commit", "-qm", "fixture");
   return git(root, "rev-parse", "HEAD");
 }
 
@@ -208,17 +195,13 @@ describe("release-metadata", () => {
   it("fails when registry.json skills[0].version is not a valid semver", () => {
     writeJson(tmp, "registry.json", VALID_REGISTRY("not-a-version"));
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContainEqual(
-      expect.stringContaining("registry.json: skills[0].version \"not-a-version\" is not a valid semver"),
-    );
+    expect(errors).toContainEqual(expect.stringContaining('registry.json: skills[0].version "not-a-version" is not a valid semver'));
   });
 
   it("forbids pre-release suffixes on the authoritative registry version", () => {
     writeJson(tmp, "registry.json", VALID_REGISTRY("3.0.0-next.5"));
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContainEqual(
-      expect.stringContaining("registry.json: skills[0].version must be a released core version"),
-    );
+    expect(errors).toContainEqual(expect.stringContaining("registry.json: skills[0].version must be a released core version"));
   });
 
   it("fails when packages/cli/package.json top-level version drifts from registry core", () => {
@@ -226,9 +209,7 @@ describe("release-metadata", () => {
     pkg.version = "3.1.0-dev.1";
     writeJson(tmp, "packages/cli/package.json", pkg);
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContainEqual(
-      expect.stringContaining("release-metadata divergence: registry.json skills[0].version core is \"3.0.0\""),
-    );
+    expect(errors).toContainEqual(expect.stringContaining('release-metadata divergence: registry.json skills[0].version core is "3.0.0"'));
   });
 
   it("fails when packages/cli/package.json agentera.suiteVersion drifts from registry version", () => {
@@ -236,11 +217,7 @@ describe("release-metadata", () => {
     pkg.agentera = { ...(pkg.agentera as Record<string, unknown>), suiteVersion: "3.0.1" };
     writeJson(tmp, "packages/cli/package.json", pkg);
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContainEqual(
-      expect.stringContaining(
-        "release-metadata divergence: registry.json skills[0].version is \"3.0.0\" but packages/cli/package.json agentera.suiteVersion is \"3.0.1\"",
-      ),
-    );
+    expect(errors).toContainEqual(expect.stringContaining('release-metadata divergence: registry.json skills[0].version is "3.0.0" but packages/cli/package.json agentera.suiteVersion is "3.0.1"'));
   });
 
   it("fails when packages/cli/package.json agentera.gitRef is not a 40-character hex SHA", () => {
@@ -260,11 +237,7 @@ describe("release-metadata", () => {
       if (label === "missing") {
         expect(errors).toContain("packages/cli/package.json: `agentera.gitRef` is required for release-metadata validation");
       } else {
-        expect(errors).toContainEqual(
-          expect.stringContaining(
-            `packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} must be a 40-character hex SHA`,
-          ),
-        );
+        expect(errors).toContainEqual(expect.stringContaining(`packages/cli/package.json: agentera.gitRef ${JSON.stringify(gitRef)} must be a 40-character hex SHA`));
       }
     }
   });
@@ -284,9 +257,7 @@ describe("release-metadata", () => {
     expect(validateReleaseMetadata(tmp)).toEqual([]);
 
     writeFile(tmp, "packages/cli/src/index.ts", "export const value = 2;\n");
-    expect(validateReleaseMetadata(tmp)).toContainEqual(
-      expect.stringContaining("does not match the governed package source tree"),
-    );
+    expect(validateReleaseMetadata(tmp)).toContainEqual(expect.stringContaining("does not match the governed package source tree"));
   });
 
   it.each([
@@ -300,9 +271,7 @@ describe("release-metadata", () => {
 
     writeFile(tmp, input, changedContent);
 
-    expect(validateReleaseMetadata(tmp)).toContainEqual(
-      expect.stringContaining("does not match the governed package source tree"),
-    );
+    expect(validateReleaseMetadata(tmp)).toContainEqual(expect.stringContaining("does not match the governed package source tree"));
   });
 
   it("rejects package contract drift outside version and gitRef", () => {
@@ -312,9 +281,7 @@ describe("release-metadata", () => {
     pkg.dependencies = { ...pkg.dependencies, unexpected: "1.0.0" };
     writeJson(tmp, "packages/cli/package.json", pkg);
 
-    expect(validateReleaseMetadata(tmp)).toContainEqual(
-      expect.stringContaining("package contract differs"),
-    );
+    expect(validateReleaseMetadata(tmp)).toContainEqual(expect.stringContaining("package contract differs"));
   });
 
   it("validates stable shim source provenance independently of development release metadata", () => {
@@ -339,25 +306,14 @@ describe("release-metadata", () => {
 
     expect(validateReleaseMetadata(tmp, "stable")).toEqual([]);
     writeFile(tmp, "packages/cli/shim/lib/resolve.mjs", "export const changed = true;\n");
-    expect(validateReleaseMetadata(tmp, "stable")).toContainEqual(
-      expect.stringContaining("does not match the stable shim packaged inputs"),
-    );
-    expect(STABLE_SHIM_PROVENANCE_PATHS).toEqual([
-      "packages/cli/shim/bin",
-      "packages/cli/shim/lib",
-      "packages/cli/shim/README.md",
-      "packages/cli/shim/LICENSE",
-    ]);
+    expect(validateReleaseMetadata(tmp, "stable")).toContainEqual(expect.stringContaining("does not match the stable shim packaged inputs"));
+    expect(STABLE_SHIM_PROVENANCE_PATHS).toEqual(["packages/cli/shim/bin", "packages/cli/shim/lib", "packages/cli/shim/README.md", "packages/cli/shim/LICENSE"]);
   });
 
   it("fails when update-channels.yaml development default drifts from registry version", () => {
     writeFile(tmp, "references/cli/update-channels.yaml", JSON.stringify(VALID_CHANNELS("3.0.1", "2.7.7")));
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContainEqual(
-      expect.stringContaining(
-        "release-metadata divergence: registry.json skills[0].version is \"3.0.0\" but update-channels.yaml offline_defaults.development is \"3.0.1\"",
-      ),
-    );
+    expect(errors).toContainEqual(expect.stringContaining('release-metadata divergence: registry.json skills[0].version is "3.0.0" but update-channels.yaml offline_defaults.development is "3.0.1"'));
   });
 
   it("reports an advisory drift when the local bundle sentinel lags registry.json", () => {
@@ -373,21 +329,7 @@ describe("release-metadata", () => {
   });
 
   it("governs only CLI and shared-skill package inputs", () => {
-    expect(RELEASE_PROVENANCE_PATHS).toEqual([
-      "packages/cli/src",
-      "packages/cli/scripts",
-      "packages/cli/README.md",
-      "packages/cli/tsconfig.json",
-      "skills",
-      "references",
-      "README.md",
-      "UPGRADE.md",
-      "CHANGELOG.md",
-      "DESIGN.md",
-      "LICENSE",
-      "registry.json",
-      "fixtures/routing/hybrid-corpus.yaml",
-    ]);
+    expect(RELEASE_PROVENANCE_PATHS).toEqual(["packages/cli/src", "packages/cli/scripts", "packages/cli/README.md", "packages/cli/tsconfig.json", "skills", "references", "README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE", "registry.json", "fixtures/routing/hybrid-corpus.yaml"]);
   });
 
   it("passes when the local bundle sentinel is in sync with registry.json", () => {
@@ -407,9 +349,7 @@ describe("release-metadata", () => {
   it("fails when update-channels.yaml is missing", () => {
     fs.rmSync(path.join(tmp, "references/cli/update-channels.yaml"));
     const errors = validateReleaseMetadata(tmp);
-    expect(errors).toContain(
-      "references/cli/update-channels.yaml: version_resolution.latest_on_channel.offline_defaults.development is required",
-    );
+    expect(errors).toContain("references/cli/update-channels.yaml: version_resolution.latest_on_channel.offline_defaults.development is required");
   });
 
   it("passes for a 2.x stable release train with @next pre-release on the development line", () => {

@@ -29,10 +29,7 @@ export function pyRepr(value: string): string {
 export function validatePrimeCapability(capability: string): void {
   if (!CAPABILITY_NAMES.includes(capability)) {
     const valid = CAPABILITY_NAMES.join(", ");
-    throw new Error(
-      `unsupported capability ${pyRepr(capability)}; valid capabilities: ${valid}. ` +
-        `Example: ${preCutoverCommand("prime --context plan")}`,
-    );
+    throw new Error(`unsupported capability ${pyRepr(capability)}; valid capabilities: ${valid}. ` + `Example: ${preCutoverCommand("prime --context plan")}`);
   }
 }
 
@@ -41,7 +38,7 @@ export function appendUnique(items: string[], value: string): void {
 }
 
 export function taskRef(task: JsonObject): JsonObject {
-  const record = task.record && typeof task.record === "object" && !Array.isArray(task.record) ? task.record as JsonObject : task;
+  const record = task.record && typeof task.record === "object" && !Array.isArray(task.record) ? (task.record as JsonObject) : task;
   return {
     id: task.id ?? null,
     artifact: task.artifact ?? "plan",

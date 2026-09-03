@@ -8,11 +8,7 @@ import { canonicalRecordJson } from "./archiveDiscovery.js";
 const BASE64URL = /^[A-Za-z0-9_-]+$/;
 
 function cursorKey(projectRoot: string, authorityPath: string): Buffer {
-  return createHash("sha256")
-    .update(path.resolve(projectRoot))
-    .update("\0")
-    .update(fs.readFileSync(authorityPath))
-    .digest();
+  return createHash("sha256").update(path.resolve(projectRoot)).update("\0").update(fs.readFileSync(authorityPath)).digest();
 }
 
 function decodeCanonicalSegment(segment: string): Buffer {

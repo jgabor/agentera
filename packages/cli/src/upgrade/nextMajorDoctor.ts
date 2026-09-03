@@ -1,9 +1,5 @@
 import { cliDistributionMajor } from "./compatibility.js";
-import {
-  loadUpdateChannelsAuthority,
-  resolveSelectedChannel,
-  type UpdateChannelName,
-} from "./channels.js";
+import { loadUpdateChannelsAuthority, resolveSelectedChannel, type UpdateChannelName } from "./channels.js";
 import { resolveRunningVersion } from "./versionResolution.js";
 import type { InstallClassification } from "./compatibility.js";
 import type { JsonObject } from "../core/jsonValue.js";
@@ -46,7 +42,9 @@ function parseNextMajorBlock(raw: unknown): NextMajorBlock | null {
     return null;
   }
   const block = raw as JsonObject;
-  const channel = String(block.channel ?? "").trim().toLowerCase();
+  const channel = String(block.channel ?? "")
+    .trim()
+    .toLowerCase();
   if (channel !== "stable" && channel !== "development") {
     return null;
   }
@@ -84,10 +82,7 @@ export function setSuccessorAnnouncedOverrideForTests(value: boolean | null): vo
  * for doctor/prime. Defaults to the stable channel so legacy callers that
  * omit the argument behave identically to pre-fix behavior.
  */
-export function isStableSuccessorAnnounced(
-  sourceRoot: string,
-  channel: UpdateChannelName = "stable",
-): boolean {
+export function isStableSuccessorAnnounced(sourceRoot: string, channel: UpdateChannelName = "stable"): boolean {
   if (testSuccessorAnnouncedOverride !== null) {
     return testSuccessorAnnouncedOverride;
   }
@@ -105,28 +100,12 @@ export function loadChannelNextMajor(sourceRoot: string, channel: UpdateChannelN
   return parseNextMajorBlock((entry as JsonObject).next_major);
 }
 
-export function formatNextMajorDoctorLines(args: {
-  currentVersion: string;
-  currentChannel: UpdateChannelName;
-  block: NextMajorBlock;
-}): string[] {
-  const nextLine = args.block.npmOnlyAdvisory
-    ? `Next: ${args.block.version} (${args.block.channel} channel). ${args.block.npmOnlyAdvisory}`
-    : `Next: ${args.block.version} (${args.block.channel} channel)`;
-  return [
-    NEXT_MAJOR_SECTION_HEADER,
-    `Current: ${args.currentVersion} (${args.currentChannel} channel)`,
-    nextLine,
-    `Guide: ${args.block.guideUrl}`,
-    `Preview: ${args.block.previewCommand}`,
-    args.block.irreversibleAdvisory,
-  ];
+export function formatNextMajorDoctorLines(args: { currentVersion: string; currentChannel: UpdateChannelName; block: NextMajorBlock }): string[] {
+  const nextLine = args.block.npmOnlyAdvisory ? `Next: ${args.block.version} (${args.block.channel} channel). ${args.block.npmOnlyAdvisory}` : `Next: ${args.block.version} (${args.block.channel} channel)`;
+  return [NEXT_MAJOR_SECTION_HEADER, `Current: ${args.currentVersion} (${args.currentChannel} channel)`, nextLine, `Guide: ${args.block.guideUrl}`, `Preview: ${args.block.previewCommand}`, args.block.irreversibleAdvisory];
 }
 
-function installTrackSkipsSuccessorBlock(
-  install: InstallClassification | null | undefined,
-  sourceRoot: string,
-): boolean {
+function installTrackSkipsSuccessorBlock(install: InstallClassification | null | undefined, sourceRoot: string): boolean {
   if (install?.kind === "v3_self_contained_npm") {
     return true;
   }
@@ -153,14 +132,10 @@ export function resolveNextMajorDoctorLines(ctx: NextMajorDoctorContext): string
     sourceRoot,
   });
   const currentChannel = selected.channel;
-  const successorChannel: UpdateChannelName =
-    install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
-  const displayChannel: UpdateChannelName =
-    install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
+  const successorChannel: UpdateChannelName = install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
+  const displayChannel: UpdateChannelName = install?.kind === "v2_managed_app_home" ? "stable" : currentChannel;
 
-  const runningDistributionMajor =
-    ctx.runningDistributionMajor ??
-    (install?.kind === "v2_managed_app_home" ? 2 : cliDistributionMajor(sourceRoot));
+  const runningDistributionMajor = ctx.runningDistributionMajor ?? (install?.kind === "v2_managed_app_home" ? 2 : cliDistributionMajor(sourceRoot));
 
   const authorityBlock = loadChannelNextMajor(sourceRoot, successorChannel);
   if (!authorityBlock || !authorityBlock.announced) {

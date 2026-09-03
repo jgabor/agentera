@@ -23,11 +23,7 @@ const fixturePath = path.join(pkgRoot, "test/analytics/fixtures/extract-corpus-p
 const bundleManifestPath = path.join(pkgRoot, "bundle/extract-corpus-parity.json");
 const pythonPath = path.join(repoRoot, "scripts/extract_corpus.py");
 const distRootIndex = process.argv.indexOf("--dist-root");
-const distRoot = path.resolve(
-  distRootIndex >= 0
-    ? process.argv[distRootIndex + 1]
-    : path.join(pkgRoot, "dist"),
-);
+const distRoot = path.resolve(distRootIndex >= 0 ? process.argv[distRootIndex + 1] : path.join(pkgRoot, "dist"));
 const distParity = path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js");
 const writeMode = process.argv.includes("--write");
 
@@ -260,10 +256,7 @@ async function main() {
   } else {
     const committed = fs.readFileSync(fixturePath, "utf8");
     if (committed !== rendered) {
-      errors.push(
-        `extract-corpus parity manifest drift: ${path.relative(repoRoot, fixturePath)} is stale; ` +
-          "run `node packages/cli/scripts/generate-extract-corpus-parity.mjs --write`",
-      );
+      errors.push(`extract-corpus parity manifest drift: ${path.relative(repoRoot, fixturePath)} is stale; ` + "run `node packages/cli/scripts/generate-extract-corpus-parity.mjs --write`");
     }
   }
 
@@ -272,10 +265,7 @@ async function main() {
   } else {
     const currentPy = fs.readFileSync(pythonPath, "utf8");
     if (currentPy !== python) {
-      errors.push(
-        `extract-corpus Python wrapper drift: ${path.relative(repoRoot, pythonPath)} is stale; ` +
-          "run `node packages/cli/scripts/generate-extract-corpus-parity.mjs --write`",
-      );
+      errors.push(`extract-corpus Python wrapper drift: ${path.relative(repoRoot, pythonPath)} is stale; ` + "run `node packages/cli/scripts/generate-extract-corpus-parity.mjs --write`");
     }
   }
 

@@ -1,18 +1,17 @@
 import { describe, expect, it } from "vitest";
 
 import type { JsonObject } from "../../src/core/jsonValue.js";
-import {
-  entityListSelectorKey,
-  projectEntityList,
-  resolveEntityListSelector,
-  type EntityListProjectionOptions,
-  type EntityListSelectorInput,
-} from "../../src/state/entityListProjection.js";
+import { entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListProjectionOptions, type EntityListSelectorInput } from "../../src/state/entityListProjection.js";
 
 function entries(count: number, detail = "small"): JsonObject[] {
   return Array.from({ length: count }, (_, index) => {
-    const id = `${String.fromCharCode(97 + Math.floor(index / 26)).repeat(9)}${String.fromCharCode(97 + index % 26)}`;
-    return { id, artifact: "plan", record: { name: `${index}-${detail}`, status: "pending", nested: { value: index } }, provenance: { path: `${id}.yaml` } };
+    const id = `${String.fromCharCode(97 + Math.floor(index / 26)).repeat(9)}${String.fromCharCode(97 + (index % 26))}`;
+    return {
+      id,
+      artifact: "plan",
+      record: { name: `${index}-${detail}`, status: "pending", nested: { value: index } },
+      provenance: { path: `${id}.yaml` },
+    };
   });
 }
 
@@ -42,7 +41,7 @@ function options(selector?: EntityListSelectorInput, maxUtf8Bytes = 32_768): Ent
 
 function todoEntries(count: number): JsonObject[] {
   return Array.from({ length: count }, (_, index) => {
-    const id = `${String.fromCharCode(97 + Math.floor(index / 26)).repeat(9)}${String.fromCharCode(97 + index % 26)}`;
+    const id = `${String.fromCharCode(97 + Math.floor(index / 26)).repeat(9)}${String.fromCharCode(97 + (index % 26))}`;
     return {
       id,
       artifact: "todo",
@@ -58,7 +57,14 @@ function todoEntries(count: number): JsonObject[] {
 }
 
 function todoOptions(selector?: EntityListSelectorInput, maxUtf8Bytes = 32_768): EntityListProjectionOptions {
-  return { family: "todo", artifact: "todo", boundary: "todo_item", format: "json", maxUtf8Bytes, selector };
+  return {
+    family: "todo",
+    artifact: "todo",
+    boundary: "todo_item",
+    format: "json",
+    maxUtf8Bytes,
+    selector,
+  };
 }
 
 describe("bounded entity list projection", () => {
@@ -74,7 +80,7 @@ describe("bounded entity list projection", () => {
       projection: { selector: "default", detail: "summary", cardinality: "requested_rows" },
       degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 100 },
     });
-    expect((projected.entries as JsonObject[])).toHaveLength(100);
+    expect(projected.entries as JsonObject[]).toHaveLength(100);
     expect((projected.entries as JsonObject[]).every((entry) => !entry.record && (entry.retrieval as JsonObject).get === `agentera state plan tasks get --id ${entry.id}`)).toBe(true);
   });
 
@@ -84,8 +90,16 @@ describe("bounded entity list projection", () => {
     const ids = resolveEntityListSelector(idsConfig.selector, rows, idsConfig);
     expect(projectEntityList(response(rows), ids, idsConfig)).toMatchObject({
       entries: [
-        { id: rows[0].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[0].id}` } },
-        { id: rows[1].id, artifact: "plan", retrieval: { get: `agentera state plan tasks get --id ${rows[1].id}` } },
+        {
+          id: rows[0].id,
+          artifact: "plan",
+          retrieval: { get: `agentera state plan tasks get --id ${rows[0].id}` },
+        },
+        {
+          id: rows[1].id,
+          artifact: "plan",
+          retrieval: { get: `agentera state plan tasks get --id ${rows[1].id}` },
+        },
       ],
       counts: { candidate: 2, returned: 2, omitted: 0 },
       projection: { selector: "ids_only", detail: "identity" },
@@ -97,7 +111,11 @@ describe("bounded entity list projection", () => {
     expect(entityListSelectorKey(fields)).toBe(entityListSelectorKey(resolveEntityListSelector({ fields: "nested.value,status" }, rows, fieldsConfig)));
     expect(projectEntityList(response(rows), fields, fieldsConfig)).toMatchObject({
       entries: [{ record: { nested: { value: 0 }, status: "pending" } }, { record: { nested: { value: 1 }, status: "pending" } }],
-      projection: { selector: "fields", detail: "selected_fields", fields: ["nested.value", "status"] },
+      projection: {
+        selector: "fields",
+        detail: "selected_fields",
+        fields: ["nested.value", "status"],
+      },
     });
     expect(() => projectEntityList(response(rows), ids, options({ idsOnly: true }, 100))).toThrow(/IDs-only rows cannot fit/);
     expect(() => projectEntityList(response(rows), fields, options({ fields: "status,nested.value" }, 100))).toThrow(/selected fields cannot fit/);
@@ -108,11 +126,8 @@ describe("bounded entity list projection", () => {
     const idsConfig = todoOptions({ idsOnly: true });
     const ids = resolveEntityListSelector(idsConfig.selector, rows, idsConfig);
     const identity = projectEntityList(response(rows), ids, idsConfig);
-    expect((identity.entries as JsonObject[])).toHaveLength(100);
-    expect((identity.entries as JsonObject[]).every((entry) => (
-      Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval"
-      && (entry.retrieval as JsonObject).get === `agentera state todo get --id ${entry.id}`
-    ))).toBe(true);
+    expect(identity.entries as JsonObject[]).toHaveLength(100);
+    expect((identity.entries as JsonObject[]).every((entry) => Object.keys(entry).sort().join(",") === "artifact,id,queue_rank,retrieval" && (entry.retrieval as JsonObject).get === `agentera state todo get --id ${entry.id}`)).toBe(true);
 
     const defaultConfig = todoOptions();
     const projected = projectEntityList(response(rows), resolveEntityListSelector(undefined, rows, defaultConfig), defaultConfig);
@@ -126,7 +141,7 @@ describe("bounded entity list projection", () => {
         omitted_fields: ["actionability", "provenance", "public_order", "readiness", "reconciliation", "record"],
       },
     });
-    expect((projected.entries as JsonObject[])).toEqual(identity.entries);
+    expect(projected.entries as JsonObject[]).toEqual(identity.entries);
 
     const selectedConfig = todoOptions({ fields: "title" });
     const selected = resolveEntityListSelector(selectedConfig.selector, rows, selectedConfig);

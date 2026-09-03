@@ -7,12 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import type { MigrationPhaseItem } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import {
-  applyRuntimeMigrationItem,
-  applyRuntimeMigrationItems,
-  planRuntimeMigrationItems,
-  planStaleCommandCleanupItems,
-} from "../../src/upgrade/runtimeMigration.js";
+import { applyRuntimeMigrationItem, applyRuntimeMigrationItems, planRuntimeMigrationItems, planStaleCommandCleanupItems } from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -21,36 +16,13 @@ const REPO_ROOT = path.resolve(__dirname, "../../../..");
 let tmp: string;
 let home: string;
 
-const MANAGED_HEJ = [
-  "---",
-  'description: "hej bridge"',
-  "agentera_managed: true",
-  "---",
-  "Bridge to the agentera skill\n",
-].join("\n");
+const MANAGED_HEJ = ["---", 'description: "hej bridge"', "agentera_managed: true", "---", "Bridge to the agentera skill\n"].join("\n");
 
-const MANAGED_LIRA = [
-  "---",
-  'description: "lira todo"',
-  "agentera_managed: true",
-  "---",
-  "Todo bridge command\n",
-].join("\n");
+const MANAGED_LIRA = ["---", 'description: "lira todo"', "agentera_managed: true", "---", "Todo bridge command\n"].join("\n");
 
-const MANAGED_AGENTERA = [
-  "---",
-  'description: "agentera"',
-  "agentera_managed: true",
-  "---",
-  "Load and execute the agentera skill for this project.\n",
-].join("\n");
+const MANAGED_AGENTERA = ["---", 'description: "agentera"', "agentera_managed: true", "---", "Load and execute the agentera skill for this project.\n"].join("\n");
 
-const UNMANAGED_BRAINSTORM = [
-  "---",
-  'description: "user brainstorm"',
-  "---",
-  "User-owned brainstorm command\n",
-].join("\n");
+const UNMANAGED_BRAINSTORM = ["---", 'description: "user brainstorm"', "---", "User-owned brainstorm command\n"].join("\n");
 
 const UNMANAGED_HEJ = "# user-authored hej\n";
 
@@ -155,9 +127,7 @@ describe("planStaleCommandCleanupItems", () => {
     writeCommand(commandsDir, "hej", MANAGED_HEJ);
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const existing: MigrationPhaseItem[] = [
-      { status: "noop", action: "configure", runtime: "opencode", message: "prev" },
-    ];
+    const existing: MigrationPhaseItem[] = [{ status: "noop", action: "configure", runtime: "opencode", message: "prev" }];
     planStaleCommandCleanupItems(ctx, existing);
     expect(existing).toHaveLength(2);
     expect(existing[0]?.action).toBe("configure");

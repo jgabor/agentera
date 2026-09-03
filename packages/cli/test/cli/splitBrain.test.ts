@@ -33,10 +33,7 @@ function seedBundle(root: string, opts: { sentinel: boolean }): void {
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
   fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
   if (opts.sentinel) {
-    fs.writeFileSync(
-      path.join(root, ".agentera-npx-bundle.json"),
-      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }),
-    );
+    fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }));
   }
 }
 

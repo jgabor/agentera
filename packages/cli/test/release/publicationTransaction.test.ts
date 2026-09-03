@@ -20,19 +20,13 @@ import {
   validateResult,
   withNpmCredentials,
 } from "../../scripts/publication-transaction.mjs";
-import {
-  formatConstruction,
-  normalizeConstruction,
-  npmChildEnvironment,
-  projectConstruction,
-} from "../../scripts/package-construction.mjs";
+import { formatConstruction, normalizeConstruction, npmChildEnvironment, projectConstruction } from "../../scripts/package-construction.mjs";
 import { isolatedNpmState } from "../../scripts/release-qualification.mjs";
 
 const HEAD = "0123456789abcdef0123456789abcdef01234567";
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const PUBLISHED_VERSION = "3.0.0-dev.39";
-const PUBLISHED_INTEGRITY =
-  "sha512-cWRi+6n8XJdumtwTVvZLXCTKIXZvnjRuE6P33XT7VpmqrDGP9Hec4ZiAx4SZHDJejtJD2qfO3pMWt+Ws5cAN4w==";
+const PUBLISHED_INTEGRITY = "sha512-cWRi+6n8XJdumtwTVvZLXCTKIXZvnjRuE6P33XT7VpmqrDGP9Hec4ZiAx4SZHDJejtJD2qfO3pMWt+Ws5cAN4w==";
 
 const manifest = (adapter: "development" | "stable") => ({
   name: "agentera",
@@ -66,15 +60,19 @@ function withTemporaryConstruction<T>(callback: (temporary: string) => T): T {
 
 describe("publication contract", () => {
   it("isolates npm children from caller tokens and configuration", () => {
-    const environment = npmChildEnvironment({
-      HOME: "/private/home",
-      NPM_TOKEN: "secret",
-      NODE_AUTH_TOKEN: "secret",
-      npm_config_registry: "https://hostile.invalid/",
-      PNPM_HOME: "/private/pnpm",
-      AGENTERA_VERIFICATION_RESULT: "/private/outer-result.json",
-      AGENTERA_VERIFICATION_BARRIER: "/private/outer-barrier",
-    }, "/tmp/user-npmrc", "/tmp/global-npmrc");
+    const environment = npmChildEnvironment(
+      {
+        HOME: "/private/home",
+        NPM_TOKEN: "secret",
+        NODE_AUTH_TOKEN: "secret",
+        npm_config_registry: "https://hostile.invalid/",
+        PNPM_HOME: "/private/pnpm",
+        AGENTERA_VERIFICATION_RESULT: "/private/outer-result.json",
+        AGENTERA_VERIFICATION_BARRIER: "/private/outer-barrier",
+      },
+      "/tmp/user-npmrc",
+      "/tmp/global-npmrc",
+    );
 
     expect(environment).toMatchObject({
       HOME: "/private/home",
@@ -134,12 +132,7 @@ describe("publication contract", () => {
       preparation: "incrementPatch",
       construction: "stableShim",
     });
-    expect(PACKAGE_ADAPTERS.development.smoke).toEqual([
-      "npx",
-      "-y",
-      "agentera@{version}",
-      "--version",
-    ]);
+    expect(PACKAGE_ADAPTERS.development.smoke).toEqual(["npx", "-y", "agentera@{version}", "--version"]);
     expect(PACKAGE_ADAPTERS.stable.smoke).toEqual(PACKAGE_ADAPTERS.development.smoke);
   });
 
@@ -168,12 +161,14 @@ describe("publication contract", () => {
 
   it("runs stable construction children in an isolated npm state", () => {
     const environments: NodeJS.ProcessEnv[] = [];
-    expect(() => constructPackage("stable", PACKAGE_ADAPTERS.stable, manifest("stable"), "/unused", {
-      run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
-        environments.push(options.env!);
-        throw new Error("stop after isolated test setup");
-      },
-    })).toThrow("stop after isolated test setup");
+    expect(() =>
+      constructPackage("stable", PACKAGE_ADAPTERS.stable, manifest("stable"), "/unused", {
+        run: (_command: string, _args: string[], options: { env?: NodeJS.ProcessEnv }) => {
+          environments.push(options.env!);
+          throw new Error("stop after isolated test setup");
+        },
+      }),
+    ).toThrow("stop after isolated test setup");
     expect(environments[0]).toMatchObject({
       HOME: expect.stringContaining("agentera-stable-construction-"),
       NPM_CONFIG_USERCONFIG: expect.any(String),
@@ -201,9 +196,7 @@ describe.each(["development", "stable"] as const)("%s publication adapter", (ada
   });
 
   it("rejects malformed preparation metadata without a registry operation", () => {
-    expect(() =>
-      prepareMetadata(adapterName, { ...manifest(adapterName), version: "bad" }, HEAD),
-    ).toThrow(/version/);
+    expect(() => prepareMetadata(adapterName, { ...manifest(adapterName), version: "bad" }, HEAD)).toThrow(/version/);
   });
 
   it("passes preflight for authorized, clean, committed metadata", () => {
@@ -400,9 +393,7 @@ describe("npm credential lifecycle", () => {
         ),
       ).toThrow("npm publish failed");
       expect(fs.existsSync(npmrc)).toBe(false);
-      expect(() => withNpmCredentials(temporary, () => undefined, {})).toThrow(
-        /NPM_TOKEN is absent/,
-      );
+      expect(() => withNpmCredentials(temporary, () => undefined, {})).toThrow(/NPM_TOKEN is absent/);
       expect(fs.existsSync(npmrc)).toBe(false);
     } finally {
       fs.rmSync(temporary, { recursive: true, force: true });
@@ -431,10 +422,7 @@ describe("npm registry response normalization", () => {
   });
 
   it("treats an absent first-use staging tag as untagged", () => {
-    expect(normalizeRegistryTag(
-      { latest: "0.0.2", next: "3.0.0-dev.41" },
-      "candidate-3.0.0-dev.45",
-    )).toBeNull();
+    expect(normalizeRegistryTag({ latest: "0.0.2", next: "3.0.0-dev.41" }, "candidate-3.0.0-dev.45")).toBeNull();
   });
 
   it.each([
@@ -446,14 +434,9 @@ describe("npm registry response normalization", () => {
     ["missing field", { integrity: PUBLISHED_INTEGRITY }],
     ["malformed field", { "dist.integrity": { value: PUBLISHED_INTEGRITY } }],
     ["malformed nested field", { "dist.integrity": PUBLISHED_INTEGRITY, dist: "invalid" }],
-    [
-      "contradictory duplicate fields",
-      { "dist.integrity": PUBLISHED_INTEGRITY, dist: { integrity: "sha512-conflict" } },
-    ],
+    ["contradictory duplicate fields", { "dist.integrity": PUBLISHED_INTEGRITY, dist: { integrity: "sha512-conflict" } }],
   ])("rejects the %s fixture as a registry-shape error", (_name, fixture) => {
-    expect(() => normalizeRegistryField(fixture, "dist.integrity")).toThrow(
-      /npm registry shape error for dist\.integrity/,
-    );
+    expect(() => normalizeRegistryField(fixture, "dist.integrity")).toThrow(/npm registry shape error for dist\.integrity/);
   });
 
   it("replays the observed npm 12 exact-version and dist-tag objects through smoke", async () => {
@@ -471,9 +454,7 @@ describe("npm registry response normalization", () => {
     const queries: string[] = [];
     const state = registryState(committed, PACKAGE_ADAPTERS.development, (args: string[]) => {
       queries.push(args.join(" "));
-      return args.at(-1) === "dist.integrity"
-        ? [{ "dist.integrity": PUBLISHED_INTEGRITY }]
-        : [{ next: PUBLISHED_VERSION }];
+      return args.at(-1) === "dist.integrity" ? [{ "dist.integrity": PUBLISHED_INTEGRITY }] : [{ next: PUBLISHED_VERSION }];
     });
     let publishes = 0;
     let smokes = 0;
@@ -487,17 +468,10 @@ describe("npm registry response normalization", () => {
       },
     });
 
-    expect(queries).toEqual([
-      `view agentera@${PUBLISHED_VERSION} dist.integrity`,
-      "view agentera dist-tags",
-    ]);
+    expect(queries).toEqual([`view agentera@${PUBLISHED_VERSION} dist.integrity`, "view agentera dist-tags"]);
     expect(publishes).toBe(0);
     expect(smokes).toBe(1);
-    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual([
-      "publication:replayed",
-      "smoke:passed",
-      "complete:passed",
-    ]);
+    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual(["publication:replayed", "smoke:passed", "complete:passed"]);
   });
 
   it("does not classify unmarked lookup errors as registry absence", () => {
@@ -525,10 +499,7 @@ describe("npm registry response normalization", () => {
 
     await expect(
       executePublication("development", committed, packed, {
-        inspectRegistry: () =>
-          registryState(committed, PACKAGE_ADAPTERS.development, () =>
-            parseNpmRegistryJson("malformed stdout containing E404"),
-          ),
+        inspectRegistry: () => registryState(committed, PACKAGE_ADAPTERS.development, () => parseNpmRegistryJson("malformed stdout containing E404")),
         publishPackage: () => publishes++,
       }),
     ).rejects.toThrow(/^npm registry shape error: invalid JSON response$/);
@@ -572,8 +543,13 @@ describe.each([
           candidateQueries += 1;
           throw new Error("staging tag must not be queried");
         },
-        publishPackage: () => { publishOrTagEffects += 1; },
-        smokePackage: () => { smokes += 1; return version; },
+        publishPackage: () => {
+          publishOrTagEffects += 1;
+        },
+        smokePackage: () => {
+          smokes += 1;
+          return version;
+        },
       });
     } catch (error) {
       failure = error;
@@ -587,7 +563,12 @@ describe.each([
     expect(candidateQueries).toBe(0);
     expect(publishOrTagEffects).toBe(0);
     expect(smokes).toBe(0);
-    expect(publicState).toEqual({ exists: false, integrity: null, expectedTagVersion: version, tagged: true });
+    expect(publicState).toEqual({
+      exists: false,
+      integrity: null,
+      expectedTagVersion: version,
+      tagged: true,
+    });
 
     const jsonFailure = publicationFailureResult(adapterName, version, "stage", failure);
     expect(JSON.parse(JSON.stringify(jsonFailure))).toMatchObject({
@@ -598,9 +579,7 @@ describe.each([
       outcome: "failed",
       nextAction: expect.stringContaining("No registry mutation was attempted"),
     });
-    expect(formatPublicationResult(jsonFailure)).toContain(
-      `${adapter.expectedTag} staging: failed`,
-    );
+    expect(formatPublicationResult(jsonFailure)).toContain(`${adapter.expectedTag} staging: failed`);
     expect(formatPublicationResult(jsonFailure)).not.toContain("NPM_TOKEN");
   });
 });
@@ -629,11 +608,7 @@ describe.each([
   }
 
   it("publishes an absent exact version once and smokes after delayed convergence", async () => {
-    const states = [
-      registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"),
-      registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"),
-      registry(packed.integrity, version),
-    ];
+    const states = [registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"), registry(null, adapterName === "development" ? "3.0.0-dev.32" : "2.7.7"), registry(packed.integrity, version)];
     let publishes = 0;
     let smokes = 0;
     const receipts = await executePublication(adapterName, committed, packed, {
@@ -649,12 +624,7 @@ describe.each([
 
     expect(publishes).toBe(1);
     expect(smokes).toBe(1);
-    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual([
-      "publication:published",
-      "convergence:passed",
-      "smoke:passed",
-      "complete:passed",
-    ]);
+    expect(receipts.map(({ phase, outcome }) => `${phase}:${outcome}`)).toEqual(["publication:published", "convergence:passed", "smoke:passed", "complete:passed"]);
   });
 
   it("replays matching registry state without publishing", async () => {
@@ -768,12 +738,14 @@ describe("publication version preflight", () => {
   };
 
   it("rejects adapter-incompatible local versions before mutation", () => {
-    expect(
-      preflightPublication("development", { ...manifest("development"), version: "3.0.0" }, state),
-    ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z-dev.N") });
-    expect(
-      preflightPublication("stable", { ...manifest("stable"), version: "2.7.8-dev.1" }, state),
-    ).toMatchObject({ outcome: "failed", nextAction: expect.stringContaining("X.Y.Z") });
+    expect(preflightPublication("development", { ...manifest("development"), version: "3.0.0" }, state)).toMatchObject({
+      outcome: "failed",
+      nextAction: expect.stringContaining("X.Y.Z-dev.N"),
+    });
+    expect(preflightPublication("stable", { ...manifest("stable"), version: "2.7.8-dev.1" }, state)).toMatchObject({
+      outcome: "failed",
+      nextAction: expect.stringContaining("X.Y.Z"),
+    });
   });
 
   it.each([
@@ -806,38 +778,33 @@ describe("publication version preflight", () => {
   it.each([
     ["3.0.0-dev.9007199254740992", "3.0.0-dev.9007199254740993"],
     [`0.0.0-dev.${"1".repeat(245)}2`, `0.0.0-dev.${"1".repeat(245)}3`],
-  ])(
-    "rejects precision-sensitive advanced next tag %s before publication",
-    async (version, ahead) => {
-      const committed = { ...manifest("development"), version };
-      const packed = normalizeConstruction(packedManifest(version), {
-        expectedName: "agentera",
-        expectedVersion: version,
-        expectedTag: "next",
-        artifact: `/tmp/agentera-${version}.tgz`,
-        warnings: [],
-      });
-      let publishes = 0;
+  ])("rejects precision-sensitive advanced next tag %s before publication", async (version, ahead) => {
+    const committed = { ...manifest("development"), version };
+    const packed = normalizeConstruction(packedManifest(version), {
+      expectedName: "agentera",
+      expectedVersion: version,
+      expectedTag: "next",
+      artifact: `/tmp/agentera-${version}.tgz`,
+      warnings: [],
+    });
+    let publishes = 0;
 
-      await expect(
-        executePublication("development", committed, packed, {
-          inspectRegistry: () => ({
-            exists: false,
-            integrity: null,
-            expectedTagVersion: ahead,
-            tagged: false,
-          }),
-          publishPackage: () => publishes++,
-          smokePackage: () => version,
-          sleep: async () => undefined,
-          registryAttempts: 1,
+    await expect(
+      executePublication("development", committed, packed, {
+        inspectRegistry: () => ({
+          exists: false,
+          integrity: null,
+          expectedTagVersion: ahead,
+          tagged: false,
         }),
-      ).rejects.toThrow(
-        `@next already points to ${ahead}, which is incompatible with committed ${version}`,
-      );
-      expect(publishes).toBe(0);
-    },
-  );
+        publishPackage: () => publishes++,
+        smokePackage: () => version,
+        sleep: async () => undefined,
+        registryAttempts: 1,
+      }),
+    ).rejects.toThrow(`@next already points to ${ahead}, which is incompatible with committed ${version}`);
+    expect(publishes).toBe(0);
+  });
 
   it.each([
     ["development", "0.0.0-dev.01"],

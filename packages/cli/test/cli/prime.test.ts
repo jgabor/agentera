@@ -17,11 +17,7 @@ import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
 import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
-import {
-  CHANGELOG_MAX_HEADING_BYTES,
-  CHANGELOG_MAX_OUTPUT_BYTES,
-  CHANGELOG_MAX_SOURCE_PATH_BYTES,
-} from "../../src/state/changelog.js";
+import { CHANGELOG_MAX_HEADING_BYTES, CHANGELOG_MAX_OUTPUT_BYTES, CHANGELOG_MAX_SOURCE_PATH_BYTES } from "../../src/state/changelog.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -38,10 +34,7 @@ describe("prime schema loading", () => {
     process.chdir(project);
 
     try {
-      fs.writeFileSync(
-        path.join(project, ".agentera/state-mode.yaml"),
-        "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-      );
+      fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
       const entityState = collectOrientationState({ home, env: process.env });
       const entityPayload = buildOrientationJsonPayload(entityState, "prime");
       expect(entityState.schemas).toEqual({});
@@ -159,7 +152,10 @@ describe("cli prime", () => {
     expect(err).toBe("");
     expect(payload.app).toBeTruthy();
     expect(payload.app_home.install_track).toBeTruthy();
-    expect(payload.shared_skill).toMatchObject({ name: "canonical_skill", status: expect.any(String) });
+    expect(payload.shared_skill).toMatchObject({
+      name: "canonical_skill",
+      status: expect.any(String),
+    });
     expect(payload.shared_skill.path).toBeUndefined();
     expect(payload).not.toHaveProperty("runtime_lifecycle");
     expect(typeof payload.app.status).toBe("string");
@@ -211,9 +207,7 @@ describe("cli prime", () => {
   });
 
   it("selects todo via --fields without emitting a deprecation warning", () => {
-    const { rc, out, err } = capture((io) =>
-      cmdPrime({ command: "prime", format: "json", fields: "todo" }, io),
-    );
+    const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", format: "json", fields: "todo" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(Object.keys(payload).sort()).toEqual(["command", "outcome", "todo"]);
@@ -229,9 +223,7 @@ describe("cli prime", () => {
   });
 
   it("rejects the retired issues field with one structured TODO correction", () => {
-    const { rc, out, err } = capture((io) =>
-      cmdPrime({ command: "prime", format: "json", fields: "issues" }, io),
-    );
+    const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", format: "json", fields: "issues" }, io));
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload).toMatchObject({
@@ -261,18 +253,24 @@ describe("cli prime", () => {
     expect(payload.capability_context.schemaVersion).toBe("agentera.capabilityContext.v1");
     expect(payload.capability_context.capability).toBe("plan");
     expect(payload.capability_context.context.planning_context).toBeTruthy();
-    expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe(
-      "agentera.planeraStartup.v1",
+    expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe("agentera.planeraStartup.v1");
+    expect(payload.capability_context.startup.availability).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          family: "plan",
+          availability: "included",
+          detail_command: "npx -y agentera@next state plan list",
+        }),
+        expect.objectContaining({
+          family: "decisions",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state decisions list",
+        }),
+      ]),
     );
-    expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "plan", availability: "included", detail_command: "npx -y agentera@next state plan list" }),
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
-    ]));
     expect(payload.capability_context).not.toHaveProperty("state");
     const planning = payload.capability_context.context.planning_context.startup_contract.planning;
-    expect(planning.task_coherence_rule).toBe(
-      "Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.",
-    );
+    expect(planning.task_coherence_rule).toBe("Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.");
     expect(planning).not.toHaveProperty(["max", "full", "plan", "tasks"].join("_"));
   });
 
@@ -339,12 +337,32 @@ describe("cli prime", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-project-"));
     fs.writeFileSync(path.join(project, "CHANGELOG.md"), "## [Unreleased]\n## [4.2.0] - 2026-07-30\n");
     try {
-      const build = JSON.parse(capture((io) => cmdPrime({
-        command: "prime", context: "build", format: "json", projectRoot: project,
-      }, io)).out).capability_context.context.execution_context.changelog_boundary;
-      const document = JSON.parse(capture((io) => cmdPrime({
-        command: "prime", context: "document", format: "json", projectRoot: project,
-      }, io)).out).capability_context.context.closeout_context.changelog_boundary;
+      const build = JSON.parse(
+        capture((io) =>
+          cmdPrime(
+            {
+              command: "prime",
+              context: "build",
+              format: "json",
+              projectRoot: project,
+            },
+            io,
+          ),
+        ).out,
+      ).capability_context.context.execution_context.changelog_boundary;
+      const document = JSON.parse(
+        capture((io) =>
+          cmdPrime(
+            {
+              command: "prime",
+              context: "document",
+              format: "json",
+              projectRoot: project,
+            },
+            io,
+          ),
+        ).out,
+      ).capability_context.context.closeout_context.changelog_boundary;
       expect(build).toMatchObject({
         status: "available",
         recognized_headings: ["## [Unreleased]", "## [4.2.0] - 2026-07-30"],
@@ -366,9 +384,7 @@ describe("cli prime", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-malformed-"));
     fs.writeFileSync(path.join(project, "CHANGELOG.md"), "## [Unreleased]\n## Notes\n## [4.2.0] - 2026-07-30\n");
     try {
-      const context = (capability: "build" | "document", field: "execution_context" | "closeout_context") =>
-        JSON.parse(capture((io) => cmdPrime({ command: "prime", context: capability, format: "json", projectRoot: project }, io)).out)
-          .capability_context.context[field].changelog_boundary;
+      const context = (capability: "build" | "document", field: "execution_context" | "closeout_context") => JSON.parse(capture((io) => cmdPrime({ command: "prime", context: capability, format: "json", projectRoot: project }, io)).out).capability_context.context[field].changelog_boundary;
       const build = context("build", "execution_context");
       const document = context("document", "closeout_context");
       expect(build).toMatchObject({ status: "incomplete", boundary: null });
@@ -383,55 +399,69 @@ describe("cli prime", () => {
     }
   });
 
-  it.each(["oversized heading", "oversized mapped path"])(
-    "keeps query, Build, and Document on one bounded envelope for an %s",
-    (kind) => {
-      const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-bound-"));
-      const previousCwd = process.cwd();
-      fs.mkdirSync(path.join(project, ".agentera"));
-      if (kind === "oversized heading") {
-        const prefix = "## [1.0.0-";
-        const suffix = "] - 2026-07-30";
-        fs.writeFileSync(
-          path.join(project, "CHANGELOG.md"),
-          `${prefix}${"a".repeat(CHANGELOG_MAX_HEADING_BYTES + 1 - prefix.length - suffix.length)}${suffix}\n`,
-        );
-      } else {
-        const parts = ["p".repeat(200), "p".repeat(200), "p".repeat(CHANGELOG_MAX_SOURCE_PATH_BYTES - 400)];
-        const mapped = parts.join("/");
-        fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), `mapping:\n  - artifact: CHANGELOG.md\n    path: ${mapped}\n`);
+  it.each(["oversized heading", "oversized mapped path"])("keeps query, Build, and Document on one bounded envelope for an %s", (kind) => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-changelog-bound-"));
+    const previousCwd = process.cwd();
+    fs.mkdirSync(path.join(project, ".agentera"));
+    if (kind === "oversized heading") {
+      const prefix = "## [1.0.0-";
+      const suffix = "] - 2026-07-30";
+      fs.writeFileSync(path.join(project, "CHANGELOG.md"), `${prefix}${"a".repeat(CHANGELOG_MAX_HEADING_BYTES + 1 - prefix.length - suffix.length)}${suffix}\n`);
+    } else {
+      const parts = ["p".repeat(200), "p".repeat(200), "p".repeat(CHANGELOG_MAX_SOURCE_PATH_BYTES - 400)];
+      const mapped = parts.join("/");
+      fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), `mapping:\n  - artifact: CHANGELOG.md\n    path: ${mapped}\n`);
+    }
+    process.chdir(project);
+    try {
+      const query = JSON.parse(capture((io) => cmdQuery({ query: "changelog", format: "json" }, io)).out);
+      const build = JSON.parse(
+        capture((io) =>
+          cmdPrime(
+            {
+              command: "prime",
+              context: "build",
+              format: "json",
+              projectRoot: project,
+            },
+            io,
+          ),
+        ).out,
+      ).capability_context.context.execution_context.changelog_boundary;
+      const document = JSON.parse(
+        capture((io) =>
+          cmdPrime(
+            {
+              command: "prime",
+              context: "document",
+              format: "json",
+              projectRoot: project,
+            },
+            io,
+          ),
+        ).out,
+      ).capability_context.context.closeout_context.changelog_boundary;
+      const shared = (value: Record<string, unknown>) => ({
+        schemaVersion: value.schemaVersion,
+        status: value.status,
+        recognized_headings: value.recognized_headings,
+        boundary: value.boundary,
+        source: value.source,
+        source_provenance: value.source_provenance,
+        caveats: value.caveats,
+        recovery: value.recovery,
+      });
+      expect(shared(build)).toEqual(shared(query));
+      expect(shared(document)).toEqual(shared(query));
+      for (const projection of [query, build, document]) {
+        expect(projection).toMatchObject({ status: "unavailable", source: { path: null } });
+        expect(Buffer.byteLength(`${JSON.stringify(projection, null, 2)}\n`)).toBeLessThanOrEqual(CHANGELOG_MAX_OUTPUT_BYTES);
       }
-      process.chdir(project);
-      try {
-        const query = JSON.parse(capture((io) => cmdQuery({ query: "changelog", format: "json" }, io)).out);
-        const build = JSON.parse(capture((io) => cmdPrime({
-          command: "prime", context: "build", format: "json", projectRoot: project,
-        }, io)).out).capability_context.context.execution_context.changelog_boundary;
-        const document = JSON.parse(capture((io) => cmdPrime({
-          command: "prime", context: "document", format: "json", projectRoot: project,
-        }, io)).out).capability_context.context.closeout_context.changelog_boundary;
-        const shared = (value: Record<string, unknown>) => ({
-          schemaVersion: value.schemaVersion,
-          status: value.status,
-          recognized_headings: value.recognized_headings,
-          boundary: value.boundary,
-          source: value.source,
-          source_provenance: value.source_provenance,
-          caveats: value.caveats,
-          recovery: value.recovery,
-        });
-        expect(shared(build)).toEqual(shared(query));
-        expect(shared(document)).toEqual(shared(query));
-        for (const projection of [query, build, document]) {
-          expect(projection).toMatchObject({ status: "unavailable", source: { path: null } });
-          expect(Buffer.byteLength(`${JSON.stringify(projection, null, 2)}\n`)).toBeLessThanOrEqual(CHANGELOG_MAX_OUTPUT_BYTES);
-        }
-      } finally {
-        process.chdir(previousCwd);
-        fs.rmSync(project, { recursive: true, force: true });
-      }
-    },
-  );
+    } finally {
+      process.chdir(previousCwd);
+      fs.rmSync(project, { recursive: true, force: true });
+    }
+  });
 
   it("derives audit and document decision pressure only from bounded decision entities", () => {
     const project = fs.mkdtempSync(path.join(os.tmpdir(), "prime-entity-decisions-"));
@@ -442,31 +472,11 @@ describe("cli prime", () => {
     fs.mkdirSync(decisionDir, { recursive: true });
     fs.mkdirSync(satisfactionDir, { recursive: true });
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    fs.writeFileSync(path.join(decisionDir, "aaaaaaaaaa.yaml"), [
-      "id: aaaaaaaaaa",
-      "artifact: decisions",
-      "record:",
-      "  date: 2026-07-01",
-      "  question: Entity authority?",
-      "  context: Audit startup",
-      "  alternatives:",
-      "    - name: entities",
-      "      status: chosen",
-      "  choice: entities",
-      "  reasoning: Canonical ownership",
-      "  confidence: firm",
-      "",
-    ].join("\n"));
-    fs.writeFileSync(path.join(satisfactionDir, "bbbbbbbbbb.yaml"), [
-      "id: bbbbbbbbbb",
-      "artifact: decisions",
-      "record:",
-      "  decision: aaaaaaaaaa",
-      "  state: open",
-      "  review_needed: true",
-      "  review_due: 2026-07-01",
-      "",
-    ].join("\n"));
+    fs.writeFileSync(
+      path.join(decisionDir, "aaaaaaaaaa.yaml"),
+      ["id: aaaaaaaaaa", "artifact: decisions", "record:", "  date: 2026-07-01", "  question: Entity authority?", "  context: Audit startup", "  alternatives:", "    - name: entities", "      status: chosen", "  choice: entities", "  reasoning: Canonical ownership", "  confidence: firm", ""].join("\n"),
+    );
+    fs.writeFileSync(path.join(satisfactionDir, "bbbbbbbbbb.yaml"), ["id: bbbbbbbbbb", "artifact: decisions", "record:", "  decision: aaaaaaaaaa", "  state: open", "  review_needed: true", "  review_due: 2026-07-01", ""].join("\n"));
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
     process.chdir(project);
     try {
@@ -477,22 +487,19 @@ describe("cli prime", () => {
       };
       const auditBefore = context("audit").evidence_context;
       const documentBefore = context("document").closeout_context;
-      fs.writeFileSync(path.join(project, ".agentera/decisions.yaml"), [
-        "decisions:",
-        "  - number: 999",
-        "    question: HOSTILE LEGACY DECISION",
-        "    satisfaction:",
-        "      review_needed: true",
-        "      review_due: 1999-01-01",
-        "",
-      ].join("\n"));
+      fs.writeFileSync(path.join(project, ".agentera/decisions.yaml"), ["decisions:", "  - number: 999", "    question: HOSTILE LEGACY DECISION", "    satisfaction:", "      review_needed: true", "      review_due: 1999-01-01", ""].join("\n"));
       const auditAfter = context("audit").evidence_context;
       const documentAfter = context("document").closeout_context;
       expect(auditAfter).toEqual(auditBefore);
       expect(documentAfter).toEqual(documentBefore);
       expect(auditAfter.decision_context).toMatchObject({
         status: "caveated",
-        summary: { total_entries: 1, returned_entries: 0, omitted_entries: 1, authority: "canonical_entity_files" },
+        summary: {
+          total_entries: 1,
+          returned_entries: 0,
+          omitted_entries: 1,
+          authority: "canonical_entity_files",
+        },
         caveats: [expect.stringContaining(STATE_FAMILY_LIST_COMMANDS.decisions)],
       });
       expect(auditAfter.decision_review_pressure).toMatchObject({
@@ -511,8 +518,7 @@ describe("cli prime", () => {
   });
 
   it("serves --context for all 12 capabilities (no gate)", () => {
-    const caps = ["status", "vision", "discuss", "research", "plan", "build",
-      "optimize", "audit", "document", "profile", "design", "orchestrate"];
+    const caps = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
     for (const cap of caps) {
       const { rc } = capture((io) => cmdPrime({ context: cap, format: "json" }, io));
       expect(rc).toBe(0);
@@ -538,22 +544,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
     fs.writeFileSync(
       path.join(tmp, ".agentera/plan.yaml"),
-      [
-        "header:",
-        "  title: Dependency queue regression",
-        "  status: active",
-        "tasks:",
-        "  - number: 1",
-        "    name: First task",
-        "    status: complete",
-        "    depends_on: []",
-        "  - number: 2",
-        "    name: Second task",
-        "    status: pending",
-        "    depends_on:",
-        '      - "1"',
-        "",
-      ].join("\n"),
+      ["header:", "  title: Dependency queue regression", "  status: active", "tasks:", "  - number: 1", "    name: First task", "    status: complete", "    depends_on: []", "  - number: 2", "    name: Second task", "    status: pending", "    depends_on:", '      - "1"', ""].join("\n"),
     );
     fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (const [boundary, id, record] of [
@@ -564,7 +555,14 @@ describe("orkestrera orchestration_context task_queue", () => {
     ] as const) {
       const dir = path.join(tmp, ".agentera/entities/plan", boundary);
       fs.mkdirSync(dir, { recursive: true });
-      fs.writeFileSync(path.join(dir, `${id}.yaml`), `id: ${id}\nartifact: plan\nrecord:\n${record.split("\n").filter(Boolean).map((line) => `  ${line}`).join("\n")}\n`);
+      fs.writeFileSync(
+        path.join(dir, `${id}.yaml`),
+        `id: ${id}\nartifact: plan\nrecord:\n${record
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => `  ${line}`)
+          .join("\n")}\n`,
+      );
     }
     process.chdir(tmp);
   });
@@ -607,9 +605,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     expect(rc).toBe(0);
     const orch = JSON.parse(out).capability_context.context.orchestration_context;
     const ready = orch.task_queue.dependency_ready_tasks.map((t: { id: string }) => t.id);
-    const blockedReasons = orch.task_queue.blocked_tasks.flatMap(
-      (t: { blocked_reasons?: string[] }) => t.blocked_reasons ?? [],
-    );
+    const blockedReasons = orch.task_queue.blocked_tasks.flatMap((t: { blocked_reasons?: string[] }) => t.blocked_reasons ?? []);
 
     expect(ready).toContain("cccccccccc");
     expect(blockedReasons.some((r: string) => r.includes("dependency bbbbbbbbbb is not present in plan tasks"))).toBe(false);
@@ -637,9 +633,7 @@ describe("orkestrera orchestration_context task_queue", () => {
       complete_plan: true,
     });
     expect(terminal.capability_context.context.orchestration_context.selected_next_task).toBeNull();
-    expect(terminal.capability_context.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "health", availability: "included" }),
-    ]));
+    expect(terminal.capability_context.startup.availability).toEqual(expect.arrayContaining([expect.objectContaining({ family: "health", availability: "included" })]));
 
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
     const missing = buildPrimeCapabilityContextPayload(collectOrientationState({ env: process.env }), "orchestrate") as any;
@@ -660,14 +654,25 @@ describe("orkestrera orchestration_context task_queue", () => {
       findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
       trajectory: "stable",
       grades: { artifact_freshness: "A" },
-      dimensions_detail: [{
-        name: "artifact_freshness",
-        grade: "A",
-        summary: "Current entity is selected by CLI-owned append time.",
-        findings: [],
-      }],
+      dimensions_detail: [
+        {
+          name: "artifact_freshness",
+          grade: "A",
+          summary: "Current entity is selected by CLI-owned append time.",
+          findings: [],
+        },
+      ],
     };
-    const request = () => ({ artifact: "health", spec, projectRoot: tmp, dryRun: false, force: false, values: {}, callerPayload: structuredClone(audit), input: structuredClone(audit) });
+    const request = () => ({
+      artifact: "health",
+      spec,
+      projectRoot: tmp,
+      dryRun: false,
+      force: false,
+      values: {},
+      callerPayload: structuredClone(audit),
+      input: structuredClone(audit),
+    });
     vi.useFakeTimers();
     try {
       vi.setSystemTime(new Date("2026-07-17T10:00:00.000Z"));
@@ -686,27 +691,78 @@ describe("orkestrera orchestration_context task_queue", () => {
   });
 
   it("indexes oversized task graphs exactly while returning bounded orchestration detail with recovery", () => {
-    const planId = "zzzzzzzzzz"; const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}aaaaaaaaa`);
+    const planId = "zzzzzzzzzz";
+    const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}aaaaaaaaa`);
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
-    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
-    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Oversized graph", status: "open" }, what: "Bounded output must retain exact orchestration graph accounting.", why: "Task details can exceed startup page capacity.", scope: { included: ["plan"], excluded: [] } } }));
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan");
+    const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task");
+    fs.mkdirSync(planDirectory, { recursive: true });
+    fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(planDirectory, `${planId}.yaml`),
+      dumpYamlMapping({
+        id: planId,
+        artifact: "plan",
+        record: {
+          header: {
+            level: "light",
+            created: "2026-07-21",
+            title: "Oversized graph",
+            status: "open",
+          },
+          what: "Bounded output must retain exact orchestration graph accounting.",
+          why: "Task details can exceed startup page capacity.",
+          scope: { included: ["plan"], excluded: [] },
+        },
+      }),
+    );
     for (const [index, id] of taskIds.entries()) {
       const status = index < 12 ? "complete" : index < 21 ? "superseded" : "pending";
-      const record: Record<string, unknown> = { plan: planId, name: `Task ${index + 1}: ${"x".repeat(3_000)}`, status, depends_on: index === 21 ? [taskIds[12]] : [], acceptance: [] };
-      if (status === "superseded") Object.assign(record, { superseded_by: [taskIds[0]], superseded_reason: "A completed replacement covers this task." });
+      const record: Record<string, unknown> = {
+        plan: planId,
+        name: `Task ${index + 1}: ${"x".repeat(3_000)}`,
+        status,
+        depends_on: index === 21 ? [taskIds[12]] : [],
+        acceptance: [],
+      };
+      if (status === "superseded")
+        Object.assign(record, {
+          superseded_by: [taskIds[0]],
+          superseded_reason: "A completed replacement covers this task.",
+        });
       fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record }));
     }
 
-    const state = collectOrientationState({ env: process.env }); const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any;
-    const context = payload.capability_context.context; const queue = context.orchestration_context.task_queue;
-    expect(context.plan).toMatchObject({ complete: 12, superseded: 9, total: 22, task_status_counts: { complete: 12, superseded: 9, pending: 1 }, task_omission: { omitted: true } });
+    const state = collectOrientationState({ env: process.env });
+    const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any;
+    const context = payload.capability_context.context;
+    const queue = context.orchestration_context.task_queue;
+    expect(context.plan).toMatchObject({
+      complete: 12,
+      superseded: 9,
+      total: 22,
+      task_status_counts: { complete: 12, superseded: 9, pending: 1 },
+      task_omission: { omitted: true },
+    });
     expect(context.plan.tasks.length).toBeLessThan(22);
-    expect(queue).toMatchObject({ total: 22, complete: 12, superseded: 9, status_counts: { complete: 12, superseded: 9, pending: 1 }, dependency_ready_count: 1, blocked_count: 0 });
+    expect(queue).toMatchObject({
+      total: 22,
+      complete: 12,
+      superseded: 9,
+      status_counts: { complete: 12, superseded: 9, pending: 1 },
+      dependency_ready_count: 1,
+      blocked_count: 0,
+    });
     expect(context.orchestration_context.selected_next_task.id).toBe(taskIds[21]);
     expect(context.orchestration_context.task_summaries.length).toBe(10);
-    expect(context.orchestration_context.task_summaries_omission).toMatchObject({ omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } });
+    expect(context.orchestration_context.task_summaries_omission).toMatchObject({
+      omitted: true,
+      omitted_count: 12,
+      retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" },
+    });
     const emitted = capture((io) => cmdPrime({ command: "prime", context: "orchestrate", format: "json" }, io));
-    expect(emitted.rc).toBe(0); expect(emitted.out).not.toContain("x".repeat(1_000));
+    expect(emitted.rc).toBe(0);
+    expect(emitted.out).not.toContain("x".repeat(1_000));
   });
 
   it("keeps a 21-task host-real plan executable with canonical mixed-history evidence", () => {
@@ -721,10 +777,7 @@ describe("orkestrera orchestration_context task_queue", () => {
         id: fixture.selectedTaskId,
         artifact: "plan",
         depends_on: [fixture.selectedDependencyId],
-        acceptance: [
-          "The bounded plan names this task and its completed dependency.",
-          "The executable next action points to exact task retrieval.",
-        ],
+        acceptance: ["The bounded plan names this task and its completed dependency.", "The executable next action points to exact task retrieval."],
         retrieval: {
           get: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}`,
         },
@@ -758,7 +811,9 @@ describe("orkestrera orchestration_context task_queue", () => {
       id: fixture.selectedTaskId,
       capability: "orchestrate",
       eligible: true,
-      retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}` },
+      retrieval: {
+        exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}`,
+      },
     });
     for (const artifact of ["progress", "decisions", "health"]) {
       expect(payload.history[artifact]).toMatchObject({
@@ -779,17 +834,7 @@ describe("orkestrera orchestration_context task_queue", () => {
     }
     expect(payload.decision_attention).toBeNull();
 
-    const exact = capture((io) => main([
-      "node",
-      "agentera",
-      "state",
-      "decisions",
-      "get",
-      "--id",
-      fixture.fullDecisionId,
-      "--format",
-      "json",
-    ], io));
+    const exact = capture((io) => main(["node", "agentera", "state", "decisions", "get", "--id", fixture.fullDecisionId, "--format", "json"], io));
     expect(exact.rc, exact.err || exact.out).toBe(0);
     expect(JSON.parse(exact.out).entry.record).toMatchObject({
       confidence: "firm",
@@ -798,38 +843,181 @@ describe("orkestrera orchestration_context task_queue", () => {
   });
 
   it("reports generic startup-cap task omissions before generic bounding truncates detail", () => {
-    const planId = "yyyyyyyyyy"; const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}bbbbbbbbb`);
+    const planId = "yyyyyyyyyy";
+    const taskIds = Array.from({ length: 22 }, (_, index) => `${String.fromCharCode(97 + index)}bbbbbbbbb`);
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
-    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
-    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Small bounded graph", status: "open" }, what: "Startup task detail is explicitly bounded.", why: "Small records can exceed the generic startup item cap.", scope: { included: ["plan"], excluded: [] } } }));
-    for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Small task ${index + 1}`, status: "pending", depends_on: [], acceptance: [] } }));
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan");
+    const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task");
+    fs.mkdirSync(planDirectory, { recursive: true });
+    fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(planDirectory, `${planId}.yaml`),
+      dumpYamlMapping({
+        id: planId,
+        artifact: "plan",
+        record: {
+          header: {
+            level: "light",
+            created: "2026-07-21",
+            title: "Small bounded graph",
+            status: "open",
+          },
+          what: "Startup task detail is explicitly bounded.",
+          why: "Small records can exceed the generic startup item cap.",
+          scope: { included: ["plan"], excluded: [] },
+        },
+      }),
+    );
+    for (const [index, id] of taskIds.entries())
+      fs.writeFileSync(
+        path.join(taskDirectory, `${id}.yaml`),
+        dumpYamlMapping({
+          id,
+          artifact: "plan",
+          record: {
+            plan: planId,
+            name: `Small task ${index + 1}`,
+            status: "pending",
+            depends_on: [],
+            acceptance: [],
+          },
+        }),
+      );
 
-    const state = collectOrientationState({ env: process.env }); const statePlan = state.plan as any;
-    expect(statePlan).toMatchObject({ total: 22, task_status_counts: { pending: 22 }, task_omission: { omitted: true, total: 22, returned_count: 20, omitted_count: 2, omission_reason: "startup_detail_capacity", retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
+    const state = collectOrientationState({ env: process.env });
+    const statePlan = state.plan as any;
+    expect(statePlan).toMatchObject({
+      total: 22,
+      task_status_counts: { pending: 22 },
+      task_omission: {
+        omitted: true,
+        total: 22,
+        returned_count: 20,
+        omitted_count: 2,
+        omission_reason: "startup_detail_capacity",
+        retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" },
+      },
+    });
     expect(statePlan.tasks).toHaveLength(20);
     const ordinary = buildOrientationJsonPayload(state, "prime") as any;
-    expect(ordinary.plan).toMatchObject({ total: 22, task_count: 22, omitted_task_count: 12, task_omission: { omitted: true, total: 22, returned_count: 10, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
+    expect(ordinary.plan).toMatchObject({
+      total: 22,
+      task_count: 22,
+      omitted_task_count: 12,
+      task_omission: {
+        omitted: true,
+        total: 22,
+        returned_count: 10,
+        omitted_count: 12,
+        retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" },
+      },
+    });
     expect(ordinary.plan.tasks).toHaveLength(10);
-    const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any; const queue = payload.capability_context.context.orchestration_context.task_queue;
-    expect(queue).toMatchObject({ total: 22, status_counts: { pending: 22 }, dependency_ready_count: 22, dependency_ready_omission: { omitted: true, omitted_count: 12, retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" } } });
-    expect(payload.capability_context.context.plan).toMatchObject({ total: 22, task_omission: { omitted: true, returned_count: 20, omitted_count: 2 } });
+    const payload = buildPrimeCapabilityContextPayload(state, "orchestrate") as any;
+    const queue = payload.capability_context.context.orchestration_context.task_queue;
+    expect(queue).toMatchObject({
+      total: 22,
+      status_counts: { pending: 22 },
+      dependency_ready_count: 22,
+      dependency_ready_omission: {
+        omitted: true,
+        omitted_count: 12,
+        retrieval: { get: "npx -y agentera@next state plan tasks get --id ID" },
+      },
+    });
+    expect(payload.capability_context.context.plan).toMatchObject({
+      total: 22,
+      task_omission: { omitted: true, returned_count: 20, omitted_count: 2 },
+    });
   });
 
   it("restarts task recovery when a byte-bounded page extends past public detail caps", () => {
     const planId = "xxxxxxxxxx";
-    const taskId = (index: number): string => { let value = index; return Array.from({ length: 10 }, () => { const char = String.fromCharCode(97 + (value % 26)); value = Math.floor(value / 26); return char; }).join(""); };
+    const taskId = (index: number): string => {
+      let value = index;
+      return Array.from({ length: 10 }, () => {
+        const char = String.fromCharCode(97 + (value % 26));
+        value = Math.floor(value / 26);
+        return char;
+      }).join("");
+    };
     const taskIds = Array.from({ length: 30 }, (_, index) => taskId(index));
     fs.rmSync(path.join(tmp, ".agentera/entities/plan"), { recursive: true, force: true });
-    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan"); const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task"); fs.mkdirSync(planDirectory, { recursive: true }); fs.mkdirSync(taskDirectory, { recursive: true });
-    fs.writeFileSync(path.join(planDirectory, `${planId}.yaml`), dumpYamlMapping({ id: planId, artifact: "plan", record: { header: { level: "light", created: "2026-07-21", title: "Composed bound graph", status: "open" }, what: "Restart recovery cannot skip hidden page entries.", why: "Public detail caps compose with byte-bounded list pages.", scope: { included: ["plan"], excluded: [] } } }));
-    for (const [index, id] of taskIds.entries()) fs.writeFileSync(path.join(taskDirectory, `${id}.yaml`), dumpYamlMapping({ id, artifact: "plan", record: { plan: planId, name: `Medium task ${index + 1}: ${"m".repeat(1_100)}`, status: "pending", depends_on: [], acceptance: [] } }));
+    const planDirectory = path.join(tmp, ".agentera/entities/plan/plan");
+    const taskDirectory = path.join(tmp, ".agentera/entities/plan/plan_task");
+    fs.mkdirSync(planDirectory, { recursive: true });
+    fs.mkdirSync(taskDirectory, { recursive: true });
+    fs.writeFileSync(
+      path.join(planDirectory, `${planId}.yaml`),
+      dumpYamlMapping({
+        id: planId,
+        artifact: "plan",
+        record: {
+          header: {
+            level: "light",
+            created: "2026-07-21",
+            title: "Composed bound graph",
+            status: "open",
+          },
+          what: "Restart recovery cannot skip hidden page entries.",
+          why: "Public detail caps compose with byte-bounded list pages.",
+          scope: { included: ["plan"], excluded: [] },
+        },
+      }),
+    );
+    for (const [index, id] of taskIds.entries())
+      fs.writeFileSync(
+        path.join(taskDirectory, `${id}.yaml`),
+        dumpYamlMapping({
+          id,
+          artifact: "plan",
+          record: {
+            plan: planId,
+            name: `Medium task ${index + 1}: ${"m".repeat(1_100)}`,
+            status: "pending",
+            depends_on: [],
+            acceptance: [],
+          },
+        }),
+      );
 
-    const state = collectOrientationState({ env: process.env }); const ordinary = buildOrientationJsonPayload(state, "prime") as any; const recovery = ordinary.plan.task_omission.retrieval;
-    expect(ordinary.plan.task_omission).toMatchObject({ omitted: true, total: 30, returned_count: 10, omitted_count: 20, retrieval: { restart: expect.stringContaining(`tasks list ${planId}`), get: "npx -y agentera@next state plan tasks get --id ID" } });
+    const state = collectOrientationState({ env: process.env });
+    const ordinary = buildOrientationJsonPayload(state, "prime") as any;
+    const recovery = ordinary.plan.task_omission.retrieval;
+    expect(ordinary.plan.task_omission).toMatchObject({
+      omitted: true,
+      total: 30,
+      returned_count: 10,
+      omitted_count: 20,
+      retrieval: {
+        restart: expect.stringContaining(`tasks list ${planId}`),
+        get: "npx -y agentera@next state plan tasks get --id ID",
+      },
+    });
     expect(recovery).not.toHaveProperty("continue");
-    const invoke = (command: string): any => { let out = ""; let err = ""; const local = command.replace(/^npx -y agentera@next /, "agentera "); const rc = main(["node", "agentera", ...local.split(" ").slice(1)], { out: (text) => { out += text; }, err: (text) => { err += text; } }); expect(rc, err || out).toBe(0); return JSON.parse(out); };
-    const reached = new Set<string>(); let page = invoke(recovery.restart);
-    expect(page).toMatchObject({ status: "degraded", counts: { candidate: 30, returned: 30, omitted: 0 }, projection: { detail: "summary" }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 30 } });
+    const invoke = (command: string): any => {
+      let out = "";
+      let err = "";
+      const local = command.replace(/^npx -y agentera@next /, "agentera ");
+      const rc = main(["node", "agentera", ...local.split(" ").slice(1)], {
+        out: (text) => {
+          out += text;
+        },
+        err: (text) => {
+          err += text;
+        },
+      });
+      expect(rc, err || out).toBe(0);
+      return JSON.parse(out);
+    };
+    const reached = new Set<string>();
+    let page = invoke(recovery.restart);
+    expect(page).toMatchObject({
+      status: "degraded",
+      counts: { candidate: 30, returned: 30, omitted: 0 },
+      projection: { detail: "summary" },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 30 },
+    });
     while (true) {
       for (const entry of page.entries) reached.add(entry.id);
       if (!page.omitted) break;

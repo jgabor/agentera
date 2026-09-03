@@ -1,8 +1,4 @@
-import {
-  type Env,
-  MAX_SQLITE_ROWS,
-  MAX_SQLITE_SESSIONS,
-} from "./core.js";
+import { type Env, MAX_SQLITE_ROWS, MAX_SQLITE_SESSIONS } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export interface SqliteCaps {
@@ -25,17 +21,10 @@ function parsePositiveCap(value: string | undefined, fallback: number, label: st
   return parsed;
 }
 
-export function resolveSqliteCaps(
-  env: Env = process.env,
-  cliOverrides?: { maxSessions?: number; maxRows?: number },
-): SqliteCaps {
+export function resolveSqliteCaps(env: Env = process.env, cliOverrides?: { maxSessions?: number; maxRows?: number }): SqliteCaps {
   return {
-    maxSessions:
-      cliOverrides?.maxSessions ??
-      parsePositiveCap(env.AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS, MAX_SQLITE_SESSIONS, "max sqlite sessions cap"),
-    maxRows:
-      cliOverrides?.maxRows ??
-      parsePositiveCap(env.AGENTERA_EXTRACT_MAX_SQLITE_ROWS, MAX_SQLITE_ROWS, "max sqlite rows cap"),
+    maxSessions: cliOverrides?.maxSessions ?? parsePositiveCap(env.AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS, MAX_SQLITE_SESSIONS, "max sqlite sessions cap"),
+    maxRows: cliOverrides?.maxRows ?? parsePositiveCap(env.AGENTERA_EXTRACT_MAX_SQLITE_ROWS, MAX_SQLITE_ROWS, "max sqlite rows cap"),
   };
 }
 

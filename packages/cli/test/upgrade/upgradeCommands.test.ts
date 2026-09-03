@@ -105,13 +105,7 @@ describe("buildUpgradeCommands", () => {
       channel,
     });
 
-    expect(cmds.dryRunCommand).toBe(
-      "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
-        "/tmp/app home' --dry-run --channel development",
-    );
-    expect(cmds.applyCommand).toBe(
-      "npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" +
-        "/tmp/app home' --yes --channel development",
-    );
+    expect(cmds.dryRunCommand).toBe("npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" + "/tmp/app home' --dry-run --channel development");
+    expect(cmds.applyCommand).toBe("npx -y agentera@next upgrade --project '/tmp/project with spaces' --install-root '" + "/tmp/app home' --yes --channel development");
   });
 });

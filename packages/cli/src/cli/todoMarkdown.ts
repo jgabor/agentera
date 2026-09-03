@@ -35,8 +35,7 @@ export function parseTodoMarkdownListItem(line: string): ParsedTodoMarkdownItem 
   const explicitId = TODO_ID_TAG_RE.exec(rest);
   const legacyId = explicitId ? null : TODO_LEGACY_ID_RE.exec(rest);
   const id = explicitId?.[1] ?? legacyId?.[2];
-  const publicRest = explicitId?.[2]?.trim()
-    ?? (legacyId ? `${legacyId[1] ?? ""}${legacyId[3]}`.trim() : rest);
+  const publicRest = explicitId?.[2]?.trim() ?? (legacyId ? `${legacyId[1] ?? ""}${legacyId[3]}`.trim() : rest);
   const typed = TODO_TYPE_TAG_RE.exec(publicRest) ?? TODO_TYPE_TAG_RE.exec(`[${token}] ${publicRest}`);
   const status = isGithubCheckboxResolved(token) ? "resolved" : "open";
   return {

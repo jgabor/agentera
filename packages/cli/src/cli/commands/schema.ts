@@ -3,13 +3,7 @@ import path from "node:path";
 
 import { activeAppModel, discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import { emitStructured } from "../structured.js";
-import {
-  appModelPayload,
-  REQUIRED_SPARSE_CONTEXT_FIELDS,
-  ROUTINE_STRUCTURED_FIELDS,
-  PRIME_STRUCTURED_FIELDS,
-  surfaceMissingMessage,
-} from "../stateQuery.js";
+import { appModelPayload, REQUIRED_SPARSE_CONTEXT_FIELDS, ROUTINE_STRUCTURED_FIELDS, PRIME_STRUCTURED_FIELDS, surfaceMissingMessage } from "../stateQuery.js";
 import { artifactLocationContract } from "./query.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { stateWriterArtifactContract, stateWriterContract } from "../../state/write/operations.js";
@@ -54,9 +48,7 @@ export const TRANSITIONAL_TOP_LEVEL_ALIASES: TransitionalTopLevelAlias[] = [
   {
     legacy: "lint",
     canonical: "check lint",
-    structuredExampleArgv: [
-      "lint", "--artifact", "progress", "--text", "alias-parity", "--format", "json",
-    ],
+    structuredExampleArgv: ["lint", "--artifact", "progress", "--text", "alias-parity", "--format", "json"],
   },
   {
     legacy: "validate",
@@ -86,7 +78,7 @@ type Io = { out?: (t: string) => void; err?: (t: string) => void };
 function projectedStateRetrieval(retrieval: JsonObject): JsonObject {
   const projected = JSON.parse(JSON.stringify(retrieval)) as JsonObject;
   const commands = projected.commands as JsonObject;
-  const families = ((projected.list_help as JsonObject).families) as JsonObject;
+  const families = (projected.list_help as JsonObject).families as JsonObject;
   for (const family of entityListFamilies()) {
     commands[family.key] = { list: family.syntax, get: family.get };
     const source = families[family.key] as JsonObject;
@@ -96,56 +88,14 @@ function projectedStateRetrieval(retrieval: JsonObject): JsonObject {
   return projected;
 }
 
-const CAPABILITY_NAMES = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-];
-const ROUTINE_STATE_COMMANDS = [
-  "status",
-  "plan",
-  "progress",
-  "health",
-  "todo",
-  "decisions",
-  "docs",
-  "objective",
-  "experiments",
-];
-const DOCTOR_SIGNAL_KINDS = [
-  "missing_bundle",
-  "invalid_install_root",
-  "unmanaged_install_root",
-  "invalid_bundle",
-  "missing_marker",
-  "version_mismatch",
-  "corrupt_bundle_marker",
-];
-const DOCTOR_SELF_CHECK_CATEGORIES = [
-  "Agentera CLI self-check status",
-  "installed app and install-root status",
-  "canonical shared-skill diagnosis",
-  "project integration and project-state migration diagnostics",
-  "bounded offline smoke checks when requested",
-] as string[];
-const DOCTOR_EXCLUDES = [
-  "project artifact health",
-  "codebase quality audit findings",
-  "capability architecture, test, dependency, or documentation audit output",
-] as string[];
+const CAPABILITY_NAMES = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
+const ROUTINE_STATE_COMMANDS = ["status", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments"];
+const DOCTOR_SIGNAL_KINDS = ["missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle", "missing_marker", "version_mismatch", "corrupt_bundle_marker"];
+const DOCTOR_SELF_CHECK_CATEGORIES = ["Agentera CLI self-check status", "installed app and install-root status", "canonical shared-skill diagnosis", "project integration and project-state migration diagnostics", "bounded offline smoke checks when requested"] as string[];
+const DOCTOR_EXCLUDES = ["project artifact health", "codebase quality audit findings", "capability architecture, test, dependency, or documentation audit output"] as string[];
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
-  prime:
-    "Composite orientation briefing and capability startup context; bare JSON is at most 12000 UTF-8 bytes and status startup at most 22500.",
+  prime: "Composite orientation briefing and capability startup context; bare JSON is at most 12000 UTF-8 bytes and status startup at most 22500.",
   schema: "Runtime CLI/schema introspection.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
@@ -153,8 +103,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   verify: "Deprecated alias for check verify. Run bounded verification families.",
   stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
-  upgrade:
-    "Preview or apply one-way app and project-state migration.",
+  upgrade: "Preview or apply one-way app and project-state migration.",
   doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
 };
 function availableStructuredFields(command: string): string[] {
@@ -179,16 +128,7 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   lint: ["artifact", "file", "text", "strict", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
-  upgrade: [
-    "project",
-    "install_root",
-    "home",
-    "only",
-    "dry_run",
-    "yes",
-    "force",
-    "channel",
-  ],
+  upgrade: ["project", "install_root", "home", "only", "dry_run", "yes", "force", "channel"],
   schema: ["format"],
 };
 
@@ -197,13 +137,7 @@ function integrationAuthorityPath(): string {
   return path.join(sourceRoot, "skills", "agentera", "SKILL.md");
 }
 
-function commandDescription(
-  name: string,
-  kind: string,
-  fields: string[] | null = null,
-  outputFormats?: string[],
-  filters?: string[],
-): JsonObject {
+function commandDescription(name: string, kind: string, fields: string[] | null = null, outputFormats?: string[], filters?: string[]): JsonObject {
   let formats = outputFormats ?? ["text", "json", "yaml"];
   if (!outputFormats && name === "lint") formats = ["text", "json"];
   else if (!outputFormats && name === "compact") formats = ["text", "json"];
@@ -211,11 +145,7 @@ function commandDescription(
   else if (!outputFormats && name === "upgrade") formats = ["text", "json"];
   else if (!outputFormats && name === "schema") formats = ["json", "yaml"];
   else if (!outputFormats && name === "prime") formats = ["text", "json", "yaml"];
-  const description = kind === "capability_routing"
-    ? `Route to ${name} capability guidance.`
-    : kind === "routine_state"
-      ? `Read ${name} project state through the agentera state namespace.`
-      : COMMAND_DESCRIPTIONS[name] ?? "unknown";
+  const description = kind === "capability_routing" ? `Route to ${name} capability guidance.` : kind === "routine_state" ? `Read ${name} project state through the agentera state namespace.` : (COMMAND_DESCRIPTIONS[name] ?? "unknown");
   const alias = TRANSITIONAL_TOP_LEVEL_ALIASES.find((entry) => entry.legacy === name);
   return {
     name,
@@ -224,17 +154,17 @@ function commandDescription(
     filters: filters ?? COMMAND_FILTERS_ALL[name] ?? [],
     output_formats: formats,
     structured_fields: fields ?? [],
-    ...(alias ? {
-      alias_for: alias.canonical,
-      structured_example_argv: alias.structuredExampleArgv,
-    } : {}),
+    ...(alias
+      ? {
+          alias_for: alias.canonical,
+          structured_example_argv: alias.structuredExampleArgv,
+        }
+      : {}),
   };
 }
 
 function describeCommands(): JsonObject[] {
-  const commands: JsonObject[] = [
-    commandDescription("prime", "orientation", availableStructuredFields("prime")),
-  ];
+  const commands: JsonObject[] = [commandDescription("prime", "orientation", availableStructuredFields("prime"))];
   for (const name of CAPABILITY_NAMES) {
     if (name === "status") continue;
     commands.push(commandDescription(name, "capability_routing", availableStructuredFields(name)));
@@ -244,55 +174,19 @@ function describeCommands(): JsonObject[] {
   }
   commands.push(
     commandDescription("query", "advanced_artifact_query"),
-    commandDescription("compact", "artifact_compaction", [
-      "command",
-      "status",
-      "project",
-      "summary",
-      "operations",
-    ]),
-    commandDescription("verify", "verification", [
-      "command",
-      "status",
-      "family",
-      "target",
-      "engine",
-      "diagnostics",
-      "safety",
-    ]),
+    commandDescription("compact", "artifact_compaction", ["command", "status", "project", "summary", "operations"]),
+    commandDescription("verify", "verification", ["command", "status", "family", "target", "engine", "diagnostics", "safety"]),
     commandDescription("stats", "usage_analytics"),
-    commandDescription("lint", "artifact_lint", [
-      "command",
-      "status",
-      "artifact",
-      "checks",
-      "summary",
-    ]),
+    commandDescription("lint", "artifact_lint", ["command", "status", "artifact", "checks", "summary"]),
     commandDescription("validate", "validation"),
     commandDescription("schema", "runtime_introspection"),
-    commandDescription("upgrade", "upgrade", [
-      "schemaVersion",
-      "mode",
-      "status",
-      "phase",
-      "phases",
-      "summary",
-      "state_validation",
-      "startup_validation",
-      "dryRunCommand",
-      "applyCommand",
-    ]),
+    commandDescription("upgrade", "upgrade", ["schemaVersion", "mode", "status", "phase", "phases", "summary", "state_validation", "startup_validation", "dryRunCommand", "applyCommand"]),
     commandDescription("doctor", "self_check"),
   );
   return commands;
 }
 
-function describeArtifactSchemas(
-  schemasDir: string,
-  schemas: Record<string, SchemaInfo>,
-  model: ReturnType<typeof activeAppModel>,
-  artifactLocations: Record<string, JsonObject> | null,
-): [JsonObject[], JsonObject[]] {
+function describeArtifactSchemas(schemasDir: string, schemas: Record<string, SchemaInfo>, model: ReturnType<typeof activeAppModel>, artifactLocations: Record<string, JsonObject> | null): [JsonObject[], JsonObject[]] {
   const gaps: JsonObject[] = [];
   let isDir = false;
   try {
@@ -367,14 +261,8 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   const artifactLocationsPayload = artifactLocationContract(schemasDir, schemas);
   const artifactLocations: Record<string, JsonObject> = {};
   // cast: artifacts payload is built by query.ts over on-disk schemas/registry (IO boundary)
-  for (const entry of artifactLocationsPayload.artifacts as JsonObject[])
-    artifactLocations[String(entry.name)] = entry;
-  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(
-    schemasDir,
-    schemas,
-    appModel,
-    artifactLocations,
-  );
+  for (const entry of artifactLocationsPayload.artifacts as JsonObject[]) artifactLocations[String(entry.name)] = entry;
+  const [artifactSchemas, schemaGaps] = describeArtifactSchemas(schemasDir, schemas, appModel, artifactLocations);
   gaps.push(...schemaGaps);
   const retrievalAuthority = loadStateRetrievalAuthority();
   const profileGlossary = personalGlossaryOutputContract();
@@ -407,7 +295,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
     },
     validation: {
       command: "agentera check validate",
-       families: [...advertisedValidateFamilyNames()],
+      families: [...advertisedValidateFamilyNames()],
     },
     state_writer: stateWriterContract(),
     state_retrieval: {
@@ -477,8 +365,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
             source: candidateReads.candidateReadCurrentGenerationSource,
             projection_generation: candidateReads.candidateReadCurrentGenerationProjectionBinding,
             unavailable_behavior: candidateReads.candidateReadCurrentGenerationUnavailableBehavior,
-            stale_projection_behavior:
-              candidateReads.candidateReadCurrentGenerationStaleProjectionBehavior,
+            stale_projection_behavior: candidateReads.candidateReadCurrentGenerationStaleProjectionBehavior,
           },
           project_checkout: "not_required",
         },
@@ -610,8 +497,7 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
         source_class: "historical_import",
         default_view: "excluded",
         all_sources_view: "--sources all",
-        sensitivity_warning:
-          "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
+        sensitivity_warning: "Transcripts can contain secrets, file contents, and command output; import is local and read-only.",
       },
     },
     routine_state_commands: ROUTINE_STATE_COMMANDS,

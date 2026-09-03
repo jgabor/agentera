@@ -13,15 +13,16 @@ interface ProjectPathIdentity {
   type: ProjectPathType;
 }
 
-export type ProjectPathSnapshot =
-  | { kind: "stable"; absolute: string; identities: ProjectPathIdentity[]; leaf: fs.BigIntStats }
-  | { kind: "missing"; absolute: string; reason: "missing" }
-  | { kind: "unsafe"; absolute: string; reason: "symlink" | "type" | "unreadable" };
+export type ProjectPathSnapshot = { kind: "stable"; absolute: string; identities: ProjectPathIdentity[]; leaf: fs.BigIntStats } | { kind: "missing"; absolute: string; reason: "missing" } | { kind: "unsafe"; absolute: string; reason: "symlink" | "type" | "unreadable" };
 
 export type ProjectFileSnapshot =
   | { kind: "file"; bytes: Buffer; dev: bigint; ino: bigint; type: "file"; mode: number }
   | { kind: "missing"; bytes: null; reason: "missing"; absolute: string }
-  | { kind: "unsafe"; bytes: null; reason: "symlink" | "type" | "unreadable" | "changed" | "over_limit" };
+  | {
+      kind: "unsafe";
+      bytes: null;
+      reason: "symlink" | "type" | "unreadable" | "changed" | "over_limit";
+    };
 
 function projectPathType(stat: fs.BigIntStats): ProjectPathType {
   if (stat.isFile()) return "file";
@@ -35,19 +36,10 @@ function samePathIdentity(left: fs.BigIntStats, right: fs.BigIntStats): boolean 
 }
 
 function sameFileSnapshot(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return left.isFile()
-    && right.isFile()
-    && samePathIdentity(left, right)
-    && left.size === right.size
-    && left.mtimeNs === right.mtimeNs
-    && left.ctimeNs === right.ctimeNs;
+  return left.isFile() && right.isFile() && samePathIdentity(left, right) && left.size === right.size && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
 }
 
-export function snapshotProjectPath(
-  root: string,
-  relativePath: string,
-  leafType: "file" | "directory",
-): ProjectPathSnapshot {
+export function snapshotProjectPath(root: string, relativePath: string, leafType: "file" | "directory"): ProjectPathSnapshot {
   const targets = [root];
   let absolute = root;
   for (const segment of relativePath.split("/").filter(Boolean)) {
@@ -61,9 +53,7 @@ export function snapshotProjectPath(
     try {
       stat = fs.lstatSync(target, { bigint: true });
     } catch (error) {
-      return (error as NodeJS.ErrnoException).code === "ENOENT"
-        ? { kind: "missing", absolute: target, reason: "missing" }
-        : { kind: "unsafe", absolute: target, reason: "unreadable" };
+      return (error as NodeJS.ErrnoException).code === "ENOENT" ? { kind: "missing", absolute: target, reason: "missing" } : { kind: "unsafe", absolute: target, reason: "unreadable" };
     }
     const type = projectPathType(stat);
     if (type === "symlink") return { kind: "unsafe", absolute: target, reason: "symlink" };
@@ -79,9 +69,7 @@ export function projectPathIsStable(snapshot: Extract<ProjectPathSnapshot, { kin
   return snapshot.identities.every((identity) => {
     try {
       const current = fs.lstatSync(identity.absolute, { bigint: true });
-      return current.dev === identity.dev
-        && current.ino === identity.ino
-        && projectPathType(current) === identity.type;
+      return current.dev === identity.dev && current.ino === identity.ino && projectPathType(current) === identity.type;
     } catch {
       return false;
     }
@@ -90,10 +78,7 @@ export function projectPathIsStable(snapshot: Extract<ProjectPathSnapshot, { kin
 
 function containedBy(root: string, candidate: string): boolean {
   const relativePath = path.relative(root, candidate);
-  return relativePath !== ""
-    && !relativePath.startsWith(`..${path.sep}`)
-    && relativePath !== ".."
-    && !path.isAbsolute(relativePath);
+  return relativePath !== "" && !relativePath.startsWith(`..${path.sep}`) && relativePath !== ".." && !path.isAbsolute(relativePath);
 }
 
 export function resolveProjectDescriptorPath(descriptor: number): string | null {
@@ -113,12 +98,7 @@ function descriptorMatchesPath(root: string, absolute: string, descriptorPath: s
 }
 
 /** Pin one project file to a verified descriptor and return only stable in-project bytes. */
-export function readProjectFileSnapshot(
-  projectRoot: string | ValidatedProjectRoot,
-  relativePath: string,
-  descriptorPathResolver: ProjectDescriptorPathResolver = resolveProjectDescriptorPath,
-  maxBytes: number | null = null,
-): ProjectFileSnapshot {
+export function readProjectFileSnapshot(projectRoot: string | ValidatedProjectRoot, relativePath: string, descriptorPathResolver: ProjectDescriptorPathResolver = resolveProjectDescriptorPath, maxBytes: number | null = null): ProjectFileSnapshot {
   const root = typeof projectRoot === "string" ? projectRoot : projectRoot.path;
   const verifyRoot = (): void => {
     if (typeof projectRoot !== "string") assertValidatedProjectRoot(projectRoot);
@@ -145,18 +125,17 @@ export function readProjectFileSnapshot(
       return { bytes: null, kind: "unsafe", reason: "over_limit" };
     }
     let descriptorRealPath: string | null = null;
-    try { descriptorRealPath = descriptorPathResolver(descriptor); } catch { /* Descriptor paths are optional strengthening. */ }
+    try {
+      descriptorRealPath = descriptorPathResolver(descriptor);
+    } catch {
+      /* Descriptor paths are optional strengthening. */
+    }
     if (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath)) {
       return { bytes: null, kind: "unsafe", reason: "changed" };
     }
     const bytes = fs.readFileSync(descriptor);
     const after = fs.fstatSync(descriptor, { bigint: true });
-    if (
-      !sameFileSnapshot(opened, after)
-      || BigInt(bytes.byteLength) !== opened.size
-      || !projectPathIsStable(pathSnapshot)
-      || (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath))
-    ) {
+    if (!sameFileSnapshot(opened, after) || BigInt(bytes.byteLength) !== opened.size || !projectPathIsStable(pathSnapshot) || (descriptorRealPath !== null && !descriptorMatchesPath(root, pathSnapshot.absolute, descriptorRealPath))) {
       return { bytes: null, kind: "unsafe", reason: "changed" };
     }
     verifyRoot();
@@ -172,7 +151,11 @@ export function readProjectFileSnapshot(
     return { bytes: null, kind: "unsafe", reason: "changed" };
   } finally {
     if (descriptor !== undefined) {
-      try { fs.closeSync(descriptor); } catch { /* Failed close cannot make unverified bytes safe. */ }
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        /* Failed close cannot make unverified bytes safe. */
+      }
     }
   }
 }

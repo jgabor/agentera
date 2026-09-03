@@ -2,17 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { CANONICAL_DEVELOPMENT_CLI } from "./developmentChannel.js";
-import {
-  ENTITY_LIST_RUNTIME_FAMILIES,
-  type EntityListRuntimeFamilyKey,
-} from "../state/entityListRuntimeRegistry.js";
-import {
-  runtimeOperationSpec,
-  runtimeOperationSpecs,
-  type RuntimeOperationField,
-  type RuntimeOperationProjectionTemplate,
-  type RuntimeOperationSpec,
-} from "../state/write/runtimeOperations.js";
+import { ENTITY_LIST_RUNTIME_FAMILIES, type EntityListRuntimeFamilyKey } from "../state/entityListRuntimeRegistry.js";
+import { runtimeOperationSpec, runtimeOperationSpecs, type RuntimeOperationField, type RuntimeOperationProjectionTemplate, type RuntimeOperationSpec } from "../state/write/runtimeOperations.js";
 
 export const CANONICAL_DEVELOPMENT_INVOCATION = CANONICAL_DEVELOPMENT_CLI;
 const LOCAL_RUNTIME_INVOCATION = "agentera";
@@ -21,11 +12,7 @@ interface CommandWord {
   value: string;
 }
 
-export type DevelopmentInvocationRejection =
-  | "invalid_authority"
-  | "malformed"
-  | "not_exact"
-  | "wrong_channel";
+export type DevelopmentInvocationRejection = "invalid_authority" | "malformed" | "not_exact" | "wrong_channel";
 
 export class DevelopmentInvocationError extends Error {
   readonly classification: DevelopmentInvocationRejection;
@@ -48,36 +35,11 @@ export interface BoundDevelopmentInvocation {
   argv: readonly string[];
 }
 
-export const DEVELOPMENT_RUNTIME_REQUIRED_FILES = Object.freeze([
-  "package.json",
-  "README.md",
-  "LICENSE",
-  "dist/bin/agentera.js",
-  "bundle/.agentera-npx-bundle.json",
-  "bundle/registry.json",
-  "bundle/skills/agentera/SKILL.md",
-  "bundle/references/adapters/package-registry.yaml",
-] as const);
+export const DEVELOPMENT_RUNTIME_REQUIRED_FILES = Object.freeze(["package.json", "README.md", "LICENSE", "dist/bin/agentera.js", "bundle/.agentera-npx-bundle.json", "bundle/registry.json", "bundle/skills/agentera/SKILL.md", "bundle/references/adapters/package-registry.yaml"] as const);
 
-export const DEVELOPMENT_CHILD_ENV_ALLOWLIST = Object.freeze([
-  "AGENTERA_BOOTSTRAP_SOURCE_ROOT",
-  "AGENTERA_HOME",
-  "AGENTERA_UPDATE_CHANNEL",
-  "DO_NOT_TRACK",
-  "HOME",
-  "LANG",
-  "LC_ALL",
-  "PATH",
-  "TMPDIR",
-  "XDG_CACHE_HOME",
-  "XDG_CONFIG_HOME",
-  "XDG_DATA_HOME",
-  "XDG_STATE_HOME",
-] as const);
+export const DEVELOPMENT_CHILD_ENV_ALLOWLIST = Object.freeze(["AGENTERA_BOOTSTRAP_SOURCE_ROOT", "AGENTERA_HOME", "AGENTERA_UPDATE_CHANNEL", "DO_NOT_TRACK", "HOME", "LANG", "LC_ALL", "PATH", "TMPDIR", "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"] as const);
 
-export const DEVELOPMENT_CHILD_PATH = process.platform === "win32"
-  ? path.dirname(process.execPath)
-  : "/usr/bin:/bin";
+export const DEVELOPMENT_CHILD_PATH = process.platform === "win32" ? path.dirname(process.execPath) : "/usr/bin:/bin";
 
 export type EntityProjectionField = "list" | "get" | "example" | "bareRecovery";
 
@@ -116,8 +78,7 @@ function runtimeValue(source: string): string {
 }
 
 function assertExact(value: unknown, owner: string, source: string): string {
-  if (typeof value !== "string" || value !== source)
-    invalid(`'${owner}' does not match its code-owned exact source value`);
+  if (typeof value !== "string" || value !== source) invalid(`'${owner}' does not match its code-owned exact source value`);
   return runtimeValue(source);
 }
 
@@ -142,14 +103,12 @@ function commandWords(command: string): CommandWord[] {
         started = true;
         continue;
       }
-      if (quote === '"' && (character === "`" || (character === "$" && command[index + 1] === "(")))
-        invalid("command substitution is not allowed");
+      if (quote === '"' && (character === "`" || (character === "$" && command[index + 1] === "("))) invalid("command substitution is not allowed");
       value += character;
       started = true;
       continue;
     }
-    if (character === "\n" || character === "\r")
-      invalid("line separators are allowed only inside one quoted argument");
+    if (character === "\n" || character === "\r") invalid("line separators are allowed only inside one quoted argument");
     if (/\s/u.test(character)) {
       if (started) {
         words.push({ value });
@@ -171,8 +130,7 @@ function commandWords(command: string): CommandWord[] {
       started = true;
       continue;
     }
-    if (";&|<>()`".includes(character) || (character === "$" && command[index + 1] === "("))
-      invalid("composition, redirection, substitution, and grouping are not allowed");
+    if (";&|<>()`".includes(character) || (character === "$" && command[index + 1] === "(")) invalid("composition, redirection, substitution, and grouping are not allowed");
     value += character;
     started = true;
   }
@@ -185,10 +143,7 @@ function parsedDevelopmentWords(command: string, classification: DevelopmentInvo
   try {
     return commandWords(command).map(({ value }) => value);
   } catch (error) {
-    throw new DevelopmentInvocationError(
-      classification,
-      error instanceof Error ? error.message : String(error),
-    );
+    throw new DevelopmentInvocationError(classification, error instanceof Error ? error.message : String(error));
   }
 }
 
@@ -201,26 +156,17 @@ function hasDevelopmentPrefix(words: readonly string[]): boolean {
  * command before a caller crosses a process boundary. The returned argv omits
  * npx and the package selector because callers execute a verified local bin.
  */
-export function bindDevelopmentInvocation(
-  identity: DevelopmentInvocationIdentity,
-  candidate: string,
-): BoundDevelopmentInvocation {
+export function bindDevelopmentInvocation(identity: DevelopmentInvocationIdentity, candidate: string): BoundDevelopmentInvocation {
   if (!/^[a-z0-9][a-z0-9_.:-]*$/u.test(identity.owner)) {
     throw new DevelopmentInvocationError("invalid_authority", "owner is not a canonical identity");
   }
   const authorityWords = parsedDevelopmentWords(identity.source, "invalid_authority");
   if (!hasDevelopmentPrefix(authorityWords) || authorityWords.length === 3) {
-    throw new DevelopmentInvocationError(
-      "invalid_authority",
-      `authority must be one complete ${CANONICAL_DEVELOPMENT_INVOCATION} command`,
-    );
+    throw new DevelopmentInvocationError("invalid_authority", `authority must be one complete ${CANONICAL_DEVELOPMENT_INVOCATION} command`);
   }
   const candidateWords = parsedDevelopmentWords(candidate, "malformed");
   if (!hasDevelopmentPrefix(candidateWords)) {
-    throw new DevelopmentInvocationError(
-      "wrong_channel",
-      `command must begin with the exact ${CANONICAL_DEVELOPMENT_INVOCATION} argv`,
-    );
+    throw new DevelopmentInvocationError("wrong_channel", `command must begin with the exact ${CANONICAL_DEVELOPMENT_INVOCATION} argv`);
   }
   if (candidate !== identity.source) {
     throw new DevelopmentInvocationError("not_exact", `command does not match code-owned identity '${identity.owner}'`);
@@ -267,10 +213,7 @@ export function assertDevelopmentRuntimeSurface(root: string): string {
 }
 
 /** Keep only reviewed process inputs; PATH is always code-owned. */
-export function scrubDevelopmentChildEnvironment(
-  inherited: NodeJS.ProcessEnv,
-  explicit: Partial<Record<(typeof DEVELOPMENT_CHILD_ENV_ALLOWLIST)[number], string>>,
-): NodeJS.ProcessEnv {
+export function scrubDevelopmentChildEnvironment(inherited: NodeJS.ProcessEnv, explicit: Partial<Record<(typeof DEVELOPMENT_CHILD_ENV_ALLOWLIST)[number], string>>): NodeJS.ProcessEnv {
   const result: NodeJS.ProcessEnv = {};
   for (const key of DEVELOPMENT_CHILD_ENV_ALLOWLIST) {
     if (key === "PATH") continue;
@@ -345,8 +288,7 @@ function exactOperation(artifact: string, verb: string): RuntimeOperationSpec {
   if (!spec) invalid(`operation '${artifact}.${verb}' is not code-owned`);
   const key = `${artifact}.${verb}`;
   if (!validatedOperations.has(key)) {
-    if (spec.projection.recovery.runtime !== runtimeValue(spec.projection.recovery.source))
-      invalid(`${key} has a non-canonical runtime recovery`);
+    if (spec.projection.recovery.runtime !== runtimeValue(spec.projection.recovery.source)) invalid(`${key} has a non-canonical runtime recovery`);
     if (spec.projection.examples.length === 0) invalid(`${key} has no code-owned example`);
     for (const example of spec.projection.examples) validateOperationExample(spec, example);
     validatedOperations.add(key);
@@ -361,17 +303,11 @@ export function projectRuntimeOperationRecovery(value: unknown, artifact: string
 
 export function projectRuntimeOperationExamples(value: unknown, artifact: string, verb: string): string[] {
   const spec = exactOperation(artifact, verb);
-  if (!Array.isArray(value) || value.length !== spec.projection.examples.length)
-    invalid(`'mutation.${artifact}.${verb}.examples' does not match its code-owned exact source list`);
-  return spec.projection.examples.map((template, index) =>
-    assertExact(value[index], `mutation.${artifact}.${verb}.examples[${index}]`, template.source));
+  if (!Array.isArray(value) || value.length !== spec.projection.examples.length) invalid(`'mutation.${artifact}.${verb}.examples' does not match its code-owned exact source list`);
+  return spec.projection.examples.map((template, index) => assertExact(value[index], `mutation.${artifact}.${verb}.examples[${index}]`, template.source));
 }
 
-export function projectEntityDevelopmentValue(
-  value: unknown,
-  familyKey: EntityListRuntimeFamilyKey,
-  field: EntityProjectionField,
-): string {
+export function projectEntityDevelopmentValue(value: unknown, familyKey: EntityListRuntimeFamilyKey, field: EntityProjectionField): string {
   const family = ENTITY_LIST_RUNTIME_FAMILIES.find(({ key }) => key === familyKey);
   const source = family?.projection[field];
   if (!family || typeof source !== "string") invalid(`retrieval.${familyKey}.${field} is not a code-owned projection`);
@@ -392,12 +328,14 @@ export function developmentProjectionOwners(): DevelopmentProjectionOwner[] {
       ...spec.projection.recovery,
       consumers: ["schema", "help", "explain"],
     });
-    spec.projection.examples.forEach((example, index) => owners.push({
-      owner: `mutation.${spec.artifact}.${spec.verb}.examples[${index}]`,
-      family: "mutation",
-      ...example,
-      consumers: ["schema", "help", "explain", "parity"],
-    }));
+    spec.projection.examples.forEach((example, index) =>
+      owners.push({
+        owner: `mutation.${spec.artifact}.${spec.verb}.examples[${index}]`,
+        family: "mutation",
+        ...example,
+        consumers: ["schema", "help", "explain", "parity"],
+      }),
+    );
   }
   for (const family of ENTITY_LIST_RUNTIME_FAMILIES) {
     for (const field of ["list", "get", "example", "bareRecovery"] as const) {
@@ -421,7 +359,6 @@ export function developmentProjectionOwners(): DevelopmentProjectionOwner[] {
       consumers: ["schema", "help", "runtime_contract"],
     });
   }
-  if (new Set(owners.map(({ owner }) => owner)).size !== owners.length)
-    invalid("code-owned projection owner identities are not unique");
+  if (new Set(owners.map(({ owner }) => owner)).size !== owners.length) invalid("code-owned projection owner identities are not unique");
   return owners;
 }

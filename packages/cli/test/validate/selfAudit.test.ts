@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  checkAbstraction,
-  checkFiller,
-  checkVerbosity,
-} from "../../src/validate/selfAudit.js";
+import { checkAbstraction, checkFiller, checkVerbosity } from "../../src/validate/selfAudit.js";
 
 describe("checkVerbosity", () => {
   it("passes within the per-entry budget", () => {
@@ -67,9 +63,7 @@ describe("checkAbstraction", () => {
   });
 
   it("reports abstraction creep when no anchor is found", () => {
-    const [passed, detail] = checkAbstraction(
-      "We made improvements to the system and it is better now.",
-    );
+    const [passed, detail] = checkAbstraction("We made improvements to the system and it is better now.");
     expect(passed).toBe(false);
     expect(detail).toContain("abstraction creep");
   });
@@ -77,9 +71,7 @@ describe("checkAbstraction", () => {
 
 describe("checkFiller", () => {
   it("passes clean text", () => {
-    const [passed, detail] = checkFiller(
-      "The test passed all benchmarks with a 15ms response time.",
-    );
+    const [passed, detail] = checkFiller("The test passed all benchmarks with a 15ms response time.");
     expect(passed).toBe(true);
     expect(detail).toBe("");
   });
@@ -92,9 +84,7 @@ describe("checkFiller", () => {
   });
 
   it("detects multiple banned patterns", () => {
-    const [passed, detail] = checkFiller(
-      "Here is the updated plan. In summary, we fixed three bugs. Overall the system is better.",
-    );
+    const [passed, detail] = checkFiller("Here is the updated plan. In summary, we fixed three bugs. Overall the system is better.");
     expect(passed).toBe(false);
     expect(detail).toContain("meta-commentary about writing");
     expect(detail).toContain("summary preambles");
@@ -127,24 +117,13 @@ describe("checkFiller", () => {
       "I chose this approach because it seemed optimal.";
     const [passed, detail] = checkFiller(text);
     expect(passed).toBe(false);
-    for (const category of [
-      "meta-commentary about writing",
-      "hedging qualifiers",
-      "redundant transitions",
-      "self-referential process narration",
-      "filler introductions",
-      "summary preambles",
-      "excessive justification",
-    ]) {
+    for (const category of ["meta-commentary about writing", "hedging qualifiers", "redundant transitions", "self-referential process narration", "filler introductions", "summary preambles", "excessive justification"]) {
       expect(detail).toContain(category);
     }
   });
 
   it("does not let clean content cancel a violation", () => {
-    const text =
-      "Fixed the null pointer in src/auth.py:42. " +
-      "In summary, this resolves the critical issue. " +
-      "Added unit tests for `handle_login` with 95% coverage.";
+    const text = "Fixed the null pointer in src/auth.py:42. " + "In summary, this resolves the critical issue. " + "Added unit tests for `handle_login` with 95% coverage.";
     const [passed, detail] = checkFiller(text);
     expect(passed).toBe(false);
     expect(detail).toContain("summary preambles");

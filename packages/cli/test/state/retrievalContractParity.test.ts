@@ -93,36 +93,100 @@ function seedExecutableExamples(root: string): void {
   const objectiveDirectory = path.join(entities, "objective/objective");
   fs.mkdirSync(planDirectory, { recursive: true });
   fs.mkdirSync(objectiveDirectory, { recursive: true });
-  fs.writeFileSync(path.join(planDirectory, "abcdefghij.yaml"), YAML.stringify({
-    id: "abcdefghij",
-    artifact: "plan",
-    record: {
-      header: { level: "light", created: "2026-08-02", status: "open", title: "Executable retrieval examples" },
-      what: "Exercise every authority-owned list example.",
-      why: "Static corrections must execute against a coherent runtime.",
-      scope: { included: ["retrieval examples"], excluded: ["mutations"] },
-    },
-  }));
-  fs.writeFileSync(path.join(objectiveDirectory, "qjtrmnpvka.yaml"), YAML.stringify({
-    id: "qjtrmnpvka",
-    artifact: "objective",
-    record: {
-      header: { title: "Executable retrieval examples", status: "open", created: "2026-08-02" },
-      objective: { description: "Exercise experiment retrieval", why: "The example requires an objective", measurement: "Command exits zero", constraints: [] },
-      metric: { description: "exit status", direction: "minimize", unit: "failures" },
-      baseline: { description: "zero failures" },
-      gates: {},
-      scope: { included: ["retrieval examples"], excluded: ["experiment publication"] },
-    },
-  }));
+  fs.writeFileSync(
+    path.join(planDirectory, "abcdefghij.yaml"),
+    YAML.stringify({
+      id: "abcdefghij",
+      artifact: "plan",
+      record: {
+        header: {
+          level: "light",
+          created: "2026-08-02",
+          status: "open",
+          title: "Executable retrieval examples",
+        },
+        what: "Exercise every authority-owned list example.",
+        why: "Static corrections must execute against a coherent runtime.",
+        scope: { included: ["retrieval examples"], excluded: ["mutations"] },
+      },
+    }),
+  );
+  fs.writeFileSync(
+    path.join(objectiveDirectory, "qjtrmnpvka.yaml"),
+    YAML.stringify({
+      id: "qjtrmnpvka",
+      artifact: "objective",
+      record: {
+        header: { title: "Executable retrieval examples", status: "open", created: "2026-08-02" },
+        objective: {
+          description: "Exercise experiment retrieval",
+          why: "The example requires an objective",
+          measurement: "Command exits zero",
+          constraints: [],
+        },
+        metric: { description: "exit status", direction: "minimize", unit: "failures" },
+        baseline: { description: "zero failures" },
+        gates: {},
+        scope: { included: ["retrieval examples"], excluded: ["experiment publication"] },
+      },
+    }),
+  );
 }
 
 function seedAliasRecords(root: string): void {
   const records = [
-    ["progress", "progress_cycle", "baaaaaaaaa", { timestamp: "2026-08-02 05:00", type: "fix", phase: "build", what: "First alias fixture", context: { intent: "test alias parity" } }],
-    ["progress", "progress_cycle", "caaaaaaaaa", { timestamp: "2026-08-02 04:00", type: "fix", phase: "build", what: "Second alias fixture", context: { intent: "test alias parity" } }],
-    ["decisions", "decision", "daaaaaaaaa", { date: "2026-08-02", question: "First?", context: "Alias parity", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "Canonical parser", confidence: "firm" }],
-    ["decisions", "decision", "eaaaaaaaaa", { date: "2026-08-01", question: "Second?", context: "Alias parity", alternatives: [{ name: "yes", status: "chosen" }], choice: "yes", reasoning: "Canonical parser", confidence: "firm" }],
+    [
+      "progress",
+      "progress_cycle",
+      "baaaaaaaaa",
+      {
+        timestamp: "2026-08-02 05:00",
+        type: "fix",
+        phase: "build",
+        what: "First alias fixture",
+        context: { intent: "test alias parity" },
+      },
+    ],
+    [
+      "progress",
+      "progress_cycle",
+      "caaaaaaaaa",
+      {
+        timestamp: "2026-08-02 04:00",
+        type: "fix",
+        phase: "build",
+        what: "Second alias fixture",
+        context: { intent: "test alias parity" },
+      },
+    ],
+    [
+      "decisions",
+      "decision",
+      "daaaaaaaaa",
+      {
+        date: "2026-08-02",
+        question: "First?",
+        context: "Alias parity",
+        alternatives: [{ name: "yes", status: "chosen" }],
+        choice: "yes",
+        reasoning: "Canonical parser",
+        confidence: "firm",
+      },
+    ],
+    [
+      "decisions",
+      "decision",
+      "eaaaaaaaaa",
+      {
+        date: "2026-08-01",
+        question: "Second?",
+        context: "Alias parity",
+        alternatives: [{ name: "yes", status: "chosen" }],
+        choice: "yes",
+        reasoning: "Canonical parser",
+        confidence: "firm",
+      },
+    ],
     ["todo", "todo_item", "faaaaaaaaa", { severity: "critical", status: "open", description: "First TODO alias fixture" }],
     ["todo", "todo_item", "gaaaaaaaaa", { severity: "normal", status: "open", description: "Second TODO alias fixture" }],
   ] as const;
@@ -147,14 +211,23 @@ function capture(root: string, argv: string[]): { rc: number; out: string; err: 
   let err = "";
   process.chdir(root);
   try {
-    const rc = main(["node", "agentera", ...argv], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+    const rc = main(["node", "agentera", ...argv], {
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
+    });
     return { rc, out, err };
   } finally {
     process.chdir(previous);
   }
 }
 
-afterEach(() => { for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true }); });
+afterEach(() => {
+  for (const root of roots.splice(0)) fs.rmSync(root, { recursive: true, force: true });
+});
 
 describe("final entity retrieval public-contract parity", () => {
   it("keeps an independent exact implementation-completeness sentinel", () => {
@@ -191,12 +264,9 @@ describe("final entity retrieval public-contract parity", () => {
       const changed = structuredClone(authority);
       changed.entity_target.public_retrieval.list_help.families[runtime.key].example += " oops";
       const sourceRoot = mutatedSourceRoot(changed);
-      expect(() => withSourceRoot(sourceRoot, () => entityListFamilies(sourceRoot)), runtime.key)
-        .toThrow(/invalid entity list help authority/);
-      expect(() => withSourceRoot(sourceRoot, () => buildSchemaPayload("schema")), runtime.key)
-        .toThrow(/invalid (?:entity list help|state retrieval) authority/);
-      expect(() => withSourceRoot(sourceRoot, () => printStateHelp(runtime.commandTokens[0])), runtime.key)
-        .toThrow(/invalid entity list help authority/);
+      expect(() => withSourceRoot(sourceRoot, () => entityListFamilies(sourceRoot)), runtime.key).toThrow(/invalid entity list help authority/);
+      expect(() => withSourceRoot(sourceRoot, () => buildSchemaPayload("schema")), runtime.key).toThrow(/invalid (?:entity list help|state retrieval) authority/);
+      expect(() => withSourceRoot(sourceRoot, () => printStateHelp(runtime.commandTokens[0])), runtime.key).toThrow(/invalid entity list help authority/);
     }
   });
 
@@ -212,23 +282,76 @@ describe("final entity retrieval public-contract parity", () => {
     authority.entity_target.public_retrieval.commands.plans.list = authority.entity_target.public_retrieval.commands.plans.list.replace("archived", "retired");
     authority.entity_target.public_retrieval.list_help.families.plans.example = authority.entity_target.public_retrieval.list_help.families.plans.example.replace("--status open", "--status retired");
     const errors = validateEntityListHelp(authority);
-    expect(errors).toEqual(expect.arrayContaining([
-      "entity_target.public_retrieval.list_help.defaults.formats",
-      "api.formats",
-      "entity_target.public_retrieval.list_help.families.plans.filters[0].runtime_parity",
-      "entity_target.public_retrieval.list_help.families.plans.list_command",
-      "entity_target.public_retrieval.list_help.families.plans.example.runtime_parity",
-    ]));
+    expect(errors).toEqual(
+      expect.arrayContaining([
+        "entity_target.public_retrieval.list_help.defaults.formats",
+        "api.formats",
+        "entity_target.public_retrieval.list_help.families.plans.filters[0].runtime_parity",
+        "entity_target.public_retrieval.list_help.families.plans.list_command",
+        "entity_target.public_retrieval.list_help.families.plans.example.runtime_parity",
+      ]),
+    );
   });
 
   it.each([
-    ["removed docs family", (value: any) => { delete value.entity_target.public_retrieval.commands.docs; delete value.entity_target.public_retrieval.list_help.families.docs; }, ".missing.docs"],
-    ["unknown ghost family", (value: any) => { value.entity_target.public_retrieval.commands.ghost = { list: "agentera state ghost list", get: "agentera state ghost get --id ID" }; value.entity_target.public_retrieval.list_help.families.ghost = { command_tokens: ["ghost"], filters: [], example: "agentera state ghost list" }; }, ".unknown.ghost"],
-    ["removed TODO summary fields", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.todo.summary_fields; }, ".todo.summary_fields"],
-    ["removed TODO summary notes", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes; }, ".todo.summary_field_notes.required"],
-    ["unknown TODO metadata", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.ghost = true; }, ".todo.unknown.ghost"],
-    ["removed progress filters", (value: any) => { value.entity_target.public_retrieval.list_help.families.progress.filters = []; }, ".progress.filters.runtime_parity"],
-    ["list-help bound drift", (value: any) => { value.entity_target.public_retrieval.list_help.defaults.bounds.maximum = 99; }, ".bounds.maximum_authority_parity"],
+    [
+      "removed docs family",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.commands.docs;
+        delete value.entity_target.public_retrieval.list_help.families.docs;
+      },
+      ".missing.docs",
+    ],
+    [
+      "unknown ghost family",
+      (value: any) => {
+        value.entity_target.public_retrieval.commands.ghost = {
+          list: "agentera state ghost list",
+          get: "agentera state ghost get --id ID",
+        };
+        value.entity_target.public_retrieval.list_help.families.ghost = {
+          command_tokens: ["ghost"],
+          filters: [],
+          example: "agentera state ghost list",
+        };
+      },
+      ".unknown.ghost",
+    ],
+    [
+      "removed TODO summary fields",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.list_help.families.todo.summary_fields;
+      },
+      ".todo.summary_fields",
+    ],
+    [
+      "removed TODO summary notes",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes;
+      },
+      ".todo.summary_field_notes.required",
+    ],
+    [
+      "unknown TODO metadata",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.todo.ghost = true;
+      },
+      ".todo.unknown.ghost",
+    ],
+    [
+      "removed progress filters",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.progress.filters = [];
+      },
+      ".progress.filters.runtime_parity",
+    ],
+    [
+      "list-help bound drift",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.defaults.bounds.maximum = 99;
+      },
+      ".bounds.maximum_authority_parity",
+    ],
   ])("rejects Audit 1 mutation: %s", (_name, mutate, expected) => {
     const authority = authorityDocument();
     mutate(authority);
@@ -236,13 +359,55 @@ describe("final entity retrieval public-contract parity", () => {
   });
 
   it.each([
-    ["unknown defaults metadata", (value: any) => { value.entity_target.public_retrieval.list_help.defaults.ghost = true; }, ".defaults.unknown.ghost"],
-    ["wrong bounds type", (value: any) => { value.entity_target.public_retrieval.list_help.defaults.bounds.default = "20"; }, ".bounds.default.value"],
-    ["unknown filter metadata", (value: any) => { value.entity_target.public_retrieval.list_help.families.progress.filters[0].ghost = true; }, ".filters[0].unknown.ghost"],
-    ["filter value syntax drift", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.filters[0].flag = "--status STATUS"; }, ".filters[0].flag_value_syntax"],
-    ["malformed filter values", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.filters[0].values = ["open", 7]; }, ".filters[0].values"],
-    ["wrong TODO note type", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes = "queue_rank"; }, ".summary_field_notes.type"],
-    ["wrong TODO ownership semantics", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes.queue_rank.persisted = true; }, ".queue_rank.semantics"],
+    [
+      "unknown defaults metadata",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.defaults.ghost = true;
+      },
+      ".defaults.unknown.ghost",
+    ],
+    [
+      "wrong bounds type",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.defaults.bounds.default = "20";
+      },
+      ".bounds.default.value",
+    ],
+    [
+      "unknown filter metadata",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.progress.filters[0].ghost = true;
+      },
+      ".filters[0].unknown.ghost",
+    ],
+    [
+      "filter value syntax drift",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.plans.filters[0].flag = "--status STATUS";
+      },
+      ".filters[0].flag_value_syntax",
+    ],
+    [
+      "malformed filter values",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.plans.filters[0].values = ["open", 7];
+      },
+      ".filters[0].values",
+    ],
+    [
+      "wrong TODO note type",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes = "queue_rank";
+      },
+      ".summary_field_notes.type",
+    ],
+    [
+      "wrong TODO ownership semantics",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.todo.summary_field_notes.queue_rank.persisted = true;
+      },
+      ".queue_rank.semantics",
+    ],
   ])("fails closed for metadata shape: %s", (_name, mutate, expected) => {
     const authority = authorityDocument();
     mutate(authority);
@@ -250,15 +415,69 @@ describe("final entity retrieval public-contract parity", () => {
   });
 
   it.each([
-    ["missing example", (value: any) => { delete value.entity_target.public_retrieval.list_help.families.progress.example; }, ".progress.example.type"],
-    ["non-string example", (value: any) => { value.entity_target.public_retrieval.list_help.families.decisions.example = ["agentera"]; }, ".decisions.example.type"],
-    ["non-canonical spacing", (value: any) => { value.entity_target.public_retrieval.list_help.families.health.example = "npx  -y agentera@next state health list --limit 20"; }, ".health.example.lexical_form"],
-    ["unknown argument", (value: any) => { value.entity_target.public_retrieval.list_help.families.docs.example = "npx -y agentera@next state docs list --ghost value --limit 20"; }, ".docs.example.argument"],
-    ["invalid positional identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "npx -y agentera@next state plan tasks list not-an-id --limit 20"; }, ".plan_tasks.example.identifier"],
-    ["missing required identifier", (value: any) => { value.entity_target.public_retrieval.list_help.families.experiments.example = "npx -y agentera@next state experiments list --limit 20"; }, ".experiments.example.identifier_required"],
-    ["invalid filter value", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.example = "npx -y agentera@next state plan list --status ghost --limit 20"; }, ".plans.example.filter_value"],
-    ["mutually exclusive selectors", (value: any) => { value.entity_target.public_retrieval.list_help.families.todo.example = "npx -y agentera@next state todo list --ids-only --fields status --limit 20"; }, ".todo.example.selector"],
-    ["invalid format", (value: any) => { value.entity_target.public_retrieval.list_help.families.objective.example = "npx -y agentera@next state objective list --limit 20 --format toml"; }, ".objective.example.format"],
+    [
+      "missing example",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.list_help.families.progress.example;
+      },
+      ".progress.example.type",
+    ],
+    [
+      "non-string example",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.decisions.example = ["agentera"];
+      },
+      ".decisions.example.type",
+    ],
+    [
+      "non-canonical spacing",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.health.example = "npx  -y agentera@next state health list --limit 20";
+      },
+      ".health.example.lexical_form",
+    ],
+    [
+      "unknown argument",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.docs.example = "npx -y agentera@next state docs list --ghost value --limit 20";
+      },
+      ".docs.example.argument",
+    ],
+    [
+      "invalid positional identifier",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.plan_tasks.example = "npx -y agentera@next state plan tasks list not-an-id --limit 20";
+      },
+      ".plan_tasks.example.identifier",
+    ],
+    [
+      "missing required identifier",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.experiments.example = "npx -y agentera@next state experiments list --limit 20";
+      },
+      ".experiments.example.identifier_required",
+    ],
+    [
+      "invalid filter value",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.plans.example = "npx -y agentera@next state plan list --status ghost --limit 20";
+      },
+      ".plans.example.filter_value",
+    ],
+    [
+      "mutually exclusive selectors",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.todo.example = "npx -y agentera@next state todo list --ids-only --fields status --limit 20";
+      },
+      ".todo.example.selector",
+    ],
+    [
+      "invalid format",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.objective.example = "npx -y agentera@next state objective list --limit 20 --format toml";
+      },
+      ".objective.example.format",
+    ],
   ])("fails closed for example grammar: %s", (_name, mutate, expected) => {
     const authority = authorityDocument();
     mutate(authority);
@@ -291,10 +510,7 @@ describe("final entity retrieval public-contract parity", () => {
     const authority = authorityDocument();
     setListLimit(authority, 7);
     setExampleLimit(authority, 7);
-    expect(validateEntityListHelp(authority)).toEqual(expect.arrayContaining([
-      "entity_target.public_retrieval.list_help.defaults.bounds.runtime_parity",
-      ...ENTITY_LIST_RUNTIME_FAMILIES.map(({ key }) => `entity_target.public_retrieval.list_help.families.${key}.example.runtime_parity`),
-    ]));
+    expect(validateEntityListHelp(authority)).toEqual(expect.arrayContaining(["entity_target.public_retrieval.list_help.defaults.bounds.runtime_parity", ...ENTITY_LIST_RUNTIME_FAMILIES.map(({ key }) => `entity_target.public_retrieval.list_help.families.${key}.example.runtime_parity`)]));
     const sourceRoot = mutatedSourceRoot(authority);
     withSourceRoot(sourceRoot, () => {
       expect(() => buildSchemaPayload("schema")).toThrow(/invalid state retrieval authority/);
@@ -393,7 +609,11 @@ describe("final entity retrieval public-contract parity", () => {
       } else {
         expect(bare, family.key).toMatchObject({ rc: 2, err: "" });
         const correction = JSON.parse(bare.out).error;
-        expect(correction).toMatchObject({ class: "invalid_request", example: family.bareRecovery, recovery: `Run \`${family.bareRecovery}\`; no state was changed.` });
+        expect(correction).toMatchObject({
+          class: "invalid_request",
+          example: family.bareRecovery,
+          recovery: `Run \`${family.bareRecovery}\`; no state was changed.`,
+        });
         expect(capture(root, exampleArgs(family.bareRecovery!)).rc, family.key).toBe(0);
       }
     }
@@ -403,9 +623,30 @@ describe("final entity retrieval public-contract parity", () => {
     const root = cutoverProject();
     seedAliasRecords(root);
     const scenarios: Record<string, string[][]> = {
-      progress: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--topic", "alias", "--ids-only", "--format", "json"], ["--fields", "status", "--format", "yaml"], ["--format", "text"]],
-      decisions: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--topic", "alias", "--ids-only", "--format", "json"], ["--fields", "confidence", "--format", "yaml"], ["--format", "text"]],
-      todo: [["--format", "json"], ["extra", "--format", "json"], ["--unknown", "--format", "json"], ["--status", "open", "--ids-only", "--format", "json"], ["--fields", "status", "--format", "yaml"], ["--format", "text"]],
+      progress: [
+        ["--format", "json"],
+        ["extra", "--format", "json"],
+        ["--unknown", "--format", "json"],
+        ["--topic", "alias", "--ids-only", "--format", "json"],
+        ["--fields", "status", "--format", "yaml"],
+        ["--format", "text"],
+      ],
+      decisions: [
+        ["--format", "json"],
+        ["extra", "--format", "json"],
+        ["--unknown", "--format", "json"],
+        ["--topic", "alias", "--ids-only", "--format", "json"],
+        ["--fields", "confidence", "--format", "yaml"],
+        ["--format", "text"],
+      ],
+      todo: [
+        ["--format", "json"],
+        ["extra", "--format", "json"],
+        ["--unknown", "--format", "json"],
+        ["--status", "open", "--ids-only", "--format", "json"],
+        ["--fields", "status", "--format", "yaml"],
+        ["--format", "text"],
+      ],
     };
     for (const key of ["progress", "decisions", "todo"] as const) {
       const family = entityListFamilies(REPO_ROOT).find((candidate) => candidate.key === key)!;
@@ -417,12 +658,13 @@ describe("final entity retrieval public-contract parity", () => {
       const first = capture(root, ["state", ...family.commandTokens, "list", "--limit", "1", "--format", "json"]);
       const cursor = JSON.parse(first.out).next_cursor;
       expect(cursor).toEqual(expect.any(String));
-      expect(capture(root, ["state", ...family.commandTokens, "--limit", "1", "--cursor", cursor, "--format", "json"])).toEqual(
-        capture(root, ["state", ...family.commandTokens, "list", "--limit", "1", "--cursor", cursor, "--format", "json"]),
-      );
+      expect(capture(root, ["state", ...family.commandTokens, "--limit", "1", "--cursor", cursor, "--format", "json"])).toEqual(capture(root, ["state", ...family.commandTokens, "list", "--limit", "1", "--cursor", cursor, "--format", "json"]));
       const writer = capture(root, ["state", ...family.commandTokens, "explain", "--format", "json"]);
       expect(writer.rc, key).toBe(0);
-      expect(JSON.parse(writer.out)).toMatchObject({ schemaVersion: "agentera.stateWriteExplain.v1", artifact: key });
+      expect(JSON.parse(writer.out)).toMatchObject({
+        schemaVersion: "agentera.stateWriteExplain.v1",
+        artifact: key,
+      });
     }
     const empty = cutoverProject();
     for (const key of ["progress", "decisions", "todo"] as const) {
@@ -445,20 +687,39 @@ describe("final entity retrieval public-contract parity", () => {
       expect(help.out).toContain(`usage: ${family.get}`);
       const rejected = capture(root, ["state", ...family.commandTokens, "get", "extra", "--format", "json"]);
       expect(rejected, family.key).toMatchObject({ rc: 2, err: "" });
-      expect(JSON.parse(rejected.out).error).toMatchObject({ class: "invalid_request", syntax: family.get });
+      expect(JSON.parse(rejected.out).error).toMatchObject({
+        class: "invalid_request",
+        syntax: family.get,
+      });
     }
   });
 
   it("projects one exact detail command per deferred startup family", () => {
     const plan = capabilityContext("plan")?.availability as Record<string, any>[];
     const optimize = capabilityContext("optimize")?.availability as Record<string, any>[];
-    expect(plan).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
-      expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding" }),
-    ]));
-    expect(optimize).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "experiments", availability: "deferred", detail_command: expect.stringContaining("--objective OBJECTIVE_ID") }),
-    ]));
+    expect(plan).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          family: "decisions",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state decisions list",
+        }),
+        expect.objectContaining({
+          family: "profile",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next report profile-grounding",
+        }),
+      ]),
+    );
+    expect(optimize).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          family: "experiments",
+          availability: "deferred",
+          detail_command: expect.stringContaining("--objective OBJECTIVE_ID"),
+        }),
+      ]),
+    );
     expect(JSON.stringify({ plan, optimize })).not.toMatch(/write_contract|input_schema|examples/);
   });
 
@@ -473,7 +734,10 @@ describe("final entity retrieval public-contract parity", () => {
       expect([1, 2]).toContain(result.rc);
       expect(result.err).toBe("");
       const payload = JSON.parse(result.out);
-      expect(payload).toMatchObject({ status: "fail", error: { class: expect.any(String), recovery: expect.any(String) } });
+      expect(payload).toMatchObject({
+        status: "fail",
+        error: { class: expect.any(String), recovery: expect.any(String) },
+      });
       expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(4096);
     }
   });

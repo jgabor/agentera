@@ -22,8 +22,7 @@ const REPLAY_NONCE_SCHEMA_VERSION = "agentera.personalGlossaryReviewReplayNonce.
 const SHA256 = /^[a-f0-9]{64}$/u;
 const BASE64URL = /^[A-Za-z0-9_-]+$/u;
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
-const SENSITIVE_REVIEW_METADATA_ASSIGNMENT =
-  /(?:^|[^A-Za-z0-9_])(?:api[_-]?key|access[_-]?token|token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact|secret)\s*[:=]/iu;
+const SENSITIVE_REVIEW_METADATA_ASSIGNMENT = /(?:^|[^A-Za-z0-9_])(?:api[_-]?key|access[_-]?token|token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact|secret)\s*[:=]/iu;
 
 type Mapping = Record<string, unknown>;
 type ReviewStatus = "pending" | "terminal";
@@ -82,12 +81,9 @@ export interface PersonalGlossaryLegacyReviewRecord {
   record_sha256: string;
 }
 
-export type PersonalGlossaryReviewStoredRecord =
-  | PersonalGlossaryReviewRecord
-  | PersonalGlossaryLegacyReviewRecord;
+export type PersonalGlossaryReviewStoredRecord = PersonalGlossaryReviewRecord | PersonalGlossaryLegacyReviewRecord;
 
-export interface PersonalGlossaryReviewReadRecord
-  extends Omit<PersonalGlossaryReviewRecord, "schema_version" | "scope"> {
+export interface PersonalGlossaryReviewReadRecord extends Omit<PersonalGlossaryReviewRecord, "schema_version" | "scope"> {
   schema_version: typeof RECORD_SCHEMA_VERSION | typeof LEGACY_RECORD_SCHEMA_VERSION;
   scope: ReviewScope | null;
 }
@@ -107,9 +103,7 @@ export interface PersonalGlossaryLegacyReviewStore {
   store_sha256: string;
 }
 
-export type PersonalGlossaryReviewStoreSource =
-  | PersonalGlossaryReviewStore
-  | PersonalGlossaryLegacyReviewStore;
+export type PersonalGlossaryReviewStoreSource = PersonalGlossaryReviewStore | PersonalGlossaryLegacyReviewStore;
 
 export interface PersonalGlossaryReviewRecordsStorageOptions {
   env?: Env;
@@ -171,15 +165,12 @@ const CONTENT_ADDRESSED_TIER_GENERATION = /^[a-f0-9]{24}$/u;
 
 /** Keep review binding metadata opaque and safe to persist or return. */
 export function validPersonalGlossaryReviewMetadataBinding(value: unknown): value is string {
-  return boundedText(value, 256) && !/[\\/]/u.test(value) &&
-    !SENSITIVE_REVIEW_METADATA_ASSIGNMENT.test(value) && !containsPersonalGlossarySensitiveContent(value);
+  return boundedText(value, 256) && !/[\\/]/u.test(value) && !SENSITIVE_REVIEW_METADATA_ASSIGNMENT.test(value) && !containsPersonalGlossarySensitiveContent(value);
 }
 
 /** A current evidence-tier generation is a bounded opaque digest, not secret content. */
 export function validPersonalGlossaryReviewGenerationBinding(value: unknown): value is string {
-  return (
-    typeof value === "string" && CONTENT_ADDRESSED_TIER_GENERATION.test(value)
-  ) || validPersonalGlossaryReviewMetadataBinding(value);
+  return (typeof value === "string" && CONTENT_ADDRESSED_TIER_GENERATION.test(value)) || validPersonalGlossaryReviewMetadataBinding(value);
 }
 
 function validCorrectedMeaning(value: unknown): value is string {
@@ -204,11 +195,13 @@ export function personalGlossaryReviewRecordsStorageContract(): PersonalGlossary
     value.command !== "agentera report personal-glossary-reviews" ||
     value.queueRequestSchemaVersion !== "agentera.personalGlossaryReviewQueueRequest.v1" ||
     !sameStrings(value.queueRequestFields, ["schema_version", "receipt"]) ||
-    value.queueMaxRequestUtf8Bytes !== 16_384 || value.queueDecisionOutcome !== "review_required" ||
+    value.queueMaxRequestUtf8Bytes !== 16_384 ||
+    value.queueDecisionOutcome !== "review_required" ||
     !sameStrings(value.queueCurrentBindings, ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "reason"]) ||
     value.queueResultSchemaVersion !== "agentera.personalGlossaryReviewQueueResult.v1" ||
     !sameStrings(value.queueResultStatuses, ["queued", "unchanged_replay", "suppressed", "reopened"]) ||
-    value.queueMaxResultUtf8Bytes !== 4_096 || value.queueNoQuestionChannel !== "queue_without_prompt_or_disposition" ||
+    value.queueMaxResultUtf8Bytes !== 4_096 ||
+    value.queueNoQuestionChannel !== "queue_without_prompt_or_disposition" ||
     value.dispositionRequestSchemaVersion !== "agentera.personalGlossaryReviewDispositionRequest.v1" ||
     !sameStrings(value.dispositionRequestFields, ["schema_version", "review_id", "receipt", "approval"]) ||
     value.dispositionMaxRequestUtf8Bytes !== 16_384 ||
@@ -220,20 +213,50 @@ export function personalGlossaryReviewRecordsStorageContract(): PersonalGlossary
     value.trustedHostKeyFile !== "trusted-local-host.json" ||
     value.trustedHostKeySchemaVersion !== TRUSTED_HOST_KEY_SCHEMA_VERSION ||
     !sameStrings(value.trustedHostKeyFields, ["schema_version", "owner", "subject", "public_key_spki_base64url"]) ||
-    value.trustedHostKeyOwner !== REVIEW_OWNER || value.trustedHostKeyAlgorithm !== "ed25519" ||
-    value.trustedHostKeyMaxSerializedUtf8Bytes !== 4_096 || value.storeSchemaVersion !== STORE_SCHEMA_VERSION ||
-    value.recordSchemaVersion !== RECORD_SCHEMA_VERSION || value.storeOwner !== REVIEW_OWNER ||
+    value.trustedHostKeyOwner !== REVIEW_OWNER ||
+    value.trustedHostKeyAlgorithm !== "ed25519" ||
+    value.trustedHostKeyMaxSerializedUtf8Bytes !== 4_096 ||
+    value.storeSchemaVersion !== STORE_SCHEMA_VERSION ||
+    value.recordSchemaVersion !== RECORD_SCHEMA_VERSION ||
+    value.storeOwner !== REVIEW_OWNER ||
     value.storeFile !== "review-records.json" ||
     !sameStrings(value.storeFields, ["schema_version", "owner", "records", "replay_index", "store_sha256"]) ||
-    !sameStrings(value.recordFields, ["schema_version", "owner", "review_id", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "scope", "reason", "status", "disposition", "review_record", "reopen_reason", "queued_at", "terminal_at", "expires_at", "record_sha256"]) ||
-    value.recordsMax !== 100 || !sameStrings(value.replayIndexFields, ["nonce_sha256", "receipt_sha256", "expires_at"]) ||
-    value.replayEntriesMax !== 100 || value.recordMaxSerializedUtf8Bytes !== 8_192 ||
-    value.storeMaxSerializedUtf8Bytes !== 1_048_576 || value.storeOrder !== "review_id_asc" ||
+    !sameStrings(value.recordFields, [
+      "schema_version",
+      "owner",
+      "review_id",
+      "candidate_id",
+      "candidate_revision",
+      "candidate_capsule_sha256",
+      "candidate_projection_sha256",
+      "host_receipt_sha256",
+      "cli_decision_sha256",
+      "semantic_fingerprint",
+      "generation",
+      "policy_version",
+      "scope",
+      "reason",
+      "status",
+      "disposition",
+      "review_record",
+      "reopen_reason",
+      "queued_at",
+      "terminal_at",
+      "expires_at",
+      "record_sha256",
+    ]) ||
+    value.recordsMax !== 100 ||
+    !sameStrings(value.replayIndexFields, ["nonce_sha256", "receipt_sha256", "expires_at"]) ||
+    value.replayEntriesMax !== 100 ||
+    value.recordMaxSerializedUtf8Bytes !== 8_192 ||
+    value.storeMaxSerializedUtf8Bytes !== 1_048_576 ||
+    value.storeOrder !== "review_id_asc" ||
     value.replay !== "exact_current_binding_is_unchanged_replay_and_exact_receipt_is_idempotent" ||
     value.conflict !== "changed_receipt_nonce_binding_or_signature_fails_before_effects" ||
     !sameStrings(value.compatibilityStoreSchemaVersions, [LEGACY_STORE_SCHEMA_VERSION, STORE_SCHEMA_VERSION]) ||
     !sameStrings(value.compatibilityRecordSchemaVersions, [LEGACY_RECORD_SCHEMA_VERSION, RECORD_SCHEMA_VERSION]) ||
-    value.compatibilityReadMutation !== "forbidden" || value.compatibilityMigrationOperation !== "disposition_only" ||
+    value.compatibilityReadMutation !== "forbidden" ||
+    value.compatibilityMigrationOperation !== "disposition_only" ||
     value.compatibilityScopeDerivation !== "current_validated_host_receipt_only" ||
     value.compatibilityInvalidBehavior !== "fail_before_effects" ||
     !sameStrings(value.compatibilityPreservedBindings, ["review_id", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "reason"]) ||
@@ -243,19 +266,27 @@ export function personalGlossaryReviewRecordsStorageContract(): PersonalGlossary
     !sameStrings(value.suppressionDispositions, ["reject", "defer"]) ||
     !sameStrings(value.reopenReasons, ["policy_changed", "scope_changed", "meaning_changed"]) ||
     !sameStrings(value.forbiddenFields, ["term", "meaning", "excerpt", "raw_evidence", "source_id", "evidence_anchor", "session_id", "project_id", "source_path", "tool_content", "review_approval", "signature", "nonce"]) ||
-    value.retrievalSchemaVersion !== "agentera.personalGlossaryReviewRetrieval.v1" || value.retrievalOwner !== REVIEW_OWNER ||
-    value.listDefaultLimit !== 20 || value.listMaximumLimit !== 50 || value.listMaxSerializedUtf8Bytes !== 32_768 ||
-    value.listOrder !== "queued_at_desc_then_review_id_asc" || !sameStrings(value.listStatuses, ["pending", "terminal"]) ||
+    value.retrievalSchemaVersion !== "agentera.personalGlossaryReviewRetrieval.v1" ||
+    value.retrievalOwner !== REVIEW_OWNER ||
+    value.listDefaultLimit !== 20 ||
+    value.listMaximumLimit !== 50 ||
+    value.listMaxSerializedUtf8Bytes !== 32_768 ||
+    value.listOrder !== "queued_at_desc_then_review_id_asc" ||
+    !sameStrings(value.listStatuses, ["pending", "terminal"]) ||
     value.cursorAuthority !== "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor" ||
     value.cursorVocabulary !== "opaque_snapshot_cursor" ||
     !sameStrings(value.cursorBinding, ["collection", "owner", "filters", "limit", "order", "snapshot"]) ||
-    value.cursorInvalidBehavior !== "cursor_invalid" || value.cursorUnavailableBehavior !== "cursor_snapshot_unavailable" ||
+    value.cursorInvalidBehavior !== "cursor_invalid" ||
+    value.cursorUnavailableBehavior !== "cursor_snapshot_unavailable" ||
     !sameStrings(value.exactRequiredBindings, ["review_id", "candidate_id", "candidate_revision", "generation", "policy_version"]) ||
-    value.exactCurrentBindingField !== "candidate_projection_sha256" || value.exactMaxSerializedUtf8Bytes !== 8_192 ||
-    value.terminalMetadataDays !== 90 || value.maintenanceExposure !== "authenticated_review_owner_only" ||
+    value.exactCurrentBindingField !== "candidate_projection_sha256" ||
+    value.exactMaxSerializedUtf8Bytes !== 8_192 ||
+    value.terminalMetadataDays !== 90 ||
+    value.maintenanceExposure !== "authenticated_review_owner_only" ||
     value.maintenancePurge !== "current_user_authorized_review_records_only" ||
     !sameStrings(value.maintenanceForbiddenEffects, ["profile_entry", "project_state", "candidate_projection", "publication"])
-  ) throw new TypeError("personal glossary review-record contract is unavailable");
+  )
+    throw new TypeError("personal glossary review-record contract is unavailable");
   return {
     storeFile: value.storeFile,
     trustedHostKeyFile: value.trustedHostKeyFile,
@@ -303,35 +334,47 @@ export function reviewExpiry(disposedAt: string): string {
   return new Date(Date.parse(disposedAt) + personalGlossaryReviewRecordsStorageContract().terminalMetadataDays * 86_400_000).toISOString();
 }
 
-function validStoredReviewRecord(
-  value: unknown,
-  record: PersonalGlossaryReviewRecord,
-): value is GlossaryReviewRecord {
-  if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "disposition", "corrected_meaning", "corrected_scope", "disposed_at", "expires_at", "record_sha256"])) return false;
+function validStoredReviewRecord(value: unknown, record: PersonalGlossaryReviewRecord): value is GlossaryReviewRecord {
   if (
-    value.schema_version !== "agentera.personalGlossaryReviewRecord.v1" || value.owner !== "user_local_review_lifecycle" ||
+    !mapping(value) ||
+    !exactKeys(value, ["schema_version", "owner", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "disposition", "corrected_meaning", "corrected_scope", "disposed_at", "expires_at", "record_sha256"])
+  )
+    return false;
+  if (
+    value.schema_version !== "agentera.personalGlossaryReviewRecord.v1" ||
+    value.owner !== "user_local_review_lifecycle" ||
     ![value.candidate_id, value.candidate_revision, value.candidate_capsule_sha256, value.host_receipt_sha256, value.cli_decision_sha256, value.semantic_fingerprint, value.record_sha256].every(digest) ||
-    !validPersonalGlossaryReviewGenerationBinding(value.generation) || !validPersonalGlossaryReviewMetadataBinding(value.policy_version) ||
-    value.candidate_id !== record.candidate_id || value.candidate_revision !== record.candidate_revision ||
-    value.candidate_capsule_sha256 !== record.candidate_capsule_sha256 || value.host_receipt_sha256 !== record.host_receipt_sha256 ||
-    value.cli_decision_sha256 !== record.cli_decision_sha256 || value.semantic_fingerprint !== record.semantic_fingerprint ||
-    value.generation !== record.generation || value.policy_version !== record.policy_version ||
-    value.disposition !== record.disposition || !timestamp(value.disposed_at) || !timestamp(value.expires_at) ||
+    !validPersonalGlossaryReviewGenerationBinding(value.generation) ||
+    !validPersonalGlossaryReviewMetadataBinding(value.policy_version) ||
+    value.candidate_id !== record.candidate_id ||
+    value.candidate_revision !== record.candidate_revision ||
+    value.candidate_capsule_sha256 !== record.candidate_capsule_sha256 ||
+    value.host_receipt_sha256 !== record.host_receipt_sha256 ||
+    value.cli_decision_sha256 !== record.cli_decision_sha256 ||
+    value.semantic_fingerprint !== record.semantic_fingerprint ||
+    value.generation !== record.generation ||
+    value.policy_version !== record.policy_version ||
+    value.disposition !== record.disposition ||
+    !timestamp(value.disposed_at) ||
+    !timestamp(value.expires_at) ||
     value.expires_at !== reviewExpiry(value.disposed_at) ||
     value.record_sha256 !== glossaryCanonicalSha256(bodyWithoutDigest(value, "record_sha256"))
-  ) return false;
-  return value.disposition === "correct"
-    ? value.corrected_scope === "personal" && validCorrectedMeaning(value.corrected_meaning)
-    : value.corrected_scope === null && value.corrected_meaning === null;
+  )
+    return false;
+  return value.disposition === "correct" ? value.corrected_scope === "personal" && validCorrectedMeaning(value.corrected_meaning) : value.corrected_scope === null && value.corrected_meaning === null;
 }
 
 function commonRecordIsValid(value: Mapping): value is Mapping & ReviewIdentityBinding {
-  return value.owner === REVIEW_OWNER &&
+  return (
+    value.owner === REVIEW_OWNER &&
     [value.review_id, value.candidate_id, value.candidate_revision, value.candidate_capsule_sha256, value.candidate_projection_sha256, value.host_receipt_sha256, value.cli_decision_sha256, value.semantic_fingerprint, value.record_sha256].every(digest) &&
-    validPersonalGlossaryReviewGenerationBinding(value.generation) && validPersonalGlossaryReviewMetadataBinding(value.policy_version) &&
+    validPersonalGlossaryReviewGenerationBinding(value.generation) &&
+    validPersonalGlossaryReviewMetadataBinding(value.policy_version) &&
     boundedText(value.reason, 512) &&
     (GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.review_required as readonly string[]).includes(value.reason as string) &&
-    timestamp(value.queued_at) && (value.status === "pending" || value.status === "terminal");
+    timestamp(value.queued_at) &&
+    (value.status === "pending" || value.status === "terminal")
+  );
 }
 
 export function isLegacyReviewRecord(value: PersonalGlossaryReviewStoredRecord): value is PersonalGlossaryLegacyReviewRecord {
@@ -343,21 +386,72 @@ export function isCurrentReviewRecord(value: PersonalGlossaryReviewStoredRecord)
 }
 
 function validLegacyReviewRecord(value: unknown, valueContract: PersonalGlossaryReviewRecordsStorageContract): value is PersonalGlossaryLegacyReviewRecord {
-  if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "review_id", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "reason", "status", "queued_at", "terminal_at", "expires_at", "record_sha256"]) ||
-    value.schema_version !== LEGACY_RECORD_SCHEMA_VERSION || !commonRecordIsValid(value) ||
+  if (
+    !mapping(value) ||
+    !exactKeys(value, [
+      "schema_version",
+      "owner",
+      "review_id",
+      "candidate_id",
+      "candidate_revision",
+      "candidate_capsule_sha256",
+      "candidate_projection_sha256",
+      "host_receipt_sha256",
+      "cli_decision_sha256",
+      "semantic_fingerprint",
+      "generation",
+      "policy_version",
+      "reason",
+      "status",
+      "queued_at",
+      "terminal_at",
+      "expires_at",
+      "record_sha256",
+    ]) ||
+    value.schema_version !== LEGACY_RECORD_SCHEMA_VERSION ||
+    !commonRecordIsValid(value) ||
     value.review_id !== reviewIdentity(value as ReviewIdentityBinding) ||
-    value.record_sha256 !== glossaryCanonicalSha256(bodyWithoutDigest(value, "record_sha256"))) return false;
+    value.record_sha256 !== glossaryCanonicalSha256(bodyWithoutDigest(value, "record_sha256"))
+  )
+    return false;
   if (value.status === "pending") return value.terminal_at === null && value.expires_at === null && serializedBytes(value) <= valueContract.recordMaxSerializedUtf8Bytes;
-  return timestamp(value.terminal_at) && timestamp(value.expires_at) &&
-    Date.parse(value.terminal_at as string) >= Date.parse(value.queued_at as string) && serializedBytes(value) <= valueContract.recordMaxSerializedUtf8Bytes;
+  return timestamp(value.terminal_at) && timestamp(value.expires_at) && Date.parse(value.terminal_at as string) >= Date.parse(value.queued_at as string) && serializedBytes(value) <= valueContract.recordMaxSerializedUtf8Bytes;
 }
 
 function validCurrentReviewRecord(value: unknown, valueContract: PersonalGlossaryReviewRecordsStorageContract): value is PersonalGlossaryReviewRecord {
-  if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "review_id", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "scope", "reason", "status", "disposition", "review_record", "reopen_reason", "queued_at", "terminal_at", "expires_at", "record_sha256"]) ||
-    value.schema_version !== RECORD_SCHEMA_VERSION || !commonRecordIsValid(value) ||
+  if (
+    !mapping(value) ||
+    !exactKeys(value, [
+      "schema_version",
+      "owner",
+      "review_id",
+      "candidate_id",
+      "candidate_revision",
+      "candidate_capsule_sha256",
+      "candidate_projection_sha256",
+      "host_receipt_sha256",
+      "cli_decision_sha256",
+      "semantic_fingerprint",
+      "generation",
+      "policy_version",
+      "scope",
+      "reason",
+      "status",
+      "disposition",
+      "review_record",
+      "reopen_reason",
+      "queued_at",
+      "terminal_at",
+      "expires_at",
+      "record_sha256",
+    ]) ||
+    value.schema_version !== RECORD_SCHEMA_VERSION ||
+    !commonRecordIsValid(value) ||
     !["personal", "ambiguous"].includes(String(value.scope)) ||
     (value.disposition !== null && !PERSONAL_REVIEW_DISPOSITIONS.includes(value.disposition as PersonalReviewDisposition)) ||
-    (value.reopen_reason !== null && !["policy_changed", "scope_changed", "meaning_changed"].includes(String(value.reopen_reason)))) return false;
+    (value.reopen_reason !== null && !["policy_changed", "scope_changed", "meaning_changed"].includes(String(value.reopen_reason)))
+  )
+    return false;
   const record = value as unknown as PersonalGlossaryReviewRecord;
   if (record.review_id !== reviewIdentity(record) || record.record_sha256 !== glossaryCanonicalSha256(bodyWithoutDigest(value, "record_sha256"))) return false;
   if (record.disposition === null) return record.status === "pending" && record.review_record === null && record.terminal_at === null && record.expires_at === null && serializedBytes(record) <= valueContract.recordMaxSerializedUtf8Bytes;
@@ -371,27 +465,44 @@ function validReplayEntry(value: unknown): value is PersonalGlossaryReviewReplay
 }
 
 function validLegacyReviewStore(value: unknown, valueContract: PersonalGlossaryReviewRecordsStorageContract): value is PersonalGlossaryLegacyReviewStore {
-  if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "records", "store_sha256"]) ||
-    value.schema_version !== LEGACY_STORE_SCHEMA_VERSION || value.owner !== REVIEW_OWNER || !Array.isArray(value.records) ||
-    value.records.length > valueContract.recordsMax || !digest(value.store_sha256) || serializedBytes(value) > valueContract.storeMaxSerializedUtf8Bytes) return false;
+  if (
+    !mapping(value) ||
+    !exactKeys(value, ["schema_version", "owner", "records", "store_sha256"]) ||
+    value.schema_version !== LEGACY_STORE_SCHEMA_VERSION ||
+    value.owner !== REVIEW_OWNER ||
+    !Array.isArray(value.records) ||
+    value.records.length > valueContract.recordsMax ||
+    !digest(value.store_sha256) ||
+    serializedBytes(value) > valueContract.storeMaxSerializedUtf8Bytes
+  )
+    return false;
   const records = value.records as PersonalGlossaryLegacyReviewRecord[];
-  return records.every((record) => validLegacyReviewRecord(record, valueContract)) &&
-    !records.some((record, index) => index > 0 && reviewRecordOrder(records[index - 1]!, record) >= 0) &&
-    value.store_sha256 === glossaryCanonicalSha256(bodyWithoutDigest(value, "store_sha256"));
+  return records.every((record) => validLegacyReviewRecord(record, valueContract)) && !records.some((record, index) => index > 0 && reviewRecordOrder(records[index - 1]!, record) >= 0) && value.store_sha256 === glossaryCanonicalSha256(bodyWithoutDigest(value, "store_sha256"));
 }
 
 function validCurrentReviewStore(value: unknown, valueContract: PersonalGlossaryReviewRecordsStorageContract): value is PersonalGlossaryReviewStore {
-  if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "records", "replay_index", "store_sha256"]) ||
-    value.schema_version !== STORE_SCHEMA_VERSION || value.owner !== REVIEW_OWNER || !Array.isArray(value.records) ||
-    value.records.length > valueContract.recordsMax || !Array.isArray(value.replay_index) ||
-    value.replay_index.length > valueContract.replayEntriesMax || !digest(value.store_sha256) ||
-    serializedBytes(value) > valueContract.storeMaxSerializedUtf8Bytes) return false;
+  if (
+    !mapping(value) ||
+    !exactKeys(value, ["schema_version", "owner", "records", "replay_index", "store_sha256"]) ||
+    value.schema_version !== STORE_SCHEMA_VERSION ||
+    value.owner !== REVIEW_OWNER ||
+    !Array.isArray(value.records) ||
+    value.records.length > valueContract.recordsMax ||
+    !Array.isArray(value.replay_index) ||
+    value.replay_index.length > valueContract.replayEntriesMax ||
+    !digest(value.store_sha256) ||
+    serializedBytes(value) > valueContract.storeMaxSerializedUtf8Bytes
+  )
+    return false;
   const records = value.records as PersonalGlossaryReviewStoredRecord[];
   const replayIndex = value.replay_index as PersonalGlossaryReviewReplayEntry[];
-  return records.every((record) => validLegacyReviewRecord(record, valueContract) || validCurrentReviewRecord(record, valueContract)) &&
+  return (
+    records.every((record) => validLegacyReviewRecord(record, valueContract) || validCurrentReviewRecord(record, valueContract)) &&
     !records.some((record, index) => index > 0 && reviewRecordOrder(records[index - 1]!, record) >= 0) &&
-    replayIndex.every(validReplayEntry) && !replayIndex.some((entry, index) => index > 0 && replayEntryOrder(replayIndex[index - 1]!, entry) >= 0) &&
-    value.store_sha256 === glossaryCanonicalSha256(bodyWithoutDigest(value, "store_sha256"));
+    replayIndex.every(validReplayEntry) &&
+    !replayIndex.some((entry, index) => index > 0 && replayEntryOrder(replayIndex[index - 1]!, entry) >= 0) &&
+    value.store_sha256 === glossaryCanonicalSha256(bodyWithoutDigest(value, "store_sha256"))
+  );
 }
 
 export function isLegacyReviewStore(value: PersonalGlossaryReviewStoreSource): value is PersonalGlossaryLegacyReviewStore {
@@ -402,29 +513,32 @@ export function isCurrentReviewStore(value: PersonalGlossaryReviewStoreSource): 
   return value.schema_version === STORE_SCHEMA_VERSION;
 }
 
-export function makePersonalGlossaryReviewStore(
-  records: readonly PersonalGlossaryReviewStoredRecord[],
-  replayIndex: readonly PersonalGlossaryReviewReplayEntry[],
-): PersonalGlossaryReviewStore {
-  const body = { schema_version: STORE_SCHEMA_VERSION, owner: REVIEW_OWNER, records: [...records].sort(reviewRecordOrder), replay_index: [...replayIndex].sort(replayEntryOrder) };
-  const store = { ...body, store_sha256: glossaryCanonicalSha256(body) } as PersonalGlossaryReviewStore;
+export function makePersonalGlossaryReviewStore(records: readonly PersonalGlossaryReviewStoredRecord[], replayIndex: readonly PersonalGlossaryReviewReplayEntry[]): PersonalGlossaryReviewStore {
+  const body = {
+    schema_version: STORE_SCHEMA_VERSION,
+    owner: REVIEW_OWNER,
+    records: [...records].sort(reviewRecordOrder),
+    replay_index: [...replayIndex].sort(replayEntryOrder),
+  };
+  const store = {
+    ...body,
+    store_sha256: glossaryCanonicalSha256(body),
+  } as PersonalGlossaryReviewStore;
   if (!validCurrentReviewStore(store, personalGlossaryReviewRecordsStorageContract())) throw new TypeError("review record store is invalid");
   return store;
 }
 
-export function sealPersonalGlossaryReviewRecord(
-  body: Omit<PersonalGlossaryReviewRecord, "record_sha256">,
-): PersonalGlossaryReviewRecord {
+export function sealPersonalGlossaryReviewRecord(body: Omit<PersonalGlossaryReviewRecord, "record_sha256">): PersonalGlossaryReviewRecord {
   const recordBody = bodyWithoutDigest(body as Mapping, "record_sha256");
-  const record = { ...recordBody, record_sha256: glossaryCanonicalSha256(recordBody) } as PersonalGlossaryReviewRecord;
+  const record = {
+    ...recordBody,
+    record_sha256: glossaryCanonicalSha256(recordBody),
+  } as PersonalGlossaryReviewRecord;
   if (!validCurrentReviewRecord(record, personalGlossaryReviewRecordsStorageContract())) throw new TypeError("review record is invalid");
   return record;
 }
 
-export function migrateLegacyPendingReviewRecord(
-  record: PersonalGlossaryLegacyReviewRecord,
-  scope: ReviewScope,
-): PersonalGlossaryReviewRecord {
+export function migrateLegacyPendingReviewRecord(record: PersonalGlossaryLegacyReviewRecord, scope: ReviewScope): PersonalGlossaryReviewRecord {
   if (record.status !== "pending" || record.terminal_at !== null || record.expires_at !== null) {
     throw new TypeError("legacy review record is not pending");
   }
@@ -469,7 +583,11 @@ export function privateWritePersonalGlossaryReviewRecords(pathname: string, text
     fs.chmodSync(pathname, 0o600);
   } catch (error) {
     if (descriptor !== null) fs.closeSync(descriptor);
-    try { fs.rmSync(temporary, { force: true }); } catch { /* already absent or renamed */ }
+    try {
+      fs.rmSync(temporary, { force: true });
+    } catch {
+      /* already absent or renamed */
+    }
     throw error;
   }
 }
@@ -507,14 +625,13 @@ export function reviewScope(receipt: Mapping): ReviewScope | null {
   return classification?.scope === "personal" || classification?.scope === "ambiguous" ? classification.scope : null;
 }
 
-export function recordMatchesProjection(
-  record: PersonalGlossaryReviewStoredRecord,
-  projection: { projection_sha256: string; candidates: ProjectedPersonalGlossaryCandidate[] },
-): boolean {
-  return record.candidate_projection_sha256 === projection.projection_sha256 && projection.candidates.some((item) =>
-    item.capsule.candidate_id === record.candidate_id && item.capsule.candidate_revision === record.candidate_revision &&
-    item.capsule.capsule_sha256 === record.candidate_capsule_sha256 && item.capsule.generation === record.generation &&
-    item.capsule.policy_version === record.policy_version);
+export function recordMatchesProjection(record: PersonalGlossaryReviewStoredRecord, projection: { projection_sha256: string; candidates: ProjectedPersonalGlossaryCandidate[] }): boolean {
+  return (
+    record.candidate_projection_sha256 === projection.projection_sha256 &&
+    projection.candidates.some(
+      (item) => item.capsule.candidate_id === record.candidate_id && item.capsule.candidate_revision === record.candidate_revision && item.capsule.capsule_sha256 === record.candidate_capsule_sha256 && item.capsule.generation === record.generation && item.capsule.policy_version === record.policy_version,
+    )
+  );
 }
 
 export function terminalReviewRecordExpired(record: PersonalGlossaryReviewStoredRecord, now: string): boolean {
@@ -552,32 +669,46 @@ export function personalGlossaryTrustedLocalHostPath(options: PersonalGlossaryRe
 
 export function readPersonalGlossaryTrustedLocalHost(options: PersonalGlossaryReviewRecordsStorageOptions): TrustedLocalHostKey | null {
   let text: string;
-  try { text = readBoundedFile(personalGlossaryTrustedLocalHostPath(options), personalGlossaryReviewRecordsStorageContract().trustedHostKeyMaxSerializedUtf8Bytes); } catch { return null; }
+  try {
+    text = readBoundedFile(personalGlossaryTrustedLocalHostPath(options), personalGlossaryReviewRecordsStorageContract().trustedHostKeyMaxSerializedUtf8Bytes);
+  } catch {
+    return null;
+  }
   try {
     const value = JSON.parse(text) as unknown;
-    if (!mapping(value) || !exactKeys(value, ["schema_version", "owner", "subject", "public_key_spki_base64url"]) ||
-      value.schema_version !== TRUSTED_HOST_KEY_SCHEMA_VERSION || value.owner !== REVIEW_OWNER ||
-      !validPersonalGlossaryReviewMetadataBinding(value.subject) || !boundedText(value.public_key_spki_base64url, 4_096) ||
-      !BASE64URL.test(value.public_key_spki_base64url) || text !== `${canonicalGlossaryJson(value)}\n`) return null;
+    if (
+      !mapping(value) ||
+      !exactKeys(value, ["schema_version", "owner", "subject", "public_key_spki_base64url"]) ||
+      value.schema_version !== TRUSTED_HOST_KEY_SCHEMA_VERSION ||
+      value.owner !== REVIEW_OWNER ||
+      !validPersonalGlossaryReviewMetadataBinding(value.subject) ||
+      !boundedText(value.public_key_spki_base64url, 4_096) ||
+      !BASE64URL.test(value.public_key_spki_base64url) ||
+      text !== `${canonicalGlossaryJson(value)}\n`
+    )
+      return null;
     const encoded = Buffer.from(value.public_key_spki_base64url, "base64url");
     const publicKey = createPublicKey({ key: encoded, format: "der", type: "spki" });
     const normalized = publicKey.export({ format: "der", type: "spki" });
-    return publicKey.asymmetricKeyType === "ed25519" && Buffer.from(normalized).equals(encoded)
-      ? { subject: value.subject, publicKey }
-      : null;
-  } catch { return null; }
+    return publicKey.asymmetricKeyType === "ed25519" && Buffer.from(normalized).equals(encoded) ? { subject: value.subject, publicKey } : null;
+  } catch {
+    return null;
+  }
 }
 
-export function readPersonalGlossaryReviewRecords(
-  options: PersonalGlossaryReviewRecordsStorageOptions = {},
-): PersonalGlossaryReviewRecordsReadResult {
+export function readPersonalGlossaryReviewRecords(options: PersonalGlossaryReviewRecordsStorageOptions = {}): PersonalGlossaryReviewRecordsReadResult {
   const valueContract = personalGlossaryReviewRecordsStorageContract();
   let text: string;
-  try { text = readBoundedFile(personalGlossaryReviewRecordsPath(options), valueContract.storeMaxSerializedUtf8Bytes); }
-  catch (error) { return (error as NodeJS.ErrnoException).code === "ENOENT" ? { status: "missing", store: null } : { status: "corrupt", store: null }; }
+  try {
+    text = readBoundedFile(personalGlossaryReviewRecordsPath(options), valueContract.storeMaxSerializedUtf8Bytes);
+  } catch (error) {
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? { status: "missing", store: null } : { status: "corrupt", store: null };
+  }
   try {
     const parsed = JSON.parse(text) as unknown;
     if ((!validLegacyReviewStore(parsed, valueContract) && !validCurrentReviewStore(parsed, valueContract)) || text !== `${canonicalGlossaryJson(parsed)}\n`) return { status: "corrupt", store: null };
     return { status: "current", store: parsed };
-  } catch { return { status: "corrupt", store: null }; }
+  } catch {
+    return { status: "corrupt", store: null };
+  }
 }

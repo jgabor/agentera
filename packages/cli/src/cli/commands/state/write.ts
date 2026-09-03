@@ -5,10 +5,7 @@ import { emitInvalidInput, type InvalidInputErrorBody } from "../../errors.js";
 import type { Io } from "../../dispatch/shared.js";
 import { emitStructured } from "../../structured.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
-import {
-  normalizeArtifactProtocolId,
-  VALIDATE_ARTIFACT_PROTOCOL_IDS,
-} from "../../../registries/artifactProtocolIds.js";
+import { normalizeArtifactProtocolId, VALIDATE_ARTIFACT_PROTOCOL_IDS } from "../../../registries/artifactProtocolIds.js";
 import {
   buildExplain,
   buildExplainAll,
@@ -68,12 +65,7 @@ function emitRetrievalFailure(error: StateRetrievalFailure, format: "text" | "js
     emitStructured(error.body, "json", io.out ?? ((text) => process.stdout.write(text)));
   } else {
     const detail = error.body.error;
-    (io.err ?? ((text) => process.stderr.write(text)))([
-      `Error: ${detail.message}`,
-      `Syntax: ${detail.syntax}`,
-      `Example: ${detail.example}`,
-      `Recovery: ${detail.recovery}`,
-    ].join("\n") + "\n");
+    (io.err ?? ((text) => process.stderr.write(text)))([`Error: ${detail.message}`, `Syntax: ${detail.syntax}`, `Example: ${detail.example}`, `Recovery: ${detail.recovery}`].join("\n") + "\n");
   }
   return error.exitCode;
 }
@@ -82,8 +74,7 @@ function setNested(target: Record<string, unknown>, field: string, value: unknow
   const parts = field.split(".");
   let cursor = target;
   for (const part of parts.slice(0, -1)) {
-    if (!cursor[part] || typeof cursor[part] !== "object" || Array.isArray(cursor[part]))
-      cursor[part] = {};
+    if (!cursor[part] || typeof cursor[part] !== "object" || Array.isArray(cursor[part])) cursor[part] = {};
     cursor = cursor[part] as Record<string, unknown>;
   }
   cursor[parts.at(-1) as string] = value;
@@ -99,14 +90,10 @@ function hasNested(target: Record<string, unknown>, field: string): boolean {
   return true;
 }
 
-function readFlag(
-  argv: string[],
-  index: number,
-): { name: string; value: string | null; consumed: number } {
+function readFlag(argv: string[], index: number): { name: string; value: string | null; consumed: number } {
   const token = argv[index];
   const equals = token.indexOf("=");
-  if (equals > 0)
-    return { name: token.slice(0, equals), value: token.slice(equals + 1), consumed: 1 };
+  if (equals > 0) return { name: token.slice(0, equals), value: token.slice(equals + 1), consumed: 1 };
   return { name: token, value: argv[index + 1] ?? null, consumed: 2 };
 }
 
@@ -148,9 +135,7 @@ function converted(field: OperationField, raw: string): unknown {
     const privacySafe = field.field.startsWith("glossary_caveat.");
     invalid({
       class: "invalid_choice",
-      message: privacySafe
-        ? `argument ${field.flag}: invalid bounded glossary caveat value`
-        : `argument ${field.flag}: invalid choice: '${raw}' (choose from ${field.validValues.map((v) => `'${v}'`).join(", ")})`,
+      message: privacySafe ? `argument ${field.flag}: invalid bounded glossary caveat value` : `argument ${field.flag}: invalid choice: '${raw}' (choose from ${field.validValues.map((v) => `'${v}'`).join(", ")})`,
       valid_values: field.validValues,
     });
   }
@@ -185,9 +170,7 @@ function specOrReject(artifact: WritableArtifact, verb: string): OperationSpec {
       class: "invalid_choice",
       message: `verb "${verb}" does not apply to ${artifact}`,
       valid_values: [...retrievalVerbs, ...verbsForArtifact(artifact)],
-      example: artifact === "experiments"
-        ? "agentera state experiments list --objective OBJECTIVE_ID"
-        : `agentera state ${artifact} ${artifact === "plan" ? "list" : "explain"}`,
+      example: artifact === "experiments" ? "agentera state experiments list --objective OBJECTIVE_ID" : `agentera state ${artifact} ${artifact === "plan" ? "list" : "explain"}`,
     });
   }
   return spec;
@@ -219,16 +202,17 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   let dryRun = false;
   let force = false;
   let inputSource: string | null = null;
-  const transitionBatchMode = artifact === "todo"
-    && (verb === "set-severity" || verb === "resolve")
-    && argv.slice(1).some((token) => token === "--input" || token.startsWith("--input="));
-  for (let i = 1; i < argv.length; ) {
+  const transitionBatchMode = artifact === "todo" && (verb === "set-severity" || verb === "resolve") && argv.slice(1).some((token) => token === "--input" || token.startsWith("--input="));
+  for (let i = 1; i < argv.length;) {
     const token = argv[i];
-    if (!token.startsWith("--"))
-      invalid({ class: "unrecognized_argument", message: `unrecognized arguments: ${token}` });
+    if (!token.startsWith("--")) invalid({ class: "unrecognized_argument", message: `unrecognized arguments: ${token}` });
     const tokenName = token.split("=", 1)[0];
     if (!transitionBatchMode && artifact === "todo" && (verb === "set-severity" || verb === "resolve") && (tokenName === "--effect-sha256" || tokenName === "--yes"))
-      invalid({ class: "unrecognized_argument", message: `unrecognized arguments: ${tokenName}`, example: exampleFor(artifact, verb) });
+      invalid({
+        class: "unrecognized_argument",
+        message: `unrecognized arguments: ${tokenName}`,
+        example: exampleFor(artifact, verb),
+      });
     if (token === "--dry-run") {
       dryRun = true;
       i += 1;
@@ -241,8 +225,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     }
     const bareBoolean = byFlag.get(token);
     if (bareBoolean?.kind === "boolean") {
-      if ((occurrences.get(token) ?? 0) > 0)
-        invalid({ class: "mutually_exclusive", message: `${token} may only be supplied once` });
+      if ((occurrences.get(token) ?? 0) > 0) invalid({ class: "mutually_exclusive", message: `${token} may only be supplied once` });
       occurrences.set(token, 1);
       setNested(values, bareBoolean.field, true);
       setNested(callerPayload, bareBoolean.field, true);
@@ -272,8 +255,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       continue;
     }
     if (parsed.name === "--input") {
-      if (inputSource !== null)
-        invalid({ class: "mutually_exclusive", message: "--input may only be supplied once" });
+      if (inputSource !== null) invalid({ class: "mutually_exclusive", message: "--input may only be supplied once" });
       inputSource = parsed.value;
       continue;
     }
@@ -302,10 +284,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
     const count = (occurrences.get(parsed.name) ?? 0) + 1;
     occurrences.set(parsed.name, count);
     if (!field.repeatable && count > 1) {
-      const message =
-        parsed.name === "--alternative-chosen"
-          ? `exactly one alternative must be chosen (DV3); received ${count} --alternative-chosen flags`
-          : `${parsed.name} may only be supplied once`;
+      const message = parsed.name === "--alternative-chosen" ? `exactly one alternative must be chosen (DV3); received ${count} --alternative-chosen flags` : `${parsed.name} may only be supplied once`;
       invalid({ class: "mutually_exclusive", message });
     }
     const value = converted(field, parsed.value);
@@ -337,11 +316,13 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       example: exampleFor(artifact, verb),
     });
   const selectorFields = new Set(spec.fields.filter((field) => spec.selectors.includes(field.flag)).map((field) => field.field));
-  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update" || verb === "create" || verb === "set-severity" || verb === "resolve")
-    ? new Set(["effect_sha256", "confirmed"])
-    : new Set<string>();
+  const correctionApplyFields = artifact === "todo" && (verb === "correct-owners" || verb === "update" || verb === "create" || verb === "set-severity" || verb === "resolve") ? new Set(["effect_sha256", "confirmed"]) : new Set<string>();
   if (artifact === "todo" && ["set-severity", "resolve"].includes(verb) && inputSource && Object.keys(values).some((field) => !correctionApplyFields.has(field)))
-    invalid({ class: "mutually_exclusive", message: `${artifact} ${verb} accepts field flags, not --input`, example: exampleFor(artifact, verb) });
+    invalid({
+      class: "mutually_exclusive",
+      message: `${artifact} ${verb} accepts field flags, not --input`,
+      example: exampleFor(artifact, verb),
+    });
   if (spec.inputRoot && inputSource && Object.keys(values).some((field) => !selectorFields.has(field) && !correctionApplyFields.has(field)))
     invalid({
       class: "mutually_exclusive",
@@ -362,15 +343,30 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
   if (artifact === "decisions" && (verb === "update" || verb === "amend")) {
     const id = mappingPath(values, "id");
     const number = mappingPath(values, "number");
-    if (number !== undefined) invalid({ class: "unrecognized_argument", message: "numeric decision selectors are unavailable in entity mode; use --id ID" });
-    if (id === undefined) invalid({ class: "missing_argument", message: `--id is required for decisions ${verb} in entity mode` });
+    if (number !== undefined)
+      invalid({
+        class: "unrecognized_argument",
+        message: "numeric decision selectors are unavailable in entity mode; use --id ID",
+      });
+    if (id === undefined)
+      invalid({
+        class: "missing_argument",
+        message: `--id is required for decisions ${verb} in entity mode`,
+      });
     if (verb === "amend" && mappingPath(values, "base_sha256") === undefined)
-      invalid({ class: "missing_argument", message: "--base-sha256 is required for decisions amend in entity mode" });
+      invalid({
+        class: "missing_argument",
+        message: "--base-sha256 is required for decisions amend in entity mode",
+      });
   }
   if (artifact === "plan" && verb !== "create") {
     const taskVerb = ["update", "set-status", "supersede", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
-    if (taskVerb && id === undefined) invalid({ class: "missing_argument", message: `--id is required for plan ${verb} in entity mode` });
+    if (taskVerb && id === undefined)
+      invalid({
+        class: "missing_argument",
+        message: `--id is required for plan ${verb} in entity mode`,
+      });
   }
   return { artifact, spec, format, projectRoot, dryRun, force, values, callerPayload, inputSource };
 }
@@ -394,15 +390,14 @@ function explainArgs(argv: string[]): {
   let project = process.cwd();
   let verb: string | null = null;
   let all = false;
-  for (let i = 1; i < argv.length; ) {
+  for (let i = 1; i < argv.length;) {
     if (argv[i] === "--all") {
       all = true;
       i += 1;
       continue;
     }
     const parsed = readFlag(argv, i);
-    if (parsed.value === null || parsed.value.startsWith("--"))
-      invalid({ class: "missing_argument", message: `${parsed.name} requires a value` });
+    if (parsed.value === null || parsed.value.startsWith("--")) invalid({ class: "missing_argument", message: `${parsed.name} requires a value` });
     i += parsed.consumed;
     if (parsed.name === "--format") {
       if (parsed.value !== "json")
@@ -433,9 +428,7 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
     assertMutationGrammarParity();
     if (argv[0] === "explain") {
       const args = explainArgs(argv);
-      const explanation = args.all
-        ? buildExplainAll(artifact, args.project)
-        : buildExplain(artifact, args.project, args.verb);
+      const explanation = args.all ? buildExplainAll(artifact, args.project) : buildExplain(artifact, args.project, args.verb);
       if (args.format === "json") out(JSON.stringify(explanation, null, 2) + "\n");
       else out(renderExplainText(explanation));
       return 0;
@@ -459,7 +452,7 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
       const updateBatch = parsed.artifact === "todo" && parsed.spec.verb === "update" ? inspectTodoUpdateBatch(input) : null;
       const createBatch = parsed.artifact === "todo" && parsed.spec.verb === "create" ? inspectTodoCreateBatch(input) : null;
       if (parsed.artifact === "todo" && parsed.spec.verb === "update" && !parsed.values.id && !updateBatch?.strictEnvelope) missingTodoUpdateId();
-      for (const owned of createBatch ? [] : parsed.spec.cliOwnedFields ?? []) {
+      for (const owned of createBatch ? [] : (parsed.spec.cliOwnedFields ?? [])) {
         if (hasNested(input, owned))
           invalid({
             class: "schema_violation",
@@ -474,16 +467,12 @@ export function runStateWrite(artifactRaw: string, argv: string[], io: Io): numb
     else if (parsed.dryRun) out(String(envelope.diff ?? "No changes.\n"));
     else {
       const operation = envelope.operation as Record<string, unknown>;
-      out(
-        `${envelope.command}: ${operation.idempotent_replay ? "idempotent replay" : "wrote"} ${envelope.path}\n`,
-      );
+      out(`${envelope.command}: ${operation.idempotent_replay ? "idempotent replay" : "wrote"} ${envelope.path}\n`);
     }
     return 0;
   } catch (error) {
-    if (error instanceof StateWriteInputError)
-      return emitInvalidInput(io, { format: detectedFormat, body: error.body });
-    if (error instanceof StateRetrievalFailure)
-      return emitRetrievalFailure(error, detectedFormat, io);
+    if (error instanceof StateWriteInputError) return emitInvalidInput(io, { format: detectedFormat, body: error.body });
+    if (error instanceof StateRetrievalFailure) return emitRetrievalFailure(error, detectedFormat, io);
     err(`Error: ${(error as Error).message}\n`);
     return 1;
   }

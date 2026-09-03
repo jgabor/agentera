@@ -22,14 +22,8 @@ function managedV2(appHome: string, marker = "2.7.7"): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 beforeEach(() => {
@@ -113,16 +107,15 @@ describe("bundle-status channel resolution consistency", () => {
     fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), {
+      recursive: true,
+    });
     const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
     let channels = fs.readFileSync(channelsPath, "utf8");
     const stableStart = channels.indexOf("  stable:");
     const devStart = channels.indexOf("  development:");
     const stableBlock = channels.slice(stableStart, devStart);
-    channels =
-      channels.slice(0, stableStart) +
-      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
-      channels.slice(devStart);
+    channels = channels.slice(0, stableStart) + stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") + channels.slice(devStart);
     fs.writeFileSync(channelsPath, channels);
     resetUpdateChannelsAuthorityCache();
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = unannouncedRoot;

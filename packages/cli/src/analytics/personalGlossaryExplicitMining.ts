@@ -4,12 +4,7 @@ import { personalGlossaryAdmissionContract } from "../registries/glossaryEntryCo
 import { PERSONAL_GLOSSARY_MINING_POLICY_VERSION } from "../registries/glossaryMiningAuthority.js";
 import { stableGlossaryTermIdentity } from "../registries/glossaryTermIdentity.js";
 import { assessTiers, recoveryForState } from "./extractCorpus/tierReader.js";
-import {
-  readSignalTier,
-  resolveEvidenceAnchor,
-  type EvidenceTierCompatibilityState,
-  type SignalRecord,
-} from "./extractCorpus/evidenceTiers.js";
+import { readSignalTier, resolveEvidenceAnchor, type EvidenceTierCompatibilityState, type SignalRecord } from "./extractCorpus/evidenceTiers.js";
 import {
   EXPLICIT_GLOSSARY_REASONS,
   candidateBounds,
@@ -42,22 +37,11 @@ function recordText(record: JsonObject): string {
 function recordIsUserAuthored(signal: SignalRecord, record: JsonObject): boolean {
   const data = dataObject(record);
   return (
-    (record.source_kind === "conversation_turn" || record.source_kind === "history_prompt") &&
-    record.author_class === "user" &&
-    (signal.author_class === undefined || signal.author_class === "user") &&
-    data.actor !== "assistant" &&
-    data.actor !== "agent" &&
-    data.injected !== true &&
-    record.source_class !== "injected"
+    (record.source_kind === "conversation_turn" || record.source_kind === "history_prompt") && record.author_class === "user" && (signal.author_class === undefined || signal.author_class === "user") && data.actor !== "assistant" && data.actor !== "agent" && data.injected !== true && record.source_class !== "injected"
   );
 }
 
-function makeAbstention(
-  sourceId: string,
-  anchor: string,
-  reason: ExplicitGlossaryReason,
-  term: string | null = null,
-): ExplicitGlossaryAbstention {
+function makeAbstention(sourceId: string, anchor: string, reason: ExplicitGlossaryReason, term: string | null = null): ExplicitGlossaryAbstention {
   const cleanTerm = term && term.trim() ? term.trim() : null;
   return {
     term: cleanTerm,
@@ -68,16 +52,8 @@ function makeAbstention(
   };
 }
 
-function compareAbstentions(
-  left: ExplicitGlossaryAbstention,
-  right: ExplicitGlossaryAbstention,
-): number {
-  return (
-    compareText(left.source_id, right.source_id) ||
-    compareText(left.evidence_anchor, right.evidence_anchor) ||
-    compareText(left.term ?? "", right.term ?? "") ||
-    compareText(left.reason, right.reason)
-  );
+function compareAbstentions(left: ExplicitGlossaryAbstention, right: ExplicitGlossaryAbstention): number {
+  return compareText(left.source_id, right.source_id) || compareText(left.evidence_anchor, right.evidence_anchor) || compareText(left.term ?? "", right.term ?? "") || compareText(left.reason, right.reason);
 }
 
 function compareCandidates(left: CandidateWithSource, right: CandidateWithSource): number {
@@ -103,23 +79,12 @@ function compareCandidateSource(left: CandidateWithSource, right: CandidateWithS
 }
 
 function sameRecord(signal: SignalRecord, record: JsonObject): "valid" | "stale" {
-  if (
-    signal.evidence_anchor !== signal.source_id ||
-    record.source_id !== signal.source_id ||
-    record.source_kind !== signal.source_kind
-  ) {
+  if (signal.evidence_anchor !== signal.source_id || record.source_id !== signal.source_id || record.source_kind !== signal.source_kind) {
     return "stale";
   }
   const dataSignal = dataObject(record).signal_type;
-  if (record.source_kind === "conversation_turn" && dataSignal !== signal.signal_type)
-    return "stale";
-  for (const field of [
-    "origin_id",
-    "content_fingerprint",
-    "author_class",
-    "session_id",
-    "project_id",
-  ] as const) {
+  if (record.source_kind === "conversation_turn" && dataSignal !== signal.signal_type) return "stale";
+  for (const field of ["origin_id", "content_fingerprint", "author_class", "session_id", "project_id"] as const) {
     const expected = signal[field];
     if (expected !== undefined && record[field] !== expected) return "stale";
   }
@@ -136,11 +101,7 @@ function recordProvenanceValue(record: JsonObject, field: string): unknown {
   return record[field];
 }
 
-function hasCompleteProvenance(
-  signal: SignalRecord,
-  record: JsonObject,
-  requiredFields: readonly string[],
-): boolean {
+function hasCompleteProvenance(signal: SignalRecord, record: JsonObject, requiredFields: readonly string[]): boolean {
   if (requiredFields.length === 0 || signal.source_kind !== "conversation_turn") return false;
   for (const field of requiredFields) {
     const signalValue = provenanceValue(signal, field);
@@ -148,10 +109,7 @@ function hasCompleteProvenance(
     if (typeof signalValue !== "string" || signalValue.length === 0) return false;
     if (typeof recordValue !== "string" || recordValue.length === 0) return false;
     if (signalValue !== recordValue) return false;
-    if (
-      (field === "origin_id" || field === "content_fingerprint") &&
-      !SHA256_RE.test(signalValue)
-    ) {
+    if ((field === "origin_id" || field === "content_fingerprint") && !SHA256_RE.test(signalValue)) {
       return false;
     }
   }
@@ -168,12 +126,7 @@ function unavailable(state: EvidenceTierCompatibilityState["state"]): ExplicitGl
   };
 }
 
-function candidateWithSource(
-  signal: SignalRecord,
-  cue: ValidCue,
-  text: string,
-  generation: string,
-): CandidateWithSource {
+function candidateWithSource(signal: SignalRecord, cue: ValidCue, text: string, generation: string): CandidateWithSource {
   const capsule = createGlossaryEvidenceCapsule({
     term: cue.term,
     meaning: cue.meaning,
@@ -204,50 +157,25 @@ function candidateWithSource(
   };
 }
 
-function userCue(
-  signal: SignalRecord,
-  record: JsonObject,
-  text: string,
-  rawCue: RawCue,
-  allCues: readonly RawCue[],
-  bounds: CandidateBounds,
-  generation: string,
-): { candidate: CandidateWithSource | null; abstention: ExplicitGlossaryAbstention | null } {
+function userCue(signal: SignalRecord, record: JsonObject, text: string, rawCue: RawCue, allCues: readonly RawCue[], bounds: CandidateBounds, generation: string): { candidate: CandidateWithSource | null; abstention: ExplicitGlossaryAbstention | null } {
   const result = validCue(text, rawCue, bounds, record);
   if (!result.cue) {
     return {
       candidate: null,
-      abstention: result.reason
-        ? makeAbstention(
-            signal.source_id,
-            signal.evidence_anchor,
-            result.reason,
-            text.slice(rawCue.termStart, rawCue.termEnd),
-          )
-        : null,
+      abstention: result.reason ? makeAbstention(signal.source_id, signal.evidence_anchor, result.reason, text.slice(rawCue.termStart, rawCue.termEnd)) : null,
     };
   }
   const cue = result.cue;
   if (!recordIsUserAuthored(signal, record)) {
     return {
       candidate: null,
-      abstention: makeAbstention(
-        signal.source_id,
-        signal.evidence_anchor,
-        EXPLICIT_GLOSSARY_REASONS.userAuthorshipRequired,
-        cue.term,
-      ),
+      abstention: makeAbstention(signal.source_id, signal.evidence_anchor, EXPLICIT_GLOSSARY_REASONS.userAuthorshipRequired, cue.term),
     };
   }
   if (retractionInvalidatesCue(text, cue, allCues)) {
     return {
       candidate: null,
-      abstention: makeAbstention(
-        signal.source_id,
-        signal.evidence_anchor,
-        EXPLICIT_GLOSSARY_REASONS.retractedDefinition,
-        cue.term,
-      ),
+      abstention: makeAbstention(signal.source_id, signal.evidence_anchor, EXPLICIT_GLOSSARY_REASONS.retractedDefinition, cue.term),
     };
   }
   return { candidate: candidateWithSource(signal, cue, text, generation), abstention: null };
@@ -263,23 +191,11 @@ function uniqueCandidateSources(candidates: readonly CandidateWithSource[]): Can
   return [...unique.values()].sort(compareCandidates);
 }
 
-function classifyRecord(
-  signal: SignalRecord,
-  record: JsonObject,
-  generation: string,
-  bounds: CandidateBounds,
-  requiredProvenanceFields: readonly string[],
-): { candidates: CandidateWithSource[]; abstentions: ExplicitGlossaryAbstention[] } {
+function classifyRecord(signal: SignalRecord, record: JsonObject, generation: string, bounds: CandidateBounds, requiredProvenanceFields: readonly string[]): { candidates: CandidateWithSource[]; abstentions: ExplicitGlossaryAbstention[] } {
   if (!hasCompleteProvenance(signal, record, requiredProvenanceFields)) {
     return {
       candidates: [],
-      abstentions: [
-        makeAbstention(
-          signal.source_id,
-          signal.evidence_anchor,
-          EXPLICIT_GLOSSARY_REASONS.provenanceIncomplete,
-        ),
-      ],
+      abstentions: [makeAbstention(signal.source_id, signal.evidence_anchor, EXPLICIT_GLOSSARY_REASONS.provenanceIncomplete)],
     };
   }
   const text = recordText(record);
@@ -301,14 +217,7 @@ function classifyRecord(
   for (const group of byIdentity.values()) {
     if (new Set(group.map((item) => item.meaning)).size > 1) {
       const first = [...group].sort(compareCandidates)[0]!;
-      abstentions.push(
-        makeAbstention(
-          first.sourceId,
-          first.anchor,
-          EXPLICIT_GLOSSARY_REASONS.conflictingMeaning,
-          first.candidate.capsule.term,
-        ),
-      );
+      abstentions.push(makeAbstention(first.sourceId, first.anchor, EXPLICIT_GLOSSARY_REASONS.conflictingMeaning, first.candidate.capsule.term));
       continue;
     }
     filtered.push([...group].sort(compareCandidateSource)[0]!);
@@ -316,32 +225,19 @@ function classifyRecord(
   return { candidates: filtered, abstentions };
 }
 
-export function mineExplicitGlossaryCandidates(
-  input: ExplicitGlossaryMiningInput,
-  resolveAnchor: (anchor: string, tiersDir: string) => JsonObject | null = resolveEvidenceAnchor,
-): ExplicitGlossaryMiningResult {
+export function mineExplicitGlossaryCandidates(input: ExplicitGlossaryMiningInput, resolveAnchor: (anchor: string, tiersDir: string) => JsonObject | null = resolveEvidenceAnchor): ExplicitGlossaryMiningResult {
   const assessment = assessTiers(input.tiersDir);
   if (!assessment.analyzable) return unavailable(assessment.state);
   const tier = readSignalTier(input.tiersDir, { allowProvenanceGaps: true });
   if (!tier) return unavailable("corrupt");
   const authority = personalGlossaryAdmissionContract();
   const allowedSignalTypes = new Set(authority.explicitSignalTypes);
-  const selected = tier.records
-    .filter((signal) => allowedSignalTypes.has(signal.signal_type))
-    .sort(
-      (left, right) =>
-        compareText(left.source_id, right.source_id) ||
-        compareText(left.evidence_anchor, right.evidence_anchor) ||
-        compareText(left.signal_type, right.signal_type),
-    );
+  const selected = tier.records.filter((signal) => allowedSignalTypes.has(signal.signal_type)).sort((left, right) => compareText(left.source_id, right.source_id) || compareText(left.evidence_anchor, right.evidence_anchor) || compareText(left.signal_type, right.signal_type));
   const bounds = candidateBounds();
   const resolvedByAnchor = new Map<string, JsonObject | null>();
   for (const signal of selected) {
     if (!resolvedByAnchor.has(signal.evidence_anchor)) {
-      resolvedByAnchor.set(
-        signal.evidence_anchor,
-        resolveAnchor(signal.evidence_anchor, input.tiersDir),
-      );
+      resolvedByAnchor.set(signal.evidence_anchor, resolveAnchor(signal.evidence_anchor, input.tiersDir));
     }
   }
 
@@ -350,32 +246,14 @@ export function mineExplicitGlossaryCandidates(
   for (const signal of selected) {
     const record = resolvedByAnchor.get(signal.evidence_anchor) ?? null;
     if (!record) {
-      abstentions.push(
-        makeAbstention(
-          signal.source_id,
-          signal.evidence_anchor,
-          EXPLICIT_GLOSSARY_REASONS.unresolvedAnchor,
-        ),
-      );
+      abstentions.push(makeAbstention(signal.source_id, signal.evidence_anchor, EXPLICIT_GLOSSARY_REASONS.unresolvedAnchor));
       continue;
     }
     if (sameRecord(signal, record) === "stale") {
-      abstentions.push(
-        makeAbstention(
-          signal.source_id,
-          signal.evidence_anchor,
-          EXPLICIT_GLOSSARY_REASONS.staleAnchor,
-        ),
-      );
+      abstentions.push(makeAbstention(signal.source_id, signal.evidence_anchor, EXPLICIT_GLOSSARY_REASONS.staleAnchor));
       continue;
     }
-    const classified = classifyRecord(
-      signal,
-      record,
-      tier.manifest.generation,
-      bounds,
-      authority.explicitProvenanceFields,
-    );
+    const classified = classifyRecord(signal, record, tier.manifest.generation, bounds, authority.explicitProvenanceFields);
     candidates.push(...classified.candidates);
     abstentions.push(...classified.abstentions);
   }
@@ -391,14 +269,7 @@ export function mineExplicitGlossaryCandidates(
     const ordered = [...group].sort(compareCandidates);
     if (new Set(ordered.map((item) => item.meaning)).size > 1) {
       for (const item of ordered) {
-        abstentions.push(
-          makeAbstention(
-            item.sourceId,
-            item.anchor,
-            EXPLICIT_GLOSSARY_REASONS.conflictingMeaning,
-            item.candidate.capsule.term,
-          ),
-        );
+        abstentions.push(makeAbstention(item.sourceId, item.anchor, EXPLICIT_GLOSSARY_REASONS.conflictingMeaning, item.candidate.capsule.term));
       }
       continue;
     }

@@ -10,13 +10,7 @@ import { readProjectFileSnapshot } from "./safeProjectFile.js";
 
 export type StateMode = "legacy" | "entities";
 
-export type ProjectState =
-  | "entities"
-  | "fresh_uninitialized"
-  | "legacy"
-  | "partial"
-  | "corrupt"
-  | "unknown";
+export type ProjectState = "entities" | "fresh_uninitialized" | "legacy" | "partial" | "corrupt" | "unknown";
 
 export interface ProjectStateClassification {
   state: ProjectState;
@@ -47,35 +41,20 @@ interface StateModeContract {
   mode: string;
 }
 
-type DetectedStateMode =
-  | { mode: "legacy"; root: ValidatedProjectRoot }
-  | { mode: "entities"; root: ValidatedProjectRoot; markerPath: string; markerBytes: Buffer };
+type DetectedStateMode = { mode: "legacy"; root: ValidatedProjectRoot } | { mode: "entities"; root: ValidatedProjectRoot; markerPath: string; markerBytes: Buffer };
 
 function mapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function contract(sourceRoot = resolveSourceRoot()): StateModeContract {
-  const authorityPath = path.join(
-    sourceRoot,
-    "references",
-    "artifacts",
-    "state-storage-authority.yaml",
-  );
+  const authorityPath = path.join(sourceRoot, "references", "artifacts", "state-storage-authority.yaml");
   const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
   const migration = authority.entity_migration;
   const marker = mapping(migration) ? migration.cutover_marker : null;
   const entityMode = mapping(marker) ? marker.entity_mode : null;
-  if (
-    !mapping(marker) ||
-    typeof marker.path !== "string" ||
-    typeof marker.schema_version !== "string" ||
-    !mapping(entityMode) ||
-    typeof entityMode.mode !== "string"
-  ) {
-    throw new Error(
-      `state storage authority '${authorityPath}' has no executable cutover marker contract`,
-    );
+  if (!mapping(marker) || typeof marker.path !== "string" || typeof marker.schema_version !== "string" || !mapping(entityMode) || typeof entityMode.mode !== "string") {
+    throw new Error(`state storage authority '${authorityPath}' has no executable cutover marker contract`);
   }
   if (path.isAbsolute(marker.path) || marker.path.split(/[\\/]/).includes("..")) {
     throw new Error(`state storage authority declares unsafe cutover marker path '${marker.path}'`);
@@ -87,21 +66,13 @@ function readStableMarker(root: ValidatedProjectRoot, markerPath: string): Buffe
   const snapshot = readProjectFileSnapshot(root, markerPath);
   if (snapshot.kind === "missing") {
     if (path.resolve(snapshot.absolute) === root.path) {
-      throw new Error(
-        `project root '${root.path}' changed while the state mode marker was inspected; restore the real directory and retry`,
-      );
+      throw new Error(`project root '${root.path}' changed while the state mode marker was inspected; restore the real directory and retry`);
     }
     return null;
   }
   if (snapshot.kind === "unsafe") {
-    const detail = snapshot.reason === "type"
-      ? "is not a regular file"
-      : snapshot.reason === "symlink"
-        ? "has an unsafe path"
-        : "changed or became unsafe while being read";
-    throw new Error(
-      `state mode marker '${markerPath}' ${detail}; restore a stable project-local marker and retry`,
-    );
+    const detail = snapshot.reason === "type" ? "is not a regular file" : snapshot.reason === "symlink" ? "has an unsafe path" : "changed or became unsafe while being read";
+    throw new Error(`state mode marker '${markerPath}' ${detail}; restore a stable project-local marker and retry`);
   }
   return snapshot.bytes;
 }
@@ -136,10 +107,7 @@ function isGitWorktreeRoot(root: ValidatedProjectRoot): boolean {
   }
 }
 
-function classifyMarkerAbsentProject(
-  root: ValidatedProjectRoot,
-  markerPath: string,
-): ProjectStateClassification {
+function classifyMarkerAbsentProject(root: ValidatedProjectRoot, markerPath: string): ProjectStateClassification {
   const stateRoot = pathKind(root, ".agentera");
   if (stateRoot === "missing") {
     return {
@@ -168,8 +136,7 @@ function classifyMarkerAbsentProject(
   }
   if (entities === "directory") return { state: "partial", root, markerPath };
 
-  const aggregates = ["plan.yaml", "progress.yaml", "decisions.yaml", "health.yaml"]
-    .map((name) => pathKind(root, `.agentera/${name}`));
+  const aggregates = ["plan.yaml", "progress.yaml", "decisions.yaml", "health.yaml"].map((name) => pathKind(root, `.agentera/${name}`));
   if (aggregates.includes("unsafe")) {
     return {
       state: "corrupt",
@@ -185,10 +152,7 @@ function classifyMarkerAbsentProject(
 }
 
 /** Classify local state without creating, repairing, or adopting project files. */
-export function classifyProjectState(
-  projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): ProjectStateClassification {
+export function classifyProjectState(projectRoot: string, sourceRoot = resolveSourceRoot()): ProjectStateClassification {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
   let bytes: Buffer | null;
@@ -224,15 +188,15 @@ export function classifyProjectState(
   return { state: "entities", root, markerPath: declared.markerPath, markerBytes: bytes };
 }
 
-export function freshEntityStateMarker(sourceRoot = resolveSourceRoot()): { schemaVersion: string; mode: string } {
+export function freshEntityStateMarker(sourceRoot = resolveSourceRoot()): {
+  schemaVersion: string;
+  mode: string;
+} {
   const declared = contract(sourceRoot);
   return { schemaVersion: declared.schemaVersion, mode: declared.mode };
 }
 
-export function freshPlanInitialization(
-  projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): FreshPlanInitialization | null {
+export function freshPlanInitialization(projectRoot: string, sourceRoot = resolveSourceRoot()): FreshPlanInitialization | null {
   const classified = classifyProjectState(projectRoot, sourceRoot);
   if (classified.state !== "fresh_uninitialized") return null;
   const marker = freshEntityStateMarker(sourceRoot);
@@ -244,10 +208,7 @@ export function freshPlanInitialization(
   };
 }
 
-function detectValidatedStateMode(
-  projectRoot: string,
-  sourceRoot: string,
-): DetectedStateMode {
+function detectValidatedStateMode(projectRoot: string, sourceRoot: string): DetectedStateMode {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);
   const bytes = readStableMarker(root, declared.markerPath);
@@ -256,33 +217,22 @@ function detectValidatedStateMode(
   try {
     document = loadYamlMapping(bytes.toString("utf8"));
   } catch (error) {
-    throw new Error(
-      `state mode marker '${declared.markerPath}' is corrupt: ${(error as Error).message}; restore the durable migration marker before retrying`,
-    );
+    throw new Error(`state mode marker '${declared.markerPath}' is corrupt: ${(error as Error).message}; restore the durable migration marker before retrying`);
   }
   if (document.schemaVersion !== declared.schemaVersion || document.mode !== declared.mode) {
-    throw new Error(
-      `state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`,
-    );
+    throw new Error(`state mode marker '${declared.markerPath}' must declare schemaVersion '${declared.schemaVersion}' and mode '${declared.mode}'; restore the durable migration marker before retrying`);
   }
   return { mode: "entities", root, markerPath: declared.markerPath, markerBytes: bytes };
 }
 
 /** Read the authority-owned cutover marker without creating or repairing state. */
-export function detectStateModeBinding(
-  projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): StateModeBinding {
+export function detectStateModeBinding(projectRoot: string, sourceRoot = resolveSourceRoot()): StateModeBinding {
   const detected = detectValidatedStateMode(projectRoot, sourceRoot);
   if (detected.mode === "legacy") return detected;
   return {
     mode: "entities",
     root: detected.root,
-    publicationContext: EntityPublicationContext.open(
-      detected.root,
-      detected.markerPath,
-      detected.markerBytes,
-    ),
+    publicationContext: EntityPublicationContext.open(detected.root, detected.markerPath, detected.markerBytes),
   };
 }
 
@@ -290,10 +240,7 @@ export function detectStateMode(projectRoot: string, sourceRoot = resolveSourceR
   return detectValidatedStateMode(projectRoot, sourceRoot).mode;
 }
 
-export function requireEntityStateBinding(
-  projectRoot: string,
-  sourceRoot = resolveSourceRoot(),
-): Extract<StateModeBinding, { mode: "entities" }> {
+export function requireEntityStateBinding(projectRoot: string, sourceRoot = resolveSourceRoot()): Extract<StateModeBinding, { mode: "entities" }> {
   const binding = detectStateModeBinding(projectRoot, sourceRoot);
   if (binding.mode === "legacy") {
     throw new Error("state writes require the durable entity-state marker; legacy aggregates are read-only migration input");

@@ -1,27 +1,9 @@
-import {
-  type Env,
-  discoverRuntimeStore,
-  eventTimestamp,
-  isoFromMtime,
-  iterJsonl,
-  rglob,
-} from "./core.js";
+import { type Env, discoverRuntimeStore, eventTimestamp, isoFromMtime, iterJsonl, rglob } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isFilePath, isDir } from "./core.js";
-import {
-  resolveCopilotStorePath,
-  resolveCursorChatsPath,
-  resolveCursorProjectsPath,
-  resolveOpencodeDbPath,
-} from "./cursorSessions.js";
+import { resolveCopilotStorePath, resolveCursorChatsPath, resolveCursorProjectsPath, resolveOpencodeDbPath } from "./cursorSessions.js";
 import type { ExtractArgs } from "./cli.js";
-import {
-  openSqlite,
-  PermissionDeniedError,
-  sqliteTimestamp,
-  tableColumns,
-  firstColumn,
-} from "./sqliteSessions.js";
+import { openSqlite, PermissionDeniedError, sqliteTimestamp, tableColumns, firstColumn } from "./sqliteSessions.js";
 
 export const COVERAGE_EXIT_FLAGGED = 4;
 
@@ -78,17 +60,54 @@ export function corpusEnvelopeCoverage(audit: CoverageAuditResult): CorpusEnvelo
   };
 }
 
-export function resolveRuntimeStoreConfigs(
-  args: ExtractArgs,
-  env: Env = process.env,
-  _platform: NodeJS.Platform = process.platform,
-): RuntimeStoreConfig[] {
+export function resolveRuntimeStoreConfigs(args: ExtractArgs, env: Env = process.env, _platform: NodeJS.Platform = process.platform): RuntimeStoreConfig[] {
   const configs: RuntimeStoreConfig[] = [
-    { runtime: "codex", sourceProduct: "codex", sourceClass: "active_runtime", activeRuntime: true, storePath: args.codexSessionsDir, selected: !args.noCodex, skipReason: args.noCodex ? "disabled_by_flag" : null },
-    { runtime: "cursor", sourceProduct: "cursor", sourceClass: "active_runtime", activeRuntime: true, storePath: args.cursorProjectsDir || resolveCursorProjectsPath(env), selected: !args.noCursor, skipReason: args.noCursor ? "disabled_by_flag" : null },
-    { runtime: "cursor", sourceProduct: "cursor-agent", sourceClass: "active_runtime", activeRuntime: true, pattern: "store.db", storePath: args.cursorChatsDir || resolveCursorChatsPath(env), selected: !args.noCursor, skipReason: args.noCursor ? "disabled_by_flag" : null },
-    { runtime: "opencode", sourceProduct: "opencode", sourceClass: "active_runtime", activeRuntime: true, storePath: args.opencodeConversationsDir || resolveOpencodeDbPath(env), selected: !args.noOpencode, skipReason: args.noOpencode ? "disabled_by_flag" : null },
-    { runtime: "copilot", sourceProduct: "github-copilot", sourceClass: "active_runtime", activeRuntime: true, storePath: args.copilotConversationsDir || resolveCopilotStorePath(env), selected: !args.noCopilot, skipReason: args.noCopilot ? "disabled_by_flag" : null },
+    {
+      runtime: "codex",
+      sourceProduct: "codex",
+      sourceClass: "active_runtime",
+      activeRuntime: true,
+      storePath: args.codexSessionsDir,
+      selected: !args.noCodex,
+      skipReason: args.noCodex ? "disabled_by_flag" : null,
+    },
+    {
+      runtime: "cursor",
+      sourceProduct: "cursor",
+      sourceClass: "active_runtime",
+      activeRuntime: true,
+      storePath: args.cursorProjectsDir || resolveCursorProjectsPath(env),
+      selected: !args.noCursor,
+      skipReason: args.noCursor ? "disabled_by_flag" : null,
+    },
+    {
+      runtime: "cursor",
+      sourceProduct: "cursor-agent",
+      sourceClass: "active_runtime",
+      activeRuntime: true,
+      pattern: "store.db",
+      storePath: args.cursorChatsDir || resolveCursorChatsPath(env),
+      selected: !args.noCursor,
+      skipReason: args.noCursor ? "disabled_by_flag" : null,
+    },
+    {
+      runtime: "opencode",
+      sourceProduct: "opencode",
+      sourceClass: "active_runtime",
+      activeRuntime: true,
+      storePath: args.opencodeConversationsDir || resolveOpencodeDbPath(env),
+      selected: !args.noOpencode,
+      skipReason: args.noOpencode ? "disabled_by_flag" : null,
+    },
+    {
+      runtime: "copilot",
+      sourceProduct: "github-copilot",
+      sourceClass: "active_runtime",
+      activeRuntime: true,
+      storePath: args.copilotConversationsDir || resolveCopilotStorePath(env),
+      selected: !args.noCopilot,
+      skipReason: args.noCopilot ? "disabled_by_flag" : null,
+    },
   ];
   if ((args.importSources ?? []).includes("claude")) {
     configs.push({
@@ -117,7 +136,10 @@ function trackLatest(current: string | null, candidate: string): string | null {
   return candidate > current ? candidate : current;
 }
 
-function probeJsonlTimestamps(storePath: string): { earliest: string | null; latest: string | null } {
+function probeJsonlTimestamps(storePath: string): {
+  earliest: string | null;
+  latest: string | null;
+} {
   let earliest: string | null = null;
   let latest: string | null = null;
   for (const filePath of rglob(storePath, "*.jsonl")) {
@@ -138,14 +160,7 @@ function probeJsonlTimestamps(storePath: string): { earliest: string | null; lat
 }
 
 function probeSqliteTimestamps(storePath: string, sourceProduct: string): { earliest: string | null; latest: string | null } {
-  const dbPaths =
-    sourceProduct === "opencode"
-      ? [storePath]
-      : sourceProduct === "github-copilot"
-        ? isFilePath(storePath)
-          ? [storePath]
-          : rglob(storePath, "session-store.db")
-        : rglob(storePath, "store.db");
+  const dbPaths = sourceProduct === "opencode" ? [storePath] : sourceProduct === "github-copilot" ? (isFilePath(storePath) ? [storePath] : rglob(storePath, "session-store.db")) : rglob(storePath, "store.db");
   let earliest: string | null = null;
   let latest: string | null = null;
   for (const dbPath of dbPaths) {
@@ -163,9 +178,7 @@ function probeSqliteTimestamps(storePath: string, sourceProduct: string): { earl
         const cols = tableColumns(conn, "session");
         const timeCol = firstColumn(cols, ["time_created", "time", "timestamp", "created_at", "createdAt"]);
         if (timeCol) {
-          const row = conn
-            .prepare(`SELECT MIN("${timeCol.replace(/"/g, '""')}") AS min_ts, MAX("${timeCol.replace(/"/g, '""')}") AS max_ts FROM session`)
-            .get();
+          const row = conn.prepare(`SELECT MIN("${timeCol.replace(/"/g, '""')}") AS min_ts, MAX("${timeCol.replace(/"/g, '""')}") AS max_ts FROM session`).get();
           if (row) {
             const minTs = sqliteTimestamp(row.min_ts, fallback);
             const maxTs = sqliteTimestamp(row.max_ts, fallback);
@@ -232,12 +245,7 @@ function probeRuntimeTimestamps(sourceProduct: string, storePath: string): { ear
   return { earliest: null, latest: null };
 }
 
-export function runCoverageAudit(
-  args: ExtractArgs,
-  env: Env = process.env,
-  platform: NodeJS.Platform = process.platform,
-  acceptCoverageGap = false,
-): CoverageAuditResult {
+export function runCoverageAudit(args: ExtractArgs, env: Env = process.env, platform: NodeJS.Platform = process.platform, acceptCoverageGap = false): CoverageAuditResult {
   const runtimes: RuntimeCoverageEntry[] = [];
   const skippedAvailable: CoverageAuditResult["skipped_available"] = [];
   for (const config of resolveRuntimeStoreConfigs(args, env, platform)) {
@@ -257,7 +265,11 @@ export function runCoverageAudit(
     }
     const skipReason = available && !config.selected ? (config.skipReason ?? "disabled_by_flag") : null;
     if (skipReason && config.storePath) {
-      skippedAvailable.push({ runtime: config.runtime as string, reason: skipReason, store_path: config.storePath });
+      skippedAvailable.push({
+        runtime: config.runtime as string,
+        reason: skipReason,
+        store_path: config.storePath,
+      });
     }
     runtimes.push({
       runtime: config.runtime,
@@ -292,16 +304,11 @@ export function formatCoverageSummaryText(audit: CoverageAuditResult): string {
   for (const entry of audit.runtimes) {
     const store = entry.store_path ?? "(none)";
     if (entry.available) {
-      const span =
-        entry.earliest_session && entry.latest_session
-          ? `${entry.earliest_session} .. ${entry.latest_session}`
-          : "timestamps unavailable";
+      const span = entry.earliest_session && entry.latest_session ? `${entry.earliest_session} .. ${entry.latest_session}` : "timestamps unavailable";
       const label = entry.active_runtime ? entry.runtime : `${entry.source_product} [historical import]`;
       lines.push(`  ${label}: available store=${store} sessions=${span} selected=${entry.selected ? "yes" : "no"}`);
     } else {
-      lines.push(
-        `  ${entry.active_runtime ? entry.runtime : `${entry.source_product} [historical import]`}: ${entry.discovery_status} (${entry.discovery_reason}) store=${store} selected=${entry.selected ? "yes" : "no"}`,
-      );
+      lines.push(`  ${entry.active_runtime ? entry.runtime : `${entry.source_product} [historical import]`}: ${entry.discovery_status} (${entry.discovery_reason}) store=${store} selected=${entry.selected ? "yes" : "no"}`);
     }
   }
   if (audit.skipped_available.length > 0) {

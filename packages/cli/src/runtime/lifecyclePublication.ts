@@ -50,15 +50,10 @@ export class LifecyclePublicationError extends Error {
   }
 }
 
-const DIRECTORY_OPEN_FLAGS = fs.constants.O_RDONLY
-  | (fs.constants.O_DIRECTORY ?? 0)
-  | (fs.constants.O_NOFOLLOW ?? 0);
+const DIRECTORY_OPEN_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
 const FILE_READ_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
 const FILE_UPDATE_FLAGS = fs.constants.O_RDWR | (fs.constants.O_NOFOLLOW ?? 0);
-const FILE_CREATE_FLAGS = fs.constants.O_WRONLY
-  | fs.constants.O_CREAT
-  | fs.constants.O_EXCL
-  | (fs.constants.O_NOFOLLOW ?? 0);
+const FILE_CREATE_FLAGS = fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0);
 
 function fingerprintBytes(bytes: Buffer): string {
   return `sha256:${crypto.createHash("sha256").update(bytes).digest("hex")}`;
@@ -68,14 +63,8 @@ function identityOf(stat: fs.BigIntStats): LifecycleResourceIdentity {
   return { device: stat.dev.toString(), inode: stat.ino.toString() };
 }
 
-export function sameLifecycleIdentity(
-  left: LifecycleResourceIdentity | undefined,
-  right: LifecycleResourceIdentity | undefined,
-): boolean {
-  return left !== undefined
-    && right !== undefined
-    && left.device === right.device
-    && left.inode === right.inode;
+export function sameLifecycleIdentity(left: LifecycleResourceIdentity | undefined, right: LifecycleResourceIdentity | undefined): boolean {
+  return left !== undefined && right !== undefined && left.device === right.device && left.inode === right.inode;
 }
 
 function lstatMaybe(target: string): fs.BigIntStats | null {
@@ -89,10 +78,12 @@ function lstatMaybe(target: string): fs.BigIntStats | null {
 
 function containingRoot(destination: string, allowedRoots: string[]): string | null {
   const roots = allowedRoots.map((root) => path.resolve(root)).sort((a, b) => b.length - a.length);
-  return roots.find((root) => {
-    const relative = path.relative(root, destination);
-    return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
-  }) ?? null;
+  return (
+    roots.find((root) => {
+      const relative = path.relative(root, destination);
+      return relative !== "" && !relative.startsWith("..") && !path.isAbsolute(relative);
+    }) ?? null
+  );
 }
 
 function statKind(stat: fs.BigIntStats): LifecyclePathObservation["kind"] {
@@ -102,11 +93,7 @@ function statKind(stat: fs.BigIntStats): LifecyclePathObservation["kind"] {
   return "other";
 }
 
-function fingerprintObservedTarget(
-  destination: string,
-  kind: LifecyclePathObservation["kind"],
-  identity: LifecycleResourceIdentity,
-): string | undefined {
+function fingerprintObservedTarget(destination: string, kind: LifecyclePathObservation["kind"], identity: LifecycleResourceIdentity): string | undefined {
   if (kind === "directory") return "directory";
   if (kind === "symlink") {
     const target = fs.readlinkSync(destination);
@@ -129,10 +116,7 @@ function fingerprintObservedTarget(
   }
 }
 
-export function observeLifecyclePath(
-  destination: string,
-  allowedRoots: string[],
-): LifecyclePathObservation {
+export function observeLifecyclePath(destination: string, allowedRoots: string[]): LifecyclePathObservation {
   const empty = { directories: [], parentComplete: false };
   if (!path.isAbsolute(destination)) {
     return { ...empty, kind: "missing", unsafeReason: "destination must be absolute" };
@@ -140,11 +124,19 @@ export function observeLifecyclePath(
   const resolved = path.resolve(destination);
   const root = containingRoot(resolved, allowedRoots);
   if (!root) {
-    return { ...empty, kind: "missing", unsafeReason: "destination must be beneath an allowed root" };
+    return {
+      ...empty,
+      kind: "missing",
+      unsafeReason: "destination must be beneath an allowed root",
+    };
   }
   const rootStat = lstatMaybe(root);
   if (!rootStat || !rootStat.isDirectory() || rootStat.isSymbolicLink()) {
-    return { ...empty, kind: "missing", unsafeReason: "allowed root is not an existing safe directory" };
+    return {
+      ...empty,
+      kind: "missing",
+      unsafeReason: "allowed root is not an existing safe directory",
+    };
   }
   const directories: ObservedDirectory[] = [{ path: root, identity: identityOf(rootStat) }];
   const relativeParent = path.relative(root, path.dirname(resolved));
@@ -209,42 +201,25 @@ function procFdPath(fd: number, child?: string): string {
 
 function assertSecurePublicationSupport(): void {
   if (process.platform !== "linux" || !fs.existsSync("/proc/self/fd")) {
-    throw new LifecyclePublicationError(
-      "safe lifecycle publication requires Linux /proc/self/fd directory-relative access",
-    );
+    throw new LifecyclePublicationError("safe lifecycle publication requires Linux /proc/self/fd directory-relative access");
   }
   if (!fs.constants.O_DIRECTORY || !fs.constants.O_NOFOLLOW) {
-    throw new LifecyclePublicationError(
-      "safe lifecycle publication requires O_DIRECTORY and O_NOFOLLOW support",
-    );
+    throw new LifecyclePublicationError("safe lifecycle publication requires O_DIRECTORY and O_NOFOLLOW support");
   }
 }
 
 export function secureLifecycleRemovalAvailable(): boolean {
-  return process.platform === "linux"
-    && fs.existsSync("/proc/self/fd")
-    && Boolean(fs.constants.O_DIRECTORY)
-    && Boolean(fs.constants.O_NOFOLLOW);
+  return process.platform === "linux" && fs.existsSync("/proc/self/fd") && Boolean(fs.constants.O_DIRECTORY) && Boolean(fs.constants.O_NOFOLLOW);
 }
 
 function assertDirectorySnapshot(directory: ObservedDirectory): void {
   const stat = lstatMaybe(directory.path);
-  if (
-    !stat
-    || !stat.isDirectory()
-    || stat.isSymbolicLink()
-    || !sameLifecycleIdentity(directory.identity, identityOf(stat))
-  ) {
+  if (!stat || !stat.isDirectory() || stat.isSymbolicLink() || !sameLifecycleIdentity(directory.identity, identityOf(stat))) {
     throw new LifecyclePublicationError(`directory identity changed before publication: ${directory.path}`);
   }
 }
 
-function withPinnedParent<T>(
-  observation: LifecyclePathObservation,
-  boundary: LifecyclePublicationBoundary,
-  hook: LifecyclePublicationBoundaryHook | undefined,
-  callback: (parentFd: number, targetPath: string) => T,
-): T {
+function withPinnedParent<T>(observation: LifecyclePathObservation, boundary: LifecyclePublicationBoundary, hook: LifecyclePublicationBoundaryHook | undefined, callback: (parentFd: number, targetPath: string) => T): T {
   assertSecurePublicationSupport();
   if (!observation.root || !observation.parentComplete || observation.directories.length === 0) {
     throw new LifecyclePublicationError("destination parent is not an existing safe directory");
@@ -279,34 +254,24 @@ function withPinnedParent<T>(
   }
 }
 
-export function withPinnedLifecycleDirectory<T>(
-  spec: LifecyclePublicationSpec,
-  observation: LifecyclePathObservation,
-  callback: (directoryPath: string) => T,
-  hook?: LifecyclePublicationBoundaryHook,
-): T {
-  return withPinnedParent(
-    observation,
-    { operationId: spec.id, destination: spec.destination, action: "update" },
-    hook,
-    (_parentFd, targetPath) => {
-      assertTargetIdentity(targetPath, observation.identity, "directory");
-      const targetFd = fs.openSync(targetPath, DIRECTORY_OPEN_FLAGS);
-      try {
-        const openedIdentity = identityOf(fs.fstatSync(targetFd, { bigint: true }));
-        if (!sameLifecycleIdentity(observation.identity, openedIdentity)) {
-          throw new LifecyclePublicationError("directory identity changed while opening publication target");
-        }
-        const result = callback(procFdPath(targetFd));
-        assertTargetIdentity(targetPath, openedIdentity, "directory");
-        for (const directory of observation.directories) assertDirectorySnapshot(directory);
-        assertTargetIdentity(spec.destination, openedIdentity, "directory");
-        return result;
-      } finally {
-        fs.closeSync(targetFd);
+export function withPinnedLifecycleDirectory<T>(spec: LifecyclePublicationSpec, observation: LifecyclePathObservation, callback: (directoryPath: string) => T, hook?: LifecyclePublicationBoundaryHook): T {
+  return withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action: "update" }, hook, (_parentFd, targetPath) => {
+    assertTargetIdentity(targetPath, observation.identity, "directory");
+    const targetFd = fs.openSync(targetPath, DIRECTORY_OPEN_FLAGS);
+    try {
+      const openedIdentity = identityOf(fs.fstatSync(targetFd, { bigint: true }));
+      if (!sameLifecycleIdentity(observation.identity, openedIdentity)) {
+        throw new LifecyclePublicationError("directory identity changed while opening publication target");
       }
-    },
-  );
+      const result = callback(procFdPath(targetFd));
+      assertTargetIdentity(targetPath, openedIdentity, "directory");
+      for (const directory of observation.directories) assertDirectorySnapshot(directory);
+      assertTargetIdentity(spec.destination, openedIdentity, "directory");
+      return result;
+    } finally {
+      fs.closeSync(targetFd);
+    }
+  });
 }
 
 function readFileDescriptor(fd: number, stat = fs.fstatSync(fd, { bigint: true })): Buffer {
@@ -334,11 +299,7 @@ function writeFileDescriptor(fd: number, bytes: Buffer): void {
   fs.fsyncSync(fd);
 }
 
-function assertTargetIdentity(
-  targetPath: string,
-  expected: LifecycleResourceIdentity | undefined,
-  expectedKind: LifecyclePublicationKind,
-): fs.BigIntStats {
+function assertTargetIdentity(targetPath: string, expected: LifecycleResourceIdentity | undefined, expectedKind: LifecyclePublicationKind): fs.BigIntStats {
   const stat = lstatMaybe(targetPath);
   if (!stat || !sameLifecycleIdentity(expected, identityOf(stat)) || statKind(stat) !== expectedKind) {
     throw new LifecyclePublicationError("resource identity changed before publication");
@@ -346,172 +307,142 @@ function assertTargetIdentity(
   return stat;
 }
 
-export function verifyLifecycleResourceAtPublication(
-  spec: LifecyclePublicationSpec,
-  observation: LifecyclePathObservation,
-  hook?: LifecyclePublicationBoundaryHook,
-): LifecycleResourceIdentity | undefined {
-  return withPinnedParent(
-    observation,
-    { operationId: spec.id, destination: spec.destination, action: "finalize_ownership" },
-    hook,
-    (_parentFd, targetPath) => {
-      if (observation.kind === "missing") {
-        if (lstatMaybe(targetPath)) {
-          throw new LifecyclePublicationError("resource appeared before ownership publication");
-        }
-        return undefined;
+export function verifyLifecycleResourceAtPublication(spec: LifecyclePublicationSpec, observation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook): LifecycleResourceIdentity | undefined {
+  return withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action: "finalize_ownership" }, hook, (_parentFd, targetPath) => {
+    if (observation.kind === "missing") {
+      if (lstatMaybe(targetPath)) {
+        throw new LifecyclePublicationError("resource appeared before ownership publication");
       }
-      const stat = assertTargetIdentity(targetPath, observation.identity, spec.kind);
-      if (spec.kind === "file") {
-        const fd = fs.openSync(targetPath, FILE_READ_FLAGS);
-        try {
-          const opened = fs.fstatSync(fd, { bigint: true });
-          if (!sameLifecycleIdentity(observation.identity, identityOf(opened))) {
-            throw new LifecyclePublicationError("resource identity changed while verifying file");
-          }
-          if (opened.nlink !== 1n) {
-            throw new LifecyclePublicationError("owned file has additional hard links");
-          }
-          if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
-            throw new LifecyclePublicationError("resource content changed before ownership publication");
-          }
-        } finally {
-          fs.closeSync(fd);
-        }
-      } else if (spec.kind === "symlink") {
-        if (fingerprintBytes(Buffer.from(fs.readlinkSync(targetPath))) !== observation.fingerprint) {
-          throw new LifecyclePublicationError("symlink target changed before ownership publication");
-        }
-      }
-      return identityOf(stat);
-    },
-  );
-}
-
-export function publishLifecycleResource(
-  spec: LifecyclePublicationSpec,
-  action: "create" | "update",
-  observation: LifecyclePathObservation,
-  hook?: LifecyclePublicationBoundaryHook,
-): LifecycleResourceIdentity {
-  return withPinnedParent(
-    observation,
-    { operationId: spec.id, destination: spec.destination, action },
-    hook,
-    (_parentFd, targetPath) => {
-      if (action === "create") {
-        if (lstatMaybe(targetPath)) {
-          throw new LifecyclePublicationError("resource appeared before exclusive creation");
-        }
-        if (spec.kind === "directory") {
-          fs.mkdirSync(targetPath, { mode: 0o700 });
-          const created = fs.lstatSync(targetPath, { bigint: true });
-          if (!created.isDirectory() || created.isSymbolicLink()) {
-            throw new LifecyclePublicationError("exclusive directory creation produced an unexpected type");
-          }
-          return identityOf(created);
-        }
-        if (spec.kind === "symlink") {
-          fs.symlinkSync(spec.linkTarget as string, targetPath);
-          const created = fs.lstatSync(targetPath, { bigint: true });
-          if (!created.isSymbolicLink()) {
-            throw new LifecyclePublicationError("exclusive symlink creation produced an unexpected type");
-          }
-          return identityOf(created);
-        }
-        const fd = fs.openSync(targetPath, FILE_CREATE_FLAGS, 0o600);
-        const created = identityOf(fs.fstatSync(fd, { bigint: true }));
-        try {
-          writeFileDescriptor(fd, Buffer.isBuffer(spec.content) ? spec.content : Buffer.from(spec.content as string));
-          return created;
-        } catch (error) {
-          throw new LifecyclePublicationError((error as Error).message, created);
-        } finally {
-          fs.closeSync(fd);
-        }
-      }
-
-      if (spec.kind !== "file") {
-        throw new LifecyclePublicationError(
-          "safe conditional replacement is unavailable for symlinks and directories",
-        );
-      }
-      assertTargetIdentity(targetPath, observation.identity, "file");
-      const fd = fs.openSync(targetPath, FILE_UPDATE_FLAGS);
+      return undefined;
+    }
+    const stat = assertTargetIdentity(targetPath, observation.identity, spec.kind);
+    if (spec.kind === "file") {
+      const fd = fs.openSync(targetPath, FILE_READ_FLAGS);
       try {
         const opened = fs.fstatSync(fd, { bigint: true });
-        const openedIdentity = identityOf(opened);
-        if (!sameLifecycleIdentity(observation.identity, openedIdentity)) {
-          throw new LifecyclePublicationError("resource identity changed while opening owned file");
+        if (!sameLifecycleIdentity(observation.identity, identityOf(opened))) {
+          throw new LifecyclePublicationError("resource identity changed while verifying file");
         }
         if (opened.nlink !== 1n) {
           throw new LifecyclePublicationError("owned file has additional hard links");
         }
         if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
-          throw new LifecyclePublicationError("owned file content changed before publication");
+          throw new LifecyclePublicationError("resource content changed before ownership publication");
         }
-        writeFileDescriptor(fd, Buffer.isBuffer(spec.content) ? spec.content : Buffer.from(spec.content as string));
-        const after = lstatMaybe(targetPath);
-        if (!sameLifecycleIdentity(openedIdentity, after ? identityOf(after) : undefined)) {
-          throw new LifecyclePublicationError("resource path changed during owned file update");
-        }
-        return openedIdentity;
       } finally {
         fs.closeSync(fd);
       }
-    },
-  );
+    } else if (spec.kind === "symlink") {
+      if (fingerprintBytes(Buffer.from(fs.readlinkSync(targetPath))) !== observation.fingerprint) {
+        throw new LifecyclePublicationError("symlink target changed before ownership publication");
+      }
+    }
+    return identityOf(stat);
+  });
 }
 
-export function removeLifecycleResource(
-  spec: LifecyclePublicationSpec,
-  observation: LifecyclePathObservation,
-  hook?: LifecyclePublicationBoundaryHook,
-): void {
-  withPinnedParent(
-    observation,
-    { operationId: spec.id, destination: spec.destination, action: "remove" },
-    hook,
-    (_parentFd, targetPath) => {
-      const stat = assertTargetIdentity(targetPath, observation.identity, spec.kind);
-      if (spec.kind === "file") {
-        const fd = fs.openSync(targetPath, FILE_READ_FLAGS);
-        try {
-          const opened = fs.fstatSync(fd, { bigint: true });
-          if (!sameLifecycleIdentity(observation.identity, identityOf(opened))) {
-            throw new LifecyclePublicationError("resource identity changed while opening owned file for removal");
-          }
-          if (opened.nlink !== 1n) {
-            throw new LifecyclePublicationError("owned file has additional hard links");
-          }
-          if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
-            throw new LifecyclePublicationError("owned file content changed before removal");
-          }
-        } finally {
-          fs.closeSync(fd);
-        }
-        assertTargetIdentity(targetPath, observation.identity, "file");
-        fs.unlinkSync(targetPath);
-      } else if (spec.kind === "symlink") {
-        if (fingerprintBytes(Buffer.from(fs.readlinkSync(targetPath))) !== observation.fingerprint) {
-          throw new LifecyclePublicationError("owned symlink target changed before removal");
-        }
-        assertTargetIdentity(targetPath, observation.identity, "symlink");
-        fs.unlinkSync(targetPath);
-      } else {
-        if (fs.readdirSync(targetPath).length > 0) {
-          throw new LifecyclePublicationError("owned directory is not empty");
-        }
-        if (!stat.isDirectory() || stat.isSymbolicLink()) {
-          throw new LifecyclePublicationError("owned directory type changed before removal");
-        }
-        assertTargetIdentity(targetPath, observation.identity, "directory");
-        fs.rmdirSync(targetPath);
-      }
+export function publishLifecycleResource(spec: LifecyclePublicationSpec, action: "create" | "update", observation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook): LifecycleResourceIdentity {
+  return withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action }, hook, (_parentFd, targetPath) => {
+    if (action === "create") {
       if (lstatMaybe(targetPath)) {
-        throw new LifecyclePublicationError("resource path reappeared during removal");
+        throw new LifecyclePublicationError("resource appeared before exclusive creation");
       }
-    },
-  );
+      if (spec.kind === "directory") {
+        fs.mkdirSync(targetPath, { mode: 0o700 });
+        const created = fs.lstatSync(targetPath, { bigint: true });
+        if (!created.isDirectory() || created.isSymbolicLink()) {
+          throw new LifecyclePublicationError("exclusive directory creation produced an unexpected type");
+        }
+        return identityOf(created);
+      }
+      if (spec.kind === "symlink") {
+        fs.symlinkSync(spec.linkTarget as string, targetPath);
+        const created = fs.lstatSync(targetPath, { bigint: true });
+        if (!created.isSymbolicLink()) {
+          throw new LifecyclePublicationError("exclusive symlink creation produced an unexpected type");
+        }
+        return identityOf(created);
+      }
+      const fd = fs.openSync(targetPath, FILE_CREATE_FLAGS, 0o600);
+      const created = identityOf(fs.fstatSync(fd, { bigint: true }));
+      try {
+        writeFileDescriptor(fd, Buffer.isBuffer(spec.content) ? spec.content : Buffer.from(spec.content as string));
+        return created;
+      } catch (error) {
+        throw new LifecyclePublicationError((error as Error).message, created);
+      } finally {
+        fs.closeSync(fd);
+      }
+    }
+
+    if (spec.kind !== "file") {
+      throw new LifecyclePublicationError("safe conditional replacement is unavailable for symlinks and directories");
+    }
+    assertTargetIdentity(targetPath, observation.identity, "file");
+    const fd = fs.openSync(targetPath, FILE_UPDATE_FLAGS);
+    try {
+      const opened = fs.fstatSync(fd, { bigint: true });
+      const openedIdentity = identityOf(opened);
+      if (!sameLifecycleIdentity(observation.identity, openedIdentity)) {
+        throw new LifecyclePublicationError("resource identity changed while opening owned file");
+      }
+      if (opened.nlink !== 1n) {
+        throw new LifecyclePublicationError("owned file has additional hard links");
+      }
+      if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
+        throw new LifecyclePublicationError("owned file content changed before publication");
+      }
+      writeFileDescriptor(fd, Buffer.isBuffer(spec.content) ? spec.content : Buffer.from(spec.content as string));
+      const after = lstatMaybe(targetPath);
+      if (!sameLifecycleIdentity(openedIdentity, after ? identityOf(after) : undefined)) {
+        throw new LifecyclePublicationError("resource path changed during owned file update");
+      }
+      return openedIdentity;
+    } finally {
+      fs.closeSync(fd);
+    }
+  });
+}
+
+export function removeLifecycleResource(spec: LifecyclePublicationSpec, observation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook): void {
+  withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action: "remove" }, hook, (_parentFd, targetPath) => {
+    const stat = assertTargetIdentity(targetPath, observation.identity, spec.kind);
+    if (spec.kind === "file") {
+      const fd = fs.openSync(targetPath, FILE_READ_FLAGS);
+      try {
+        const opened = fs.fstatSync(fd, { bigint: true });
+        if (!sameLifecycleIdentity(observation.identity, identityOf(opened))) {
+          throw new LifecyclePublicationError("resource identity changed while opening owned file for removal");
+        }
+        if (opened.nlink !== 1n) {
+          throw new LifecyclePublicationError("owned file has additional hard links");
+        }
+        if (fingerprintBytes(readFileDescriptor(fd, opened)) !== observation.fingerprint) {
+          throw new LifecyclePublicationError("owned file content changed before removal");
+        }
+      } finally {
+        fs.closeSync(fd);
+      }
+      assertTargetIdentity(targetPath, observation.identity, "file");
+      fs.unlinkSync(targetPath);
+    } else if (spec.kind === "symlink") {
+      if (fingerprintBytes(Buffer.from(fs.readlinkSync(targetPath))) !== observation.fingerprint) {
+        throw new LifecyclePublicationError("owned symlink target changed before removal");
+      }
+      assertTargetIdentity(targetPath, observation.identity, "symlink");
+      fs.unlinkSync(targetPath);
+    } else {
+      if (fs.readdirSync(targetPath).length > 0) {
+        throw new LifecyclePublicationError("owned directory is not empty");
+      }
+      if (!stat.isDirectory() || stat.isSymbolicLink()) {
+        throw new LifecyclePublicationError("owned directory type changed before removal");
+      }
+      assertTargetIdentity(targetPath, observation.identity, "directory");
+      fs.rmdirSync(targetPath);
+    }
+    if (lstatMaybe(targetPath)) {
+      throw new LifecyclePublicationError("resource path reappeared during removal");
+    }
+  });
 }

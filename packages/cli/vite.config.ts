@@ -11,7 +11,14 @@ export default defineConfig({
     ignorePatterns: ["dist/**", "bundle/**", "node_modules/**", "**/*.generated.*"],
   },
   fmt: {
-    ignorePatterns: ["dist/**", "bundle/**", "node_modules/**", "**/*.generated.*"],
+    ignorePatterns: ["dist/**", "bundle/**", "node_modules/**", "test/**/fixtures/**", "**/*.generated.*"],
+    printWidth: 320,
+    overrides: [
+      {
+        files: ["src/state/entityMigrationPreview.ts", "src/state/entityStorage.ts", "src/state/planEntities.ts", "src/state/todoDocsEntities.ts", "src/validate/activationArtifactEvidence.ts", "src/validate/activationConjunction.ts"],
+        options: { printWidth: 320, objectWrap: "collapse" },
+      },
+    ],
   },
   test: {
     include: ["test/**/*.test.ts"],

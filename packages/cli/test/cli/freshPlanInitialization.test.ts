@@ -44,8 +44,20 @@ function planInput(title = "Initialize fresh project"): string {
     why: "Fresh Plan creation must publish one complete entity graph.",
     scope: { included: ["fresh Plan initialization"], excluded: ["legacy migration"] },
     tasks: [
-      { number: 1, name: "Publish first task", status: "pending", depends_on: [], acceptance: ["GIVEN fresh state WHEN Plan publishes THEN entities are canonical"] },
-      { number: 2, name: "Verify marker", status: "pending", depends_on: [1], acceptance: ["GIVEN entities publish WHEN marker activates THEN Plan is operable"] },
+      {
+        number: 1,
+        name: "Publish first task",
+        status: "pending",
+        depends_on: [],
+        acceptance: ["GIVEN fresh state WHEN Plan publishes THEN entities are canonical"],
+      },
+      {
+        number: 2,
+        name: "Verify marker",
+        status: "pending",
+        depends_on: [1],
+        acceptance: ["GIVEN entities publish WHEN marker activates THEN Plan is operable"],
+      },
     ],
   });
 }
@@ -57,8 +69,12 @@ function capture(root: string, args: string[], stdin = ""): { rc: number; out: s
   process.chdir(root);
   try {
     const rc = main(["node", "agentera", ...args], {
-      out: (text) => { out += text; },
-      err: (text) => { err += text; },
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
       stdin: () => stdin,
     });
     return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
@@ -77,17 +93,7 @@ function userFiles(root: string): Map<string, Buffer> {
 }
 
 beforeEach(() => {
-  previousEnvironment = Object.fromEntries([
-    "AGENTERA_BOOTSTRAP_SOURCE_ROOT",
-    "AGENTERA_HOME",
-    "AGENTERA_PROFILE_DIR",
-    "PROFILERA_PROFILE_DIR",
-    "HOME",
-    "XDG_CACHE_HOME",
-    "XDG_CONFIG_HOME",
-    "XDG_DATA_HOME",
-    "XDG_STATE_HOME",
-  ].map((name) => [name, process.env[name]]));
+  previousEnvironment = Object.fromEntries(["AGENTERA_BOOTSTRAP_SOURCE_ROOT", "AGENTERA_HOME", "AGENTERA_PROFILE_DIR", "PROFILERA_PROFILE_DIR", "HOME", "XDG_CACHE_HOME", "XDG_CONFIG_HOME", "XDG_DATA_HOME", "XDG_STATE_HOME"].map((name) => [name, process.env[name]]));
   const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-fresh-plan-home-"));
   roots.push(home);
   process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
@@ -120,7 +126,11 @@ describe("fresh Plan initialization", () => {
     expect(startup.rc, startup.err).toBe(0);
     expect(startup.json?.capability_context.startup).toMatchObject({
       outcome: "ok",
-      state_cutover: { status: "fresh_uninitialized", project_state: "fresh_uninitialized", recovery_command: null },
+      state_cutover: {
+        status: "fresh_uninitialized",
+        project_state: "fresh_uninitialized",
+        recovery_command: null,
+      },
     });
     expect(startup.out).not.toContain("upgrade --yes");
     expect(snapshot(root)).toBe(before);
@@ -131,7 +141,10 @@ describe("fresh Plan initialization", () => {
       operation: { dry_run: true },
       initialization: {
         atomic: true,
-        marker: { path: path.join(root, ".agentera", "state-mode.yaml"), record: { schemaVersion: "agentera.stateMode.v1", mode: "entities" } },
+        marker: {
+          path: path.join(root, ".agentera", "state-mode.yaml"),
+          record: { schemaVersion: "agentera.stateMode.v1", mode: "entities" },
+        },
       },
       tasks: expect.arrayContaining([expect.objectContaining({ id: expect.stringMatching(/^[a-z]{10}$/) })]),
     });
@@ -139,7 +152,10 @@ describe("fresh Plan initialization", () => {
 
     const applied = capture(root, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput());
     expect(applied.rc, applied.err || applied.out).toBe(0);
-    expect(applied.json?.initialization.marker.record).toEqual({ schemaVersion: "agentera.stateMode.v1", mode: "entities" });
+    expect(applied.json?.initialization.marker.record).toEqual({
+      schemaVersion: "agentera.stateMode.v1",
+      mode: "entities",
+    });
     expect(detectStateMode(root)).toBe("entities");
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
     for (const [name, bytes] of existingFiles) expect(fs.readFileSync(path.join(root, name))).toEqual(bytes);
@@ -147,7 +163,10 @@ describe("fresh Plan initialization", () => {
     const initialized = capture(root, ["prime", "--context", "plan", "--format", "json"]);
     expect(initialized.rc, initialized.err).toBe(0);
     expect(initialized.json?.capability_context.startup.outcome).toBe("ok");
-    expect(initialized.json?.capability_context.startup.state_cutover).toMatchObject({ status: "complete", project_state: "v3" });
+    expect(initialized.json?.capability_context.startup.state_cutover).toMatchObject({
+      status: "complete",
+      project_state: "v3",
+    });
     expect(initialized.out).not.toContain("upgrade --yes");
   });
 
@@ -176,9 +195,21 @@ describe("fresh Plan initialization", () => {
   it("keeps legacy and unknown marker-absent recovery distinct and other writers uninitialized", () => {
     const fresh = project();
     const freshBefore = snapshot(fresh);
-    const otherWriter = capture(fresh, ["state", "progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ type: "test", phase: "build", what: "blocked", context: { intent: "prove Plan-only initialization" } }));
+    const otherWriter = capture(
+      fresh,
+      ["state", "progress", "append", "--input", "-", "--format", "json"],
+      JSON.stringify({
+        type: "test",
+        phase: "build",
+        what: "blocked",
+        context: { intent: "prove Plan-only initialization" },
+      }),
+    );
     expect(otherWriter.rc).toBe(1);
-    expect(otherWriter.json?.error).toMatchObject({ class: "fresh_initialization_required", recovery: expect.stringContaining("state plan create") });
+    expect(otherWriter.json?.error).toMatchObject({
+      class: "fresh_initialization_required",
+      recovery: expect.stringContaining("state plan create"),
+    });
     expect(snapshot(fresh)).toBe(freshBefore);
 
     const legacy = project();
@@ -188,7 +219,10 @@ describe("fresh Plan initialization", () => {
     const legacyBefore = snapshot(legacy);
     const legacyResult = capture(legacy, ["prime", "--context", "plan", "--format", "json"]);
     expect(legacyResult.rc).toBe(1);
-    expect(legacyResult.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade") });
+    expect(legacyResult.json?.error).toMatchObject({
+      class: "migration_required",
+      recovery: expect.stringContaining("upgrade"),
+    });
     expect(legacyResult.json?.error.recovery).toContain("--yes");
     expect(snapshot(legacy)).toBe(legacyBefore);
 
@@ -198,7 +232,10 @@ describe("fresh Plan initialization", () => {
     const unknownBefore = snapshot(unknown);
     const unknownResult = capture(unknown, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput("Must not adopt unknown state"));
     expect(unknownResult.rc).toBe(1);
-    expect(unknownResult.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade") });
+    expect(unknownResult.json?.error).toMatchObject({
+      class: "migration_required",
+      recovery: expect.stringContaining("upgrade"),
+    });
     expect(unknownResult.json?.error.recovery).toContain("--dry-run");
     expect(unknownResult.out).not.toContain("upgrade --yes");
     expect(snapshot(unknown)).toBe(unknownBefore);

@@ -5,14 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-  buildDoctorStatus,
-  publicDoctorStatus,
-} from "../../src/upgrade/doctor.js";
+import { APP_MANUAL_REVIEW_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE, buildDoctorStatus, publicDoctorStatus } from "../../src/upgrade/doctor.js";
 import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -29,21 +22,12 @@ afterEach(() => {
 function managed(appHome: string, marker: string | null, hej = true): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
-  fs.writeFileSync(
-    path.join(app, "scripts", "agentera"),
-    "#!/usr/bin/env python3\n" + (hej ? "sub.add_parser('hej')\n" : "pass\n"),
-  );
+  fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\n" + (hej ? "sub.add_parser('hej')\n" : "pass\n"));
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
   if (marker !== null) {
-    fs.writeFileSync(
-      path.join(app, ".agentera-bundle.json"),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-    );
+    fs.writeFileSync(path.join(app, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
   }
 }
 
@@ -76,10 +60,7 @@ describe("buildDoctorStatus", () => {
   });
 
   it("pins missing_marker diagnostic copy to authority-approved repair wording", () => {
-    const classifierSource = fs.readFileSync(
-      path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/upgrade/doctorClassifier.ts"),
-      "utf8",
-    );
+    const classifierSource = fs.readFileSync(path.join(path.dirname(fileURLToPath(import.meta.url)), "../../src/upgrade/doctorClassifier.ts"), "utf8");
     expect(classifierSource).toContain('kind: "missing_marker"');
     expect(classifierSource).toContain('message: "Agentera app files need repair"');
   });
@@ -142,16 +123,15 @@ describe("buildDoctorStatus", () => {
     fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), {
+      recursive: true,
+    });
     const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
     let channels = fs.readFileSync(channelsPath, "utf8");
     const stableStart = channels.indexOf("  stable:");
     const devStart = channels.indexOf("  development:");
     const stableBlock = channels.slice(stableStart, devStart);
-    channels =
-      channels.slice(0, stableStart) +
-      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
-      channels.slice(devStart);
+    channels = channels.slice(0, stableStart) + stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") + channels.slice(devStart);
     fs.writeFileSync(channelsPath, channels);
 
     const appHome = path.join(tmp, "v2-cross-major");
@@ -197,15 +177,9 @@ describe("buildDoctorStatus", () => {
     const v2Source = path.join(tmp, "v2-cli-source");
     fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(v2Source, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
-    );
+    fs.writeFileSync(path.join(v2Source, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }));
     fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
-    fs.copyFileSync(
-      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
-      path.join(v2Source, "references", "cli", "update-channels.yaml"),
-    );
+    fs.copyFileSync(path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"), path.join(v2Source, "references", "cli", "update-channels.yaml"));
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
       sourceRoot: v2Source,
@@ -287,39 +261,23 @@ describe("publicDoctorStatus", () => {
   });
 });
 
-function managedWithScript(
-  appHome: string,
-  marker: string | null,
-  scriptBody: string,
-  shebang: string | null,
-): void {
+function managedWithScript(appHome: string, marker: string | null, scriptBody: string, shebang: string | null): void {
   const app = path.join(appHome, "app");
   fs.mkdirSync(path.join(app, "scripts"), { recursive: true });
   const content = shebang ? `${shebang}\n${scriptBody}` : scriptBody;
   fs.writeFileSync(path.join(app, "scripts", "agentera"), content);
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
   if (marker !== null) {
-    fs.writeFileSync(
-      path.join(app, ".agentera-bundle.json"),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-    );
+    fs.writeFileSync(path.join(app, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
   }
 }
 
 describe("buildDoctorStatus invoking-cli retryCommand", () => {
   it("builds retryCommand with npx for a v3 Node CLI against a Python managed script", () => {
     const appHome = path.join(tmp, "python-shebang");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import argparse\ndef main():\n    pass\n",
-      "#!/usr/bin/env python3",
-    );
+    managedWithScript(appHome, "v9", "import argparse\ndef main():\n    pass\n", "#!/usr/bin/env python3");
     const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
     expect(status.retryCommand).not.toBeNull();
     expect(status.retryCommand).toMatch(/^npx -y /);
@@ -330,12 +288,7 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
 
   it("builds retryCommand with npx for a v3 Node CLI against a Node shebang managed script", () => {
     const appHome = path.join(tmp, "node-shebang");
-    managedWithScript(
-      appHome,
-      "v9",
-      "import fs from 'node:fs';\nexport const main = () => {};\n",
-      "#!/usr/bin/env node",
-    );
+    managedWithScript(appHome, "v9", "import fs from 'node:fs';\nexport const main = () => {};\n", "#!/usr/bin/env node");
     const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
     expect(status.retryCommand).not.toBeNull();
     expect(status.retryCommand).toMatch(/^npx -y /);
@@ -347,22 +300,11 @@ describe("buildDoctorStatus invoking-cli retryCommand", () => {
     const v2Source = path.join(tmp, "v2-cli-source-no-shebang");
     fs.mkdirSync(path.join(v2Source, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(v2Source, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(v2Source, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }),
-    );
+    fs.writeFileSync(path.join(v2Source, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.9" }] }));
     fs.mkdirSync(path.join(v2Source, "references", "cli"), { recursive: true });
-    fs.copyFileSync(
-      path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"),
-      path.join(v2Source, "references", "cli", "update-channels.yaml"),
-    );
+    fs.copyFileSync(path.join(REPO_ROOT, "references", "cli", "update-channels.yaml"), path.join(v2Source, "references", "cli", "update-channels.yaml"));
     const appHome = path.join(tmp, "no-shebang");
-    managedWithScript(
-      appHome,
-      "v9",
-      "console.log('no shebang');\n",
-      null,
-    );
+    managedWithScript(appHome, "v9", "console.log('no shebang');\n", null);
     const status = buildDoctorStatus(appHome, {
       rootSource: "explicit --install-root",
       sourceRoot: v2Source,

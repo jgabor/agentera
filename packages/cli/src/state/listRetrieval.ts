@@ -6,17 +6,7 @@ import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
-import {
-  canonicalRecordJson,
-  decisionOverlayContract,
-  discoverNumberedArchives,
-  numberedArchiveContract,
-  stateCurrentProjectionPath,
-  validateStateRecord,
-  type NumberedArchiveContract,
-  type NumberedArchiveEntry,
-  type ArchiveRejection,
-} from "./archiveDiscovery.js";
+import { canonicalRecordJson, decisionOverlayContract, discoverNumberedArchives, numberedArchiveContract, stateCurrentProjectionPath, validateStateRecord, type NumberedArchiveContract, type NumberedArchiveEntry, type ArchiveRejection } from "./archiveDiscovery.js";
 import { decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
 import { loadProjectionPolicy, serializedProjectionBytes } from "./projectionPolicy.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
@@ -146,18 +136,7 @@ function compactSummary(value: unknown): JsonValue | undefined {
   }
   if (!isMapping(value)) return undefined;
   const selected: JsonObject = {};
-  for (const key of [
-    "number",
-    "date",
-    "timestamp",
-    "summary",
-    "what",
-    "choice",
-    "question",
-    "trajectory",
-    "type",
-    "phase",
-  ]) {
+  for (const key of ["number", "date", "timestamp", "summary", "what", "choice", "question", "trajectory", "type", "phase"]) {
     const converted = jsonValue(value[key]);
     if (converted !== undefined && (typeof converted !== "object" || converted === null)) selected[key] = converted;
   }
@@ -173,20 +152,10 @@ function listSyntax(artifactId = "<artifact-id>"): string {
 }
 
 function listExample(artifactId: string, cursor = false): string {
-  return cursor
-    ? `agentera state ${artifactId} list --limit 20 --cursor TOKEN`
-    : `agentera state ${artifactId} list --limit 20`;
+  return cursor ? `agentera state ${artifactId} list --limit 20 --cursor TOKEN` : `agentera state ${artifactId} list --limit 20`;
 }
 
-function listFailure(
-  exitCode: 1 | 2,
-  className: StateFailureClass,
-  message: string,
-  artifactId: string,
-  recovery: string,
-  details?: JsonObject,
-  validValues?: string[],
-): StateRetrievalFailure {
+function listFailure(exitCode: 1 | 2, className: StateFailureClass, message: string, artifactId: string, recovery: string, details?: JsonObject, validValues?: string[]): StateRetrievalFailure {
   return new StateRetrievalFailure(
     {
       schemaVersion: "agentera.stateFailure.v1",
@@ -213,9 +182,7 @@ function cursorKey(projectRoot: string, sourceRoot: string): Buffer {
 }
 
 function cursorSignature(payload: CursorPayload, projectRoot: string, sourceRoot: string): string {
-  return createHmac("sha256", cursorKey(projectRoot, sourceRoot))
-    .update(canonicalRecordJson(payload), "utf8")
-    .digest("hex");
+  return createHmac("sha256", cursorKey(projectRoot, sourceRoot)).update(canonicalRecordJson(payload), "utf8").digest("hex");
 }
 
 function encodeCursor(payload: CursorPayload, projectRoot: string, sourceRoot: string): string {
@@ -223,29 +190,15 @@ function encodeCursor(payload: CursorPayload, projectRoot: string, sourceRoot: s
   return Buffer.from(JSON.stringify(signed), "utf8").toString("base64url");
 }
 
-function invalidCursor(
-  artifactId: string,
-  message: string,
-  projectRoot: string,
-  sourceRoot: string,
-): StateRetrievalFailure {
-  return listFailure(
-    2,
-    "cursor_invalid",
-    message,
-    artifactId,
-    "Copy response.next_cursor exactly, or omit --cursor to establish a new snapshot.",
-    { cursor: "opaque; do not parse or construct cursor tokens", project_root: path.resolve(projectRoot), source_root: path.resolve(sourceRoot) },
-  );
+function invalidCursor(artifactId: string, message: string, projectRoot: string, sourceRoot: string): StateRetrievalFailure {
+  return listFailure(2, "cursor_invalid", message, artifactId, "Copy response.next_cursor exactly, or omit --cursor to establish a new snapshot.", {
+    cursor: "opaque; do not parse or construct cursor tokens",
+    project_root: path.resolve(projectRoot),
+    source_root: path.resolve(sourceRoot),
+  });
 }
 
-function parseCursor(
-  artifactId: string,
-  token: string,
-  filters: JsonObject,
-  projectRoot: string,
-  sourceRoot: string,
-): ParsedCursor {
+function parseCursor(artifactId: string, token: string, filters: JsonObject, projectRoot: string, sourceRoot: string): ParsedCursor {
   if (token.length === 0 || token.length > 100_000 || !/^[A-Za-z0-9_-]+$/.test(token)) {
     throw invalidCursor(artifactId, "cursor is not a valid opaque token", projectRoot, sourceRoot);
   }
@@ -297,12 +250,7 @@ function projectionHash(current: CurrentIdentity): string {
   return hashValue(current.record ?? current.summary ?? null);
 }
 
-function readCurrentProjection(
-  projectRoot: string,
-  artifactId: string,
-  contract: NumberedArchiveContract,
-  sourceRoot: string,
-): { path: string; exists: boolean; entries: CurrentIdentity[] } {
+function readCurrentProjection(projectRoot: string, artifactId: string, contract: NumberedArchiveContract, sourceRoot: string): { path: string; exists: boolean; entries: CurrentIdentity[] } {
   const projectionPath = stateCurrentProjectionPath(projectRoot, artifactId, sourceRoot);
   try {
     assertRealpathBoundary(projectRoot, projectionPath, `${artifactId} projection`);
@@ -327,7 +275,9 @@ function readCurrentProjection(
   try {
     document = loadYamlMapping(fs.readFileSync(projectionPath, "utf8"));
   } catch (error) {
-    throw listFailure(1, "corrupt", `cannot parse current ${artifactId} projection: ${(error as Error).message}`, artifactId, "Repair the current projection YAML and retry the list command.", { path: projectionPath });
+    throw listFailure(1, "corrupt", `cannot parse current ${artifactId} projection: ${(error as Error).message}`, artifactId, "Repair the current projection YAML and retry the list command.", {
+      path: projectionPath,
+    });
   }
   const collection = document[contract.entryCollection];
   if (!Array.isArray(collection)) {
@@ -389,7 +339,9 @@ function overlayState(projectRoot: string, artifactId: string, sourceRoot: strin
   try {
     document = loadDecisionOverlay(projectRoot, sourceRoot);
   } catch (error) {
-    throw listFailure(1, "corrupt", `cannot read decision overlay: ${(error as Error).message}`, artifactId, "Repair the authority-declared decision overlay, then retry the list command.", { path: overlayPath });
+    throw listFailure(1, "corrupt", `cannot read decision overlay: ${(error as Error).message}`, artifactId, "Repair the authority-declared decision overlay, then retry the list command.", {
+      path: overlayPath,
+    });
   }
   return {
     path: overlayPath,
@@ -448,7 +400,11 @@ function physicalRowFromRejection(rejected: ArchiveRejection, entryNumber: numbe
     identity: entryNumber === null ? "unaddressable" : "canonical_number",
     entryNumber,
     representation: "unavailable",
-    projectionHash: hashValue({ path: rejected.path, reason: rejected.reason, message: rejected.message }),
+    projectionHash: hashValue({
+      path: rejected.path,
+      reason: rejected.reason,
+      message: rejected.message,
+    }),
     rejection: rejected,
   };
 }
@@ -466,7 +422,11 @@ function buildCandidates(
   artifactId: string,
   contract: NumberedArchiveContract,
   sourceRoot: string,
-): { candidates: ListCandidate[]; projection: { path: string; exists: boolean }; rejected: ArchiveRejection[] } {
+): {
+  candidates: ListCandidate[];
+  projection: { path: string; exists: boolean };
+  rejected: ArchiveRejection[];
+} {
   const current = readCurrentProjection(projectRoot, artifactId, contract, sourceRoot);
   const discovery = discoverNumberedArchives(projectRoot, { sourceRoot, artifactId });
   const grouped = new Map<number, { rows: PhysicalRow[]; archive?: NumberedArchiveEntry; corruptArchive?: ArchiveRejection }>();
@@ -521,7 +481,11 @@ function buildCandidates(
     });
   }
   candidates.sort((left, right) => left.sortKey.localeCompare(right.sortKey));
-  return { candidates, projection: { path: current.path, exists: current.exists }, rejected: discovery.rejected };
+  return {
+    candidates,
+    projection: { path: current.path, exists: current.exists },
+    rejected: discovery.rejected,
+  };
 }
 
 function stringValues(value: unknown): string[] {
@@ -545,7 +509,15 @@ function matchesFilter(candidate: ListCandidate, filters: StateListFilters): boo
     const grades = record.grades;
     const details = record.dimensions_detail;
     const gradeMatch = isMapping(grades) && Object.keys(grades).some((key) => key.toLowerCase().includes(needle));
-    const detailMatch = Array.isArray(details) && details.some((detail) => isMapping(detail) && String(detail.name ?? "").toLowerCase().includes(needle));
+    const detailMatch =
+      Array.isArray(details) &&
+      details.some(
+        (detail) =>
+          isMapping(detail) &&
+          String(detail.name ?? "")
+            .toLowerCase()
+            .includes(needle),
+      );
     if (!gradeMatch && !detailMatch) return false;
   }
   return true;
@@ -624,7 +596,7 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
   const hasArchive = candidate.archive !== undefined;
   const currentStatus = candidate.current ? (candidate.current.representation === "full" ? "active" : "summary") : "archive_only";
   const source = hasArchive ? "archive" : candidate.corruptArchive ? "archive" : candidate.current?.representation === "full" ? "legacy_full" : "legacy_summary";
-  const detailAvailability = hasArchive ? "full" : candidate.current?.representation === "full" ? "full" : candidate.current ? "summary" : candidate.rows[0]?.representation ?? "unavailable";
+  const detailAvailability = hasArchive ? "full" : candidate.current?.representation === "full" ? "full" : candidate.current ? "summary" : (candidate.rows[0]?.representation ?? "unavailable");
   const overlayFieldsForEntry = overlayFields(overlay, candidate.stableId ?? "");
   const addressable = candidate.stableId !== null;
   const physicalRows = candidate.rows.map((row) => ({
@@ -649,9 +621,7 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
     current_status: currentStatus,
     detail_availability: detailAvailability,
     source,
-    compatibility: candidate.classification === "conflict" || candidate.classification === "ambiguous" || candidate.classification === "corrupt"
-      ? "blocked"
-      : hasArchive && !candidate.corruptArchive ? "complete" : "degraded",
+    compatibility: candidate.classification === "conflict" || candidate.classification === "ambiguous" || candidate.classification === "corrupt" ? "blocked" : hasArchive && !candidate.corruptArchive ? "complete" : "degraded",
     record_status: recordStatus(candidate, overlay),
     provenance: {
       archive: {
@@ -669,14 +639,30 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
       physical_rows: physicalRows,
     },
     ...(addressable
-      ? { retrieval: { command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber}`, available: candidate.classification !== "conflict" && candidate.classification !== "ambiguous" && candidate.classification !== "corrupt" } }
-      : { retrieval: { available: false, reason: "unaddressable", message: "No stable ID was inferred from this physical row; list output is the only supported view." } }),
+      ? {
+          retrieval: {
+            command: `agentera state ${candidate.artifactId} get --number ${candidate.entryNumber}`,
+            available: candidate.classification !== "conflict" && candidate.classification !== "ambiguous" && candidate.classification !== "corrupt",
+          },
+        }
+      : {
+          retrieval: {
+            available: false,
+            reason: "unaddressable",
+            message: "No stable ID was inferred from this physical row; list output is the only supported view.",
+          },
+        }),
   };
   if (overlay && addressable) {
     entry.overlay_applied = overlayFieldsForEntry.length > 0;
     entry.provenance = {
       ...(entry.provenance as JsonObject),
-      overlay: { path: overlay.path, applied: overlayFieldsForEntry.length > 0, fields: overlayFieldsForEntry, revision: overlay.revision },
+      overlay: {
+        path: overlay.path,
+        applied: overlayFieldsForEntry.length > 0,
+        fields: overlayFieldsForEntry,
+        revision: overlay.revision,
+      },
     };
   }
   const baseSourceValue = candidate.current?.summary ?? candidate.archive?.record ?? candidate.current?.record;
@@ -686,14 +672,7 @@ function listEntry(candidate: ListCandidate, overlay: OverlayState | null, proje
 }
 
 function textList(value: JsonObject): string {
-  const lines = [
-    `command: ${value.command}`,
-    `status: ${value.status}`,
-    `snapshot: ${String((value.snapshot as JsonObject).id)}${(value.snapshot as JsonObject).has_more ? " (more)" : ""}`,
-    `counts: ${JSON.stringify(value.counts)}`,
-    `filters: ${JSON.stringify(value.filters)}`,
-    "entries:",
-  ];
+  const lines = [`command: ${value.command}`, `status: ${value.status}`, `snapshot: ${String((value.snapshot as JsonObject).id)}${(value.snapshot as JsonObject).has_more ? " (more)" : ""}`, `counts: ${JSON.stringify(value.counts)}`, `filters: ${JSON.stringify(value.filters)}`, "entries:"];
   for (const raw of (value.entries as JsonValue[]) ?? []) {
     const entry = raw as JsonObject;
     lines.push(`- ${entry.stable_id} current=${entry.current_status} detail=${entry.detail_availability} source=${entry.source} compatibility=${entry.compatibility} status=${entry.record_status}`);
@@ -706,9 +685,7 @@ function textList(value: JsonObject): string {
 }
 
 function responseBytes(value: StateListResponse, format: "json" | "yaml" | "text"): number {
-  return format === "text"
-    ? Buffer.byteLength(textList(value as unknown as JsonObject), "utf8")
-    : serializedProjectionBytes(value, format);
+  return format === "text" ? Buffer.byteLength(textList(value as unknown as JsonObject), "utf8") : serializedProjectionBytes(value, format);
 }
 
 function copyEntryWithoutOptionalDetails(entry: JsonObject): JsonObject {
@@ -718,11 +695,7 @@ function copyEntryWithoutOptionalDetails(entry: JsonObject): JsonObject {
   return copy;
 }
 
-function omissionMetadata(
-  command: string,
-  count: number,
-  entries: JsonObject[],
-): JsonObject {
+function omissionMetadata(command: string, count: number, entries: JsonObject[]): JsonObject {
   return {
     omitted: count > 0,
     omitted_count: count,
@@ -744,14 +717,7 @@ export interface StateListResponse {
   next_cursor?: string;
 }
 
-export function listStateEntries(
-  projectRoot: string,
-  artifactId: string,
-  limit: number,
-  filters: StateListFilters = {},
-  cursor: string | undefined,
-  options: StateListOptions = {},
-): StateListResponse {
+export function listStateEntries(projectRoot: string, artifactId: string, limit: number, filters: StateListFilters = {}, cursor: string | undefined, options: StateListOptions = {}): StateListResponse {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   let contract: NumberedArchiveContract;
   try {
@@ -773,15 +739,9 @@ export function listStateEntries(
   let snapshotCandidates = allCandidates;
   let firstPage = parsed === null;
   if (parsed) {
-    const oldCandidates = allCandidates.filter(
-      (candidate) => candidate.sortKey >= parsed.payload.candidate_start_key && candidate.sortKey <= parsed.payload.candidate_end_key,
-    );
+    const oldCandidates = allCandidates.filter((candidate) => candidate.sortKey >= parsed.payload.candidate_start_key && candidate.sortKey <= parsed.payload.candidate_end_key);
     const oldSnapshotId = snapshotId(oldCandidates, artifactId, normalizedFilters, overlayRevision);
-    if (
-      oldSnapshotId !== parsed.payload.snapshot_id ||
-      oldCandidates.length !== parsed.payload.candidate_count ||
-      (oldCandidates.length > 0 && oldCandidates[0].sortKey !== parsed.payload.candidate_start_key)
-    ) {
+    if (oldSnapshotId !== parsed.payload.snapshot_id || oldCandidates.length !== parsed.payload.candidate_count || (oldCandidates.length > 0 && oldCandidates[0].sortKey !== parsed.payload.candidate_start_key)) {
       throw listFailure(1, "cursor_snapshot_unavailable", `cursor snapshot for state ${artifactId} is no longer available; an existing candidate changed or disappeared`, artifactId, "Start a new listing without --cursor to establish a current snapshot.", {
         snapshot_id: parsed.payload.snapshot_id,
         current_snapshot_id: currentSnapshotId,
@@ -798,25 +758,26 @@ export function listStateEntries(
   const nextAfterCandidate = selected.at(-1);
   const nextAfterKey = nextAfterCandidate?.sortKey ?? parsed?.payload.after_key ?? "";
   const nextAfter = nextAfterCandidate?.entryNumber ?? parsed?.payload.after ?? 1;
-  const nextCursor = remaining > 0
-    ? encodeCursor(
-        {
-          version: CURSOR_VERSION,
-          artifact_id: artifactId,
-          filters: normalizedFilters,
-          order: LIST_ORDER,
-          snapshot_id: snapshot,
-          candidate_count: snapshotCandidates.length,
-          candidate_max: snapshotCandidates[0]?.entryNumber ?? 1,
-          candidate_start_key: snapshotCandidates[0]?.sortKey ?? "",
-          candidate_end_key: snapshotCandidates.at(-1)?.sortKey ?? "",
-          after_key: nextAfterKey,
-          after: nextAfter,
-        },
-        projectRoot,
-        sourceRoot,
-      )
-    : undefined;
+  const nextCursor =
+    remaining > 0
+      ? encodeCursor(
+          {
+            version: CURSOR_VERSION,
+            artifact_id: artifactId,
+            filters: normalizedFilters,
+            order: LIST_ORDER,
+            snapshot_id: snapshot,
+            candidate_count: snapshotCandidates.length,
+            candidate_max: snapshotCandidates[0]?.entryNumber ?? 1,
+            candidate_start_key: snapshotCandidates[0]?.sortKey ?? "",
+            candidate_end_key: snapshotCandidates.at(-1)?.sortKey ?? "",
+            after_key: nextAfterKey,
+            after: nextAfter,
+          },
+          projectRoot,
+          sourceRoot,
+        )
+      : undefined;
   const rowCounts = { active: 0, summary: 0, archive_only: 0 };
   for (const candidate of snapshotCandidates) {
     const state = candidate.current ? (candidate.current.representation === "full" ? "active" : "summary") : "archive_only";
@@ -844,7 +805,11 @@ export function listStateEntries(
     source: {
       artifact: artifactId,
       current_projection: { path: built.projection.path, exists: built.projection.exists },
-       archive: { root: path.join(path.resolve(projectRoot), contract.archiveRoot, artifactId), validated_entries: snapshotCandidates.reduce((count, candidate) => count + candidate.rows.filter((row) => row.origin === "numbered_archive").length, 0), rejected_count: built.rejected.length },
+      archive: {
+        root: path.join(path.resolve(projectRoot), contract.archiveRoot, artifactId),
+        validated_entries: snapshotCandidates.reduce((count, candidate) => count + candidate.rows.filter((row) => row.origin === "numbered_archive").length, 0),
+        rejected_count: built.rejected.length,
+      },
     },
     filters: normalizedFilters,
     snapshot: {
@@ -870,20 +835,13 @@ export function listStateEntries(
   };
 }
 
-export function boundStateList(
-  response: StateListResponse,
-  format: "json" | "yaml" | "text",
-  sourceRoot: string = resolveSourceRoot(),
-  projectRoot: string = process.cwd(),
-): StateListResponse {
+export function boundStateList(response: StateListResponse, format: "json" | "yaml" | "text", sourceRoot: string = resolveSourceRoot(), projectRoot: string = process.cwd()): StateListResponse {
   const policy = loadProjectionPolicy(sourceRoot);
   if (responseBytes(response, format) <= policy.maxUtf8Bytes) return response;
 
   const originalEntries = response.entries.map((entry) => entry as JsonObject);
   const entriesWithoutOptionalDetails = originalEntries.map((entry) => copyEntryWithoutOptionalDetails(entry));
-  const optionalDetailOmitted = originalEntries.filter(
-    (entry, index) => Object.keys(entry).length !== Object.keys(entriesWithoutOptionalDetails[index]).length,
-  ).length;
+  const optionalDetailOmitted = originalEntries.filter((entry, index) => Object.keys(entry).length !== Object.keys(entriesWithoutOptionalDetails[index]).length).length;
 
   const boundedPage = (entries: JsonObject[], omittedRows: number): StateListResponse => {
     const snapshot = response.snapshot;
@@ -893,27 +851,28 @@ export function boundStateList(
     const lastEntry = entries.at(-1);
     const lastNumber = lastEntry ? positiveNumber(String(lastEntry.entry_number)) : null;
     const lastKey = typeof lastEntry?.cursor_key === "string" ? lastEntry.cursor_key : null;
-    const continuation = omittedRows > 0 && lastKey !== null
-      ? encodeCursor(
-          {
-            version: CURSOR_VERSION,
-            artifact_id: artifactId,
-            filters: response.filters,
-            order: LIST_ORDER,
-            snapshot_id: String(snapshot.id),
-            candidate_count: candidateCount,
-            candidate_max: candidateMax,
-            candidate_start_key: String(snapshot.candidate_start_key ?? ""),
-            candidate_end_key: String(snapshot.candidate_end_key ?? ""),
-            after_key: lastKey,
-            after: lastNumber ?? 1,
-          },
-          projectRoot,
-          sourceRoot,
-        )
-      : omittedRows === 0
-        ? response.next_cursor
-        : undefined;
+    const continuation =
+      omittedRows > 0 && lastKey !== null
+        ? encodeCursor(
+            {
+              version: CURSOR_VERSION,
+              artifact_id: artifactId,
+              filters: response.filters,
+              order: LIST_ORDER,
+              snapshot_id: String(snapshot.id),
+              candidate_count: candidateCount,
+              candidate_max: candidateMax,
+              candidate_start_key: String(snapshot.candidate_start_key ?? ""),
+              candidate_end_key: String(snapshot.candidate_end_key ?? ""),
+              after_key: lastKey,
+              after: lastNumber ?? 1,
+            },
+            projectRoot,
+            sourceRoot,
+          )
+        : omittedRows === 0
+          ? response.next_cursor
+          : undefined;
     const bounded = {
       ...response,
       status: optionalDetailOmitted + omittedRows > 0 ? "degraded" : response.status,
@@ -926,9 +885,7 @@ export function boundStateList(
         omitted: Math.max(0, Number(response.counts.physical ?? response.counts.total ?? 0) - entries.reduce((total, entry) => total + Number(entry.physical_count ?? 1), 0)),
       },
       snapshot: { ...snapshot, has_more: continuation !== undefined },
-      ...(optionalDetailOmitted + omittedRows > 0
-        ? omissionMetadata(response.command, optionalDetailOmitted + omittedRows, entries)
-        : {}),
+      ...(optionalDetailOmitted + omittedRows > 0 ? omissionMetadata(response.command, optionalDetailOmitted + omittedRows, entries) : {}),
     } as StateListResponse;
     delete bounded.next_cursor;
     if (continuation) bounded.next_cursor = continuation;
@@ -948,7 +905,10 @@ export function boundStateList(
     `list output cannot emit an advancing row page within the ${policy.maxUtf8Bytes}-byte ${format} authority budget`,
     String(response.source.artifact ?? "state"),
     "Reduce the requested output to a supported state artifact or repair the authority budget before retrying; no continuation cursor was issued.",
-    { format, candidate_count: Number(response.snapshot.candidate_count ?? response.counts.total ?? 0) },
+    {
+      format,
+      candidate_count: Number(response.snapshot.candidate_count ?? response.counts.total ?? 0),
+    },
   );
 }
 

@@ -19,12 +19,7 @@ export class SequenceMatcher {
   private readonly isjunk: ((s: string) => boolean) | null;
   private readonly autojunk: boolean;
 
-  constructor(
-    isjunk: ((s: string) => boolean) | null = null,
-    a: string[] = [],
-    b: string[] = [],
-    autojunk = true,
-  ) {
+  constructor(isjunk: ((s: string) => boolean) | null = null, a: string[] = [], b: string[] = [], autojunk = true) {
     this.isjunk = isjunk;
     this.autojunk = autojunk;
     this.setSeqs(a, b);
@@ -116,12 +111,7 @@ export class SequenceMatcher {
       bestj -= 1;
       bestsize += 1;
     }
-    while (
-      besti + bestsize < ahi &&
-      bestj + bestsize < bhi &&
-      !bjunk.has(this.b[bestj + bestsize]) &&
-      a[besti + bestsize] === this.b[bestj + bestsize]
-    ) {
+    while (besti + bestsize < ahi && bestj + bestsize < bhi && !bjunk.has(this.b[bestj + bestsize]) && a[besti + bestsize] === this.b[bestj + bestsize]) {
       bestsize += 1;
     }
 
@@ -130,12 +120,7 @@ export class SequenceMatcher {
       bestj -= 1;
       bestsize += 1;
     }
-    while (
-      besti + bestsize < ahi &&
-      bestj + bestsize < bhi &&
-      bjunk.has(this.b[bestj + bestsize]) &&
-      a[besti + bestsize] === this.b[bestj + bestsize]
-    ) {
+    while (besti + bestsize < ahi && bestj + bestsize < bhi && bjunk.has(this.b[bestj + bestsize]) && a[besti + bestsize] === this.b[bestj + bestsize]) {
       bestsize += 1;
     }
 
@@ -237,16 +222,7 @@ function formatRangeUnified(start: number, stop: number): string {
   return `${beginning},${length}`;
 }
 
-export function unifiedDiff(
-  a: string[],
-  b: string[],
-  fromfile = "",
-  tofile = "",
-  fromfiledate = "",
-  tofiledate = "",
-  n = 3,
-  lineterm = "\n",
-): string[] {
+export function unifiedDiff(a: string[], b: string[], fromfile = "", tofile = "", fromfiledate = "", tofiledate = "", n = 3, lineterm = "\n"): string[] {
   const out: string[] = [];
   let started = false;
   const sm = new SequenceMatcher(null, a, b);

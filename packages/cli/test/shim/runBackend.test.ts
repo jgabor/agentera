@@ -6,9 +6,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("node:child_process", async () => {
-  const actual = await vi.importActual<typeof import("node:child_process")>(
-    "node:child_process",
-  );
+  const actual = await vi.importActual<typeof import("node:child_process")>("node:child_process");
   return {
     ...actual,
     spawnSync: vi.fn(() => ({
@@ -71,11 +69,7 @@ describe("shim runBackend cwd preservation", () => {
     expect(rc.exitCode).toBe(0);
     expect(rc.fallthrough).toBe(false);
     expect(spawnSyncMock).toHaveBeenCalledTimes(1);
-    const [command, args, options] = spawnSyncMock.mock.calls[0] as [
-      string,
-      string[],
-      { cwd?: string },
-    ];
+    const [command, args, options] = spawnSyncMock.mock.calls[0] as [string, string[], { cwd?: string }];
     expect(command).toBe("uv");
     expect(args[0]).toBe("run");
     expect(args[1]).toBe(backend.scriptPath);
@@ -95,11 +89,7 @@ describe("shim runBackend cwd preservation", () => {
 
     expect(rc.exitCode).toBe(0);
     expect(rc.fallthrough).toBe(false);
-    const options = (spawnSyncMock.mock.calls[0] as [
-      string,
-      string[],
-      { cwd?: string },
-    ])[2];
+    const options = (spawnSyncMock.mock.calls[0] as [string, string[], { cwd?: string }])[2];
     // The shim must never derive cwd from the script path; spawnSync falls back
     // to process.cwd() when cwd is undefined.
     expect(options.cwd).toBeUndefined();
@@ -117,11 +107,7 @@ describe("shim runBackend cwd preservation", () => {
 
     expect(rc.exitCode).toBe(0);
     expect(rc.fallthrough).toBe(false);
-    const [command, args, options] = spawnSyncMock.mock.calls[0] as [
-      string,
-      string[],
-      { cwd?: string },
-    ];
+    const [command, args, options] = spawnSyncMock.mock.calls[0] as [string, string[], { cwd?: string }];
     expect(command).toBe("uv");
     expect(args).toEqual(["run", "scripts/agentera", "state", "plan"]);
     expect(options.cwd).toBe(tmpRepoRoot);

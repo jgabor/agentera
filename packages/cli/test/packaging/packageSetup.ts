@@ -6,18 +6,10 @@ import path from "node:path";
 
 import type { GlobalSetupContext } from "vitest/node";
 
-import {
-  generatedSourceIdentity,
-  readGeneratedSourceIdentity,
-  sameGeneratedSourceIdentity,
-} from "../../scripts/generated-output.mjs";
+import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
-import {
-  finalizePackageOwnerEvidence,
-  writeContentAddressedOwnerEvidence,
-  writeContentAddressedPackageIdentity,
-} from "../../src/validate/activationArtifactEvidence.js";
+import { finalizePackageOwnerEvidence, writeContentAddressedOwnerEvidence, writeContentAddressedPackageIdentity } from "../../src/validate/activationArtifactEvidence.js";
 
 export interface PackFile {
   path: string;
@@ -59,9 +51,7 @@ export interface PackageFixture {
 }
 
 function scrubbedEnv(): NodeJS.ProcessEnv {
-  const env = Object.fromEntries(
-    Object.entries(process.env).filter(([key]) => !key.startsWith("npm_config_")),
-  );
+  const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith("npm_config_")));
   return {
     ...env,
     npm_config_offline: "true",
@@ -73,9 +63,7 @@ function scrubbedEnv(): NodeJS.ProcessEnv {
 function run(command: string, args: string[], cwd: string): string {
   const result = spawnSync(command, args, { cwd, encoding: "utf8", env: scrubbedEnv() });
   if (result.status !== 0) {
-    throw new Error(
-      `package verification boundary failed during ${command} ${args.join(" ")}:\n${result.stderr || result.stdout}`,
-    );
+    throw new Error(`package verification boundary failed during ${command} ${args.join(" ")}:\n${result.stderr || result.stdout}`);
   }
   return result.stdout;
 }
@@ -87,27 +75,12 @@ function parseManifest(stdout: string): PackEntry {
   } catch {
     throw new Error("package verification boundary failed: npm pack returned invalid JSON");
   }
-  const entries = Array.isArray(parsed)
-    ? parsed
-    : parsed && typeof parsed === "object"
-      ? Object.values(parsed)
-      : [];
+  const entries = Array.isArray(parsed) ? parsed : parsed && typeof parsed === "object" ? Object.values(parsed) : [];
   if (entries.length !== 1) {
-    throw new Error(
-      `package verification boundary failed: npm pack returned ${entries.length} entries; expected one`,
-    );
+    throw new Error(`package verification boundary failed: npm pack returned ${entries.length} entries; expected one`);
   }
   const entry = entries[0] as Partial<PackEntry>;
-  if (
-    typeof entry.name !== "string"
-    || typeof entry.version !== "string"
-    || typeof entry.filename !== "string"
-    || !Array.isArray(entry.files)
-    || !Number.isSafeInteger(entry.size)
-    || !Number.isSafeInteger(entry.unpackedSize)
-    || typeof entry.integrity !== "string"
-    || typeof entry.shasum !== "string"
-  ) {
+  if (typeof entry.name !== "string" || typeof entry.version !== "string" || typeof entry.filename !== "string" || !Array.isArray(entry.files) || !Number.isSafeInteger(entry.size) || !Number.isSafeInteger(entry.unpackedSize) || typeof entry.integrity !== "string" || typeof entry.shasum !== "string") {
     throw new Error("package verification boundary failed: npm pack omitted manifest integrity");
   }
   return entry as PackEntry;
@@ -127,12 +100,13 @@ function regularFileManifest(root: string): RegularFileEntry[] {
       const target = path.join(directory, name);
       const stat = fs.lstatSync(target);
       if (stat.isDirectory()) visit(target);
-      else if (stat.isFile()) entries.push({
-        path: path.relative(root, target).split(path.sep).join("/"),
-        size: stat.size,
-        mode: stat.mode & 0o777,
-        sha256: createHash("sha256").update(fs.readFileSync(target)).digest("hex"),
-      });
+      else if (stat.isFile())
+        entries.push({
+          path: path.relative(root, target).split(path.sep).join("/"),
+          size: stat.size,
+          mode: stat.mode & 0o777,
+          sha256: createHash("sha256").update(fs.readFileSync(target)).digest("hex"),
+        });
     }
   };
   visit(root);
@@ -152,9 +126,18 @@ export function pathNeedles(needleClass: string, value: string): PathNeedle[] {
 }
 
 const developerHomePatterns: ReadonlyArray<{ class: string; pattern: RegExp }> = [
-  { class: "developer-home-pattern:linux", pattern: /\/home\/(?!user(?:name)?(?:\/|$)|example(?:\/|$))[a-z_][a-z0-9._-]*(?:\/|$)/giu },
-  { class: "developer-home-pattern:macos", pattern: /\/Users\/(?!user(?:name)?(?:\/|$)|example(?:\/|$))[a-z_][a-z0-9._-]*(?:\/|$)/giu },
-  { class: "developer-home-pattern:windows", pattern: /[a-z]:[\\/]Users[\\/](?!user(?:name)?(?:[\\/]|$)|example(?:[\\/]|$))[^\\/\s"']+(?:[\\/]|$)/giu },
+  {
+    class: "developer-home-pattern:linux",
+    pattern: /\/home\/(?!user(?:name)?(?:\/|$)|example(?:\/|$))[a-z_][a-z0-9._-]*(?:\/|$)/giu,
+  },
+  {
+    class: "developer-home-pattern:macos",
+    pattern: /\/Users\/(?!user(?:name)?(?:\/|$)|example(?:\/|$))[a-z_][a-z0-9._-]*(?:\/|$)/giu,
+  },
+  {
+    class: "developer-home-pattern:windows",
+    pattern: /[a-z]:[\\/]Users[\\/](?!user(?:name)?(?:[\\/]|$)|example(?:[\\/]|$))[^\\/\s"']+(?:[\\/]|$)/giu,
+  },
 ];
 
 function forbiddenPathMatches(root: string, needles: readonly PathNeedle[]): string[] {
@@ -176,26 +159,14 @@ function forbiddenPathMatches(root: string, needles: readonly PathNeedle[]): str
 export function assertNoForbiddenPathMatches(root: string, needles: readonly PathNeedle[]): string[] {
   const matches = forbiddenPathMatches(root, needles);
   if (matches.length > 0) {
-    throw new Error(
-      `package verification boundary failed: extracted file matched portable-path needle class: ${matches.join(", ")}`,
-    );
+    throw new Error(`package verification boundary failed: extracted file matched portable-path needle class: ${matches.join(", ")}`);
   }
   return matches;
 }
 
-export function assertDeterministicPackagePair(
-  firstBytes: Buffer,
-  secondBytes: Buffer,
-  firstManifest: PackEntry,
-  secondManifest: PackEntry,
-): void {
-  if (!firstBytes.equals(secondBytes)
-    || JSON.stringify(firstManifest.files) !== JSON.stringify(secondManifest.files)
-    || firstManifest.integrity !== secondManifest.integrity
-    || firstManifest.shasum !== secondManifest.shasum) {
-    throw new Error(
-      "package verification boundary failed: independent construction roots produced different package bytes",
-    );
+export function assertDeterministicPackagePair(firstBytes: Buffer, secondBytes: Buffer, firstManifest: PackEntry, secondManifest: PackEntry): void {
+  if (!firstBytes.equals(secondBytes) || JSON.stringify(firstManifest.files) !== JSON.stringify(secondManifest.files) || firstManifest.integrity !== secondManifest.integrity || firstManifest.shasum !== secondManifest.shasum) {
+    throw new Error("package verification boundary failed: independent construction roots produced different package bytes");
   }
 }
 
@@ -207,7 +178,10 @@ function stageConstructionInputs(packageRoot: string, constructionRoot: string):
   fs.copyFileSync(path.resolve(packageRoot, "../..", "LICENSE"), path.join(constructionRoot, "LICENSE"));
 }
 
-export async function createPackageFixture(): Promise<{ fixture: PackageFixture; cleanup: () => void }> {
+export async function createPackageFixture(): Promise<{
+  fixture: PackageFixture;
+  cleanup: () => void;
+}> {
   waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "../..");
   const checkoutRoot = path.resolve(packageRoot, "../..");
@@ -218,37 +192,17 @@ export async function createPackageFixture(): Promise<{ fixture: PackageFixture;
   try {
     stageConstructionInputs(packageRoot, constructionRoot);
     stageConstructionInputs(packageRoot, secondConstructionRoot);
-    run(
-      process.execPath,
-      ["scripts/build-package.mjs", "--output-root", constructionRoot],
-      packageRoot,
-    );
-    run(
-      process.execPath,
-      ["scripts/build-package.mjs", "--output-root", secondConstructionRoot],
-      packageRoot,
-    );
+    run(process.execPath, ["scripts/build-package.mjs", "--output-root", constructionRoot], packageRoot);
+    run(process.execPath, ["scripts/build-package.mjs", "--output-root", secondConstructionRoot], packageRoot);
     for (const construction of [constructionRoot, secondConstructionRoot]) {
       if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(construction), sourceIdentity)) {
         throw new Error("package verification boundary failed: construction source identity drifted");
       }
     }
-    const manifest = parseManifest(
-      run(
-        "npm",
-        ["pack", "--json", "--ignore-scripts", "--pack-destination", root],
-        constructionRoot,
-      ),
-    );
+    const manifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", root], constructionRoot));
     const secondPackRoot = path.join(root, "second package ; [$]");
     fs.mkdirSync(secondPackRoot);
-    const secondManifest = parseManifest(
-      run(
-        "npm",
-        ["pack", "--json", "--ignore-scripts", "--pack-destination", secondPackRoot],
-        secondConstructionRoot,
-      ),
-    );
+    const secondManifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", secondPackRoot], secondConstructionRoot));
     const tarball = path.join(root, manifest.filename);
     const secondTarball = path.join(secondPackRoot, secondManifest.filename);
     const tarballBytes = fs.readFileSync(tarball);
@@ -263,13 +217,7 @@ export async function createPackageFixture(): Promise<{ fixture: PackageFixture;
     }
     const firstContent = regularFileManifest(extractedPackage);
     const contentSha256 = createHash("sha256").update(JSON.stringify(firstContent)).digest("hex");
-    const pathScanNeedles = [
-      ...pathNeedles("checkout-root", checkoutRoot),
-      ...pathNeedles("construction-root-primary", constructionRoot),
-      ...pathNeedles("construction-root-secondary", secondConstructionRoot),
-      ...pathNeedles("extraction-root-primary", extractedPackage),
-      ...pathNeedles("actual-home", os.homedir()),
-    ];
+    const pathScanNeedles = [...pathNeedles("checkout-root", checkoutRoot), ...pathNeedles("construction-root-primary", constructionRoot), ...pathNeedles("construction-root-secondary", secondConstructionRoot), ...pathNeedles("extraction-root-primary", extractedPackage), ...pathNeedles("actual-home", os.homedir())];
     const pathMatches = assertNoForbiddenPathMatches(extractedPackage, pathScanNeedles);
     // Both constructed and extracted runtimes use the checkout's already
     // installed dependency graph. Package verification must never consult a
@@ -296,12 +244,7 @@ export async function createPackageFixture(): Promise<{ fixture: PackageFixture;
         regularFiles: firstContent.length,
         contentSha256,
         forbiddenPathMatches: pathMatches,
-        pathNeedleClasses: [
-          ...new Set([
-            ...pathScanNeedles.map((needle) => needle.class),
-            ...developerHomePatterns.map((pattern) => pattern.class),
-          ]),
-        ].sort(),
+        pathNeedleClasses: [...new Set([...pathScanNeedles.map((needle) => needle.class), ...developerHomePatterns.map((pattern) => pattern.class)])].sort(),
         secondManifest,
       },
     };

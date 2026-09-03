@@ -18,9 +18,13 @@ describe("argvParser", () => {
   it("advances the outer index for space-separated values", () => {
     const argv = ["--artifact", "plan", "--format", "json"];
     let i = 0;
-    const value = makeArgvValueReader(argv, () => i, (n) => {
-      i = n;
-    });
+    const value = makeArgvValueReader(
+      argv,
+      () => i,
+      (n) => {
+        i = n;
+      },
+    );
     expect(value("--artifact")).toBe("plan");
     expect(i).toBe(1);
     i++;

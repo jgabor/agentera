@@ -1,8 +1,4 @@
-export type LegacyIdentityKind =
-  | "canonical_number"
-  | "explicit_decision_shorthand"
-  | "unaddressable"
-  | "ambiguous";
+export type LegacyIdentityKind = "canonical_number" | "explicit_decision_shorthand" | "unaddressable" | "ambiguous";
 
 export interface LegacyIdentity {
   number: number | null;
@@ -19,9 +15,7 @@ function positiveNumber(value: unknown): number | null {
 }
 
 function mapping(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 /**
@@ -31,11 +25,7 @@ function mapping(value: unknown): Record<string, unknown> | null {
 const LEADING_DECISION_SHORTHAND = /^D([1-9][0-9]*)(?=$|[\s:([,.;])/;
 const LEADING_DECISION_COMPOUND = /^D[1-9][0-9]*\s*\+\s*D[1-9][0-9]*/;
 
-export function legacyIdentity(
-  value: unknown,
-  artifactId: string,
-  entryNumberField: string,
-): LegacyIdentity {
+export function legacyIdentity(value: unknown, artifactId: string, entryNumberField: string): LegacyIdentity {
   const object = mapping(value);
   if (object) {
     const explicit = positiveNumber(object[entryNumberField]);

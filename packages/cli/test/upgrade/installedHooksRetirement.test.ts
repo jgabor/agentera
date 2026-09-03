@@ -5,10 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  APP_CONTENT_REFRESH_ACTION,
-  detectStaleAppContentSurfaces,
-} from "../../src/upgrade/appContentRefresh.js";
+import { APP_CONTENT_REFRESH_ACTION, detectStaleAppContentSurfaces } from "../../src/upgrade/appContentRefresh.js";
 import {
   applyInstalledHooksRetirementItems,
   INSTALLED_HOOKS_SURFACE_LABEL,
@@ -19,10 +16,7 @@ import {
   planInstalledHooksRetirementItems,
   textReferencesV2InstalledHooks,
 } from "../../src/upgrade/installedHooksRetirement.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 import { scanDirectoryForPythonLeftovers } from "./helpers/preservation.js";
 import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
@@ -42,17 +36,8 @@ function copyFixture(name: string, dest: string): string {
 function seedV2InstalledHooks(appHome: string): void {
   const hooksDir = path.join(appHome, "hooks");
   fs.mkdirSync(hooksDir, { recursive: true });
-  for (const name of [
-    "validate_artifact.py",
-    "cursor_session_start.py",
-    "cursor_pre_tool_use.py",
-    "cursor_session_stop.py",
-  ]) {
-    fs.writeFileSync(
-      path.join(hooksDir, name),
-      `#!/usr/bin/env python3\n# v2 installed hook stub: ${name}\n`,
-      "utf8",
-    );
+  for (const name of ["validate_artifact.py", "cursor_session_start.py", "cursor_pre_tool_use.py", "cursor_session_stop.py"]) {
+    fs.writeFileSync(path.join(hooksDir, name), `#!/usr/bin/env python3\n# v2 installed hook stub: ${name}\n`, "utf8");
   }
   const manifestPath = path.join(appHome, "hooks", "codex-hooks.json");
   fs.writeFileSync(
@@ -124,10 +109,7 @@ describe("upgrade apply retires v2 installed hooks", () => {
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
 
-    const hookItems = [
-      ...preview.runtime.items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION),
-      ...preview.cleanup.items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION),
-    ];
+    const hookItems = [...preview.runtime.items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION), ...preview.cleanup.items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION)];
     const refreshItems = preview.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
     expect(refreshItems.some((item) => item.status === "pending")).toBe(true);
     expect(hookItems.some((item) => item.status === "pending")).toBe(true);

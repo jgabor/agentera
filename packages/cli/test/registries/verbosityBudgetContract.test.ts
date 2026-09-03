@@ -6,16 +6,8 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  inspectArtifactVerbosityBudget,
-  resolveVerbosityBudgetOwner,
-  validateVerbosityBudgetContract,
-  VerbosityBudgetContractError,
-} from "../../src/registries/verbosityBudgetContract.js";
-import {
-  checkFullFileVerbosity,
-  checkVerbosity,
-} from "../../src/validate/selfAudit.js";
+import { inspectArtifactVerbosityBudget, resolveVerbosityBudgetOwner, validateVerbosityBudgetContract, VerbosityBudgetContractError } from "../../src/registries/verbosityBudgetContract.js";
+import { checkFullFileVerbosity, checkVerbosity } from "../../src/validate/selfAudit.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PRODUCTION_CONTRACT = path.join(REPO_ROOT, "references", "artifacts", "verbosity-budget-authority.yaml");
@@ -29,19 +21,19 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
-function writeFixture(
-  artifacts: Array<{ artifact_id: string; schema: string }>,
-  schemas: Record<string, unknown>,
-): string {
+function writeFixture(artifacts: Array<{ artifact_id: string; schema: string }>, schemas: Record<string, unknown>): string {
   for (const [name, schema] of Object.entries(schemas)) {
     fs.writeFileSync(path.join(tmp, "schemas", name), YAML.stringify(schema));
   }
   const contractPath = path.join(tmp, "authority.yaml");
-  fs.writeFileSync(contractPath, YAML.stringify({
-    schema_version: "agentera.verbosityBudgetAuthority.v1",
-    authority: { schema_directory: "schemas" },
-    scope: { supported_artifacts: artifacts },
-  }));
+  fs.writeFileSync(
+    contractPath,
+    YAML.stringify({
+      schema_version: "agentera.verbosityBudgetAuthority.v1",
+      authority: { schema_directory: "schemas" },
+      scope: { supported_artifacts: artifacts },
+    }),
+  );
   return contractPath;
 }
 
@@ -66,46 +58,38 @@ describe("verbosity budget authority classifications", () => {
   });
 
   it("classifies malformed and ambiguous declarations as invalid", () => {
-    const contract = writeFixture(
-      [{ artifact_id: "progress", schema: "progress.yaml" }],
-      {
-        "progress.yaml": {
-          BUDGET: {
-            1: { id: "PB1", scope: "full_file", max_words: 3000, token_budget: 2000 },
-            2: { id: "PB2", scope: "full_file", max_words: 100 },
-          },
+    const contract = writeFixture([{ artifact_id: "progress", schema: "progress.yaml" }], {
+      "progress.yaml": {
+        BUDGET: {
+          1: { id: "PB1", scope: "full_file", max_words: 3000, token_budget: 2000 },
+          2: { id: "PB2", scope: "full_file", max_words: 100 },
         },
       },
-    );
+    });
     const inspected = inspectArtifactVerbosityBudget("progress", contract);
     expect(inspected.dimensions.every((dimension) => dimension.classification === "invalid_declaration")).toBe(true);
-    expect(validateVerbosityBudgetContract(contract)).toEqual([
-      "progress:full_file: duplicate budget scope full_file",
-      "progress:full_file: duplicate budget scope full_file",
-    ]);
+    expect(validateVerbosityBudgetContract(contract)).toEqual(["progress:full_file: duplicate budget scope full_file", "progress:full_file: duplicate budget scope full_file"]);
   });
 });
 
 describe("verbosity budget authority failures", () => {
   it("validates the checked-in owner inventory without fallback values", () => {
     expect(validateVerbosityBudgetContract(PRODUCTION_CONTRACT)).toEqual([]);
-    expect(inspectArtifactVerbosityBudget("docs", PRODUCTION_CONTRACT).dimensions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ scope: "full_file", classification: "explicit_no_limit" }),
-      ]),
-    );
+    expect(inspectArtifactVerbosityBudget("docs", PRODUCTION_CONTRACT).dimensions).toEqual(expect.arrayContaining([expect.objectContaining({ scope: "full_file", classification: "explicit_no_limit" })]));
   });
 
   it("keeps DOCS validation and audit metadata aligned with its no-limit budget", () => {
     const schema = YAML.parse(fs.readFileSync(DOCS_SCHEMA, "utf8")) as Record<string, any>;
     const docs = YAML.parse(fs.readFileSync(DOCS_ARTIFACT, "utf8")) as Record<string, any>;
     const validationRules = Object.values(schema.VALIDATION as Record<string, Record<string, unknown>>);
-    const latestAudit = docs.audit_log[0] as { date: string; label: string; findings: Array<{ description: string }> };
+    const latestAudit = docs.audit_log[0] as {
+      date: string;
+      label: string;
+      findings: Array<{ description: string }>;
+    };
 
     expect(schema.BUDGET[1].max_words).toBeNull();
-    expect(validationRules).not.toEqual(expect.arrayContaining([
-      expect.objectContaining({ rule: "word_budget" }),
-    ]));
+    expect(validationRules).not.toEqual(expect.arrayContaining([expect.objectContaining({ rule: "word_budget" })]));
     expect(JSON.stringify(validationRules)).not.toContain("2000");
     expect(docs.last_audit).toBe(`${latestAudit.date} (${latestAudit.label})`);
     expect(latestAudit.findings.at(-1)?.description).toContain("no full-file word limit");
@@ -144,9 +128,7 @@ describe("verbosity budget owner resolution", () => {
   });
 
   it("rejects unsupported identifiers instead of selecting a generic owner", () => {
-    expect(() => resolveVerbosityBudgetOwner("notes.md", PRODUCTION_CONTRACT)).toThrowError(
-      VerbosityBudgetContractError,
-    );
+    expect(() => resolveVerbosityBudgetOwner("notes.md", PRODUCTION_CONTRACT)).toThrowError(VerbosityBudgetContractError);
     expect(() => resolveVerbosityBudgetOwner("notes.md", PRODUCTION_CONTRACT)).toThrow("unsupported artifact");
   });
 });
@@ -172,27 +154,22 @@ describe("lint verbosity budget consumption", () => {
     );
 
     expect(checkVerbosity("one two three", "PROGRESS.md", contract)[1]).toContain("exceeds 2 budget");
-    expect(checkFullFileVerbosity("one two three four", ".agentera/progress.yaml", contract)[1])
-      .toContain("exceeds 3 full-file budget");
+    expect(checkFullFileVerbosity("one two three four", ".agentera/progress.yaml", contract)[1]).toContain("exceeds 3 full-file budget");
     expect(checkFullFileVerbosity("word ".repeat(100), "decisions", contract)).toEqual([true, ""]);
     expect(checkFullFileVerbosity("word ".repeat(100), "DESIGN.md", contract)).toEqual([true, ""]);
   });
 
   it("returns actionable authority errors for malformed or unavailable required data", () => {
-    const malformedContract = writeFixture(
-      [{ artifact_id: "progress", schema: "progress.yaml" }],
-      { "progress.yaml": { BUDGET: { 1: { id: "PB1", scope: "full_file", max_words: -1 } } } },
-    );
+    const malformedContract = writeFixture([{ artifact_id: "progress", schema: "progress.yaml" }], {
+      "progress.yaml": { BUDGET: { 1: { id: "PB1", scope: "full_file", max_words: -1 } } },
+    });
     const [passed, detail] = checkFullFileVerbosity("one", "progress", malformedContract);
     expect(passed).toBe(false);
     expect(detail).toContain("verbosity authority error");
     expect(detail).toContain("max_words must be a positive number or null");
     expect(detail).toContain("repair the declared owner");
 
-    const unavailableContract = writeFixture(
-      [{ artifact_id: "progress", schema: "missing.yaml" }],
-      {},
-    );
+    const unavailableContract = writeFixture([{ artifact_id: "progress", schema: "missing.yaml" }], {});
     const [, unavailableDetail] = checkFullFileVerbosity("one", "progress", unavailableContract);
     expect(unavailableDetail).toContain("verbosity authority error");
     expect(unavailableDetail).toContain("missing.yaml is unreadable or malformed");

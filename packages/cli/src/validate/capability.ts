@@ -4,10 +4,7 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
-import {
-  CapabilitySchemaContract,
-  loadCapabilitySchemaContract,
-} from "../registries/capabilityContract.js";
+import { CapabilitySchemaContract, loadCapabilitySchemaContract } from "../registries/capabilityContract.js";
 
 /**
  * Validate a capability directory against the capability schema contract.
@@ -18,17 +15,7 @@ import {
  * for all real (bare-integer) schema keys.
  */
 
-export const PROTOCOL_GROUPS = [
-  "CONFIDENCE_SCALE",
-  "SEVERITY_FINDING",
-  "SEVERITY_ISSUE",
-  "SEVERITY_MAPPING",
-  "DECISION_LABELS",
-  "EXIT_SIGNALS",
-  "VISUAL_TOKENS",
-  "SKILL_GLYPHS",
-  "PHASES",
-] as const;
+export const PROTOCOL_GROUPS = ["CONFIDENCE_SCALE", "SEVERITY_FINDING", "SEVERITY_ISSUE", "SEVERITY_MAPPING", "DECISION_LABELS", "EXIT_SIGNALS", "VISUAL_TOKENS", "SKILL_GLYPHS", "PHASES"] as const;
 
 export { loadCapabilitySchemaContract };
 
@@ -88,11 +75,7 @@ function listSchemaFiles(schemasDir: string, glob: string): string[] {
     .map((name) => path.join(schemasDir, name));
 }
 
-export function collectSchemaGroups(
-  schemasDir: string,
-  requiredGroups: readonly string[],
-  schemaGlob = "*.yaml",
-): JsonObject {
+export function collectSchemaGroups(schemasDir: string, requiredGroups: readonly string[], schemaGlob = "*.yaml"): JsonObject {
   const combined: JsonObject = {};
   for (const yamlFile of listSchemaFiles(schemasDir, schemaGlob)) {
     const data = loadSchemaFile(yamlFile);
@@ -119,10 +102,7 @@ export function checkDirectoryStructure(capDir: string, contract: CapabilitySche
   // capability name from the capDir (last path segment) and look up the
   // module against the resolved Agentera source root, not the capDir.
   const capabilityName = path.basename(capDir);
-  const instructionModulePath = (directoryRules.instructionModulePath ?? directoryRules.instructionPath).replace(
-    /<name>/g,
-    capabilityName,
-  );
+  const instructionModulePath = (directoryRules.instructionModulePath ?? directoryRules.instructionPath).replace(/<name>/g, capabilityName);
   const sourceRoot = resolveSourceRoot();
   const instructionModuleAbs = path.join(sourceRoot, instructionModulePath);
   const isFile = fs.existsSync(instructionModuleAbs) && fs.statSync(instructionModuleAbs).isFile();
@@ -138,11 +118,7 @@ export function checkDirectoryStructure(capDir: string, contract: CapabilitySche
   return errors;
 }
 
-export function checkRequiredGroups(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkRequiredGroups(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   for (const rg of contract.requiredGroups) {
     if (!(rg in groups)) {
@@ -152,11 +128,7 @@ export function checkRequiredGroups(
   return errors;
 }
 
-export function checkNumberedEntries(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkNumberedEntries(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   for (const [groupName, entries] of Object.entries(groups)) {
     if (!contract.requiredGroups.includes(groupName)) {
@@ -175,11 +147,7 @@ export function checkNumberedEntries(
   return errors;
 }
 
-export function checkStableIds(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkStableIds(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   for (const [groupName, entries] of Object.entries(groups)) {
     if (!contract.requiredGroups.includes(groupName)) {
@@ -188,8 +156,7 @@ export function checkStableIds(
     if (!isMapping(entries)) {
       continue;
     }
-    const requiredFields =
-      contract.entryRules.requiredFieldsByGroup[groupName] ?? contract.entryRules.defaultRequiredFields;
+    const requiredFields = contract.entryRules.requiredFieldsByGroup[groupName] ?? contract.entryRules.defaultRequiredFields;
     for (const [key, entry] of Object.entries(entries)) {
       if (!isMapping(entry)) {
         errors.push(`V4 [error]: entry ${key} in ${groupName} in ${sourceLabel} is not a mapping`);
@@ -208,11 +175,7 @@ export function checkStableIds(
   return errors;
 }
 
-export function checkTriggerPriorities(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkTriggerPriorities(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   const triggers = groups.TRIGGERS ?? {};
   if (!isMapping(triggers)) {
@@ -226,11 +189,9 @@ export function checkTriggerPriorities(
     const priority = entry.priority ?? null;
     if (priority === null && priorityRules.required) {
       errors.push(`V5b [error]: TRIGGERS entry ${key} in ${sourceLabel} missing 'priority'`);
-    } else if (priority !== null && !priorityRules.allowedValues.includes(priority as string)) { // cast: parsed schema IO data
-      errors.push(
-        `V5b [error]: TRIGGERS entry ${key} in ${sourceLabel} has invalid priority=${valueRepr(priority)} ` +
-          `(must be one of: ${priorityRules.allowedValues.join(", ")})`,
-      );
+    } else if (priority !== null && !priorityRules.allowedValues.includes(priority as string)) {
+      // cast: parsed schema IO data
+      errors.push(`V5b [error]: TRIGGERS entry ${key} in ${sourceLabel} has invalid priority=${valueRepr(priority)} ` + `(must be one of: ${priorityRules.allowedValues.join(", ")})`);
     }
   }
   return errors;
@@ -246,11 +207,7 @@ export function checkTriggerPriorities(
  * valid range/value and the offending entry ID so authors can locate the
  * violation without grepping the contract.
  */
-export function checkTriggerEnrichment(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkTriggerEnrichment(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const errors: string[] = [];
   const triggers = groups.TRIGGERS ?? {};
   if (!isMapping(triggers)) {
@@ -271,10 +228,7 @@ export function checkTriggerEnrichment(
     if (entry.patterns !== undefined) {
       const value = entry.patterns;
       if (!Array.isArray(value) || !value.every((pattern) => typeof pattern === "string")) {
-        errors.push(
-          `V7 [error]: ${location} has patterns=${valueRepr(value)} ` +
-            `(must be a list of strings)`,
-        );
+        errors.push(`V7 [error]: ${location} has patterns=${valueRepr(value)} ` + `(must be a list of strings)`);
       }
     }
 
@@ -282,16 +236,8 @@ export function checkTriggerEnrichment(
       const value = entry.confidence_threshold;
       const min = confidenceField.min ?? 0;
       const max = confidenceField.max ?? 100;
-      if (
-        typeof value !== "number" ||
-        !Number.isInteger(value) ||
-        value < min ||
-        value > max
-      ) {
-        errors.push(
-          `V7 [error]: ${location} has confidence_threshold=${valueRepr(value)} ` +
-            `(must be an integer in range ${min}..${max})`,
-        );
+      if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
+        errors.push(`V7 [error]: ${location} has confidence_threshold=${valueRepr(value)} ` + `(must be an integer in range ${min}..${max})`);
       }
     }
 
@@ -299,42 +245,26 @@ export function checkTriggerEnrichment(
       const value = entry.borderline_band;
       const min = borderlineField.min ?? 0;
       const max = borderlineField.max ?? 100;
-      if (
-        typeof value !== "number" ||
-        !Number.isInteger(value) ||
-        value < min ||
-        value > max
-      ) {
-        errors.push(
-          `V7 [error]: ${location} has borderline_band=${valueRepr(value)} ` +
-            `(must be an integer in range ${min}..${max})`,
-        );
+      if (typeof value !== "number" || !Number.isInteger(value) || value < min || value > max) {
+        errors.push(`V7 [error]: ${location} has borderline_band=${valueRepr(value)} ` + `(must be an integer in range ${min}..${max})`);
       }
     }
 
     if (entry.patterns_regex !== undefined) {
       const value = entry.patterns_regex;
       if (!Array.isArray(value)) {
-        errors.push(
-          `V7 [error]: ${location} has patterns_regex=${valueRepr(value)} ` +
-            `(must be a list of regex strings)`,
-        );
+        errors.push(`V7 [error]: ${location} has patterns_regex=${valueRepr(value)} ` + `(must be a list of regex strings)`);
       } else {
         for (let i = 0; i < value.length; i++) {
           const pattern = value[i];
           if (typeof pattern !== "string") {
-            errors.push(
-              `V7 [error]: ${location} patterns_regex[${i}] is not a string`,
-            );
+            errors.push(`V7 [error]: ${location} patterns_regex[${i}] is not a string`);
             continue;
           }
           try {
             new RegExp(pattern);
           } catch {
-            errors.push(
-              `V7 [error]: ${location} patterns_regex[${i}]=${valueRepr(pattern)} ` +
-                `is not a valid regular expression`,
-            );
+            errors.push(`V7 [error]: ${location} patterns_regex[${i}]=${valueRepr(pattern)} ` + `is not a valid regular expression`);
           }
         }
       }
@@ -343,38 +273,24 @@ export function checkTriggerEnrichment(
     if (entry.disambiguates_against !== undefined) {
       const value = entry.disambiguates_against;
       if (!Array.isArray(value)) {
-        errors.push(
-          `V7 [error]: ${location} has disambiguates_against=${valueRepr(value)} ` +
-            `(must be a list of mappings each with 'capability' and 'hint')`,
-        );
+        errors.push(`V7 [error]: ${location} has disambiguates_against=${valueRepr(value)} ` + `(must be a list of mappings each with 'capability' and 'hint')`);
         continue;
       }
       for (let i = 0; i < value.length; i++) {
         const item = value[i];
         if (!isMapping(item)) {
-          errors.push(
-            `V7 [error]: ${location} disambiguates_against[${i}] must be a mapping with 'capability' and 'hint'`,
-          );
+          errors.push(`V7 [error]: ${location} disambiguates_against[${i}] must be a mapping with 'capability' and 'hint'`);
           continue;
         }
         const capability = item.capability;
         if (typeof capability !== "string" || !capability) {
-          errors.push(
-            `V7 [error]: ${location} disambiguates_against[${i}] missing 'capability' ` +
-              `(must be one of: ${allowedIds.join(", ")})`,
-          );
+          errors.push(`V7 [error]: ${location} disambiguates_against[${i}] missing 'capability' ` + `(must be one of: ${allowedIds.join(", ")})`);
         } else if (!allowedIds.includes(capability)) {
-          errors.push(
-            `V7 [error]: ${location} disambiguates_against[${i}].capability=${valueRepr(capability)} ` +
-              `is not a canonical capability ID (must be one of: ${allowedIds.join(", ")})`,
-          );
+          errors.push(`V7 [error]: ${location} disambiguates_against[${i}].capability=${valueRepr(capability)} ` + `is not a canonical capability ID (must be one of: ${allowedIds.join(", ")})`);
         }
         const hint = item.hint;
         if (typeof hint !== "string" || hint.trim() === "") {
-          errors.push(
-            `V7 [error]: ${location} disambiguates_against[${i}] missing or empty 'hint' ` +
-              `(must be a non-empty string distinguishing this trigger from the named capability)`,
-          );
+          errors.push(`V7 [error]: ${location} disambiguates_against[${i}] missing or empty 'hint' ` + `(must be a non-empty string distinguishing this trigger from the named capability)`);
         }
       }
     }
@@ -382,11 +298,7 @@ export function checkTriggerEnrichment(
   return errors;
 }
 
-export function checkDeprecation(
-  groups: JsonObject,
-  sourceLabel: string,
-  contract: CapabilitySchemaContract,
-): string[] {
+export function checkDeprecation(groups: JsonObject, sourceLabel: string, contract: CapabilitySchemaContract): string[] {
   const warnings: string[] = [];
   const markerField = contract.deprecationRules.marker_field as string;
   const markerValue = contract.deprecationRules.marker_value;
@@ -412,16 +324,9 @@ export function checkDeprecation(
       if (entry[markerField] === markerValue) {
         const replaced = entry[replacementField];
         if (!replaced) {
-          warnings.push(
-            `V5 [warning]: entry ${key} (${entry.id ?? "?"}) ` +
-              `in ${groupName} in ${sourceLabel} is deprecated but has no ${replacementField}`,
-          );
+          warnings.push(`V5 [warning]: entry ${key} (${entry.id ?? "?"}) ` + `in ${groupName} in ${sourceLabel} is deprecated but has no ${replacementField}`);
         } else if (!validIds.has(replaced)) {
-          warnings.push(
-            `V5 [warning]: entry ${key} (${entry.id ?? "?"}) ` +
-              `in ${groupName} in ${sourceLabel} has ${replacementField}=${valueRepr(replaced)} ` +
-              `which does not match any entry ID`,
-          );
+          warnings.push(`V5 [warning]: entry ${key} (${entry.id ?? "?"}) ` + `in ${groupName} in ${sourceLabel} has ${replacementField}=${valueRepr(replaced)} ` + `which does not match any entry ID`);
         }
       }
     }
@@ -462,11 +367,7 @@ export function validateCapability(capDir: string, contractPath: string): string
 
   const schemasDir = path.join(capDir, contract.directoryRules.schemasPath);
   if (fs.existsSync(schemasDir) && fs.statSync(schemasDir).isDirectory()) {
-    const groups = collectSchemaGroups(
-      schemasDir,
-      contract.requiredGroups,
-      contract.directoryRules.schemaGlob,
-    );
+    const groups = collectSchemaGroups(schemasDir, contract.requiredGroups, contract.directoryRules.schemaGlob);
     allErrors.push(...checkRequiredGroups(groups, capDir, contract));
     allErrors.push(...checkNumberedEntries(groups, capDir, contract));
     allErrors.push(...checkStableIds(groups, capDir, contract));
@@ -534,10 +435,7 @@ export function checkProtocolStructure(protocolData: JsonObject, sourceLabel: st
       } else {
         const eid = entry.id as string;
         if (expectedPrefix && !eid.startsWith(expectedPrefix)) {
-          errors.push(
-            `[error]: entry ${key} id=${valueRepr(eid)} in ${groupName} ` +
-              `does not match prefix ${valueRepr(expectedPrefix)}`,
-          );
+          errors.push(`[error]: entry ${key} id=${valueRepr(eid)} in ${groupName} ` + `does not match prefix ${valueRepr(expectedPrefix)}`);
         }
         validIds.add(eid);
       }
@@ -550,16 +448,10 @@ export function checkProtocolStructure(protocolData: JsonObject, sourceLabel: st
       if (entry.deprecated) {
         const replaced = entry.replaced_by;
         if (!replaced) {
-          errors.push(
-            `[warning]: entry ${key} (${entry.id ?? "?"}) ` +
-              `in ${groupName} is deprecated but has no replaced_by`,
-          );
-        } else if (!validIds.has(replaced as string)) { // cast: parsed protocol IO data
-          errors.push(
-            `[warning]: entry ${key} (${entry.id ?? "?"}) ` +
-              `in ${groupName} has replaced_by=${valueRepr(replaced)} ` +
-              `which does not match any entry ID`,
-          );
+          errors.push(`[warning]: entry ${key} (${entry.id ?? "?"}) ` + `in ${groupName} is deprecated but has no replaced_by`);
+        } else if (!validIds.has(replaced as string)) {
+          // cast: parsed protocol IO data
+          errors.push(`[warning]: entry ${key} (${entry.id ?? "?"}) ` + `in ${groupName} has replaced_by=${valueRepr(replaced)} ` + `which does not match any entry ID`);
         }
       }
     }
@@ -591,17 +483,11 @@ export function checkPhaseTransitions(protocolData: JsonObject, sourceLabel: str
     const entryId = entry.id ?? `entry ${key}`;
     for (const s of successors) {
       if (!phaseValues.has(s)) {
-        errors.push(
-          `[error]: ${entryId} in PHASES has valid_successors entry ` +
-            `${valueRepr(s)} which is not a defined phase value`,
-        );
+        errors.push(`[error]: ${entryId} in PHASES has valid_successors entry ` + `${valueRepr(s)} which is not a defined phase value`);
       }
     }
     if (entry.self_transition && !successors.includes(entry.value as string)) {
-      errors.push(
-        `[error]: ${entryId} in PHASES has self_transition=true ` +
-          `but ${valueRepr(entry.value)} not in valid_successors`,
-      );
+      errors.push(`[error]: ${entryId} in PHASES has self_transition=true ` + `but ${valueRepr(entry.value)} not in valid_successors`);
     }
   }
 
@@ -616,11 +502,7 @@ export function validateProtocolSelf(protocolPath: string): string[] {
   return errors;
 }
 
-export function checkPrimitiveReferences(
-  capDir: string,
-  protocolPath: string,
-  contractPath = "skills/agentera/capability_schema_contract.yaml",
-): string[] {
+export function checkPrimitiveReferences(capDir: string, protocolPath: string, contractPath = "skills/agentera/capability_schema_contract.yaml"): string[] {
   const contract = loadCapabilitySchemaContract(contractPath);
   const protocolData = loadProtocol(protocolPath);
   const lookup = buildProtocolValueLookup(protocolData);
@@ -651,17 +533,14 @@ export function checkPrimitiveReferences(
           for (const v of valuesToCheck) {
             let resolved = false;
             for (const pg of protocolGroups) {
-              if (pg in lookup && lookup[pg].has(v as string)) { // cast: parsed schema/protocol IO data
+              if (pg in lookup && lookup[pg].has(v as string)) {
+                // cast: parsed schema/protocol IO data
                 resolved = true;
                 break;
               }
             }
             if (!resolved) {
-              errors.push(
-                `[error]: ${entryId} field ${fieldName}=${valueRepr(v)} ` +
-                  `does not resolve to any protocol primitive ` +
-                  `in groups ${pyListRepr(protocolGroups)}`,
-              );
+              errors.push(`[error]: ${entryId} field ${fieldName}=${valueRepr(v)} ` + `does not resolve to any protocol primitive ` + `in groups ${pyListRepr(protocolGroups)}`);
             }
           }
         }

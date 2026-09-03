@@ -8,12 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { main } from "../../src/cli/dispatch.js";
-import {
-  renderVerifySummary,
-  type VerifyResult,
-  verifyOneWayUpgrade,
-  verifyUpgrade,
-} from "../../src/cli/commands/upgradeVerify.js";
+import { renderVerifySummary, type VerifyResult, verifyOneWayUpgrade, verifyUpgrade } from "../../src/cli/commands/upgradeVerify.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { gitCommitArgs } from "../helpers/git.js";
@@ -30,14 +25,8 @@ function managedV3(appHome: string, version: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version }));
 }
 
 beforeEach(() => {
@@ -127,7 +116,11 @@ describe("renderVerifySummary", () => {
       status: string;
       checks: Array<{ name: string; passed: boolean; detail: string }>;
     };
-    expect(parsed).toEqual({ command: "upgrade --verify", status: "failed", checks: result.checks });
+    expect(parsed).toEqual({
+      command: "upgrade --verify",
+      status: "failed",
+      checks: result.checks,
+    });
   });
 
   it("emits a text summary with a status line and per-check rows", () => {
@@ -162,37 +155,16 @@ describe("cli dispatch: upgrade --verify", () => {
   });
 
   it("upgrade --verify --install-root <missing> exits non-zero with a failed doctor check", () => {
-    const { rc, out } = capture([
-      "node",
-      "agentera",
-      "upgrade",
-      "--verify",
-      "--install-root",
-      path.join(tmp, "no-such-app"),
-      "--home",
-      home,
-      "--expected-version",
-      "3.0.0",
-    ]);
+    const { rc, out } = capture(["node", "agentera", "upgrade", "--verify", "--install-root", path.join(tmp, "no-such-app"), "--home", home, "--expected-version", "3.0.0"]);
     expect(rc).toBe(1);
-    expect(JSON.parse(out)).toMatchObject({ status: "failed", checks: expect.arrayContaining([expect.objectContaining({ name: "doctor", passed: false })]) });
+    expect(JSON.parse(out)).toMatchObject({
+      status: "failed",
+      checks: expect.arrayContaining([expect.objectContaining({ name: "doctor", passed: false })]),
+    });
   });
 
   it("upgrade --verify emits the envelope on stdout", () => {
-    const { rc, out } = capture([
-      "node",
-      "agentera",
-      "upgrade",
-      "--verify",
-      "--format",
-      "json",
-      "--install-root",
-      path.join(tmp, "no-such-app-json"),
-      "--home",
-      home,
-      "--expected-version",
-      "3.0.0",
-    ]);
+    const { rc, out } = capture(["node", "agentera", "upgrade", "--verify", "--format", "json", "--install-root", path.join(tmp, "no-such-app-json"), "--home", home, "--expected-version", "3.0.0"]);
     expect(rc).toBe(1);
     const parsed = JSON.parse(out) as { command: string; status: string };
     expect(parsed.command).toBe("upgrade --verify");
@@ -211,34 +183,23 @@ describe("verify", () => {
   it("fullUpgradeThenDoctorAndPrime: upgrade --yes --verify exits 0 after state and startup validation", () => {
     const appHome = path.join(home, ".local", "share", "agentera");
     fs.mkdirSync(appHome, { recursive: true });
-    fs.copyFileSync(
-      path.join(REPO_ROOT, "packages/cli/test/migrate/fixtures/v2-handoff-manifest.json"),
-      path.join(appHome, "v3-handoff.json"),
-    );
+    fs.copyFileSync(path.join(REPO_ROOT, "packages/cli/test/migrate/fixtures/v2-handoff-manifest.json"), path.join(appHome, "v3-handoff.json"));
     const project = path.join(tmp, "v2-project");
-    fs.cpSync(path.join(REPO_ROOT, "packages/cli/test/upgrade/fixtures/v2-yaml-project"), project, { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "packages/cli/test/upgrade/fixtures/v2-yaml-project"), project, {
+      recursive: true,
+    });
     execFileSync("git", ["init", "--quiet"], { cwd: project });
     execFileSync("git", ["add", "."], { cwd: project });
     execFileSync("git", gitCommitArgs("--quiet", "-m", "v2 state"), { cwd: project });
 
-    const { rc, out, err } = capture([
-      "node",
-      "agentera",
-      "upgrade",
-      "--yes",
-      "--verify",
-      "--home",
-      home,
-      "--install-root",
-      appHome,
-      "--project",
-      project,
-      "--channel",
-      "development",
-    ]);
+    const { rc, out, err } = capture(["node", "agentera", "upgrade", "--yes", "--verify", "--home", home, "--install-root", appHome, "--project", project, "--channel", "development"]);
 
     expect(rc, `${out}\n${err}`).toBe(0);
-    expect(JSON.parse(out)).toMatchObject({ status: "success", state_validation: { status: "passed" }, startup_validation: { status: "passed" } });
+    expect(JSON.parse(out)).toMatchObject({
+      status: "success",
+      state_validation: { status: "passed" },
+      startup_validation: { status: "passed" },
+    });
     expect(err).toBe("");
   });
 

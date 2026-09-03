@@ -55,11 +55,7 @@ function sourceFixture() {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-authority-"));
   const file = path.join(root, PENDING_PATH);
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, [
-    'describe("generated generation publication", () => {',
-    '  it.runIf(process.platform === "darwin")("reads one real Darwin process identity independently of caller locale and timezone", () => {});',
-    "});",
-  ].join("\n"));
+  fs.writeFileSync(file, ['describe("generated generation publication", () => {', '  it.runIf(process.platform === "darwin")("reads one real Darwin process identity independently of caller locale and timezone", () => {});', "});"].join("\n"));
   const overlapTest = path.join(root, "packages/cli/test/verification/overlapPending.test.ts");
   fs.mkdirSync(path.dirname(overlapTest), { recursive: true });
   fs.writeFileSync(overlapTest, "// source fixture\n");
@@ -141,31 +137,20 @@ function expectUnknownOwnerFailure(policyBytes: Buffer) {
   });
   expect(result.status).toBe(2);
   expect(Buffer.byteLength(result.stderr, "utf8")).toBeLessThanOrEqual(8192);
-  expect(result.stderr).toContain(
-    "verification policy: policy 'targeted' names invalid owner 'unknown'",
-  );
+  expect(result.stderr).toContain("verification policy: policy 'targeted' names invalid owner 'unknown'");
   expect(result.stderr).toContain("correction:");
   expect(result.stderr).not.toMatch(/(?:Syntax|Type)Error|\n\s+at\s/);
 }
 
 describe("serialized overlap evidence boundary", () => {
   it("exports only serialized-boundary operations", () => {
-    expect(Object.keys(overlap).sort()).toEqual([
-      "loadVerificationPolicy",
-      "normalizeReporterSuiteAggregates",
-      "validatePendingAuthority",
-      "validatePendingTests",
-    ]);
+    expect(Object.keys(overlap).sort()).toEqual(["loadVerificationPolicy", "normalizeReporterSuiteAggregates", "validatePendingAuthority", "validatePendingTests"]);
   });
 
   it("accepts governed YAML and parent-owned JSON result bytes", () => {
     const root = sourceFixture();
-    const sourceReport = result([
-      suite("packages/cli/test/verification/overlapPending.test.ts", undefined, "passed", root),
-      suite(PENDING_PATH, [assertion("generation always executes"), assertion(PENDING_NAME, "skipped")], "passed", root),
-    ]);
-    expect(validate("source", bytes(sourceReport), ["packages/cli/test/verification/overlapPending.test.ts", PENDING_PATH], root))
-      .toEqual([{ path: PENDING_PATH, name: PENDING_NAME, status: "skipped" }]);
+    const sourceReport = result([suite("packages/cli/test/verification/overlapPending.test.ts", undefined, "passed", root), suite(PENDING_PATH, [assertion("generation always executes"), assertion(PENDING_NAME, "skipped")], "passed", root)]);
+    expect(validate("source", bytes(sourceReport), ["packages/cli/test/verification/overlapPending.test.ts", PENDING_PATH], root)).toEqual([{ path: PENDING_PATH, name: PENDING_NAME, status: "skipped" }]);
     expect(validate("package", bytes(result([suite(PACKAGE_FILE)])), [PACKAGE_FILE])).toEqual([]);
   });
 

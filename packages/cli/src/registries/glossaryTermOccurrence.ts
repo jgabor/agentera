@@ -12,11 +12,7 @@ function escapeRegExp(value: string): string {
  */
 export function containsGlossaryTerm(line: string, term: string): boolean {
   const characters = [...term];
-  const prefix = identifierContinuation.test(characters[0] ?? "")
-    ? `(?<!${IDENTIFIER_CONTINUATION})`
-    : "";
-  const suffix = identifierContinuation.test(characters.at(-1) ?? "")
-    ? `(?!${IDENTIFIER_CONTINUATION})`
-    : "";
+  const prefix = identifierContinuation.test(characters[0] ?? "") ? `(?<!${IDENTIFIER_CONTINUATION})` : "";
+  const suffix = identifierContinuation.test(characters.at(-1) ?? "") ? `(?!${IDENTIFIER_CONTINUATION})` : "";
   return new RegExp(`${prefix}${escapeRegExp(term)}${suffix}`, "u").test(line);
 }

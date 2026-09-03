@@ -5,6 +5,5 @@ export function isGlossaryIsoCalendarDate(value: unknown): value is string {
   if (!match) return false;
   const [, year, month, day] = match.map(Number);
   const date = new Date(`${value}T00:00:00.000Z`);
-  return !Number.isNaN(date.getTime()) && date.getUTCFullYear() === year &&
-    date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
+  return !Number.isNaN(date.getTime()) && date.getUTCFullYear() === year && date.getUTCMonth() + 1 === month && date.getUTCDate() === day;
 }

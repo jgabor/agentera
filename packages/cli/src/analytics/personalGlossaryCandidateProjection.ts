@@ -2,24 +2,10 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { personalGlossaryCandidateProjectionContract } from "../registries/glossaryCandidateProjectionContract.js";
-import {
-  validateGlossaryEvidenceCapsule,
-  type GlossaryEvidenceCapsule,
-} from "../registries/glossaryCandidateContracts.js";
-import {
-  canonicalGlossaryJson,
-  compareGlossaryUnicodeStrings,
-  glossaryCanonicalSha256,
-} from "../registries/glossaryTermIdentity.js";
+import { validateGlossaryEvidenceCapsule, type GlossaryEvidenceCapsule } from "../registries/glossaryCandidateContracts.js";
+import { canonicalGlossaryJson, compareGlossaryUnicodeStrings, glossaryCanonicalSha256 } from "../registries/glossaryTermIdentity.js";
 import { defaultProfileDir } from "./extractCorpus/core.js";
-import {
-  EXCERPT_OMISSION_REASONS,
-  containsPersonalGlossarySensitiveContent,
-  personalGlossaryCandidateProjectionExcerptExpiry,
-  selectPersonalGlossarySafeExcerpt,
-  validPersonalGlossarySafeExcerpt,
-  type ExcerptOmissionReason,
-} from "./personalGlossaryCandidateProjectionExcerpts.js";
+import { EXCERPT_OMISSION_REASONS, containsPersonalGlossarySensitiveContent, personalGlossaryCandidateProjectionExcerptExpiry, selectPersonalGlossarySafeExcerpt, validPersonalGlossarySafeExcerpt, type ExcerptOmissionReason } from "./personalGlossaryCandidateProjectionExcerpts.js";
 import type {
   PersonalGlossaryCandidateProjection,
   PersonalGlossaryCandidateProjectionInput,
@@ -70,9 +56,7 @@ interface MergedCandidate {
 }
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function compareText(left: string, right: string): number {
@@ -89,11 +73,7 @@ function validTimestamp(value: unknown): value is string {
 }
 
 function requireBoundedText(value: unknown, maximum: number, label: string): string {
-  if (
-    typeof value !== "string" ||
-    value.length === 0 ||
-    Buffer.byteLength(value, "utf8") > maximum
-  ) {
+  if (typeof value !== "string" || value.length === 0 || Buffer.byteLength(value, "utf8") > maximum) {
     throw new TypeError(`${label} is outside its bound`);
   }
   return value;
@@ -109,8 +89,7 @@ function projectionContract(): ProjectionContract {
     contract.projectIdsMaxPerCandidate !== 100 ||
     contract.sourceExcerptMaxUtf8Bytes !== 4096 ||
     contract.pendingExcerptDays !== 30 ||
-    contract.selectionAlgorithm !==
-      "least_retained_source_family_then_project_then_canonical_candidate" ||
+    contract.selectionAlgorithm !== "least_retained_source_family_then_project_then_canonical_candidate" ||
     contract.tieBreak !== "candidate_id_then_candidate_revision_then_capsule_sha256" ||
     contract.projectIdentitySchemaVersion !== PROJECT_IDENTITY_SCHEMA_VERSION ||
     contract.storageFile !== "candidate-projection.json" ||
@@ -121,8 +100,7 @@ function projectionContract(): ProjectionContract {
     contract.recurringAbstentionKeys.length !== 12 ||
     JSON.stringify(Object.keys(families)) !== JSON.stringify(["explicit", "recurring"]) ||
     JSON.stringify(families.explicit) !== JSON.stringify(["personal_explicit_definition"]) ||
-    JSON.stringify(families.recurring) !==
-      JSON.stringify(["personal_inferred_usage", "personal_inferred_conversation"])
+    JSON.stringify(families.recurring) !== JSON.stringify(["personal_inferred_usage", "personal_inferred_conversation"])
   ) {
     throw new TypeError("personal glossary candidate projection contract is invalid");
   }
@@ -133,10 +111,7 @@ function zeroReasons(keys: readonly string[]): Record<string, number> {
   return Object.fromEntries(keys.map((key) => [key, 0]));
 }
 
-function projectionMiningSummary(
-  input: PersonalGlossaryCandidateProjectionInput,
-  contract: ProjectionContract,
-): PersonalGlossaryMiningSummary {
+function projectionMiningSummary(input: PersonalGlossaryCandidateProjectionInput, contract: ProjectionContract): PersonalGlossaryMiningSummary {
   if (input.mining_summary) return input.mining_summary;
   let explicit = 0;
   let recurring = 0;
@@ -164,42 +139,38 @@ function projectionMiningSummary(
 function validMiningFamily(value: unknown, keys: readonly string[]): boolean {
   const family = mapping(value);
   const reasons = mapping(family?.abstentions_by_reason);
-  return family !== null && reasons !== null &&
+  return (
+    family !== null &&
+    reasons !== null &&
     exactKeys(family, ["candidate_count", "abstention_count", "abstentions_by_reason"]) &&
-    nonNegativeInteger(family.candidate_count) && nonNegativeInteger(family.abstention_count) &&
-    exactKeys(reasons, keys) && Object.values(reasons).every(nonNegativeInteger) &&
-    family.abstention_count === Object.values(reasons).reduce<number>((sum, count) => sum + Number(count), 0);
+    nonNegativeInteger(family.candidate_count) &&
+    nonNegativeInteger(family.abstention_count) &&
+    exactKeys(reasons, keys) &&
+    Object.values(reasons).every(nonNegativeInteger) &&
+    family.abstention_count === Object.values(reasons).reduce<number>((sum, count) => sum + Number(count), 0)
+  );
 }
 
-function validMiningSummary(
-  value: unknown,
-  inputCount: number,
-  contract: ProjectionContract,
-): value is PersonalGlossaryMiningSummary {
+function validMiningSummary(value: unknown, inputCount: number, contract: ProjectionContract): value is PersonalGlossaryMiningSummary {
   const summary = mapping(value);
-  if (summary === null || !exactKeys(summary, [
-    "schema_version", "explicit", "recurring", "total_candidate_count", "total_abstention_count",
-  ]) || summary.schema_version !== MINING_SUMMARY_SCHEMA_VERSION ||
+  if (
+    summary === null ||
+    !exactKeys(summary, ["schema_version", "explicit", "recurring", "total_candidate_count", "total_abstention_count"]) ||
+    summary.schema_version !== MINING_SUMMARY_SCHEMA_VERSION ||
     !validMiningFamily(summary.explicit, contract.explicitAbstentionKeys) ||
     !validMiningFamily(summary.recurring, contract.recurringAbstentionKeys) ||
     !nonNegativeInteger(summary.total_candidate_count) ||
-    !nonNegativeInteger(summary.total_abstention_count)) return false;
+    !nonNegativeInteger(summary.total_abstention_count)
+  )
+    return false;
   const explicit = summary.explicit as PersonalGlossaryMiningFamilySummary;
   const recurring = summary.recurring as PersonalGlossaryMiningFamilySummary;
-  return summary.total_candidate_count === explicit.candidate_count + recurring.candidate_count &&
-    summary.total_candidate_count === inputCount &&
-    summary.total_abstention_count === explicit.abstention_count + recurring.abstention_count;
+  return summary.total_candidate_count === explicit.candidate_count + recurring.candidate_count && summary.total_candidate_count === inputCount && summary.total_abstention_count === explicit.abstention_count + recurring.abstention_count;
 }
 
-function sourceFamily(
-  capsule: GlossaryEvidenceCapsule,
-  contract: ProjectionContract,
-): SourceFamily {
-  const matches = (Object.entries(contract.sourceFamilies) as Array<[SourceFamily, string[]]>)
-    .filter(([, kinds]) => kinds.includes(capsule.provenance_kind))
-    .map(([family]) => family);
-  if (matches.length !== 1)
-    throw new TypeError("candidate provenance has no projection source family");
+function sourceFamily(capsule: GlossaryEvidenceCapsule, contract: ProjectionContract): SourceFamily {
+  const matches = (Object.entries(contract.sourceFamilies) as Array<[SourceFamily, string[]]>).filter(([, kinds]) => kinds.includes(capsule.provenance_kind)).map(([family]) => family);
+  if (matches.length !== 1) throw new TypeError("candidate provenance has no projection source family");
   return matches[0]!;
 }
 
@@ -215,41 +186,23 @@ export function personalGlossaryProjectionProjectIdentity(projectId: string): st
 }
 
 function candidateOrder(left: MergedCandidate, right: MergedCandidate): number {
-  return (
-    compareText(left.capsule.candidate_id, right.capsule.candidate_id) ||
-    compareText(left.capsule.candidate_revision, right.capsule.candidate_revision) ||
-    compareText(left.capsule.capsule_sha256, right.capsule.capsule_sha256)
-  );
+  return compareText(left.capsule.candidate_id, right.capsule.candidate_id) || compareText(left.capsule.candidate_revision, right.capsule.candidate_revision) || compareText(left.capsule.capsule_sha256, right.capsule.capsule_sha256);
 }
 
 function candidateKey(capsule: GlossaryEvidenceCapsule): string {
   return `${capsule.candidate_id}\u0000${capsule.candidate_revision}`;
 }
 
-function projectCandidate(
-  candidate: PersonalGlossaryProjectionCandidateInput,
-  input: PersonalGlossaryCandidateProjectionInput,
-  contract: ProjectionContract,
-): MergedCandidate {
+function projectCandidate(candidate: PersonalGlossaryProjectionCandidateInput, input: PersonalGlossaryCandidateProjectionInput, contract: ProjectionContract): MergedCandidate {
   const errors = validateGlossaryEvidenceCapsule(candidate.capsule);
   if (errors.length > 0) throw new TypeError("candidate capsule is invalid");
-  if (
-    containsPersonalGlossarySensitiveContent(candidate.capsule.term) ||
-    containsPersonalGlossarySensitiveContent(candidate.capsule.meaning)
-  ) {
+  if (containsPersonalGlossarySensitiveContent(candidate.capsule.term) || containsPersonalGlossarySensitiveContent(candidate.capsule.meaning)) {
     throw new TypeError(`candidate content is ineligible: ${contract.candidateSecretReason}`);
   }
-  if (
-    candidate.capsule.generation !== input.generation ||
-    candidate.capsule.policy_version !== input.policy_version
-  ) {
+  if (candidate.capsule.generation !== input.generation || candidate.capsule.policy_version !== input.policy_version) {
     throw new TypeError("candidate capsule bindings do not match projection input");
   }
-  if (
-    !Array.isArray(candidate.project_ids) ||
-    candidate.project_ids.length === 0 ||
-    candidate.project_ids.length > contract.projectIdsMaxPerCandidate
-  ) {
+  if (!Array.isArray(candidate.project_ids) || candidate.project_ids.length === 0 || candidate.project_ids.length > contract.projectIdsMaxPerCandidate) {
     throw new TypeError("candidate project identities are outside their bound");
   }
   const projectKeys = new Set<string>();
@@ -272,10 +225,7 @@ function projectCandidate(
   };
 }
 
-function mergeCandidates(
-  input: PersonalGlossaryCandidateProjectionInput,
-  contract: ProjectionContract,
-): { candidates: MergedCandidate[]; duplicates: number } {
+function mergeCandidates(input: PersonalGlossaryCandidateProjectionInput, contract: ProjectionContract): { candidates: MergedCandidate[]; duplicates: number } {
   const merged = new Map<string, MergedCandidate>();
   let duplicates = 0;
   for (const rawCandidate of input.candidates) {
@@ -286,10 +236,7 @@ function mergeCandidates(
       merged.set(key, candidate);
       continue;
     }
-    if (
-      existing.capsule.capsule_sha256 !== candidate.capsule.capsule_sha256 ||
-      canonicalGlossaryJson(existing.capsule) !== canonicalGlossaryJson(candidate.capsule)
-    ) {
+    if (existing.capsule.capsule_sha256 !== candidate.capsule.capsule_sha256 || canonicalGlossaryJson(existing.capsule) !== canonicalGlossaryJson(candidate.capsule)) {
       throw new TypeError("candidate revision collision has non-identical capsule bytes");
     }
     duplicates += 1;
@@ -323,33 +270,21 @@ function countByProject(candidates: readonly MergedCandidate[]): Map<string, num
   return counts;
 }
 
-function selectCandidates(
-  candidates: readonly MergedCandidate[],
-  contract: ProjectionContract,
-): { retained: MergedCandidate[]; ties: number } {
+function selectCandidates(candidates: readonly MergedCandidate[], contract: ProjectionContract): { retained: MergedCandidate[]; ties: number } {
   const remaining = [...candidates];
   const familyRetained = new Map<SourceFamily, number>([
     ["explicit", 0],
     ["recurring", 0],
   ]);
-  const projectRetained = new Map<string, number>(
-    [...countByProject(candidates).keys()].map((projectKey) => [projectKey, 0]),
-  );
+  const projectRetained = new Map<string, number>([...countByProject(candidates).keys()].map((projectKey) => [projectKey, 0]));
   const retained: MergedCandidate[] = [];
   let ties = 0;
-  const rank = (candidate: MergedCandidate): [number, number] => [
-    familyRetained.get(candidate.sourceFamily) ?? 0,
-    Math.min(
-      ...[...candidate.projectKeys].map((projectKey) => projectRetained.get(projectKey) ?? 0),
-    ),
-  ];
+  const rank = (candidate: MergedCandidate): [number, number] => [familyRetained.get(candidate.sourceFamily) ?? 0, Math.min(...[...candidate.projectKeys].map((projectKey) => projectRetained.get(projectKey) ?? 0))];
   while (remaining.length > 0 && retained.length < contract.candidatesMax) {
     remaining.sort((left, right) => {
       const leftRank = rank(left);
       const rightRank = rank(right);
-      return (
-        leftRank[0] - rightRank[0] || leftRank[1] - rightRank[1] || candidateOrder(left, right)
-      );
+      return leftRank[0] - rightRank[0] || leftRank[1] - rightRank[1] || candidateOrder(left, right);
     });
     const next = remaining.shift()!;
     const nextRank = rank(next);
@@ -371,10 +306,7 @@ function selectCandidates(
 }
 
 function emptyOmissions(): Record<ExcerptOmissionReason, number> {
-  return Object.fromEntries(EXCERPT_OMISSION_REASONS.map((reason) => [reason, 0])) as Record<
-    ExcerptOmissionReason,
-    number
-  >;
+  return Object.fromEntries(EXCERPT_OMISSION_REASONS.map((reason) => [reason, 0])) as Record<ExcerptOmissionReason, number>;
 }
 
 /**
@@ -382,9 +314,7 @@ function emptyOmissions(): Record<ExcerptOmissionReason, number> {
  * producer seam only. It deliberately exposes no list, exact-read, review, or
  * publication CLI behavior.
  */
-export function projectPersonalGlossaryCandidates(
-  input: PersonalGlossaryCandidateProjectionInput,
-): PersonalGlossaryCandidateProjection {
+export function projectPersonalGlossaryCandidates(input: PersonalGlossaryCandidateProjectionInput): PersonalGlossaryCandidateProjection {
   const contract = projectionContract();
   requireBoundedText(input.generation, 256, "projection generation");
   requireBoundedText(input.policy_version, 256, "projection policy version");
@@ -410,12 +340,7 @@ export function projectPersonalGlossaryCandidates(
   let redacted = 0;
   let truncated = 0;
   const candidates = selected.retained.map((candidate) => {
-    const excerpt = selectPersonalGlossarySafeExcerpt(
-      candidate.excerpts,
-      candidate.capsule.term,
-      input.retained_at,
-      contract,
-    );
+    const excerpt = selectPersonalGlossarySafeExcerpt(candidate.excerpts, candidate.capsule.term, input.retained_at, contract);
     provided += excerpt.provided;
     if (excerpt.excerpt !== null) {
       safeRetained += 1;
@@ -432,18 +357,9 @@ export function projectPersonalGlossaryCandidates(
     };
   });
   const capApplied = merged.candidates.length > contract.candidatesMax;
-  const uncoveredSourceFamilies = (["explicit", "recurring"] as const).filter(
-    (family) =>
-      (availableByFamily.get(family) ?? 0) > 0 && (retainedByFamily.get(family) ?? 0) === 0,
-  );
-  const uncoveredProjects = [...availableByProject.keys()].filter(
-    (projectKey) => (retainedByProject.get(projectKey) ?? 0) === 0,
-  ).length;
-  const coverageReasons = [
-    ...(capApplied ? ["candidate_cap"] : []),
-    ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []),
-    ...(uncoveredProjects > 0 ? ["project_uncovered"] : []),
-  ];
+  const uncoveredSourceFamilies = (["explicit", "recurring"] as const).filter((family) => (availableByFamily.get(family) ?? 0) > 0 && (retainedByFamily.get(family) ?? 0) === 0);
+  const uncoveredProjects = [...availableByProject.keys()].filter((projectKey) => (retainedByProject.get(projectKey) ?? 0) === 0).length;
+  const coverageReasons = [...(capApplied ? ["candidate_cap"] : []), ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(uncoveredProjects > 0 ? ["project_uncovered"] : [])];
   const report: PersonalGlossaryCandidateProjectionReport = {
     schema_version: PROJECTION_REPORT_SCHEMA_VERSION,
     input_count: input.candidates.length,
@@ -499,16 +415,9 @@ export function projectPersonalGlossaryCandidates(
   };
 }
 
-export function personalGlossaryCandidateProjectionPath(
-  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
-): string {
+export function personalGlossaryCandidateProjectionPath(options: PersonalGlossaryCandidateProjectionStorageOptions = {}): string {
   const contract = projectionContract();
-  return path.join(
-    defaultProfileDir(options.env ?? process.env, options.platform ?? process.platform),
-    "intermediate",
-    "personal-glossary",
-    contract.storageFile,
-  );
+  return path.join(defaultProfileDir(options.env ?? process.env, options.platform ?? process.platform), "intermediate", "personal-glossary", contract.storageFile);
 }
 
 function privateWrite(pathname: string, text: string): void {
@@ -562,29 +471,9 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
   const omissions = mapping(excerpts?.omissions);
   if (
     report === null ||
-    !exactKeys(report, [
-      "schema_version",
-      "input_count",
-      "duplicate_count",
-      "unique_count",
-      "retained_count",
-      "dropped_count",
-      "cap",
-      "allocation",
-      "source_families",
-      "projects",
-      "coverage",
-      "excerpts",
-      "mining_summary",
-    ]) ||
+    !exactKeys(report, ["schema_version", "input_count", "duplicate_count", "unique_count", "retained_count", "dropped_count", "cap", "allocation", "source_families", "projects", "coverage", "excerpts", "mining_summary"]) ||
     report.schema_version !== PROJECTION_REPORT_SCHEMA_VERSION ||
-    ![
-      report.input_count,
-      report.duplicate_count,
-      report.unique_count,
-      report.retained_count,
-      report.dropped_count,
-    ].every(nonNegativeInteger) ||
+    ![report.input_count, report.duplicate_count, report.unique_count, report.retained_count, report.dropped_count].every(nonNegativeInteger) ||
     cap === null ||
     !exactKeys(cap, ["maximum", "applied"]) ||
     cap.maximum !== projectionContract().candidatesMax ||
@@ -600,41 +489,17 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
     !exactKeys(projects, ["available", "retained", "dropped"]) ||
     !Object.values(projects).every(nonNegativeInteger) ||
     coverage === null ||
-    !exactKeys(coverage, [
-      "status",
-      "reasons",
-      "uncovered_source_families",
-      "uncovered_projects",
-    ]) ||
+    !exactKeys(coverage, ["status", "reasons", "uncovered_source_families", "uncovered_projects"]) ||
     !["complete", "degraded"].includes(String(coverage.status)) ||
     !Array.isArray(coverage.reasons) ||
-    coverage.reasons.some(
-      (reason) =>
-        typeof reason !== "string" ||
-        !["candidate_cap", "source_family_uncovered", "project_uncovered"].includes(reason),
-    ) ||
+    coverage.reasons.some((reason) => typeof reason !== "string" || !["candidate_cap", "source_family_uncovered", "project_uncovered"].includes(reason)) ||
     !Array.isArray(coverage.uncovered_source_families) ||
-    coverage.uncovered_source_families.some(
-      (family) => family !== "explicit" && family !== "recurring",
-    ) ||
+    coverage.uncovered_source_families.some((family) => family !== "explicit" && family !== "recurring") ||
     !nonNegativeInteger(coverage.uncovered_projects) ||
     !validMiningSummary(report.mining_summary, Number(report.input_count), projectionContract()) ||
     excerpts === null ||
-    !exactKeys(excerpts, [
-      "provided",
-      "retained",
-      "redacted",
-      "truncated",
-      "expired",
-      "omissions",
-    ]) ||
-    ![
-      excerpts.provided,
-      excerpts.retained,
-      excerpts.redacted,
-      excerpts.truncated,
-      excerpts.expired,
-    ].every(nonNegativeInteger) ||
+    !exactKeys(excerpts, ["provided", "retained", "redacted", "truncated", "expired", "omissions"]) ||
+    ![excerpts.provided, excerpts.retained, excerpts.redacted, excerpts.truncated, excerpts.expired].every(nonNegativeInteger) ||
     omissions === null ||
     !exactKeys(omissions, EXCERPT_OMISSION_REASONS) ||
     !Object.values(omissions).every(nonNegativeInteger)
@@ -643,35 +508,19 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
   }
   return report.source_families.every((family) => {
     const item = mapping(family);
-    return (
-      item !== null &&
-      exactKeys(item, ["family", "available", "retained", "dropped"]) &&
-      (item.family === "explicit" || item.family === "recurring") &&
-      [item.available, item.retained, item.dropped].every(nonNegativeInteger)
-    );
+    return item !== null && exactKeys(item, ["family", "available", "retained", "dropped"]) && (item.family === "explicit" || item.family === "recurring") && [item.available, item.retained, item.dropped].every(nonNegativeInteger);
   });
 }
 
-function projectedCandidateOrder(
-  left: ProjectedPersonalGlossaryCandidate,
-  right: ProjectedPersonalGlossaryCandidate,
-): number {
-  return (
-    compareText(left.capsule.candidate_id, right.capsule.candidate_id) ||
-    compareText(left.capsule.candidate_revision, right.capsule.candidate_revision) ||
-    compareText(left.capsule.capsule_sha256, right.capsule.capsule_sha256)
-  );
+function projectedCandidateOrder(left: ProjectedPersonalGlossaryCandidate, right: ProjectedPersonalGlossaryCandidate): number {
+  return compareText(left.capsule.candidate_id, right.capsule.candidate_id) || compareText(left.capsule.candidate_revision, right.capsule.candidate_revision) || compareText(left.capsule.capsule_sha256, right.capsule.capsule_sha256);
 }
 
 function sameTextArray(left: readonly string[], right: readonly string[]): boolean {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
-function validProjectedCandidate(
-  value: unknown,
-  projection: Pick<PersonalGlossaryCandidateProjection, "generation" | "policy_version" | "retained_at">,
-  contract: ProjectionContract,
-): value is ProjectedPersonalGlossaryCandidate {
+function validProjectedCandidate(value: unknown, projection: Pick<PersonalGlossaryCandidateProjection, "generation" | "policy_version" | "retained_at">, contract: ProjectionContract): value is ProjectedPersonalGlossaryCandidate {
   const item = mapping(value);
   if (
     item === null ||
@@ -679,9 +528,7 @@ function validProjectedCandidate(
     !Array.isArray(item.project_keys) ||
     item.project_keys.length === 0 ||
     item.project_keys.length > contract.projectIdsMaxPerCandidate ||
-    item.project_keys.some(
-      (projectKey) => typeof projectKey !== "string" || !SHA256_RE.test(projectKey),
-    ) ||
+    item.project_keys.some((projectKey) => typeof projectKey !== "string" || !SHA256_RE.test(projectKey)) ||
     new Set(item.project_keys).size !== item.project_keys.length ||
     !sameTextArray(
       item.project_keys as string[],
@@ -693,10 +540,7 @@ function validProjectedCandidate(
   }
   const capsule = item.capsule as GlossaryEvidenceCapsule;
   if (validateGlossaryEvidenceCapsule(capsule).length > 0) return false;
-  if (
-    containsPersonalGlossarySensitiveContent(capsule.term) ||
-    containsPersonalGlossarySensitiveContent(capsule.meaning)
-  ) {
+  if (containsPersonalGlossarySensitiveContent(capsule.term) || containsPersonalGlossarySensitiveContent(capsule.meaning)) {
     return false;
   }
   try {
@@ -705,22 +549,14 @@ function validProjectedCandidate(
       capsule.generation === projection.generation &&
       capsule.policy_version === projection.policy_version &&
       sourceFamily(capsule, contract) === item.source_family &&
-      (item.safe_excerpt === null ||
-        item.safe_excerpt.expires_at ===
-          personalGlossaryCandidateProjectionExcerptExpiry(
-            projection.retained_at,
-            contract.pendingExcerptDays,
-          ))
+      (item.safe_excerpt === null || item.safe_excerpt.expires_at === personalGlossaryCandidateProjectionExcerptExpiry(projection.retained_at, contract.pendingExcerptDays))
     );
   } catch {
     return false;
   }
 }
 
-function validProjectionBindings(
-  projection: PersonalGlossaryCandidateProjection,
-  contract: ProjectionContract,
-): boolean {
+function validProjectionBindings(projection: PersonalGlossaryCandidateProjection, contract: ProjectionContract): boolean {
   const { candidates, report } = projection;
   const families: readonly SourceFamily[] = ["explicit", "recurring"];
   if (
@@ -747,24 +583,23 @@ function validProjectionBindings(
   const retainedByFamily = new Map<SourceFamily, number>(families.map((family) => [family, 0]));
   const retainedProjectKeys = new Set<string>();
   for (const candidate of candidates) {
-    retainedByFamily.set(
-      candidate.source_family,
-      (retainedByFamily.get(candidate.source_family) ?? 0) + 1,
-    );
+    retainedByFamily.set(candidate.source_family, (retainedByFamily.get(candidate.source_family) ?? 0) + 1);
     for (const projectKey of candidate.project_keys) retainedProjectKeys.add(projectKey);
   }
 
-  if (!sameTextArray(report.source_families.map((item) => item.family), families)) return false;
+  if (
+    !sameTextArray(
+      report.source_families.map((item) => item.family),
+      families,
+    )
+  )
+    return false;
   let availableCandidates = 0;
   let droppedCandidates = 0;
   for (const family of families) {
     const item = report.source_families.find((entry) => entry.family === family)!;
     const retained = retainedByFamily.get(family) ?? 0;
-    if (
-      item.retained !== retained ||
-      item.available < item.retained ||
-      item.dropped !== item.available - item.retained
-    ) {
+    if (item.retained !== retained || item.available < item.retained || item.dropped !== item.available - item.retained) {
       return false;
     }
     availableCandidates += item.available;
@@ -774,11 +609,7 @@ function validProjectionBindings(
     return false;
   }
 
-  if (
-    report.projects.retained !== retainedProjectKeys.size ||
-    report.projects.available < report.projects.retained ||
-    report.projects.dropped !== report.projects.available - report.projects.retained
-  ) {
+  if (report.projects.retained !== retainedProjectKeys.size || report.projects.available < report.projects.retained || report.projects.dropped !== report.projects.available - report.projects.retained) {
     return false;
   }
 
@@ -786,27 +617,13 @@ function validProjectionBindings(
     const item = report.source_families.find((entry) => entry.family === family)!;
     return item.available > 0 && item.retained === 0;
   });
-  const coverageReasons = [
-    ...(report.cap.applied ? ["candidate_cap"] : []),
-    ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []),
-    ...(report.projects.dropped > 0 ? ["project_uncovered"] : []),
-  ];
-  if (
-    report.coverage.uncovered_projects !== report.projects.dropped ||
-    !sameTextArray(report.coverage.uncovered_source_families, uncoveredSourceFamilies) ||
-    !sameTextArray(report.coverage.reasons, coverageReasons) ||
-    report.coverage.status !== (coverageReasons.length === 0 ? "complete" : "degraded")
-  ) {
+  const coverageReasons = [...(report.cap.applied ? ["candidate_cap"] : []), ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(report.projects.dropped > 0 ? ["project_uncovered"] : [])];
+  if (report.coverage.uncovered_projects !== report.projects.dropped || !sameTextArray(report.coverage.uncovered_source_families, uncoveredSourceFamilies) || !sameTextArray(report.coverage.reasons, coverageReasons) || report.coverage.status !== (coverageReasons.length === 0 ? "complete" : "degraded")) {
     return false;
   }
 
-  const activeExcerpts = candidates.flatMap((candidate) =>
-    candidate.safe_excerpt === null ? [] : [candidate.safe_excerpt],
-  );
-  const omissionCount = Object.values(report.excerpts.omissions).reduce(
-    (total, count) => total + count,
-    0,
-  );
+  const activeExcerpts = candidates.flatMap((candidate) => (candidate.safe_excerpt === null ? [] : [candidate.safe_excerpt]));
+  const omissionCount = Object.values(report.excerpts.omissions).reduce((total, count) => total + count, 0);
   if (
     report.excerpts.retained !== activeExcerpts.length ||
     report.excerpts.provided !== candidates.length - report.excerpts.omissions.no_excerpt ||
@@ -826,16 +643,7 @@ function validProjection(value: unknown): value is PersonalGlossaryCandidateProj
   const contract = projectionContract();
   if (
     projection === null ||
-    !exactKeys(projection, [
-      "schema_version",
-      "owner",
-      "generation",
-      "policy_version",
-      "retained_at",
-      "candidates",
-      "report",
-      "projection_sha256",
-    ]) ||
+    !exactKeys(projection, ["schema_version", "owner", "generation", "policy_version", "retained_at", "candidates", "report", "projection_sha256"]) ||
     projection.schema_version !== PROJECTION_SCHEMA_VERSION ||
     projection.owner !== PROJECTION_OWNER ||
     typeof projection.generation !== "string" ||
@@ -857,23 +665,16 @@ function validProjection(value: unknown): value is PersonalGlossaryCandidateProj
   delete body.projection_sha256;
   if (projection.projection_sha256 !== glossaryCanonicalSha256(body)) return false;
   const typed = projection as unknown as PersonalGlossaryCandidateProjection;
-  return (
-    typed.candidates.every((candidate) => validProjectedCandidate(candidate, typed, contract)) &&
-    validProjectionBindings(typed, contract)
-  );
+  return typed.candidates.every((candidate) => validProjectedCandidate(candidate, typed, contract)) && validProjectionBindings(typed, contract);
 }
 
-export function readPersonalGlossaryCandidateProjection(
-  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
-): PersonalGlossaryCandidateProjectionReadResult {
+export function readPersonalGlossaryCandidateProjection(options: PersonalGlossaryCandidateProjectionStorageOptions = {}): PersonalGlossaryCandidateProjectionReadResult {
   const pathname = personalGlossaryCandidateProjectionPath(options);
   let text: string;
   try {
     text = fs.readFileSync(pathname, "utf8");
   } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "ENOENT"
-      ? { status: "missing", projection: null }
-      : { status: "corrupt", projection: null };
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? { status: "missing", projection: null } : { status: "corrupt", projection: null };
   }
   try {
     const parsed = JSON.parse(text) as unknown;
@@ -886,10 +687,7 @@ export function readPersonalGlossaryCandidateProjection(
   }
 }
 
-export function persistPersonalGlossaryCandidateProjection(
-  projection: PersonalGlossaryCandidateProjection,
-  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
-): { status: "changed" | "unchanged_replay"; path: string } {
+export function persistPersonalGlossaryCandidateProjection(projection: PersonalGlossaryCandidateProjection, options: PersonalGlossaryCandidateProjectionStorageOptions = {}): { status: "changed" | "unchanged_replay"; path: string } {
   if (!validProjection(projection)) throw new TypeError("candidate projection is invalid");
   const pathname = personalGlossaryCandidateProjectionPath(options);
   const text = `${canonicalGlossaryJson(projection)}\n`;
@@ -909,17 +707,10 @@ export function persistPersonalGlossaryCandidateProjection(
 }
 
 /** Persist after explicit refresh consent, replacing only a malformed owned regular file. */
-export function persistPersonalGlossaryCandidateProjectionAfterRefresh(
-  projection: PersonalGlossaryCandidateProjection,
-  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
-): { status: "changed" | "unchanged_replay"; path: string } {
+export function persistPersonalGlossaryCandidateProjectionAfterRefresh(projection: PersonalGlossaryCandidateProjection, options: PersonalGlossaryCandidateProjectionStorageOptions = {}): { status: "changed" | "unchanged_replay"; path: string } {
   if (!validProjection(projection)) throw new TypeError("candidate projection is invalid");
   const pathname = personalGlossaryCandidateProjectionPath(options);
-  const root = path.resolve(
-    defaultProfileDir(options.env ?? process.env, options.platform ?? process.platform),
-    "intermediate",
-    "personal-glossary",
-  );
+  const root = path.resolve(defaultProfileDir(options.env ?? process.env, options.platform ?? process.platform), "intermediate", "personal-glossary");
   if (path.resolve(pathname) !== path.join(root, projectionContract().storageFile)) {
     throw new TypeError("candidate projection path escapes its configured storage root");
   }
@@ -948,9 +739,7 @@ export function persistPersonalGlossaryCandidateProjectionAfterRefresh(
  * No CLI command exposes this primitive. The later review lifecycle owns the
  * authentication ceremony and any review-disposition storage.
  */
-export function maintainPersonalGlossaryCandidateProjection(
-  input: PersonalGlossaryCandidateProjectionMaintenanceInput,
-): PersonalGlossaryCandidateProjectionMaintenanceResult {
+export function maintainPersonalGlossaryCandidateProjection(input: PersonalGlossaryCandidateProjectionMaintenanceInput): PersonalGlossaryCandidateProjectionMaintenanceResult {
   if (!validTimestamp(input.now)) throw new TypeError("maintenance now must be an ISO timestamp");
   const options = { env: input.env, platform: input.platform };
   const current = readPersonalGlossaryCandidateProjection(options);
@@ -964,10 +753,7 @@ export function maintainPersonalGlossaryCandidateProjection(
   }
   let expired = 0;
   const candidates = current.projection!.candidates.map((candidate) => {
-    if (
-      candidate.safe_excerpt !== null &&
-      Date.parse(candidate.safe_excerpt.expires_at) <= Date.parse(input.now)
-    ) {
+    if (candidate.safe_excerpt !== null && Date.parse(candidate.safe_excerpt.expires_at) <= Date.parse(input.now)) {
       expired += 1;
       return { ...candidate, safe_excerpt: null };
     }

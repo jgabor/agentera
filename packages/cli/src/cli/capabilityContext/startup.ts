@@ -50,8 +50,11 @@ export function slimDocsState(docs: JsonObject): JsonObject {
 
 export function slimProgressState(progress: JsonObject): JsonObject {
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
-  const latestRecord = latest.record && typeof latest.record === "object" && !Array.isArray(latest.record) ? latest.record as JsonObject : latest;
-  const latestCycle: JsonObject = { id: latest.id ?? null, artifact: latest.artifact ?? "progress" };
+  const latestRecord = latest.record && typeof latest.record === "object" && !Array.isArray(latest.record) ? (latest.record as JsonObject) : latest;
+  const latestCycle: JsonObject = {
+    id: latest.id ?? null,
+    artifact: latest.artifact ?? "progress",
+  };
   for (const key of ["timestamp", "type", "phase"]) {
     if (latestRecord[key] !== null && latestRecord[key] !== undefined && latestRecord[key] !== "") latestCycle[key] = latestRecord[key];
   }
@@ -84,28 +87,49 @@ export function slimTodoState(todoItems: JsonObject[]): JsonObject {
   return { open_count: todoItems.length, severity_counts: severityCounts, entries: todoItems };
 }
 
-export function genericSlimStartupContext(
-  capability: string,
-  context: JsonObject,
-  plan: JsonObject,
-  docs: JsonObject,
-  progress: JsonObject,
-  health: JsonObject,
-  todoItems: JsonObject[],
-): JsonObject {
+export function genericSlimStartupContext(capability: string, context: JsonObject, plan: JsonObject, docs: JsonObject, progress: JsonObject, health: JsonObject, todoItems: JsonObject[]): JsonObject {
   const docsState = slimDocsState(docs);
   if (capability === "vision") {
-    return { vision_startup_context: { docs_mapping: docsState, progress: slimProgressState(progress), health: slimHealthState(health), todo: slimTodoState(todoItems) } };
+    return {
+      vision_startup_context: {
+        docs_mapping: docsState,
+        progress: slimProgressState(progress),
+        health: slimHealthState(health),
+        todo: slimTodoState(todoItems),
+      },
+    };
   }
   if (capability === "discuss") {
-    return { deliberation_context: { todo: slimTodoState(todoItems), docs_mapping: docsState, protected_write_boundaries: ["vision", "todo", "objective"] } };
+    return {
+      deliberation_context: {
+        todo: slimTodoState(todoItems),
+        docs_mapping: docsState,
+        protected_write_boundaries: ["vision", "todo", "objective"],
+      },
+    };
   }
   if (capability === "research") return { research_context: { write_boundaries: ["todo", "vision"] } };
   if (capability === "plan") {
-    return { planning_context: { startup_contract: context.startup_contract ?? null, plan: slimPlanState(plan), docs: docsState, health: slimHealthState(health), todo: slimTodoState(todoItems), progress: slimProgressState(progress) } };
+    return {
+      planning_context: {
+        startup_contract: context.startup_contract ?? null,
+        plan: slimPlanState(plan),
+        docs: docsState,
+        health: slimHealthState(health),
+        todo: slimTodoState(todoItems),
+        progress: slimProgressState(progress),
+      },
+    };
   }
   if (capability === "profile") return { profile_context: { raw_profile_body_emitted: false } };
-  if (capability === "design") return { design_context: { progress: slimProgressState(progress), todo: slimTodoState(todoItems), docs_mapping: docsState } };
+  if (capability === "design")
+    return {
+      design_context: {
+        progress: slimProgressState(progress),
+        todo: slimTodoState(todoItems),
+        docs_mapping: docsState,
+      },
+    };
   return {};
 }
 
@@ -159,13 +183,7 @@ export function orientationAppHome(bundle: JsonObject): JsonObject {
   };
 }
 
-export function buildPrimeCapabilityContextPayload(
-  state: OrientationState,
-  capabilityName: string,
-  command = "prime",
-  buildRequest: import("../commands/prime/buildExecutionRequest.js").BuildExecutionRequest | null = null,
-  glossaryAdvice: GlossaryAdvice | null = null,
-): JsonObject {
+export function buildPrimeCapabilityContextPayload(state: OrientationState, capabilityName: string, command = "prime", buildRequest: import("../commands/prime/buildExecutionRequest.js").BuildExecutionRequest | null = null, glossaryAdvice: GlossaryAdvice | null = null): JsonObject {
   const stateDict = state as unknown as JsonObject;
   const bundlePublic = publicDoctorStatus(state.app);
   const appHome = orientationAppHome(stateDict.app as JsonObject);
@@ -178,20 +196,7 @@ export function buildPrimeCapabilityContextPayload(
     command,
     outcome: startup.outcome,
     shared_skill: stateDict.shared_skill,
-    capability_context: slimCapabilityContext(
-      capabilityName,
-      state.mode,
-      appHome,
-      bundlePublic as unknown as JsonObject,
-      stateDict.plan as JsonObject,
-      stateDict.docs as JsonObject,
-      stateDict.progress as JsonObject,
-      stateDict.health as JsonObject,
-      state.todo_items,
-      bespoke,
-      cutover,
-      todoReconciliation,
-    ),
+    capability_context: slimCapabilityContext(capabilityName, state.mode, appHome, bundlePublic as unknown as JsonObject, stateDict.plan as JsonObject, stateDict.docs as JsonObject, stateDict.progress as JsonObject, stateDict.health as JsonObject, state.todo_items, bespoke, cutover, todoReconciliation),
   };
   if (glossaryAdvice !== null) (payload.capability_context as JsonObject).glossary_advice = glossaryAdvice as unknown as JsonObject;
   return payload;

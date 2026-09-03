@@ -33,10 +33,21 @@ function writeArtifact(name: string, content: string): void {
   fs.writeFileSync(path.join(project, ".agentera", name), content);
 }
 
-function capture(fn: (out: (text: string) => void, err: (text: string) => void) => number): { rc: number; out: string; err: string } {
+function capture(fn: (out: (text: string) => void, err: (text: string) => void) => number): {
+  rc: number;
+  out: string;
+  err: string;
+} {
   let out = "";
   let err = "";
-  return { rc: fn((text) => (out += text), (text) => (err += text)), out, err };
+  return {
+    rc: fn(
+      (text) => (out += text),
+      (text) => (err += text),
+    ),
+    out,
+    err,
+  };
 }
 
 function jsonBytes(value: unknown): number {
@@ -64,7 +75,11 @@ function hasUnpairedSurrogateInValue(value: unknown): boolean {
   return false;
 }
 
-function boundaryAlignedFixtureText(): { taskName: string; blockedReason: string; todoText: string } {
+function boundaryAlignedFixtureText(): {
+  taskName: string;
+  blockedReason: string;
+  todoText: string;
+} {
   const nonBmpLetter = "\u{10400}";
   return {
     taskName: `${"a".repeat(93)}${nonBmpLetter}${"b".repeat(160)}${nonBmpLetter}tail`,
@@ -102,9 +117,12 @@ afterEach(() => {
 
 describe("prime projection contract", () => {
   it("fails closed when legacy dashboard fields no longer address the status capsule", () => {
-    const result = capture((out, err) => main([
-      "node", "agentera", "prime", "--dashboard", "--fields", "plan,progress,docs", "--format", "json",
-    ], { out, err }));
+    const result = capture((out, err) =>
+      main(["node", "agentera", "prime", "--dashboard", "--fields", "plan,progress,docs", "--format", "json"], {
+        out,
+        err,
+      }),
+    );
 
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
@@ -127,7 +145,11 @@ describe("prime projection contract", () => {
     const contract = authority();
     const count = 25;
     const fixture = createEntityAuthorityFixture(project, count, contract);
-    expect(Object.entries(fixture.boundaryCounts).filter(([boundary]) => !boundary.endsWith("_summary")).every(([, boundaryCount]) => boundaryCount > 0)).toBe(true);
+    expect(
+      Object.entries(fixture.boundaryCounts)
+        .filter(([boundary]) => !boundary.endsWith("_summary"))
+        .every(([, boundaryCount]) => boundaryCount > 0),
+    ).toBe(true);
     expect(Object.values(fixture.boundaryCounts).reduce((sum, boundaryCount) => sum + boundaryCount, 0)).toBe(count);
 
     const startup = capture((out, err) => main(["node", "agentera", "prime", "--dashboard", "--format", "json"], { out, err }));
@@ -136,14 +158,33 @@ describe("prime projection contract", () => {
     const capsule = payload.capability_context;
     const status = capsule.context.status_context;
     const latest = status.progress.latest;
-    expect(latest).toMatchObject({ id: expect.any(String), artifact: "progress", what: expect.any(String) });
-    expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "progress", availability: "included", detail_command: "npx -y agentera@next state progress list" }),
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
-    ]));
+    expect(latest).toMatchObject({
+      id: expect.any(String),
+      artifact: "progress",
+      what: expect.any(String),
+    });
+    expect(capsule.startup.availability).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          family: "progress",
+          availability: "included",
+          detail_command: "npx -y agentera@next state progress list",
+        }),
+        expect.objectContaining({
+          family: "decisions",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state decisions list",
+        }),
+      ]),
+    );
     expect(status).not.toHaveProperty("history");
 
-    const list = capture((out, err) => main(["node", "agentera", "state", "progress", "list", "--limit", "5", "--format", "json"], { out, err }));
+    const list = capture((out, err) =>
+      main(["node", "agentera", "state", "progress", "list", "--limit", "5", "--format", "json"], {
+        out,
+        err,
+      }),
+    );
     expect(list.rc, list.out || list.err).toBe(0);
     const listed = JSON.parse(list.out);
     expect(listed.counts.total).toBe(fixture.progressCount);
@@ -154,14 +195,7 @@ describe("prime projection contract", () => {
   });
 
   it("reports omitted, unaddressable, ambiguous, and corrupt history with valid routes", () => {
-    writeArtifact("decisions.yaml", [
-      "decisions:",
-      "  - summary: D7 explicit shorthand",
-      "  - summary: D7+D8 compound shorthand",
-      "  - summary: legacy decision without an identity",
-      "    what: not emitted in startup detail",
-      "",
-    ].join("\n"));
+    writeArtifact("decisions.yaml", ["decisions:", "  - summary: D7 explicit shorthand", "  - summary: D7+D8 compound shorthand", "  - summary: legacy decision without an identity", "    what: not emitted in startup detail", ""].join("\n"));
     const archiveDirectory = path.join(project, ".agentera", "archive", "decisions");
     fs.mkdirSync(archiveDirectory, { recursive: true });
     fs.writeFileSync(path.join(archiveDirectory, "1.yaml"), "broken: true\n");
@@ -183,20 +217,7 @@ describe("prime projection contract", () => {
   });
 
   it("uses canonical row classifications for bounded per-entry history", () => {
-    writeArtifact("progress.yaml", [
-      "cycles:",
-      "  - number: 9",
-      "    timestamp: 2026-07-09 00:00",
-      "    type: feat",
-      "    phase: build",
-      "    what: first projection",
-      "  - number: 9",
-      "    timestamp: 2026-07-09 00:00",
-      "    type: feat",
-      "    phase: build",
-      "    what: conflicting projection",
-      "",
-    ].join("\n"));
+    writeArtifact("progress.yaml", ["cycles:", "  - number: 9", "    timestamp: 2026-07-09 00:00", "    type: feat", "    phase: build", "    what: first projection", "  - number: 9", "    timestamp: 2026-07-09 00:00", "    type: feat", "    phase: build", "    what: conflicting projection", ""].join("\n"));
     const conflict = startupHistorySummary(project, "progress", REPO_ROOT);
     expect(conflict.counts.conflict).toBe(1);
     expect((conflict.entries as Array<Record<string, any>>).every((entry) => entry.classification === "conflict")).toBe(true);
@@ -205,15 +226,7 @@ describe("prime projection contract", () => {
       origin: "active",
     });
 
-    writeArtifact("progress.yaml", [
-      "cycles:",
-      "  - number: 8",
-      "    timestamp: 2026-07-08 00:00",
-      "    type: feat",
-      "    phase: build",
-      "    what: mirrored projection",
-      "",
-    ].join("\n"));
+    writeArtifact("progress.yaml", ["cycles:", "  - number: 8", "    timestamp: 2026-07-08 00:00", "    type: feat", "    phase: build", "    what: mirrored projection", ""].join("\n"));
     publishNumberedArchive(project, "progress", 8, {
       number: 8,
       timestamp: "2026-07-08 00:00",
@@ -224,10 +237,7 @@ describe("prime projection contract", () => {
     });
     const mirrored = startupHistorySummary(project, "progress", REPO_ROOT);
     expect(mirrored.counts.mirrored).toBe(1);
-    expect((mirrored.entries as Array<Record<string, any>>).map((entry) => entry.provenance.origin)).toEqual([
-      "active",
-      "numbered_archive",
-    ]);
+    expect((mirrored.entries as Array<Record<string, any>>).map((entry) => entry.provenance.origin)).toEqual(["active", "numbered_archive"]);
     expect((mirrored.entries as Array<Record<string, any>>)[0].detail_availability).toBe("summary");
     expect((mirrored.entries as Array<Record<string, any>>)[1].detail_availability).toBe("full");
     expect((mirrored.entries as Array<Record<string, any>>).every((entry) => entry.classification === "mirrored")).toBe(true);
@@ -238,11 +248,20 @@ describe("prime projection contract", () => {
     const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
     fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    fs.writeFileSync(path.join(directory, "aaaaaaaaaa.yaml"), dumpYamlMapping({
-      id: "aaaaaaaaaa",
-      artifact: "progress",
-      record: { timestamp: "2026-07-19 00:00", type: "test", phase: "audit", what: unicode, context: { intent: "Unicode safety" } },
-    }));
+    fs.writeFileSync(
+      path.join(directory, "aaaaaaaaaa.yaml"),
+      dumpYamlMapping({
+        id: "aaaaaaaaaa",
+        artifact: "progress",
+        record: {
+          timestamp: "2026-07-19 00:00",
+          type: "test",
+          phase: "audit",
+          what: unicode,
+          context: { intent: "Unicode safety" },
+        },
+      }),
+    );
 
     const state = collectOrientationState({ home, env: process.env });
     const payload = buildOrientationJsonPayload(state, "prime");
@@ -263,32 +282,14 @@ describe("prime projection contract", () => {
     const sparse = capture((out, err) => emitPrime("prime", payload, "json", "plan,progress,docs", out, err));
     expect(hasUnpairedSurrogate(sparse.out)).toBe(false);
     for (const capability of CAPABILITY_NAMES) {
-      const selected = capture((out, err) => emitPrime(
-        "prime",
-        buildPrimeCapabilityContextPayload(state, capability),
-        "json",
-        "capability_context",
-        out,
-        err,
-      ));
+      const selected = capture((out, err) => emitPrime("prime", buildPrimeCapabilityContextPayload(state, capability), "json", "capability_context", out, err));
       expect(hasUnpairedSurrogate(selected.out), capability).toBe(false);
     }
   });
 
   it("keeps boundary-aligned non-BMP code points intact on every prime output surface", () => {
     const { taskName, blockedReason, todoText } = boundaryAlignedFixtureText();
-    writeArtifact("plan.yaml", [
-      "header:",
-      "  title: Boundary fixture",
-      "  status: open",
-      "tasks:",
-      "  - number: 1",
-      `    name: ${taskName}`,
-      "    status: pending",
-      "    depends_on: []",
-      `    blocked_reasons: [\"${blockedReason}\"]`,
-      "",
-    ].join("\n"));
+    writeArtifact("plan.yaml", ["header:", "  title: Boundary fixture", "  status: open", "tasks:", "  - number: 1", `    name: ${taskName}`, "    status: pending", "    depends_on: []", `    blocked_reasons: [\"${blockedReason}\"]`, ""].join("\n"));
     writeArtifact("TODO.md", `# TODO\n\n## normal\n- [ ] ${todoText}\n`);
     writeArtifact("progress.yaml", "cycles: []\n");
     writeArtifact("decisions.yaml", "decisions: []\n");

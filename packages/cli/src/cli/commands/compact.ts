@@ -66,7 +66,8 @@ function isDirectory(directory: string): boolean {
 
 function yamlFilesBelow(directory: string): string[] {
   if (!isDirectory(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true })
+  return fs
+    .readdirSync(directory, { withFileTypes: true })
     .sort((left, right) => compareText(left.name, right.name))
     .flatMap((entry) => {
       const candidate = path.join(directory, entry.name);
@@ -78,11 +79,11 @@ function yamlFilesBelow(directory: string): string[] {
 function activeStateYamlFiles(project: string): string[] {
   const stateRoot = path.join(project, ".agentera");
   if (!isDirectory(stateRoot)) return [];
-  const topLevel = fs.readdirSync(stateRoot, { withFileTypes: true })
+  const topLevel = fs
+    .readdirSync(stateRoot, { withFileTypes: true })
     .filter((entry) => entry.isFile() && path.extname(entry.name) === ".yaml")
     .map((entry) => path.join(stateRoot, entry.name));
-  return [...topLevel, ...yamlFilesBelow(path.join(stateRoot, "entities"))]
-    .sort(compareText);
+  return [...topLevel, ...yamlFilesBelow(path.join(stateRoot, "entities"))].sort(compareText);
 }
 
 function stringScalarValues(node: unknown): string[] {
@@ -109,19 +110,14 @@ function volatileTodoReferenceDiagnostics(project: string): {
       }
     }
   }
-  matches.sort((left, right) =>
-    compareText(left.path, right.path) || left.order - right.order,
-  );
+  matches.sort((left, right) => compareText(left.path, right.path) || left.order - right.order);
   return {
     diagnostics: matches.slice(0, TODO_REFERENCE_DIAGNOSTIC_LIMIT).map(({ path, reference }) => ({ path, reference })),
     omitted_count: Math.max(0, matches.length - TODO_REFERENCE_DIAGNOSTIC_LIMIT),
   };
 }
 
-function volatileTodoReferenceGate(
-  project: string,
-  mode: string,
-): GateCompactionOperation | null {
+function volatileTodoReferenceGate(project: string, mode: string): GateCompactionOperation | null {
   const { diagnostics, omitted_count } = volatileTodoReferenceDiagnostics(project);
   if (!diagnostics.length) return null;
   const count = diagnostics.length + omitted_count;
@@ -180,9 +176,7 @@ function compactionOperationPayload(op: GateCompactionOperation): JsonObject {
     archive_count: status.archive_count,
     total_count: status.total_count,
     over_limit_count: status.over_limit_count,
-    ...(status.pending_summarization_count !== undefined
-      ? { pending_summarization_count: status.pending_summarization_count }
-      : {}),
+    ...(status.pending_summarization_count !== undefined ? { pending_summarization_count: status.pending_summarization_count } : {}),
     ...(status.projection_state ? { projection_state: status.projection_state } : {}),
     protected_overflow_count: status.protected_overflow_count ?? 0,
     mode: op.mode,
@@ -236,10 +230,7 @@ function compactionGuidance(mode: string, operations: GateCompactionOperation[])
   }
   if (protectedOps.length > 0) {
     const artifacts = protectedOps.map((op) => op.status.artifact).join(", ");
-    return (
-      `Protected-overflow review pressure blocks compaction for: ${artifacts}. ` +
-      "Resolve or explicitly confirm protected decision satisfaction before rerunning."
-    );
+    return `Protected-overflow review pressure blocks compaction for: ${artifacts}. ` + "Resolve or explicitly confirm protected decision satisfaction before rerunning.";
   }
   if (mode === "check" && over.length > 0) {
     const artifacts = over.map((op) => op.status.artifact).join(", ");
@@ -250,9 +241,7 @@ function compactionGuidance(mode: string, operations: GateCompactionOperation[])
   }
   if (formatting.length > 0) {
     const artifacts = formatting.map((op) => op.status.artifact).join(", ");
-    return mode === "check"
-      ? `Summary formatting is pending for: ${artifacts}. Safe fix: \`${fixCommand}\`.`
-      : `Summary formatting remains pending for: ${artifacts}; inspect the artifact diagnostics.`;
+    return mode === "check" ? `Summary formatting is pending for: ${artifacts}. Safe fix: \`${fixCommand}\`.` : `Summary formatting remains pending for: ${artifacts}; inspect the artifact diagnostics.`;
   }
   if (projections.length > 0) {
     return "Projection defaults are bounded; numbered archive records remain complete and authoritative.";
@@ -289,10 +278,7 @@ function compactionSummary(mode: string, operations: GateCompactionOperation[]):
 function compactionExitCode(mode: string, operations: GateCompactionOperation[]): number {
   if (operations.some((op) => op.action === "error")) return 2;
   if (operations.some((op) => op.action === "volatile_todo_reference")) return 1;
-  if (
-    mode === "check" &&
-    operations.some((op) => op.action === "over_limit" || op.action === "formatting")
-  ) return 1;
+  if (mode === "check" && operations.some((op) => op.action === "over_limit" || op.action === "formatting")) return 1;
   return 0;
 }
 
@@ -311,23 +297,11 @@ function emitCompactionPayload(payload: CompactionPayload, mode: string, format:
   const summary = payload.summary;
   const project = payload.project;
   if (format === "json") {
-    emitStructured(
-      boundStructuredProjection(payload as unknown as JsonObject, "compact", "json"),
-      "json",
-      out,
-    );
+    emitStructured(boundStructuredProjection(payload as unknown as JsonObject, "compact", "json"), "json", out);
     return;
   }
   out(`status=${summary.status} | mode=${mode} | project=${project}\n`);
-  out(
-    "counts=" +
-      `artifacts:${summary.artifact_count} ` +
-      `over_limit:${summary.over_limit_count} ` +
-      `formatting:${summary.formatting_count} ` +
-      `protected_overflow:${summary.protected_overflow_count} ` +
-      `errors:${summary.error_count} ` +
-      `changed:${summary.changed_count}\n`,
-  );
+  out("counts=" + `artifacts:${summary.artifact_count} ` + `over_limit:${summary.over_limit_count} ` + `formatting:${summary.formatting_count} ` + `protected_overflow:${summary.protected_overflow_count} ` + `errors:${summary.error_count} ` + `changed:${summary.changed_count}\n`);
   for (const item of payload.operations) {
     out(
       `- artifact=${item.artifact} | action=${item.action} | ` +

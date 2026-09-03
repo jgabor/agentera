@@ -31,19 +31,22 @@ function mapping(value: unknown): value is JsonObject {
 
 function fail(options: EntityListProjectionOptions, message: string, recovery: string, exitCode: 1 | 2, validValues?: string[]): never {
   const family = entityListFamily(options.family);
-  throw new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: exitCode === 2 ? "invalid_request" : "unsupported_state",
-      message,
-      syntax: family.syntax,
-      example: family.example,
-      recovery: exitCode === 2 ? `Run \`${family.example}\`; no state was changed.` : recovery,
-      artifact: options.artifact,
-      ...(validValues ? { valid_values: validValues } : exitCode === 2 ? { valid_values: entityListValidValues(family) } : {}),
+  throw new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: exitCode === 2 ? "invalid_request" : "unsupported_state",
+        message,
+        syntax: family.syntax,
+        example: family.example,
+        recovery: exitCode === 2 ? `Run \`${family.example}\`; no state was changed.` : recovery,
+        artifact: options.artifact,
+        ...(validValues ? { valid_values: validValues } : exitCode === 2 ? { valid_values: entityListValidValues(family) } : {}),
+      },
     },
-  }, exitCode);
+    exitCode,
+  );
 }
 
 function fieldPaths(value: unknown, prefix = ""): string[] {
@@ -73,11 +76,7 @@ function assignSelected(target: JsonObject, field: string, value: JsonValue): vo
   current[parts.at(-1)!] = structuredClone(value);
 }
 
-export function resolveEntityListSelector(
-  input: EntityListSelectorInput | undefined,
-  entries: JsonObject[],
-  options: EntityListProjectionOptions,
-): ResolvedEntityListSelector {
+export function resolveEntityListSelector(input: EntityListSelectorInput | undefined, entries: JsonObject[], options: EntityListProjectionOptions): ResolvedEntityListSelector {
   if (input?.idsOnly && input.fields !== undefined) {
     fail(options, "--ids-only and --fields cannot be combined", "Choose one bounded selector and retry; no state was changed.", 2);
   }
@@ -109,11 +108,7 @@ export function entityListSelectorFlags(selector: ResolvedEntityListSelector): s
   return "";
 }
 
-function identityEntry(
-  entry: JsonObject,
-  family: ReturnType<typeof entityListFamily>,
-  fields: readonly string[],
-): JsonObject {
+function identityEntry(entry: JsonObject, family: ReturnType<typeof entityListFamily>, fields: readonly string[]): JsonObject {
   const id = String(entry.id);
   const result: JsonObject = { id, artifact: String(entry.artifact) };
   for (const field of fields) {
@@ -149,34 +144,26 @@ function omittedTopLevelFields(fullEntries: JsonObject[], retainedEntries: JsonO
   return [...omitted].sort();
 }
 
-function degradedProjection(
-  response: JsonObject,
-  entries: JsonObject[],
-  selector: ResolvedEntityListSelector,
-  options: EntityListProjectionOptions,
-  family: ReturnType<typeof entityListFamily>,
-  fullEntries: JsonObject[],
-  detail: "summary" | "minimum",
-): JsonObject {
-  return normalize({
-    ...response,
-    status: "degraded",
-    degradation: {
-      reason: "optional_detail_byte_budget",
-      detail_omitted_count: entries.length,
-      omitted_fields: omittedTopLevelFields(fullEntries, entries),
-      recovery: family.get,
+function degradedProjection(response: JsonObject, entries: JsonObject[], selector: ResolvedEntityListSelector, options: EntityListProjectionOptions, family: ReturnType<typeof entityListFamily>, fullEntries: JsonObject[], detail: "summary" | "minimum"): JsonObject {
+  return normalize(
+    {
+      ...response,
+      status: "degraded",
+      degradation: {
+        reason: "optional_detail_byte_budget",
+        detail_omitted_count: entries.length,
+        omitted_fields: omittedTopLevelFields(fullEntries, entries),
+        recovery: family.get,
+      },
     },
-  }, entries, selector, options, detail);
+    entries,
+    selector,
+    options,
+    detail,
+  );
 }
 
-function normalize(
-  response: JsonObject,
-  entries: JsonObject[],
-  selector: ResolvedEntityListSelector,
-  options: EntityListProjectionOptions,
-  detail: string,
-): JsonObject {
+function normalize(response: JsonObject, entries: JsonObject[], selector: ResolvedEntityListSelector, options: EntityListProjectionOptions, detail: string): JsonObject {
   const family = entityListFamily(options.family);
   const counts = mapping(response.counts) ? response.counts : {};
   const snapshot = mapping(response.snapshot) ? response.snapshot : {};
@@ -206,16 +193,16 @@ function normalize(
   };
 }
 
-export function projectEntityList(
-  response: JsonObject,
-  selector: ResolvedEntityListSelector,
-  options: EntityListProjectionOptions,
-): JsonObject {
+export function projectEntityList(response: JsonObject, selector: ResolvedEntityListSelector, options: EntityListProjectionOptions): JsonObject {
   const family = entityListFamily(options.family);
   const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
-  const selectedEntries = selector.mode === "default"
-    ? fullEntries.map((entry) => ({ ...entry, retrieval: identityEntry(entry, family, family.minimumFields).retrieval }))
-    : fullEntries.map((entry) => projectEntry(entry, selector, family));
+  const selectedEntries =
+    selector.mode === "default"
+      ? fullEntries.map((entry) => ({
+          ...entry,
+          retrieval: identityEntry(entry, family, family.minimumFields).retrieval,
+        }))
+      : fullEntries.map((entry) => projectEntry(entry, selector, family));
   const selectedDetail = selector.mode === "default" ? "full" : selector.mode === "fields" ? "selected_fields" : "identity";
   const selected = normalize(response, selectedEntries, selector, options, selectedDetail);
   if (serializedProjectionBytes(selected, options.format === "text" ? "yaml" : options.format) <= options.maxUtf8Bytes) return selected;

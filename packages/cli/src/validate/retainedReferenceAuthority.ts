@@ -12,31 +12,25 @@ const RETAINED_CLASSES = new Set(["current", "migration-only", "runbook"]);
 const ABSENT_CLASSES = new Set(["historical", "delete"]);
 const CONSUMPTION_KINDS = new Set(["loads"]);
 const CONSUMER_KINDS = new Set(["runtime", "validator"]);
-const READER_CALLS = [
-  "readFileSync",
-  "readFile",
-  "loadYamlMappingFile",
-] as const;
+const READER_CALLS = ["readFileSync", "readFile", "loadYamlMappingFile"] as const;
 
 type Mapping = Record<string, unknown>;
 type ImportedSymbol = { module: string; symbol: string };
-type ReachabilityAnalysis = Map<string, {
-  source: string;
-  functions: Map<string, FunctionDeclaration>;
-  imports: Map<string, ImportedSymbol>;
-}>;
+type ReachabilityAnalysis = Map<
+  string,
+  {
+    source: string;
+    functions: Map<string, FunctionDeclaration>;
+    imports: Map<string, ImportedSymbol>;
+  }
+>;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Mapping
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function isSafeRelativePath(value: unknown): value is string {
-  return typeof value === "string"
-    && value.length > 0
-    && !path.isAbsolute(value)
-    && !value.split(/[\\/]/).includes("..");
+  return typeof value === "string" && value.length > 0 && !path.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
 }
 
 function isReferencePath(value: unknown): value is string {
@@ -45,10 +39,7 @@ function isReferencePath(value: unknown): value is string {
 }
 
 function isProductionModulePath(value: unknown): value is string {
-  return isSafeRelativePath(value) && (
-    /^packages\/cli\/src\/.+\.ts$/u.test(value)
-    || /^packages\/cli\/scripts\/.+\.mjs$/u.test(value)
-  );
+  return isSafeRelativePath(value) && (/^packages\/cli\/src\/.+\.ts$/u.test(value) || /^packages\/cli\/scripts\/.+\.mjs$/u.test(value));
 }
 
 function pathInside(root: string, candidate: string): boolean {
@@ -84,9 +75,7 @@ function regularContainedFile(root: string, relative: string): string | null {
 }
 
 function sourceWithoutComments(source: string): string {
-  return source
-    .replace(/\/\*[\s\S]*?\*\//gu, "")
-    .replace(/(^|[^:\\])\/\/.*$/gmu, "$1");
+  return source.replace(/\/\*[\s\S]*?\*\//gu, "").replace(/(^|[^:\\])\/\/.*$/gmu, "$1");
 }
 
 function escapeRegExp(value: string): string {
@@ -213,19 +202,13 @@ function functionParameterLists(source: string): Array<{ name: string; parameter
 
 function declarationSource(source: string, symbol: string): string | null {
   const escaped = escapeRegExp(symbol);
-  const functionMatch = new RegExp(
-    `(?:export\\s+)?(?:async\\s+)?function\\s+${escaped}\\s*\\(`,
-    "u",
-  ).exec(source);
+  const functionMatch = new RegExp(`(?:export\\s+)?(?:async\\s+)?function\\s+${escaped}\\s*\\(`, "u").exec(source);
   if (functionMatch && functionMatch.index !== undefined) {
     const opening = source.indexOf("{", functionMatch.index + functionMatch[0].length);
     const end = opening < 0 ? null : braceEnd(source, opening);
     return end === null ? null : source.slice(functionMatch.index, end);
   }
-  const valueMatch = new RegExp(
-    `(?:export\\s+)?(?:const|let|var)\\s+${escaped}\\b`,
-    "u",
-  ).exec(source);
+  const valueMatch = new RegExp(`(?:export\\s+)?(?:const|let|var)\\s+${escaped}\\b`, "u").exec(source);
   if (!valueMatch || valueMatch.index === undefined) return null;
   const end = source.indexOf(";", valueMatch.index);
   return end < 0 ? source.slice(valueMatch.index) : source.slice(valueMatch.index, end + 1);
@@ -245,12 +228,7 @@ function declaredSymbols(source: string): string[] {
 function resolveImportedModule(root: string, importer: string, specifier: string): string | null {
   if (!specifier.startsWith(".")) return null;
   const candidate = path.posix.normalize(path.posix.join(path.posix.dirname(importer), specifier));
-  const candidates = [
-    candidate,
-    candidate.replace(/\.js$/u, ".ts"),
-    candidate.replace(/\.mjs$/u, ".mjs"),
-    `${candidate}/index.ts`,
-  ];
+  const candidates = [candidate, candidate.replace(/\.js$/u, ".ts"), candidate.replace(/\.mjs$/u, ".mjs"), `${candidate}/index.ts`];
   for (const relative of candidates) {
     if (!isProductionModulePath(relative)) continue;
     if (regularContainedFile(root, relative)) return relative;
@@ -296,21 +274,13 @@ function sourceClosure(root: string, modulePath: string, symbol: string, referen
       const importedPath = regularContainedFile(root, imported.module);
       const importedSource = importedPath ? sourceWithoutComments(fs.readFileSync(importedPath, "utf8")) : "";
       const importedDeclaration = declarationSource(importedSource, imported.symbol);
-      if (
-        importedDeclaration
-        && (new RegExp(`\\b${escapeRegExp(local)}\\s*\\(`, "u").test(declaration)
-          || referencePathExpression(importedDeclaration.replace(/^[^=]+=/u, "").replace(/;\s*$/u, ""), referencePath))
-      ) {
+      if (importedDeclaration && (new RegExp(`\\b${escapeRegExp(local)}\\s*\\(`, "u").test(declaration) || referencePathExpression(importedDeclaration.replace(/^[^=]+=/u, "").replace(/;\s*$/u, ""), referencePath))) {
         visit(imported.module, imported.symbol);
       }
     }
     for (const local of declaredSymbols(source)) {
       const localDeclaration = declarationSource(source, local);
-      if (localDeclaration && !/function\s+/u.test(localDeclaration)
-        && (
-          referencePathExpression(localDeclaration.replace(/^[^=]+=/u, "").replace(/;\s*$/u, ""), referencePath)
-          || new RegExp(`\\b${escapeRegExp(local)}\\b`, "u").test(declaration)
-        )) {
+      if (localDeclaration && !/function\s+/u.test(localDeclaration) && (referencePathExpression(localDeclaration.replace(/^[^=]+=/u, "").replace(/;\s*$/u, ""), referencePath) || new RegExp(`\\b${escapeRegExp(local)}\\b`, "u").test(declaration))) {
         fragments.push(localDeclaration);
       }
     }
@@ -341,18 +311,12 @@ function pathCallArguments(expression: string): string[][] {
  * Unrelated literals in an array, options argument, or surrounding expression
  * never combine into a path.
  */
-function referencePathExpression(
-  expression: string,
-  referencePath: string,
-  bindings: Set<string> = new Set(),
-  providers: Set<string> = new Set(),
-): boolean {
+function referencePathExpression(expression: string, referencePath: string, bindings: Set<string> = new Set(), providers: Set<string> = new Set()): boolean {
   const literal = exactStringLiteral(expression.replace(/\s+as\s+(?:const|any|unknown|string)\s*$/u, ""));
   if (literal === referencePath) return true;
   const identifier = /^\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*$/u.exec(expression)?.[1];
   if (identifier && bindings.has(identifier)) return true;
-  if ([...providers].some((provider) =>
-    new RegExp(`^\\s*${escapeRegExp(provider)}\\s*\\([^)]*\\)\\s*$`, "u").test(expression))) {
+  if ([...providers].some((provider) => new RegExp(`^\\s*${escapeRegExp(provider)}\\s*\\([^)]*\\)\\s*$`, "u").test(expression))) {
     return true;
   }
   for (const argumentsList of pathCallArguments(expression)) {
@@ -361,13 +325,7 @@ function referencePathExpression(
       const argumentLiteral = exactStringLiteral(argument);
       if (argumentLiteral !== null) {
         suffix.push(argumentLiteral);
-      } else if (
-        referencePathExpression(argument, referencePath, bindings, providers)
-        || [...bindings].some((binding) => new RegExp(
-          `^\\s*\\.\\.\\.\\s*${escapeRegExp(binding)}\\.split\\(\\s*["']/["']\\s*\\)\\s*$`,
-          "u",
-        ).test(argument))
-      ) {
+      } else if (referencePathExpression(argument, referencePath, bindings, providers) || [...bindings].some((binding) => new RegExp(`^\\s*\\.\\.\\.\\s*${escapeRegExp(binding)}\\.split\\(\\s*["']/["']\\s*\\)\\s*$`, "u").test(argument))) {
         suffix = [referencePath];
       } else {
         // An unknown value can be a root prefix, but it breaks any previously
@@ -384,7 +342,10 @@ function returnExpressions(declaration: string): string[] {
   return [...declaration.matchAll(/\breturn\s+([^;\n}]+)/gu)].map((match) => match[1]!.trim());
 }
 
-function referenceFacts(fragments: string[], referencePath: string): {
+function referenceFacts(
+  fragments: string[],
+  referencePath: string,
+): {
   bindings: Set<string>;
   providers: Set<string>;
 } {
@@ -393,10 +354,7 @@ function referenceFacts(fragments: string[], referencePath: string): {
   const source = fragments.join("\n");
   const declarations = [...source.matchAll(/(?:const|let|var)\s+([A-Za-z_$][A-Za-z0-9_$]*)\s*=\s*([^;]+);/gu)];
   const functions = functionParameterLists(source);
-  const parameterNames = new Map(functions.map(({ name, parameters }) => [
-    name,
-    parameters.map((parameter) => /^\s*([A-Za-z_$][A-Za-z0-9_$]*)/u.exec(parameter)?.[1] ?? ""),
-  ]));
+  const parameterNames = new Map(functions.map(({ name, parameters }) => [name, parameters.map((parameter) => /^\s*([A-Za-z_$][A-Za-z0-9_$]*)/u.exec(parameter)?.[1] ?? "")]));
   let changed = true;
   while (changed) {
     changed = false;
@@ -410,8 +368,7 @@ function referenceFacts(fragments: string[], referencePath: string): {
     for (const { name } of functions) {
       if (providers.has(name)) continue;
       const declaration = declarationSource(source, name);
-      if (declaration && returnExpressions(declaration).some((expression) =>
-        referencePathExpression(expression, referencePath, bindings, providers))) {
+      if (declaration && returnExpressions(declaration).some((expression) => referencePathExpression(expression, referencePath, bindings, providers))) {
         providers.add(name);
         changed = true;
       }
@@ -421,8 +378,7 @@ function referenceFacts(fragments: string[], referencePath: string): {
       if (!parameters) continue;
       call.argumentsList.forEach((argument, index) => {
         const parameter = parameters[index];
-        if (parameter && !bindings.has(parameter)
-          && referencePathExpression(argument, referencePath, bindings, providers)) {
+        if (parameter && !bindings.has(parameter) && referencePathExpression(argument, referencePath, bindings, providers)) {
           bindings.add(parameter);
           changed = true;
         }
@@ -431,8 +387,7 @@ function referenceFacts(fragments: string[], referencePath: string): {
     for (const functionParameters of functions) {
       for (const parameter of functionParameters.parameters) {
         const match = /^\s*([A-Za-z_$][A-Za-z0-9_$]*)[^=]*=([\s\S]+)$/u.exec(parameter);
-        if (match && !bindings.has(match[1]!)
-          && referencePathExpression(match[2]!, referencePath, bindings, providers)) {
+        if (match && !bindings.has(match[1]!) && referencePathExpression(match[2]!, referencePath, bindings, providers)) {
           bindings.add(match[1]!);
           changed = true;
         }
@@ -447,8 +402,7 @@ function hasExactReadOrParse(fragments: string[], referencePath: string): boolea
   const { bindings, providers } = referenceFacts(fragments, referencePath);
   return namedCalls(source, READER_CALLS).some(({ argumentsList }) => {
     const pathArgument = argumentsList[0];
-    return pathArgument !== undefined
-      && referencePathExpression(pathArgument, referencePath, bindings, providers);
+    return pathArgument !== undefined && referencePathExpression(pathArgument, referencePath, bindings, providers);
   });
 }
 
@@ -609,10 +563,7 @@ function symbolIsReachable(modules: ReachabilityAnalysis, modulePath: string, sy
 /** Whether a root has source files needed to audit source-only retained references. */
 export function isRetainedReferenceSourceCheckout(root: string = resolveSourceRoot()): boolean {
   const resolved = resolvePath(root);
-  return !isNpxBundleRoot(resolved)
-    && regularContainedFile(resolved, "packages/cli/package.json") !== null
-    && regularContainedFile(resolved, "packages/cli/src/bin/agentera.ts") !== null
-    && regularContainedFile(resolved, AUTHORITY_RELATIVE_PATH) !== null;
+  return !isNpxBundleRoot(resolved) && regularContainedFile(resolved, "packages/cli/package.json") !== null && regularContainedFile(resolved, "packages/cli/src/bin/agentera.ts") !== null && regularContainedFile(resolved, AUTHORITY_RELATIVE_PATH) !== null;
 }
 
 function listLiveFiles(root: string, relative: string, errors: string[]): string[] {
@@ -642,14 +593,7 @@ function listLiveFiles(root: string, relative: string, errors: string[]): string
   return files;
 }
 
-function validateProductionParticipant(
-  root: string,
-  reachability: () => ReachabilityAnalysis,
-  referencePath: string,
-  label: string,
-  raw: unknown,
-  requireConsumption: boolean,
-): string[] {
+function validateProductionParticipant(root: string, reachability: () => ReachabilityAnalysis, referencePath: string, label: string, raw: unknown, requireConsumption: boolean): string[] {
   const value = mapping(raw);
   if (!value) return [`${referencePath}: ${label} must be a mapping`];
   const errors: string[] = [];
@@ -781,10 +725,7 @@ function validateRunbook(root: string, referencePath: string, raw: Mapping): str
 export function validateRetainedReferenceAuthority(root: string = resolveSourceRoot()): string[] {
   const resolvedRoot = resolvePath(root);
   if (!isRetainedReferenceSourceCheckout(resolvedRoot)) {
-    return [
-      `${AUTHORITY_RELATIVE_PATH}: retained-reference validation requires a source checkout with packages/cli/src; ` +
-      "recovery: run it from the repository root after pnpm -C packages/cli build",
-    ];
+    return [`${AUTHORITY_RELATIVE_PATH}: retained-reference validation requires a source checkout with packages/cli/src; ` + "recovery: run it from the repository root after pnpm -C packages/cli build"];
   }
   const authorityPath = regularContainedFile(resolvedRoot, AUTHORITY_RELATIVE_PATH);
   if (!authorityPath) return [`${AUTHORITY_RELATIVE_PATH}: authority file must be a contained regular file`];
@@ -797,7 +738,7 @@ export function validateRetainedReferenceAuthority(root: string = resolveSourceR
 
   const errors: string[] = [];
   let reachabilityAnalysis: ReachabilityAnalysis | undefined;
-  const reachability = (): ReachabilityAnalysis => reachabilityAnalysis ??= analyzeReachability(resolvedRoot);
+  const reachability = (): ReachabilityAnalysis => (reachabilityAnalysis ??= analyzeReachability(resolvedRoot));
   if (authority.schema_version !== "agentera.retainedReferenceAuthority.v1") {
     errors.push(`${AUTHORITY_RELATIVE_PATH}: unsupported schema_version`);
   }
@@ -884,9 +825,7 @@ export function retainedReferenceAuthorityMain(opts: RetainedReferenceAuthorityM
   const root = resolvePath(opts.root ?? resolveSourceRoot());
   const errors = validateRetainedReferenceAuthority(root);
   if (errors.length === 0) {
-    errors.push(...validateStructuredInputInventory(
-      path.join(root, "references/analysis/structured-input-inventory.yaml"),
-    ));
+    errors.push(...validateStructuredInputInventory(path.join(root, "references/analysis/structured-input-inventory.yaml")));
   }
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
   if (errors.length > 0) {

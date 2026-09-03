@@ -46,8 +46,12 @@ function run(root: string, args: string[]): { rc: number; out: string; err: stri
   process.chdir(root);
   try {
     const rc = main(["node", "agentera", ...args], {
-      out: (text) => { out += text; },
-      err: (text) => { err += text; },
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
     });
     return { rc, out, err };
   } finally {
@@ -125,10 +129,7 @@ describe("product v1 EOL execution gate", () => {
     const previousProfile = process.env.AGENTERA_PROFILE_DIR;
     process.env.AGENTERA_PROFILE_DIR = profile;
     try {
-      const args = [
-        "upgrade", "--reset-product-v1", "--project", root, "--install-root", install,
-        "--home", home, "--dry-run", "--format", "json",
-      ];
+      const args = ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--format", "json"];
       const before = [snapshot(root), snapshot(home), snapshot(install), snapshot(profile)];
       const previewResult = run(root, args);
       expect(previewResult.rc).toBe(0);
@@ -139,12 +140,8 @@ describe("product v1 EOL execution gate", () => {
         mutation_performed: false,
         roots: { project: root, profile_root: profile, install_root: install, runtime_home: home },
       });
-      expect(preview.deletions.map((item: { id: string }) => item.id)).toEqual([
-        "project.state", "profile.state", "installation.state", "runtime.resources",
-      ]);
-      expect(preview.recreations.map((item: { id: string }) => item.id)).toEqual([
-        "project.fresh-v3", "installation.current-package", "runtime.canonical-skill",
-      ]);
+      expect(preview.deletions.map((item: { id: string }) => item.id)).toEqual(["project.state", "profile.state", "installation.state", "runtime.resources"]);
+      expect(preview.recreations.map((item: { id: string }) => item.id)).toEqual(["project.fresh-v3", "installation.current-package", "runtime.canonical-skill"]);
       expect(preview.deletions.every((item: { targets: unknown[] }) => item.targets.length > 0)).toBe(true);
       expect(preview.irreversible_loss).toHaveLength(4);
       expect(preview.authorization).toMatch(/^sha256:[0-9a-f]{64}$/);
@@ -152,29 +149,24 @@ describe("product v1 EOL execution gate", () => {
 
       fs.writeFileSync(path.join(root, ".agentera", "new-state.yaml"), "changed: true\n");
       const changed = snapshot(root);
-      const stale = run(root, [
-        "upgrade", "--reset-product-v1", "--project", root, "--install-root", install,
-        "--home", home, "--yes", "--authorization", preview.authorization, "--format", "json",
-      ]);
+      const stale = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--yes", "--authorization", preview.authorization, "--format", "json"]);
       expect(stale.rc).toBe(2);
       expect(JSON.parse(stale.out).error.message).toContain("scope changed after preview");
       expect(snapshot(root)).toBe(changed);
 
       const freshPreview = JSON.parse(run(root, args).out);
-      const authorized = run(root, [
-        "upgrade", "--reset-product-v1", "--project", root, "--install-root", install,
-        "--home", home, "--yes", "--authorization", freshPreview.authorization, "--format", "json",
-      ]);
+      const authorized = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--yes", "--authorization", freshPreview.authorization, "--format", "json"]);
       expect(authorized.rc).toBe(0);
-      expect(JSON.parse(authorized.out)).toMatchObject({ status: "complete", effects_performed: true });
+      expect(JSON.parse(authorized.out)).toMatchObject({
+        status: "complete",
+        effects_performed: true,
+      });
       expect(fs.readFileSync(path.join(root, "keep.txt"), "utf8")).toBe("user owned\n");
       expect(fs.existsSync(path.join(root, ".agentera"))).toBe(false);
       expect(classifyProjectState(root).state).toBe("fresh_uninitialized");
       expect(fs.existsSync(profile)).toBe(false);
       expect(fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md"))).toBe(true);
-      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(
-        fs.realpathSync(path.join(install, "skills", "agentera")),
-      );
+      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(fs.realpathSync(path.join(install, "skills", "agentera")));
     } finally {
       if (previousProfile === undefined) delete process.env.AGENTERA_PROFILE_DIR;
       else process.env.AGENTERA_PROFILE_DIR = previousProfile;
@@ -192,19 +184,13 @@ describe("product v1 EOL execution gate", () => {
     fs.symlinkSync(external, path.join(root, ".agentera", "external-link"));
     fs.symlinkSync(install, installAlias);
 
-    const preview = run(root, [
-      "upgrade", "--reset-product-v1", "--project", root, "--install-root", install,
-      "--home", home, "--dry-run", "--format", "json",
-    ]);
+    const preview = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--format", "json"]);
     expect(preview.rc).toBe(0);
     const serialized = preview.out;
     expect(serialized).toContain(path.join(root, ".agentera", "external-link"));
     expect(serialized).not.toContain(path.join(external, "keep.txt"));
 
-    const alias = run(root, [
-      "upgrade", "--reset-product-v1", "--project", root, "--install-root", installAlias,
-      "--home", home, "--dry-run", "--format", "json",
-    ]);
+    const alias = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", installAlias, "--home", home, "--dry-run", "--format", "json"]);
     expect(alias.rc).toBe(2);
     expect(JSON.parse(alias.out).error.message).toContain("must not be a symbolic link");
     expect(fs.readFileSync(path.join(external, "keep.txt"), "utf8")).toBe("external\n");
@@ -219,14 +205,7 @@ describe("product v1 EOL execution gate", () => {
     const codex = path.join(home, ".codex");
     fs.mkdirSync(codex);
     const config = path.join(codex, "config.toml");
-    fs.writeFileSync(config, [
-      "[plugins.unrelated]",
-      'command = "keep-me"',
-      "",
-      '[plugins."agentera@agentera"]',
-      'command = "legacy-agentera"',
-      "",
-    ].join("\n"));
+    fs.writeFileSync(config, ["[plugins.unrelated]", 'command = "keep-me"', "", '[plugins."agentera@agentera"]', 'command = "legacy-agentera"', ""].join("\n"));
     const options = {
       project: root,
       installRoot: install,
@@ -238,15 +217,12 @@ describe("product v1 EOL execution gate", () => {
     const runtime = preview.deletions.find(({ id }) => id === "runtime.resources")!;
     const configTargets = runtime.targets.filter((target) => target.path === config);
     expect(configTargets.length).toBeGreaterThan(0);
-    expect(configTargets.every((target) =>
-      target.operation === "remove_in_file_selector"
-      && target.selector !== undefined
-      && target.entries === undefined
-      && target.file_state?.type === "file"
-    )).toBe(true);
-    expect(configTargets).toContainEqual(expect.objectContaining({
-      selector: { kind: "contains", value: '[plugins."agentera@agentera"]' },
-    }));
+    expect(configTargets.every((target) => target.operation === "remove_in_file_selector" && target.selector !== undefined && target.entries === undefined && target.file_state?.type === "file")).toBe(true);
+    expect(configTargets).toContainEqual(
+      expect.objectContaining({
+        selector: { kind: "contains", value: '[plugins."agentera@agentera"]' },
+      }),
+    );
     expect(JSON.stringify(configTargets)).not.toContain("keep-me");
 
     fs.appendFileSync(config, "[plugins.still_unrelated]\nenabled = true\n");
@@ -256,18 +232,20 @@ describe("product v1 EOL execution gate", () => {
     const changedContract = structuredClone(loadNativeResourceCleanupContract());
     const selected = changedContract.diagnosticResources.find((resource) => resource.contains !== null)!;
     selected.contains = `${selected.contains}.changed`;
-    expect(() => authorizeProductV1Reset(
-      options,
-      reviewed.authorization,
-      { runtimeContract: changedContract },
-    )).toThrow("scope changed after preview");
+    expect(() =>
+      authorizeProductV1Reset(options, reviewed.authorization, {
+        runtimeContract: changedContract,
+      }),
+    ).toThrow("scope changed after preview");
 
     const authorized = authorizeProductV1Reset(options, reviewed.authorization);
     const validatedRuntime = authorized.validated_scope.deletions.find(({ id }) => id === "runtime.resources")!;
-    expect(validatedRuntime.targets.filter((target) => target.path === config)).toEqual(configTargets.map((target) => ({
-      ...target,
-      file_state: expect.objectContaining({ type: "file" }),
-    })));
+    expect(validatedRuntime.targets.filter((target) => target.path === config)).toEqual(
+      configTargets.map((target) => ({
+        ...target,
+        file_state: expect.objectContaining({ type: "file" }),
+      })),
+    );
     expect(authorized.effects_performed).toBe(false);
   });
 
@@ -310,14 +288,16 @@ describe("product v1 EOL execution gate", () => {
       };
       const preview = previewProductV1Reset(options);
       let interrupted = false;
-      expect(() => applyProductV1Reset(options, preview.authorization, {
-        afterEffect(effect) {
-          if (!interrupted && (effect === interruptedEffect || (interruptedEffect === "selector-staged" && effect === `selector-staged:${config}`))) {
-            interrupted = true;
-            throw new Error(`interrupted after ${interruptedEffect}`);
-          }
-        },
-      })).toThrow(`interrupted after ${interruptedEffect}`);
+      expect(() =>
+        applyProductV1Reset(options, preview.authorization, {
+          afterEffect(effect) {
+            if (!interrupted && (effect === interruptedEffect || (interruptedEffect === "selector-staged" && effect === `selector-staged:${config}`))) {
+              interrupted = true;
+              throw new Error(`interrupted after ${interruptedEffect}`);
+            }
+          },
+        }),
+      ).toThrow(`interrupted after ${interruptedEffect}`);
 
       if (interruptedEffect === "selector-staged") {
         expect(fs.readFileSync(config, "utf8")).toBe(originalConfig);
@@ -335,21 +315,9 @@ describe("product v1 EOL execution gate", () => {
       expect(fs.existsSync(path.join(root, ".agentera-product-v1-reset.json"))).toBe(false);
       expect(fs.existsSync(selectorStaging)).toBe(false);
       expect(fs.statSync(config).mode & 0o7777).toBe(0o640);
-      expect(fs.readFileSync(config, "utf8")).toBe([
-        "[plugins.unrelated]",
-        'command = "keep-me"',
-        "",
-        "[plugins.after] # adjacent unrelated section",
-        'command = "keep-after"',
-        "",
-        "[shell_environment_policy.set]",
-        'KEEP = "yes"',
-        "",
-      ].join("\n"));
+      expect(fs.readFileSync(config, "utf8")).toBe(["[plugins.unrelated]", 'command = "keep-me"', "", "[plugins.after] # adjacent unrelated section", 'command = "keep-after"', "", "[shell_environment_policy.set]", 'KEEP = "yes"', ""].join("\n"));
       expect(fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md"))).toBe(true);
-      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(
-        fs.realpathSync(path.join(install, "skills", "agentera")),
-      );
+      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(fs.realpathSync(path.join(install, "skills", "agentera")));
       if (interruptedEffect === "initialize:fresh-v3") {
         const canonicalInstall = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-fresh-install-"));
         roots.push(canonicalInstall);
@@ -370,11 +338,20 @@ describe("product v1 EOL execution gate", () => {
     roots.push(home, install, profile);
     fs.writeFileSync(path.join(install, "owned.txt"), "approved\n");
     fs.writeFileSync(path.join(profile, "state"), "preserve-until-validation-passes\n");
-    const options = { project: root, installRoot: install, home, env: { ...process.env, AGENTERA_PROFILE_DIR: profile } };
+    const options = {
+      project: root,
+      installRoot: install,
+      home,
+      env: { ...process.env, AGENTERA_PROFILE_DIR: profile },
+    };
     const preview = previewProductV1Reset(options);
-    expect(() => applyProductV1Reset(options, preview.authorization, {
-      afterEffect(effect) { if (effect === "journal") throw new Error("interrupted after journal"); },
-    })).toThrow("interrupted after journal");
+    expect(() =>
+      applyProductV1Reset(options, preview.authorization, {
+        afterEffect(effect) {
+          if (effect === "journal") throw new Error("interrupted after journal");
+        },
+      }),
+    ).toThrow("interrupted after journal");
 
     mutate(install);
     expect(() => applyProductV1Reset(options, preview.authorization)).toThrow(/new or changed|changed after approval/);
@@ -388,14 +365,25 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
-    const options = { project: root, installRoot: install, home, env: { ...process.env, AGENTERA_PROFILE_DIR: profile } };
+    const options = {
+      project: root,
+      installRoot: install,
+      home,
+      env: { ...process.env, AGENTERA_PROFILE_DIR: profile },
+    };
     const preview = previewProductV1Reset(options);
-    expect(() => applyProductV1Reset(options, preview.authorization, {
-      afterEffect(effect) { if (effect === "journal") throw new Error("interrupted after journal"); },
-    })).toThrow("interrupted after journal");
+    expect(() =>
+      applyProductV1Reset(options, preview.authorization, {
+        afterEffect(effect) {
+          if (effect === "journal") throw new Error("interrupted after journal");
+        },
+      }),
+    ).toThrow("interrupted after journal");
     fs.writeFileSync(path.join(root, ".agentera-product-v1-reset.json"), "{\n");
 
-    expect(applyProductV1Reset(options, preview.authorization)).toMatchObject({ status: "complete" });
+    expect(applyProductV1Reset(options, preview.authorization)).toMatchObject({
+      status: "complete",
+    });
     expect(fs.existsSync(path.join(root, ".agentera-product-v1-reset.json"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera-product-v1-reset.json.staging"))).toBe(false);
     expect(classifyProjectState(root).state).toBe("fresh_uninitialized");
@@ -408,11 +396,20 @@ describe("product v1 EOL execution gate", () => {
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
     fs.writeFileSync(path.join(profile, "state"), "must-remain\n");
-    const options = { project: root, installRoot: install, home, env: { ...process.env, AGENTERA_PROFILE_DIR: profile } };
+    const options = {
+      project: root,
+      installRoot: install,
+      home,
+      env: { ...process.env, AGENTERA_PROFILE_DIR: profile },
+    };
     const preview = previewProductV1Reset(options);
-    expect(() => applyProductV1Reset(options, preview.authorization, {
-      afterEffect(effect) { if (effect === "delete:project.state:.agentera") throw new Error("interrupted after deletion"); },
-    })).toThrow("interrupted after deletion");
+    expect(() =>
+      applyProductV1Reset(options, preview.authorization, {
+        afterEffect(effect) {
+          if (effect === "delete:project.state:.agentera") throw new Error("interrupted after deletion");
+        },
+      }),
+    ).toThrow("interrupted after deletion");
     fs.writeFileSync(path.join(root, ".agentera-product-v1-reset.json"), "{\n");
 
     expect(() => applyProductV1Reset(options, preview.authorization)).toThrow("cannot be recovered after effects may have begun");

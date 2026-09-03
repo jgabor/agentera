@@ -4,12 +4,7 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  ArtifactRecord,
-  artifactSchemasDir as defaultArtifactSchemasDir,
-  loadArtifactRegistry,
-  registryModelPath as defaultRegistryModelPath,
-} from "../registries/artifactRegistry.js";
+import { ArtifactRecord, artifactSchemasDir as defaultArtifactSchemasDir, loadArtifactRegistry, registryModelPath as defaultRegistryModelPath } from "../registries/artifactRegistry.js";
 
 /**
  * Validate cross-capability artifact producer/consumer consistency. Faithful TS
@@ -40,10 +35,7 @@ function loadYaml(p: string): JsonObject {
   return loadYamlMapping(fs.readFileSync(p, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
-export function loadCanonicalArtifacts(
-  artifactSchemasDir: string = defaultArtifactSchemasDir(),
-  registryModelPathArg: string = defaultRegistryModelPath(),
-): Map<string, CanonicalArtifact> {
+export function loadCanonicalArtifacts(artifactSchemasDir: string = defaultArtifactSchemasDir(), registryModelPathArg: string = defaultRegistryModelPath()): Map<string, CanonicalArtifact> {
   const out = new Map<string, CanonicalArtifact>();
   for (const [artifactId, record] of loadArtifactRegistry(artifactSchemasDir, registryModelPathArg)) {
     out.set(artifactId, {
@@ -67,9 +59,7 @@ function listCapabilityDirs(capabilitiesDir: string): string[] {
     .sort();
 }
 
-export function loadCapabilityArtifacts(
-  capabilitiesDir: string = capabilitiesDirDefault(),
-): CapabilityArtifact[] {
+export function loadCapabilityArtifacts(capabilitiesDir: string = capabilitiesDirDefault()): CapabilityArtifact[] {
   const records: CapabilityArtifact[] = [];
   for (const capName of listCapabilityDirs(capabilitiesDir)) {
     const artifactPath = path.join(capabilitiesDir, capName, "schemas", "artifacts.yaml");
@@ -147,11 +137,7 @@ function sortedListRepr(s: Set<string>): string {
   return "[" + arr.map((v) => `'${v}'`).join(", ") + "]";
 }
 
-export function validateGraph(
-  artifactSchemasDir: string = defaultArtifactSchemasDir(),
-  capabilitiesDir: string = capabilitiesDirDefault(),
-  registryModelPathArg: string = defaultRegistryModelPath(),
-): string[] {
+export function validateGraph(artifactSchemasDir: string = defaultArtifactSchemasDir(), capabilitiesDir: string = capabilitiesDirDefault(), registryModelPathArg: string = defaultRegistryModelPath()): string[] {
   // Thread the same model path into both registry loads so a synthetic
   // test fixture (or a non-default install) resolves the same identity set in
   // the canonical map and the dependency-graph walk below.
@@ -185,20 +171,10 @@ export function validateGraph(
     const schemaProducers = intersect(artifact.producers, capabilityNames);
     const schemaConsumers = intersect(artifact.consumers, capabilityNames);
     if (schemaProducers.size > 0 && !setsEqual(schemaProducers, producedBy)) {
-      errors.push(
-        `${artifact.displayName}: registry producers ${sortedListRepr(schemaProducers)} ` +
-          `do not match capability producers ${sortedListRepr(producedBy)}`,
-      );
+      errors.push(`${artifact.displayName}: registry producers ${sortedListRepr(schemaProducers)} ` + `do not match capability producers ${sortedListRepr(producedBy)}`);
     }
-    if (
-      artifact.consumers.size > 0 &&
-      !artifact.consumers.has("all_skills") &&
-      !setsEqual(schemaConsumers, consumedBy)
-    ) {
-      errors.push(
-        `${artifact.displayName}: registry consumers ${sortedListRepr(schemaConsumers)} ` +
-          `do not match capability consumers ${sortedListRepr(consumedBy)}`,
-      );
+    if (artifact.consumers.size > 0 && !artifact.consumers.has("all_skills") && !setsEqual(schemaConsumers, consumedBy)) {
+      errors.push(`${artifact.displayName}: registry consumers ${sortedListRepr(schemaConsumers)} ` + `do not match capability consumers ${sortedListRepr(consumedBy)}`);
     }
   }
 

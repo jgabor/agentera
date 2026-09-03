@@ -25,8 +25,12 @@ function runCli(root: string, args: string[], stdin = "", selectProject = true):
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...args, ...(selectProject ? ["--project", root] : [])], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
     stdin: () => stdin,
   });
   return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
@@ -105,11 +109,7 @@ describe("declarative state mutation grammar", () => {
       type: "list[integer|string]",
       required: false,
       format: null,
-      validation: [
-        "positive_integer_or_canonical_numeric_string",
-        "unique_after_normalization_within_task",
-        "resolves_to_declared_task_ordinal_in_same_atomic_document",
-      ],
+      validation: ["positive_integer_or_canonical_numeric_string", "unique_after_normalization_within_task", "resolves_to_declared_task_ordinal_in_same_atomic_document"],
       accepted_forms: {
         atomic_plan_create: ["positive_integer", "canonical_numeric_string"],
         legacy_migration_only: ["legacy_task_reference_string"],
@@ -183,12 +183,17 @@ describe("declarative state mutation grammar", () => {
     const schema = runCli(root, ["schema", "--format", "json"], "", false);
     expect(schema.rc, schema.err).toBe(0);
     const schemaOperations = new Map<string, any>();
-    for (const artifact of schema.json.state_writer.artifacts)
-      for (const operation of artifact.operations) schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
+    for (const artifact of schema.json.state_writer.artifacts) for (const operation of artifact.operations) schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
 
     const schemaParityRows = new Map(schema.json.state_writer.parity_matrix.rows.map((row: any) => [`${row.artifact}.${row.verb}`, row]));
 
-    for (const [artifact, verb] of [["progress", "append"], ["decisions", "append"], ["decisions", "amend"], ["plan", "append"], ["plan", "update"]]) {
+    for (const [artifact, verb] of [
+      ["progress", "append"],
+      ["decisions", "append"],
+      ["decisions", "amend"],
+      ["plan", "append"],
+      ["plan", "update"],
+    ]) {
       const key = `${artifact}.${verb}`;
       const explain = run(root, [artifact, "explain", "--verb", verb, "--format", "json"]);
       const all = run(root, [artifact, "explain", "--all", "--format", "json"]);
@@ -235,15 +240,28 @@ describe("declarative state mutation grammar", () => {
     const plan = schema.json.state_writer.artifacts.find((artifact: any) => artifact.artifact === "plan");
     const operation = plan.operations.find((candidate: any) => candidate.verb === "replace");
     const allOperation = all.json.operations.find((candidate: any) => candidate.requested_verb === "replace");
-    expect(operation.input).toMatchObject({ mode: "structured", optional: true, root: "complete plan document when creating a successor" });
-    expect(explain.json.input).toMatchObject({ mode: "structured", optional: true, root: "complete plan document when creating a successor" });
+    expect(operation.input).toMatchObject({
+      mode: "structured",
+      optional: true,
+      root: "complete plan document when creating a successor",
+    });
+    expect(explain.json.input).toMatchObject({
+      mode: "structured",
+      optional: true,
+      root: "complete plan document when creating a successor",
+    });
     expect(allOperation.input).toEqual(explain.json.input);
   });
 
   it("preserves optional selector inference and rejects mandatory decision omissions before effects", () => {
     const root = project();
     const planInput = dumpYamlMapping({
-      header: { level: "light", created: "2026-07-31", status: "open", title: "Selector inference" },
+      header: {
+        level: "light",
+        created: "2026-07-31",
+        status: "open",
+        title: "Selector inference",
+      },
       what: "Verify optional selector inference in packages/cli/src/state/planEntities.ts.",
       why: "Discovery requiredness must preserve executable defaults.",
       scope: { included: ["selector inference"], excluded: ["downstream conversions"] },
@@ -251,13 +269,18 @@ describe("declarative state mutation grammar", () => {
     });
     const createdPlan = run(root, ["plan", "create", "--input", "-", "--format", "json"], planInput);
     expect(createdPlan.rc, createdPlan.err).toBe(0);
-    const appended = run(root, ["plan", "append", "--input", "-", "--format", "json"], "name: Inferred plan\ndepends_on: []\nacceptance: [\"GIVEN input WHEN selected THEN the inferred plan is used\"]\n");
+    const appended = run(root, ["plan", "append", "--input", "-", "--format", "json"], 'name: Inferred plan\ndepends_on: []\nacceptance: ["GIVEN input WHEN selected THEN the inferred plan is used"]\n');
     expect(appended.rc, appended.err).toBe(0);
     expect(appended.json.record.plan).toBe(createdPlan.json.id);
 
     const objectiveInput = dumpYamlMapping({
       header: { title: "Selector objective", status: "open", created: "2026-07-31" },
-      objective: { description: "Verify selector defaults", why: "Discovery must be truthful", measurement: "Focused regression", constraints: [] },
+      objective: {
+        description: "Verify selector defaults",
+        why: "Discovery must be truthful",
+        measurement: "Focused regression",
+        constraints: [],
+      },
       metric: { description: "parity", direction: "maximize", unit: "operations" },
       baseline: { description: "22 operations" },
       gates: {},
@@ -288,7 +311,7 @@ describe("declarative state mutation grammar", () => {
       class: "missing_argument",
       message: "--id is required for decisions update",
       syntax: "--id VALUE",
-      example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence \"...\"",
+      example: 'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."',
       recovery: "Correct the input and retry; no state was changed.",
     });
     const amendId = run(rejectRoot, ["decisions", "amend", "--base-sha256", "abc", "--input", "-", "--format", "json"]);
@@ -332,7 +355,10 @@ describe("declarative state mutation grammar", () => {
     expect(health.json.verbs).toEqual(["append"]);
     const repair = run(root, ["health", "repair", "--number", "1", "--force", "--format", "json"]);
     expect(repair.rc).not.toBe(0);
-    expect(repair.json.error).toMatchObject({ class: "invalid_request", syntax: expect.stringContaining("state health list") });
+    expect(repair.json.error).toMatchObject({
+      class: "invalid_request",
+      syntax: expect.stringContaining("state health list"),
+    });
     expect(fs.readdirSync(path.join(root, ".agentera"))).toEqual(["state-mode.yaml"]);
   });
 
@@ -353,13 +379,16 @@ describe("declarative state mutation grammar", () => {
     expect(transitionReject.json.error.class).toBe("mutually_exclusive");
 
     const input = path.join(root, "plan.yaml");
-    fs.writeFileSync(input, dumpYamlMapping({
-      header: { level: "light", created: "2026-07-30", status: "open", title: "Grammar" },
-      what: "Prove packages/cli/src/state/write/grammar.ts batch publication.",
-      why: "Parity needs one batch success at packages/cli/src/state/write/grammar.ts.",
-      scope: { included: ["grammar"], excluded: ["legacy aggregate"] },
-      tasks: [{ number: 1, name: "Batch", status: "pending", depends_on: [] }],
-    }));
+    fs.writeFileSync(
+      input,
+      dumpYamlMapping({
+        header: { level: "light", created: "2026-07-30", status: "open", title: "Grammar" },
+        what: "Prove packages/cli/src/state/write/grammar.ts batch publication.",
+        why: "Parity needs one batch success at packages/cli/src/state/write/grammar.ts.",
+        scope: { included: ["grammar"], excluded: ["legacy aggregate"] },
+        tasks: [{ number: 1, name: "Batch", status: "pending", depends_on: [] }],
+      }),
+    );
     const batchPass = run(root, ["plan", "create", "--input", input, "--dry-run", "--format", "json"]);
     expect(batchPass.rc, JSON.stringify(batchPass)).toBe(0);
     const beforeBatchReject = fs.readdirSync(path.join(root, ".agentera", "entities"));
@@ -421,20 +450,11 @@ describe("declarative state mutation grammar", () => {
       roots.push(sourceRoot);
       const authorityDir = path.join(sourceRoot, "references", "artifacts");
       fs.mkdirSync(authorityDir, { recursive: true });
-      const source = loadYamlMapping(fs.readFileSync(
-        path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
-        "utf8",
-      )) as any;
-      const operation = source.mutation_grammar.operations.find(
-        (candidate: any) => candidate.artifact === "progress" && candidate.verb === "append",
-      );
+      const source = loadYamlMapping(fs.readFileSync(path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"), "utf8")) as any;
+      const operation = source.mutation_grammar.operations.find((candidate: any) => candidate.artifact === "progress" && candidate.verb === "append");
       operation[field] = field === "examples" ? [badCommand] : badCommand;
-      fs.writeFileSync(
-        path.join(authorityDir, "state-storage-authority.yaml"),
-        dumpYamlMapping(source),
-      );
-      expect(() => loadMutationGrammar(sourceRoot), `${field}: ${badCommand}`)
-        .toThrow(/invalid development command projection/);
+      fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), dumpYamlMapping(source));
+      expect(() => loadMutationGrammar(sourceRoot), `${field}: ${badCommand}`).toThrow(/invalid development command projection/);
     }
     loadMutationGrammar();
   });
@@ -451,31 +471,23 @@ describe("declarative state mutation grammar", () => {
         const authorityDir = path.join(sourceRoot, "references", "artifacts");
         fs.mkdirSync(authorityDir, { recursive: true });
         const changed = structuredClone(authority);
-        const target = changed.mutation_grammar.operations.find(
-          (candidate: any) => candidate.artifact === operation.artifact && candidate.verb === operation.verb,
-        );
+        const target = changed.mutation_grammar.operations.find((candidate: any) => candidate.artifact === operation.artifact && candidate.verb === operation.verb);
         if (field === "recovery") target.recovery = `${target.recovery} oops`;
         else target.examples[0] = `${target.examples[0]} oops`;
         fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), dumpYamlMapping(changed));
-        expect(() => loadMutationGrammar(sourceRoot), `${operation.artifact}.${operation.verb}.${field}`)
-          .toThrow(/invalid development command projection/);
+        expect(() => loadMutationGrammar(sourceRoot), `${operation.artifact}.${operation.verb}.${field}`).toThrow(/invalid development command projection/);
       }
     }
     const grammar = loadMutationGrammar();
     for (const operation of grammar.operations) {
-      const runtime = runtimeOperationSpecs().find(
-        (candidate) => candidate.artifact === operation.artifact && candidate.verb === operation.verb,
-      )!;
+      const runtime = runtimeOperationSpecs().find((candidate) => candidate.artifact === operation.artifact && candidate.verb === operation.verb)!;
       expect(operation.recovery).toBe(runtime.projection.recovery.runtime);
       expect(operation.examples).toEqual(runtime.projection.examples.map(({ runtime: value }) => value));
     }
   });
 
   it("rejects invalid enum and format examples before schema or help can consume them", () => {
-    const authority = loadYamlMapping(fs.readFileSync(
-      path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
-      "utf8",
-    )) as any;
+    const authority = loadYamlMapping(fs.readFileSync(path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"), "utf8")) as any;
     for (const [artifact, verb, mutate] of [
       ["plan", "set-status", (value: string) => value.replace("--status complete", "--status retired")],
       ["progress", "append", (value: string) => `${value} --format invalid`],
@@ -485,9 +497,7 @@ describe("declarative state mutation grammar", () => {
       const authorityDir = path.join(sourceRoot, "references", "artifacts");
       fs.mkdirSync(authorityDir, { recursive: true });
       const changed = structuredClone(authority);
-      const operation = changed.mutation_grammar.operations.find(
-        (candidate: any) => candidate.artifact === artifact && candidate.verb === verb,
-      );
+      const operation = changed.mutation_grammar.operations.find((candidate: any) => candidate.artifact === artifact && candidate.verb === verb);
       operation.examples[0] = mutate(operation.examples[0]);
       fs.writeFileSync(path.join(authorityDir, "state-storage-authority.yaml"), dumpYamlMapping(changed));
       expect(() => loadMutationGrammar(sourceRoot)).toThrow(/invalid development command projection/);

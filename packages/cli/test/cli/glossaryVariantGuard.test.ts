@@ -3,9 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import {
-  scanConfirmedVariantViolations,
-} from "../../src/validate/glossaryVariantGuard.js";
+import { scanConfirmedVariantViolations } from "../../src/validate/glossaryVariantGuard.js";
 import { assessTerminologyDrift } from "../../src/audit/terminologyDrift.js";
 import type { TerminologyDriftFinding } from "../../src/audit/terminologyDrift.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -18,28 +16,28 @@ function project(): string {
   return root;
 }
 
-function publishConfirmedSet(
-  root: string,
-  canonical = "JsonValue",
-  variant = "LegacyJsonValue",
-  concept = "structured value",
-): string {
+function publishConfirmedSet(root: string, canonical = "JsonValue", variant = "LegacyJsonValue", concept = "structured value"): string {
   fs.writeFileSync(path.join(root, "terms.ts"), `export type ${canonical} = ${variant};\n`);
   fs.writeFileSync(path.join(root, "terms-extra.ts"), `export type Canonical = ${canonical};\n`);
   const proposal = assessTerminologyDrift({
     projectRoot: root,
-    concepts: [{
-      concept,
-      confidence: 84,
-      severity: "warning",
-      terms: [
-        { term: canonical, evidence: [
-          { source_path: "terms.ts", line: 1 },
-          { source_path: "terms-extra.ts", line: 1 },
-        ] },
-        { term: variant, evidence: [{ source_path: "terms.ts", line: 1 }] },
-      ],
-    }],
+    concepts: [
+      {
+        concept,
+        confidence: 84,
+        severity: "warning",
+        terms: [
+          {
+            term: canonical,
+            evidence: [
+              { source_path: "terms.ts", line: 1 },
+              { source_path: "terms-extra.ts", line: 1 },
+            ],
+          },
+          { term: variant, evidence: [{ source_path: "terms.ts", line: 1 }] },
+        ],
+      },
+    ],
     deliberateDecisionConcepts: new Set(),
     trackedIssueConcepts: new Set(),
   })[0]!;
@@ -52,10 +50,7 @@ function publishConfirmedSet(
       confirmed_at: "2026-07-26T14:00:00Z",
     },
   };
-  const rc = main(
-    ["node", "agentera", "state", "glossary", "publish", "--input", "-", "--format", "json", "--project", root],
-    { out: () => {}, err: () => {}, stdin: () => JSON.stringify(request) },
-  );
+  const rc = main(["node", "agentera", "state", "glossary", "publish", "--input", "-", "--format", "json", "--project", root], { out: () => {}, err: () => {}, stdin: () => JSON.stringify(request) });
   expect(rc).toBe(0);
   return proposal.proposal_digest;
 }
@@ -71,19 +66,24 @@ function publishProposal(root: string, proposal: TerminologyDriftFinding): { rc:
     },
   };
   let out = "";
-  const rc = main(
-    ["node", "agentera", "state", "glossary", "publish", "--input", "-", "--format", "json", "--project", root],
-    { out: (text) => { out += text; }, err: () => {}, stdin: () => JSON.stringify(request) },
-  );
+  const rc = main(["node", "agentera", "state", "glossary", "publish", "--input", "-", "--format", "json", "--project", root], {
+    out: (text) => {
+      out += text;
+    },
+    err: () => {},
+    stdin: () => JSON.stringify(request),
+  });
   return { rc, json: JSON.parse(out) };
 }
 
 function validateState(root: string): { rc: number; json: any } {
   let out = "";
-  const rc = main(
-    ["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"],
-    { out: (text) => { out += text; }, err: () => {} },
-  );
+  const rc = main(["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"], {
+    out: (text) => {
+      out += text;
+    },
+    err: () => {},
+  });
   return { rc, json: JSON.parse(out) };
 }
 
@@ -203,10 +203,7 @@ describe("confirmed glossary variant guard", () => {
       publishConfirmedSet(root, "é", variant, "decomposed boundary");
       fs.mkdirSync(path.join(root, "src"));
       const target = path.join(root, "src/reintroduced.ts");
-      fs.writeFileSync(
-        target,
-        [`type A = ${variant}Suffix;`, `type B = Prefix${variant};`, `type C = ${variant}\u200Cnext;`].join("\n"),
-      );
+      fs.writeFileSync(target, [`type A = ${variant}Suffix;`, `type B = Prefix${variant};`, `type C = ${variant}\u200Cnext;`].join("\n"));
       expect(scanConfirmedVariantViolations(root)).toEqual([]);
 
       fs.writeFileSync(target, `const value = (${variant});\n`);
@@ -227,18 +224,23 @@ describe("confirmed glossary variant guard", () => {
       fs.writeFileSync(path.join(root, "request-extra.ts"), "export type RequestEnvelope = string;\n");
       const overlapping = assessTerminologyDrift({
         projectRoot: root,
-        concepts: [{
-          concept: "request envelope",
-          confidence: 84,
-          severity: "warning",
-          terms: [
-            { term: "RequestEnvelope", evidence: [
-              { source_path: "request.ts", line: 1 },
-              { source_path: "request-extra.ts", line: 1 },
-            ] },
-            { term: "LegacyJsonValue", evidence: [{ source_path: "request.ts", line: 1 }] },
-          ],
-        }],
+        concepts: [
+          {
+            concept: "request envelope",
+            confidence: 84,
+            severity: "warning",
+            terms: [
+              {
+                term: "RequestEnvelope",
+                evidence: [
+                  { source_path: "request.ts", line: 1 },
+                  { source_path: "request-extra.ts", line: 1 },
+                ],
+              },
+              { term: "LegacyJsonValue", evidence: [{ source_path: "request.ts", line: 1 }] },
+            ],
+          },
+        ],
         deliberateDecisionConcepts: new Set(),
         trackedIssueConcepts: new Set(),
       })[0]!;
@@ -261,10 +263,7 @@ describe("confirmed glossary variant guard", () => {
     const root = project();
     try {
       publishConfirmedSet(root);
-      fs.writeFileSync(
-        path.join(root, "negative.ts"),
-        "type A = legacyJsonValue; type B = LegacyJsonValueSuffix; type C = JsonValue;\n",
-      );
+      fs.writeFileSync(path.join(root, "negative.ts"), "type A = legacyJsonValue; type B = LegacyJsonValueSuffix; type C = JsonValue;\n");
       expect(scanConfirmedVariantViolations(root)).toEqual([]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -297,5 +296,4 @@ describe("confirmed glossary variant guard", () => {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
-
 });

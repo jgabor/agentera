@@ -1,18 +1,16 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  allocateDevelopmentVersion,
-  classifyDevelopmentPublication,
-} from "../../scripts/development-publication-state.mjs";
+import { allocateDevelopmentVersion, classifyDevelopmentPublication } from "../../scripts/development-publication-state.mjs";
 
 const candidate = { version: "3.0.0-dev.10", integrity: "sha512-exact", source: "a".repeat(40) };
 const exact = { integrity: candidate.integrity, source: candidate.source };
 
 describe("development publication state", () => {
-  it.each([[1, "3.0.0-dev.90"], [2, "3.0.0-dev.91"], [3, "3.0.0-dev.92"]])(
-    "allocates run %s as %s",
-    (runNumber, expected) => expect(allocateDevelopmentVersion("3.0.0-dev.84", runNumber)).toBe(expected),
-  );
+  it.each([
+    [1, "3.0.0-dev.90"],
+    [2, "3.0.0-dev.91"],
+    [3, "3.0.0-dev.92"],
+  ])("allocates run %s as %s", (runNumber, expected) => expect(allocateDevelopmentVersion("3.0.0-dev.84", runNumber)).toBe(expected));
 
   it("replays the same run and increases monotonically without registry input", () => {
     expect(allocateDevelopmentVersion("3.0.0-dev.84", "1")).toBe(allocateDevelopmentVersion("3.0.0-dev.84", "1"));

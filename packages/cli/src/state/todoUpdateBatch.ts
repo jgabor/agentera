@@ -55,19 +55,25 @@ export function inspectTodoUpdateBatch(input: Record<string, unknown> | null): T
 export function parseTodoUpdateBatch(input: Record<string, unknown> | null): TodoUpdateBatchEntry[] | null {
   const inspected = inspectTodoUpdateBatch(input);
   if (!inspected) return null;
-  if (inspected.violations.length) reject({ class: "schema_violation", message: "todo update batch input is invalid", violations: inspected.violations, recovery: "Correct the strict agentera.todoUpdateBatch.v1 envelope, then preview it again; no state was changed." });
+  if (inspected.violations.length)
+    reject({
+      class: "schema_violation",
+      message: "todo update batch input is invalid",
+      violations: inspected.violations,
+      recovery: "Correct the strict agentera.todoUpdateBatch.v1 envelope, then preview it again; no state was changed.",
+    });
   return inspected.updates;
 }
 
-export function todoUpdateBatchEffectSha256(
-  input: JsonObject,
-  mappingSha256: string,
-  targets: TodoUpdateBatchEffectTarget[],
-): string {
-  return createHash("sha256").update(canonicalRecordJson({
-    schema_version: TODO_UPDATE_BATCH_VERSION,
-    input,
-    mapping_sha256: mappingSha256,
-    targets,
-  })).digest("hex");
+export function todoUpdateBatchEffectSha256(input: JsonObject, mappingSha256: string, targets: TodoUpdateBatchEffectTarget[]): string {
+  return createHash("sha256")
+    .update(
+      canonicalRecordJson({
+        schema_version: TODO_UPDATE_BATCH_VERSION,
+        input,
+        mapping_sha256: mappingSha256,
+        targets,
+      }),
+    )
+    .digest("hex");
 }

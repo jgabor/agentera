@@ -17,7 +17,15 @@ export function runProfileGroundingCommand(argv: string[], io: Io): number {
     const argument = argv[index];
     const [name, inline] = argument.split("=", 2);
     if (name !== "--format") {
-      return invalid(io, { class: "unrecognized_argument", message: "profile-grounding accepts only", syntax: COMMAND }, REQUEST_RECOVERY);
+      return invalid(
+        io,
+        {
+          class: "unrecognized_argument",
+          message: "profile-grounding accepts only",
+          syntax: COMMAND,
+        },
+        REQUEST_RECOVERY,
+      );
     }
     const value = inline ?? argv[++index];
     if (value !== "json") {
@@ -29,33 +37,41 @@ export function runProfileGroundingCommand(argv: string[], io: Io): number {
   const acquired = acquireProfile();
   const output = io.out ?? ((text: string) => process.stdout.write(text));
   if (acquired.validity.status !== "valid" || acquired.groundingContent === null) {
-    emitStructured({
-      schemaVersion: contract.schemaVersion,
-      command: "report profile-grounding",
-      status: acquired.validity.status,
-      validity: acquired.validity,
-      freshness: acquired.freshness,
-      content: null,
-      recovery: acquired.validity.recovery,
-      error: {
-        class: "profile_unavailable",
-        message: INVALID_PROFILE_MESSAGE,
+    emitStructured(
+      {
+        schemaVersion: contract.schemaVersion,
+        command: "report profile-grounding",
+        status: acquired.validity.status,
+        validity: acquired.validity,
+        freshness: acquired.freshness,
+        content: null,
         recovery: acquired.validity.recovery,
+        error: {
+          class: "profile_unavailable",
+          message: INVALID_PROFILE_MESSAGE,
+          recovery: acquired.validity.recovery,
+        },
       },
-    }, "json", output);
+      "json",
+      output,
+    );
     return 2;
   }
 
-  emitStructured({
-    schemaVersion: contract.schemaVersion,
-    command: "report profile-grounding",
-    status: "ok",
-    validity: acquired.validity,
-    freshness: acquired.freshness,
-    content: acquired.groundingContent,
-    content_utf8_bytes: Buffer.byteLength(acquired.groundingContent),
-    excluded: "owned_personal_glossary_section",
-    recovery: null,
-  }, "json", output);
+  emitStructured(
+    {
+      schemaVersion: contract.schemaVersion,
+      command: "report profile-grounding",
+      status: "ok",
+      validity: acquired.validity,
+      freshness: acquired.freshness,
+      content: acquired.groundingContent,
+      content_utf8_bytes: Buffer.byteLength(acquired.groundingContent),
+      excluded: "owned_personal_glossary_section",
+      recovery: null,
+    },
+    "json",
+    output,
+  );
   return 0;
 }

@@ -4,20 +4,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  BUNDLE_MARKER,
-} from "../../src/state/installRoot.js";
-import {
-  MANAGED_APP_SCRIPT_PATH,
-  NODE_SHEBANG,
-  PYTHON_SHEBANG,
-  UV_SCRIPT_SHEBANG,
-  managedAppScriptContent,
-  platformDefaultAppHome as helperPlatformDefaultAppHome,
-  scriptBody,
-  scriptShebang,
-  writeManagedAppStub,
-} from "../helpers/managedAppStub.js";
+import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
+import { MANAGED_APP_SCRIPT_PATH, NODE_SHEBANG, PYTHON_SHEBANG, UV_SCRIPT_SHEBANG, managedAppScriptContent, platformDefaultAppHome as helperPlatformDefaultAppHome, scriptBody, scriptShebang, writeManagedAppStub } from "../helpers/managedAppStub.js";
 
 let tmp: string;
 let priorXdg: string | undefined;
@@ -132,12 +120,20 @@ describe("platformDefaultAppHome isolation from XDG_DATA_HOME", () => {
   it("PASS: does not overwrite an existing valid script", () => {
     const appHome = path.join(tmp, "existing");
     const existingContent = `${UV_SCRIPT_SHEBANG}\n# v2 managed script\nsub.add_parser('hej')\n`;
-    writeManagedAppStub(appHome, { runtime: "python", scriptContent: existingContent, marker: "2.7.0" });
+    writeManagedAppStub(appHome, {
+      runtime: "python",
+      scriptContent: existingContent,
+      marker: "2.7.0",
+    });
 
     const scriptPath = path.join(appHome, MANAGED_APP_SCRIPT_PATH);
     const before = fs.readFileSync(scriptPath, "utf8");
 
-    writeManagedAppStub(appHome, { runtime: "python", scriptContent: existingContent, marker: "2.7.0" });
+    writeManagedAppStub(appHome, {
+      runtime: "python",
+      scriptContent: existingContent,
+      marker: "2.7.0",
+    });
     const after = fs.readFileSync(scriptPath, "utf8");
 
     expect(after).toBe(before);

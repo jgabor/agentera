@@ -7,13 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { startupCompletenessContract } from "../../src/cli/startupCompletenessContract.js";
-import {
-  APP_CONTENT_REFRESH_ACTION,
-  APP_CONTENT_SURFACE_LABELS,
-  applyAppContentRefreshItem,
-  detectStaleAppContentSurfaces,
-  skillMdLooksV2,
-} from "../../src/upgrade/appContentRefresh.js";
+import { APP_CONTENT_REFRESH_ACTION, APP_CONTENT_SURFACE_LABELS, applyAppContentRefreshItem, detectStaleAppContentSurfaces, skillMdLooksV2 } from "../../src/upgrade/appContentRefresh.js";
 import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { buildUpgradePlan as buildOrchestratorPlan } from "../../src/upgrade/upgradeOrchestrator.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
@@ -35,34 +29,13 @@ function copyFixture(name: string, dest: string): string {
 function seedV2SkillMd(appBundleRoot: string): void {
   const skillPath = path.join(appBundleRoot, "skills", "agentera", "SKILL.md");
   fs.mkdirSync(path.dirname(skillPath), { recursive: true });
-  fs.writeFileSync(
-    skillPath,
-    [
-      "---",
-      "name: agentera",
-      "capabilities:",
-      "  - planera",
-      "  - inspektera",
-      "---",
-      "",
-      "# hej",
-      "",
-      "Route /agentera planera to the planera capability.",
-      "Read capabilities/plan/instructions.md for prose.",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+  fs.writeFileSync(skillPath, ["---", "name: agentera", "capabilities:", "  - planera", "  - inspektera", "---", "", "# hej", "", "Route /agentera planera to the planera capability.", "Read capabilities/plan/instructions.md for prose.", ""].join("\n"), "utf8");
 }
 
 function seedV2InstalledHooks(appHome: string): void {
   const hooksDir = path.join(appHome, "hooks");
   fs.mkdirSync(hooksDir, { recursive: true });
-  fs.writeFileSync(
-    path.join(hooksDir, "validate_artifact.py"),
-    "#!/usr/bin/env python3\n# v2 installed hook stub\n",
-    "utf8",
-  );
+  fs.writeFileSync(path.join(hooksDir, "validate_artifact.py"), "#!/usr/bin/env python3\n# v2 installed hook stub\n", "utf8");
   fs.writeFileSync(
     path.join(hooksDir, "codex-hooks.json"),
     JSON.stringify(
@@ -147,11 +120,7 @@ describe("detectStaleAppContentSurfaces", () => {
     for (const label of APP_CONTENT_SURFACE_LABELS) {
       expect(stale).toContain(label);
     }
-    expect(
-      skillMdLooksV2(
-        fs.readFileSync(path.join(appHome, "app", "skills", "agentera", "SKILL.md"), "utf8"),
-      ),
-    ).toBe(true);
+    expect(skillMdLooksV2(fs.readFileSync(path.join(appHome, "app", "skills", "agentera", "SKILL.md"), "utf8"))).toBe(true);
   });
 });
 
@@ -162,9 +131,7 @@ describe("upgrade planner integration", () => {
     seedV2SkillMd(path.join(appHome, "app"));
 
     const preview = dryRunMigration(migrationCtx(appHome, project, home, REPO_ROOT));
-    const refreshItems = preview.cleanup.items.filter(
-      (item) => item.action === APP_CONTENT_REFRESH_ACTION,
-    );
+    const refreshItems = preview.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
     expect(refreshItems.length).toBeGreaterThan(0);
     expect(refreshItems.every((item) => item.status === "pending")).toBe(true);
     expect(refreshItems.map((item) => item.message).join("\n")).toMatch(/SKILL\.md/);
@@ -177,9 +144,7 @@ describe("upgrade planner integration", () => {
       channel: "development",
       dryRun: true,
     });
-    const orchestratorRefresh = plan.phases
-      .flatMap((phase) => phase.items)
-      .filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
+    const orchestratorRefresh = plan.phases.flatMap((phase) => phase.items).filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
     expect(orchestratorRefresh.length).toBeGreaterThan(0);
   });
 
@@ -192,11 +157,7 @@ describe("upgrade planner integration", () => {
     const preview = dryRunMigration(ctx);
     const applied = applyMigrationPhases(ctx, preview);
 
-    expect(
-      applied.cleanup.items.some(
-        (item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "applied",
-      ),
-    ).toBe(true);
+    expect(applied.cleanup.items.some((item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "applied")).toBe(true);
     expect(fs.existsSync(path.join(appHome, "app"))).toBe(false);
 
     const installedSkill = path.join(appHome, "skills", "agentera", "SKILL.md");
@@ -207,9 +168,7 @@ describe("upgrade planner integration", () => {
 
     expect(fs.existsSync(path.join(appHome, "references"))).toBe(true);
     expect(fs.existsSync(path.join(appHome, "registry.json"))).toBe(true);
-    expect(
-      fs.existsSync(path.join(appHome, "dist", "capabilities", "audit", "instructions.js")),
-    ).toBe(true);
+    expect(fs.existsSync(path.join(appHome, "dist", "capabilities", "audit", "instructions.js"))).toBe(true);
 
     const appEnv = {
       ...sandboxMigrationEnv(home, appHome),
@@ -220,9 +179,7 @@ describe("upgrade planner integration", () => {
     const capabilityContext = payload.capability_context as Record<string, unknown>;
     const startup = capabilityContext.startup as Record<string, unknown>;
     expect(startup.outcome).toBe("blocked");
-    expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(
-      true,
-    );
+    expect(startupCompletenessContract({ schemaError: null }).complete_for_capability_startup).toBe(true);
 
     const retry = dryRunMigration(ctx);
     const retryRefresh = retry.cleanup.items.filter((item) => item.action === APP_CONTENT_REFRESH_ACTION);
@@ -231,39 +188,34 @@ describe("upgrade planner integration", () => {
     expect(fs.readFileSync(installedSkill, "utf8")).toBe(fs.readFileSync(sourceSkill, "utf8"));
   });
 
-  it.each(["target", "parent"] as const)(
-    "blocks refresh when its %s directory is replaced during apply without redirecting a write",
-    (replacement) => {
-      const container = path.join(tmp, `refresh-${replacement}-swap`);
-      fs.mkdirSync(container);
-      const appHome = copyFixture("v2-app-home", path.join(container, "app-home"));
-      const project = copyFixture("v2-yaml-project", path.join(tmp, `project-${replacement}-swap`));
-      seedV2SkillMd(path.join(appHome, "app"));
-      const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
-      const preview = dryRunMigration(ctx);
-      const refresh = preview.cleanup.items.find(
-        (item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "pending",
-      );
-      expect(refresh).toBeDefined();
-      const replacedPath = replacement === "target" ? appHome : container;
-      const moved = `${replacedPath}.moved`;
-      let crossedBoundary = false;
+  it.each(["target", "parent"] as const)("blocks refresh when its %s directory is replaced during apply without redirecting a write", (replacement) => {
+    const container = path.join(tmp, `refresh-${replacement}-swap`);
+    fs.mkdirSync(container);
+    const appHome = copyFixture("v2-app-home", path.join(container, "app-home"));
+    const project = copyFixture("v2-yaml-project", path.join(tmp, `project-${replacement}-swap`));
+    seedV2SkillMd(path.join(appHome, "app"));
+    const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
+    const preview = dryRunMigration(ctx);
+    const refresh = preview.cleanup.items.find((item) => item.action === APP_CONTENT_REFRESH_ACTION && item.status === "pending");
+    expect(refresh).toBeDefined();
+    const replacedPath = replacement === "target" ? appHome : container;
+    const moved = `${replacedPath}.moved`;
+    let crossedBoundary = false;
 
-      applyAppContentRefreshItem(refresh!, ctx, () => {
-        crossedBoundary = true;
-        fs.renameSync(replacedPath, moved);
-        if (replacement === "target") {
-          fs.mkdirSync(appHome);
-        } else {
-          fs.mkdirSync(appHome, { recursive: true });
-        }
-      });
+    applyAppContentRefreshItem(refresh!, ctx, () => {
+      crossedBoundary = true;
+      fs.renameSync(replacedPath, moved);
+      if (replacement === "target") {
+        fs.mkdirSync(appHome);
+      } else {
+        fs.mkdirSync(appHome, { recursive: true });
+      }
+    });
 
-      expect(crossedBoundary).toBe(true);
-      expect(refresh?.status).toBe("blocked");
-      expect(fs.existsSync(path.join(appHome, "references"))).toBe(false);
-      const movedAppHome = replacement === "target" ? moved : path.join(moved, "app-home");
-      expect(fs.existsSync(path.join(movedAppHome, "references"))).toBe(false);
-    },
-  );
+    expect(crossedBoundary).toBe(true);
+    expect(refresh?.status).toBe("blocked");
+    expect(fs.existsSync(path.join(appHome, "references"))).toBe(false);
+    const movedAppHome = replacement === "target" ? moved : path.join(moved, "app-home");
+    expect(fs.existsSync(path.join(movedAppHome, "references"))).toBe(false);
+  });
 });

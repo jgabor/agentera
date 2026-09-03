@@ -19,12 +19,7 @@ export const GAP_IDS = {
 
 export type GapId = (typeof GAP_IDS)[keyof typeof GAP_IDS];
 
-export type RuntimeMatrixStatus =
-  | "applied"
-  | "blocked"
-  | "not_implemented"
-  | "expected_fail"
-  | "noop";
+export type RuntimeMatrixStatus = "applied" | "blocked" | "not_implemented" | "expected_fail" | "noop";
 
 export interface TrackedGap {
   id: GapId;
@@ -55,40 +50,35 @@ export const TRACKED_GAPS: readonly TrackedGap[] = [
   // Artifact-validation CLI surface.
   {
     id: GAP_IDS.ARTIFACT_VALIDATION_FAMILY,
-    description:
-      "Validate command parity with the Python oracle pinned at parity-remaining-families.json:python_commit.",
+    description: "Validate command parity with the Python oracle pinned at parity-remaining-families.json:python_commit.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // Compaction CLI surface.
   {
     id: GAP_IDS.COMPACTION_FAMILY,
-    description:
-      "`check compact` apply, dry-run, and retention parity with size-bounded corpus reads and archive preservation.",
+    description: "`check compact` apply, dry-run, and retention parity with size-bounded corpus reads and archive preservation.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // Doctor and upgrade safety rails.
   {
     id: GAP_IDS.DOCTOR_UPGRADE_SAFETY_FAMILY,
-    description:
-      "Doctor and upgrade safety rails cover lifecycle status vocabulary and plain-language repair wording on the npm channel.",
+    description: "Doctor and upgrade safety rails cover lifecycle status vocabulary and plain-language repair wording on the npm channel.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // Verify gates.
   {
     id: GAP_IDS.VERIFY_EVAL_FAMILY,
-    description:
-      "`check verify eval` preserves bounded offline evaluation and retired-smoke guidance for the npm distribution.",
+    description: "`check verify eval` preserves bounded offline evaluation and retired-smoke guidance for the npm distribution.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },
   // Usage and stats consent semantics.
   {
     id: GAP_IDS.USAGE_STATS_CONSENT_FAMILY,
-    description:
-      "`stats` and `stats refresh` enforce explicit consent with size-bounded corpus reads; no top-level `agentera corpus` command.",
+    description: "`stats` and `stats refresh` enforce explicit consent with size-bounded corpus reads; no top-level `agentera corpus` command.",
     closed: true,
     runtimeIds: ["opencode", "copilot", "codex", "cursor"],
   },

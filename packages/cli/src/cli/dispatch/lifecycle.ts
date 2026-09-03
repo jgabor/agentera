@@ -25,12 +25,7 @@ import { migrationProject } from "../migrationRequired.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 import { resolveRetiredResourceDiagnosticId, retiredResourceSelectorIds } from "../../runtime/nativeResourceCleanup.js";
 
-function rejectUnsupportedUpgradeFlag(
-  io: Io,
-  format: string,
-  message: string,
-  recovery?: string,
-): number {
+function rejectUnsupportedUpgradeFlag(io: Io, format: string, message: string, recovery?: string): number {
   return emitInvalidInput(io, {
     format: asEnvelopeFormat(format),
     body: { class: "unsupported_target", message, recovery },
@@ -67,9 +62,13 @@ export function runAppHome(argv: string[], io: Io, prog: string): number {
     format: "json",
   };
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -124,9 +123,13 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
   };
   let jsonFlag = false;
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -179,9 +182,13 @@ export function runUsage(argv: string[], io: Io, prog: string): number {
   let corpus: string | null = null;
   let project: string | null = null;
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -256,9 +263,13 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
   };
   let jsonFlag = false;
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -268,21 +279,13 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
     else if ((v = value("--expected-version")) !== null) args.expectedVersion = v;
     else if ((v = value("--channel")) !== null) args.channel = v;
     else if ((v = value("--target-major")) !== null) {
-      return rejectUnsupportedUpgradeFlag(
-        io,
-        args.format ?? "text",
-        "--target-major was removed; use --channel with dry-run preview then --yes",
-        fullEntityUpgradeCommand(migrationProject(argv)),
-      );
+      return rejectUnsupportedUpgradeFlag(io, args.format ?? "text", "--target-major was removed; use --channel with dry-run preview then --yes", fullEntityUpgradeCommand(migrationProject(argv)));
     } else if ((v = value("--runtime")) !== null) {
       return emitInvalidInput(io, {
         format: detectTopLevelFormat(argv),
         body: {
           class: "invalid_choice",
-          message:
-            `argument --runtime ${v} is retired; Agentera now uses the shared skill at ` +
-            "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun the app/project upgrade. " +
-             "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.",
+          message: `argument --runtime ${v} is retired; Agentera now uses the shared skill at ` + "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun the app/project upgrade. " + "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.",
         },
       });
     } else if ((v = value("--legacy-cleanup")) !== null) {
@@ -315,33 +318,17 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
         });
       }
       (args.only as UpgradeOnlyPhase[]).push(v);
-    }
-    else if ((v = value("--opencode-config-dir")) !== null) {
-      return rejectUnsupportedUpgradeFlag(
-        io,
-        args.format ?? "text",
-        "--opencode-config-dir is not yet supported by the TypeScript upgrade command",
-      );
+    } else if ((v = value("--opencode-config-dir")) !== null) {
+      return rejectUnsupportedUpgradeFlag(io, args.format ?? "text", "--opencode-config-dir is not yet supported by the TypeScript upgrade command");
     } else if (a === "--yes") args.yes = true;
     else if (a === "--dry-run") args.dryRun = true;
     else if (a === "--force") args.force = true;
     else if (a === "--verify") args.verify = true;
     else if (a === "--update-packages") {
-      return rejectUnsupportedUpgradeFlag(
-        io,
-        args.format ?? "text",
-        "--update-packages is retired; Agentera does not manage host package installation or updates",
-      );
-    }
-    else if (["--restore", "--rollback", "--downgrade"].includes(a)) {
-      return rejectUnsupportedUpgradeFlag(
-        io,
-        args.format ?? "text",
-        `${a} was removed; v2-to-v3 upgrade is one-way and apply must run as one full upgrade --yes`,
-        fullEntityUpgradeCommand(migrationProject(argv)),
-      );
-    }
-    else if (a === "--json") jsonFlag = true;
+      return rejectUnsupportedUpgradeFlag(io, args.format ?? "text", "--update-packages is retired; Agentera does not manage host package installation or updates");
+    } else if (["--restore", "--rollback", "--downgrade"].includes(a)) {
+      return rejectUnsupportedUpgradeFlag(io, args.format ?? "text", `${a} was removed; v2-to-v3 upgrade is one-way and apply must run as one full upgrade --yes`, fullEntityUpgradeCommand(migrationProject(argv)));
+    } else if (a === "--json") jsonFlag = true;
     else if ((v = value("--format")) !== null) {
       if (v !== "text" && v !== "json") {
         return emitInvalidInput(io, {
@@ -399,9 +386,13 @@ export function runVerify(argv: string[], io: Io, prog: string): number {
   };
   const positionals: string[] = [];
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -542,9 +533,13 @@ export function runReport(argv: string[], io: Io, prog: string): number {
   };
   const positionals: string[] = [];
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -554,12 +549,15 @@ export function runReport(argv: string[], io: Io, prog: string): number {
       if (v !== "active" && v !== "all") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
-          body: { class: "invalid_choice", message: `argument --sources: invalid choice: '${v}' (choose from 'active', 'all')`, valid_values: ["active", "all"] },
+          body: {
+            class: "invalid_choice",
+            message: `argument --sources: invalid choice: '${v}' (choose from 'active', 'all')`,
+            valid_values: ["active", "all"],
+          },
         });
       }
       args.sources = v;
-    }
-    else if ((v = value("--consent")) !== null) {
+    } else if ((v = value("--consent")) !== null) {
       if (v !== "local-history") {
         return emitInvalidInput(io, {
           format: asEnvelopeFormat(args.format),
@@ -587,8 +585,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
         });
       }
       if (!(args.importSources as string[]).includes(v)) (args.importSources as string[]).push(v);
-    }
-    else if ((v = value("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
+    } else if ((v = value("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
     else if ((v = value("--copilot-conversations-dir")) !== null) args.copilotConversationsDir = v;
     else if ((v = value("--cursor-projects-dir")) !== null) args.cursorProjectsDir = v;
     else if ((v = value("--cursor-chats-dir")) !== null) args.cursorChatsDir = v;
@@ -621,10 +618,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
 
 function resolveCliVersion(): string {
   const moduleDir = path.dirname(fileURLToPath(import.meta.url));
-  const candidates = [
-    path.resolve(moduleDir, "..", "..", "package.json"),
-    path.resolve(moduleDir, "..", "..", "..", "package.json"),
-  ];
+  const candidates = [path.resolve(moduleDir, "..", "..", "package.json"), path.resolve(moduleDir, "..", "..", "..", "package.json")];
   for (const pkgPath of candidates) {
     try {
       const pkg = JSON.parse(fs.readFileSync(pkgPath, "utf8"));
@@ -662,7 +656,10 @@ export function runVersion(argv: string[], io: Io): number {
     } else {
       return emitInvalidInput(io, {
         format: "json",
-        body: { class: "unrecognized_argument", message: `agentera --version: unrecognized argument: ${a}` },
+        body: {
+          class: "unrecognized_argument",
+          message: `agentera --version: unrecognized argument: ${a}`,
+        },
       });
     }
   }

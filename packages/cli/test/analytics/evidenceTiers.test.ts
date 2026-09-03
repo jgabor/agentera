@@ -33,17 +33,7 @@ beforeEach(() => {
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
 /** Build a full evidence record shaped like the extraction adapters emit. */
-function fullRecord(opts: {
-  sourceId: string;
-  sourceKind?: string;
-  timestamp?: string;
-  sourceProduct?: string;
-  runtime?: string | null;
-  sourceClass?: "active_runtime" | "historical_import" | "project";
-  activeRuntime?: boolean;
-  data?: JsonObject;
-  sessionId?: string;
-}): JsonObjectLocal {
+function fullRecord(opts: { sourceId: string; sourceKind?: string; timestamp?: string; sourceProduct?: string; runtime?: string | null; sourceClass?: "active_runtime" | "historical_import" | "project"; activeRuntime?: boolean; data?: JsonObject; sessionId?: string }): JsonObjectLocal {
   const activeRuntime = opts.activeRuntime ?? (opts.runtime == null ? false : true);
   const r: JsonObjectLocal = {
     source_id: opts.sourceId,
@@ -75,15 +65,66 @@ function fullRecord(opts: {
 /** A small representative corpus spanning several source families. */
 function representativeRecords(): JsonObjectLocal[] {
   return [
-    fullRecord({ sourceId: "a1", sourceKind: "instruction_document", sourceProduct: "filesystem", runtime: "filesystem", timestamp: "2026-01-01T00:00:00.000Z", data: { doc_type: "agents_md" } }),
-    fullRecord({ sourceId: "a2", sourceKind: "project_config_signal", sourceProduct: "filesystem", runtime: "filesystem", timestamp: "2026-01-01T00:00:01.000Z", data: { config_type: "package_json", signals: ["name=demo"] } }),
-    fullRecord({ sourceId: "c1", sourceKind: "conversation_turn", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:00:00.000Z", data: { actor: "user", signal_type: "question", text: "why?" } }),
-    fullRecord({ sourceId: "c2", sourceKind: "conversation_turn", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:01:00.000Z", data: { actor: "assistant", text: "because" } }),
-    fullRecord({ sourceId: "c3", sourceKind: "conversation_turn", sourceProduct: "codex", runtime: "codex", timestamp: "2026-01-03T09:00:00.000Z", data: { actor: "user", signal_type: "decision", text: "decide to keep it" } }),
-    fullRecord({ sourceId: "t1", sourceKind: "tool_call", sourceProduct: "cursor", runtime: "cursor", timestamp: "2026-01-04T12:00:00.000Z", data: { tool_name: "edit", arguments: { file: "x" } } }),
+    fullRecord({
+      sourceId: "a1",
+      sourceKind: "instruction_document",
+      sourceProduct: "filesystem",
+      runtime: "filesystem",
+      timestamp: "2026-01-01T00:00:00.000Z",
+      data: { doc_type: "agents_md" },
+    }),
+    fullRecord({
+      sourceId: "a2",
+      sourceKind: "project_config_signal",
+      sourceProduct: "filesystem",
+      runtime: "filesystem",
+      timestamp: "2026-01-01T00:00:01.000Z",
+      data: { config_type: "package_json", signals: ["name=demo"] },
+    }),
+    fullRecord({
+      sourceId: "c1",
+      sourceKind: "conversation_turn",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:00:00.000Z",
+      data: { actor: "user", signal_type: "question", text: "why?" },
+    }),
+    fullRecord({
+      sourceId: "c2",
+      sourceKind: "conversation_turn",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:01:00.000Z",
+      data: { actor: "assistant", text: "because" },
+    }),
+    fullRecord({
+      sourceId: "c3",
+      sourceKind: "conversation_turn",
+      sourceProduct: "codex",
+      runtime: "codex",
+      timestamp: "2026-01-03T09:00:00.000Z",
+      data: { actor: "user", signal_type: "decision", text: "decide to keep it" },
+    }),
+    fullRecord({
+      sourceId: "t1",
+      sourceKind: "tool_call",
+      sourceProduct: "cursor",
+      runtime: "cursor",
+      timestamp: "2026-01-04T12:00:00.000Z",
+      data: { tool_name: "edit", arguments: { file: "x" } },
+    }),
     // Historical Claude import: source_class=historical_import, active_runtime=false
     // (runtime null) — the model the JSONL importer emits, not an active runtime.
-    fullRecord({ sourceId: "h1", sourceKind: "history_prompt", sourceProduct: "claude-code", runtime: null, sourceClass: "historical_import", activeRuntime: false, timestamp: "2026-01-05T08:00:00.000Z", data: { prompt: "old" } }),
+    fullRecord({
+      sourceId: "h1",
+      sourceKind: "history_prompt",
+      sourceProduct: "claude-code",
+      runtime: null,
+      sourceClass: "historical_import",
+      activeRuntime: false,
+      timestamp: "2026-01-05T08:00:00.000Z",
+      data: { prompt: "old" },
+    }),
   ];
 }
 
@@ -135,7 +176,7 @@ describe("AC1 — publication retains every record within declared bounds", () =
     const bounds = evidenceTierBounds();
     const gen = readCurrentGeneration(tmp);
     expect(gen).not.toBeNull();
-    for (const shard of (gen!.manifest.shards as FullEvidenceShard[])) {
+    for (const shard of gen!.manifest.shards as FullEvidenceShard[]) {
       expect(shard.bytes, `${shard.path}`).toBeLessThanOrEqual(bounds.shardByteCap);
     }
     expect(result.signal_bytes).toBeLessThanOrEqual(bounds.signalByteCap);
@@ -146,7 +187,15 @@ describe("AC1 — publication retains every record within declared bounds", () =
     const big = "x".repeat(2048);
     const records: JsonObjectLocal[] = [];
     for (let i = 0; i < 40; i++) {
-      records.push(fullRecord({ sourceId: `big${i}`, sourceProduct: "opencode", runtime: "opencode", timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`, data: { big, idx: i } }));
+      records.push(
+        fullRecord({
+          sourceId: `big${i}`,
+          sourceProduct: "opencode",
+          runtime: "opencode",
+          timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+          data: { big, idx: i },
+        }),
+      );
     }
     const smallCap = 8192;
     const shards = shardFullEvidence(records, smallCap, productFamily);
@@ -221,8 +270,21 @@ describe("AC3 — no consumer observes a partially published generation", () => 
     const records = representativeRecords();
     const r1 = publish(records, path.join(tmp, "t"));
     expect(r1.superseded_generation).toBeNull();
-    const more = [...records, fullRecord({ sourceId: "c4", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-02-01T00:00:00.000Z", data: { actor: "user", signal_type: "correction", text: "no, actually" } })];
-    const r2 = publishEvidenceTiers(more, { tiersDir: path.join(tmp, "t"), adapterVersion: ADAPTER_VERSION, publishedAt: "2026-01-16T00:00:00.000Z" });
+    const more = [
+      ...records,
+      fullRecord({
+        sourceId: "c4",
+        sourceProduct: "opencode",
+        runtime: "opencode",
+        timestamp: "2026-02-01T00:00:00.000Z",
+        data: { actor: "user", signal_type: "correction", text: "no, actually" },
+      }),
+    ];
+    const r2 = publishEvidenceTiers(more, {
+      tiersDir: path.join(tmp, "t"),
+      adapterVersion: ADAPTER_VERSION,
+      publishedAt: "2026-01-16T00:00:00.000Z",
+    });
     expect(r2.superseded_generation).toBe(r1.generation);
     expect(getFullRecord("c4", path.join(tmp, "t"))).not.toBeNull();
   });
@@ -275,9 +337,38 @@ describe("Unknown 1 — deterministic signal bound and selection", () => {
   it("applies proportional-per-family selection preserving >=1 per family when capped", () => {
     const signals: SignalRecord[] = [];
     // opencode has the most, codex fewer, cursor one. Under a tiny cap.
-    for (let i = 0; i < 200; i++) signals.push({ source_id: `op${i}`, source_kind: "conversation_turn", signal_type: "decision", timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`, project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: `op${i}` });
-    for (let i = 0; i < 50; i++) signals.push({ source_id: `co${i}`, source_kind: "conversation_turn", signal_type: "question", timestamp: `2026-01-02T00:00:${String(i % 60).padStart(2, "0")}.000Z`, project_id: "p", runtime: "codex", source_product: "codex", evidence_anchor: `co${i}` });
-    signals.push({ source_id: "cu1", source_kind: "tool_call", signal_type: "record_identity", timestamp: "2026-01-03T00:00:00.000Z", project_id: "p", runtime: "cursor", source_product: "cursor", evidence_anchor: "cu1" });
+    for (let i = 0; i < 200; i++)
+      signals.push({
+        source_id: `op${i}`,
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: `op${i}`,
+      });
+    for (let i = 0; i < 50; i++)
+      signals.push({
+        source_id: `co${i}`,
+        source_kind: "conversation_turn",
+        signal_type: "question",
+        timestamp: `2026-01-02T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+        project_id: "p",
+        runtime: "codex",
+        source_product: "codex",
+        evidence_anchor: `co${i}`,
+      });
+    signals.push({
+      source_id: "cu1",
+      source_kind: "tool_call",
+      signal_type: "record_identity",
+      timestamp: "2026-01-03T00:00:00.000Z",
+      project_id: "p",
+      runtime: "cursor",
+      source_product: "cursor",
+      evidence_anchor: "cu1",
+    });
     const cap = 4096;
     const { records, selection } = selectSignalsForBound(signals, cap);
     expect(selection.capped).toBe(true);
@@ -293,7 +384,17 @@ describe("Unknown 1 — deterministic signal bound and selection", () => {
 
   it("selection is deterministic: same input reproduces identical membership and order", () => {
     const signals: SignalRecord[] = [];
-    for (let i = 0; i < 100; i++) signals.push({ source_id: `op${i}`, source_kind: "conversation_turn", signal_type: "decision", timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`, project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: `op${i}` });
+    for (let i = 0; i < 100; i++)
+      signals.push({
+        source_id: `op${i}`,
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: `op${i}`,
+      });
     const cap = 2048;
     const a = selectSignalsForBound(signals, cap);
     const b = selectSignalsForBound(signals.slice().reverse(), cap);
@@ -320,8 +421,23 @@ describe("family sharding + compatibility states", () => {
   it("reports incomplete state when a supported family was skipped/sparse", () => {
     const records = representativeRecords();
     const runtimeStatuses: JsonObjectLocal[] = [
-      { runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "sparse", reason: "no_candidate_files", store_path: "/codex" },
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "codex",
+        source_product: "codex",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "sparse",
+        reason: "no_candidate_files",
+        store_path: "/codex",
+      },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publish(records, tmp, runtimeStatuses);
     const compat = evidenceTierCompatibility(tmp);
@@ -334,8 +450,22 @@ describe("family sharding + compatibility states", () => {
   it("reports current when every supported family is available and accepted", () => {
     const records = representativeRecords();
     const runtimeStatuses: JsonObjectLocal[] = [
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
-      { runtime: "cursor", source_product: "cursor", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
+      {
+        runtime: "cursor",
+        source_product: "cursor",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publish(records, tmp, runtimeStatuses);
     expect(evidenceTierCompatibility(tmp).state).toBe("current");

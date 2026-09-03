@@ -23,7 +23,12 @@ function id(index: number): string {
   return `aaaaaaaaa${String.fromCharCode(97 + index)}`;
 }
 
-function fixture(): { root: string; activePlan: string; activeObjective: string; entityCount: number } {
+function fixture(): {
+  root: string;
+  activePlan: string;
+  activeObjective: string;
+  entityCount: number;
+} {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reader-discovery-"));
   roots.push(root);
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
@@ -37,29 +42,115 @@ function fixture(): { root: string; activePlan: string; activeObjective: string;
     return entityId;
   };
 
-  for (const [day, what] of [["17", "First cycle"], ["18", "Second cycle"]]) {
-    add("progress", "progress_cycle", { timestamp: `2026-07-${day} 12:00`, type: "test", phase: "audit", what, context: { intent: "Verify reuse" } });
+  for (const [day, what] of [
+    ["17", "First cycle"],
+    ["18", "Second cycle"],
+  ]) {
+    add("progress", "progress_cycle", {
+      timestamp: `2026-07-${day} 12:00`,
+      type: "test",
+      phase: "audit",
+      what,
+      context: { intent: "Verify reuse" },
+    });
   }
   for (const day of ["17", "18"]) {
-    add("decisions", "decision", { date: `2026-07-${day}`, question: `Decision ${day}?`, context: "Reader reuse", alternatives: [{ name: "reuse", status: "chosen" }], choice: "reuse", reasoning: "One parse", confidence: "firm" });
-    add("health", "health_audit", { date: `2026-07-${day}`, dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" } });
+    add("decisions", "decision", {
+      date: `2026-07-${day}`,
+      question: `Decision ${day}?`,
+      context: "Reader reuse",
+      alternatives: [{ name: "reuse", status: "chosen" }],
+      choice: "reuse",
+      reasoning: "One parse",
+      confidence: "firm",
+    });
+    add("health", "health_audit", {
+      date: `2026-07-${day}`,
+      dimensions: ["architecture_alignment"],
+      findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+      trajectory: "stable",
+      grades: { architecture_alignment: "A" },
+    });
   }
 
-  const activePlan = add("plan", "plan", { header: { level: "light", created: "2026-07-18", status: "open", title: "Active" }, what: "Reuse", why: "Avoid reparsing", scope: { included: ["prime"], excluded: [] } });
-  add("plan", "plan_task", { plan: activePlan, name: "First", status: "complete", depends_on: [], acceptance: ["pass"] });
-  add("plan", "plan_task", { plan: activePlan, name: "Second", status: "pending", depends_on: [], acceptance: ["pass"] });
-  add("plan", "plan", { header: { level: "light", created: "2026-07-17", status: "complete", title: "Complete" }, what: "Done", why: "History", scope: { included: ["prime"], excluded: [] } });
+  const activePlan = add("plan", "plan", {
+    header: { level: "light", created: "2026-07-18", status: "open", title: "Active" },
+    what: "Reuse",
+    why: "Avoid reparsing",
+    scope: { included: ["prime"], excluded: [] },
+  });
+  add("plan", "plan_task", {
+    plan: activePlan,
+    name: "First",
+    status: "complete",
+    depends_on: [],
+    acceptance: ["pass"],
+  });
+  add("plan", "plan_task", {
+    plan: activePlan,
+    name: "Second",
+    status: "pending",
+    depends_on: [],
+    acceptance: ["pass"],
+  });
+  add("plan", "plan", {
+    header: { level: "light", created: "2026-07-17", status: "complete", title: "Complete" },
+    what: "Done",
+    why: "History",
+    scope: { included: ["prime"], excluded: [] },
+  });
 
-  const activeObjective = add("objective", "objective", { header: { title: "Active objective", status: "open", created: "2026-07-18" }, objective: { description: "Reduce allocation", why: "Cold start", measurement: "Inspector", constraints: [] }, metric: { description: "Peak heap", direction: "minimize", unit: "bytes" }, baseline: { description: "Current peak" }, gates: {}, scope: { included: ["prime"], excluded: [] } });
-  add("objective", "objective", { header: { title: "Closed objective", status: "closed", created: "2026-07-17" }, objective: { description: "Prior", why: "History", measurement: "Inspector", constraints: [] }, metric: { description: "Peak heap", direction: "minimize", unit: "bytes" }, baseline: { description: "Prior peak" }, gates: {}, scope: { included: ["prime"], excluded: [] } });
-  const experiment = (date: string, status: string, label: string) => ({ objective: activeObjective, date, label, hypothesis: "Reuse helps", method: "Run gate", change: "Share discovery", metric: { primary_value: "1", delta_vs_baseline: "-1" }, regression: "tests pass", status, conclusion: "Measured", provenance: { command: "gate", revision: "fixture" } });
+  const activeObjective = add("objective", "objective", {
+    header: { title: "Active objective", status: "open", created: "2026-07-18" },
+    objective: {
+      description: "Reduce allocation",
+      why: "Cold start",
+      measurement: "Inspector",
+      constraints: [],
+    },
+    metric: { description: "Peak heap", direction: "minimize", unit: "bytes" },
+    baseline: { description: "Current peak" },
+    gates: {},
+    scope: { included: ["prime"], excluded: [] },
+  });
+  add("objective", "objective", {
+    header: { title: "Closed objective", status: "closed", created: "2026-07-17" },
+    objective: { description: "Prior", why: "History", measurement: "Inspector", constraints: [] },
+    metric: { description: "Peak heap", direction: "minimize", unit: "bytes" },
+    baseline: { description: "Prior peak" },
+    gates: {},
+    scope: { included: ["prime"], excluded: [] },
+  });
+  const experiment = (date: string, status: string, label: string) => ({
+    objective: activeObjective,
+    date,
+    label,
+    hypothesis: "Reuse helps",
+    method: "Run gate",
+    change: "Share discovery",
+    metric: { primary_value: "1", delta_vs_baseline: "-1" },
+    regression: "tests pass",
+    status,
+    conclusion: "Measured",
+    provenance: { command: "gate", revision: "fixture" },
+  });
   add("experiments", "experiment", experiment("2026-07-17 09:00", "baseline", "Baseline"));
   add("experiments", "experiment", experiment("2026-07-18 09:00", "kept", "Reuse"));
 
   add("todo", "todo_item", { severity: "critical", status: "open", description: "Critical item" });
   add("todo", "todo_item", { severity: "normal", status: "open", description: "Normal item" });
-  add("docs", "documentation_inventory_entry", { document: "Alpha", path: "a.md", last_updated: "2026-07-18", status: "current" });
-  add("docs", "documentation_inventory_entry", { document: "Zulu", path: "z.md", last_updated: "2026-07-17", status: "current" });
+  add("docs", "documentation_inventory_entry", {
+    document: "Alpha",
+    path: "a.md",
+    last_updated: "2026-07-18",
+    status: "current",
+  });
+  add("docs", "documentation_inventory_entry", {
+    document: "Zulu",
+    path: "z.md",
+    last_updated: "2026-07-17",
+    status: "current",
+  });
   return { root, activePlan, activeObjective, entityCount: next };
 }
 
@@ -92,13 +183,16 @@ function readers(root: string, activePlan: string, activeObjective: string, disc
 function rejectBeforeEntries(discovery: EntityDiscoveryResult): void {
   Object.defineProperty(discovery, "entities", {
     configurable: true,
-    get: () => { throw new Error("foreign discovery entries were consumed"); },
+    get: () => {
+      throw new Error("foreign discovery entries were consumed");
+    },
   });
 }
 
 function failureClass(call: () => unknown): string {
-  try { call(); }
-  catch (error) {
+  try {
+    call();
+  } catch (error) {
     if (error instanceof StateRetrievalFailure) return error.body.error.class;
     throw error;
   }
@@ -115,13 +209,84 @@ describe("startup entity reader discovery reuse", () => {
     const { root, activePlan, activeObjective } = fixture();
     const discovery = discoverEntities(root, SOURCE_ROOT);
     const pairs: Array<[Record<string, any>, Record<string, any>]> = [
-      [listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }), listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
-      [listDecisionEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }), listDecisionEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
-      [listHealthEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }), listHealthEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
-      [listPlanEntities(root, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", statuses: ["open", "complete"] }), listPlanEntities(root, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", statuses: ["open", "complete"], discovery })],
-      [listPlanTaskEntities(root, activePlan, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }), listPlanTaskEntities(root, activePlan, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
-      [listObjectiveEntities(root, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", statuses: ["open", "closed"] }), listObjectiveEntities(root, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", statuses: ["open", "closed"], discovery })],
-      [listExperimentEntities(root, activeObjective, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }), listExperimentEntities(root, activeObjective, 1, undefined, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
+      [
+        listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT, format: "json" }),
+        listProgressEntities(root, 1, {}, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          discovery,
+        }),
+      ],
+      [
+        listDecisionEntities(root, 1, undefined, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+        }),
+        listDecisionEntities(root, 1, undefined, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          discovery,
+        }),
+      ],
+      [
+        listHealthEntities(root, 1, undefined, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+        }),
+        listHealthEntities(root, 1, undefined, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          discovery,
+        }),
+      ],
+      [
+        listPlanEntities(root, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          statuses: ["open", "complete"],
+        }),
+        listPlanEntities(root, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          statuses: ["open", "complete"],
+          discovery,
+        }),
+      ],
+      [
+        listPlanTaskEntities(root, activePlan, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+        }),
+        listPlanTaskEntities(root, activePlan, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          discovery,
+        }),
+      ],
+      [
+        listObjectiveEntities(root, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          statuses: ["open", "closed"],
+        }),
+        listObjectiveEntities(root, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          statuses: ["open", "closed"],
+          discovery,
+        }),
+      ],
+      [
+        listExperimentEntities(root, activeObjective, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+        }),
+        listExperimentEntities(root, activeObjective, 1, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          format: "json",
+          discovery,
+        }),
+      ],
       [listTodoDocsEntities(root, "todo", 1, undefined, { status: "open" }, { sourceRoot: SOURCE_ROOT, format: "json" }), listTodoDocsEntities(root, "todo", 1, undefined, { status: "open" }, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
       [listTodoDocsEntities(root, "docs", 1, undefined, { status: "current" }, { sourceRoot: SOURCE_ROOT, format: "json" }), listTodoDocsEntities(root, "docs", 1, undefined, { status: "current" }, { sourceRoot: SOURCE_ROOT, format: "json", discovery })],
     ];
@@ -136,7 +301,11 @@ describe("startup entity reader discovery reuse", () => {
 
     for (const [name, call] of readers(requested.root, requested.activePlan, requested.activeObjective, discovery)) {
       expect(call, name).toThrow(/discovery origin does not match.*call discoverEntities/s);
-      try { call(); } catch (error) { expect(String(error), name).not.toContain("foreign discovery entries were consumed"); }
+      try {
+        call();
+      } catch (error) {
+        expect(String(error), name).not.toContain("foreign discovery entries were consumed");
+      }
     }
   });
 
@@ -150,7 +319,11 @@ describe("startup entity reader discovery reuse", () => {
 
     for (const [name, call] of readers(requested.root, requested.activePlan, requested.activeObjective, discovery)) {
       expect(call, name).toThrow(/discovery origin does not match.*source authority/s);
-      try { call(); } catch (error) { expect(String(error), name).not.toContain("foreign discovery entries were consumed"); }
+      try {
+        call();
+      } catch (error) {
+        expect(String(error), name).not.toContain("foreign discovery entries were consumed");
+      }
     }
   });
 
@@ -160,7 +333,14 @@ describe("startup entity reader discovery reuse", () => {
     fs.writeFileSync(progressPath, "id: [\n");
     const corruptDiscovery = discoverEntities(corrupt.root, SOURCE_ROOT);
     expect(failureClass(() => listProgressEntities(corrupt.root, 20, {}, undefined, { sourceRoot: SOURCE_ROOT }))).toBe("corrupt");
-    expect(failureClass(() => listProgressEntities(corrupt.root, 20, {}, undefined, { sourceRoot: SOURCE_ROOT, discovery: corruptDiscovery }))).toBe("corrupt");
+    expect(
+      failureClass(() =>
+        listProgressEntities(corrupt.root, 20, {}, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          discovery: corruptDiscovery,
+        }),
+      ),
+    ).toBe("corrupt");
 
     const duplicate = fixture();
     const planPath = path.join(duplicate.root, ".agentera/entities/plan/plan", `${duplicate.activePlan}.yaml`);
@@ -168,7 +348,14 @@ describe("startup entity reader discovery reuse", () => {
     fs.copyFileSync(planPath, duplicatePath);
     const duplicateDiscovery = discoverEntities(duplicate.root, SOURCE_ROOT);
     expect(failureClass(() => listPlanEntities(duplicate.root, 20, undefined, { sourceRoot: SOURCE_ROOT }))).toBe("ambiguous");
-    expect(failureClass(() => listPlanEntities(duplicate.root, 20, undefined, { sourceRoot: SOURCE_ROOT, discovery: duplicateDiscovery }))).toBe("ambiguous");
+    expect(
+      failureClass(() =>
+        listPlanEntities(duplicate.root, 20, undefined, {
+          sourceRoot: SOURCE_ROOT,
+          discovery: duplicateDiscovery,
+        }),
+      ),
+    ).toBe("ambiguous");
   });
 
   it("reads every canonical entity exactly once during entity orientation", () => {

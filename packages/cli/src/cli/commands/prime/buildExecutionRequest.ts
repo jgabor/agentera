@@ -38,13 +38,22 @@ function codePointLength(value: string): number {
 
 function validateText(value: unknown, field: string): string {
   if (typeof value !== "string" || value.trim().length === 0) {
-    fail({ class: "schema_violation", message: `Build execution request ${field} must be a non-empty string` });
+    fail({
+      class: "schema_violation",
+      message: `Build execution request ${field} must be a non-empty string`,
+    });
   }
   if (codePointLength(value) > BUILD_EXECUTION_REQUEST_MAX_CODE_POINTS) {
-    fail({ class: "schema_violation", message: `Build execution request ${field} exceeds 160 Unicode code points` });
+    fail({
+      class: "schema_violation",
+      message: `Build execution request ${field} exceeds 160 Unicode code points`,
+    });
   }
   if (hasControlChars(value)) {
-    fail({ class: "schema_violation", message: `Build execution request ${field} contains control characters` });
+    fail({
+      class: "schema_violation",
+      message: `Build execution request ${field} contains control characters`,
+    });
   }
   return value;
 }
@@ -58,7 +67,10 @@ function unreadableInput(): never {
 }
 
 function oversizedInput(): never {
-  return fail({ class: "schema_violation", message: "Build execution request input exceeds the 32768-byte UTF-8 bound" });
+  return fail({
+    class: "schema_violation",
+    message: "Build execution request input exceeds the 32768-byte UTF-8 bound",
+  });
 }
 
 function readBoundedDescriptor(fd: number): Buffer {
@@ -127,10 +139,7 @@ function readBytes(source: string, readStdin?: () => string | Buffer): Buffer {
   }
 }
 
-export function loadBuildExecutionRequest(
-  source: string,
-  readStdin?: () => string | Buffer,
-): BuildExecutionRequest {
+export function loadBuildExecutionRequest(source: string, readStdin?: () => string | Buffer): BuildExecutionRequest {
   const bytes = readBytes(source, readStdin);
 
   let input: Record<string, unknown>;
@@ -147,22 +156,37 @@ export function loadBuildExecutionRequest(
   const fields = Object.keys(input);
   const expected = ["schema_version", "scope", "acceptance"];
   if (fields.some((field) => !expected.includes(field))) {
-    fail({ class: "schema_violation", message: "Build execution request contains unsupported fields" });
+    fail({
+      class: "schema_violation",
+      message: "Build execution request contains unsupported fields",
+    });
   }
   if (fields.length !== expected.length || expected.some((field) => !Object.hasOwn(input, field))) {
-    fail({ class: "schema_violation", message: "Build execution request requires exactly schema_version, scope, and acceptance" });
+    fail({
+      class: "schema_violation",
+      message: "Build execution request requires exactly schema_version, scope, and acceptance",
+    });
   }
   if (input.schema_version !== BUILD_EXECUTION_REQUEST_SCHEMA) {
-    fail({ class: "schema_violation", message: `Build execution request schema_version must be ${BUILD_EXECUTION_REQUEST_SCHEMA}` });
+    fail({
+      class: "schema_violation",
+      message: `Build execution request schema_version must be ${BUILD_EXECUTION_REQUEST_SCHEMA}`,
+    });
   }
 
   const scope = validateText(input.scope, "scope");
   if (!Array.isArray(input.acceptance) || input.acceptance.length < 1 || input.acceptance.length > BUILD_EXECUTION_REQUEST_MAX_ITEMS) {
-    fail({ class: "schema_violation", message: "Build execution request acceptance must contain 1 to 12 strings" });
+    fail({
+      class: "schema_violation",
+      message: "Build execution request acceptance must contain 1 to 12 strings",
+    });
   }
   const acceptance = input.acceptance.map((value, index) => validateText(value, `acceptance[${index}]`));
   if (new Set(acceptance).size !== acceptance.length) {
-    fail({ class: "schema_violation", message: "Build execution request acceptance must not contain duplicate values" });
+    fail({
+      class: "schema_violation",
+      message: "Build execution request acceptance must not contain duplicate values",
+    });
   }
 
   return {

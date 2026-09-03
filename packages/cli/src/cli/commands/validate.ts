@@ -12,15 +12,9 @@ import { validate as validateAppHome } from "../../validate/appHomeContract.js";
 import { selfAuditMain } from "../../validate/selfAudit.js";
 import { vocabularyAuthorityMain } from "../../validate/vocabularyAuthority.js";
 import { activationConjunctionMain } from "../../validate/activationConjunction.js";
-import {
-  isRetainedReferenceSourceCheckout,
-  retainedReferenceAuthorityMain,
-} from "../../validate/retainedReferenceAuthority.js";
+import { isRetainedReferenceSourceCheckout, retainedReferenceAuthorityMain } from "../../validate/retainedReferenceAuthority.js";
 import { releaseMetadataMain } from "../../release/releaseMetadata.js";
-import {
-  VALIDATE_ARTIFACT_PROTOCOL_IDS,
-  normalizeArtifactProtocolId,
-} from "../../registries/artifactProtocolIds.js";
+import { VALIDATE_ARTIFACT_PROTOCOL_IDS, normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
 import { emitStructured } from "../structured.js";
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
 import { validateEntityState } from "../../state/entityStorage.js";
@@ -30,35 +24,18 @@ import { detectStateModeBinding } from "../../state/stateMode.js";
 import { loadEntityCutoverTargetsForMarker } from "../../state/entityCutover.js";
 import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
-import {
-  loadTodoReadinessContract,
-  TodoReadinessContractError,
-} from "../../registries/todoReadinessContract.js";
+import { loadTodoReadinessContract, TodoReadinessContractError } from "../../registries/todoReadinessContract.js";
 import { scanConfirmedVariantViolations } from "../../validate/glossaryVariantGuard.js";
 
 /** Port of scripts/agentera cmd_validate delegated-script family. */
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
-export const VALIDATE_FAMILY_NAMES = [
-  "cross-capability",
-  "app-home-contract",
-  "vocabularyAuthority",
-  "retained-references",
-  "activation-conjunction",
-  "selfAudit",
-  "release-metadata",
-  "capability",
-  "capability-contract",
-  "artifact",
-  "state",
-] as const;
+export const VALIDATE_FAMILY_NAMES = ["cross-capability", "app-home-contract", "vocabularyAuthority", "retained-references", "activation-conjunction", "selfAudit", "release-metadata", "capability", "capability-contract", "artifact", "state"] as const;
 
 /** Source-only validation must not appear as a packaged CLI capability. */
 export function advertisedValidateFamilyNames(): readonly string[] {
-  return isRetainedReferenceSourceCheckout()
-    ? VALIDATE_FAMILY_NAMES
-    : VALIDATE_FAMILY_NAMES.filter((family) => !["retained-references", "activation-conjunction"].includes(family));
+  return isRetainedReferenceSourceCheckout() ? VALIDATE_FAMILY_NAMES : VALIDATE_FAMILY_NAMES.filter((family) => !["retained-references", "activation-conjunction"].includes(family));
 }
 
 interface ProcResult {
@@ -103,7 +80,11 @@ function runAppHomeContract(): ProcResult {
       returncode: 1,
     };
   }
-  return { stdout: "OK: app-home contract terminology is release-ready\n", stderr: "", returncode: 0 };
+  return {
+    stdout: "OK: app-home contract terminology is release-ready\n",
+    stderr: "",
+    returncode: 0,
+  };
 }
 
 function runVocabularyAuthority(): ProcResult {
@@ -119,9 +100,7 @@ function runRetainedReferenceAuthority(): ProcResult {
     stdout: lines.map((line) => line + "\n").join(""),
     stderr: "",
     returncode: rc,
-    violations: rc === 0
-      ? []
-      : lines.filter((line) => line.startsWith("- ")).map((line) => line.slice(2)),
+    violations: rc === 0 ? [] : lines.filter((line) => line.startsWith("- ")).map((line) => line.slice(2)),
   };
 }
 
@@ -171,12 +150,7 @@ const DELEGATED_RUNNERS: Record<string, (args: DelegatedValidateArgs) => ProcRes
   "release-metadata": () => runReleaseMetadata(),
 };
 
-function validationProcessPayload(
-  targetFamily: string,
-  target: string,
-  p: string | null,
-  result: ProcResult,
-): JsonObject {
+function validationProcessPayload(targetFamily: string, target: string, p: string | null, result: ProcResult): JsonObject {
   const lines = pySplitlines(result.stderr).map((l) => l.trim());
   const violations = result.violations ?? lines.filter((l) => l.trim()).map((l) => (l.startsWith("  ") ? l.slice(2) : l));
   const payload: JsonObject = {
@@ -208,19 +182,11 @@ export function cmdValidate(family: string, args: DelegatedValidateArgs, io: Io)
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   if (!(family in DELEGATED_RUNNERS)) {
-    throw new Error(
-      `unsupported validate target family; valid families: ${VALIDATE_FAMILY_NAMES.join(", ")}.`,
-    );
+    throw new Error(`unsupported validate target family; valid families: ${VALIDATE_FAMILY_NAMES.join(", ")}.`);
   }
-  const result = family === "retained-references" && !isRetainedReferenceSourceCheckout()
-    ? unsupportedRetainedReferenceValidation()
-    : DELEGATED_RUNNERS[family](args);
+  const result = family === "retained-references" && !isRetainedReferenceSourceCheckout() ? unsupportedRetainedReferenceValidation() : DELEGATED_RUNNERS[family](args);
   if ((args.format ?? "text") === "json") {
-    emitStructured(
-      delegatedValidationPayload(family, result, VALIDATE_DELEGATED_SCRIPTS[family]),
-      "json",
-      out,
-    );
+    emitStructured(delegatedValidationPayload(family, result, VALIDATE_DELEGATED_SCRIPTS[family]), "json", out);
   } else {
     if (result.stdout) out(result.stdout);
     if (result.stderr) err(result.stderr);
@@ -238,10 +204,7 @@ export function cmdValidateActivationConjunction(io: Io): number {
 
 // ── capability + capability-contract families ───────────────────────
 
-const CAPABILITY_NAMES = [
-  "status", "vision", "discuss", "research", "plan", "build",
-  "optimize", "audit", "document", "profile", "design", "orchestrate",
-];
+const CAPABILITY_NAMES = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
 const CONTRACT_PATH = "skills/agentera/capability_schema_contract.yaml";
 const PROTOCOL_PATH = "skills/agentera/protocol.yaml";
 const TODO_READINESS_PATH = "skills/agentera/schemas/artifacts/todo.yaml";
@@ -258,11 +221,7 @@ function validateCapabilityTarget(target: string): string {
   }
   if (/^[A-Za-z][A-Za-z0-9_-]*$/.test(target)) {
     const valid = CAPABILITY_NAMES.join(", ");
-    throw new Error(
-      `unsupported capability target ${pyRepr(target)}; valid capability names: ${valid}. ` +
-        "Syntax: agentera validate capability <capability-or-path> [--format text|json]. " +
-        "Example: agentera validate capability status",
-    );
+    throw new Error(`unsupported capability target ${pyRepr(target)}; valid capability names: ${valid}. ` + "Syntax: agentera validate capability <capability-or-path> [--format text|json]. " + "Example: agentera validate capability status");
   }
   validatePathValue(target, "capability path");
   return target;
@@ -322,9 +281,7 @@ export function cmdValidateCapability(target: string, args: { format?: string },
     const results = targets.map((t) => capabilityResult(t));
     const status = results.every((r) => r.returncode === 0) ? "pass" : "fail";
     if (format === "json") {
-      const checks = targets.map((t, i) =>
-        validationProcessPayload("capability", path.basename(t), t, results[i]),
-      );
+      const checks = targets.map((t, i) => validationProcessPayload("capability", path.basename(t), t, results[i]));
       emitStructured(
         {
           command: "validate",
@@ -403,11 +360,7 @@ function todoReadinessResult(): ProcResult {
   let stdout = `Validating TODO readiness: ${TODO_READINESS_PATH}\n`;
   let errors: string[] = [];
   try {
-    loadTodoReadinessContract(
-      path.join(resolveSourceRoot(), TODO_READINESS_PATH),
-      path.join(resolveSourceRoot(), PROTOCOL_PATH),
-      path.join(resolveSourceRoot(), CONTRACT_PATH),
-    );
+    loadTodoReadinessContract(path.join(resolveSourceRoot(), TODO_READINESS_PATH), path.join(resolveSourceRoot(), PROTOCOL_PATH), path.join(resolveSourceRoot(), CONTRACT_PATH));
   } catch (exc) {
     errors = exc instanceof TodoReadinessContractError ? exc.errors : [(exc as Error).message];
   }
@@ -464,18 +417,11 @@ function validateArtifactLabel(artifact: string): void {
   validateAgentString(artifact, "artifact");
   if (normalizeArtifactProtocolId(artifact) === null) {
     const valid = VALIDATE_ARTIFACT_PROTOCOL_IDS.join(", ");
-    throw new Error(
-      `unsupported artifact ${pyRepr(artifact)}; valid artifact_id values: ${valid}. ` +
-        "Syntax: agentera check validate artifact --artifact <ARTIFACT_ID> [--file <PATH>] [--format text|json]. " +
-        "Example: agentera check validate artifact --artifact plan --file .agentera/plan.yaml",
-    );
+    throw new Error(`unsupported artifact ${pyRepr(artifact)}; valid artifact_id values: ${valid}. ` + "Syntax: agentera check validate artifact --artifact <ARTIFACT_ID> [--file <PATH>] [--format text|json]. " + "Example: agentera check validate artifact --artifact plan --file .agentera/plan.yaml");
   }
 }
 
-export function cmdValidateArtifact(
-  args: { artifact: string; file?: string | null; cwd?: string | null; format?: string },
-  io: Io,
-): number {
+export function cmdValidateArtifact(args: { artifact: string; file?: string | null; cwd?: string | null; format?: string }, io: Io): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const artifact = String(args.artifact);
@@ -496,20 +442,13 @@ export function cmdValidateArtifact(
     if (wrapped.status === "fail" && rc === 0) return 2;
     return rc;
   }
-  out(
-    `status=${payload.status} | artifact=${payload.artifact} | ` +
-      `file=${payload.file} | docs_mapped_default=${payload.docs_mapped_default} | ` +
-      `path_source=${payload.path_source}\n`,
-  );
+  out(`status=${payload.status} | artifact=${payload.artifact} | ` + `file=${payload.file} | docs_mapped_default=${payload.docs_mapped_default} | ` + `path_source=${payload.path_source}\n`);
   // cast: payload.violations come from the artifact-validation engine IO boundary
   for (const violation of payload.violations as string[]) err(`${violation}\n`);
   return rc;
 }
 
-export function cmdValidateState(
-  args: { cwd?: string | null; format?: string },
-  io: Io,
-): number {
+export function cmdValidateState(args: { cwd?: string | null; format?: string }, io: Io): number {
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   const err = io.err ?? ((text: string) => process.stderr.write(text));
   const projectRoot = resolvePath(args.cwd ?? process.cwd());
@@ -540,15 +479,13 @@ function todoReconciliationValidationIssue(diagnosis: TodoReconciliationInspecti
 export function validateStatePayload(projectRootInput: string): JsonObject {
   const projectRoot = resolvePath(projectRootInput);
   const result = validateEntityState(projectRoot);
-  const issues: JsonObject[] = [...result.issues as unknown as JsonObject[]];
+  const issues: JsonObject[] = [...(result.issues as unknown as JsonObject[])];
   let additionalOmittedIssues = 0;
   const glossaryViolations = scanConfirmedVariantViolations(projectRoot);
   const glossaryIssueCapacity = Math.max(0, 100 - issues.length);
   for (const message of glossaryViolations.slice(0, glossaryIssueCapacity)) {
     issues.push({
-      code: message.startsWith("project glossary is malformed")
-        ? "invalid_project_glossary"
-        : "confirmed_glossary_variant",
+      code: message.startsWith("project glossary is malformed") ? "invalid_project_glossary" : "confirmed_glossary_variant",
       artifact: "glossary",
       message,
       recovery: "Apply the reported correction, then rerun npx -y agentera@next check validate state; no state was changed.",
@@ -570,19 +507,27 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
         for (const target of targets) {
           const actual = byPath.get(target.path);
           if (!actual || actual.classification !== "valid" || (target.id && actual.id !== target.id) || (target.artifact && actual.artifact !== target.artifact)) {
-            issues.push({ code: "missing_migrated_entity", path: target.path, id: target.id ?? null, artifact: target.artifact ?? null, message: `cutover target '${target.path}' is missing or no longer has its declared identity`, recovery: "Restore a valid canonical entity at the manifest-declared path; no state was changed." });
+            issues.push({
+              code: "missing_migrated_entity",
+              path: target.path,
+              id: target.id ?? null,
+              artifact: target.artifact ?? null,
+              message: `cutover target '${target.path}' is missing or no longer has its declared identity`,
+              recovery: "Restore a valid canonical entity at the manifest-declared path; no state was changed.",
+            });
           }
         }
       }
     }
   } catch (error) {
     const message = (error as Error).message;
-    if (issues.length < 100) issues.push({
-      code: message.includes("state mode marker") ? "invalid_lifecycle_state" : "invalid_state_marker_or_manifest",
-      path: ".agentera/state-mode.yaml",
-      message: message.includes("state mode marker") ? "entity-state lifecycle marker is invalid" : message,
-      recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check.",
-    });
+    if (issues.length < 100)
+      issues.push({
+        code: message.includes("state mode marker") ? "invalid_lifecycle_state" : "invalid_state_marker_or_manifest",
+        path: ".agentera/state-mode.yaml",
+        message: message.includes("state mode marker") ? "entity-state lifecycle marker is invalid" : message,
+        recovery: "Restore the durable marker and immutable migration evidence, then rerun this read-only check.",
+      });
     else additionalOmittedIssues += 1;
   }
   if (entityMode) {
@@ -594,7 +539,14 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
         else additionalOmittedIssues += 1;
       }
     } catch (error) {
-      if (issues.length < 100) issues.push({ code: "invalid_todo_reconciliation", path: "TODO.md", artifact: "todo", message: "TODO reconciliation could not be inspected without state changes", recovery: "Restore valid bounded TODO reconciliation state, then rerun this read-only check." });
+      if (issues.length < 100)
+        issues.push({
+          code: "invalid_todo_reconciliation",
+          path: "TODO.md",
+          artifact: "todo",
+          message: "TODO reconciliation could not be inspected without state changes",
+          recovery: "Restore valid bounded TODO reconciliation state, then rerun this read-only check.",
+        });
       else additionalOmittedIssues += 1;
     }
     if (reconciliation?.state === "invalid_lifecycle") return finishStateValidation(projectRoot, result, issues, additionalOmittedIssues);
@@ -606,11 +558,11 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
       for (const item of driftItems.slice(0, available)) {
         const id = String(item.id ?? "unknown");
         const state = String(item.state ?? "drift");
-        const fields = [...new Set([
-          ...(Array.isArray(item.markdown_changed_fields) ? item.markdown_changed_fields : []),
-          ...(Array.isArray(item.entity_changed_fields) ? item.entity_changed_fields : []),
-          ...(Array.isArray(item.conflicting_fields) ? item.conflicting_fields : []),
-        ].filter((field): field is string => typeof field === "string"))].sort();
+        const fields = [
+          ...new Set(
+            [...(Array.isArray(item.markdown_changed_fields) ? item.markdown_changed_fields : []), ...(Array.isArray(item.entity_changed_fields) ? item.entity_changed_fields : []), ...(Array.isArray(item.conflicting_fields) ? item.conflicting_fields : [])].filter((field): field is string => typeof field === "string"),
+          ),
+        ].sort();
         issues.push({
           code: "todo_reconciliation_drift",
           path: "TODO.md",
@@ -622,19 +574,21 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
       }
       additionalOmittedIssues += Math.max(0, driftItems.length - available) + (Number.isSafeInteger(reconciliationOmitted) && reconciliationOmitted > 0 ? reconciliationOmitted : 0);
     } catch (error) {
-      if (issues.length < 100) issues.push({ code: "invalid_todo_reconciliation", path: "TODO.md", artifact: "todo", message: (error as Error).message, recovery: "Restore valid bounded managed TODO Markdown, activation metadata, and public baselines, then rerun this read-only check." });
+      if (issues.length < 100)
+        issues.push({
+          code: "invalid_todo_reconciliation",
+          path: "TODO.md",
+          artifact: "todo",
+          message: (error as Error).message,
+          recovery: "Restore valid bounded managed TODO Markdown, activation metadata, and public baselines, then rerun this read-only check.",
+        });
       else additionalOmittedIssues += 1;
     }
   }
   return finishStateValidation(projectRoot, result, issues, additionalOmittedIssues);
 }
 
-function finishStateValidation(
-  projectRoot: string,
-  result: ReturnType<typeof validateEntityState>,
-  issues: JsonObject[],
-  additionalOmittedIssues: number,
-): JsonObject {
+function finishStateValidation(projectRoot: string, result: ReturnType<typeof validateEntityState>, issues: JsonObject[], additionalOmittedIssues: number): JsonObject {
   const omittedIssueCount = result.omittedIssueCount + additionalOmittedIssues;
   const valid = result.valid && issues.length === 0 && omittedIssueCount === 0;
   const payload: JsonObject = {

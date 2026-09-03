@@ -26,9 +26,7 @@ function runnerPath(): string {
 }
 
 /** Run the heavyweight frozen evaluator only for a request that needs its gate. */
-export function runGlossaryEvaluationProcess(
-  sourceRoot: string = resolveSourceRoot(),
-): GlossaryEvaluationProcessResult {
+export function runGlossaryEvaluationProcess(sourceRoot: string = resolveSourceRoot()): GlossaryEvaluationProcessResult {
   const result = spawnSync(process.execPath, [runnerPath(), sourceRoot], {
     encoding: "utf8",
     maxBuffer: 1_048_576,

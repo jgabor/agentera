@@ -10,29 +10,15 @@ import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { runProfileGroundingCommand } from "../../src/cli/commands/profileGrounding.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
-import {
-  acquireProfile,
-  readProfileSourceSafely,
-  type ProfileValidityClass,
-} from "../../src/cli/profileAcquisition.js";
+import { acquireProfile, readProfileSourceSafely, type ProfileValidityClass } from "../../src/cli/profileAcquisition.js";
 import { personalProfileGroundingContract } from "../../src/registries/glossaryEntryContract.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const SCHEMAS_DIR = path.join(REPO_ROOT, "skills/agentera/schemas/artifacts");
 const PRIVACY_TRAP = "PRIVATE_PROFILE_BYTES_MUST_NOT_ESCAPE";
-const VALIDITY_CLASSES: ProfileValidityClass[] = [
-  "absent", "valid", "malformed", "ambiguous", "unreadable", "unsafe", "oversized", "invalid_utf8",
-];
+const VALIDITY_CLASSES: ProfileValidityClass[] = ["absent", "valid", "malformed", "ambiguous", "unreadable", "unsafe", "oversized", "invalid_utf8"];
 
-const EMPTY_GLOSSARY = [
-  "<!-- agentera:personal-glossary:start -->",
-  "## Glossary",
-  "",
-  "```json",
-  '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}',
-  "```",
-  "<!-- agentera:personal-glossary:end -->",
-].join("\n");
+const EMPTY_GLOSSARY = ["<!-- agentera:personal-glossary:start -->", "## Glossary", "", "```json", '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}', "```", "<!-- agentera:personal-glossary:end -->"].join("\n");
 
 let root: string;
 let project: string;
@@ -62,13 +48,21 @@ function captureReport(): { rc: number; out: string; err: string; payload: Recor
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
-function capturePrime(context?: string): { rc: number; out: string; err: string; payload: Record<string, any> } {
+function capturePrime(context?: string): {
+  rc: number;
+  out: string;
+  err: string;
+  payload: Record<string, any>;
+} {
   let out = "";
   let err = "";
-  const rc = cmdPrime({ command: "prime", context, format: "json" }, {
-    out: (text) => (out += text),
-    err: (text) => (err += text),
-  });
+  const rc = cmdPrime(
+    { command: "prime", context, format: "json" },
+    {
+      out: (text) => (out += text),
+      err: (text) => (err += text),
+    },
+  );
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
@@ -159,11 +153,18 @@ describe("shared bounded profile acquisition", () => {
   });
 
   it("separates current, stale, and unknown freshness from valid structure", () => {
-    for (const [days, state] of [[1, "current"], [10, "stale"]] as const) {
+    for (const [days, state] of [
+      [1, "current"],
+      [10, "stale"],
+    ] as const) {
       fs.writeFileSync(profilePath, `# Profile\n<!-- Generated: ${isoDaysAgo(days)} | Data: x -->\n`);
       const acquired = acquireProfile(SCHEMAS_DIR, env());
       expect(acquired.validity).toEqual({ status: "valid", class: "valid", recovery: null });
-      expect(acquired.freshness).toMatchObject({ state, days_since_generated: days, stale_threshold_days: 7 });
+      expect(acquired.freshness).toMatchObject({
+        state,
+        days_since_generated: days,
+        stale_threshold_days: 7,
+      });
     }
     fs.writeFileSync(profilePath, "# Profile\n");
     expect(acquireProfile(SCHEMAS_DIR, env()).freshness.state).toBe("unknown");
@@ -173,7 +174,10 @@ describe("shared bounded profile acquisition", () => {
     fs.writeFileSync(profilePath, Buffer.alloc(65_536, 65));
     expect(acquireProfile(SCHEMAS_DIR, env()).validity.class).toBe("valid");
     fs.writeFileSync(profilePath, Buffer.alloc(65_537, 65));
-    expect(acquireProfile(SCHEMAS_DIR, env()).validity).toMatchObject({ status: "repair_needed", class: "oversized" });
+    expect(acquireProfile(SCHEMAS_DIR, env()).validity).toMatchObject({
+      status: "repair_needed",
+      class: "oversized",
+    });
   });
 
   it("keeps fallback reads safe and rejects final symlinks, non-files, and changed sources", () => {
@@ -193,17 +197,21 @@ describe("shared bounded profile acquisition", () => {
     expect(readProfileSourceSafely(profilePath, 65_536).status).toBe("unsafe");
     fs.rmSync(profilePath, { recursive: true });
     fs.writeFileSync(profilePath, "before");
-    expect(readProfileSourceSafely(profilePath, 65_536, {
-      afterRead: () => fs.writeFileSync(profilePath, "after!"),
-    }).status).toBe("unsafe");
-    expect(readProfileSourceSafely(profilePath, 65_536, {
-      noFollowFlag: 0,
-      afterPathSnapshot: () => {
-        const replacement = path.join(root, "replacement-profile");
-        fs.writeFileSync(replacement, "replacement");
-        fs.renameSync(replacement, profilePath);
-      },
-    }).status).toBe("unsafe");
+    expect(
+      readProfileSourceSafely(profilePath, 65_536, {
+        afterRead: () => fs.writeFileSync(profilePath, "after!"),
+      }).status,
+    ).toBe("unsafe");
+    expect(
+      readProfileSourceSafely(profilePath, 65_536, {
+        noFollowFlag: 0,
+        afterPathSnapshot: () => {
+          const replacement = path.join(root, "replacement-profile");
+          fs.writeFileSync(replacement, "replacement");
+          fs.renameSync(replacement, profilePath);
+        },
+      }).status,
+    ).toBe("unsafe");
   });
 
   it("accepts a stable profile beneath a symlinked parent and rejects parent retarget races", () => {
@@ -222,19 +230,25 @@ describe("shared bounded profile acquisition", () => {
     }
     const linkedProfile = path.join(linked, "PROFILE.md");
     expect(readProfileSourceSafely(linkedProfile, 65_536, { noFollowFlag: 0 }).status).toBe("ok");
-    expect(readProfileSourceSafely(linkedProfile, 65_536, {
-      noFollowFlag: 0,
-      afterPathSnapshot: () => {
-        fs.rmSync(linked);
-        fs.symlinkSync(second, linked, "dir");
-      },
-    }).status).toBe("unsafe");
+    expect(
+      readProfileSourceSafely(linkedProfile, 65_536, {
+        noFollowFlag: 0,
+        afterPathSnapshot: () => {
+          fs.rmSync(linked);
+          fs.symlinkSync(second, linked, "dir");
+        },
+      }).status,
+    ).toBe("unsafe");
   });
 
   it.each(VALIDITY_CLASSES)("keeps profile validity out of bounded Prime startup for %s", (validityClass) => {
     const cleanup = writeScenario(validityClass);
     try {
-      const state = collectOrientationState({ projectRoot: project, home: path.join(root, "home"), env: env() });
+      const state = collectOrientationState({
+        projectRoot: project,
+        home: path.join(root, "home"),
+        env: env(),
+      });
       const report = captureReport();
       const bare = capturePrime();
       const status = capturePrime("status");
@@ -257,9 +271,15 @@ describe("shared bounded profile acquisition", () => {
       for (const capability of CAPABILITY_NAMES) {
         const payload = buildPrimeCapabilityContextPayload(state, capability);
         expect(payload.capability_context.profile).toBeUndefined();
-        expect(payload.capability_context.startup.availability).toEqual(expect.arrayContaining([
-          expect.objectContaining({ family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding" }),
-        ]));
+        expect(payload.capability_context.startup.availability).toEqual(
+          expect.arrayContaining([
+            expect.objectContaining({
+              family: "profile",
+              availability: "deferred",
+              detail_command: "npx -y agentera@next report profile-grounding",
+            }),
+          ]),
+        );
         expect(JSON.stringify(payload)).not.toContain(PRIVACY_TRAP);
       }
       for (const output of [report.out, report.err, bare.out, bare.err, status.out, status.err, JSON.stringify(state.profile_dict)]) {

@@ -1,14 +1,10 @@
 import fs from "node:fs";
 import path from "node:path";
 
-export const ACTIVATION_CLASSES = [
-  "cli", "capability", "runtime", "reference", "state", "package", "bootstrap",
-] as const;
+export const ACTIVATION_CLASSES = ["cli", "capability", "runtime", "reference", "state", "package", "bootstrap"] as const;
 export type ActivationClassId = (typeof ACTIVATION_CLASSES)[number];
 
-export const ACTIVATION_DIMENSIONS = [
-  "discovery", "behavior", "diagnostics", "package_projection", "instructions", "adversarial",
-] as const;
+export const ACTIVATION_DIMENSIONS = ["discovery", "behavior", "diagnostics", "package_projection", "instructions", "adversarial"] as const;
 export type ActivationDimensionId = (typeof ACTIVATION_DIMENSIONS)[number];
 
 export interface ActivationClassAuthority {
@@ -17,7 +13,10 @@ export interface ActivationClassAuthority {
   readonly selector?: string;
   readonly correction: string;
 }
-export interface ActivationCensusIdentity { readonly count: number; readonly sha256: string }
+export interface ActivationCensusIdentity {
+  readonly count: number;
+  readonly sha256: string;
+}
 
 function deepFreeze<T>(value: T): T {
   if (value && typeof value === "object" && !Object.isFrozen(value)) {
@@ -30,31 +29,38 @@ function deepFreeze<T>(value: T): T {
 /** Code-owned identity that the publication document must project exactly. */
 export const ACTIVATION_CLASS_AUTHORITIES: Readonly<Record<ActivationClassId, ActivationClassAuthority>> = deepFreeze({
   cli: {
-    path: "packages/cli/src/cli/dispatch/commands.ts", symbol: "DISPATCHER_TOP_LEVEL_COMMANDS",
+    path: "packages/cli/src/cli/dispatch/commands.ts",
+    symbol: "DISPATCHER_TOP_LEVEL_COMMANDS",
     correction: "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts",
   },
   capability: {
-    path: "packages/cli/src/capabilities/index.ts", symbol: "CAPABILITY_INSTRUCTIONS",
+    path: "packages/cli/src/capabilities/index.ts",
+    symbol: "CAPABILITY_INSTRUCTIONS",
     correction: "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts",
   },
   runtime: {
-    path: "packages/cli/src/runtime/lifecycleAuthority.ts", symbol: "loadLifecycleAuthority",
+    path: "packages/cli/src/runtime/lifecycleAuthority.ts",
+    symbol: "loadLifecycleAuthority",
     correction: "pnpm -C packages/cli test:source -- test/runtime/runtimeLifecycle.test.ts",
   },
   reference: {
-    path: "packages/cli/src/validate/retainedReferenceAuthority.ts", symbol: "validateRetainedReferenceAuthority",
+    path: "packages/cli/src/validate/retainedReferenceAuthority.ts",
+    symbol: "validateRetainedReferenceAuthority",
     correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
   state: {
-    path: "packages/cli/src/state/write/runtimeOperations.ts", symbol: "runtimeOperationSpecs",
+    path: "packages/cli/src/state/write/runtimeOperations.ts",
+    symbol: "runtimeOperationSpecs",
     correction: "node packages/cli/dist/bin/agentera.js check validate state",
   },
   package: {
-    path: "packages/cli/src/registries/packageRegistry.ts", symbol: "loadRegistry",
+    path: "packages/cli/src/registries/packageRegistry.ts",
+    symbol: "loadRegistry",
     correction: "pnpm -C packages/cli run verify:package",
   },
   bootstrap: {
-    path: "packages/cli/src/validate/bootstrapAuthority.ts", symbol: "bootstrapMatrixAuthority",
+    path: "packages/cli/src/validate/bootstrapAuthority.ts",
+    symbol: "bootstrapMatrixAuthority",
     correction: "pnpm -C packages/cli test:source -- test/cli/runtimeBootstrapMatrix.test.ts",
   },
 });
@@ -68,33 +74,96 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
   algorithm: "sha256(sorted_utf8_ids_joined_by_lf)",
   classes: {
     cli: { count: 27, sha256: "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4" },
-    capability: { count: 12, sha256: "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867" },
-    runtime: { count: 98, sha256: "9986cd87660308dc8fe6574768f14aec80f8b7eb55dffcdf1dfe7fc1c80f0251" },
-    reference: { count: 27, sha256: "9992ecb8fd560b18f2858daab9208acda068ed6e7779954e12539b748e80aa57" },
-    state: { count: 38, sha256: "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681" },
-    package: { count: 68, sha256: "b237db48078d6f00e1418c43e1df9fbafb7dc86f950cb544e5866f5079ad8995" },
-    bootstrap: { count: 34, sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e" },
+    capability: {
+      count: 12,
+      sha256: "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867",
+    },
+    runtime: {
+      count: 98,
+      sha256: "9986cd87660308dc8fe6574768f14aec80f8b7eb55dffcdf1dfe7fc1c80f0251",
+    },
+    reference: {
+      count: 27,
+      sha256: "9992ecb8fd560b18f2858daab9208acda068ed6e7779954e12539b748e80aa57",
+    },
+    state: {
+      count: 38,
+      sha256: "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681",
+    },
+    package: {
+      count: 68,
+      sha256: "b237db48078d6f00e1418c43e1df9fbafb7dc86f950cb544e5866f5079ad8995",
+    },
+    bootstrap: {
+      count: 34,
+      sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e",
+    },
   },
   total: { count: 304, sha256: "472adb93e4fbbc35172846684dc1cb2aa9f07ed90ef0f85cfd103b4ad2ec9839" },
 });
 
 /** Each dimension names the production contract it observes independently. */
 export const ACTIVATION_EVIDENCE_SOURCES: Readonly<Record<ActivationClassId, Readonly<Record<ActivationDimensionId, string>>>> = deepFreeze({
-  cli: { discovery: "cli.dispatcher-inventory", behavior: "cli.dispatch-handler-registry", diagnostics: "cli.command-diagnostic-registry", package_projection: "cli.schema-dispatcher-projection", instructions: "cli.public-help-declaration", adversarial: "cli.invalid-shape-command-authority" },
-  capability: { discovery: "capability.instruction-registry", behavior: "capability.route-handler-registry", diagnostics: "capability.schema-contract-directories", package_projection: "capability.packaged-registry-projection", instructions: "capability.served-instruction-targets", adversarial: "capability.registry-schema-closure" },
-  runtime: { discovery: "runtime.lifecycle-retirement-loader", behavior: "runtime.cleanup-behavior-records", diagnostics: "runtime.retired-diagnostic-expansion", package_projection: "runtime.packaged-authority-loaders", instructions: "runtime.lifecycle-declaration-records", adversarial: "runtime.retirement-shape-authority" },
-  reference: { discovery: "reference.retained-inventory", behavior: "reference.production-consumers", diagnostics: "reference.authority-entry-validation", package_projection: "reference.packaged-retained-inventory", instructions: "reference.consumer-runbook-contracts", adversarial: "reference.owner-command-shape-authority" },
-  state: { discovery: "state.read-write-runtime-registries", behavior: "state.read-write-dispatch-contracts", diagnostics: "state.recovery-and-bound-contracts", package_projection: "state.schema-discovery-projections", instructions: "state.help-and-example-projections", adversarial: "state.input-and-output-bound-authorities" },
-  package: { discovery: "package.registry-surface-records", behavior: "package.construction-classification-records", diagnostics: "package.generated-surface-classifications", package_projection: "package.packaged-registry-projection", instructions: "package.identity-and-selector-contracts", adversarial: "package.selector-shape-authority" },
-  bootstrap: { discovery: "bootstrap.matrix-axis-registry", behavior: "bootstrap.acceptance-execution-specs", diagnostics: "bootstrap.rejection-classification-specs", package_projection: "bootstrap.packaged-matrix-authority", instructions: "bootstrap.state-applicability-contracts", adversarial: "bootstrap.invalid-command-classification-authority" },
+  cli: {
+    discovery: "cli.dispatcher-inventory",
+    behavior: "cli.dispatch-handler-registry",
+    diagnostics: "cli.command-diagnostic-registry",
+    package_projection: "cli.schema-dispatcher-projection",
+    instructions: "cli.public-help-declaration",
+    adversarial: "cli.invalid-shape-command-authority",
+  },
+  capability: {
+    discovery: "capability.instruction-registry",
+    behavior: "capability.route-handler-registry",
+    diagnostics: "capability.schema-contract-directories",
+    package_projection: "capability.packaged-registry-projection",
+    instructions: "capability.served-instruction-targets",
+    adversarial: "capability.registry-schema-closure",
+  },
+  runtime: {
+    discovery: "runtime.lifecycle-retirement-loader",
+    behavior: "runtime.cleanup-behavior-records",
+    diagnostics: "runtime.retired-diagnostic-expansion",
+    package_projection: "runtime.packaged-authority-loaders",
+    instructions: "runtime.lifecycle-declaration-records",
+    adversarial: "runtime.retirement-shape-authority",
+  },
+  reference: {
+    discovery: "reference.retained-inventory",
+    behavior: "reference.production-consumers",
+    diagnostics: "reference.authority-entry-validation",
+    package_projection: "reference.packaged-retained-inventory",
+    instructions: "reference.consumer-runbook-contracts",
+    adversarial: "reference.owner-command-shape-authority",
+  },
+  state: {
+    discovery: "state.read-write-runtime-registries",
+    behavior: "state.read-write-dispatch-contracts",
+    diagnostics: "state.recovery-and-bound-contracts",
+    package_projection: "state.schema-discovery-projections",
+    instructions: "state.help-and-example-projections",
+    adversarial: "state.input-and-output-bound-authorities",
+  },
+  package: {
+    discovery: "package.registry-surface-records",
+    behavior: "package.construction-classification-records",
+    diagnostics: "package.generated-surface-classifications",
+    package_projection: "package.packaged-registry-projection",
+    instructions: "package.identity-and-selector-contracts",
+    adversarial: "package.selector-shape-authority",
+  },
+  bootstrap: {
+    discovery: "bootstrap.matrix-axis-registry",
+    behavior: "bootstrap.acceptance-execution-specs",
+    diagnostics: "bootstrap.rejection-classification-specs",
+    package_projection: "bootstrap.packaged-matrix-authority",
+    instructions: "bootstrap.state-applicability-contracts",
+    adversarial: "bootstrap.invalid-command-classification-authority",
+  },
 });
 
-export const ACTIVATION_CHECK_IDS = Object.freeze(ACTIVATION_CLASSES.flatMap((classId) =>
-  ACTIVATION_DIMENSIONS.map((dimension) => `${classId}.${dimension}`)));
-export const SOURCE_GATE_IDS = [
-  "source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build",
-  "compact", "capability-contract", "activation-conjunction",
-] as const;
+export const ACTIVATION_CHECK_IDS = Object.freeze(ACTIVATION_CLASSES.flatMap((classId) => ACTIVATION_DIMENSIONS.map((dimension) => `${classId}.${dimension}`)));
+export const SOURCE_GATE_IDS = ["source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build", "compact", "capability-contract", "activation-conjunction"] as const;
 export const SOURCE_DAG_PHASES = {
   batchA: ["generated-overlap", "stress", "typecheck"],
   performanceBarrier: ["performance"],
@@ -180,7 +249,11 @@ export interface PackagePublicationModel {
   readiness: ReleaseReadinessContract;
   activationConjunction: ActivationConjunctionContract;
   versionCallerInventory: {
-    development: { authority: string; currentExplicitTargetCallers: string[]; task2Boundary: string };
+    development: {
+      authority: string;
+      currentExplicitTargetCallers: string[];
+      task2Boundary: string;
+    };
     stable: { authority: string; preservedCallers: string[] };
     suite: { authority: string; requiredVersion: "3.0.0" };
   };
@@ -200,7 +273,9 @@ const EXACT_COMMANDS: Record<string, readonly string[]> = {
   "activation-conjunction": ["node", "packages/cli/dist/bin/agentera.js", "check", "validate", "activation-conjunction"],
 };
 
-function fail(message: string): never { throw new Error(`package publication contract: ${message}`); }
+function fail(message: string): never {
+  throw new Error(`package publication contract: ${message}`);
+}
 function countStringValue(value: unknown, target: string): number {
   if (typeof value === "string") return value === target ? 1 : 0;
   if (!value || typeof value !== "object") return 0;
@@ -210,14 +285,16 @@ function isCanonicalBranchRef(value: unknown): value is string {
   if (typeof value !== "string" || !value.startsWith("refs/heads/")) return false;
   const branch = value.slice("refs/heads/".length);
   const components = branch.split("/");
-  return branch.length > 0
-    && !/[\x00-\x20\x7f]/.test(value)
-    && !["~", "^", ":", "?", "*", "[", "\\"].some((character) => value.includes(character))
-    && !value.includes("..")
-    && !value.includes("@{")
-    && !value.includes("//")
-    && !value.endsWith(".")
-    && components.every((component) => component.length > 0 && !component.startsWith(".") && !component.endsWith(".lock"));
+  return (
+    branch.length > 0 &&
+    !/[\x00-\x20\x7f]/.test(value) &&
+    !["~", "^", ":", "?", "*", "[", "\\"].some((character) => value.includes(character)) &&
+    !value.includes("..") &&
+    !value.includes("@{") &&
+    !value.includes("//") &&
+    !value.endsWith(".") &&
+    components.every((component) => component.length > 0 && !component.startsWith(".") && !component.endsWith(".lock"))
+  );
 }
 function exactList(value: unknown, expected: readonly string[], label: string): string[] {
   if (!Array.isArray(value) || value.some((entry) => typeof entry !== "string")) fail(`${label} must be a string list`);
@@ -252,86 +329,34 @@ function exactCensusIdentity(value: any, expected: ActivationCensusIdentity, lab
 export function validatePackagePublicationDocument(raw: any): PackagePublicationModel {
   if (raw?.schemaVersion !== "agentera.packagePublication.v2") fail("schemaVersion is invalid");
   const inventory = raw?.versionCallerInventory;
-  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, [
-    "packages/cli/scripts/pack-package.mjs#--package-version with --git-ref",
-  ], "development version callers");
-  const stableCallers = exactList(inventory?.stable?.preservedCallers, [
-    "packages/cli/scripts/publication-transaction.mjs#prepare stable",
-  ], "stable version callers");
-  if (raw?.packages?.development?.versionAuthority !== "GITHUB_RUN_NUMBER plus governed offset on packages/cli/package.json base line"
-    || raw?.packages?.development?.suiteVersionAuthority !== "packages/cli/package.json#agentera.suiteVersion"
-    || inventory?.development?.authority !== "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line"
-    || inventory?.stable?.authority !== "explicit target-version"
-    || inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion"
-    || inventory?.suite?.requiredVersion !== "3.0.0") fail("version authority or caller inventory is invalid");
+  const developmentCallers = exactList(inventory?.development?.currentExplicitTargetCallers, ["packages/cli/scripts/pack-package.mjs#--package-version with --git-ref"], "development version callers");
+  const stableCallers = exactList(inventory?.stable?.preservedCallers, ["packages/cli/scripts/publication-transaction.mjs#prepare stable"], "stable version callers");
+  if (
+    raw?.packages?.development?.versionAuthority !== "GITHUB_RUN_NUMBER plus governed offset on packages/cli/package.json base line" ||
+    raw?.packages?.development?.suiteVersionAuthority !== "packages/cli/package.json#agentera.suiteVersion" ||
+    inventory?.development?.authority !== "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line" ||
+    inventory?.stable?.authority !== "explicit target-version" ||
+    inventory?.suite?.authority !== "packages/cli/package.json#agentera.suiteVersion" ||
+    inventory?.suite?.requiredVersion !== "3.0.0"
+  )
+    fail("version authority or caller inventory is invalid");
   const developmentPush = raw?.ci?.developmentPush;
   const developmentWorkflow = raw?.ci?.developmentPublicationWorkflow;
-  if (
-    !isCanonicalBranchRef(developmentPush?.ref)
-    || developmentPush.ref === "refs/heads/main"
-    || developmentWorkflow?.refAuthority !== "ci.developmentPush.ref"
-    || Object.hasOwn(developmentWorkflow ?? {}, "ref")
-    || countStringValue(raw, developmentPush.ref) !== 1
-  ) fail("development push ref authority is invalid");
-  if (
-    developmentPush?.versionAuthority !== "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line"
-    || developmentPush?.runNumberOffset !== 89
-  ) fail("development push version authority is invalid");
-  exactList(raw?.qualification?.candidate?.inputs, [
-    "source_receipt", "metadata_commit", "source_commit", "adapter", "package", "registry",
-    "expected_tag", "artifact_bytes", "artifact_mode",
-  ], "candidate inputs");
+  if (!isCanonicalBranchRef(developmentPush?.ref) || developmentPush.ref === "refs/heads/main" || developmentWorkflow?.refAuthority !== "ci.developmentPush.ref" || Object.hasOwn(developmentWorkflow ?? {}, "ref") || countStringValue(raw, developmentPush.ref) !== 1) fail("development push ref authority is invalid");
+  if (developmentPush?.versionAuthority !== "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line" || developmentPush?.runNumberOffset !== 89) fail("development push version authority is invalid");
+  exactList(raw?.qualification?.candidate?.inputs, ["source_receipt", "metadata_commit", "source_commit", "adapter", "package", "registry", "expected_tag", "artifact_bytes", "artifact_mode"], "candidate inputs");
   const source = raw?.qualification?.source;
   const readiness = raw?.qualification?.readiness;
   const activation = source?.activationConjunction;
   if (!source || !activation || activation.gateIdentity !== "agentera.activationConjunction.v1") fail("source activation conjunction is missing or invalid");
-  if (
-    !readiness
-    || readiness.schemaVersion !== "agentera.releaseReadiness.v1"
-    || readiness.component !== "release-readiness"
-    || readiness.adapter !== "development"
-  ) fail("release readiness authority is missing or invalid");
-  const readinessCommand = boundedText(
-    readiness.command,
-    "release readiness command",
-    320,
-    /^node packages\/cli\/scripts\/release-readiness\.mjs development --candidate-dir DIR --source-commit COMMIT \[--metadata-commit COMMIT\] \[--json\]$/,
-  );
-  const readinessPhases = exactList(
-    readiness.phases,
-    ["source-readiness", "metadata-review", "candidate-readiness"],
-    "release readiness phases",
-  ) as ReleaseReadinessContract["phases"];
-  if (
-    !readiness.receipts
-    || Object.keys(readiness.receipts).sort().join("\0") !== "candidate\0source"
-    || readiness.receipts.source !== "source-receipt.json"
-    || readiness.receipts.candidate !== "candidate-receipt.json"
-  ) fail("release readiness receipts must name the governed source and candidate receipts");
-  const readinessReuse = boundedText(
-    readiness.reuse,
-    "release readiness reuse rule",
-    1200,
-    /^[^\0\r\n]+$/,
-  );
-  const readinessMetadataReview = boundedText(
-    readiness.metadataReview,
-    "release readiness metadata review rule",
-    1200,
-    /^[^\0\r\n]+$/,
-  );
-  const readinessOutcomes = exactList(
-    readiness.outcomes,
-    ["paused", "ready", "rejected"],
-    "release readiness outcomes",
-  ) as ReleaseReadinessContract["outcomes"];
-  if (
-    !readiness.exitCodes
-    || Object.keys(readiness.exitCodes).sort().join("\0") !== "paused\0ready\0rejected"
-    || readiness.exitCodes.paused !== 0
-    || readiness.exitCodes.ready !== 0
-    || readiness.exitCodes.rejected !== 1
-  ) fail("release readiness exit codes must map paused and ready to 0 and rejected to 1");
+  if (!readiness || readiness.schemaVersion !== "agentera.releaseReadiness.v1" || readiness.component !== "release-readiness" || readiness.adapter !== "development") fail("release readiness authority is missing or invalid");
+  const readinessCommand = boundedText(readiness.command, "release readiness command", 320, /^node packages\/cli\/scripts\/release-readiness\.mjs development --candidate-dir DIR --source-commit COMMIT \[--metadata-commit COMMIT\] \[--json\]$/);
+  const readinessPhases = exactList(readiness.phases, ["source-readiness", "metadata-review", "candidate-readiness"], "release readiness phases") as ReleaseReadinessContract["phases"];
+  if (!readiness.receipts || Object.keys(readiness.receipts).sort().join("\0") !== "candidate\0source" || readiness.receipts.source !== "source-receipt.json" || readiness.receipts.candidate !== "candidate-receipt.json") fail("release readiness receipts must name the governed source and candidate receipts");
+  const readinessReuse = boundedText(readiness.reuse, "release readiness reuse rule", 1200, /^[^\0\r\n]+$/);
+  const readinessMetadataReview = boundedText(readiness.metadataReview, "release readiness metadata review rule", 1200, /^[^\0\r\n]+$/);
+  const readinessOutcomes = exactList(readiness.outcomes, ["paused", "ready", "rejected"], "release readiness outcomes") as ReleaseReadinessContract["outcomes"];
+  if (!readiness.exitCodes || Object.keys(readiness.exitCodes).sort().join("\0") !== "paused\0ready\0rejected" || readiness.exitCodes.paused !== 0 || readiness.exitCodes.ready !== 0 || readiness.exitCodes.rejected !== 1) fail("release readiness exit codes must map paused and ready to 0 and rejected to 1");
 
   if (!Array.isArray(source.gates) || source.gates.length !== SOURCE_GATE_IDS.length) fail(`source gates must contain exactly ${SOURCE_GATE_IDS.length} entries`);
   const sourceGates = source.gates.map((gate: any, index: number): SourceGateContract => {
@@ -368,23 +393,22 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
     if (!owner) fail(`activation owner '${classId}' is missing`);
     const canonical = ACTIVATION_CLASS_AUTHORITIES[classId as keyof typeof ACTIVATION_CLASS_AUTHORITIES];
     const expectedFields = ["path", "symbol", ...(canonical.selector ? ["selector"] : []), "correction"].sort();
-    if (Object.keys(owner).sort().join("\0") !== expectedFields.join("\0")
-      || owner.path !== canonical.path
-      || owner.symbol !== canonical.symbol
-      || owner.selector !== canonical.selector
-      || owner.correction !== canonical.correction) {
+    if (Object.keys(owner).sort().join("\0") !== expectedFields.join("\0") || owner.path !== canonical.path || owner.symbol !== canonical.symbol || owner.selector !== canonical.selector || owner.correction !== canonical.correction) {
       fail(`activation owner '${classId}' must equal ${canonical.path}#${canonical.selector ?? canonical.symbol}; correction: ${canonical.correction}`);
     }
     owners[classId] = {
       path: boundedText(owner.path, `${classId} owner path`, 240, /^packages\/cli\/(?:src\/.+\.ts|scripts\/.+\.mjs)$/),
       symbol: boundedText(owner.symbol, `${classId} owner symbol`, 120, /^[A-Za-z_$][A-Za-z0-9_.$-]*$/),
-      ...(owner.selector ? { selector: boundedText(owner.selector, `${classId} owner selector`, 240, /^[^\0\r\n]+$/) } : {}),
+      ...(owner.selector
+        ? {
+            selector: boundedText(owner.selector, `${classId} owner selector`, 240, /^[^\0\r\n]+$/),
+          }
+        : {}),
       correction: boundedText(owner.correction, `${classId} correction`, 320, /^(?:pnpm|node) [^\0\r\n]+$/),
     };
   }
   const census = activation.census;
-  if (!census || Object.keys(census).sort().join("\0") !== "algorithm\0classes\0total"
-    || census.algorithm !== ACTIVATION_CENSUS_AUTHORITY.algorithm) fail("activation census authority is missing or invalid");
+  if (!census || Object.keys(census).sort().join("\0") !== "algorithm\0classes\0total" || census.algorithm !== ACTIVATION_CENSUS_AUTHORITY.algorithm) fail("activation census authority is missing or invalid");
   if (!census.classes || Object.keys(census.classes).join("\0") !== classes.join("\0")) fail("activation census classes must exactly match ordered classes");
   const censusClasses: Record<string, ActivationCensusIdentity> = {};
   for (const classId of classes) {
@@ -401,7 +425,11 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
     developmentRefAuthority: developmentWorkflow.refAuthority,
     sourceGates,
     sourceDag: {
-      batchA, performanceBarrier, capacityBarrier, barrierB, generatedOverlapOrigins,
+      batchA,
+      performanceBarrier,
+      capacityBarrier,
+      barrierB,
+      generatedOverlapOrigins,
       overlapCleanupMarginMs: positiveInteger(dag.overlapCleanupMarginMs, "overlap cleanup margin", 60_000),
       overlapParentReconciliationMarginMs: positiveInteger(dag.overlapParentReconciliationMarginMs, "parent reconciliation margin", 60_000),
       minimumExecutionWindowMs,
@@ -427,11 +455,24 @@ export function validatePackagePublicationDocument(raw: any): PackagePublication
       },
     },
     activationConjunction: {
-      gateIdentity: activation.gateIdentity, classes, dimensions, checkIds, bounds, owners,
-      census: { algorithm: ACTIVATION_CENSUS_AUTHORITY.algorithm, classes: censusClasses, total: censusTotal },
+      gateIdentity: activation.gateIdentity,
+      classes,
+      dimensions,
+      checkIds,
+      bounds,
+      owners,
+      census: {
+        algorithm: ACTIVATION_CENSUS_AUTHORITY.algorithm,
+        classes: censusClasses,
+        total: censusTotal,
+      },
     },
     versionCallerInventory: {
-      development: { authority: inventory.development.authority, currentExplicitTargetCallers: developmentCallers, task2Boundary: boundedText(inventory.development.task2Boundary, "development task 2 boundary", 240, /^[^\0\r\n]+$/) },
+      development: {
+        authority: inventory.development.authority,
+        currentExplicitTargetCallers: developmentCallers,
+        task2Boundary: boundedText(inventory.development.task2Boundary, "development task 2 boundary", 240, /^[^\0\r\n]+$/),
+      },
       stable: { authority: inventory.stable.authority, preservedCallers: stableCallers },
       suite: { authority: inventory.suite.authority, requiredVersion: "3.0.0" },
     },

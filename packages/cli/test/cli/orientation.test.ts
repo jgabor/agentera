@@ -4,28 +4,12 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  healthSummary,
-  issueCounts,
-  loadTodoItems,
-  parseProfileHeaderDates,
-  planSummary,
-  progressSummary,
-  selectStatusNextAction,
-  selectStatusReadiness,
-  statePresence,
-} from "../../src/cli/orientation.js";
+import { healthSummary, issueCounts, loadTodoItems, parseProfileHeaderDates, planSummary, progressSummary, selectStatusNextAction, selectStatusReadiness, statePresence } from "../../src/cli/orientation.js";
 import { orchestrationContext } from "../../src/cli/capabilityContext/orchestration.js";
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import { auditEvidenceContext } from "../../src/cli/capabilityContext/evidence.js";
 import type { JsonObject } from "../../src/core/jsonValue.js";
-import type {
-  DecisionFollowUp,
-  HealthSummary,
-  ObjectiveSummary,
-  PlanSummary,
-  ReadinessHint,
-} from "../../src/cli/orientation.js";
+import type { DecisionFollowUp, HealthSummary, ObjectiveSummary, PlanSummary, ReadinessHint } from "../../src/cli/orientation.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 
 let tmp: string;
@@ -62,20 +46,20 @@ describe("orientation: pure helpers", () => {
   });
 
   it("does not infer a TODO destination from prose", () => {
-    const complex = [{ severity: "normal", status: "open", text: "update the schema contract and validation surface" }];
+    const complex = [
+      {
+        severity: "normal",
+        status: "open",
+        text: "update the schema contract and validation surface",
+      },
+    ];
     const simple = [{ severity: "normal", status: "open", text: "rename a thing" }];
     expect(selectStatusNextAction({}, {}, {}, complex, null, true).capability).toBe("status");
     expect(selectStatusNextAction({}, {}, {}, simple, null, true).capability).toBe("status");
   });
 
   it("summarizes state presence", () => {
-    const presence = statePresence(
-      { active: true, exists: true },
-      { exists: true },
-      { exists: false, absence_reason: "none" },
-      { exists: false },
-      { active: false, exists: false },
-    );
+    const presence = statePresence({ active: true, exists: true }, { exists: true }, { exists: false, absence_reason: "none" }, { exists: false }, { active: false, exists: false });
     expect(presence.active).toEqual({ plan: true, objective: false });
     expect(presence.any_active).toBe(true);
     expect(presence.absence).toEqual({ progress: "none" });
@@ -85,11 +69,7 @@ describe("orientation: pure helpers", () => {
 describe("orientation: artifact summaries", () => {
   it("summarizes a plan with task completion + first pending", () => {
     const p = path.join(tmp, "plan.yaml");
-    fs.writeFileSync(
-      p,
-      ["header:", "  title: T", "  status: active", "tasks:", "  - number: 1", "    status: done",
-       "  - number: 2", "    status: pending", ""].join("\n"),
-    );
+    fs.writeFileSync(p, ["header:", "  title: T", "  status: active", "tasks:", "  - number: 1", "    status: done", "  - number: 2", "    status: pending", ""].join("\n"));
     const summary = planSummary(schema("plan", p));
     expect(summary.exists).toBe(true);
     expect(summary.complete).toBe(1);
@@ -107,19 +87,7 @@ describe("orientation: artifact summaries", () => {
     const p = path.join(tmp, "plan.yaml");
     const archiveDir = path.join(tmp, "archive");
     fs.mkdirSync(archiveDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(archiveDir, "PLAN-2026-07-12-open.yaml"),
-      [
-        "header:",
-        "  title: Archived open plan",
-        "  status: open",
-        "tasks:",
-        "  - number: 8",
-        "    status: pending",
-        "    name: Historical unfinished task",
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(path.join(archiveDir, "PLAN-2026-07-12-open.yaml"), ["header:", "  title: Archived open plan", "  status: open", "tasks:", "  - number: 8", "    status: pending", "    name: Historical unfinished task", ""].join("\n"));
 
     const summary = planSummary(schema("plan", p));
     expect(summary.exists).toBe(true);
@@ -131,17 +99,12 @@ describe("orientation: artifact summaries", () => {
     const readiness = selectStatusReadiness(summary, { exists: false }, { exists: false }, [], null, false);
     expect(readiness.recommended.object).not.toContain("PLAN Task");
 
-    const context = orchestrationContext(
-      "orchestrate",
-      summary as unknown as JsonObject,
-      { exists: false },
-      { exists: false },
-      [],
-      { exists: false },
-      { status: "not found" },
-      { object: "VISION refresh", capability: "vision", reason: "fresh project direction" },
-    );
-    expect(context?.task_queue).toMatchObject({ total: 0, dependency_ready_tasks: [], blocked_tasks: [] });
+    const context = orchestrationContext("orchestrate", summary as unknown as JsonObject, { exists: false }, { exists: false }, [], { exists: false }, { status: "not found" }, { object: "VISION refresh", capability: "vision", reason: "fresh project direction" });
+    expect(context?.task_queue).toMatchObject({
+      total: 0,
+      dependency_ready_tasks: [],
+      blocked_tasks: [],
+    });
     expect(context?.selected_next_task).toBeNull();
   });
 
@@ -152,33 +115,10 @@ describe("orientation: artifact summaries", () => {
     const p = path.join(tmp, "plan.yaml");
     const archiveDir = path.join(tmp, "archive");
     fs.mkdirSync(archiveDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(archiveDir, `PLAN-2026-07-12-${status}.yaml`),
-      [
-        "header:",
-        `  title: ${status} archive`,
-        `  status: ${status}`,
-        "tasks:",
-        "  - number: 1",
-        "    name: Historical task",
-        `    status: ${taskStatus}`,
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(path.join(archiveDir, `PLAN-2026-07-12-${status}.yaml`), ["header:", `  title: ${status} archive`, `  status: ${status}`, "tasks:", "  - number: 1", "    name: Historical task", `    status: ${taskStatus}`, ""].join("\n"));
     const schemas = schema("plan", p);
     const summary = planSummary(schemas);
-    const build = buildExecutionContext(
-      "build",
-      schemas,
-      summary as unknown as JsonObject,
-      { exists: true },
-      { exists: true },
-      [{ severity: "normal", status: "open", text: "issue" }],
-      { exists: true },
-      { status: "loaded" },
-      { status: "up_to_date" },
-      tmp,
-    );
+    const build = buildExecutionContext("build", schemas, summary as unknown as JsonObject, { exists: true }, { exists: true }, [{ severity: "normal", status: "open", text: "issue" }], { exists: true }, { status: "loaded" }, { status: "up_to_date" }, tmp);
 
     expect(summary).toMatchObject({ active: false, complete_plan: false, tasks: [] });
     expect(build).toMatchObject({
@@ -191,39 +131,20 @@ describe("orientation: artifact summaries", () => {
         plan_status_update_required: false,
       },
       progress_logging_requirements: { requirement: "none" },
-      plan_completion_sweep: { status: "not_eligible", required_updates: [], archive_candidate: null },
+      plan_completion_sweep: {
+        status: "not_eligible",
+        required_updates: [],
+        archive_candidate: null,
+      },
     });
   });
 
   it("keeps an active completed plan eligible for its pre-archive sweep", () => {
     const p = path.join(tmp, "plan.yaml");
-    fs.writeFileSync(
-      p,
-      [
-        "header:",
-        "  title: Completed current plan",
-        "  status: complete",
-        "tasks:",
-        "  - number: 1",
-        "    name: Completed task",
-        "    status: complete",
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(p, ["header:", "  title: Completed current plan", "  status: complete", "tasks:", "  - number: 1", "    name: Completed task", "    status: complete", ""].join("\n"));
     const schemas = schema("plan", p);
     const summary = planSummary(schemas);
-    const build = buildExecutionContext(
-      "build",
-      schemas,
-      summary as unknown as JsonObject,
-      { exists: true },
-      { exists: true },
-      [{ severity: "normal", status: "open", text: "issue" }],
-      { exists: true },
-      { status: "loaded" },
-      { status: "up_to_date" },
-      tmp,
-    );
+    const build = buildExecutionContext("build", schemas, summary as unknown as JsonObject, { exists: true }, { exists: true }, [{ severity: "normal", status: "open", text: "issue" }], { exists: true }, { status: "loaded" }, { status: "up_to_date" }, tmp);
 
     expect(summary).toMatchObject({ active: true, complete_plan: true });
     expect(build).toMatchObject({
@@ -240,23 +161,7 @@ describe("orientation: artifact summaries", () => {
 
   it("withholds blocked dependent work from status next-work selection", () => {
     const p = path.join(tmp, "plan.yaml");
-    fs.writeFileSync(
-      p,
-      [
-        "header:",
-        "  title: Blocked dependency",
-        "  status: open",
-        "tasks:",
-        "  - number: 1",
-        "    name: Blocked prerequisite",
-        "    status: blocked",
-        "  - number: 2",
-        "    name: Pending dependent",
-        "    status: pending",
-        "    depends_on: ['1']",
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(p, ["header:", "  title: Blocked dependency", "  status: open", "tasks:", "  - number: 1", "    name: Blocked prerequisite", "    status: blocked", "  - number: 2", "    name: Pending dependent", "    status: pending", "    depends_on: ['1']", ""].join("\n"));
     const summary = planSummary(schema("plan", p));
     expect(summary.first_pending).toBeNull();
     expect(selectStatusNextAction(summary, { exists: false }, { exists: false }, [], null, false).object).not.toContain("PLAN Task");
@@ -360,7 +265,11 @@ describe("orientation: artifact summaries", () => {
       { exists: true },
       { status: "loaded" },
       { status: "up_to_date" },
-      { command: "state decisions list", entries: [], counts: { total: 0, returned: 0, remaining: 0 } },
+      {
+        command: "state decisions list",
+        entries: [],
+        counts: { total: 0, returned: 0, remaining: 0 },
+      },
     );
 
     expect(audit).toMatchObject({
@@ -374,48 +283,16 @@ describe("orientation: artifact summaries", () => {
 
   it("normalizes a completed plan with pending tasks back to open", () => {
     const p = path.join(tmp, "plan.yaml");
-    fs.writeFileSync(
-      p,
-      [
-        "header:",
-        "  title: Contradictory",
-        "  status: complete",
-        "tasks:",
-        "  - number: 1",
-        "    name: Still pending",
-        "    status: pending",
-        "",
-      ].join("\n"),
-    );
+    fs.writeFileSync(p, ["header:", "  title: Contradictory", "  status: complete", "tasks:", "  - number: 1", "    name: Still pending", "    status: pending", ""].join("\n"));
     const schemas = schema("plan", p);
     const summary = planSummary(schemas);
     expect(summary.lifecycle_state).toMatchObject({ status: "available", diagnostic_count: 0 });
 
-    const orchestration = orchestrationContext(
-      "orchestrate",
-      summary as unknown as JsonObject,
-      { exists: true },
-      { exists: true },
-      [{ severity: "normal", status: "open", text: "issue" }],
-      { exists: true },
-      { status: "loaded" },
-      { object: "Next", capability: "build", reason: "test" },
-    );
+    const orchestration = orchestrationContext("orchestrate", summary as unknown as JsonObject, { exists: true }, { exists: true }, [{ severity: "normal", status: "open", text: "issue" }], { exists: true }, { status: "loaded" }, { object: "Next", capability: "build", reason: "test" });
     expect(orchestration?.plan_lifecycle_state).toMatchObject({ status: "available" });
     expect(orchestration?.selected_next_task).toMatchObject({ name: "Still pending" });
 
-    const build = buildExecutionContext(
-      "build",
-      schemas,
-      summary as unknown as JsonObject,
-      { exists: true },
-      { exists: true },
-      [{ severity: "normal", status: "open", text: "issue" }],
-      { exists: true },
-      { status: "loaded" },
-      { status: "up_to_date" },
-      tmp,
-    );
+    const build = buildExecutionContext("build", schemas, summary as unknown as JsonObject, { exists: true }, { exists: true }, [{ severity: "normal", status: "open", text: "issue" }], { exists: true }, { status: "loaded" }, { status: "up_to_date" }, tmp);
     expect(build?.plan_lifecycle_state).toMatchObject({ status: "available" });
   });
 
@@ -435,7 +312,11 @@ describe("orientation: artifact summaries", () => {
               failure_count: 2,
               last_verdict: "fail",
               last_failure_evidence: "audit:1",
-              provenance: { attempt_id: "audit-2", source: "audit report", recorded_at: "2026-07-12 12:00" },
+              provenance: {
+                attempt_id: "audit-2",
+                source: "audit report",
+                recorded_at: "2026-07-12 12:00",
+              },
             },
           },
         ],
@@ -462,39 +343,18 @@ describe("orientation: artifact summaries", () => {
     const archive = path.join(tmp, "archive");
     fs.mkdirSync(archive, { recursive: true });
     fs.writeFileSync(path.join(archive, "PLAN-parse.yaml"), "header: [broken\n");
-    fs.writeFileSync(
-      path.join(archive, "PLAN-schema.yaml"),
-      ["header:", "  title: Schema", "  status: open", "tasks: invalid", ""].join("\n"),
-    );
-    fs.writeFileSync(
-      path.join(archive, "PLAN-lifecycle.yaml"),
-      ["header:", "  title: Lifecycle", "  status: queued", "tasks: []", ""].join("\n"),
-    );
-    fs.writeFileSync(
-      path.join(archive, "PLAN-legacy.yaml"),
-      ["header:", "  title: Legacy", "  status: active", "tasks: []", ""].join("\n"),
-    );
+    fs.writeFileSync(path.join(archive, "PLAN-schema.yaml"), ["header:", "  title: Schema", "  status: open", "tasks: invalid", ""].join("\n"));
+    fs.writeFileSync(path.join(archive, "PLAN-lifecycle.yaml"), ["header:", "  title: Lifecycle", "  status: queued", "tasks: []", ""].join("\n"));
+    fs.writeFileSync(path.join(archive, "PLAN-legacy.yaml"), ["header:", "  title: Legacy", "  status: active", "tasks: []", ""].join("\n"));
 
     const summary = planSummary(schema("plan", p));
-    expect(summary.diagnostics?.map((diagnostic) => diagnostic.category).sort()).toEqual([
-      "legacy",
-      "lifecycle",
-      "parse",
-      "schema",
-    ]);
-    expect(summary.invalid_archive_paths).toEqual([
-      path.join(archive, "PLAN-lifecycle.yaml"),
-      path.join(archive, "PLAN-parse.yaml"),
-      path.join(archive, "PLAN-schema.yaml"),
-    ]);
+    expect(summary.diagnostics?.map((diagnostic) => diagnostic.category).sort()).toEqual(["legacy", "lifecycle", "parse", "schema"]);
+    expect(summary.invalid_archive_paths).toEqual([path.join(archive, "PLAN-lifecycle.yaml"), path.join(archive, "PLAN-parse.yaml"), path.join(archive, "PLAN-schema.yaml")]);
   });
 
   it("summarizes the latest progress cycle", () => {
     const p = path.join(tmp, "progress.yaml");
-    fs.writeFileSync(
-      p,
-      ["progress:", "  - number: 1", "    verified: tests pass", "  - number: 2", "    verified: more tests", ""].join("\n"),
-    );
+    fs.writeFileSync(p, ["progress:", "  - number: 1", "    verified: tests pass", "  - number: 2", "    verified: more tests", ""].join("\n"));
     const summary = progressSummary(schema("progress", p));
     expect(summary.exists).toBe(true);
     expect(summary.cycle_count).toBe(2);
@@ -504,11 +364,7 @@ describe("orientation: artifact summaries", () => {
 
   it("summarizes the worst health grade and degrading flag", () => {
     const p = path.join(tmp, "health.yaml");
-    fs.writeFileSync(
-      p,
-      ["audits:", "  - number: 1", "    trajectory: improving", "    grades:", "      coupling: A",
-       "  - number: 2", "    trajectory: degrading", "    grades:", "      coupling: A", "      tests: D", ""].join("\n"),
-    );
+    fs.writeFileSync(p, ["audits:", "  - number: 1", "    trajectory: improving", "    grades:", "      coupling: A", "  - number: 2", "    trajectory: degrading", "    grades:", "      coupling: A", "      tests: D", ""].join("\n"));
     const summary = healthSummary(schema("health", p));
     expect(summary.exists).toBe(true);
     expect(summary).not.toHaveProperty("number");
@@ -526,10 +382,7 @@ describe("orientation: artifact summaries", () => {
 
   it("excludes resolved GitHub checkbox items from open todo load", () => {
     const p = path.join(tmp, "TODO.md");
-    fs.writeFileSync(
-      p,
-      ["## ⇶ Critical", "- [x] [fix] Already done", "- [ ] [fix] Still open", ""].join("\n"),
-    );
+    fs.writeFileSync(p, ["## ⇶ Critical", "- [x] [fix] Already done", "- [ ] [fix] Still open", ""].join("\n"));
     const items = loadTodoItems(schema("todo", p));
     expect(items).toEqual([{ severity: "critical", status: "open", text: "[fix] Still open" }]);
     expect(issueCounts(items).critical).toBe(1);
@@ -617,9 +470,7 @@ describe("selectStatusReadiness", () => {
     expect(typeof hint.recommended.object).toBe("string");
     expect(hint.recommended.object.length).toBeGreaterThan(0);
     expect(hint.alternatives.length).toBeGreaterThan(0);
-    const hasVisionRefresh = [hint.recommended, ...hint.alternatives].some(
-      (entry) => entry.object.includes("VISION refresh") && entry.capability === "vision",
-    );
+    const hasVisionRefresh = [hint.recommended, ...hint.alternatives].some((entry) => entry.object.includes("VISION refresh") && entry.capability === "vision");
     expect(hasVisionRefresh).toBe(true);
     assertProtocolPhases(hint);
   });
@@ -645,11 +496,23 @@ describe("selectStatusReadiness", () => {
       first_pending: { number: 9, name: "Tag phases" },
     };
     const health: HealthSummary = { exists: true, degrading: true, worst: ["coupling", "D", 3] };
-    const objective: ObjectiveSummary = { exists: true, active: true, metric: "p95 latency", title: "Cut p95" };
+    const objective: ObjectiveSummary = {
+      exists: true,
+      active: true,
+      metric: "p95 latency",
+      title: "Cut p95",
+    };
     const todos = [
-      { severity: "critical", status: "open", text: "update the schema contract and validation surface" },
+      {
+        severity: "critical",
+        status: "open",
+        text: "update the schema contract and validation surface",
+      },
     ];
-    const decision: DecisionFollowUp = { object: "DECISION 12 follow-up", title: "Pick a fuse rating" };
+    const decision: DecisionFollowUp = {
+      object: "DECISION 12 follow-up",
+      title: "Pick a fuse rating",
+    };
     const hint = selectStatusReadiness(plan, health, objective, todos, decision, true);
     assertProtocolPhases(hint);
     expect(hint.recommended.capability).toBe("orchestrate");

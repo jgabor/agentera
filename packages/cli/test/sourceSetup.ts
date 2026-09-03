@@ -11,16 +11,13 @@ export default function setup({ provide }: GlobalSetupContext): () => void {
   waitForVerificationBarrier();
   const packageRoot = path.resolve(import.meta.dirname, "..");
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-verification-"));
-  const result = spawnSync(
-    process.execPath,
-    [path.join(packageRoot, "node_modules", "typescript", "bin", "tsc"), "-p", "tsconfig.json", "--outDir", root, "--sourceMap", "false"],
-    { cwd: packageRoot, encoding: "utf8" },
-  );
+  const result = spawnSync(process.execPath, [path.join(packageRoot, "node_modules", "typescript", "bin", "tsc"), "-p", "tsconfig.json", "--outDir", root, "--sourceMap", "false"], {
+    cwd: packageRoot,
+    encoding: "utf8",
+  });
   if (result.status !== 0) {
     fs.rmSync(root, { recursive: true, force: true });
-    throw new Error(
-      `source verification boundary failed during transient subprocess compilation:\n${result.stderr || result.stdout}`,
-    );
+    throw new Error(`source verification boundary failed during transient subprocess compilation:\n${result.stderr || result.stdout}`);
   }
   fs.writeFileSync(path.join(root, "package.json"), '{"type":"module"}\n');
   fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(root, "node_modules"), "dir");

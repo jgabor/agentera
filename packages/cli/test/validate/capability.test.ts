@@ -6,15 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  buildProtocolValueLookup,
-  checkDeprecation,
-  checkPrimitiveReferences,
-  checkTriggerEnrichment,
-  collectSchemaGroups,
-  loadCapabilitySchemaContract,
-  validateCapability,
-} from "../../src/validate/capability.js";
+import { buildProtocolValueLookup, checkDeprecation, checkPrimitiveReferences, checkTriggerEnrichment, collectSchemaGroups, loadCapabilitySchemaContract, validateCapability } from "../../src/validate/capability.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -28,11 +20,7 @@ function dedent(text: string): string {
   return lines.map((l) => l.slice(min)).join("\n");
 }
 
-function writeCapability(
-  capDir: string,
-  schemaText: string | null,
-  opts: { instructions?: boolean; prose?: boolean } = {},
-): string {
+function writeCapability(capDir: string, schemaText: string | null, opts: { instructions?: boolean; prose?: boolean } = {}): string {
   const instructions = opts.instructions ?? true;
   const prose = opts.prose ?? false;
   fs.mkdirSync(capDir, { recursive: true });
@@ -45,10 +33,7 @@ function writeCapability(
     const capabilityName = path.basename(capDir);
     const modulePath = path.join(REPO_ROOT, "packages", "cli", "src", "capabilities", capabilityName, "instructions.ts");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
-    fs.writeFileSync(
-      modulePath,
-      '// Fixture for capability validator (D65).\nexport const instructions: string = "# Fixture\\n";\nexport default instructions;\n',
-    );
+    fs.writeFileSync(modulePath, '// Fixture for capability validator (D65).\nexport const instructions: string = "# Fixture\\n";\nexport default instructions;\n');
     fixtureModules.push(modulePath);
   }
   if (prose) {
@@ -118,10 +103,7 @@ describe("validateCapability", () => {
 
   it("reports both V1 errors for a missing directory", () => {
     const capDir = path.join(tmp, "missing-directory");
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: packages/cli/src/capabilities/missing-directory/instructions.ts not found in ${capDir}`,
-      `V1 [error]: schemas/ directory not found in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V1 [error]: packages/cli/src/capabilities/missing-directory/instructions.ts not found in ${capDir}`, `V1 [error]: schemas/ directory not found in ${capDir}`]);
   });
 
   it("reports V1 + V2 for empty schemas", () => {
@@ -139,9 +121,7 @@ describe("validateCapability", () => {
     const capDir = writeCapability(path.join(tmp, "missing-instructions"), validSchema(), {
       instructions: false,
     });
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: packages/cli/src/capabilities/missing-instructions/instructions.ts not found in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V1 [error]: packages/cli/src/capabilities/missing-instructions/instructions.ts not found in ${capDir}`]);
   });
 
   it("rejects legacy prose.md without the instructions module", () => {
@@ -150,9 +130,7 @@ describe("validateCapability", () => {
       prose: true,
     });
     expect(fs.existsSync(path.join(capDir, "prose" + ".md"))).toBe(true);
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V1 [error]: packages/cli/src/capabilities/legacy-prose-only/instructions.ts not found in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V1 [error]: packages/cli/src/capabilities/legacy-prose-only/instructions.ts not found in ${capDir}`]);
   });
 
   it("reports a missing required group", () => {
@@ -174,9 +152,7 @@ describe("validateCapability", () => {
             description: Validation entry.
       `),
     );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V2 [error]: required group EXIT_CONDITIONS missing in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V2 [error]: required group EXIT_CONDITIONS missing in ${capDir}`]);
   });
 
   it("passes when a required group is a non-mapping (treated as empty)", () => {
@@ -204,22 +180,12 @@ describe("validateCapability", () => {
 
   it("flags an invalid trigger priority", () => {
     const capDir = writeCapability(path.join(tmp, "invalid-priority"), validSchema({ triggerPriority: "urgent" }));
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V5b [error]: TRIGGERS entry 1 in ${capDir} has invalid priority='urgent' (must be one of: high, medium, low)`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V5b [error]: TRIGGERS entry 1 in ${capDir} has invalid priority='urgent' (must be one of: high, medium, low)`]);
   });
 
   it("emits a deprecation warning that does not fail validation", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "deprecation-warning"),
-      validSchema().replace(
-        "description: Artifact entry.",
-        "description: Artifact entry.\n    deprecated: true\n    replaced_by: A99",
-      ),
-    );
-    const expectedWarning =
-      `V5 [warning]: entry 1 (A1) in ARTIFACTS in ${capDir} ` +
-      "has replaced_by='A99' which does not match any entry ID";
+    const capDir = writeCapability(path.join(tmp, "deprecation-warning"), validSchema().replace("description: Artifact entry.", "description: Artifact entry.\n    deprecated: true\n    replaced_by: A99"));
+    const expectedWarning = `V5 [warning]: entry 1 (A1) in ARTIFACTS in ${capDir} ` + "has replaced_by='A99' which does not match any entry ID";
     const stderrSpy = vi.spyOn(process.stderr, "write").mockImplementation(() => true);
     try {
       expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
@@ -241,9 +207,7 @@ describe("validateCapability", () => {
       data.ENTRY_REQUIREMENTS.groups.EXTRA_GROUP = { required_fields: ["id", "description"] };
       data.EXTRA_GROUP = {};
     });
-    expect(validateCapability(capDir, contract)).toEqual([
-      `V2 [error]: required group EXTRA_GROUP missing in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, contract)).toEqual([`V2 [error]: required group EXTRA_GROUP missing in ${capDir}`]);
   });
 
   it("observes contract-required fields", () => {
@@ -251,9 +215,7 @@ describe("validateCapability", () => {
     const contract = writeContract((data) => {
       data.ENTRY_REQUIREMENTS.groups.ARTIFACTS.required_fields.push("name");
     });
-    expect(validateCapability(capDir, contract)).toEqual([
-      `V4 [error]: entry 1 in ARTIFACTS in ${capDir} missing 'name'`,
-    ]);
+    expect(validateCapability(capDir, contract)).toEqual([`V4 [error]: entry 1 in ARTIFACTS in ${capDir} missing 'name'`]);
   });
 
   it("observes the contract priority enum", () => {
@@ -269,9 +231,7 @@ describe("validateCapability", () => {
     const contract = writeContract((data) => {
       data.DIRECTORY_REQUIREMENTS.schema_files.minimum_count = 2;
     });
-    expect(validateCapability(capDir, contract)).toEqual([
-      `V1 [error]: schemas/ contains no .yaml files in ${capDir}`,
-    ]);
+    expect(validateCapability(capDir, contract)).toEqual([`V1 [error]: schemas/ contains no .yaml files in ${capDir}`]);
   });
 
   it("declares group prefixes without enforcing them", () => {
@@ -336,43 +296,23 @@ disambiguates_against:
   });
 
   it("fails when legacy patterns is not a list of strings", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "patterns-invalid"),
-      triggerSchema("patterns: 42"),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has patterns=42 (must be a list of strings)`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "patterns-invalid"), triggerSchema("patterns: 42"));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has patterns=42 (must be a list of strings)`]);
   });
 
   it("fails when confidence_threshold is above 100 with the valid range and offending entry ID", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "ct-high"),
-      triggerSchema("confidence_threshold: 150"),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=150 (must be an integer in range 0..100)`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "ct-high"), triggerSchema("confidence_threshold: 150"));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=150 (must be an integer in range 0..100)`]);
   });
 
   it("fails when confidence_threshold is below 0", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "ct-low"),
-      triggerSchema("confidence_threshold: -5"),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=-5 (must be an integer in range 0..100)`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "ct-low"), triggerSchema("confidence_threshold: -5"));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=-5 (must be an integer in range 0..100)`]);
   });
 
   it("fails when confidence_threshold is a non-integer", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "ct-float"),
-      triggerSchema("confidence_threshold: 12.5"),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=12.5 (must be an integer in range 0..100)`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "ct-float"), triggerSchema("confidence_threshold: 12.5"));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has confidence_threshold=12.5 (must be an integer in range 0..100)`]);
   });
 
   it("fails when disambiguates_against.capability references a non-existent capability", () => {
@@ -382,11 +322,8 @@ disambiguates_against:
   - capability: nonexistent_capability
     hint: "distinguishes from undefined"`),
     );
-    const allowed =
-      "status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate";
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0].capability='nonexistent_capability' is not a canonical capability ID (must be one of: ${allowed})`,
-    ]);
+    const allowed = "status, vision, discuss, research, plan, build, optimize, audit, document, profile, design, orchestrate";
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0].capability='nonexistent_capability' is not a canonical capability ID (must be one of: ${allowed})`]);
   });
 
   it("fails when disambiguates_against entry is missing the hint", () => {
@@ -395,9 +332,7 @@ disambiguates_against:
       triggerSchema(`disambiguates_against:
   - capability: build`),
     );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`]);
   });
 
   it("fails when disambiguates_against hint is empty whitespace", () => {
@@ -407,19 +342,12 @@ disambiguates_against:
   - capability: build
     hint: "   "`),
     );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} disambiguates_against[0] missing or empty 'hint' (must be a non-empty string distinguishing this trigger from the named capability)`]);
   });
 
   it("fails when disambiguates_against is not a list", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "da-string"),
-      triggerSchema('disambiguates_against: "build"'),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has disambiguates_against='build' (must be a list of mappings each with 'capability' and 'hint')`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "da-string"), triggerSchema('disambiguates_against: "build"'));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has disambiguates_against='build' (must be a list of mappings each with 'capability' and 'hint')`]);
   });
 
   it("fails when patterns_regex contains an invalid regex", () => {
@@ -428,19 +356,12 @@ disambiguates_against:
       triggerSchema(`patterns_regex:
   - "[unclosed"`),
     );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} patterns_regex[0]='[unclosed' is not a valid regular expression`,
-    ]);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} patterns_regex[0]='[unclosed' is not a valid regular expression`]);
   });
 
   it("fails when borderline_band is out of range", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "bb-high"),
-      triggerSchema("borderline_band: 150"),
-    );
-    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([
-      `V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has borderline_band=150 (must be an integer in range 0..100)`,
-    ]);
+    const capDir = writeCapability(path.join(tmp, "bb-high"), triggerSchema("borderline_band: 150"));
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V7 [error]: TRIGGERS entry 1 (T1) in ${capDir} has borderline_band=150 (must be an integer in range 0..100)`]);
   });
 
   it("validates the contract file against its own enrichment rules", () => {
@@ -452,13 +373,7 @@ disambiguates_against:
 
 describe("primitive references", () => {
   it("splits ownership between contract field mapping and protocol values", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "primitive-reference"),
-      validSchema().replace(
-        "description: Validation entry.",
-        "description: Validation entry.\n    severity: experimental",
-      ),
-    );
+    const capDir = writeCapability(path.join(tmp, "primitive-reference"), validSchema().replace("description: Validation entry.", "description: Validation entry.\n    severity: experimental"));
     const protocol = structuredClone(YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8")));
     protocol.SEVERITY_FINDING[99] = {
       id: "SF99",
@@ -475,13 +390,7 @@ describe("primitive references", () => {
   });
 
   it("takes the field mapping from the contract fixture", () => {
-    const capDir = writeCapability(
-      path.join(tmp, "primitive-contract-mapping"),
-      validSchema().replace(
-        "description: Validation entry.",
-        "description: Validation entry.\n    severity: complete",
-      ),
-    );
+    const capDir = writeCapability(path.join(tmp, "primitive-contract-mapping"), validSchema().replace("description: Validation entry.", "description: Validation entry.\n    severity: complete"));
     const contractPath = writeContract((data) => {
       data.PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups = ["EXIT_SIGNALS"];
     });

@@ -7,18 +7,8 @@ import { expanduser } from "../../core/paths.js";
 
 import { usageMain, corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { extractCorpusMain } from "../../analytics/extractCorpus.js";
-import {
-  acquirePersonalGlossaryRefreshCommitLock,
-  PersonalGlossaryRefreshCommitLockError,
-  produceCurrentPersonalGlossaryProjection,
-  releasePersonalGlossaryRefreshCommitLock,
-} from "../../analytics/personalGlossaryRefreshProjection.js";
-import {
-  tiersDirForCorpusPath,
-  assessTiers,
-  readBoundedMetadata,
-  readCurrentGeneration,
-} from "../../analytics/extractCorpus/index.js";
+import { acquirePersonalGlossaryRefreshCommitLock, PersonalGlossaryRefreshCommitLockError, produceCurrentPersonalGlossaryProjection, releasePersonalGlossaryRefreshCommitLock } from "../../analytics/personalGlossaryRefreshProjection.js";
+import { tiersDirForCorpusPath, assessTiers, readBoundedMetadata, readCurrentGeneration } from "../../analytics/extractCorpus/index.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
@@ -86,10 +76,7 @@ function usageExample(): string {
 /** Faithful port of scripts/agentera `_validate_usage_request` (shared by usage/stats/report). */
 function validateUsageRequest(format: string): string {
   if (format !== "text" && format !== "json") {
-    throw new Error(
-      `unsupported usage format '${format}'; valid formats: text, json. ` +
-        `Syntax: ${usageSyntax()}. Example: ${usageExample()}`,
-    );
+    throw new Error(`unsupported usage format '${format}'; valid formats: text, json. ` + `Syntax: ${usageSyntax()}. Example: ${usageExample()}`);
   }
   return format;
 }
@@ -129,7 +116,7 @@ export function statsExistingCorpusStatus(corpusPath: string): JsonObject {
       tier_path: tiersDir,
       tier_state: assessment.state,
       reason: "bounded evidence tier published",
-      extracted_at: extractedAt ?? (manifest?.published_at ?? null),
+      extracted_at: extractedAt ?? manifest?.published_at ?? null,
       total_records: manifest?.total_records ?? 0,
     };
   }
@@ -155,14 +142,22 @@ export function statsExistingCorpusStatus(corpusPath: string): JsonObject {
   try {
     data = JSON.parse(fs.readFileSync(corpusPath, "utf8"));
   } catch (exc) {
-    return { status: "stale", path: corpusPath, tier_state: "legacy", reason: `corpus is not readable JSON: ${(exc as Error).message}` };
+    return {
+      status: "stale",
+      path: corpusPath,
+      tier_state: "legacy",
+      reason: `corpus is not readable JSON: ${(exc as Error).message}`,
+    };
   }
-  const records = data && typeof data === "object" && !Array.isArray(data) ? data.records ?? [] : [];
-  const hasTurn =
-    Array.isArray(records) &&
-    records.some((r: any) => r && typeof r === "object" && r.source_kind === "conversation_turn");
+  const records = data && typeof data === "object" && !Array.isArray(data) ? (data.records ?? []) : [];
+  const hasTurn = Array.isArray(records) && records.some((r: any) => r && typeof r === "object" && r.source_kind === "conversation_turn");
   if (!hasTurn) {
-    return { status: "stale", path: corpusPath, tier_state: "legacy", reason: "corpus has no conversation_turn records" };
+    return {
+      status: "stale",
+      path: corpusPath,
+      tier_state: "legacy",
+      reason: "corpus has no conversation_turn records",
+    };
   }
   const metadata = data.metadata && typeof data.metadata === "object" ? data.metadata : {};
   return {
@@ -204,9 +199,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
     }
     if (!dryRun && consent !== "local-history") {
       const recovery = "agentera report refresh --consent local-history";
-      const message =
-        "Error: agentera stats refresh requires explicit --consent local-history to read local runtime history. " +
-        "Preview first with agentera stats refresh --dry-run";
+      const message = "Error: agentera stats refresh requires explicit --consent local-history to read local runtime history. " + "Preview first with agentera stats refresh --dry-run";
       if (outputFormat === "json") {
         out(
           JSON.stringify(
@@ -250,9 +243,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         diagnostics: [
           "dry-run does not read runtime history or write tier files",
           "published tiers are internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/tiers",
-          ...(args.importSources?.includes("claude")
-            ? ["Claude historical import can contain secrets, file contents, and command output; apply stays local and read-only"]
-            : []),
+          ...(args.importSources?.includes("claude") ? ["Claude historical import can contain secrets, file contents, and command output; apply stays local and read-only"] : []),
         ],
       };
       if (outputFormat === "json") {
@@ -289,18 +280,18 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
           required_consent: "local-history",
           provided_consent: "local-history",
           historical_imports: args.importSources ?? [],
-          historical_import_warning: args.importSources?.includes("claude")
-            ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only."
-            : null,
+          historical_import_warning: args.importSources?.includes("claude") ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only." : null,
         },
         corpus_path: corpusPath,
         tier_path: tiersDir,
         evidence: {
           status: currentGeneration ? "readable" : "unavailable",
-          ...(currentGeneration ? {
-            generation: currentGeneration.manifest.generation,
-            published_at: currentGeneration.manifest.published_at,
-          } : {}),
+          ...(currentGeneration
+            ? {
+                generation: currentGeneration.manifest.generation,
+                published_at: currentGeneration.manifest.published_at,
+              }
+            : {}),
         },
         projection,
         engine: { command: engineCommand, exit_code: null, stdout: [], stderr: [] },
@@ -355,21 +346,26 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
         required_consent: "local-history",
         provided_consent: "local-history",
         historical_imports: args.importSources ?? [],
-        historical_import_warning: args.importSources?.includes("claude")
-          ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only."
-          : null,
+        historical_import_warning: args.importSources?.includes("claude") ? "Claude transcripts can contain secrets, file contents, and command output. Import is local and read-only." : null,
       },
       corpus_path: corpusPath,
       tier_path: tiersDir,
       evidence: {
         status: rc === 0 ? "published" : "failed",
-        ...(currentGeneration ? {
-          generation: currentGeneration.manifest.generation,
-          published_at: currentGeneration.manifest.published_at,
-        } : {}),
+        ...(currentGeneration
+          ? {
+              generation: currentGeneration.manifest.generation,
+              published_at: currentGeneration.manifest.published_at,
+            }
+          : {}),
       },
       projection,
-      engine: { command: engineCommand, exit_code: rc, stdout: engineOut.split("\n").filter((l) => l), stderr: engineErr.split("\n").filter((l) => l) },
+      engine: {
+        command: engineCommand,
+        exit_code: rc,
+        stdout: engineOut.split("\n").filter((l) => l),
+        stderr: engineErr.split("\n").filter((l) => l),
+      },
     };
     if (outputFormat === "json") {
       out(JSON.stringify(payload, null, 2) + "\n");
@@ -385,10 +381,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
   }
 
   if (action !== null) {
-    err(
-      `Error: unsupported stats action '${action}'. ` +
-        "Syntax: agentera stats [--format text|json] [--project VALUE] | agentera stats refresh --dry-run|--consent local-history\n",
-    );
+    err(`Error: unsupported stats action '${action}'. ` + "Syntax: agentera stats [--format text|json] [--project VALUE] | agentera stats refresh --dry-run|--consent local-history\n");
     return 2;
   }
 

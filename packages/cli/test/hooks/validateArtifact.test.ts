@@ -3,10 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  ArtifactSchemaValidator,
-  loadSchema,
-} from "../../src/hooks/validateArtifact/index.js";
+import { ArtifactSchemaValidator, loadSchema } from "../../src/hooks/validateArtifact/index.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 let tmp: string;
@@ -44,10 +41,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("flags decision alternatives and satisfaction violations", () => {
     const p = path.join(tmp, "decisions.yaml");
-    fs.writeFileSync(
-      p,
-      "decisions:\n- number: 1\n  date: x\n  question: q\n  choice: c\n  alternatives:\n  - status: rejected\n  satisfaction:\n    state: bogus_state\n",
-    );
+    fs.writeFileSync(p, "decisions:\n- number: 1\n  date: x\n  question: q\n  choice: c\n  alternatives:\n  - status: rejected\n  satisfaction:\n    state: bogus_state\n");
     const violations = new ArtifactSchemaValidator().validateExplicit("DECISIONS.md", p, tmp);
     expect(violations.some((v) => v.includes("must have exactly one chosen entry"))).toBe(true);
     expect(violations.some((v) => v.includes("invalid value 'bogus_state'"))).toBe(true);
@@ -57,18 +51,7 @@ describe("ArtifactSchemaValidator", () => {
     const p = path.join(tmp, "health.yaml");
     fs.writeFileSync(
       p,
-      [
-        "audits:",
-        "- number: 1",
-        "  date: 2026-07-11",
-        "  dimensions: [architecture_alignment]",
-        "  findings_summary: {critical: 0, warning: 0, info: 0, filtered_by_confidence: 0}",
-        "  trajectory: stable",
-        "  grades: {architecture_alignment: A}",
-        "archive:",
-        "- 'Audit 0: legacy scalar summary'",
-        "",
-      ].join("\n"),
+      ["audits:", "- number: 1", "  date: 2026-07-11", "  dimensions: [architecture_alignment]", "  findings_summary: {critical: 0, warning: 0, info: 0, filtered_by_confidence: 0}", "  trajectory: stable", "  grades: {architecture_alignment: A}", "archive:", "- 'Audit 0: legacy scalar summary'", ""].join("\n"),
     );
     expect(new ArtifactSchemaValidator().validateExplicit("HEALTH.md", p, tmp)).toEqual([]);
   });
@@ -88,21 +71,10 @@ describe("ArtifactSchemaValidator", () => {
       ].join("\n");
 
     fs.writeFileSync(p, plan("99"));
-    expect(
-      new ArtifactSchemaValidator()
-        .validateExplicit("PLAN.md", p, tmp)
-        .some((violation) => violation.includes("unknown task '99'") && violation.includes("PV4")),
-    ).toBe(true);
+    expect(new ArtifactSchemaValidator().validateExplicit("PLAN.md", p, tmp).some((violation) => violation.includes("unknown task '99'") && violation.includes("PV4"))).toBe(true);
 
     fs.writeFileSync(p, plan("2", "1"));
-    expect(
-      new ArtifactSchemaValidator()
-        .validateExplicit("PLAN.md", p, tmp)
-        .some(
-          (violation) =>
-            violation.includes("circular dependency chain") && violation.includes("PV4"),
-        ),
-    ).toBe(true);
+    expect(new ArtifactSchemaValidator().validateExplicit("PLAN.md", p, tmp).some((violation) => violation.includes("circular dependency chain") && violation.includes("PV4"))).toBe(true);
   });
 
   it("accepts required full-plan unknowns and rejected critic findings", () => {
@@ -136,20 +108,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("accepts header-only Degraded and Annoying bands in a multi-section TODO.md", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [fix:3.0.0] First critical item",
-      "",
-      "## ⇉ Degraded",
-      "",
-      "## → Normal",
-      "- [chore:3.0.0] Normal item",
-      "",
-      "## ⇢ Annoying",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [fix:3.0.0] First critical item", "", "## ⇉ Degraded", "", "## → Normal", "- [chore:3.0.0] Normal item", "", "## ⇢ Annoying", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
@@ -157,19 +116,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("accepts all four bands header-only when Critical still carries an item", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [fix:3.0.0] First critical item",
-      "",
-      "## ⇉ Degraded",
-      "",
-      "## → Normal",
-      "",
-      "## ⇢ Annoying",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [fix:3.0.0] First critical item", "", "## ⇉ Degraded", "", "## → Normal", "", "## ⇢ Annoying", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
@@ -177,22 +124,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("accepts header-only Critical when resolved items live in ## ✓ Resolved", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "",
-      "## ⇉ Degraded",
-      "",
-      "## → Normal",
-      "- [ ] [chore:3.0.0] Open item",
-      "",
-      "## ⇢ Annoying",
-      "",
-      "## ✓ Resolved",
-      "- [x] [fix:3.0.0] Done item",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "", "## ⇉ Degraded", "", "## → Normal", "- [ ] [chore:3.0.0] Open item", "", "## ⇢ Annoying", "", "## ✓ Resolved", "- [x] [fix:3.0.0] Done item", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.filter((v) => v.includes("severity section"))).toEqual([]);
@@ -201,18 +133,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("flags resolved checkboxes left in severity bands", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [x] [fix:3.0.0] Done in critical",
-      "",
-      "## → Normal",
-      "- [ ] [chore:3.0.0] Open item",
-      "",
-      "## ⇢ Annoying",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [x] [fix:3.0.0] Done in critical", "", "## → Normal", "- [ ] [chore:3.0.0] Open item", "", "## ⇢ Annoying", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.some((v) => v.includes("must live under '## ✓ Resolved'"))).toBe(true);
@@ -220,20 +141,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("does not collapse an empty Degraded body into the next Normal heading", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [fix:3.0.0] First critical item",
-      "",
-      "## ⇉ Degraded",
-      "",
-      "## → Normal",
-      "- [chore:3.0.0] Normal item",
-      "",
-      "## ⇢ Annoying",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [fix:3.0.0] First critical item", "", "## ⇉ Degraded", "", "## → Normal", "- [chore:3.0.0] Normal item", "", "## ⇢ Annoying", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.filter((v) => v.includes("severity section '⇉ Degraded'"))).toEqual([]);
@@ -242,19 +150,7 @@ describe("ArtifactSchemaValidator", () => {
 
   it("flags a Critical-body-collapse scenario where the next heading is glued into Critical", () => {
     const p = path.join(tmp, "TODO.md");
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "## ⇉ Degraded",
-      "- [chore:3.0.0] Degraded item",
-      "",
-      "## → Normal",
-      "- [chore:3.0.0] Normal item",
-      "",
-      "## ⇢ Annoying",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "## ⇉ Degraded", "- [chore:3.0.0] Degraded item", "", "## → Normal", "- [chore:3.0.0] Normal item", "", "## ⇢ Annoying", ""].join("\n");
     fs.writeFileSync(p, todo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", p, tmp);
     expect(violations.filter((v) => v.includes("nested heading")).length).toBeGreaterThan(0);

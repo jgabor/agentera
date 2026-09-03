@@ -11,15 +11,69 @@ const CONTRACT = {
 function corpus(): any {
   return {
     records: [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
-      { source_kind: "tool_call", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
-      { source_kind: "tool_call", source_id: "t2", session_id: "c1", timestamp: "2026-02-01T00:00:02Z", data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } } },
-      { source_kind: "tool_call", source_id: "t3", session_id: "c1", timestamp: "2026-02-01T00:00:03Z", data: { tool: "read", arguments: { path: ".agentera/health.yaml" } } },
-      { source_kind: "tool_call", source_id: "t4", session_id: "c1", timestamp: "2026-02-01T00:00:04Z", data: { tool: "apply_patch", arguments: { path: "x.py" } } },
-      { source_kind: "conversation_turn", source_id: "u2", session_id: "c3", timestamp: "2026-02-02T00:00:00Z", data: { actor: "user", content: "/plan the feature" } },
-      { source_kind: "conversation_turn", source_id: "a2", session_id: "c3", timestamp: "2026-02-02T00:00:01Z", data: { actor: "assistant", content: "thinking" } },
-      { source_kind: "conversation_turn", source_id: "u3", session_id: "c3", timestamp: "2026-02-02T00:00:02Z", data: { actor: "user", content: "thanks" } },
-      { source_kind: "tool_call", source_id: "old", session_id: "c4", timestamp: "2020-01-01T00:00:00Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
+      {
+        source_kind: "conversation_turn",
+        source_id: "u1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:00Z",
+        data: { actor: "user", content: "/build build it" },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:01Z",
+        data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t2",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:02Z",
+        data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t3",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:03Z",
+        data: { tool: "read", arguments: { path: ".agentera/health.yaml" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t4",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:04Z",
+        data: { tool: "apply_patch", arguments: { path: "x.py" } },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "u2",
+        session_id: "c3",
+        timestamp: "2026-02-02T00:00:00Z",
+        data: { actor: "user", content: "/plan the feature" },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "a2",
+        session_id: "c3",
+        timestamp: "2026-02-02T00:00:01Z",
+        data: { actor: "assistant", content: "thinking" },
+      },
+      {
+        source_kind: "conversation_turn",
+        source_id: "u3",
+        session_id: "c3",
+        timestamp: "2026-02-02T00:00:02Z",
+        data: { actor: "user", content: "thanks" },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "old",
+        session_id: "c4",
+        timestamp: "2020-01-01T00:00:00Z",
+        data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } },
+      },
     ],
   };
 }
@@ -45,7 +99,17 @@ describe("classifyStartupRecords", () => {
   });
 
   it("flags transcript-bearing records for privacy redaction", () => {
-    const c = { records: [{ source_kind: "tool_call", source_id: "x", session_id: "c", timestamp: "2026-02-01T00:00:00Z", transcript: "raw" }] };
+    const c = {
+      records: [
+        {
+          source_kind: "tool_call",
+          source_id: "x",
+          session_id: "c",
+          timestamp: "2026-02-01T00:00:00Z",
+          transcript: "raw",
+        },
+      ],
+    };
     const result = classifyStartupRecords(c, { salt: "SALT", contract: CONTRACT });
     expect(result.degradations[0].reason).toBe("privacy_redaction_required");
   });

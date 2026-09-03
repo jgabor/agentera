@@ -76,10 +76,7 @@ function exactKeys(value: Record<string, unknown>, expected: string[]): boolean 
 }
 
 function safeTarget(value: string): boolean {
-  return value.startsWith(".agentera/entities/")
-    && !path.isAbsolute(value)
-    && !value.includes("\\")
-    && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  return value.startsWith(".agentera/entities/") && !path.isAbsolute(value) && !value.includes("\\") && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 }
 
 function markerSnapshot(project: string): ReturnType<typeof readProjectFileSnapshot> {
@@ -88,14 +85,16 @@ function markerSnapshot(project: string): ReturnType<typeof readProjectFileSnaps
 
 function parseHistoricalForwardManifest(bytes: Buffer): HistoricalForwardManifest {
   const value = loadYamlMapping(bytes.toString("utf8"));
-  if (!exactKeys(value, ["schemaVersion", "phase", "source", "targets", "marker"])
-    || value.schemaVersion !== MANIFEST_SCHEMA
-    || value.phase !== "entities_published"
-    || !mapping(value.marker)
-    || value.marker.path !== ENTITY_MODE_MARKER
-    || typeof value.marker.sha256 !== "string"
-    || !SHA256.test(value.marker.sha256)
-    || !Array.isArray(value.targets)) {
+  if (
+    !exactKeys(value, ["schemaVersion", "phase", "source", "targets", "marker"]) ||
+    value.schemaVersion !== MANIFEST_SCHEMA ||
+    value.phase !== "entities_published" ||
+    !mapping(value.marker) ||
+    value.marker.path !== ENTITY_MODE_MARKER ||
+    typeof value.marker.sha256 !== "string" ||
+    !SHA256.test(value.marker.sha256) ||
+    !Array.isArray(value.targets)
+  ) {
     throw new EntityCutoverError(`historical cutover manifest '${FORWARD_MANIFEST}' is invalid`);
   }
   const targets = value.targets.map((raw): EntityCutoverTargetBinding => {
@@ -104,7 +103,12 @@ function parseHistoricalForwardManifest(bytes: Buffer): HistoricalForwardManifes
     }
     return { path: raw.path, sha256: raw.sha256 };
   });
-  return { schemaVersion: MANIFEST_SCHEMA, phase: "entities_published", targets, marker: value.marker as HistoricalForwardManifest["marker"] };
+  return {
+    schemaVersion: MANIFEST_SCHEMA,
+    phase: "entities_published",
+    targets,
+    marker: value.marker as HistoricalForwardManifest["marker"],
+  };
 }
 
 function loadHistoricalForwardManifest(project: string): HistoricalForwardManifest | null {
@@ -115,13 +119,20 @@ function loadHistoricalForwardManifest(project: string): HistoricalForwardManife
 }
 
 function targetsForPlan(plan: DurableEntityMigrationPlan): EntityCutoverTargetBinding[] {
-  const targets = plan.entries.map((entry): EntityCutoverTargetBinding => {
-    const target = entry.proposed_target;
-    if (!target || typeof target.id !== "string" || typeof entry.artifact !== "string" || !safeTarget(target.path)) throw new EntityCutoverError(`first unresolved path '${entry.source_paths[0] ?? ".agentera"}': source has no safe canonical target`);
-    const bytes = canonicalEntityEnvelopeBytes({ id: target.id, artifact: entry.artifact, record: entry.record, migrationProvenance: entry.canonical_migration_provenance });
-    if (entry.target_sha256 !== hash(bytes)) throw new EntityCutoverError(`first unresolved path '${target.path}': converted entity bytes are not deterministic`);
-    return { path: target.path, sha256: hash(bytes) };
-  }).sort((a, b) => a.path.localeCompare(b.path));
+  const targets = plan.entries
+    .map((entry): EntityCutoverTargetBinding => {
+      const target = entry.proposed_target;
+      if (!target || typeof target.id !== "string" || typeof entry.artifact !== "string" || !safeTarget(target.path)) throw new EntityCutoverError(`first unresolved path '${entry.source_paths[0] ?? ".agentera"}': source has no safe canonical target`);
+      const bytes = canonicalEntityEnvelopeBytes({
+        id: target.id,
+        artifact: entry.artifact,
+        record: entry.record,
+        migrationProvenance: entry.canonical_migration_provenance,
+      });
+      if (entry.target_sha256 !== hash(bytes)) throw new EntityCutoverError(`first unresolved path '${target.path}': converted entity bytes are not deterministic`);
+      return { path: target.path, sha256: hash(bytes) };
+    })
+    .sort((a, b) => a.path.localeCompare(b.path));
   if (new Set(targets.map(({ path: target }) => target)).size !== targets.length) throw new EntityCutoverError("first unresolved path '.agentera/entities': converted target paths are not unique");
   return targets;
 }
@@ -194,16 +205,17 @@ export function loadEntityCutoverTargetsForMarker(projectRoot: string, bytes: Bu
   throw new EntityCutoverError("entity marker has no supported cutover binding");
 }
 
-function inspect(
-  projectRoot: string,
-  sourceRoot: string,
-  requireGit: boolean,
-  writerLockHeld = false,
-  activeUpgradeLockPaths: readonly string[] = [],
-): { inspection: EntityCutoverInspection; plan?: DurableEntityMigrationPlan; head?: string } {
+function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, writerLockHeld = false, activeUpgradeLockPaths: readonly string[] = []): { inspection: EntityCutoverInspection; plan?: DurableEntityMigrationPlan; head?: string } {
   const project = validateRealProjectRoot(projectRoot).path;
   const marker = markerSnapshot(project);
-  if (marker.kind === "file") return { inspection: { phase: "active", entityCount: validateActiveEntityCutover(project, marker.bytes, sourceRoot), todoReconciliation: false } };
+  if (marker.kind === "file")
+    return {
+      inspection: {
+        phase: "active",
+        entityCount: validateActiveEntityCutover(project, marker.bytes, sourceRoot),
+        todoReconciliation: false,
+      },
+    };
   if (marker.kind !== "missing") throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker path is unsafe`);
 
   const binding = todoReconciliationBinding(project, sourceRoot);
@@ -224,10 +236,21 @@ function inspect(
       const relative = path.relative(project, path.resolve(activeLockPath));
       if (relative !== "" && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) allowedPaths.add(relative.split(path.sep).join("/"));
     }
-    const binding = verifyEntityCutoverGitSource(project, plan, { paths: allowedPaths, prefixes: writerLockHeld ? [".agentera/.writer.lock"] : [] });
+    const binding = verifyEntityCutoverGitSource(project, plan, {
+      paths: allowedPaths,
+      prefixes: writerLockHeld ? [".agentera/.writer.lock"] : [],
+    });
     head = binding.head;
   }
-  return { inspection: { phase: "ready", entityCount: targets.length, todoReconciliation: Boolean(plan.todo_reconciliation) }, plan, ...(head ? { head } : {}) };
+  return {
+    inspection: {
+      phase: "ready",
+      entityCount: targets.length,
+      todoReconciliation: Boolean(plan.todo_reconciliation),
+    },
+    plan,
+    ...(head ? { head } : {}),
+  };
 }
 
 export function inspectEntityCutoverForUpgrade(projectRoot: string, sourceRoot: string, requireGit = false, activeUpgradeLockPaths: readonly string[] = []): EntityCutoverInspection {
@@ -236,9 +259,27 @@ export function inspectEntityCutoverForUpgrade(projectRoot: string, sourceRoot: 
 
 export function prepareEntityCutoverForUpgrade(projectRoot: string, sourceRoot: string, activeUpgradeLockPaths: readonly string[] = []): PreparedEntityCutover {
   const current = inspect(projectRoot, sourceRoot, true, false, activeUpgradeLockPaths);
-  if (current.inspection.phase === "ready" && !current.plan) return { project: validateRealProjectRoot(projectRoot).path, sourceRoot, head: "", sourceFingerprint: "", previewDigest: "", entityCount: current.inspection.entityCount, todoReconciliation: current.inspection.todoReconciliation, recovery: true };
+  if (current.inspection.phase === "ready" && !current.plan)
+    return {
+      project: validateRealProjectRoot(projectRoot).path,
+      sourceRoot,
+      head: "",
+      sourceFingerprint: "",
+      previewDigest: "",
+      entityCount: current.inspection.entityCount,
+      todoReconciliation: current.inspection.todoReconciliation,
+      recovery: true,
+    };
   if (current.inspection.phase === "active" || !current.plan || !current.head) throw new EntityCutoverError("entity authority is already active; no cutover preparation is available");
-  return { project: current.plan.project, sourceRoot, head: current.head, sourceFingerprint: current.plan.source_fingerprint, previewDigest: current.plan.preview_digest, entityCount: current.inspection.entityCount, todoReconciliation: current.inspection.todoReconciliation };
+  return {
+    project: current.plan.project,
+    sourceRoot,
+    head: current.head,
+    sourceFingerprint: current.plan.source_fingerprint,
+    previewDigest: current.plan.preview_digest,
+    entityCount: current.inspection.entityCount,
+    todoReconciliation: current.inspection.todoReconciliation,
+  };
 }
 
 function ensureDirectory(project: string, relativeDirectory: string): void {
@@ -253,7 +294,12 @@ function ensureDirectory(project: string, relativeDirectory: string): void {
 
 function writeDurable(file: string, bytes: string): void {
   const fd = fs.openSync(file, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
-  try { fs.writeFileSync(fd, bytes); fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  try {
+    fs.writeFileSync(fd, bytes);
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function fault(phase: string): void {
@@ -263,7 +309,12 @@ function fault(phase: string): void {
 function publishTargets(project: string, plan: DurableEntityMigrationPlan): void {
   for (const entry of plan.entries.slice().sort((a, b) => a.proposed_target!.path.localeCompare(b.proposed_target!.path))) {
     const target = entry.proposed_target!;
-    const bytes = canonicalEntityEnvelopeBytes({ id: target.id!, artifact: entry.artifact!, record: entry.record, migrationProvenance: entry.canonical_migration_provenance });
+    const bytes = canonicalEntityEnvelopeBytes({
+      id: target.id!,
+      artifact: entry.artifact!,
+      record: entry.record,
+      migrationProvenance: entry.canonical_migration_provenance,
+    });
     const observed = readProjectFileSnapshot(validateRealProjectRoot(project), target.path);
     if (observed.kind === "file") {
       if (hash(observed.bytes) !== hash(bytes)) {
@@ -273,7 +324,13 @@ function publishTargets(project: string, plan: DurableEntityMigrationPlan): void
       continue;
     }
     if (observed.kind !== "missing") throw new EntityCutoverError(`first unresolved path '${target.path}': target is unsafe`);
-    ensureDirectory(project, path.relative(project, path.dirname(path.join(project, target.path))).split(path.sep).join("/"));
+    ensureDirectory(
+      project,
+      path
+        .relative(project, path.dirname(path.join(project, target.path)))
+        .split(path.sep)
+        .join("/"),
+    );
     try {
       writeDurable(path.join(project, target.path), bytes);
     } catch (error) {
@@ -290,12 +347,7 @@ function upgradePublicationContext(project: string, activeUpgradeLockPaths: read
   return EntityPublicationContext.open(validateRealProjectRoot(project), relative, fs.readFileSync(lockPath));
 }
 
-function validatePendingEntityCutoverTargets(
-  project: string,
-  sourceRoot: string,
-  binding: ReturnType<typeof todoReconciliationBinding>,
-  targets: readonly ValidatedTodoReconciliationTarget[],
-): void {
+function validatePendingEntityCutoverTargets(project: string, sourceRoot: string, binding: ReturnType<typeof todoReconciliationBinding>, targets: readonly ValidatedTodoReconciliationTarget[]): void {
   const entityTargets = new Map<string, { artifact: string; boundary: string; id: string; target: ValidatedTodoReconciliationTarget }>();
   let activation: ValidatedTodoReconciliationTarget | undefined;
   let publicTarget: ValidatedTodoReconciliationTarget | undefined;
@@ -303,7 +355,12 @@ function validatePendingEntityCutoverTargets(
   for (const target of targets) {
     const match = /^\.agentera\/entities\/([a-z][a-z0-9_]*)\/([a-z][a-z0-9_]*)\/([a-z]{10})\.yaml$/.exec(target.path);
     if (match) {
-      entityTargets.set(target.path, { artifact: match[1]!, boundary: match[2]!, id: match[3]!, target });
+      entityTargets.set(target.path, {
+        artifact: match[1]!,
+        boundary: match[2]!,
+        id: match[3]!,
+        target,
+      });
       continue;
     }
     if (target.path === TODO_RECONCILIATION_ACTIVATION_PATH && !activation) activation = target;
@@ -337,30 +394,43 @@ function validatePendingEntityCutoverTargets(
     throw new EntityCutoverError(`first unresolved path '${target.path}': pending TODO cutover target changed outside its journal baseline`);
   }
 
-  const finalEntities = [...entityTargets.values()].sort((left, right) => left.target.path.localeCompare(right.target.path)).map(({ artifact, boundary, id, target }) => {
-    let envelope: ReturnType<typeof canonicalEntityEnvelope>;
-    try {
-      envelope = canonicalEntityEnvelope(target.after.toString("utf8"), { id, artifact, boundary }, sourceRoot, { kind: "migration_preview", projectRoot: project });
-    } catch (error) {
-      throw new EntityCutoverError(`first unresolved path '${target.path}': pending cutover final entity is invalid: ${(error as Error).message}`);
-    }
-    return { artifact, boundary, id, record: envelope.record };
-  });
-  const projectionIssue = todoCutoverPublicProjectionViolations(publicTarget.after.toString("utf8"), finalEntities.filter(({ artifact, boundary }) => artifact === "todo" && boundary === "todo_item"))[0];
+  const finalEntities = [...entityTargets.values()]
+    .sort((left, right) => left.target.path.localeCompare(right.target.path))
+    .map(({ artifact, boundary, id, target }) => {
+      let envelope: ReturnType<typeof canonicalEntityEnvelope>;
+      try {
+        envelope = canonicalEntityEnvelope(target.after.toString("utf8"), { id, artifact, boundary }, sourceRoot, {
+          kind: "migration_preview",
+          projectRoot: project,
+        });
+      } catch (error) {
+        throw new EntityCutoverError(`first unresolved path '${target.path}': pending cutover final entity is invalid: ${(error as Error).message}`);
+      }
+      return { artifact, boundary, id, record: envelope.record };
+    });
+  const projectionIssue = todoCutoverPublicProjectionViolations(
+    publicTarget.after.toString("utf8"),
+    finalEntities.filter(({ artifact, boundary }) => artifact === "todo" && boundary === "todo_item"),
+  )[0];
   if (projectionIssue) throw new EntityCutoverError(`first unresolved path '${binding.publicPath}': ${projectionIssue}`);
 
   const markerValue = loadYamlMapping(marker.after.toString("utf8"));
-  if (!exactKeys(markerValue, ["schemaVersion", "mode", "source_fingerprint", "preview_digest"])
-    || markerValue.schemaVersion !== "agentera.stateMode.v1"
-    || markerValue.mode !== "entities"
-    || typeof markerValue.source_fingerprint !== "string"
-    || typeof markerValue.preview_digest !== "string"
-    || !SHA256.test(markerValue.source_fingerprint)
-    || !SHA256.test(markerValue.preview_digest)) {
+  if (
+    !exactKeys(markerValue, ["schemaVersion", "mode", "source_fingerprint", "preview_digest"]) ||
+    markerValue.schemaVersion !== "agentera.stateMode.v1" ||
+    markerValue.mode !== "entities" ||
+    typeof markerValue.source_fingerprint !== "string" ||
+    typeof markerValue.preview_digest !== "string" ||
+    !SHA256.test(markerValue.source_fingerprint) ||
+    !SHA256.test(markerValue.preview_digest)
+  ) {
     throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': pending TODO cutover authority target is invalid`);
   }
 
-  const validation = validateEntityState(project, sourceRoot, { kind: "migration_preview", projectRoot: project });
+  const validation = validateEntityState(project, sourceRoot, {
+    kind: "migration_preview",
+    projectRoot: project,
+  });
   if (!validation.valid || validation.entityCount !== entityTargets.size) {
     const issue = validation.issues[0];
     throw new EntityCutoverError(`first unresolved path '${issue?.path ?? ".agentera/entities"}': TODO cutover entity graph is invalid (${validation.entityCount}/${entityTargets.size})${issue ? `: ${issue.message}` : ""}`);
@@ -388,7 +458,13 @@ function recoverPendingTodoCutover(project: string, sourceRoot: string, activeUp
   }
   const marker = markerSnapshot(project);
   if (marker.kind !== "file") throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': recovered cutover did not publish its authority marker`);
-  return { status: "complete", phase: "active", idempotent: false, mutation_performed: true, entity_count: validateActiveEntityCutover(project, marker.bytes, sourceRoot) };
+  return {
+    status: "complete",
+    phase: "active",
+    idempotent: false,
+    mutation_performed: true,
+    entity_count: validateActiveEntityCutover(project, marker.bytes, sourceRoot),
+  };
 }
 
 function publishTodoCutover(project: string, sourceRoot: string, plan: DurableEntityMigrationPlan, activeUpgradeLockPaths: readonly string[]): void {
@@ -397,25 +473,60 @@ function publishTodoCutover(project: string, sourceRoot: string, plan: DurableEn
     publishMarker(project, plan);
     return;
   }
-  const markerBytes = dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest });
+  const markerBytes = dumpYamlMapping({
+    schemaVersion: "agentera.stateMode.v1",
+    mode: "entities",
+    source_fingerprint: plan.source_fingerprint,
+    preview_digest: plan.preview_digest,
+  });
   const targets: TodoReconciliationTarget[] = plan.entries.map((entry) => {
     const target = entry.proposed_target!;
     const before = readProjectFileSnapshot(validateRealProjectRoot(project), target.path);
     if (before.kind !== "file") throw new EntityCutoverError(`first unresolved path '${target.path}': cutover target was not published before reconciliation`);
-    return { path: target.path, before: before.bytes, after: canonicalEntityEnvelopeBytes({ id: target.id, artifact: entry.artifact!, record: entry.record, migrationProvenance: entry.canonical_migration_provenance }) };
+    return {
+      path: target.path,
+      before: before.bytes,
+      after: canonicalEntityEnvelopeBytes({
+        id: target.id,
+        artifact: entry.artifact!,
+        record: entry.record,
+        migrationProvenance: entry.canonical_migration_provenance,
+      }),
+    };
   });
   targets.push(
-    { path: TODO_RECONCILIATION_ACTIVATION_PATH, before: null, after: reconciliation.activation_after },
-    { path: reconciliation.public_path, before: Buffer.from(reconciliation.markdown_before_base64, "base64"), after: reconciliation.markdown_after },
+    {
+      path: TODO_RECONCILIATION_ACTIVATION_PATH,
+      before: null,
+      after: reconciliation.activation_after,
+    },
+    {
+      path: reconciliation.public_path,
+      before: Buffer.from(reconciliation.markdown_before_base64, "base64"),
+      after: reconciliation.markdown_after,
+    },
     { path: ENTITY_MODE_MARKER, before: null, after: markerBytes },
   );
-  const validatedTargets: ValidatedTodoReconciliationTarget[] = targets.map((target) => ({ path: target.path, before: target.before, after: Buffer.from(target.after) }));
+  const validatedTargets: ValidatedTodoReconciliationTarget[] = targets.map((target) => ({
+    path: target.path,
+    before: target.before,
+    after: Buffer.from(target.after),
+  }));
   const context = upgradePublicationContext(project, activeUpgradeLockPaths);
   try {
     publishTodoReconciliation(context, sourceRoot, { publicPath: reconciliation.public_path, mappingSha256: reconciliation.mapping_sha256 }, targets, {
       retainUnchangedTargets: true,
       interruptAfterTarget: process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET ? Number(process.env.AGENTERA_FAULT_INJECT_TODO_CUTOVER_AFTER_TARGET) : undefined,
-      beforeActivation: () => validatePendingEntityCutoverTargets(project, sourceRoot, { publicPath: reconciliation.public_path, mappingSha256: reconciliation.mapping_sha256 }, validatedTargets),
+      beforeActivation: () =>
+        validatePendingEntityCutoverTargets(
+          project,
+          sourceRoot,
+          {
+            publicPath: reconciliation.public_path,
+            mappingSha256: reconciliation.mapping_sha256,
+          },
+          validatedTargets,
+        ),
     });
   } finally {
     context.close();
@@ -423,7 +534,12 @@ function publishTodoCutover(project: string, sourceRoot: string, plan: DurableEn
 }
 
 function publishMarker(project: string, plan: DurableEntityMigrationPlan): void {
-  const markerBytes = dumpYamlMapping({ schemaVersion: "agentera.stateMode.v1", mode: "entities", source_fingerprint: plan.source_fingerprint, preview_digest: plan.preview_digest });
+  const markerBytes = dumpYamlMapping({
+    schemaVersion: "agentera.stateMode.v1",
+    mode: "entities",
+    source_fingerprint: plan.source_fingerprint,
+    preview_digest: plan.preview_digest,
+  });
   const existing = markerSnapshot(project);
   if (existing.kind === "file") {
     if (!existing.bytes.equals(Buffer.from(markerBytes))) throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker has unexpected bytes`);
@@ -449,16 +565,28 @@ export function applyPreparedEntityCutover(prepared: PreparedEntityCutover, acti
       const recovered = recoverPendingTodoCutover(prepared.project, prepared.sourceRoot, activeUpgradeLockPaths);
       if (!recovered) throw new EntityCutoverError("prepared TODO cutover recovery journal is missing");
       return recovered;
-    } finally { lock.release(); }
+    } finally {
+      lock.release();
+    }
   }
   const lock = acquireWriterLock(prepared.project, 2000);
   try {
     const current = inspect(prepared.project, prepared.sourceRoot, true, true, activeUpgradeLockPaths);
-    if (current.inspection.phase === "active") return { status: "complete", phase: "active", idempotent: true, mutation_performed: false, entity_count: current.inspection.entityCount };
+    if (current.inspection.phase === "active")
+      return {
+        status: "complete",
+        phase: "active",
+        idempotent: true,
+        mutation_performed: false,
+        entity_count: current.inspection.entityCount,
+      };
     const plan = current.plan!;
     if (current.head !== prepared.head || plan.source_fingerprint !== prepared.sourceFingerprint || plan.preview_digest !== prepared.previewDigest) throw new EntityCutoverError("first unresolved path '.agentera': converted input changed before its first effect");
     publishTargets(prepared.project, plan);
-    const validation = validateEntityState(prepared.project, prepared.sourceRoot, { kind: "migration_preview", projectRoot: prepared.project });
+    const validation = validateEntityState(prepared.project, prepared.sourceRoot, {
+      kind: "migration_preview",
+      projectRoot: prepared.project,
+    });
     if (!validation.valid || validation.entityCount !== plan.entries.length) {
       const issue = validation.issues[0];
       throw new EntityCutoverError(`first unresolved path '${issue?.path ?? ".agentera/entities"}': converted entity graph is invalid (${validation.entityCount}/${plan.entries.length})${issue ? `: ${issue.message}` : ""}`);
@@ -466,7 +594,13 @@ export function applyPreparedEntityCutover(prepared: PreparedEntityCutover, acti
     publishTodoCutover(prepared.project, prepared.sourceRoot, plan, activeUpgradeLockPaths);
     const marker = markerSnapshot(prepared.project);
     if (marker.kind !== "file") throw new EntityCutoverError(`first unresolved path '${ENTITY_MODE_MARKER}': marker was not published`);
-    return { status: "complete", phase: "active", idempotent: false, mutation_performed: true, entity_count: validateActiveEntityCutover(prepared.project, marker.bytes, prepared.sourceRoot) };
+    return {
+      status: "complete",
+      phase: "active",
+      idempotent: false,
+      mutation_performed: true,
+      entity_count: validateActiveEntityCutover(prepared.project, marker.bytes, prepared.sourceRoot),
+    };
   } finally {
     lock.release();
   }

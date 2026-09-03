@@ -49,12 +49,12 @@ type FamilyOptions = Omit<EntityListRuntimeFamily, "projection"> & {
   bareRecoveryArguments?: string;
 };
 
-function family<const T extends FamilyOptions>(options: T): Omit<T, "exampleArguments" | "bareRecoveryArguments"> & {
+function family<const T extends FamilyOptions>(
+  options: T,
+): Omit<T, "exampleArguments" | "bareRecoveryArguments"> & {
   projection: EntityListRuntimeProjection;
 } {
-  const identifier = options.familyIdentifier
-    ? ` ${options.familyIdentifier.required ? options.familyIdentifier.syntax : `[${options.familyIdentifier.syntax}]`}`
-    : "";
+  const identifier = options.familyIdentifier ? ` ${options.familyIdentifier.required ? options.familyIdentifier.syntax : `[${options.familyIdentifier.syntax}]`}` : "";
   const filters = options.filters.map(({ flag }) => ` [${flag}]`).join("");
   const root = `${CANONICAL_DEVELOPMENT_CLI} state ${options.commandTokens.join(" ")}`;
   const projection = {
@@ -68,15 +68,130 @@ function family<const T extends FamilyOptions>(options: T): Omit<T, "exampleArgu
 }
 
 export const ENTITY_LIST_RUNTIME_REGISTRY = {
-  progress: family({ key: "progress", commandTokens: ["progress"], parser: "generic", artifact: "progress", boundary: "progress_cycle", bareRead: "alias", filters: [{ name: "topic", flag: "--topic TEXT", values: "free_text" }, { name: "status", flag: "--status STATUS", values: "free_text" }], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state progress list --limit 20" }),
-  decisions: family({ key: "decisions", commandTokens: ["decisions"], parser: "generic", artifact: "decisions", boundary: "decision", bareRead: "alias", filters: [{ name: "topic", flag: "--topic TEXT", values: "free_text" }], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state decisions list --limit 20" }),
-  health: family({ key: "health", commandTokens: ["health"], parser: "generic", artifact: "health", boundary: "health_audit", bareRead: "correction", filters: [{ name: "dimension", flag: "--dimension DIMENSION", values: "free_text" }], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state health list --limit 20", bareRecoveryArguments: "state health list --limit 20" }),
-  plans: family({ key: "plans", commandTokens: ["plan"], parser: "plans", artifact: "plan", boundary: "plan", bareRead: "correction", filters: [{ name: "status", flag: "--status open|complete|archived", values: ["open", "complete", "archived"] }], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state plan list --status open --limit 20", bareRecoveryArguments: "state plan list --status open --limit 20" }),
-  plan_tasks: family({ key: "plan_tasks", commandTokens: ["plan", "tasks"], parser: "plan_tasks", artifact: "plan", boundary: "plan_task", boundsBoundary: "plan", bareRead: "correction", filters: [], familyIdentifier: { syntax: "PLAN_ID", required: false }, summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state plan tasks list --limit 20", bareRecoveryArguments: "state plan tasks list --limit 20" }),
-  objective: family({ key: "objective", commandTokens: ["objective"], parser: "generic", artifact: "objective", boundary: "objective", bareRead: "correction", filters: [], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state objective list --limit 20", bareRecoveryArguments: "state objective list --limit 20" }),
-  experiments: family({ key: "experiments", commandTokens: ["experiments"], bareRecoveryCommandTokens: ["objective"], parser: "experiments", artifact: "experiments", boundary: "experiment", bareRead: "correction", filters: [], familyIdentifier: { syntax: "--objective ID", required: true }, summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state experiments list --objective qjtrmnpvka --limit 20", bareRecoveryArguments: "state objective list --limit 20" }),
-  todo: family({ key: "todo", commandTokens: ["todo"], parser: "generic", artifact: "todo", boundary: "todo_item", bareRead: "alias", filters: [{ name: "severity", flag: "--severity SEVERITY", values: "free_text" }, { name: "status", flag: "--status STATUS", values: "free_text" }], summaryFields: ["id", "artifact", "public_order", "readiness", "actionability", "queue_rank", "reconciliation", "retrieval.get"], exampleArguments: "state todo list --severity critical --ids-only --limit 20" }),
-  docs: family({ key: "docs", commandTokens: ["docs"], parser: "generic", artifact: "docs", boundary: "documentation_inventory_entry", bareRead: "correction", filters: [{ name: "topic", flag: "--topic TEXT", values: "free_text" }, { name: "status", flag: "--status STATUS", values: "free_text" }], summaryFields: COMMON_SUMMARY_FIELDS, exampleArguments: "state docs list --limit 20", bareRecoveryArguments: "state docs list --limit 20" }),
+  progress: family({
+    key: "progress",
+    commandTokens: ["progress"],
+    parser: "generic",
+    artifact: "progress",
+    boundary: "progress_cycle",
+    bareRead: "alias",
+    filters: [
+      { name: "topic", flag: "--topic TEXT", values: "free_text" },
+      { name: "status", flag: "--status STATUS", values: "free_text" },
+    ],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state progress list --limit 20",
+  }),
+  decisions: family({
+    key: "decisions",
+    commandTokens: ["decisions"],
+    parser: "generic",
+    artifact: "decisions",
+    boundary: "decision",
+    bareRead: "alias",
+    filters: [{ name: "topic", flag: "--topic TEXT", values: "free_text" }],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state decisions list --limit 20",
+  }),
+  health: family({
+    key: "health",
+    commandTokens: ["health"],
+    parser: "generic",
+    artifact: "health",
+    boundary: "health_audit",
+    bareRead: "correction",
+    filters: [{ name: "dimension", flag: "--dimension DIMENSION", values: "free_text" }],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state health list --limit 20",
+    bareRecoveryArguments: "state health list --limit 20",
+  }),
+  plans: family({
+    key: "plans",
+    commandTokens: ["plan"],
+    parser: "plans",
+    artifact: "plan",
+    boundary: "plan",
+    bareRead: "correction",
+    filters: [
+      {
+        name: "status",
+        flag: "--status open|complete|archived",
+        values: ["open", "complete", "archived"],
+      },
+    ],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state plan list --status open --limit 20",
+    bareRecoveryArguments: "state plan list --status open --limit 20",
+  }),
+  plan_tasks: family({
+    key: "plan_tasks",
+    commandTokens: ["plan", "tasks"],
+    parser: "plan_tasks",
+    artifact: "plan",
+    boundary: "plan_task",
+    boundsBoundary: "plan",
+    bareRead: "correction",
+    filters: [],
+    familyIdentifier: { syntax: "PLAN_ID", required: false },
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state plan tasks list --limit 20",
+    bareRecoveryArguments: "state plan tasks list --limit 20",
+  }),
+  objective: family({
+    key: "objective",
+    commandTokens: ["objective"],
+    parser: "generic",
+    artifact: "objective",
+    boundary: "objective",
+    bareRead: "correction",
+    filters: [],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state objective list --limit 20",
+    bareRecoveryArguments: "state objective list --limit 20",
+  }),
+  experiments: family({
+    key: "experiments",
+    commandTokens: ["experiments"],
+    bareRecoveryCommandTokens: ["objective"],
+    parser: "experiments",
+    artifact: "experiments",
+    boundary: "experiment",
+    bareRead: "correction",
+    filters: [],
+    familyIdentifier: { syntax: "--objective ID", required: true },
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state experiments list --objective qjtrmnpvka --limit 20",
+    bareRecoveryArguments: "state objective list --limit 20",
+  }),
+  todo: family({
+    key: "todo",
+    commandTokens: ["todo"],
+    parser: "generic",
+    artifact: "todo",
+    boundary: "todo_item",
+    bareRead: "alias",
+    filters: [
+      { name: "severity", flag: "--severity SEVERITY", values: "free_text" },
+      { name: "status", flag: "--status STATUS", values: "free_text" },
+    ],
+    summaryFields: ["id", "artifact", "public_order", "readiness", "actionability", "queue_rank", "reconciliation", "retrieval.get"],
+    exampleArguments: "state todo list --severity critical --ids-only --limit 20",
+  }),
+  docs: family({
+    key: "docs",
+    commandTokens: ["docs"],
+    parser: "generic",
+    artifact: "docs",
+    boundary: "documentation_inventory_entry",
+    bareRead: "correction",
+    filters: [
+      { name: "topic", flag: "--topic TEXT", values: "free_text" },
+      { name: "status", flag: "--status STATUS", values: "free_text" },
+    ],
+    summaryFields: COMMON_SUMMARY_FIELDS,
+    exampleArguments: "state docs list --limit 20",
+    bareRecoveryArguments: "state docs list --limit 20",
+  }),
 } as const satisfies Record<string, EntityListRuntimeFamily>;
 
 function deepFreeze<T>(value: T): T {
@@ -98,8 +213,7 @@ export function runtimeEntityFamiliesForCommand(command: string): readonly Entit
 }
 
 export function runtimeEntityListFamilyForStateArgs(command: string, argv: string[]): EntityListRuntimeFamily | undefined {
-  return ENTITY_LIST_RUNTIME_FAMILIES
-    .filter(({ commandTokens }) => commandTokens[0] === command)
+  return ENTITY_LIST_RUNTIME_FAMILIES.filter(({ commandTokens }) => commandTokens[0] === command)
     .sort((left, right) => right.commandTokens.length - left.commandTokens.length)
     .find(({ commandTokens }) => {
       const remainder = commandTokens.slice(1);
@@ -115,8 +229,7 @@ export function runtimeEntityFamilyForStateCommand(command: string, argv: string
 }
 
 export function runtimeEntityListFamilyForHelpArgs(args: string[]): EntityListRuntimeFamily | undefined {
-  return ENTITY_LIST_RUNTIME_FAMILIES
-    .slice()
+  return ENTITY_LIST_RUNTIME_FAMILIES.slice()
     .sort((left, right) => right.commandTokens.length - left.commandTokens.length)
     .find(({ commandTokens }) => args.length === commandTokens.length + 1 && args.at(-1) === "list" && commandTokens.every((token, index) => args[index] === token));
 }

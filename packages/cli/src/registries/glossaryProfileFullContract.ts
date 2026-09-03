@@ -4,9 +4,7 @@ import { glossaryEntryAuthorityPath } from "./glossaryEntryContract.js";
 type Mapping = Record<string, unknown>;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 export interface PersonalGlossaryProfileFullContract {
@@ -22,9 +20,7 @@ function exactPositiveLimit(value: unknown, expected: number): number {
 }
 
 /** Load the bounded Profile Full integration settings from the glossary authority. */
-export function personalGlossaryProfileFullContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): PersonalGlossaryProfileFullContract {
+export function personalGlossaryProfileFullContract(pathname: string = glossaryEntryAuthorityPath()): PersonalGlossaryProfileFullContract {
   const authority = loadYamlMappingFile(pathname) as Mapping;
   const profileFull = mapping(mapping(authority.personal_mining_authority)?.profile_full);
   const existingGeneration = mapping(profileFull?.existing_generation);

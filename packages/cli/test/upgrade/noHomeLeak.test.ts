@@ -28,10 +28,7 @@ function assertMigrationPathsStaySandboxed(home: string, items: { source?: strin
   for (const item of items) {
     const target = item.target ?? "";
     if (target) {
-      expect(
-        target.startsWith(home),
-        `migration item.target must stay under sandbox home ${home}, got: ${target}`,
-      ).toBe(true);
+      expect(target.startsWith(home), `migration item.target must stay under sandbox home ${home}, got: ${target}`).toBe(true);
       if (target.startsWith(realHome) && !target.startsWith(home)) {
         expect.fail(`migration item.target must not use developer homedir ${realHome}, got: ${target}`);
       }
@@ -43,10 +40,7 @@ function assertMigrationPathsStaySandboxed(home: string, items: { source?: strin
     }
     const inSandboxHome = source.startsWith(home);
     const inRepo = source === REPO_ROOT || source.startsWith(repoPrefix);
-    expect(
-      inSandboxHome || inRepo,
-      `migration item.source must be under sandbox home or REPO_ROOT, got: ${source}`,
-    ).toBe(true);
+    expect(inSandboxHome || inRepo, `migration item.source must be under sandbox home or REPO_ROOT, got: ${source}`).toBe(true);
   }
 }
 

@@ -1,0 +1,15 @@
+id: feswitlcng
+artifact: progress
+record:
+  timestamp: 2026-09-03 21:26
+  type: refactor
+  phase: build
+  what: Decomposed the three formatter-blocked state modules and completed formatter normalization with parity compatibility repair.
+  context:
+    intent: Complete task cninkdteua without changing formatter or monolith policy.
+    constraints: Preserve behavior, package boundaries, protected formatter exclusions, pre-migration toolchain ownership, and independently established baseline failures.
+    scope: The three named state modules, formatter-owned files already staged by obhhyoadbq, emitted-producer classification, and the parity oracle pin.
+  discovered: The extracted state boundaries required emitted-producer classification in package-registry.yaml; without it, two retired-runtime inventory tests failed. The Python source trees did not differ between the old pin and origin/main, but the hook requires exact pin equality.
+  verified: "Oxfmt checked 736 declared files clean. The named modules are 999, 985, and 963 lines. Focused formatter, monolith, parity, migration-preview, plan, TODO/docs, and runtime inventory tests passed; typecheck, build, package verification 25/25, compact, capability contract, and retained references passed. Full source verification passed 4282 tests with 2 skipped and retained exactly five baseline failures: four activation-census assertions and one prime token-budget assertion."
+  next: Keep cninkdteua in progress for independent audit. If accepted, supersede blocked formatter task obhhyoadbq and only then resolve TODO bhwgdxohmy through typed state ownership.
+  publication_order: 319

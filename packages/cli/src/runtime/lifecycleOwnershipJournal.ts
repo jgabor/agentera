@@ -2,23 +2,14 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  emptyLifecycleOwnershipLedger,
-  validateLifecycleOwnershipLedger,
-  type LifecycleOwnershipLedger,
-} from "./lifecycleOperations.js";
+import { emptyLifecycleOwnershipLedger, validateLifecycleOwnershipLedger, type LifecycleOwnershipLedger } from "./lifecycleOperations.js";
 import { secureLifecycleRemovalAvailable } from "./lifecyclePublication.js";
 
-export const LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA =
-  "agentera.lifecycleOwnershipJournalEvent.v1" as const;
+export const LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA = "agentera.lifecycleOwnershipJournalEvent.v1" as const;
 
 const LIFECYCLE_OWNERSHIP_LOCK_SCHEMA = "agentera.lifecycleOwnershipJournalLock.v1" as const;
 
-export type LifecycleOwnershipJournalState =
-  | "absent"
-  | "clean"
-  | "recoverable_terminal_tail"
-  | "corrupt";
+export type LifecycleOwnershipJournalState = "absent" | "clean" | "recoverable_terminal_tail" | "corrupt";
 
 export interface LifecycleOwnershipJournalRead {
   schemaVersion: "agentera.lifecycleOwnershipJournalRead.v1";
@@ -63,24 +54,16 @@ interface InternalJournalRead extends LifecycleOwnershipJournalRead {
   lastDigest: string | null;
 }
 
-type ParsedEvent =
-  | { state: "valid"; event: LifecycleOwnershipJournalEvent }
-  | { state: "incomplete"; reason: string }
-  | { state: "invalid"; reason: string };
+type ParsedEvent = { state: "valid"; event: LifecycleOwnershipJournalEvent } | { state: "incomplete"; reason: string } | { state: "invalid"; reason: string };
 
-type LockRead =
-  | { state: "valid"; record: LifecycleOwnershipLockRecord }
-  | { state: "absent" }
-  | { state: "malformed"; reason: string };
+type LockRead = { state: "valid"; record: LifecycleOwnershipLockRecord } | { state: "absent" } | { state: "malformed"; reason: string };
 
 const UUID_PATTERN = "[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}";
 const EVENT_NAME = new RegExp(`^(\\d{20})-(${UUID_PATTERN})\\.json$`);
 const TEMP_EVENT_NAME = new RegExp(`^\\.event-(\\d{20})-(${UUID_PATTERN})\\.tmp$`);
 const TEMP_LOCK_NAME = new RegExp(`^\\.apply-lock-(${UUID_PATTERN})\\.tmp$`);
 const LOCK_RECORD_NAME = "owner.json";
-const DIRECTORY_FLAGS = fs.constants.O_RDONLY
-  | (fs.constants.O_DIRECTORY ?? 0)
-  | (fs.constants.O_NOFOLLOW ?? 0);
+const DIRECTORY_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
 
 function digestBody(body: LifecycleOwnershipJournalEventBody): string {
   return `sha256:${crypto.createHash("sha256").update(JSON.stringify(body)).digest("hex")}`;
@@ -92,14 +75,7 @@ function isObject(value: unknown): value is Record<string, unknown> {
 
 function eventFromValue(value: unknown): LifecycleOwnershipJournalEvent | null {
   if (!isObject(value)) return null;
-  if (
-    value.schemaVersion !== LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA
-    || !Number.isSafeInteger(value.sequence)
-    || typeof value.eventId !== "string"
-    || typeof value.recordedAt !== "string"
-    || (value.previousDigest !== null && typeof value.previousDigest !== "string")
-    || typeof value.digest !== "string"
-  ) {
+  if (value.schemaVersion !== LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA || !Number.isSafeInteger(value.sequence) || typeof value.eventId !== "string" || typeof value.recordedAt !== "string" || (value.previousDigest !== null && typeof value.previousDigest !== "string") || typeof value.digest !== "string") {
     return null;
   }
   const ledgerErrors = validateLifecycleOwnershipLedger(value.ledger);
@@ -112,8 +88,7 @@ function incompleteJsonAtEnd(text: string, error: unknown): boolean {
   if (trimmed.length === 0) return true;
   const message = error instanceof Error ? error.message : "";
   const position = /position (\d+)/i.exec(message);
-  const failedAtEnd = message.toLowerCase().includes("end of json input")
-    || (position !== null && Number(position[1]) >= trimmed.length - 1);
+  const failedAtEnd = message.toLowerCase().includes("end of json input") || (position !== null && Number(position[1]) >= trimmed.length - 1);
   if (!failedAtEnd) return false;
 
   const stack: string[] = [];
@@ -149,14 +124,10 @@ function readEvent(eventPath: string): ParsedEvent {
     try {
       value = JSON.parse(text);
     } catch (error) {
-      return incompleteJsonAtEnd(text, error)
-        ? { state: "incomplete", reason: "syntactically incomplete publication" }
-        : { state: "invalid", reason: "malformed complete JSON publication" };
+      return incompleteJsonAtEnd(text, error) ? { state: "incomplete", reason: "syntactically incomplete publication" } : { state: "invalid", reason: "malformed complete JSON publication" };
     }
     const event = eventFromValue(value);
-    return event
-      ? { state: "valid", event }
-      : { state: "invalid", reason: "complete event does not satisfy the journal schema" };
+    return event ? { state: "valid", event } : { state: "invalid", reason: "complete event does not satisfy the journal schema" };
   } catch (error) {
     return { state: "invalid", reason: `unreadable journal event: ${(error as Error).message}` };
   } finally {
@@ -195,11 +166,7 @@ function baseRead(pathname: string, state: LifecycleOwnershipJournalState): Inte
   };
 }
 
-function corruptRead(
-  current: InternalJournalRead,
-  reason: string,
-  finalEventCount: number,
-): InternalJournalRead {
+function corruptRead(current: InternalJournalRead, reason: string, finalEventCount: number): InternalJournalRead {
   return {
     ...current,
     state: "corrupt",
@@ -213,11 +180,7 @@ function readJournal(journalPath: string): InternalJournalRead {
   const directoryState = safeDirectoryState(resolved);
   if (directoryState === "absent") return baseRead(resolved, "absent");
   if (directoryState === "unsafe") {
-    return corruptRead(
-      baseRead(resolved, "corrupt"),
-      "ownership journal path contains a symlink, non-directory, or unreadable component",
-      0,
-    );
+    return corruptRead(baseRead(resolved, "corrupt"), "ownership journal path contains a symlink, non-directory, or unreadable component", 0);
   }
 
   const current = baseRead(resolved, "clean");
@@ -242,11 +205,7 @@ function readJournal(journalPath: string): InternalJournalRead {
     const expectedSequence = current.validEvents + 1;
     if (item.sequence !== expectedSequence) {
       const kind = item.sequence < expectedSequence ? "duplicate sequence or fork" : "sequence gap";
-      return corruptRead(
-        current,
-        `${item.name}: ${kind}; expected sequence ${expectedSequence}`,
-        events.length,
-      );
+      return corruptRead(current, `${item.name}: ${kind}; expected sequence ${expectedSequence}`, events.length);
     }
     if (events[index + 1]?.sequence === item.sequence) {
       return corruptRead(current, `${item.name}: duplicate sequence or fork`, events.length);
@@ -257,16 +216,10 @@ function readJournal(journalPath: string): InternalJournalRead {
       if (index === events.length - 1) {
         current.state = "recoverable_terminal_tail";
         current.ignoredEvents = 1;
-        current.diagnostics.push(
-          `${item.name}: recoverable terminal tail (${parsed.reason}); mutation remains blocked until removed`,
-        );
+        current.diagnostics.push(`${item.name}: recoverable terminal tail (${parsed.reason}); mutation remains blocked until removed`);
         return current;
       }
-      return corruptRead(
-        current,
-        `${item.name}: incomplete publication occurs before a successor event`,
-        events.length,
-      );
+      return corruptRead(current, `${item.name}: incomplete publication occurs before a successor event`, events.length);
     }
     if (parsed.state === "invalid") {
       return corruptRead(current, `${item.name}: ${parsed.reason}`, events.length);
@@ -299,10 +252,7 @@ export function lifecycleOwnershipJournalPath(appHome: string): string {
 function ownedLockDirectory(directory: string): boolean {
   try {
     const entries = fs.readdirSync(directory, { withFileTypes: true });
-    return entries.length === 1
-      && entries[0]?.name === LOCK_RECORD_NAME
-      && entries[0].isFile()
-      && !entries[0].isSymbolicLink();
+    return entries.length === 1 && entries[0]?.name === LOCK_RECORD_NAME && entries[0].isFile() && !entries[0].isSymbolicLink();
   } catch {
     return false;
   }
@@ -322,9 +272,7 @@ export function isLifecycleOwnershipStateDirectory(directory: string): boolean {
     }
     if (entry.name === "ownership-journal-v1" && entry.isDirectory() && !entry.isSymbolicLink()) {
       const journalEntries = fs.readdirSync(full, { withFileTypes: true });
-      if (journalEntries.every((event) =>
-        (event.isFile() && !event.isSymbolicLink() && EVENT_NAME.test(event.name))
-        || (event.isFile() && !event.isSymbolicLink() && TEMP_EVENT_NAME.test(event.name)))) continue;
+      if (journalEntries.every((event) => (event.isFile() && !event.isSymbolicLink() && EVENT_NAME.test(event.name)) || (event.isFile() && !event.isSymbolicLink() && TEMP_EVENT_NAME.test(event.name)))) continue;
     }
     return false;
   }
@@ -379,14 +327,7 @@ function appendEventFile(journalPath: string, name: string, eventId: string, byt
   let fileFd: number | null = null;
   let temporaryCreated = false;
   try {
-    fileFd = fs.openSync(
-      temporaryPath,
-      fs.constants.O_WRONLY
-        | fs.constants.O_CREAT
-        | fs.constants.O_EXCL
-        | (fs.constants.O_NOFOLLOW ?? 0),
-      0o600,
-    );
+    fileFd = fs.openSync(temporaryPath, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
     temporaryCreated = true;
     writeAll(fileFd, bytes, "ownership journal write made no progress");
     fs.fsyncSync(fileFd);
@@ -446,16 +387,8 @@ function currentLockRecord(token: string = crypto.randomUUID()): LifecycleOwners
 
 function lockRecord(value: unknown): LifecycleOwnershipLockRecord | null {
   if (!isObject(value)) return null;
-  if (
-    value.schemaVersion !== LIFECYCLE_OWNERSHIP_LOCK_SCHEMA
-    || !Number.isSafeInteger(value.pid)
-    || (value.pid as number) <= 0
-    || typeof value.bootId !== "string"
-    || typeof value.processStartTicks !== "string"
-    || !/^\d+$/.test(value.processStartTicks)
-    || typeof value.token !== "string"
-    || value.token.length === 0
-  ) return null;
+  if (value.schemaVersion !== LIFECYCLE_OWNERSHIP_LOCK_SCHEMA || !Number.isSafeInteger(value.pid) || (value.pid as number) <= 0 || typeof value.bootId !== "string" || typeof value.processStartTicks !== "string" || !/^\d+$/.test(value.processStartTicks) || typeof value.token !== "string" || value.token.length === 0)
+    return null;
   return value as unknown as LifecycleOwnershipLockRecord;
 }
 
@@ -472,15 +405,10 @@ function readLock(lockPath: string): LockRead {
     if (entries.length !== 1 || entries[0] !== LOCK_RECORD_NAME) {
       return { state: "malformed", reason: "final lock does not contain exactly one owner record" };
     }
-    recordFd = fs.openSync(
-      `/proc/self/fd/${directoryFd}/${LOCK_RECORD_NAME}`,
-      fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0),
-    );
+    recordFd = fs.openSync(`/proc/self/fd/${directoryFd}/${LOCK_RECORD_NAME}`, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
     const value: unknown = JSON.parse(fs.readFileSync(recordFd, "utf8"));
     const record = lockRecord(value);
-    return record
-      ? { state: "valid", record }
-      : { state: "malformed", reason: "final lock owner record does not satisfy its schema" };
+    return record ? { state: "valid", record } : { state: "malformed", reason: "final lock owner record does not satisfy its schema" };
   } catch (error) {
     if ((error as NodeJS.ErrnoException).code === "ENOENT") return { state: "absent" };
     return { state: "malformed", reason: `final lock is unreadable: ${(error as Error).message}` };
@@ -491,11 +419,7 @@ function readLock(lockPath: string): LockRead {
 }
 
 function sameLockRecord(left: LifecycleOwnershipLockRecord, right: LifecycleOwnershipLockRecord): boolean {
-  return left.schemaVersion === right.schemaVersion
-    && left.pid === right.pid
-    && left.bootId === right.bootId
-    && left.processStartTicks === right.processStartTicks
-    && left.token === right.token;
+  return left.schemaVersion === right.schemaVersion && left.pid === right.pid && left.bootId === right.bootId && left.processStartTicks === right.processStartTicks && left.token === right.token;
 }
 
 function lockOwnerState(record: LifecycleOwnershipLockRecord): "live" | "stale" {
@@ -544,19 +468,8 @@ function publishLock(parentFd: number, record: LifecycleOwnershipLockRecord): vo
   try {
     fs.mkdirSync(temporaryPath, { mode: 0o700 });
     temporaryCreated = true;
-    recordFd = fs.openSync(
-      `${temporaryPath}/${LOCK_RECORD_NAME}`,
-      fs.constants.O_WRONLY
-        | fs.constants.O_CREAT
-        | fs.constants.O_EXCL
-        | (fs.constants.O_NOFOLLOW ?? 0),
-      0o600,
-    );
-    writeAll(
-      recordFd,
-      Buffer.from(`${JSON.stringify(record)}\n`),
-      "lifecycle ownership journal lock write made no progress",
-    );
+    recordFd = fs.openSync(`${temporaryPath}/${LOCK_RECORD_NAME}`, fs.constants.O_WRONLY | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
+    writeAll(recordFd, Buffer.from(`${JSON.stringify(record)}\n`), "lifecycle ownership journal lock write made no progress");
     fs.fsyncSync(recordFd);
     fs.closeSync(recordFd);
     recordFd = null;
@@ -599,9 +512,7 @@ function removeStaleLock(parentFd: number, expected: LifecycleOwnershipLockRecor
   return true;
 }
 
-export function acquireLifecycleOwnershipJournalLock(
-  journalPath: string,
-): LifecycleOwnershipJournalLock {
+export function acquireLifecycleOwnershipJournalLock(journalPath: string): LifecycleOwnershipJournalLock {
   const directory = path.dirname(path.resolve(journalPath));
   const directoryFd = ensureDirectoryTreePinned(directory);
   const lockPath = `/proc/self/fd/${directoryFd}/apply.lock`;
@@ -643,14 +554,7 @@ export function releaseLifecycleOwnershipJournalLock(lock: LifecycleOwnershipJou
   try {
     const existing = readLock(lockPath);
     const current = currentLockRecord(lock.token);
-    if (
-      existing.state !== "valid"
-      || existing.record.pid !== process.pid
-      || existing.record.token !== lock.token
-      || existing.record.bootId !== lock.bootId
-      || existing.record.processStartTicks !== lock.processStartTicks
-      || !sameLockRecord(existing.record, current)
-    ) {
+    if (existing.state !== "valid" || existing.record.pid !== process.pid || existing.record.token !== lock.token || existing.record.bootId !== lock.bootId || existing.record.processStartTicks !== lock.processStartTicks || !sameLockRecord(existing.record, current)) {
       throw new Error("lifecycle ownership journal lock identity changed before release");
     }
     const lockFd = fs.openSync(lockPath, DIRECTORY_FLAGS);
@@ -667,19 +571,14 @@ export function releaseLifecycleOwnershipJournalLock(lock: LifecycleOwnershipJou
   }
 }
 
-export function appendLifecycleOwnershipJournal(
-  journalPath: string,
-  ledger: LifecycleOwnershipLedger,
-): LifecycleOwnershipJournalRead {
+export function appendLifecycleOwnershipJournal(journalPath: string, ledger: LifecycleOwnershipLedger): LifecycleOwnershipJournalRead {
   const ledgerErrors = validateLifecycleOwnershipLedger(ledger);
   if (ledgerErrors.length > 0) throw new Error(ledgerErrors.join("; "));
   const resolved = path.resolve(journalPath);
   for (let attempt = 0; attempt < 8; attempt += 1) {
     const previous = readJournal(resolved);
     if (!["absent", "clean"].includes(previous.state)) {
-      throw new Error(
-        `ownership journal is not appendable (${previous.state}): ${previous.diagnostics.join("; ")}`,
-      );
+      throw new Error(`ownership journal is not appendable (${previous.state}): ${previous.diagnostics.join("; ")}`);
     }
     const sequence = previous.validEvents + 1;
     const eventId = crypto.randomUUID();

@@ -3,10 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  defaultCorpusPath,
-  defaultUsageDir,
-} from "../../src/analytics/usageStats.js";
+import { defaultCorpusPath, defaultUsageDir } from "../../src/analytics/usageStats.js";
 import { agenteraDataHome, startupBenchmarkDir } from "../../src/cli/capabilityContext/benchmark.js";
 import { statsCorpusPath } from "../../src/cli/commands/report.js";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../../src/core/envPaths.js";
@@ -24,18 +21,14 @@ describe("resolveProfileDirOverride", () => {
   });
 
   it("falls back to PROFILERA_PROFILE_DIR when AGENTERA_PROFILE_DIR is unset", () => {
-    expect(resolveProfileDirOverride({ PROFILERA_PROFILE_DIR: "/legacy/profile" })).toBe(
-      "/legacy/profile",
-    );
+    expect(resolveProfileDirOverride({ PROFILERA_PROFILE_DIR: "/legacy/profile" })).toBe("/legacy/profile");
   });
 });
 
 describe("resolveXdgDataHome", () => {
   it("expands tilde paths the same way installRoot.ts does", () => {
     const home = "/tmp/home";
-    expect(resolveXdgDataHome({ XDG_DATA_HOME: "~/.local/share" }, home)).toBe(
-      path.join(os.homedir(), ".local", "share"),
-    );
+    expect(resolveXdgDataHome({ XDG_DATA_HOME: "~/.local/share" }, home)).toBe(path.join(os.homedir(), ".local", "share"));
   });
 
   it("aligns corpus and usage resolvers on the same expanded directory", () => {
@@ -51,17 +44,13 @@ describe("resolveXdgDataHome", () => {
 describe("startupBenchmarkDir", () => {
   it("uses caller-provided env instead of process.env", () => {
     const env = { AGENTERA_HOME: "/tmp/custom-home" };
-    expect(startupBenchmarkDir(env)).toBe(
-      path.join("/tmp/custom-home", "benchmarks", "startup-state"),
-    );
+    expect(startupBenchmarkDir(env)).toBe(path.join("/tmp/custom-home", "benchmarks", "startup-state"));
   });
 
   it("honors PROFILERA_PROFILE_DIR when AGENTERA_PROFILE_DIR is unset", () => {
     const env = { PROFILERA_PROFILE_DIR: "/legacy/profile" };
     expect(agenteraDataHome(env)).toBe("/legacy/profile");
-    expect(startupBenchmarkDir(env)).toBe(
-      path.join("/legacy/profile", "benchmarks", "startup-state"),
-    );
+    expect(startupBenchmarkDir(env)).toBe(path.join("/legacy/profile", "benchmarks", "startup-state"));
   });
 });
 

@@ -34,7 +34,6 @@ it("drives Profile Full source behavior from the served instruction order", { ti
       projectGlossaryTrapSurvived: true,
     });
     expect(observation.questionPrompts).toBe(observation.questionPromptMaximum);
-
   } finally {
     restoreEvaluationRunner();
     fs.rmSync(root, { recursive: true, force: true });

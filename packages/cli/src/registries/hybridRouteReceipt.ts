@@ -23,7 +23,10 @@ export type RouteReceiptResult = {
 };
 
 export class RouteReceiptValidationError extends Error {
-  constructor(readonly field: string, message: string) {
+  constructor(
+    readonly field: string,
+    message: string,
+  ) {
     super(message);
   }
 }
@@ -197,10 +200,13 @@ export function validateRouteReceiptSubmission(input: unknown, sourceRoot: strin
       schemaVersion: "agentera.route_receipt_result.v1",
       outcome: "clarification",
       question: receipt.question as string,
-      route_provenance: { source: "semantic_receipt", receipt_version: "agentera.route_receipt.v1" },
+      route_provenance: {
+        source: "semantic_receipt",
+        receipt_version: "agentera.route_receipt.v1",
+      },
     };
   }
-  const capability = receipt.outcome === "no_match" ? "status" : receipt.capability as string;
+  const capability = receipt.outcome === "no_match" ? "status" : (receipt.capability as string);
   const startupCommand = preCutoverCommand(`prime --context ${capability}`);
   const span = receipt.remainder_span as { start: number; end: number } | undefined;
   return {

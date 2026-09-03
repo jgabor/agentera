@@ -14,18 +14,7 @@ import { summaryCaveat } from "../../../state/summaryEntityRead.js";
 import { boundStartupValue, STARTUP_ARRAY_LIMIT } from "../../../state/startupProjection.js";
 import { rememberPlanTaskIndex } from "../../planTaskIndex.js";
 import { firstActionablePlanTask } from "../../capabilityContext/planState.js";
-import type {
-  DecisionFollowUp,
-  DecisionReviewAttention,
-  DocsSummary,
-  HealthSummary,
-  IssueCounts,
-  ObjectiveSummary,
-  PlanSummary,
-  ProgressSummary,
-  StartupHistorySummary,
-  TodoDetailSummary,
-} from "../../contracts/orientationState.js";
+import type { DecisionFollowUp, DecisionReviewAttention, DocsSummary, HealthSummary, IssueCounts, ObjectiveSummary, PlanSummary, ProgressSummary, StartupHistorySummary, TodoDetailSummary } from "../../contracts/orientationState.js";
 import { issueCounts } from "../../orientation.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
@@ -34,9 +23,7 @@ import { glossaryCaveatContract } from "../../../registries/glossaryCaveatContra
 import { renderTodoPublicRecord } from "../../todoMarkdown.js";
 
 function entries(payload: JsonObject): JsonObject[] {
-  return Array.isArray(payload.entries)
-    ? payload.entries.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry))
-    : [];
+  return Array.isArray(payload.entries) ? payload.entries.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry)) : [];
 }
 
 function bounded<T>(value: T): T {
@@ -44,14 +31,12 @@ function bounded<T>(value: T): T {
 }
 
 function record(entry: JsonObject | undefined): JsonObject {
-  return entry?.record && typeof entry.record === "object" && !Array.isArray(entry.record)
-    ? entry.record as JsonObject
-    : {};
+  return entry?.record && typeof entry.record === "object" && !Array.isArray(entry.record) ? (entry.record as JsonObject) : {};
 }
 
 function header(entry: JsonObject | undefined): JsonObject {
   const value = record(entry).header;
-  return value && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : {};
+  return value && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : {};
 }
 
 function terminal(status: unknown): boolean {
@@ -60,26 +45,33 @@ function terminal(status: unknown): boolean {
 
 function healthSummary(latest: JsonObject | undefined, history: JsonObject | undefined, currentCount: number): HealthSummary {
   if (!latest) {
-    const omission = currentCount > 0 ? {
-      detail_availability: "omitted" as const,
-      omitted: true,
-      omitted_count: currentCount,
-      omission_reason: "startup_health_detail",
-      retrieval: {
-        list: preCutoverCommand("state health list --limit 20"),
-        get: preCutoverCommand("state health get --id ID"),
-      },
-    } : {};
+    const omission =
+      currentCount > 0
+        ? {
+            detail_availability: "omitted" as const,
+            omitted: true,
+            omitted_count: currentCount,
+            omission_reason: "startup_health_detail",
+            retrieval: {
+              list: preCutoverCommand("state health list --limit 20"),
+              get: preCutoverCommand("state health get --id ID"),
+            },
+          }
+        : {};
     return history
-      ? { exists: true, status: "degraded", startup_outcome: "degraded", degraded_history: history, ...omission }
+      ? {
+          exists: true,
+          status: "degraded",
+          startup_outcome: "degraded",
+          degraded_history: history,
+          ...omission,
+        }
       : currentCount > 0
         ? { exists: true, status: "summary_only", startup_outcome: "degraded", ...omission }
         : { exists: false, status: "absent", startup_outcome: "ok" };
   }
   const healthRecord = record(latest);
-  const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades)
-    ? healthRecord.grades as JsonObject
-    : {};
+  const grades = healthRecord.grades && typeof healthRecord.grades === "object" && !Array.isArray(healthRecord.grades) ? (healthRecord.grades as JsonObject) : {};
   const ranks: Record<string, number> = { A: 0, B: 1, C: 2, D: 3, F: 4 };
   let worst: [string, string, number] | null = null;
   for (const [dimension, grade] of Object.entries(grades)) {
@@ -104,10 +96,7 @@ function healthSummary(latest: JsonObject | undefined, history: JsonObject | und
   };
 }
 
-function degradedHistory(
-  artifact: "progress" | "decisions" | "health",
-  totalSummaryCount: number,
-): JsonObject | undefined {
+function degradedHistory(artifact: "progress" | "decisions" | "health", totalSummaryCount: number): JsonObject | undefined {
   if (totalSummaryCount === 0) return undefined;
   return {
     summary_count: totalSummaryCount,
@@ -120,13 +109,7 @@ function degradedHistory(
   };
 }
 
-function projectedHistory(
-  list: JsonObject,
-  artifact: "progress" | "decisions" | "health",
-  fullCount: number,
-  summaryCount: number,
-  degraded: JsonObject | undefined,
-): JsonObject {
+function projectedHistory(list: JsonObject, artifact: "progress" | "decisions" | "health", fullCount: number, summaryCount: number, degraded: JsonObject | undefined): JsonObject {
   const total = fullCount + summaryCount;
   const listCommand = preCutoverCommand(`state ${artifact} list --limit 20`);
   const getCommand = preCutoverCommand(`state ${artifact} get --id ID`);
@@ -149,36 +132,32 @@ function projectedHistory(
 
 function entityPlanStatus(entry: { record?: JsonObject | null }): string {
   const plan = entry.record ?? {};
-  const planHeader = plan.header && typeof plan.header === "object" && !Array.isArray(plan.header)
-    ? plan.header as JsonObject
-    : {};
+  const planHeader = plan.header && typeof plan.header === "object" && !Array.isArray(plan.header) ? (plan.header as JsonObject) : {};
   return String(planHeader.status ?? plan.status ?? "");
 }
 
-function selected(
-  entries: JsonObject[],
-  artifact: "plan" | "objective",
-  candidateIds = entries.map((entry) => String(entry.id)),
-  sourceRoot?: string,
-): JsonObject | undefined {
+function selected(entries: JsonObject[], artifact: "plan" | "objective", candidateIds = entries.map((entry) => String(entry.id)), sourceRoot?: string): JsonObject | undefined {
   if (candidateIds.length < 2) return entries[0];
   const ids = candidateIds.slice().sort();
   const noun = artifact === "plan" ? "open plans" : "active objectives";
   const list = preCutoverCommand(`state ${artifact} list`);
   const planConflict = artifact === "plan" ? openPlanConflictDiagnostic(ids, sourceRoot) : undefined;
-  throw new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "ambiguous",
-      artifact,
-      message: planConflict?.message ?? `multiple ${noun} require explicit selection: ${ids.join(", ")}`,
-      syntax: preCutoverCommand(`state ${artifact} get --id ID`),
-      example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)}`),
-      recovery: planConflict?.recovery ?? `Run ${list}, resolve the competing ${noun}, and retry prime.`,
-      ...(planConflict ? { details: planConflict.details } : {}),
+  throw new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "ambiguous",
+        artifact,
+        message: planConflict?.message ?? `multiple ${noun} require explicit selection: ${ids.join(", ")}`,
+        syntax: preCutoverCommand(`state ${artifact} get --id ID`),
+        example: preCutoverCommand(`state ${artifact} get --id ${String(entries[0]?.id)}`),
+        recovery: planConflict?.recovery ?? `Run ${list}, resolve the competing ${noun}, and retry prime.`,
+        ...(planConflict ? { details: planConflict.details } : {}),
+      },
     },
-  }, 1);
+    1,
+  );
 }
 
 export interface EntityOrientationProjection {
@@ -206,18 +185,41 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const todoReconciliation = inspectTodoReconciliationState(projectRoot, sourceRoot, discovery);
   const caveatContract = glossaryCaveatContract(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml"));
   const glossaryCaveatProjection = projectCurrentGlossaryCaveats(discovery.entities, caveatContract);
-  const invalidProgress = (entity: (typeof discovery.entities)[number]): boolean =>
-    (entity.artifact === "progress" || ["progress_cycle", "progress_summary"].includes(entity.boundary ?? "")) &&
-    entity.classification !== "valid";
-  const progressDiscovery = discovery.entities.some(invalidProgress)
-    ? { ...discovery, entities: discovery.entities.filter((entity) => !invalidProgress(entity)) }
-    : discovery;
-  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, { sourceRoot, format: "json", discovery: progressDiscovery });
-  const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
-  const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, { sourceRoot, format: "json", discovery });
-  const planList = listPlanEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
-  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, { sourceRoot, format: "json", statuses: ["open", "active"], discovery });
-  const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, { sourceRoot, format: "json", statuses: ["closed"], discovery });
+  const invalidProgress = (entity: (typeof discovery.entities)[number]): boolean => (entity.artifact === "progress" || ["progress_cycle", "progress_summary"].includes(entity.boundary ?? "")) && entity.classification !== "valid";
+  const progressDiscovery = discovery.entities.some(invalidProgress) ? { ...discovery, entities: discovery.entities.filter((entity) => !invalidProgress(entity)) } : discovery;
+  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, {
+    sourceRoot,
+    format: "json",
+    discovery: progressDiscovery,
+  });
+  const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, {
+    sourceRoot,
+    format: "json",
+    discovery,
+  });
+  const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, {
+    sourceRoot,
+    format: "json",
+    discovery,
+  });
+  const planList = listPlanEntities(projectRoot, 2, undefined, {
+    sourceRoot,
+    format: "json",
+    statuses: ["open", "active"],
+    discovery,
+  });
+  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, {
+    sourceRoot,
+    format: "json",
+    statuses: ["open", "active"],
+    discovery,
+  });
+  const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, {
+    sourceRoot,
+    format: "json",
+    statuses: ["closed"],
+    discovery,
+  });
   const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, { status: "open" }, { sourceRoot, format: "json", discovery });
   const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json", discovery });
 
@@ -227,23 +229,12 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const fullProgressEntries = progressEntries.filter((entry) => entry.detail_availability === "full");
   const fullHealthEntries = healthEntries.filter((entry) => entry.detail_availability === "full");
   const fullDecisionEntries = decisionEntries.filter((entry) => entry.detail_availability === "full");
-  const progressHistory = degradedHistory(
-    "progress",
-    discovery.entities.filter((entry) => entry.boundary === "progress_summary").length,
-  );
-  const decisionHistory = degradedHistory(
-    "decisions",
-    discovery.entities.filter((entry) => entry.boundary === "decision_summary").length,
-  );
-  const healthHistory = degradedHistory(
-    "health",
-    discovery.entities.filter((entry) => entry.boundary === "health_summary").length,
-  );
+  const progressHistory = degradedHistory("progress", discovery.entities.filter((entry) => entry.boundary === "progress_summary").length);
+  const decisionHistory = degradedHistory("decisions", discovery.entities.filter((entry) => entry.boundary === "decision_summary").length);
+  const healthHistory = degradedHistory("health", discovery.entities.filter((entry) => entry.boundary === "health_summary").length);
   const progressFullCount = discovery.entities.filter((entry) => entry.boundary === "progress_cycle").length;
   const decisionFullCount = discovery.entities.filter((entry) => entry.boundary === "decision").length;
-  const healthFullCount = discovery.entities.filter((entry) =>
-    entry.artifact === "health" && entry.boundary === "health_audit" && entry.classification === "valid"
-  ).length;
+  const healthFullCount = discovery.entities.filter((entry) => entry.artifact === "health" && entry.boundary === "health_audit" && entry.classification === "valid").length;
   const progressSummaryCount = discovery.entities.filter((entry) => entry.boundary === "progress_summary").length;
   const decisionSummaryCount = discovery.entities.filter((entry) => entry.boundary === "decision_summary").length;
   const healthSummaryCount = discovery.entities.filter((entry) => entry.boundary === "health_summary").length;
@@ -255,96 +246,140 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   // Startup detail is bounded to two plans, but ambiguous diagnostics must use
   // the complete canonical candidate set so their ID sample and omission count
   // match direct plan selection without creating another selector.
-  const openPlanCandidateIds = discovery.entities
-    .filter((entry) => entry.boundary === "plan" && entry.classification === "valid" && entry.id && ["open", "active"].includes(entityPlanStatus(entry)))
-    .map((entry) => entry.id!);
+  const openPlanCandidateIds = discovery.entities.filter((entry) => entry.boundary === "plan" && entry.classification === "valid" && entry.id && ["open", "active"].includes(entityPlanStatus(entry))).map((entry) => entry.id!);
   const selectedPlan = selected(planEntries, "plan", openPlanCandidateIds, sourceRoot);
   const taskPage = selectedPlan
-    ? listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, { sourceRoot, format: "json", discovery })
+    ? listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, {
+        sourceRoot,
+        format: "json",
+        discovery,
+      })
     : null;
-  const taskEntries = (taskPage
-    ? entries(taskPage)
-    : []).map((entry): JsonObject => ({ ...record(entry), id: entry.id, artifact: entry.artifact, provenance: entry.provenance }));
+  const taskEntries = (taskPage ? entries(taskPage) : []).map((entry): JsonObject => ({
+    ...record(entry),
+    id: entry.id,
+    artifact: entry.artifact,
+    provenance: entry.provenance,
+  }));
   const allTaskEntries = selectedPlan
     ? discovery.entities
-      .filter((entry) => entry.boundary === "plan_task" && entry.classification === "valid" && entry.record?.plan === selectedPlan.id && entry.id)
-      .sort((left, right) => left.id!.localeCompare(right.id!))
-      .map((entry): JsonObject => ({ ...entry.record!, id: entry.id!, artifact: entry.artifact!, provenance: { storage: "canonical_entity_file", path: entry.relativePath } }))
+        .filter((entry) => entry.boundary === "plan_task" && entry.classification === "valid" && entry.record?.plan === selectedPlan.id && entry.id)
+        .sort((left, right) => left.id!.localeCompare(right.id!))
+        .map((entry): JsonObject => ({
+          ...entry.record!,
+          id: entry.id!,
+          artifact: entry.artifact!,
+          provenance: { storage: "canonical_entity_file", path: entry.relativePath },
+        }))
     : [];
   const firstPending = firstActionablePlanTask(allTaskEntries);
   const taskStatusCounts = allTaskEntries.reduce<Record<string, number>>((counts, entry) => {
-    const status = String(entry.status ?? "pending").toLowerCase(); counts[status] = (counts[status] ?? 0) + 1; return counts;
+    const status = String(entry.status ?? "pending").toLowerCase();
+    counts[status] = (counts[status] ?? 0) + 1;
+    return counts;
   }, {});
   const publicTaskEntries = taskEntries.slice(0, STARTUP_ARRAY_LIMIT);
   const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length;
   const taskRetrieval: JsonObject = selectedPlan
-    ? { list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`), restart: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`), get: preCutoverCommand("state plan tasks get --id ID") }
+    ? {
+        list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`),
+        restart: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`),
+        get: preCutoverCommand("state plan tasks get --id ID"),
+      }
     : {};
-  const plan: PlanSummary = selectedPlan ? {
-    exists: true,
-    active: true,
-    id: selectedPlan.id,
-    artifact: selectedPlan.artifact,
-    status: String(header(selectedPlan).status ?? "open"),
-    title: String(header(selectedPlan).title ?? ""),
-    tasks: publicTaskEntries,
-    complete: taskStatusCounts.complete ?? 0,
-    superseded: taskStatusCounts.superseded ?? 0,
-    total: allTaskEntries.length,
-    complete_plan: allTaskEntries.length > 0 && allTaskEntries.every((entry) => terminal(entry.status)),
-    first_pending: firstPending ?? null,
-    task_status_counts: taskStatusCounts,
-    task_omission: { omitted: taskDetailOmitted, total: allTaskEntries.length, returned_count: publicTaskEntries.length, omitted_count: allTaskEntries.length - publicTaskEntries.length, omission_reason: taskDetailOmitted ? taskPage?.omitted === true ? taskPage.omission_reason : "startup_detail_capacity" : "none", retrieval: taskRetrieval },
-    diagnostics: [],
-  } : { exists: false, active: false, status: "missing", tasks: [], complete: 0, superseded: 0, total: 0, complete_plan: false, first_pending: null };
+  const plan: PlanSummary = selectedPlan
+    ? {
+        exists: true,
+        active: true,
+        id: selectedPlan.id,
+        artifact: selectedPlan.artifact,
+        status: String(header(selectedPlan).status ?? "open"),
+        title: String(header(selectedPlan).title ?? ""),
+        tasks: publicTaskEntries,
+        complete: taskStatusCounts.complete ?? 0,
+        superseded: taskStatusCounts.superseded ?? 0,
+        total: allTaskEntries.length,
+        complete_plan: allTaskEntries.length > 0 && allTaskEntries.every((entry) => terminal(entry.status)),
+        first_pending: firstPending ?? null,
+        task_status_counts: taskStatusCounts,
+        task_omission: {
+          omitted: taskDetailOmitted,
+          total: allTaskEntries.length,
+          returned_count: publicTaskEntries.length,
+          omitted_count: allTaskEntries.length - publicTaskEntries.length,
+          omission_reason: taskDetailOmitted ? (taskPage?.omitted === true ? taskPage.omission_reason : "startup_detail_capacity") : "none",
+          retrieval: taskRetrieval,
+        },
+        diagnostics: [],
+      }
+    : {
+        exists: false,
+        active: false,
+        status: "missing",
+        tasks: [],
+        complete: 0,
+        superseded: 0,
+        total: 0,
+        complete_plan: false,
+        first_pending: null,
+      };
 
   const latestProgress = fullProgressEntries[0];
   const latestProgressRecord = record(latestProgress);
-  const progress: ProgressSummary = latestProgress ? {
-    exists: true,
-    status: "available",
-    latest: {
-      id: latestProgress.id,
-      artifact: latestProgress.artifact,
-      ...Object.fromEntries(
-        ["what", "next"]
-          .filter((field) => latestProgressRecord[field] !== undefined)
-          .map((field) => [field, latestProgressRecord[field]]),
-      ),
-    },
-    ...(latestProgressRecord.verified === undefined ? {} : { latest_verification: latestProgressRecord.verified }),
-    cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
-    ...(progressHistory ? { degraded_history: progressHistory } : {}),
-  } : progressEntries.length ? {
-    exists: true,
-    status: "degraded_history",
-    cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
-    degraded_history: progressHistory!,
-  } : { exists: false, status: "missing", cycle_count: 0 };
+  const progress: ProgressSummary = latestProgress
+    ? {
+        exists: true,
+        status: "available",
+        latest: {
+          id: latestProgress.id,
+          artifact: latestProgress.artifact,
+          ...Object.fromEntries(["what", "next"].filter((field) => latestProgressRecord[field] !== undefined).map((field) => [field, latestProgressRecord[field]])),
+        },
+        ...(latestProgressRecord.verified === undefined ? {} : { latest_verification: latestProgressRecord.verified }),
+        cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
+        ...(progressHistory ? { degraded_history: progressHistory } : {}),
+      }
+    : progressEntries.length
+      ? {
+          exists: true,
+          status: "degraded_history",
+          cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
+          degraded_history: progressHistory!,
+        }
+      : { exists: false, status: "missing", cycle_count: 0 };
 
   const health = healthSummary(fullHealthEntries[0], healthEntries.length ? healthHistory : undefined, healthFullCount);
 
   const activeObjective = selected(objectiveEntries, "objective");
   const closedObjectiveCount = Number((closedObjectiveList.counts as JsonObject | undefined)?.total ?? 0);
   const objectiveRecord = record(activeObjective);
-  const objective: ObjectiveSummary = activeObjective ? {
-    exists: true,
-    active: true,
-    id: activeObjective.id,
-    artifact: activeObjective.artifact,
-    title: String(header(activeObjective).title ?? ""),
-    status: String(header(activeObjective).status ?? "open"),
-    metric: String((objectiveRecord.metric as JsonObject | undefined)?.description ?? ""),
-    experiments: entries(listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, { sourceRoot, format: "json", discovery })),
-    closed_count: closedObjectiveCount,
-  } : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
+  const objective: ObjectiveSummary = activeObjective
+    ? {
+        exists: true,
+        active: true,
+        id: activeObjective.id,
+        artifact: activeObjective.artifact,
+        title: String(header(activeObjective).title ?? ""),
+        status: String(header(activeObjective).status ?? "open"),
+        metric: String((objectiveRecord.metric as JsonObject | undefined)?.description ?? ""),
+        experiments: entries(
+          listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, {
+            sourceRoot,
+            format: "json",
+            discovery,
+          }),
+        ),
+        closed_count: closedObjectiveCount,
+      }
+    : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 
   const completeTodoEntities = projectTodoReadEntities(projectRoot, sourceRoot, discovery);
   const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
   const todoItems = todoEntries.map((entry) => {
     const todo = record(entry);
     return {
-      id: String(entry.id), artifact: String(entry.artifact),
+      id: String(entry.id),
+      artifact: String(entry.artifact),
       severity: String(todo.severity ?? "normal"),
       status: String(todo.status ?? "open"),
       kind: typeof todo.kind === "string" ? todo.kind : null,
@@ -356,11 +391,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
       text: renderTodoPublicRecord(todo),
     };
   });
-  const todoCounts = issueCounts(
-    completeTodoEntities
-      .filter((entry) => entry.record.status === "open")
-      .map((entry) => ({ severity: String(entry.record.severity ?? "normal") })),
-  );
+  const todoCounts = issueCounts(completeTodoEntities.filter((entry) => entry.record.status === "open").map((entry) => ({ severity: String(entry.record.severity ?? "normal") })));
   const todoListCounts = todoList.counts as JsonObject | undefined;
   const todoDetail: TodoDetailSummary = {
     total: Number(todoListCounts?.total ?? todoEntries.length),
@@ -379,27 +410,48 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     const satisfaction = record(entry).satisfaction as JsonObject | undefined;
     return satisfaction?.review_needed === true || satisfaction?.state === "open";
   });
-  const decisionAttention: DecisionReviewAttention | null = reviewEntries.length ? {
-    type: "decision_review",
-    count: reviewEntries.length,
-    states: {},
-    entries: reviewEntries.slice(0, 3).map((entry) => ({
-      id: String(entry.id), artifact: String(entry.artifact), title: String(record(entry).question ?? "Decision"), state: String((record(entry).satisfaction as JsonObject | undefined)?.state ?? "open"), source: entry.provenance ?? null,
-    })),
-    max_entries: 3,
-    bounded: reviewEntries.length > 3,
-    attention: `${reviewEntries.length} decision(s) require review`,
-  } : null;
+  const decisionAttention: DecisionReviewAttention | null = reviewEntries.length
+    ? {
+        type: "decision_review",
+        count: reviewEntries.length,
+        states: {},
+        entries: reviewEntries.slice(0, 3).map((entry) => ({
+          id: String(entry.id),
+          artifact: String(entry.artifact),
+          title: String(record(entry).question ?? "Decision"),
+          state: String((record(entry).satisfaction as JsonObject | undefined)?.state ?? "open"),
+          source: entry.provenance ?? null,
+        })),
+        max_entries: 3,
+        bounded: reviewEntries.length > 3,
+        attention: `${reviewEntries.length} decision(s) require review`,
+      }
+    : null;
   const firstDecision = reviewEntries[0];
-  const decision = firstDecision ? { object: String(firstDecision.id), title: String(record(firstDecision).question ?? "Decision review") } : null;
+  const decision = firstDecision
+    ? {
+        object: String(firstDecision.id),
+        title: String(record(firstDecision).question ?? "Decision review"),
+      }
+    : null;
 
   const projection = bounded({
-    plan, docs, progress, health, objective, todoItems, todoCounts, decision, decisionAttention,
+    plan,
+    docs,
+    progress,
+    health,
+    objective,
+    todoItems,
+    todoCounts,
+    decision,
+    decisionAttention,
     glossaryCaveatAttention: glossaryCaveatProjection.attention,
-    glossaryCaveatAttentionPolicy: glossaryCaveatProjection.attention ? {
-      public_limit: glossaryCaveatProjection.publicAttentionLimit,
-      reserved_slots: glossaryCaveatProjection.reservedGlossarySlots,
-    } : null,
+    glossaryCaveatAttentionPolicy: glossaryCaveatProjection.attention
+      ? {
+          public_limit: glossaryCaveatProjection.publicAttentionLimit,
+          reserved_slots: glossaryCaveatProjection.reservedGlossarySlots,
+        }
+      : null,
     history: {
       progress: projectedHistory(progressList, "progress", progressFullCount, progressSummaryCount, progressHistory),
       decisions: projectedHistory(decisionList, "decisions", decisionFullCount, decisionSummaryCount, decisionHistory),

@@ -5,18 +5,9 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
-import {
-  decisionContextEntry,
-  decisionSatisfactionContext,
-  hydrateDecisionEntries,
-} from "../../src/cli/commands/state/decisions.js";
+import { decisionContextEntry, decisionSatisfactionContext, hydrateDecisionEntries } from "../../src/cli/commands/state/decisions.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
-import {
-  composeDecisionOverlay,
-  decisionOverlayPath,
-  decisionOverlayViolations,
-  loadDecisionOverlay,
-} from "../../src/state/decisionOverlay.js";
+import { composeDecisionOverlay, decisionOverlayPath, decisionOverlayViolations, loadDecisionOverlay } from "../../src/state/decisionOverlay.js";
 import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
 import { executeStateWrite, type StateWriteRequest } from "../../src/state/write/transaction.js";
 import { operationSpec } from "../../src/state/write/operations.js";
@@ -60,32 +51,28 @@ function run(root: string, args: string[], stdin = ""): Captured {
 }
 
 function appendDecision(root: string, suffix = ""): Captured {
-  const result = run(root, [
-      "decisions",
-      "append",
-      "--input",
-      "-",
-      "--format",
-      "json",
-    ], JSON.stringify({ question: `Where should review state live${suffix}?`, context: "The immutable archive must remain unchanged.", alternatives: { chosen: "An ID-keyed overlay", rejected: ["The archive record"] }, choice: "An ID-keyed overlay", reasoning: "Current satisfaction is mutable review state.", confidence: "firm" }));
+  const result = run(
+    root,
+    ["decisions", "append", "--input", "-", "--format", "json"],
+    JSON.stringify({
+      question: `Where should review state live${suffix}?`,
+      context: "The immutable archive must remain unchanged.",
+      alternatives: { chosen: "An ID-keyed overlay", rejected: ["The archive record"] },
+      choice: "An ID-keyed overlay",
+      reasoning: "Current satisfaction is mutable review state.",
+      confidence: "firm",
+    }),
+  );
   expect(result.rc).toBe(0);
   return result;
 }
 
 function update(root: string, state: string, ...extra: string[]): Captured {
-  const id = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"), { withFileTypes: true })
-    .find((entry) => entry.isFile() && entry.name.endsWith(".yaml"))!.name.slice(0, -5);
-  return run(root, [
-    "decisions",
-    "update",
-    "--id",
-    id,
-    "--satisfaction-state",
-    state,
-    ...extra,
-    "--format",
-    "json",
-  ]);
+  const id = fs
+    .readdirSync(path.join(root, ".agentera/entities/decisions/decision"), { withFileTypes: true })
+    .find((entry) => entry.isFile() && entry.name.endsWith(".yaml"))!
+    .name.slice(0, -5);
+  return run(root, ["decisions", "update", "--id", id, "--satisfaction-state", state, ...extra, "--format", "json"]);
 }
 
 function updateRequest(root: string, state: string): StateWriteRequest {
@@ -114,7 +101,10 @@ describe("decision review overlays", () => {
 
     const result = update(root, "provisionally_satisfied", "--satisfaction-evidence", "tests passed");
     expect(result).toMatchObject({ rc: 0 });
-    expect(result.json?.record).toMatchObject({ state: "provisionally_satisfied", evidence: "tests passed" });
+    expect(result.json?.record).toMatchObject({
+      state: "provisionally_satisfied",
+      evidence: "tests passed",
+    });
     expect(fs.readFileSync(basePath, "utf8")).toBe(baseBefore);
     expect(String(result.json?.path)).toContain(".agentera/entities/decisions/decision_satisfaction/");
     expect(fs.existsSync(path.join(root, ".agentera/decisions.yaml"))).toBe(false);
@@ -145,12 +135,7 @@ describe("decision review overlays", () => {
         },
       },
     });
-    expect(violations).toEqual(
-      expect.arrayContaining([
-        "satisfaction.review_needed is not an authority-declared mutable overlay field",
-        "satisfaction.question is not an authority-declared mutable overlay field",
-      ]),
-    );
+    expect(violations).toEqual(expect.arrayContaining(["satisfaction.review_needed is not an authority-declared mutable overlay field", "satisfaction.question is not an authority-declared mutable overlay field"]));
 
     const outside = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlay-outside-"));
     fs.mkdirSync(path.join(outside, "overlays"));
@@ -161,7 +146,11 @@ describe("decision review overlays", () => {
 
   it("preserves missing, open, provisional, confirmed, and invalid Decision 53 states", () => {
     const missing = decisionSatisfactionContext({ number: 53 });
-    expect(missing).toMatchObject({ state: null, review_needed: true, source: "missing_legacy_state" });
+    expect(missing).toMatchObject({
+      state: null,
+      review_needed: true,
+      source: "missing_legacy_state",
+    });
 
     const open = decisionSatisfactionContext({ satisfaction: { state: "open" } });
     expect(open).toMatchObject({ state: "open", review_needed: true });
@@ -183,7 +172,10 @@ describe("decision review overlays", () => {
     expect(invalid).toMatchObject({ state: "invented", review_needed: true });
     expect(invalid.caveats).toContain("Satisfaction state is missing or unrecognized and requires review.");
     const malformedConfirmation = decisionSatisfactionContext({
-      satisfaction: { state: "user_confirmed_satisfied", user_confirmation: { confirmed_by: "user" } },
+      satisfaction: {
+        state: "user_confirmed_satisfied",
+        user_confirmation: { confirmed_by: "user" },
+      },
     });
     expect(malformedConfirmation.review_needed).toBe(true);
   });
@@ -195,27 +187,9 @@ describe("decision review overlays", () => {
     expect(update(root, "provisionally_satisfied").json?.error.class).toBe("schema_violation");
     expect(update(root, "provisionally_satisfied", "--satisfaction-evidence", "evidence").rc).toBe(0);
     expect(update(root, "user_confirmed_satisfied").json?.error.class).toBe("schema_violation");
-    expect(
-      update(
-        root,
-        "user_confirmed_satisfied",
-        "--confirmed-by",
-        "user",
-        "--confirmed-at",
-        "2026-07-13T12:00:00Z",
-      ).rc,
-    ).toBe(0);
+    expect(update(root, "user_confirmed_satisfied", "--confirmed-by", "user", "--confirmed-at", "2026-07-13T12:00:00Z").rc).toBe(0);
     expect(update(root, "open").json?.error.class).toBe("conflict");
-    expect(
-      update(
-        root,
-        "open",
-        "--confirmed-by",
-        "user",
-        "--confirmed-at",
-        "2026-07-13T12:01:00Z",
-      ).rc,
-    ).toBe(0);
+    expect(update(root, "open", "--confirmed-by", "user", "--confirmed-at", "2026-07-13T12:01:00Z").rc).toBe(0);
     expect(update(root, "not-a-state").json?.error.class).toBe("invalid_choice");
   });
 
@@ -223,7 +197,12 @@ describe("decision review overlays", () => {
     const entry = {
       number: 53,
       question: "immutable question",
-      satisfaction: { state: "open", evidence: "old", review_needed: true, caveats: ["historical"] },
+      satisfaction: {
+        state: "open",
+        evidence: "old",
+        review_needed: true,
+        caveats: ["historical"],
+      },
     };
     const hydrated = composeDecisionOverlay(entry, {
       satisfaction: {
@@ -248,10 +227,7 @@ describe("decision review overlays", () => {
     const root = project();
     appendDecision(root);
     expect(update(root, "open").rc).toBe(0);
-    const entries = hydrateDecisionEntries(
-      [{ number: 1, satisfaction: { state: "user_confirmed_satisfied" } }],
-      root,
-    );
+    const entries = hydrateDecisionEntries([{ number: 1, satisfaction: { state: "user_confirmed_satisfied" } }], root);
     expect(entries[0].satisfaction).toMatchObject({ state: "user_confirmed_satisfied" });
 
     const decisions = Array.from({ length: 51 }, (_, index) => ({
@@ -265,14 +241,20 @@ describe("decision review overlays", () => {
       confidence: "firm",
     }));
     fs.writeFileSync(path.join(root, ".agentera", "decisions.yaml"), dumpYamlMapping({ decisions }));
-    expect(run(root, [
-      "decisions",
-      "append",
-      "--input",
-      "-",
-      "--format",
-      "json",
-    ], JSON.stringify({ question: "Q52", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "firm" })).rc).toBe(0);
+    expect(
+      run(
+        root,
+        ["decisions", "append", "--input", "-", "--format", "json"],
+        JSON.stringify({
+          question: "Q52",
+          context: "c",
+          alternatives: { chosen: "a" },
+          choice: "a",
+          reasoning: "r",
+          confidence: "firm",
+        }),
+      ).rc,
+    ).toBe(0);
     expect(checkCompaction(root).some((item) => item.status.artifact === "decisions")).toBe(false);
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))).toHaveLength(2);
     expect(loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/decisions.yaml"), "utf8")).decisions).toHaveLength(51);
@@ -282,7 +264,14 @@ describe("decision review overlays", () => {
     const root = project();
     const agentera = path.join(root, ".agentera");
     for (let index = 1; index <= 11; index += 1) appendDecision(root, String(index));
-    expect(checkCompaction(root)).toEqual(expect.arrayContaining([expect.objectContaining({ action: "skipped", status: expect.objectContaining({ artifact: "entity_state" }) })]));
+    expect(checkCompaction(root)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          action: "skipped",
+          status: expect.objectContaining({ artifact: "entity_state" }),
+        }),
+      ]),
+    );
     const appended = appendDecision(root, "12");
     expect(appended.rc).toBe(0);
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))).toHaveLength(12);

@@ -4,25 +4,17 @@ import { createRequire } from "node:module";
 
 import { resolvePath } from "../../core/paths.js";
 import type { JsonValue, JsonObject } from "../../core/jsonValue.js";
-import {
-  authorClassForRole,
-  isoFromMtime,
-  record,
-  signalType,
-  textFromContent,
-  transportProvenance,
-} from "./core.js";
+import { authorClassForRole, isoFromMtime, record, signalType, textFromContent, transportProvenance } from "./core.js";
 import { isPlainObject, isFilePath, rglob } from "./core.js";
-import {
-  type SqliteCaps,
-  type SqliteTruncationInfo,
-  resolveSqliteCaps,
-} from "./sqliteCaps.js";
+import { type SqliteCaps, type SqliteTruncationInfo, resolveSqliteCaps } from "./sqliteCaps.js";
 
 const requireCjs = createRequire(import.meta.url);
 
 export interface SqliteDb {
-  prepare(sql: string): { all(...params: unknown[]): JsonObject[]; get(...params: unknown[]): JsonObject | undefined };
+  prepare(sql: string): {
+    all(...params: unknown[]): JsonObject[];
+    get(...params: unknown[]): JsonObject | undefined;
+  };
   close(): void;
 }
 
@@ -129,11 +121,17 @@ interface OpencodeTool {
 
 function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
   const tables = new Set(
-    conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
+    conn
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all()
+      .map((r) => String(r.name)),
   );
   for (const t of ["session", "message", "part"]) {
     if (!tables.has(t)) {
-      const missing = ["session", "message", "part"].filter((x) => !tables.has(x)).sort().join(",");
+      const missing = ["session", "message", "part"]
+        .filter((x) => !tables.has(x))
+        .sort()
+        .join(",");
       throw new Error(`missing opencode tables: ${missing}`);
     }
   }
@@ -183,25 +181,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
 }
 
 function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): JsonObject[] {
-  const {
-    sessionId,
-    messageId,
-    messageSession,
-    partMessage,
-    messageData,
-    partData,
-    roleCol,
-    messageTime,
-    partTime,
-    sessionTime,
-    projectCol,
-    messageText,
-    partText,
-    partType,
-    partId,
-    sortExpr,
-    recentSessionExpr,
-  } = schema;
+  const { sessionId, messageId, messageSession, partMessage, messageData, partData, roleCol, messageTime, partTime, sessionTime, projectCol, messageText, partText, partType, partId, sortExpr, recentSessionExpr } = schema;
   const query = `
         WITH recent_sessions AS (
             SELECT s."${sessionId}" AS recent_session_id
@@ -244,11 +224,7 @@ function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema):
   return conn.prepare(query).all(caps.maxSessions, caps.maxRows);
 }
 
-export function probeOpencodeTruncation(
-  conn: SqliteDb,
-  caps: SqliteCaps,
-  fallback: string,
-): SqliteTruncationInfo | null {
+export function probeOpencodeTruncation(conn: SqliteDb, caps: SqliteCaps, fallback: string): SqliteTruncationInfo | null {
   const schema = resolveOpencodeSchema(conn);
   const { sessionId, sessionTime, sessionUpdated, recentSessionExpr } = schema;
   const sessionTimeCol = sessionTime || sessionId;
@@ -269,21 +245,7 @@ export function probeOpencodeTruncation(
     return { truncatedAt, cap: "sessions", limit: caps.maxSessions };
   }
 
-  const {
-    messageId,
-    messageSession,
-    partMessage,
-    roleCol,
-    messageTime,
-    partTime,
-    messageData,
-    partData,
-    messageText,
-    partText,
-    partType,
-    partId,
-    sortExpr,
-  } = schema;
+  const { messageId, messageSession, partMessage, roleCol, messageTime, partTime, messageData, partData, messageText, partText, partType, partId, sortExpr } = schema;
   const rowCountQuery = `
     WITH recent_sessions AS (
       SELECT s."${sessionId}" AS recent_session_id
@@ -333,11 +295,7 @@ function opencodeDbCandidates(storePath: string): string[] {
   return rglob(storePath, "opencode.db");
 }
 
-export function extractOpencodeSessions(
-  storePath: string | null,
-  errors: string[],
-  ctx?: ExtractorContext,
-): JsonObject[] {
+export function extractOpencodeSessions(storePath: string | null, errors: string[], ctx?: ExtractorContext): JsonObject[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
   const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
   const records: JsonObject[] = [];

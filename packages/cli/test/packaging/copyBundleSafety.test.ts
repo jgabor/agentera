@@ -14,36 +14,24 @@ function stageFakeRepo(options: { omitSkills?: boolean } = {}): string {
   if (!options.omitSkills) {
     fs.mkdirSync(path.join(root, "skills/agentera/schemas/artifacts"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills/agentera/SKILL.md"), "# Fixture\n");
-    fs.writeFileSync(
-      path.join(root, "skills/agentera/schemas/artifacts/experiments.yaml"),
-      "meta:\n  name: experiments\n",
-    );
+    fs.writeFileSync(path.join(root, "skills/agentera/schemas/artifacts/experiments.yaml"), "meta:\n  name: experiments\n");
   }
   fs.mkdirSync(path.join(root, "references/adapters"), { recursive: true });
   fs.mkdirSync(path.join(root, "references/artifacts"), { recursive: true });
   fs.mkdirSync(path.join(root, "fixtures/routing"), { recursive: true });
-  fs.copyFileSync(
-    path.join(fixture.packageRoot, "bundle/references/adapters/package-registry.yaml"),
-    path.join(root, "references/adapters/package-registry.yaml"),
-  );
-  fs.writeFileSync(
-    path.join(root, "references/artifacts/state-storage-authority.yaml"),
-    "schema_version: fixture.authority.v1\n",
-  );
+  fs.copyFileSync(path.join(fixture.packageRoot, "bundle/references/adapters/package-registry.yaml"), path.join(root, "references/adapters/package-registry.yaml"));
+  fs.writeFileSync(path.join(root, "references/artifacts/state-storage-authority.yaml"), "schema_version: fixture.authority.v1\n");
   fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [] }));
-  for (const name of ["hybrid-corpus.yaml"])
-    fs.writeFileSync(path.join(root, "fixtures/routing", name), "schema_version: fixture.v1\n");
-  for (const name of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"])
-    fs.writeFileSync(path.join(root, name), "fixture\n");
+  for (const name of ["hybrid-corpus.yaml"]) fs.writeFileSync(path.join(root, "fixtures/routing", name), "schema_version: fixture.v1\n");
+  for (const name of ["README.md", "UPGRADE.md", "CHANGELOG.md", "DESIGN.md", "LICENSE"]) fs.writeFileSync(path.join(root, name), "fixture\n");
 
   const packageRoot = path.join(root, "packages/cli");
   fs.mkdirSync(path.join(packageRoot, "scripts"), { recursive: true });
-  fs.cpSync(path.join(fixture.packageRoot, "dist"), path.join(packageRoot, "dist"), { recursive: true });
+  fs.cpSync(path.join(fixture.packageRoot, "dist"), path.join(packageRoot, "dist"), {
+    recursive: true,
+  });
   fs.symlinkSync(path.join(fixture.packageRoot, "node_modules"), path.join(packageRoot, "node_modules"), "dir");
-  fs.copyFileSync(
-    path.join(checkoutPackageRoot, "scripts/copy-bundle.mjs"),
-    path.join(packageRoot, "scripts/copy-bundle.mjs"),
-  );
+  fs.copyFileSync(path.join(checkoutPackageRoot, "scripts/copy-bundle.mjs"), path.join(packageRoot, "scripts/copy-bundle.mjs"));
   fs.copyFileSync(path.join(fixture.packageRoot, "package.json"), path.join(packageRoot, "package.json"));
   return root;
 }
@@ -95,10 +83,8 @@ describe("copy-bundle filesystem safety", () => {
     try {
       const result = runCopyBundle(root);
       expect(result.status, `package copy boundary failed:\n${result.stderr}`).toBe(0);
-      expect(fs.readFileSync(path.join(root, "packages/cli/bundle/skills/agentera/SKILL.md"), "utf8"))
-        .toBe("# Fixture\n");
-      expect(fs.existsSync(path.join(root, "packages/cli/bundle/references/artifacts/state-storage-authority.yaml")))
-        .toBe(true);
+      expect(fs.readFileSync(path.join(root, "packages/cli/bundle/skills/agentera/SKILL.md"), "utf8")).toBe("# Fixture\n");
+      expect(fs.existsSync(path.join(root, "packages/cli/bundle/references/artifacts/state-storage-authority.yaml"))).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
@@ -117,11 +103,15 @@ describe("copy-bundle filesystem safety", () => {
   it("rejects invalid registry shape and escaping paths before bundle side effects", () => {
     for (const scenario of [
       {
-        mutate: (registry: any) => { registry.records[0].bundle_surfaces.directories = ["skills"]; },
+        mutate: (registry: any) => {
+          registry.records[0].bundle_surfaces.directories = ["skills"];
+        },
         message: "records[0].bundle_surfaces.directories[0] must be an object",
       },
       {
-        mutate: (registry: any) => { registry.records[0].bundle_surfaces.files[0].path = "../outside"; },
+        mutate: (registry: any) => {
+          registry.records[0].bundle_surfaces.files[0].path = "../outside";
+        },
         message: 'files[0].path "../outside" for id "readme" is invalid',
       },
     ]) {
@@ -144,13 +134,8 @@ describe("copy-bundle filesystem safety", () => {
       fs.writeFileSync(path.join(outside, "sentinel.txt"), "outside-source-before\n");
       fs.rmSync(path.join(root, "skills"), { recursive: true, force: true });
       fs.symlinkSync(outside, path.join(root, "skills"), "dir");
-      expectBoundaryFailure(
-        root,
-        state,
-        'source id "skills" path "skills" resolves outside source root',
-      );
-      expect(fs.readFileSync(path.join(outside, "sentinel.txt"), "utf8"))
-        .toBe("outside-source-before\n");
+      expectBoundaryFailure(root, state, 'source id "skills" path "skills" resolves outside source root');
+      expect(fs.readFileSync(path.join(outside, "sentinel.txt"), "utf8")).toBe("outside-source-before\n");
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
       fs.rmSync(outside, { recursive: true, force: true });
@@ -167,11 +152,7 @@ describe("copy-bundle filesystem safety", () => {
           path: "skills/agentera/SKILL.md",
         });
       });
-      expectBoundaryFailure(
-        root,
-        state,
-        'destination id "nested-skill" path "skills/agentera/SKILL.md" duplicates id "skills" path "skills/agentera/SKILL.md"',
-      );
+      expectBoundaryFailure(root, state, 'destination id "nested-skill" path "skills/agentera/SKILL.md" duplicates id "skills" path "skills/agentera/SKILL.md"');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

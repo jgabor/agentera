@@ -8,10 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import {
-  buildUpgradePlan,
-  upgradeExitCode,
-} from "../../src/upgrade/upgradeOrchestrator.js";
+import { buildUpgradePlan, upgradeExitCode } from "../../src/upgrade/upgradeOrchestrator.js";
 import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -28,10 +25,7 @@ function managedV2(appHome: string): void {
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
   fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 function seedLayout(sandbox: string): { appHome: string; project: string } {

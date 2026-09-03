@@ -2,30 +2,14 @@ import os from "node:os";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
-import {
-  resolveDoctorInstallRoot,
-  resolveSourceRootStrict,
-} from "../../upgrade/appModel.js";
+import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { BundleStatus } from "../contracts/bundleStatus.js";
-import {
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_MIGRATION_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-  appLifecycleActionNoun,
-  buildDoctorStatus,
-  EXPECTED_STATE_COMMANDS,
-  doctorParityJsonEnvelope,
-} from "../../upgrade/doctor.js";
+import { APP_MANUAL_REVIEW_NEEDED, APP_MIGRATION_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE, appLifecycleActionNoun, buildDoctorStatus, EXPECTED_STATE_COMMANDS, doctorParityJsonEnvelope } from "../../upgrade/doctor.js";
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
-import {
-  prependNextMajorDoctorSection,
-  resolveNextMajorDoctorLines,
-} from "../../upgrade/nextMajorDoctor.js";
+import { prependNextMajorDoctorSection, resolveNextMajorDoctorLines } from "../../upgrade/nextMajorDoctor.js";
 import { emitStructured } from "../structured.js";
 import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
 import { diagnoseRetiredResources, type RetiredResourceDiagnosis } from "../../upgrade/retiredResourceDiagnostics.js";
@@ -62,37 +46,16 @@ function plainStatus(value: string): string {
   return PLAIN_STATUS[value] ?? value.replace(/_/g, " ").replace(/-/g, " ");
 }
 
-function previewCommand(
-  resource: RetiredResourceDiagnosis["resources"][number],
-  context: { home: string; project: string; installRoot: string },
-): string {
-  return commandText([
-    "npx",
-    "-y",
-    "agentera@next",
-    "upgrade",
-    "--home",
-    context.home,
-    "--project",
-    context.project,
-    "--install-root",
-    context.installRoot,
-    "--legacy-cleanup",
-    resource.id,
-    "--dry-run",
-  ]);
+function previewCommand(resource: RetiredResourceDiagnosis["resources"][number], context: { home: string; project: string; installRoot: string }): string {
+  return commandText(["npx", "-y", "agentera@next", "upgrade", "--home", context.home, "--project", context.project, "--install-root", context.installRoot, "--legacy-cleanup", resource.id, "--dry-run"]);
 }
 
-function doctorRetiredResources(
-  diagnosis: RetiredResourceDiagnosis,
-  context: { home: string; project: string; installRoot: string },
-): Record<string, unknown> {
+function doctorRetiredResources(diagnosis: RetiredResourceDiagnosis, context: { home: string; project: string; installRoot: string }): Record<string, unknown> {
   return {
     ...diagnosis,
     resources: diagnosis.resources.map((resource) => {
       if (resource.ownershipMode === "managed_marker_regular_file") {
-        const items = resource.evidence.paths.map((source) =>
-          planDeclaredMarkerManagedFileItem(resource, source, [context.home, context.project, context.installRoot]));
+        const items = resource.evidence.paths.map((source) => planDeclaredMarkerManagedFileItem(resource, source, [context.home, context.project, context.installRoot]));
         if (items.length > 0 && items.every((item) => item.status === "pending")) {
           return {
             id: resource.id,
@@ -102,20 +65,13 @@ function doctorRetiredResources(
           };
         }
       }
-      const qualification = classifyAutomaticRetirement(
-        resource.id,
-        resource.evidence.paths[0]!,
-        lifecycleOwnershipJournalPath(context.installRoot),
-      );
+      const qualification = classifyAutomaticRetirement(resource.id, resource.evidence.paths[0]!, lifecycleOwnershipJournalPath(context.installRoot));
       if (qualification.qualification === "qualified") {
         return {
           id: resource.id,
           status: "pending_automatic_removal",
           evidence: resource.evidence,
-          next_action: commandText([
-            "npx", "-y", "agentera@next", "upgrade", "--channel", "development",
-            "--project", context.project, "--install-root", context.installRoot, "--dry-run",
-          ]),
+          next_action: commandText(["npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", context.project, "--install-root", context.installRoot, "--dry-run"]),
         };
       }
       return {
@@ -130,14 +86,7 @@ function doctorRetiredResources(
 
 export function renderDoctorStatus(status: BundleStatus, retiredResources?: Record<string, unknown>): string {
   const actionNoun = appLifecycleActionNoun(String(status.status));
-  const lines = [
-    "Agentera doctor",
-    `status: ${plainStatus(status.status)}`,
-    `expected version: ${status.expectedVersion}`,
-    `Agentera directory: ${status.appHome}`,
-    `App files directory: ${status.managedAppRoot}`,
-    `Your Agentera data directory: ${status.userDataRoot}`,
-  ];
+  const lines = ["Agentera doctor", `status: ${plainStatus(status.status)}`, `expected version: ${status.expectedVersion}`, `Agentera directory: ${status.appHome}`, `App files directory: ${status.managedAppRoot}`, `Your Agentera data directory: ${status.userDataRoot}`];
   if (status.signals && status.signals.length > 0) {
     lines.push("");
     lines.push("What needs attention:");
@@ -161,7 +110,7 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
       }
     }
   }
-  const resources = Array.isArray(retiredResources?.resources) ? retiredResources.resources as Array<Record<string, unknown>> : [];
+  const resources = Array.isArray(retiredResources?.resources) ? (retiredResources.resources as Array<Record<string, unknown>>) : [];
   const todoReconciliation = status.signals?.some((signal) => signal.kind === "todo_reconciliation") ?? false;
   const unsafeInactiveTodo = status.signals?.some((signal) => signal.kind === "todo_reconciliation" && signal.reconciliationState === "unsafe_inactive") ?? false;
   if (resources.length > 0) {
@@ -190,9 +139,7 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
     if (status.retryCommand) {
       lines.push(`  3. Then retry Agentera: ${status.retryCommand}`);
     } else {
-      lines.push(
-        "  3. Then retry Agentera once a retry command is available.",
-      );
+      lines.push("  3. Then retry Agentera once a retry command is available.");
     }
   } else if (unsafeInactiveTodo) {
     lines.push("");
@@ -208,9 +155,7 @@ export function renderDoctorStatus(status: BundleStatus, retiredResources?: Reco
     lines.push("Next: run the reported cleanup preview.");
   } else {
     lines.push("");
-    lines.push(
-      "Next: choose a safer Agentera directory, or use `--force` only after checking the directory is safe to replace.",
-    );
+    lines.push("Next: choose a safer Agentera directory, or use `--force` only after checking the directory is safe to replace.");
   }
   return lines.join("\n");
 }
@@ -228,12 +173,7 @@ export interface DoctorArgs {
 }
 
 function renderDoctorSmoke(smoke: JsonObject): string {
-  const lines = [
-    "",
-    "Smoke checks:",
-    `  enabled: ${smoke.enabled ? "yes" : "no"}`,
-    `  model calls attempted: ${smoke.modelCallsAttempted ? "yes" : "no"}`,
-  ];
+  const lines = ["", "Smoke checks:", `  enabled: ${smoke.enabled ? "yes" : "no"}`, `  model calls attempted: ${smoke.modelCallsAttempted ? "yes" : "no"}`];
   for (const check of (smoke.checks ?? []) as JsonObject[]) {
     lines.push(`  - ${check.name}: ${check.status} - ${check.message}`);
   }
@@ -252,7 +192,10 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   }
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
-  const [installRoot, rootSource] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
+  const [installRoot, rootSource] = resolveDoctorInstallRoot(args.installRoot ?? null, {
+    home,
+    sourceRoot,
+  });
   const expectedCommands = args.expectCommand && args.expectCommand.length > 0 ? args.expectCommand : [...EXPECTED_STATE_COMMANDS];
   const status = buildDoctorStatus(installRoot, {
     rootSource,
@@ -287,7 +230,10 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     sourceRoot,
   });
   const retiredResources = doctorRetiredResources(retiredDiagnosis, { home, project, installRoot });
-  const retiredResourceEntries = retiredResources.resources as Array<{ id: string; status: string }>;
+  const retiredResourceEntries = retiredResources.resources as Array<{
+    id: string;
+    status: string;
+  }>;
   const manualReviewResources = retiredResourceEntries.filter((resource) => resource.status === "manual_review");
   const pendingAutomaticResources = retiredResourceEntries.filter((resource) => resource.status === "pending_automatic_removal");
   if (manualReviewResources.length > 0) {
@@ -331,10 +277,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
       install,
       env: process.env,
     });
-    const body =
-      prependNextMajorDoctorSection(renderDoctorStatus(status, retiredResources), nextMajorLines) +
-      `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` +
-      (smokeReport ? renderDoctorSmoke(smokeReport) : "");
+    const body = prependNextMajorDoctorSection(renderDoctorStatus(status, retiredResources), nextMajorLines) + `\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` + (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + "\n");
   }
   if (args.smoke) {

@@ -18,8 +18,7 @@ function git(repo, args, options = {}) {
 }
 
 function indexEntries(repo, label) {
-  const records = git(repo, ["ls-files", "--stage", "-z"], { label })
-    .toString("utf8").split("\0").filter(Boolean);
+  const records = git(repo, ["ls-files", "--stage", "-z"], { label }).toString("utf8").split("\0").filter(Boolean);
   const entries = new Map();
   for (const record of records) {
     const match = /^(100644|100755|120000) ([0-9a-f]+) ([0-3])\t([\s\S]+)$/.exec(record);
@@ -72,7 +71,8 @@ function workingMode(stat, indexedMode, fileModeSupported, symlinksSupported) {
 
 function booleanConfig(repo, name, defaultValue, label) {
   const value = git(repo, ["config", "--bool", "--default", String(defaultValue), name], { label })
-    .toString("utf8").trim();
+    .toString("utf8")
+    .trim();
   if (value !== "true" && value !== "false") {
     throw new Error(`${label} received an invalid ${name} value from Git`);
   }
@@ -93,19 +93,14 @@ export function gitSourceTreeDigest(repo, options = {}) {
   const indexed = indexEntries(repo, label);
   const entries = [...indexed.values()];
   if (source === "working" && options.includeUntracked) {
-    const untracked = git(repo, ["ls-files", "--others", "--exclude-standard", "-z"], { label })
-      .toString("utf8").split("\0").filter(Boolean);
+    const untracked = git(repo, ["ls-files", "--others", "--exclude-standard", "-z"], { label }).toString("utf8").split("\0").filter(Boolean);
     for (const relative of untracked) entries.push({ relative, mode: undefined, object: undefined });
   }
-  entries.sort((left, right) => left.relative < right.relative ? -1 : left.relative > right.relative ? 1 : 0);
+  entries.sort((left, right) => (left.relative < right.relative ? -1 : left.relative > right.relative ? 1 : 0));
 
   const indexedContent = source === "index" ? indexedBytes(repo, entries, label) : null;
-  const fileModeSupported = source === "working"
-    ? booleanConfig(repo, "core.filemode", true, label)
-    : false;
-  const symlinksSupported = source === "working"
-    ? booleanConfig(repo, "core.symlinks", true, label)
-    : false;
+  const fileModeSupported = source === "working" ? booleanConfig(repo, "core.filemode", true, label) : false;
+  const symlinksSupported = source === "working" ? booleanConfig(repo, "core.symlinks", true, label) : false;
   const digest = createHash("sha256");
   for (let index = 0; index < entries.length; index += 1) {
     const entry = entries[index];
@@ -122,9 +117,7 @@ export function gitSourceTreeDigest(repo, options = {}) {
       }
       mode = workingMode(stat, entry.mode, fileModeSupported, symlinksSupported);
       if (!mode) throw new Error(`${label} contains a non-file Git path at ${file}`);
-      bytes = mode === "120000" && stat.isSymbolicLink()
-        ? Buffer.from(fs.readlinkSync(file))
-        : fs.readFileSync(file);
+      bytes = mode === "120000" && stat.isSymbolicLink() ? Buffer.from(fs.readlinkSync(file)) : fs.readFileSync(file);
     }
     const normalized = options.transformBytes?.(entry.relative, bytes, { mode, source }) ?? bytes;
     digest.update(entry.relative);

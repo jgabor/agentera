@@ -8,17 +8,7 @@ import { fileURLToPath } from "node:url";
 
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
-import {
-  REPO_ROOT,
-  RELEASE_CONTRACT,
-  canonicalJson,
-  isolatedNpmState,
-  issueCandidateReceipt,
-  issueSourceReceipt,
-  qualificationPreflight,
-  sha256,
-  validateCandidateReceipt,
-} from "./release-qualification.mjs";
+import { REPO_ROOT, RELEASE_CONTRACT, canonicalJson, isolatedNpmState, issueCandidateReceipt, issueSourceReceipt, qualificationPreflight, sha256, validateCandidateReceipt } from "./release-qualification.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const QUALIFICATION_BUDGET_MS = RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs;
@@ -114,7 +104,7 @@ function receiptOwners(receipt, reused) {
     name: gate.name,
     phase: gate.phase,
     elapsedMs: gate.elapsedMs ?? 0,
-    executed: reused ? "none" : gate.executed ?? "ordered",
+    executed: reused ? "none" : (gate.executed ?? "ordered"),
     reused,
   }));
 }
@@ -136,31 +126,17 @@ export async function runQualificationBenchmark(options = {}) {
   const runs = [];
   for (let repetition = 1; repetition <= repetitions; repetition += 1) {
     const context = { repetition, clock, emit };
-    const preflight = await runPhase(
-      "preflight",
-      RELEASE_CONTRACT.benchmark.timeouts.preflightMs,
-      () => options.runPreflight({ repetition }),
-      context,
-    );
-    const source = await runPhase(
-      "source-qualification",
-      QUALIFICATION_BUDGET_MS,
-      () => options.runSource({ repetition }),
-      context,
-    );
-    const candidate = await runPhase(
-      "candidate-qualification",
-      QUALIFICATION_BUDGET_MS,
-      () => options.runCandidate({ repetition }),
-      context,
-    );
+    const preflight = await runPhase("preflight", RELEASE_CONTRACT.benchmark.timeouts.preflightMs, () => options.runPreflight({ repetition }), context);
+    const source = await runPhase("source-qualification", QUALIFICATION_BUDGET_MS, () => options.runSource({ repetition }), context);
+    const candidate = await runPhase("candidate-qualification", QUALIFICATION_BUDGET_MS, () => options.runCandidate({ repetition }), context);
     const qualificationElapsedMs = source.elapsedMs + candidate.elapsedMs;
     if (qualificationElapsedMs >= QUALIFICATION_BUDGET_MS) {
-      const error = benchmarkError(
-        `benchmark phase 'full-qualification' exceeded its ${QUALIFICATION_BUDGET_MS}ms budget`,
-        "full-qualification",
-      );
-      const firstFailure = { owner: error.owner, phase: "full-qualification", detail: error.message };
+      const error = benchmarkError(`benchmark phase 'full-qualification' exceeded its ${QUALIFICATION_BUDGET_MS}ms budget`, "full-qualification");
+      const firstFailure = {
+        owner: error.owner,
+        phase: "full-qualification",
+        detail: error.message,
+      };
       emit({ event: "failed", repetition, firstFailure });
       error.firstFailure = firstFailure;
       throw error;
@@ -199,9 +175,7 @@ function redactPublicationDiagnostic(value, candidateDirectory) {
   for (const privatePath of [REPO_ROOT, candidateDirectory, os.homedir()].filter(Boolean)) {
     text = text.replaceAll(privatePath, privatePath === REPO_ROOT ? "<repository>" : "<private>");
   }
-  return text
-    .replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>")
-    .slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  return text.replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>").slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
 }
 
 function parseTransactionResults(stdout) {
@@ -230,11 +204,7 @@ function defaultCommandRunner(specification) {
   const results = parseTransactionResults(invocation.stdout);
   if (invocation.error || invocation.status !== 0) {
     const failed = results.find((entry) => entry.outcome === "failed");
-    const detail = failed?.detail
-      ?? invocation.error?.message
-      ?? invocation.stderr
-      ?? invocation.stdout
-      ?? `exit ${invocation.status ?? "signal"}`;
+    const detail = failed?.detail ?? invocation.error?.message ?? invocation.stderr ?? invocation.stdout ?? `exit ${invocation.status ?? "signal"}`;
     const error = new Error(String(detail).trim());
     error.owner = failed?.phase ?? specification.name;
     throw error;
@@ -244,10 +214,7 @@ function defaultCommandRunner(specification) {
 
 function isTransientCandidateMigrationFailure(specification, error) {
   const detail = error instanceof Error ? error.message : String(error);
-  return specification.name === "candidate-migration-smoke"
-    && specification.env?.AGENTERA_SANDBOX_TIER === "L2"
-    && detail.includes("ETARGET")
-    && detail.includes("No matching version found");
+  return specification.name === "candidate-migration-smoke" && specification.env?.AGENTERA_SANDBOX_TIER === "L2" && detail.includes("ETARGET") && detail.includes("No matching version found");
 }
 
 async function runPublicationCommand(specification, commandRunner, timeoutMs, remaining, wait) {
@@ -255,10 +222,7 @@ async function runPublicationCommand(specification, commandRunner, timeoutMs, re
     try {
       return await commandRunner({ ...specification, timeoutMs });
     } catch (error) {
-      if (
-        attempt >= CANDIDATE_PROPAGATION_ATTEMPTS
-        || !isTransientCandidateMigrationFailure(specification, error)
-      ) {
+      if (attempt >= CANDIDATE_PROPAGATION_ATTEMPTS || !isTransientCandidateMigrationFailure(specification, error)) {
         throw error;
       }
       if (remaining() <= CANDIDATE_PROPAGATION_RETRY_MS) {
@@ -274,26 +238,10 @@ async function runPublicationCommand(specification, commandRunner, timeoutMs, re
 }
 
 function transactionArguments(phase, adapterName, candidateDirectory, sourceRunId) {
-  return [
-    path.join(REPO_ROOT, "packages/cli/scripts/publication-transaction.mjs"),
-    phase,
-    adapterName,
-    "--approve",
-    "--candidate-dir",
-    candidateDirectory,
-    ...(sourceRunId ? ["--source-run-id", sourceRunId] : []),
-    "--json",
-  ];
+  return [path.join(REPO_ROOT, "packages/cli/scripts/publication-transaction.mjs"), phase, adapterName, "--approve", "--candidate-dir", candidateDirectory, ...(sourceRunId ? ["--source-run-id", sourceRunId] : []), "--json"];
 }
 
-function publicationPhases(
-  adapterName,
-  candidateDirectory,
-  candidate,
-  sourceRunId,
-  environment,
-  candidateEnvironment,
-) {
+function publicationPhases(adapterName, candidateDirectory, candidate, sourceRunId, environment, candidateEnvironment) {
   const transaction = (name, phase) => ({
     name,
     transactionPhase: phase,
@@ -302,29 +250,26 @@ function publicationPhases(
     cwd: REPO_ROOT,
     env: environment,
   });
-  const candidateMigrationSmoke = adapterName === "development"
-    ? {
-        name: "candidate-migration-smoke",
-        command: "bash",
-        args: [path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "happy-path-clean"],
-        cwd: REPO_ROOT,
-        env: {
-          ...candidateEnvironment,
-          REPO_ROOT,
-          AGENTERA_SANDBOX_TIER: "L2",
-          AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`,
-        },
-      }
-    : {
-        ...transaction("candidate-migration-smoke", "smoke"),
-        name: "candidate-migration-smoke",
-        env: npmChildEnvironment(environment),
-      };
-  return [
-    transaction("stage", "stage"),
-    candidateMigrationSmoke,
-    transaction("promote", "promote"),
-  ];
+  const candidateMigrationSmoke =
+    adapterName === "development"
+      ? {
+          name: "candidate-migration-smoke",
+          command: "bash",
+          args: [path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "happy-path-clean"],
+          cwd: REPO_ROOT,
+          env: {
+            ...candidateEnvironment,
+            REPO_ROOT,
+            AGENTERA_SANDBOX_TIER: "L2",
+            AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`,
+          },
+        }
+      : {
+          ...transaction("candidate-migration-smoke", "smoke"),
+          name: "candidate-migration-smoke",
+          env: npmChildEnvironment(environment),
+        };
+  return [transaction("stage", "stage"), candidateMigrationSmoke, transaction("promote", "promote")];
 }
 
 function successfulTransaction(specification, output) {
@@ -332,20 +277,19 @@ function successfulTransaction(specification, output) {
     return { reused: false, observations: [] };
   }
   const results = parseTransactionResults(output.stdout);
-  const completed = [...results].reverse().find(
-    (entry) => entry.phase === specification.transactionPhase && entry.outcome === "passed",
-  );
+  const completed = [...results].reverse().find((entry) => entry.phase === specification.transactionPhase && entry.outcome === "passed");
   if (!completed) {
-    throw benchmarkError(
-      `publication owner '${specification.name}' returned no successful transaction result`,
-      specification.name,
-    );
+    throw benchmarkError(`publication owner '${specification.name}' returned no successful transaction result`, specification.name);
   }
   return {
     reused: Boolean(completed.reused),
     observations: results
       .filter((entry) => typeof entry.phase === "string" && typeof entry.outcome === "string")
-      .map((entry) => ({ phase: entry.phase, outcome: entry.outcome, reused: Boolean(entry.reused) })),
+      .map((entry) => ({
+        phase: entry.phase,
+        outcome: entry.outcome,
+        reused: Boolean(entry.reused),
+      })),
   };
 }
 
@@ -372,8 +316,7 @@ function publicationReceipt(candidate, sourceRunId, phases, started, ended, outc
     elapsedMs,
     withinBudget: elapsedMs < RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs,
     executed: "ordered",
-    reused: phases.length === 3
-      && phases.filter((phase) => phase.name !== "candidate-migration-smoke").every((phase) => phase.reused),
+    reused: phases.length === 3 && phases.filter((phase) => phase.name !== "candidate-migration-smoke").every((phase) => phase.reused),
     phases,
     ownerElapsedMs,
     unattributedElapsedMs: elapsedMs - ownerElapsedMs,
@@ -387,14 +330,14 @@ function publicationReceipt(candidate, sourceRunId, phases, started, ended, outc
 
 function assertPublicationCandidate(candidate) {
   if (
-    typeof candidate?.receiptSha256 !== "string"
-    || !/^[0-9a-f]{64}$/.test(candidate.receiptSha256)
-    || typeof candidate?.metadataCommit !== "string"
-    || !/^[0-9a-f]{40}$/.test(candidate.metadataCommit)
-    || typeof candidate?.package !== "string"
-    || typeof candidate?.version !== "string"
-    || typeof candidate?.artifact?.integrity !== "string"
-    || typeof candidate?.artifact?.sha256 !== "string"
+    typeof candidate?.receiptSha256 !== "string" ||
+    !/^[0-9a-f]{64}$/.test(candidate.receiptSha256) ||
+    typeof candidate?.metadataCommit !== "string" ||
+    !/^[0-9a-f]{40}$/.test(candidate.metadataCommit) ||
+    typeof candidate?.package !== "string" ||
+    typeof candidate?.version !== "string" ||
+    typeof candidate?.artifact?.integrity !== "string" ||
+    typeof candidate?.artifact?.sha256 !== "string"
   ) {
     throw new Error("publication requires a valid content-bound package artifact receipt");
   }
@@ -411,29 +354,22 @@ export async function runQualifiedPublication(options = {}) {
   if (options.sourceRunId !== undefined && !/^[1-9]\d{0,19}$/.test(options.sourceRunId)) {
     throw new Error("publication sourceRunId must be a positive GitHub Actions run ID");
   }
-  const loaded = options.candidate
-    ?? validateCandidateReceipt({ candidateDirectory: options.candidateDirectory, adapterName });
+  const loaded = options.candidate ?? validateCandidateReceipt({ candidateDirectory: options.candidateDirectory, adapterName });
   const candidate = assertPublicationCandidate(loaded.receipt ?? loaded);
   const clock = options.clock ?? (() => performance.now());
   const commandRunner = options.runCommand ?? defaultCommandRunner;
   const emit = options.emit ?? (() => {});
   const wait = options.sleep ?? sleep;
   const environment = options.environment ?? process.env;
-  const candidateState = adapterName === "development"
-    ? isolatedNpmState("agentera-qualified-candidate-", {
-        environment,
-        ignoreScripts: false,
-        registryInGlobalConfig: true,
-      })
-    : null;
-  const specifications = publicationPhases(
-    adapterName,
-    options.candidateDirectory,
-    candidate,
-    options.sourceRunId,
-    environment,
-    candidateState?.environment,
-  );
+  const candidateState =
+    adapterName === "development"
+      ? isolatedNpmState("agentera-qualified-candidate-", {
+          environment,
+          ignoreScripts: false,
+          registryInGlobalConfig: true,
+        })
+      : null;
+  const specifications = publicationPhases(adapterName, options.candidateDirectory, candidate, options.sourceRunId, environment, candidateState?.environment);
   const budgetMs = RELEASE_CONTRACT.benchmark.timeouts.qualifiedPublicationMs;
   const phases = [];
   let lastClock = clock();
@@ -446,7 +382,11 @@ export async function runQualifiedPublication(options = {}) {
     lastClock = value;
     return value;
   };
-  emit({ event: "started", phase: "qualified-publication", candidateReceiptSha256: candidate.receiptSha256 });
+  emit({
+    event: "started",
+    phase: "qualified-publication",
+    candidateReceiptSha256: candidate.receiptSha256,
+  });
   try {
     for (const specification of specifications) {
       const phaseStarted = now();
@@ -456,13 +396,7 @@ export async function runQualifiedPublication(options = {}) {
       }
       emit({ event: "started", phase: specification.name });
       try {
-        const output = await runPublicationCommand(
-          specification,
-          commandRunner,
-          remainingMs,
-          () => budgetMs - (now() - started),
-          wait,
-        );
+        const output = await runPublicationCommand(specification, commandRunner, remainingMs, () => budgetMs - (now() - started), wait);
         const phaseEnded = now();
         const transaction = successfulTransaction(specification, output ?? {});
         const phase = {
@@ -476,10 +410,7 @@ export async function runQualifiedPublication(options = {}) {
         if (phaseEnded - started >= budgetMs) {
           phase.outcome = "failed";
           phases.push(phase);
-          throw benchmarkError(
-            `publication exceeded its ${budgetMs}ms budget during ${specification.name}`,
-            specification.name,
-          );
+          throw benchmarkError(`publication exceeded its ${budgetMs}ms budget during ${specification.name}`, specification.name);
         }
         phases.push(phase);
         emit({ event: "passed", phase });
@@ -501,10 +432,7 @@ export async function runQualifiedPublication(options = {}) {
     }
     const ended = now();
     if (ended - started >= budgetMs) {
-      throw benchmarkError(
-        `publication exceeded its ${budgetMs}ms budget during final reconciliation`,
-        "qualified-publication",
-      );
+      throw benchmarkError(`publication exceeded its ${budgetMs}ms budget during final reconciliation`, "qualified-publication");
     }
     const receipt = publicationReceipt(candidate, options.sourceRunId, phases, started, ended, "passed");
     emit({ event: "passed", phase: "qualified-publication", receipt });
@@ -514,10 +442,7 @@ export async function runQualifiedPublication(options = {}) {
     const firstFailure = {
       owner: error?.owner ?? "qualified-publication",
       phase: "qualified-publication",
-      detail: redactPublicationDiagnostic(
-        error instanceof Error ? error.message : String(error),
-        options.candidateDirectory,
-      ),
+      detail: redactPublicationDiagnostic(error instanceof Error ? error.message : String(error), options.candidateDirectory),
     };
     const receipt = publicationReceipt(candidate, options.sourceRunId, phases, started, ended, "failed", firstFailure);
     emit({ event: "failed", phase: "qualified-publication", firstFailure, receipt });
@@ -542,24 +467,18 @@ function writePublicationReceipt(file, receipt) {
 export function formatPublicationReceipt(receipt) {
   const phases = receipt.phases.map((phase) => `${phase.name} ${phase.elapsedMs}ms${phase.reused ? " replayed" : ""}`).join("; ");
   const bound = receipt.withinBudget ? "<" : ">=";
-  const failure = receipt.firstFailure
-    ? `; first failure ${receipt.firstFailure.owner}: ${receipt.firstFailure.detail}`
-    : "";
+  const failure = receipt.firstFailure ? `; first failure ${receipt.firstFailure.owner}: ${receipt.firstFailure.detail}` : "";
   return `publication ${receipt.outcome}; ${phases}; total ${receipt.elapsedMs}ms ${bound} ${receipt.budgetMs}ms; reconciled ${receipt.reconciled}${failure}; receipt ${receipt.receiptSha256}`;
 }
 
 async function main() {
   const [command, ...args] = process.argv.slice(2);
   if (!["qualification", "publication"].includes(command)) {
-    throw new Error(
-      "usage: release-benchmark.mjs <qualification --candidate-root DIR|publication --candidate-dir DIR> --adapter development|stable [--json]",
-    );
+    throw new Error("usage: release-benchmark.mjs <qualification --candidate-root DIR|publication --candidate-dir DIR> --adapter development|stable [--json]");
   }
   const flags = parseReleaseFlags(args, {
     boolean: ["--json"],
-    value: command === "qualification"
-      ? ["--adapter", "--candidate-root"]
-      : ["--adapter", "--candidate-dir", "--source-run-id", "--receipt-file"],
+    value: command === "qualification" ? ["--adapter", "--candidate-root"] : ["--adapter", "--candidate-dir", "--source-run-id", "--receipt-file"],
   });
   const adapterName = flags.get("--adapter");
   if (!RELEASE_CONTRACT.packages[adapterName]) throw new Error("--adapter must be development or stable");
@@ -585,10 +504,7 @@ async function main() {
         process.stdout.write(`${flags.get("--json") ? JSON.stringify(error.publicationReceipt) : formatPublicationReceipt(error.publicationReceipt)}\n`);
       }
       if (error && typeof error === "object" && !error.firstFailure) {
-        let detail = redactPublicationDiagnostic(
-          error instanceof Error ? error.message : String(error),
-          candidateDirectory,
-        );
+        let detail = redactPublicationDiagnostic(error instanceof Error ? error.message : String(error), candidateDirectory);
         if (flags.get("--receipt-file")) {
           detail = detail.replaceAll(path.resolve(flags.get("--receipt-file")), "<private>");
         }
@@ -614,11 +530,17 @@ async function main() {
       }
     },
     runPreflight: ({ repetition }) => {
-      qualificationPreflight({ repo: REPO_ROOT, adapterName, candidateDirectory: candidateDirectory(repetition) });
+      qualificationPreflight({
+        repo: REPO_ROOT,
+        adapterName,
+        candidateDirectory: candidateDirectory(repetition),
+      });
       return { owners: [{ name: "preflight", elapsedMs: 0, executed: "ordered", reused: false }] };
     },
     runSource: async ({ repetition }) => {
-      const issued = await issueSourceReceipt({ candidateDirectory: candidateDirectory(repetition) });
+      const issued = await issueSourceReceipt({
+        candidateDirectory: candidateDirectory(repetition),
+      });
       return {
         ownerElapsedMs: issued.receipt.execution?.elapsedMs,
         owners: receiptOwners(issued.receipt, issued.reused),
@@ -627,8 +549,15 @@ async function main() {
       };
     },
     runCandidate: ({ repetition }) => {
-      const issued = issueCandidateReceipt({ candidateDirectory: candidateDirectory(repetition), adapterName });
-      return { owners: receiptOwners(issued.receipt, issued.reused), reused: issued.reused, executed: issued.reused ? "none" : "ordered" };
+      const issued = issueCandidateReceipt({
+        candidateDirectory: candidateDirectory(repetition),
+        adapterName,
+      });
+      return {
+        owners: receiptOwners(issued.receipt, issued.reused),
+        reused: issued.reused,
+        executed: issued.reused ? "none" : "ordered",
+      };
     },
   });
   process.stdout.write(`${flags.get("--json") ? JSON.stringify(report) : `qualification median ${report.medianElapsedMs.fullQualification}ms; preflight median ${report.medianElapsedMs.preflight}ms`}\n`);

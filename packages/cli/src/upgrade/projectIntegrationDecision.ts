@@ -2,11 +2,7 @@ import { APP_MANUAL_REVIEW_NEEDED, APP_UP_TO_DATE } from "./doctor.js";
 
 export type IntegrationScenario = "stay" | "upgrade" | "blocked";
 
-export type IntegrationExitMeaning =
-  | "no_changes_needed"
-  | "preview_required"
-  | "manual_review_required"
-  | "preview_and_blockers";
+export type IntegrationExitMeaning = "no_changes_needed" | "preview_required" | "manual_review_required" | "preview_and_blockers";
 
 export interface IntegrationPhaseSummary {
   status: "stay" | "pending" | "blocked";
@@ -45,13 +41,7 @@ export interface IntegrationPhaseFacts {
 }
 
 export function classifyIntegrationScenario(facts: IntegrationScenarioFacts): IntegrationScenario {
-  if (
-    facts.pendingArtifactCount === 0 &&
-    !facts.crossMajor &&
-    !facts.crossMajorMigration &&
-    !facts.crossMajorNeedsPreview &&
-    (facts.bundleStatus === APP_UP_TO_DATE || facts.bundleStatus === APP_MANUAL_REVIEW_NEEDED)
-  ) {
+  if (facts.pendingArtifactCount === 0 && !facts.crossMajor && !facts.crossMajorMigration && !facts.crossMajorNeedsPreview && (facts.bundleStatus === APP_UP_TO_DATE || facts.bundleStatus === APP_MANUAL_REVIEW_NEEDED)) {
     return "stay";
   }
   if (facts.crossMajorNeedsPreview) {
@@ -60,10 +50,7 @@ export function classifyIntegrationScenario(facts: IntegrationScenarioFacts): In
   return "upgrade";
 }
 
-export function integrationScenarioMessage(
-  scenario: IntegrationScenario,
-  facts: IntegrationScenarioFacts,
-): string {
+export function integrationScenarioMessage(scenario: IntegrationScenario, facts: IntegrationScenarioFacts): string {
   if (scenario === "stay") return "Your Agentera install is up to date.";
   if (scenario === "blocked") {
     return "Cross-major version boundary detected; v3 successor not yet announced. Stay on the current channel.";
@@ -76,10 +63,7 @@ export function integrationScenarioMessage(
   return `This project needs an Agentera upgrade (${reasons.join(", ")}). Preview the upgrade command.`;
 }
 
-export function integrationPhase(
-  facts: IntegrationPhaseFacts,
-  statusOverride?: IntegrationPhaseSummary["status"],
-): IntegrationPhaseSummary {
+export function integrationPhase(facts: IntegrationPhaseFacts, statusOverride?: IntegrationPhaseSummary["status"]): IntegrationPhaseSummary {
   const status = statusOverride ?? (facts.blocked > 0 ? "blocked" : facts.pending > 0 ? "pending" : "stay");
   return {
     status,
@@ -88,10 +72,7 @@ export function integrationPhase(
   };
 }
 
-export function integrationExit(
-  hasPendingWork: boolean,
-  appBlocked: boolean,
-): IntegrationExit {
+export function integrationExit(hasPendingWork: boolean, appBlocked: boolean): IntegrationExit {
   if (!hasPendingWork && !appBlocked) {
     return { code: 0, meaning: "no_changes_needed" };
   }

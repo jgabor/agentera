@@ -13,14 +13,7 @@ import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
  * Authority: references/cli/update-channels.yaml (version_resolution)
  */
 
-export type UpgradeOutcomeKind =
-  | "same_major_update"
-  | "forward_major_upgrade"
-  | "migration_to_latest_on_channel"
-  | "channel_line_mismatch"
-  | "blocked_downgrade_to_v2"
-  | "blocked_downgrade_not_implemented"
-  | "up_to_date";
+export type UpgradeOutcomeKind = "same_major_update" | "forward_major_upgrade" | "migration_to_latest_on_channel" | "channel_line_mismatch" | "blocked_downgrade_to_v2" | "blocked_downgrade_not_implemented" | "up_to_date";
 
 export interface UpgradeOutcome {
   kind: UpgradeOutcomeKind;
@@ -38,8 +31,7 @@ export interface VersionCatalog {
   development?: string;
 }
 
-export const IRREVERSIBLE_V2_RETURN =
-  "return to the v2 Python line is permanently unsupported after migrating to v3+";
+export const IRREVERSIBLE_V2_RETURN = "return to the v2 Python line is permanently unsupported after migrating to v3+";
 
 let testVersionCatalog: VersionCatalog | null = null;
 
@@ -74,11 +66,7 @@ function readRegistryVersion(root: string): string | null {
 }
 
 function readNpmPackageVersion(sourceRoot: string): string | null {
-  const candidates = [
-    path.join(sourceRoot, "package.json"),
-    path.join(sourceRoot, "..", "package.json"),
-    path.join(sourceRoot, "..", "..", "package.json"),
-  ];
+  const candidates = [path.join(sourceRoot, "package.json"), path.join(sourceRoot, "..", "package.json"), path.join(sourceRoot, "..", "..", "package.json")];
   for (const candidate of candidates) {
     if (!fs.existsSync(candidate)) {
       continue;
@@ -95,11 +83,7 @@ function readNpmPackageVersion(sourceRoot: string): string | null {
   return null;
 }
 
-export function resolveRunningVersion(args: {
-  appHome: string;
-  sourceRoot: string;
-  install: InstallClassification;
-}): string {
+export function resolveRunningVersion(args: { appHome: string; sourceRoot: string; install: InstallClassification }): string {
   void args.install;
   if (isNpxBundleRoot(args.sourceRoot)) {
     return readRegistryVersion(args.sourceRoot) ?? readNpmPackageVersion(args.sourceRoot) ?? "0.0.0";
@@ -130,24 +114,12 @@ export function loadOfflineLatestDefaults(sourceRoot: string): VersionCatalog {
   };
 }
 
-export function resolveLatestOnChannel(
-  channel: ResolvedUpdateChannel,
-  sourceRoot: string,
-  catalog?: VersionCatalog | null,
-): string {
+export function resolveLatestOnChannel(channel: ResolvedUpdateChannel, sourceRoot: string, catalog?: VersionCatalog | null): string {
   const resolved = catalog ?? testVersionCatalog ?? loadOfflineLatestDefaults(sourceRoot);
-  return channel.channel === "development"
-    ? (resolved.development ?? "3.0.0")
-    : (resolved.stable ?? "2.7.7");
+  return channel.channel === "development" ? (resolved.development ?? "3.0.0") : (resolved.stable ?? "2.7.7");
 }
 
-export function classifyUpgradeOutcome(args: {
-  appHome: string;
-  sourceRoot: string;
-  install: InstallClassification;
-  channel: ResolvedUpdateChannel;
-  catalog?: VersionCatalog | null;
-}): UpgradeOutcome {
+export function classifyUpgradeOutcome(args: { appHome: string; sourceRoot: string; install: InstallClassification; channel: ResolvedUpdateChannel; catalog?: VersionCatalog | null }): UpgradeOutcome {
   const runningVersion = resolveRunningVersion(args);
   const latestOnChannel = resolveLatestOnChannel(args.channel, args.sourceRoot, args.catalog);
   const runningMajor = parseSemverMajor(runningVersion) ?? 0;
@@ -186,22 +158,19 @@ export function classifyUpgradeOutcome(args: {
     };
   }
 
-
   if (args.install.kind === "v2_managed_app_home") {
     if (args.channel.distributionMajor < 3) {
       return {
         ...base,
         kind: "up_to_date",
-        message:
-          "stable channel tracks the 2.x support line; switch to the development channel to preview v2→v3 migration",
+        message: "stable channel tracks the 2.x support line; switch to the development channel to preview v2→v3 migration",
       };
     }
     if (!isStableSuccessorAnnounced(args.sourceRoot, "stable")) {
       return {
         ...base,
         kind: "up_to_date",
-        message:
-          `v3 successor line is not announced yet; v2 managed app files remain current on the ${args.channel.channel} channel`,
+        message: `v3 successor line is not announced yet; v2 managed app files remain current on the ${args.channel.channel} channel`,
       };
     }
     return {
@@ -213,11 +182,7 @@ export function classifyUpgradeOutcome(args: {
     };
   }
 
-  if (
-    runningMajor >= 3 &&
-    runningMajor !== args.channel.distributionMajor &&
-    args.channel.distributionMajor < runningMajor
-  ) {
+  if (runningMajor >= 3 && runningMajor !== args.channel.distributionMajor && args.channel.distributionMajor < runningMajor) {
     return {
       ...base,
       kind: "channel_line_mismatch",
@@ -246,20 +211,10 @@ export function classifyUpgradeOutcome(args: {
   };
 }
 
-export function shouldIncludeCrossMajorPlanItems(
-  channel: ResolvedUpdateChannel,
-  outcome: UpgradeOutcome,
-): boolean {
-  return (
-    outcome.kind === "migration_to_latest_on_channel" &&
-    outcome.allowsMigrationApply &&
-    channel.distributionMajor >= 3
-  );
+export function shouldIncludeCrossMajorPlanItems(channel: ResolvedUpdateChannel, outcome: UpgradeOutcome): boolean {
+  return outcome.kind === "migration_to_latest_on_channel" && outcome.allowsMigrationApply && channel.distributionMajor >= 3;
 }
 
 export function isBlockedUpgradeOutcome(outcome: UpgradeOutcome): boolean {
-  return (
-    outcome.kind === "blocked_downgrade_to_v2" ||
-    outcome.kind === "blocked_downgrade_not_implemented"
-  );
+  return outcome.kind === "blocked_downgrade_to_v2" || outcome.kind === "blocked_downgrade_not_implemented";
 }

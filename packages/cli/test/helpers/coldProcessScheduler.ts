@@ -181,11 +181,7 @@ export class ColdProcessScheduler {
   }
 
   private pump(): void {
-    while (
-      this.abortReason === undefined
-      && this.active.size < this.concurrency
-      && this.queued.length > 0
-    ) {
+    while (this.abortReason === undefined && this.active.size < this.concurrency && this.queued.length > 0) {
       this.start(this.queued.shift()!);
     }
     this.resolveIdle();
@@ -230,9 +226,15 @@ export class ColdProcessScheduler {
     }, this.timeoutMs);
     child.stdout?.setEncoding("utf8");
     child.stderr?.setEncoding("utf8");
-    child.stdout?.on("data", (chunk: string) => { active.stdout += chunk; });
-    child.stderr?.on("data", (chunk: string) => { active.stderr += chunk; });
-    child.on("error", (error) => { active.spawnError = error.message; });
+    child.stdout?.on("data", (chunk: string) => {
+      active.stdout += chunk;
+    });
+    child.stderr?.on("data", (chunk: string) => {
+      active.stderr += chunk;
+    });
+    child.on("error", (error) => {
+      active.spawnError = error.message;
+    });
     child.on("close", (status, signal) => this.close(active, status, signal));
     child.stdin?.end(job.command.input);
   }
@@ -333,10 +335,7 @@ export class ColdProcessScheduler {
         const exitAfterSettlement = () => {
           process.exit(signal === "SIGINT" ? 130 : signal === "SIGTERM" ? 143 : 129);
         };
-        void this.abortAndSettle(new Error(`participant received ${signal}`)).then(
-          exitAfterSettlement,
-          exitAfterSettlement,
-        );
+        void this.abortAndSettle(new Error(`participant received ${signal}`)).then(exitAfterSettlement, exitAfterSettlement);
       };
       handlers.set(signal, handler);
       process.once(signal, handler);

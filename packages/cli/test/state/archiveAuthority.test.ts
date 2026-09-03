@@ -44,29 +44,23 @@ describe("state storage authority", () => {
     expect(authority.storage.project_root.fixed).toBe(true);
     expect(authority.storage.project_root.path_override).toBe("forbidden");
     expect(authority.identity.stable_id.format).toBe("<artifact-id>:<entry-number>");
-    expect(authority.envelope.required_fields).toEqual([
-      "schemaVersion",
-      "artifact_id",
-      "entry_number",
-      "record",
-      "record_sha256",
-    ]);
-    expect(authority.envelope.forbidden_fields).toEqual(
-      expect.arrayContaining(["commit", "commit_hash", "git_commit", "git_ref"]),
-    );
+    expect(authority.envelope.required_fields).toEqual(["schemaVersion", "artifact_id", "entry_number", "record", "record_sha256"]);
+    expect(authority.envelope.forbidden_fields).toEqual(expect.arrayContaining(["commit", "commit_hash", "git_commit", "git_ref"]));
     expect(authority.overlays.location).toBe(".agentera/overlays/decisions.yaml");
-    expect(authority.overlays).toMatchObject({ legacy_source_state: "migration_input_only", current_entity_boundary: "decision_satisfaction" });
-    expect(authority.overlays.mutable_paths).toEqual([
-      "satisfaction.state",
-      "satisfaction.evidence",
-      "satisfaction.user_confirmation.confirmed_by",
-      "satisfaction.user_confirmation.confirmed_at",
-    ]);
-    expect(authority.overlays.derived_paths).toEqual(
-      expect.arrayContaining(["satisfaction.review_needed", "satisfaction.caveats"]),
-    );
-    expect(authority.projections.archive).toMatchObject({ source_state: "migration_input_only", role: expect.stringContaining("complete immutable") });
-    expect(authority.projections.current).toMatchObject({ source_state: "migration_input_only", role: expect.stringContaining("bounded aggregate") });
+    expect(authority.overlays).toMatchObject({
+      legacy_source_state: "migration_input_only",
+      current_entity_boundary: "decision_satisfaction",
+    });
+    expect(authority.overlays.mutable_paths).toEqual(["satisfaction.state", "satisfaction.evidence", "satisfaction.user_confirmation.confirmed_by", "satisfaction.user_confirmation.confirmed_at"]);
+    expect(authority.overlays.derived_paths).toEqual(expect.arrayContaining(["satisfaction.review_needed", "satisfaction.caveats"]));
+    expect(authority.projections.archive).toMatchObject({
+      source_state: "migration_input_only",
+      role: expect.stringContaining("complete immutable"),
+    });
+    expect(authority.projections.current).toMatchObject({
+      source_state: "migration_input_only",
+      role: expect.stringContaining("bounded aggregate"),
+    });
     expect(authority.projections.startup.source_state).toBe("canonical_entity_authority");
     expect(authority.projections.current.default_capacity).toEqual({
       active_entries: 10,
@@ -81,13 +75,7 @@ describe("state storage authority", () => {
       detail_availability: "unavailable",
       archive_verified: false,
     });
-    expect(authority.failures.envelope.error_required_fields).toEqual([
-      "class",
-      "message",
-      "syntax",
-      "example",
-      "recovery",
-    ]);
+    expect(authority.failures.envelope.error_required_fields).toEqual(["class", "message", "syntax", "example", "recovery"]);
   });
 
   it("keeps experiment archives objective-scoped and separate from numbered archives", () => {
@@ -110,21 +98,16 @@ describe("state storage authority", () => {
         authority: "references/artifacts/state-storage-authority.yaml",
       },
       publication: { archive_before_projection: true },
-      projection: { policy: "uniform_10_40_50", full_entries: 10, summary_entries: 40, total_entries: 50 },
+      projection: {
+        policy: "uniform_10_40_50",
+        full_entries: 10,
+        summary_entries: 40,
+        total_entries: 50,
+      },
       compatibility: { pre_feature_dropped_detail: "unavailable_and_never_fabricated" },
     });
-    expect(archive.envelope.required_fields).toEqual([
-      "schemaVersion", "stable_id", "objective_id", "experiment_number", "record", "record_sha256", "provenance",
-    ]);
-    expect(archive.publication.order).toEqual([
-      "validate_objective_identity",
-      "validate_full_experiment_record",
-      "validate_archive_envelope",
-      "stage_and_compact_projection",
-      "create_and_fsync_each_missing_archive_directory_entry",
-      "publish_and_fsync_immutable_archive",
-      "replace_and_fsync_projection",
-    ]);
+    expect(archive.envelope.required_fields).toEqual(["schemaVersion", "stable_id", "objective_id", "experiment_number", "record", "record_sha256", "provenance"]);
+    expect(archive.publication.order).toEqual(["validate_objective_identity", "validate_full_experiment_record", "validate_archive_envelope", "stage_and_compact_projection", "create_and_fsync_each_missing_archive_directory_entry", "publish_and_fsync_immutable_archive", "replace_and_fsync_projection"]);
     expect(archive.publication.directory_durability).toContain("fsync of the archive directory");
     expect(archive.publication.exact_full_replay_recovery).toContain("byte-equivalent full record");
     expect(archive.publication.exact_full_replay_recovery).toContain("never inferred");
@@ -155,9 +138,7 @@ describe("state storage authority", () => {
     expect(api.cursor.snapshot_identity).toContain("deterministic hash");
     expect(api.cursor.append_behavior).toContain("excluded");
     expect(api.cursor.unavailable).toContain("cursor_snapshot_unavailable");
-    expect(api.list.response_fields.required).toEqual(
-      expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]),
-    );
+    expect(api.list.response_fields.required).toEqual(expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]));
     expect(api.durability).toMatchObject({
       command: "npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N]",
       default_limit: 100,
@@ -193,9 +174,7 @@ describe("state storage authority", () => {
       confirmed: "review_needed=false only with confirmed_by and confirmed_at",
       inference: expect.stringContaining("forbidden"),
     });
-    expect(authority.projections.current.default_capacity.semantics).toContain(
-      "not retention or deletion limits",
-    );
+    expect(authority.projections.current.default_capacity.semantics).toContain("not retention or deletion limits");
     expect(authority.projections.current.default_capacity.semantics).not.toMatch(/destructive|delete records/i);
   });
 
@@ -204,9 +183,7 @@ describe("state storage authority", () => {
     authority.api.list.maximum_limit = 0;
     authority.api.cursor.append_behavior = "include new entries";
 
-    expect(authorityErrors(authority)).toEqual(
-      expect.arrayContaining(["list.limit_range", "cursor.append_behavior"]),
-    );
+    expect(authorityErrors(authority)).toEqual(expect.arrayContaining(["list.limit_range", "cursor.append_behavior"]));
   });
 
   it("classifies every required compatibility condition without reconstruction", () => {
@@ -240,9 +217,7 @@ describe("state storage authority", () => {
   it("keeps projection and startup byte budgets measurable and aligned with the manifest", () => {
     const authority = loadYaml(AUTHORITY_PATH);
     const manifest = loadYaml(BUDGET_MANIFEST_PATH);
-    const surfaces = Object.fromEntries(
-      manifest.surfaces.map((surface: any) => [surface.id, surface.byte_budget]),
-    );
+    const surfaces = Object.fromEntries(manifest.surfaces.map((surface: any) => [surface.id, surface.byte_budget]));
 
     expect(authority.budgets.measurement.bytes).toContain("serialized byte length");
     expect(authority.budgets.projection.max_utf8_bytes).toBe(32768);
@@ -285,9 +260,7 @@ describe("state storage authority", () => {
     authority.budgets.projection.omission_semantics = "truncate";
 
     const manifest = loadYaml(BUDGET_MANIFEST_PATH);
-    expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).not.toBe(
-      manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").byte_budget,
-    );
+    expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").byte_budget);
     expect(authority.budgets.projection.omission_semantics).not.toContain("Never split UTF-8");
   });
 });

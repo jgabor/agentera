@@ -2,11 +2,7 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  AGENTERA_USER_STATE_NAMES,
-  ROOT_USER_STATE_DIR_NAMES,
-  ROOT_USER_STATE_FILE_NAMES,
-} from "../../../src/upgrade/doctor.js";
+import { AGENTERA_USER_STATE_NAMES, ROOT_USER_STATE_DIR_NAMES, ROOT_USER_STATE_FILE_NAMES } from "../../../src/upgrade/doctor.js";
 
 /** Paths preserved during v2→v3 app-home cleanup (relative to app-home root). */
 export function listPreservedAppHomeRelPaths(appHome: string): string[] {
@@ -115,10 +111,7 @@ export function checksumManifest(root: string, relPaths: readonly string[]): Rec
   return manifest;
 }
 
-export function assertChecksumsUnchanged(
-  root: string,
-  before: Record<string, string>,
-): void {
+export function assertChecksumsUnchanged(root: string, before: Record<string, string>): void {
   for (const [rel, hash] of Object.entries(before)) {
     const full = path.join(root, rel);
     if (!fs.existsSync(full)) {
@@ -132,14 +125,7 @@ export function assertChecksumsUnchanged(
 }
 
 /** Forbidden patterns on rewired managed surfaces. */
-export const PYTHON_LEFTOVER_PATTERNS = [
-  /validate_artifact\.py/,
-  /cursor_session_start\.py/,
-  /cursor_pre_tool_use\.py/,
-  /cursor_session_stop\.py/,
-  /\/app\/scripts\/agentera/,
-  /\buv run\b.*scripts\/agentera/,
-] as const;
+export const PYTHON_LEFTOVER_PATTERNS = [/validate_artifact\.py/, /cursor_session_start\.py/, /cursor_pre_tool_use\.py/, /cursor_session_stop\.py/, /\/app\/scripts\/agentera/, /\buv run\b.*scripts\/agentera/] as const;
 
 export function scanTextForPythonLeftovers(text: string, label: string): string[] {
   const hits: string[] = [];

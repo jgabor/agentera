@@ -3,40 +3,18 @@ import path from "node:path";
 import { projectGlossaryDevelopmentValue } from "../core/developmentInvocation.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
-import {
-  validateConsumerBoundary,
-  validateConsumerEvidenceOwner,
-} from "./glossaryConsumerContractValidation.js";
+import { validateConsumerBoundary, validateConsumerEvidenceOwner } from "./glossaryConsumerContractValidation.js";
 import { validatePersonalCandidateContracts } from "./glossaryCandidateContracts.js";
-import {
-  validateConversationProvenance,
-  validateHistoryEvidence,
-  validatePersonalMiningAuthority,
-  validateProvenanceVariants,
-} from "./glossaryMiningAuthority.js";
+import { validateConversationProvenance, validateHistoryEvidence, validatePersonalMiningAuthority, validateProvenanceVariants } from "./glossaryMiningAuthority.js";
 import { isGlossaryIsoCalendarDate } from "./glossaryEntryTemporal.js";
-import type {
-  ConfirmedVariantGuardContract,
-  PersonalGlossaryAdmissionContract,
-  PersonalGlossaryOutputContract,
-  PersonalProfileGroundingContract,
-} from "./personalGlossaryContracts.js";
-export type {
-  ConfirmedVariantGuardContract,
-  PersonalGlossaryAdmissionContract,
-  PersonalGlossaryOutputContract,
-  PersonalProfileGroundingContract,
-};
+import type { ConfirmedVariantGuardContract, PersonalGlossaryAdmissionContract, PersonalGlossaryOutputContract, PersonalProfileGroundingContract } from "./personalGlossaryContracts.js";
+export type { ConfirmedVariantGuardContract, PersonalGlossaryAdmissionContract, PersonalGlossaryOutputContract, PersonalProfileGroundingContract };
 type Mapping = Record<string, unknown>;
 
 export type GlossaryOwner = "personal" | "project";
 
 export class GlossaryEntryBoundError extends Error {}
-export type GlossaryProvenanceKind =
-  | "personal_explicit_definition"
-  | "personal_inferred_usage"
-  | "personal_inferred_conversation"
-  | "project_file";
+export type GlossaryProvenanceKind = "personal_explicit_definition" | "personal_inferred_usage" | "personal_inferred_conversation" | "project_file";
 
 export interface RetainedEvidence {
   sourceId: string;
@@ -90,9 +68,7 @@ export function glossaryEntryAuthorityPath(root: string = resolveSourceRoot()): 
 }
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function strings(value: unknown): string[] {
@@ -103,21 +79,13 @@ function contract(pathname: string): Mapping {
   return loadYamlMappingFile(pathname) as Mapping;
 }
 
-export function personalGlossaryAdmissionContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): PersonalGlossaryAdmissionContract {
+export function personalGlossaryAdmissionContract(pathname: string = glossaryEntryAuthorityPath()): PersonalGlossaryAdmissionContract {
   const authority = contract(pathname);
   const personal = mapping(mapping(authority.ownership_contracts)?.personal);
   const admission = mapping(personal?.admission);
-  const conversation = mapping(
-    mapping(authority.provenance_variants)?.personal_inferred_conversation,
-  );
-  const explicitVariant = mapping(
-    mapping(authority.provenance_variants)?.personal_explicit_definition,
-  );
-  const explicitDiscovery = mapping(
-    mapping(authority.personal_mining_authority)?.explicit_discovery,
-  );
+  const conversation = mapping(mapping(authority.provenance_variants)?.personal_inferred_conversation);
+  const explicitVariant = mapping(mapping(authority.provenance_variants)?.personal_explicit_definition);
+  const explicitDiscovery = mapping(mapping(authority.personal_mining_authority)?.explicit_discovery);
   const explicitGrammar = mapping(explicitDiscovery?.grammar);
   const expectedEvidence = mapping(conversation?.expected_evidence);
   return {
@@ -135,35 +103,21 @@ export function personalGlossaryAdmissionContract(
     conversationAuthorClasses: strings(conversation?.allowed_author_classes),
     conversationEvidenceFields: strings(conversation?.required_evidence_fields),
     conversationExpectedEvidenceContextFields: strings(expectedEvidence?.context_fields),
-    conversationMinimumEvidenceCount:
-      typeof conversation?.minimum_evidence_count === "number"
-        ? conversation.minimum_evidence_count
-        : 0,
-    conversationCompletenessAuthority:
-      typeof conversation?.completeness_authority === "string"
-        ? conversation.completeness_authority
-        : "",
-    conversationAdmission:
-      typeof conversation?.admission === "string" ? conversation.admission : "",
-    insufficientRecovery:
-      typeof admission?.insufficient_recovery === "string"
-        ? admission.insufficient_recovery.trim()
-        : "",
+    conversationMinimumEvidenceCount: typeof conversation?.minimum_evidence_count === "number" ? conversation.minimum_evidence_count : 0,
+    conversationCompletenessAuthority: typeof conversation?.completeness_authority === "string" ? conversation.completeness_authority : "",
+    conversationAdmission: typeof conversation?.admission === "string" ? conversation.admission : "",
+    insufficientRecovery: typeof admission?.insufficient_recovery === "string" ? admission.insufficient_recovery.trim() : "",
   };
 }
 
-export function confirmedVariantGuardContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): ConfirmedVariantGuardContract {
+export function confirmedVariantGuardContract(pathname: string = glossaryEntryAuthorityPath()): ConfirmedVariantGuardContract {
   const authority = contract(pathname);
   const project = mapping(mapping(authority.ownership_contracts)?.project);
   const guard = mapping(project?.confirmed_variant_guard);
   return { excludedDirectories: strings(guard?.excluded_directory_names) };
 }
 
-export function personalGlossaryOutputContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): PersonalGlossaryOutputContract {
+export function personalGlossaryOutputContract(pathname: string = glossaryEntryAuthorityPath()): PersonalGlossaryOutputContract {
   const authority = contract(pathname);
   const personal = mapping(mapping(authority.ownership_contracts)?.personal);
   const output = mapping(personal?.profile_output);
@@ -188,32 +142,21 @@ export function personalGlossaryOutputContract(
   };
 }
 
-export function personalProfileGroundingContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): PersonalProfileGroundingContract {
+export function personalProfileGroundingContract(pathname: string = glossaryEntryAuthorityPath()): PersonalProfileGroundingContract {
   const grounding = mapping(mapping(contract(pathname).consumer_boundary)?.profile_grounding);
   return {
     command: projectGlossaryDevelopmentValue(grounding?.command, "profile_grounding.command"),
     schemaVersion: typeof grounding?.schema_version === "string" ? grounding.schema_version : "",
-    maxProfileUtf8Bytes:
-      typeof grounding?.max_profile_utf8_bytes === "number" ? grounding.max_profile_utf8_bytes : 0,
+    maxProfileUtf8Bytes: typeof grounding?.max_profile_utf8_bytes === "number" ? grounding.max_profile_utf8_bytes : 0,
     validityStatuses: strings(mapping(grounding?.validity)?.statuses),
     validityClasses: strings(mapping(grounding?.validity)?.classes),
     freshnessStates: strings(mapping(grounding?.freshness)?.states),
-    repairRecovery: projectGlossaryDevelopmentValue(
-      mapping(grounding?.recovery)?.repair,
-      "profile_grounding.repair",
-    ),
-    absentRecovery: projectGlossaryDevelopmentValue(
-      mapping(grounding?.recovery)?.absent,
-      "profile_grounding.absent",
-    ),
+    repairRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.repair, "profile_grounding.repair"),
+    absentRecovery: projectGlossaryDevelopmentValue(mapping(grounding?.recovery)?.absent, "profile_grounding.absent"),
   };
 }
 
-export function glossaryConsumerContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): GlossaryConsumerContract {
+export function glossaryConsumerContract(pathname: string = glossaryEntryAuthorityPath()): GlossaryConsumerContract {
   const consumer = mapping(contract(pathname).consumer_boundary);
   const implementation = mapping(consumer?.implementation);
   const integrations = mapping(implementation?.capability_integrations);
@@ -227,16 +170,8 @@ export function glossaryConsumerContract(
   const gate = mapping(consumer?.downstream_gate);
   return {
     contractStatus: typeof consumer?.contract_status === "string" ? consumer.contract_status : "",
-    implementation: Object.fromEntries(
-      Object.entries(implementation ?? {}).filter(
-        (entry): entry is [string, string] => typeof entry[1] === "string",
-      ),
-    ),
-    capabilityIntegrations: Object.fromEntries(
-      Object.entries(integrations ?? {}).filter(
-        (entry): entry is [string, string] => typeof entry[1] === "string",
-      ),
-    ),
+    implementation: Object.fromEntries(Object.entries(implementation ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
+    capabilityIntegrations: Object.fromEntries(Object.entries(integrations ?? {}).filter((entry): entry is [string, string] => typeof entry[1] === "string")),
     outcomes: Object.keys(matrix ?? {}),
     refreshRequired: strings(refresh?.required),
     refreshNotRequired: strings(refresh?.not_required),
@@ -244,24 +179,19 @@ export function glossaryConsumerContract(
     durableAllowed: strings(durable?.allowed),
     caveatOwner: typeof caveat?.durable_owner === "string" ? caveat.durable_owner : "",
     caveatChannel: typeof caveat?.durable_channel === "string" ? caveat.durable_channel : "",
-    caveatEvents: ["current", "resolved", "superseded"].filter((event) =>
-      nonEmpty(lifecycle?.[event]),
-    ),
+    caveatEvents: ["current", "resolved", "superseded"].filter((event) => nonEmpty(lifecycle?.[event])),
     caveatExpiration: typeof lifecycle?.expiration === "string" ? lifecycle.expiration : "",
     downstreamGateStatus: typeof gate?.status === "string" ? gate.status : "",
   };
 }
 
-export function glossaryAcquisitionContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): GlossaryAcquisitionContract {
+export function glossaryAcquisitionContract(pathname: string = glossaryEntryAuthorityPath()): GlossaryAcquisitionContract {
   const acquisition = mapping(mapping(contract(pathname).consumer_boundary)?.acquisition);
   const bounds = mapping(acquisition?.bounds);
   const availability = mapping(acquisition?.availability);
   const output = mapping(acquisition?.output);
   return {
-    maxSourceUtf8Bytes:
-      typeof bounds?.max_source_utf8_bytes === "number" ? bounds.max_source_utf8_bytes : 0,
+    maxSourceUtf8Bytes: typeof bounds?.max_source_utf8_bytes === "number" ? bounds.max_source_utf8_bytes : 0,
     maxEntries: typeof bounds?.max_entries === "number" ? bounds.max_entries : 0,
     availabilityStates: strings(availability?.states),
     outputEntryFields: strings(output?.entry_fields),
@@ -277,18 +207,10 @@ function nonEmpty(value: unknown): boolean {
 }
 
 export function isSafeProjectSourcePath(value: unknown): value is string {
-  return (
-    typeof value === "string" &&
-    value.length > 0 &&
-    !path.posix.isAbsolute(value) &&
-    !path.win32.isAbsolute(value) &&
-    !value.split(/[\\/]/).includes("..")
-  );
+  return typeof value === "string" && value.length > 0 && !path.posix.isAbsolute(value) && !path.win32.isAbsolute(value) && !value.split(/[\\/]/).includes("..");
 }
 
-export function validateGlossaryEntryContract(
-  pathname: string = glossaryEntryAuthorityPath(),
-): string[] {
+export function validateGlossaryEntryContract(pathname: string = glossaryEntryAuthorityPath()): string[] {
   let authority: Mapping;
   try {
     authority = contract(pathname);
@@ -305,21 +227,14 @@ export function validateGlossaryEntryContract(
 
   const occurrence = mapping(authority.term_occurrence);
   if (
-    occurrence?.runtime !==
-      "packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm" ||
-    !sameStrings(occurrence?.consumers, [
-      "audit_evidence",
-      "project_publication_revalidation",
-      "confirmed_variant_guard",
-    ]) ||
+    occurrence?.runtime !== "packages/cli/src/registries/glossaryTermOccurrence.ts#containsGlossaryTerm" ||
+    !sameStrings(occurrence?.consumers, ["audit_evidence", "project_publication_revalidation", "confirmed_variant_guard"]) ||
     occurrence?.comparison !== "exact_case_sensitive_literal" ||
     occurrence?.normalization !== "none" ||
     occurrence?.identifier_continuation !== "unicode_ID_Continue_plus_dollar_ZWNJ_ZWJ" ||
     !nonEmpty(occurrence?.rule)
   ) {
-    errors.push(
-      "term_occurrence must define one exact-case escaped literal matcher with ECMAScript identifier-continuation boundaries",
-    );
+    errors.push("term_occurrence must define one exact-case escaped literal matcher with ECMAScript identifier-continuation boundaries");
   }
 
   const primitive = mapping(authority.shared_primitive);
@@ -339,37 +254,22 @@ export function validateGlossaryEntryContract(
     }
   }
   const confidence = mapping(fields?.confidence);
-  if (
-    confidence?.type !== "integer" ||
-    confidence?.range_from !== "skills/agentera/protocol.yaml#CONFIDENCE_SCALE"
-  ) {
+  if (confidence?.type !== "integer" || confidence?.range_from !== "skills/agentera/protocol.yaml#CONFIDENCE_SCALE") {
     errors.push("confidence must derive integer bounds from protocol CONFIDENCE_SCALE");
   }
   const permanence = mapping(fields?.permanence);
-  if (
-    permanence?.type !== "enum" ||
-    !sameStrings(permanence?.values, ["stable", "durable", "situational"])
-  ) {
+  if (permanence?.type !== "enum" || !sameStrings(permanence?.values, ["stable", "durable", "situational"])) {
     errors.push("permanence must use the existing profile permanence classes");
   }
   if (!nonEmpty(permanence?.classification_rule)) {
     errors.push("permanence classification must remain independent from confidence");
   }
   const temporal = mapping(fields?.temporal);
-  if (
-    temporal?.type !== "object" ||
-    temporal?.field_type !== "iso_date" ||
-    !sameStrings(temporal?.required_fields, ["observed_at", "last_confirmed_at"])
-  ) {
+  if (temporal?.type !== "object" || temporal?.field_type !== "iso_date" || !sameStrings(temporal?.required_fields, ["observed_at", "last_confirmed_at"])) {
     errors.push("temporal metadata must include observed_at and last_confirmed_at");
   }
   const provenance = mapping(fields?.provenance);
-  if (
-    provenance?.type !== "discriminated_union" ||
-    provenance?.discriminator !== "kind" ||
-    provenance?.evidence_field !== "evidence" ||
-    provenance?.variants_from !== "provenance_variants"
-  ) {
+  if (provenance?.type !== "discriminated_union" || provenance?.discriminator !== "kind" || provenance?.evidence_field !== "evidence" || provenance?.variants_from !== "provenance_variants") {
     errors.push("provenance must derive its kind and evidence variants from provenance_variants");
   }
 
@@ -379,27 +279,15 @@ export function validateGlossaryEntryContract(
   const ownership = mapping(authority.ownership_contracts);
   const personal = mapping(ownership?.personal);
   if (personal?.scope !== "user") errors.push("personal ownership scope must be user");
-  if (
-    !sameStrings(personal?.allowed_provenance, [
-      "personal_explicit_definition",
-      "personal_inferred_usage",
-      "personal_inferred_conversation",
-    ])
-  ) {
+  if (!sameStrings(personal?.allowed_provenance, ["personal_explicit_definition", "personal_inferred_usage", "personal_inferred_conversation"])) {
     errors.push("personal ownership must admit only personal provenance variants");
   }
   const personalInput = mapping(personal?.input);
   const excluded = strings(personalInput?.excluded_categories);
-  for (const category of [
-    "project_glossary_artifact_identity",
-    "project_glossary_path",
-    "project_glossary_record",
-    "project_file_provenance",
-  ]) {
+  for (const category of ["project_glossary_artifact_identity", "project_glossary_path", "project_glossary_record", "project_file_provenance"]) {
     if (!excluded.includes(category)) errors.push(`personal input must exclude ${category}`);
   }
-  if (personalInput?.tier !== "signal")
-    errors.push("personal input must use the bounded signal tier");
+  if (personalInput?.tier !== "signal") errors.push("personal input must use the bounded signal tier");
   if (personalInput?.authority !== "references/analysis/evidence-tier-authority.yaml") {
     errors.push("personal input must use evidence-tier authority");
   }
@@ -425,47 +313,35 @@ export function validateGlossaryEntryContract(
     ]) ||
     !sameStrings(personalImplementation?.inactive, ["lookup"])
   ) {
-    errors.push(
-      "personal implementation must be active_partial while lookup remains inactive",
-    );
+    errors.push("personal implementation must be active_partial while lookup remains inactive");
   }
   if (
-    !sameStrings(mapping(admission?.explicit)?.candidate_signal_types, [
-      "correction",
-      "decision",
-    ]) ||
-    !sameStrings(mapping(admission?.inferred)?.candidate_signal_types, [
-      "instruction",
-      "configuration",
-    ]) ||
-    !sameStrings(mapping(admission?.inferred)?.source_kinds, [
-      "instruction_document",
-      "project_config_signal",
-    ]) ||
+    !sameStrings(mapping(admission?.explicit)?.candidate_signal_types, ["correction", "decision"]) ||
+    !sameStrings(mapping(admission?.inferred)?.candidate_signal_types, ["instruction", "configuration"]) ||
+    !sameStrings(mapping(admission?.inferred)?.source_kinds, ["instruction_document", "project_config_signal"]) ||
     !nonEmpty(admission?.read_rule) ||
     !nonEmpty(admission?.insufficient_recovery) ||
     !nonEmpty(admission?.isolation_rule)
   ) {
-    errors.push(
-      "personal admission must declare bounded classifier, recovery, and isolation rules",
-    );
+    errors.push("personal admission must declare bounded classifier, recovery, and isolation rules");
   }
 
   const decay = mapping(personal?.retention_and_decay);
   if (decay?.authority !== "packages/cli/src/capabilities/profile/instructions.ts#Profile-format") {
     errors.push("personal decay must delegate to the existing profile decay authority");
   }
-  if (
-    mapping(authority.authority)?.confidence !== "skills/agentera/protocol.yaml#CONFIDENCE_SCALE"
-  ) {
+  if (mapping(authority.authority)?.confidence !== "skills/agentera/protocol.yaml#CONFIDENCE_SCALE") {
     errors.push("contract confidence authority must be protocol CONFIDENCE_SCALE");
   }
   for (const field of ["retention", "confidence", "permanence"]) {
     if (!nonEmpty(decay?.[field])) errors.push(`personal retention_and_decay.${field} is required`);
   }
-  const profileOutput = mapping(personal?.profile_output), profileSection = mapping(profileOutput?.section);
+  const profileOutput = mapping(personal?.profile_output),
+    profileSection = mapping(profileOutput?.section);
   const mergeIdentity = mapping(profileOutput?.merge_identity);
-  const profileCommand = mapping(profileOutput?.command), profileRequest = mapping(profileCommand?.request), profileFilesystem = mapping(profileOutput?.filesystem);
+  const profileCommand = mapping(profileOutput?.command),
+    profileRequest = mapping(profileCommand?.request),
+    profileFilesystem = mapping(profileOutput?.filesystem);
   const reviewAuthorization = mapping(profileRequest?.review_authorization);
   if (
     profileOutput?.owner !== "personal_profile_publication" ||
@@ -490,8 +366,7 @@ export function validateGlossaryEntryContract(
     reviewAuthorization?.source !== "personal_mining_authority.review_records.disposition.publication_authorization" ||
     !nonEmpty(reviewAuthorization?.rule) ||
     !nonEmpty(profileRequest?.date_rule) ||
-    mapping(profileCommand?.result)?.schema_version !==
-      "agentera.personalGlossaryPublicationResult.v1" ||
+    mapping(profileCommand?.result)?.schema_version !== "agentera.personalGlossaryPublicationResult.v1" ||
     mapping(profileCommand?.result)?.max_utf8_bytes !== 4096 ||
     !sameStrings(profileCommand?.output_statuses, ["changed", "unchanged_replay", "dry_run_candidate"]) ||
     !nonEmpty(profileCommand?.rule) ||
@@ -529,78 +404,38 @@ export function validateGlossaryEntryContract(
   const publicationRequest = mapping(publication?.request);
   const persistedDocument = mapping(publication?.persisted_document);
   const terminologySetIdentity = mapping(persistedDocument?.terminology_set_identity);
-  if (
-    project?.scope !== "repository" ||
-    !sameStrings(project?.allowed_provenance, ["project_file"])
-  ) {
+  if (project?.scope !== "repository" || !sameStrings(project?.allowed_provenance, ["project_file"])) {
     errors.push("project ownership must be repository-scoped project_file provenance");
   }
   if (
     projectImplementation?.status !== "active" ||
-    !sameStrings(projectImplementation?.active, [
-      "audit_proposal_digest",
-      "build_publication",
-      "confirmed_variant_guard",
-    ]) ||
-    !sameStrings(projectImplementation?.inactive, [
-      "lookup",
-      "precedence",
-      "semantic_equivalence_review",
-    ]) ||
+    !sameStrings(projectImplementation?.active, ["audit_proposal_digest", "build_publication", "confirmed_variant_guard"]) ||
+    !sameStrings(projectImplementation?.inactive, ["lookup", "precedence", "semantic_equivalence_review"]) ||
     proposalDigest?.algorithm !== "sha256" ||
     proposalDigest?.encoding !== "lowercase_hex" ||
     !nonEmpty(proposalDigest?.canonicalization)
   ) {
-    errors.push(
-      "project glossary digest and build publication must remain active under the declared consumer boundary",
-    );
+    errors.push("project glossary digest and build publication must remain active under the declared consumer boundary");
   }
   if (
     confirmedVariantGuard?.owner !== "packages/cli/src/cli/commands/validate.ts#validateStatePayload" ||
     confirmedVariantGuard?.scanner !== "packages/cli/src/validate/glossaryVariantGuard.ts#scanConfirmedVariantViolations" ||
     confirmedVariantGuard?.command !== "npx -y agentera@next check validate state" ||
     confirmedVariantGuard?.validation_surface !== "packages/cli/test/cli/glossaryVariantGuard.test.ts" ||
-    confirmedVariantGuard?.loader !==
-      "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
+    confirmedVariantGuard?.loader !== "packages/cli/src/state/write/glossaryPublication.ts#loadProjectGlossaryDocument" ||
     confirmedVariantGuard?.matching !== "exact_case_sensitive_boundary_aware_literal" ||
     !nonEmpty(confirmedVariantGuard?.source_rule) ||
     !nonEmpty(confirmedVariantGuard?.approved_evidence_rule) ||
     !nonEmpty(confirmedVariantGuard?.failure_rule) ||
-    !sameStrings(confirmedVariantGuard?.exclusions, [
-      "generated_output",
-      "vendor_and_dependency_state",
-      "cache_state",
-      "repository_metadata",
-      "historical_agentera_state",
-      "project_glossary_document",
-      "unrelated_agentera_state",
-    ]) ||
-    !sameStrings(confirmedVariantGuard?.excluded_directory_names, [
-      ".agentera",
-      ".agentera-generated",
-      ".cache",
-      ".git",
-      ".next",
-      ".pnpm",
-      ".turbo",
-      ".venv",
-      ".vite",
-      "build",
-      "bundle",
-      "coverage",
-      "dist",
-      "node_modules",
-      "target",
-      "vendor",
-    ]) ||
+    !sameStrings(confirmedVariantGuard?.exclusions, ["generated_output", "vendor_and_dependency_state", "cache_state", "repository_metadata", "historical_agentera_state", "project_glossary_document", "unrelated_agentera_state"]) ||
+    !sameStrings(confirmedVariantGuard?.excluded_directory_names, [".agentera", ".agentera-generated", ".cache", ".git", ".next", ".pnpm", ".turbo", ".venv", ".vite", "build", "bundle", "coverage", "dist", "node_modules", "target", "vendor"]) ||
     !nonEmpty(confirmedVariantGuard?.exclusion_rule)
   ) {
     errors.push("confirmed variant guard must run through the active state validator and reuse validated project glossary pairs with bounded exclusions");
   }
   if (
     proposalValidation?.owner !== "audit" ||
-    proposalValidation?.shared_runtime !==
-      "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
+    proposalValidation?.shared_runtime !== "packages/cli/src/audit/terminologyDrift.ts#validateTerminologyProposal" ||
     !sameStrings(proposalValidation?.required_rules, [
       "safe_distinct_evidence_identities_per_term",
       "unicode_caseless_exact_unique_term_identities",
@@ -627,41 +462,22 @@ export function validateGlossaryEntryContract(
   }
   if (
     publication?.owner !== "build" ||
-    publication?.command !==
-      "npx -y agentera@next state glossary publish --input REQUEST" ||
+    publication?.command !== "npx -y agentera@next state glossary publish --input REQUEST" ||
     publicationRequest?.schema_version !== "agentera.glossaryPublicationRequest.v1" ||
-    !sameStrings(publicationRequest?.required_fields, [
-      "schema_version",
-      "proposal",
-      "confirmation",
-    ]) ||
+    !sameStrings(publicationRequest?.required_fields, ["schema_version", "proposal", "confirmation"]) ||
     persistedDocument?.schema_version !== "agentera.projectGlossary.v1" ||
     !sameStrings(persistedDocument?.required_fields, ["schema_version", "approvals", "entries"]) ||
     terminologySetIdentity?.normalization !== "unicode_caseless_exact_no_normalization" ||
-    !sameStrings(terminologySetIdentity?.members, [
-      "paired_entry.term",
-      "paired_approval.proposal.variants.term",
-    ]) ||
+    !sameStrings(terminologySetIdentity?.members, ["paired_entry.term", "paired_approval.proposal.variants.term"]) ||
     terminologySetIdentity?.uniqueness !== "global_across_complete_document" ||
     !nonEmpty(terminologySetIdentity?.rule) ||
     !nonEmpty(publication?.transaction) ||
     !nonEmpty(publication?.merge_and_replay)
   ) {
-    errors.push(
-      "project publication must define one versioned atomic build-owned request and document",
-    );
+    errors.push("project publication must define one versioned atomic build-owned request and document");
   }
-  if (
-    projectInput?.authority !== "repository_files" ||
-    !nonEmpty(projectInput?.bounded_rule) ||
-    !sameStrings(projectInput?.excluded_categories, [
-      "personal_history_record",
-      "personal_history_anchor",
-    ])
-  ) {
-    errors.push(
-      "project input must be bounded repository-file evidence excluding personal history",
-    );
+  if (projectInput?.authority !== "repository_files" || !nonEmpty(projectInput?.bounded_rule) || !sameStrings(projectInput?.excluded_categories, ["personal_history_record", "personal_history_anchor"])) {
+    errors.push("project input must be bounded repository-file evidence excluding personal history");
   }
 
   const consumer = mapping(authority.consumer_boundary);
@@ -669,33 +485,15 @@ export function validateGlossaryEntryContract(
   errors.push(...validateConsumerEvidenceOwner(consumer));
   const profileGrounding = mapping(consumer?.profile_grounding);
   if (
-    !sameStrings(consumer?.forbidden_persisted_entry_fields, [
-      "precedence",
-      "collision",
-      "review",
-    ]) ||
+    !sameStrings(consumer?.forbidden_persisted_entry_fields, ["precedence", "collision", "review"]) ||
     profileGrounding?.implementation !== "active_exclusion_only" ||
     !sameStrings(profileGrounding?.capabilities, ["discuss", "plan", "build"]) ||
     profileGrounding?.command !== "npx -y agentera@next report profile-grounding" ||
     profileGrounding?.schema_version !== "agentera.profileGrounding.v1" ||
-    profileGrounding?.parser !==
-      "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
+    profileGrounding?.parser !== "packages/cli/src/analytics/personalGlossaryProfile.ts#personalProfileGrounding" ||
     profileGrounding?.max_profile_utf8_bytes !== 65536 ||
-    !sameStrings(mapping(profileGrounding?.validity)?.statuses, [
-      "absent",
-      "valid",
-      "repair_needed",
-    ]) ||
-    !sameStrings(mapping(profileGrounding?.validity)?.classes, [
-      "absent",
-      "valid",
-      "malformed",
-      "ambiguous",
-      "unreadable",
-      "unsafe",
-      "oversized",
-      "invalid_utf8",
-    ]) ||
+    !sameStrings(mapping(profileGrounding?.validity)?.statuses, ["absent", "valid", "repair_needed"]) ||
+    !sameStrings(mapping(profileGrounding?.validity)?.classes, ["absent", "valid", "malformed", "ambiguous", "unreadable", "unsafe", "oversized", "invalid_utf8"]) ||
     !sameStrings(mapping(profileGrounding?.freshness)?.states, ["current", "stale", "unknown"]) ||
     !nonEmpty(mapping(profileGrounding?.recovery)?.repair) ||
     !nonEmpty(mapping(profileGrounding?.recovery)?.absent) ||
@@ -703,30 +501,15 @@ export function validateGlossaryEntryContract(
     !nonEmpty(profileGrounding?.content_rule) ||
     !nonEmpty(profileGrounding?.failure_rule)
   ) {
-    errors.push(
-      "sanitized profile grounding must continue excluding the owned glossary while consumer acquisition remains separate",
-    );
+    errors.push("sanitized profile grounding must continue excluding the owned glossary while consumer acquisition remains separate");
   }
   const exactCollision = mapping(consumer?.exact_collision);
-  if (
-    exactCollision?.behavior !== "project_precedence_at_consumption" ||
-    exactCollision?.persistence !== "forbidden" ||
-    exactCollision?.personal_entry_suppression !== "forbidden"
-  ) {
-    errors.push(
-      "exact collisions must defer project precedence to consumption without persistence or suppression",
-    );
+  if (exactCollision?.behavior !== "project_precedence_at_consumption" || exactCollision?.persistence !== "forbidden" || exactCollision?.personal_entry_suppression !== "forbidden") {
+    errors.push("exact collisions must defer project precedence to consumption without persistence or suppression");
   }
   const inferred = mapping(consumer?.inferred_semantic_equivalence);
-  if (
-    inferred?.behavior !== "user_review" ||
-    inferred?.automatic_merge !== "forbidden" ||
-    inferred?.suppression !== "forbidden" ||
-    inferred?.precedence !== "forbidden"
-  ) {
-    errors.push(
-      "inferred equivalence must defer to user review without merge, suppression, or precedence",
-    );
+  if (inferred?.behavior !== "user_review" || inferred?.automatic_merge !== "forbidden" || inferred?.suppression !== "forbidden" || inferred?.precedence !== "forbidden") {
+    errors.push("inferred equivalence must defer to user review without merge, suppression, or precedence");
   }
 
   const capabilities = mapping(authority.deferred_capability_contracts);
@@ -735,24 +518,16 @@ export function validateGlossaryEntryContract(
   if (
     profile?.implementation !== "active_partial" ||
     !sameStrings(profile?.capabilities, ["profile"]) ||
-    !sameStrings(profile?.active_behavior, [
-      "ownership_contracts.personal.admission",
-      "personal_mining_authority.profile_full",
-    ]) ||
+    !sameStrings(profile?.active_behavior, ["ownership_contracts.personal.admission", "personal_mining_authority.profile_full"]) ||
     !sameStrings(profile?.inactive_behavior, ["lookup"]) ||
     profileContracts?.admission !== "ownership_contracts.personal.input" ||
     profileContracts?.provenance !== "ownership_contracts.personal.allowed_provenance" ||
     profileContracts?.confidence !== "shared_primitive.fields.confidence" ||
     profileContracts?.retention_and_decay !== "ownership_contracts.personal.retention_and_decay" ||
     profileContracts?.profile_full !== "personal_mining_authority.profile_full" ||
-    !sameStrings(profile?.forbidden_current_claims, [
-      "lookup",
-      "project_glossary_consumption",
-    ])
+    !sameStrings(profile?.forbidden_current_claims, ["lookup", "project_glossary_consumption"])
   ) {
-    errors.push(
-      "profile glossary synthesis must reuse existing consented input and only canonical authorized personal publication",
-    );
+    errors.push("profile glossary synthesis must reuse existing consented input and only canonical authorized personal publication");
   }
   const audit = mapping(capabilities?.audit);
   const findingFamily = mapping(audit?.finding_family);
@@ -775,12 +550,7 @@ export function validateGlossaryEntryContract(
     auditInputs?.personal_history !== "ownership_contracts.personal.input" ||
     auditInputs?.project_file !== "ownership_contracts.project.input" ||
     auditInputs?.project_file_history_classification !== "forbidden" ||
-    !sameStrings(audit?.forbidden_current_claims, [
-      "persistence",
-      "approval",
-      "docs_mapping_mutation",
-      "lookup",
-    ])
+    !sameStrings(audit?.forbidden_current_claims, ["persistence", "approval", "docs_mapping_mutation", "lookup"])
   ) {
     errors.push("audit findings and proposal digests must be active and read-only");
   }
@@ -790,13 +560,7 @@ export function validateGlossaryEntryContract(
     !sameStrings(buildPublication?.capabilities, ["build"]) ||
     buildPublication?.active_behavior !== "ownership_contracts.project.publication" ||
     buildPublication?.output !== "skills/agentera/schemas/artifacts/glossary.yaml" ||
-    !sameStrings(buildPublication?.inactive_behavior, [
-      "lookup",
-      "precedence",
-      "semantic_equivalence_review",
-      "personal_profile_mutation",
-      "docs_mapping_mutation",
-    ])
+    !sameStrings(buildPublication?.inactive_behavior, ["lookup", "precedence", "semantic_equivalence_review", "personal_profile_mutation", "docs_mapping_mutation"])
   ) {
     errors.push("build must own only active typed glossary publication");
   }
@@ -816,11 +580,7 @@ export function validateGlossaryEntryContract(
   return errors;
 }
 
-export function validateGlossaryCapabilityImplementationClaim(
-  capability: string,
-  claimedImplementation: string,
-  pathname: string = glossaryEntryAuthorityPath(),
-): string[] {
+export function validateGlossaryCapabilityImplementationClaim(capability: string, claimedImplementation: string, pathname: string = glossaryEntryAuthorityPath()): string[] {
   if (!DEFERRED_CAPABILITIES.includes(capability as DeferredGlossaryCapability)) {
     return [`${capability} is not an affected glossary capability`];
   }
@@ -830,12 +590,9 @@ export function validateGlossaryCapabilityImplementationClaim(
     .map(mapping)
     .find((candidate) => strings(candidate?.capabilities).includes(capability));
   if (!declaration) return [`${capability} has no deferred glossary declaration`];
-  const declaredImplementation =
-    mapping(declaration.implementation)?.[capability] ?? declaration.implementation;
+  const declaredImplementation = mapping(declaration.implementation)?.[capability] ?? declaration.implementation;
   if (claimedImplementation !== declaredImplementation) {
-    return [
-      `${capability} glossary behavior is ${String(declaredImplementation)}; ${claimedImplementation} is a false implementation claim`,
-    ];
+    return [`${capability} glossary behavior is ${String(declaredImplementation)}; ${claimedImplementation} is a false implementation claim`];
   }
   return [];
 }
@@ -845,28 +602,19 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   const primitive = mapping(authority.shared_primitive);
   const fields = mapping(primitive?.fields);
   const consumer = mapping(authority.consumer_boundary);
-  const forbidden = strings(consumer?.forbidden_persisted_entry_fields).filter(
-    (field) => field in entry,
-  );
+  const forbidden = strings(consumer?.forbidden_persisted_entry_fields).filter((field) => field in entry);
   if (forbidden.length > 0) {
     errors.push(`entry contains forbidden persisted fields: ${forbidden.join(", ")}`);
   }
   const requiredFields = strings(primitive?.required_fields);
   const additional = Object.keys(entry).filter((field) => !requiredFields.includes(field));
-  if (additional.length > 0)
-    errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
+  if (additional.length > 0) errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
   for (const field of requiredFields) {
     if (!(field in entry)) errors.push(`${field} is required`);
   }
-  if (typeof entry.term !== "string" || entry.term.trim() === "")
-    errors.push("term must be a non-empty string");
-  if (typeof entry.meaning !== "string" || entry.meaning.trim() === "")
-    errors.push("meaning must be a non-empty string");
-  if (
-    !Number.isInteger(entry.confidence) ||
-    Number(entry.confidence) < 0 ||
-    Number(entry.confidence) > 100
-  ) {
+  if (typeof entry.term !== "string" || entry.term.trim() === "") errors.push("term must be a non-empty string");
+  if (typeof entry.meaning !== "string" || entry.meaning.trim() === "") errors.push("meaning must be a non-empty string");
+  if (!Number.isInteger(entry.confidence) || Number(entry.confidence) < 0 || Number(entry.confidence) > 100) {
     errors.push("confidence must be an integer from protocol CS1-CS5");
   }
   if (!strings(mapping(fields?.permanence)?.values).includes(String(entry.permanence))) {
@@ -881,12 +629,7 @@ function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
   return errors;
 }
 
-function evidenceShape(
-  evidence: Mapping,
-  requiredFields: string[],
-  kind: string,
-  index: number,
-): string[] {
+function evidenceShape(evidence: Mapping, requiredFields: string[], kind: string, index: number): string[] {
   const errors: string[] = [];
   const missing = requiredFields.filter((field) => !(field in evidence));
   const forbidden = Object.keys(evidence).filter((field) => !requiredFields.includes(field));
@@ -894,19 +637,12 @@ function evidenceShape(
     errors.push(`provenance.evidence[${index}] is missing ${kind} fields: ${missing.join(", ")}`);
   }
   if (forbidden.length > 0) {
-    errors.push(
-      `provenance.evidence[${index}] contains fields forbidden for ${kind}: ${forbidden.join(", ")}`,
-    );
+    errors.push(`provenance.evidence[${index}] contains fields forbidden for ${kind}: ${forbidden.join(", ")}`);
   }
   return errors;
 }
 
-export function validateGlossaryEntry(
-  entry: Mapping,
-  owner: GlossaryOwner,
-  context: GlossaryAdmissionContext = { retainedHistory: new Map() },
-  pathname: string = glossaryEntryAuthorityPath(),
-): string[] {
+export function validateGlossaryEntry(entry: Mapping, owner: GlossaryOwner, context: GlossaryAdmissionContext = { retainedHistory: new Map() }, pathname: string = glossaryEntryAuthorityPath()): string[] {
   const authorityErrors = validateGlossaryEntryContract(pathname);
   if (authorityErrors.length > 0) {
     return authorityErrors.map((error) => `glossary authority invalid: ${error}`);
@@ -921,11 +657,7 @@ export function validateGlossaryEntry(
   const evidence = Array.isArray(provenance?.evidence) ? provenance.evidence.map(mapping) : [];
 
   if (!kind || !strings(ownerContract.allowed_provenance).includes(kind)) {
-    errors.push(
-      owner === "personal"
-        ? "personal entries admit only bounded personal-history provenance"
-        : "project entries admit only repository-file provenance",
-    );
+    errors.push(owner === "personal" ? "personal entries admit only bounded personal-history provenance" : "project entries admit only repository-file provenance");
     return errors;
   }
   const variant = mapping(variants[kind]) as Mapping;
@@ -941,11 +673,7 @@ export function validateGlossaryEntry(
     } else {
       errors.push(...validateHistoryEvidence(evidence[0], context, 0));
       const retained = context.retainedHistory.get(String(evidence[0].evidence_anchor));
-      if (
-        !retained ||
-        evidence[0].signal_type !== retained.signalType ||
-        !strings(variant.allowed_signal_types).includes(retained.signalType)
-      ) {
+      if (!retained || evidence[0].signal_type !== retained.signalType || !strings(variant.allowed_signal_types).includes(retained.signalType)) {
         errors.push("explicit personal definition evidence has an inadmissible signal type");
       }
     }
@@ -958,20 +686,14 @@ export function validateGlossaryEntry(
       for (const [index, item] of (evidence as Mapping[]).entries()) {
         errors.push(...validateHistoryEvidence(item, context, index));
         const retained = context.retainedHistory.get(String(item.evidence_anchor));
-        if (
-          !retained ||
-          item.source_kind !== retained.sourceKind ||
-          !strings(variant.allowed_source_kinds).includes(retained.sourceKind)
-        ) {
+        if (!retained || item.source_kind !== retained.sourceKind || !strings(variant.allowed_source_kinds).includes(retained.sourceKind)) {
           errors.push(`provenance.evidence[${index}] has an inadmissible inferred source kind`);
         }
       }
       const sourceIds = evidence.map((item) => String(item?.source_id));
       const anchors = evidence.map((item) => String(item?.evidence_anchor));
       if (new Set(sourceIds).size !== 2 || new Set(anchors).size !== 2) {
-        errors.push(
-          "inferred personal usage requires two distinct retained identities and anchors",
-        );
+        errors.push("inferred personal usage requires two distinct retained identities and anchors");
       }
     }
   }

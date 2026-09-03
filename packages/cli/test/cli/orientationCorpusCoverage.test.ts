@@ -6,19 +6,13 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { buildOrientationAttention } from "../../src/cli/orientation/attention.js";
-import {
-  corpusCoverageAttention,
-  corpusCoverageSummary,
-} from "../../src/cli/orientation/corpusCoverage.js";
+import { corpusCoverageAttention, corpusCoverageSummary } from "../../src/cli/orientation/corpusCoverage.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 import { projectIntegrationAttention } from "../../src/upgrade/projectIntegration.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
-import type {
-  LifecycleProjectedAction,
-  RuntimeLifecycleSnapshot,
-} from "../../src/runtime/lifecycleSnapshot.js";
+import type { LifecycleProjectedAction, RuntimeLifecycleSnapshot } from "../../src/runtime/lifecycleSnapshot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -28,7 +22,13 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
   return {
     schemas_dir: "",
     schemas: {},
-    app: { status: "ok", appHome: "/tmp", appHomeSource: "test", managedAppRoot: "/tmp", userDataRoot: "/tmp" },
+    app: {
+      status: "ok",
+      appHome: "/tmp",
+      appHomeSource: "test",
+      managedAppRoot: "/tmp",
+      userDataRoot: "/tmp",
+    },
     mode: "returning",
     profile_dict: { status: "loaded", path: "/tmp/PROFILE.md" },
     profile_status: "valid",
@@ -63,11 +63,7 @@ function minimalOrientationState(corpusCoverage: OrientationState["corpus_covera
   };
 }
 
-function lifecycleAction(
-  actionClass: LifecycleProjectedAction["actionClass"],
-  runtimeIds: string[],
-  instruction?: string,
-): LifecycleProjectedAction {
+function lifecycleAction(actionClass: LifecycleProjectedAction["actionClass"], runtimeIds: string[], instruction?: string): LifecycleProjectedAction {
   return {
     id: `${actionClass}:${runtimeIds.join(",")}`,
     runtimeIds,
@@ -87,10 +83,7 @@ function lifecycleAction(
       manual: actionClass === "manual_verification",
       diagnostic: actionClass === "unobservable_gap",
     },
-    manual:
-      actionClass === "manual_verification"
-        ? { command: "/skills list", instruction: instruction ?? "Run `/skills list` in the host." }
-        : null,
+    manual: actionClass === "manual_verification" ? { command: "/skills list", instruction: instruction ?? "Run `/skills list` in the host." } : null,
   };
 }
 
@@ -186,9 +179,7 @@ describe("corpus coverage attention", () => {
     );
     const summary = corpusCoverageSummary({ AGENTERA_PROFILE_DIR: profileDir }, "linux");
     expect(summary.status).toBe("loaded");
-    expect(summary.available_but_not_selected).toEqual([
-      { runtime: "opencode", reason: "disabled_by_flag", store_path: "/tmp/opencode.db" },
-    ]);
+    expect(summary.available_but_not_selected).toEqual([{ runtime: "opencode", reason: "disabled_by_flag", store_path: "/tmp/opencode.db" }]);
   });
 
   it("loads coverage envelope from bounded tiers when published", () => {
@@ -196,10 +187,33 @@ describe("corpus coverage attention", () => {
     const corpusPath = path.join(profileDir, "intermediate", "corpus.json");
     fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
     const records: Record<string, unknown>[] = [
-      { source_id: "c1", source_kind: "conversation_turn", timestamp: "2026-01-01T00:00:00.000Z", project_id: "demo", runtime: "opencode", source_class: "active_runtime", source_product: "opencode", active_runtime: true, adapter_version: ADAPTER_VERSION, session_id: "s1", conversation_key: "s1", origin_id: originIdentity("fixture:c1"), content_fingerprint: contentFingerprint("hi"), author_class: "user", data: { actor: "user", text: "hi" } },
+      {
+        source_id: "c1",
+        source_kind: "conversation_turn",
+        timestamp: "2026-01-01T00:00:00.000Z",
+        project_id: "demo",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        session_id: "s1",
+        conversation_key: "s1",
+        origin_id: originIdentity("fixture:c1"),
+        content_fingerprint: contentFingerprint("hi"),
+        author_class: "user",
+        data: { actor: "user", text: "hi" },
+      },
     ];
     const runtimeStatuses = [
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publishEvidenceTiers(records, {
       tiersDir: tiersDirForCorpusPath(corpusPath),
@@ -219,9 +233,7 @@ describe("corpus coverage attention", () => {
     const summary = corpusCoverageSummary({ AGENTERA_PROFILE_DIR: profileDir }, "linux");
     expect(summary.status).toBe("loaded");
     expect(summary.available_runtimes).toEqual(["opencode", "codex"]);
-    expect(summary.available_but_not_selected).toEqual([
-      { runtime: "codex", reason: "disabled_by_flag", store_path: "/codex.db" },
-    ]);
+    expect(summary.available_but_not_selected).toEqual([{ runtime: "codex", reason: "disabled_by_flag", store_path: "/codex.db" }]);
   });
 
   it("includes coverage-loss item in orientation attention", () => {
@@ -256,16 +268,10 @@ describe("retired lifecycle attention", () => {
       aggregate_status: "upgrade",
       dry_run_command: "npx -y agentera@next upgrade --dry-run --runtime codex",
     } as typeof state.project_integration;
-    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
-      lifecycleAction("repairable_owned", ["codex"]),
-      lifecycleAction("manual_verification", ["opencode", "codex", "cursor", "copilot"], "Run `/skills list` in the host."),
-      lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared."),
-    ]);
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([lifecycleAction("repairable_owned", ["codex"]), lifecycleAction("manual_verification", ["opencode", "codex", "cursor", "copilot"], "Run `/skills list` in the host."), lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared.")]);
 
     const integrationRow = projectIntegrationAttention(state.project_integration);
-    const lifecyclePresentation = buildOrientationAttention(state).filter(
-      (item) => item === integrationRow || item.includes("lifecycle action_class="),
-    );
+    const lifecyclePresentation = buildOrientationAttention(state).filter((item) => item === integrationRow || item.includes("lifecycle action_class="));
 
     expect(lifecyclePresentation).toEqual([]);
   });
@@ -295,16 +301,11 @@ describe("retired lifecycle attention", () => {
         },
       },
     } as typeof state.project_integration;
-    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
-      lifecycleAction("manual_verification", ["copilot"], "Run `/skills list` in the host."),
-      lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared."),
-    ]);
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([lifecycleAction("manual_verification", ["copilot"], "Run `/skills list` in the host."), lifecycleAction("unobservable_gap", ["cursor"], "No verified safe remediation is declared.")]);
 
     const integrationRow = projectIntegrationAttention(state.project_integration);
     const attention = buildOrientationAttention(state);
-    const lifecyclePresentation = attention.filter(
-      (item) => item === integrationRow || item.includes("lifecycle action_class="),
-    );
+    const lifecyclePresentation = attention.filter((item) => item === integrationRow || item.includes("lifecycle action_class="));
 
     expect(lifecyclePresentation).toEqual([]);
   });
@@ -318,9 +319,7 @@ describe("retired lifecycle attention", () => {
       available_but_not_selected: [],
     });
     const longInstruction = Array.from({ length: 200 }, (_, index) => `instruction-${index}`).join(" ");
-    state.runtime_lifecycle_snapshot = lifecycleSnapshot([
-      lifecycleAction("manual_verification", ["copilot"], longInstruction),
-    ]);
+    state.runtime_lifecycle_snapshot = lifecycleSnapshot([lifecycleAction("manual_verification", ["copilot"], longInstruction)]);
 
     const row = buildOrientationAttention(state).find((item) => item.includes("lifecycle action_class="));
 
@@ -335,11 +334,7 @@ describe("retired lifecycle attention", () => {
       selected_runtimes: [],
       available_but_not_selected: [],
     });
-    const action = lifecycleAction(
-      "manual_verification",
-      ["copilot"],
-      Array.from({ length: 200 }, (_, index) => `reason-${index}`).join(" "),
-    );
+    const action = lifecycleAction("manual_verification", ["copilot"], Array.from({ length: 200 }, (_, index) => `reason-${index}`).join(" "));
     action.manual = null;
     state.runtime_lifecycle_snapshot = lifecycleSnapshot([action]);
 

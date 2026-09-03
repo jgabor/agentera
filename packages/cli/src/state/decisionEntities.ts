@@ -27,10 +27,23 @@ const REVISION = "decision_revision";
 const ORDER = "date_desc_then_id_asc";
 const ID_PATTERN = /^[a-z]{10}$/;
 
-interface Options { sourceRoot?: string; id?: string; candidate?: () => string; publicationContext?: EntityPublicationContext }
-interface Contract { authorityPath: string; entityRoot: string; defaultLimit: number; maximumLimit: number; maxUtf8Bytes: number }
+interface Options {
+  sourceRoot?: string;
+  id?: string;
+  candidate?: () => string;
+  publicationContext?: EntityPublicationContext;
+}
+interface Contract {
+  authorityPath: string;
+  entityRoot: string;
+  defaultLimit: number;
+  maximumLimit: number;
+  maxUtf8Bytes: number;
+}
 
-function mapping(value: unknown): value is JsonObject { return value !== null && typeof value === "object" && !Array.isArray(value); }
+function mapping(value: unknown): value is JsonObject {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
 function requiredText(value: unknown, field: string): string {
   if (typeof value !== "string" || value.length === 0) throw new Error(`decision entity requires ${field}`);
   return value;
@@ -47,30 +60,54 @@ function contract(sourceRoot = resolveSourceRoot()): Contract {
     if (!Number.isSafeInteger(result) || result < 1) throw new Error(`invalid decisions entity ${field} authority`);
     return result;
   };
-  return { authorityPath, entityRoot: requiredText(storage.canonical_root, "canonical_root"), defaultLimit: number(retrieval.default_limit, "default_limit"), maximumLimit: number(retrieval.maximum_limit, "maximum_limit"), maxUtf8Bytes: number(retrieval.max_utf8_bytes, "max_utf8_bytes") };
+  return {
+    authorityPath,
+    entityRoot: requiredText(storage.canonical_root, "canonical_root"),
+    defaultLimit: number(retrieval.default_limit, "default_limit"),
+    maximumLimit: number(retrieval.maximum_limit, "maximum_limit"),
+    maxUtf8Bytes: number(retrieval.max_utf8_bytes, "max_utf8_bytes"),
+  };
 }
 function failure(kind: StateFailureClass, message: string, recovery: string, id?: string): StateRetrievalFailure {
-  return new StateRetrievalFailure({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: kind, message, syntax: "agentera state decisions get --id ID", example: `agentera state decisions get --id ${id ?? "qjtrmnpvka"}`, recovery, artifact: ARTIFACT, ...(id ? { id } : {}) } }, kind === "invalid_request" ? 2 : 1);
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: kind,
+        message,
+        syntax: "agentera state decisions get --id ID",
+        example: `agentera state decisions get --id ${id ?? "qjtrmnpvka"}`,
+        recovery,
+        artifact: ARTIFACT,
+        ...(id ? { id } : {}),
+      },
+    },
+    kind === "invalid_request" ? 2 : 1,
+  );
 }
 function summaryMutationFailure(id: string, verb: "amend" | "update"): StateRetrievalFailure {
-  const syntax = verb === "amend"
-    ? "agentera state decisions amend --id ID --base-sha256 SHA256 --input PATH"
-    : "agentera state decisions update --id ID --satisfaction-state STATE";
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "unsupported_state",
-      message: `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`,
-      syntax,
-      example: `agentera state decisions get --id ${id}`,
-      recovery: `Run agentera state decisions get --id ${id} to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --input decision.yaml.`,
-      artifact: ARTIFACT,
-      id,
+  const syntax = verb === "amend" ? "agentera state decisions amend --id ID --base-sha256 SHA256 --input PATH" : "agentera state decisions update --id ID --satisfaction-state STATE";
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "unsupported_state",
+        message: `decision '${id}' is an immutable migrated summary: incomplete historical evidence is read-only`,
+        syntax,
+        example: `agentera state decisions get --id ${id}`,
+        recovery: `Run agentera state decisions get --id ${id} to inspect retained evidence and caveats. For new deliberation, run agentera state decisions append --input decision.yaml.`,
+        artifact: ARTIFACT,
+        id,
+      },
     },
-  }, 1);
+    1,
+  );
 }
-function relative(root: string, file: string): string { return path.relative(path.resolve(root), file).split(path.sep).join("/"); }
+function relative(root: string, file: string): string {
+  return path.relative(path.resolve(root), file).split(path.sep).join("/");
+}
 function entityRecord(values: Record<string, unknown>): JsonObject {
   const alternatives = mapping(values.alternatives) ? values.alternatives : {};
   const chosen = requiredText(alternatives.chosen, "alternatives.chosen");
@@ -80,38 +117,72 @@ function entityRecord(values: Record<string, unknown>): JsonObject {
     question: requiredText(values.question, "question"),
     context: requiredText(values.context, "context"),
     alternatives: [{ name: chosen, status: "chosen" }, ...rejected.map((name) => ({ name, status: "rejected" }))],
-    choice: requiredText(values.choice, "choice"), reasoning: requiredText(values.reasoning, "reasoning"), confidence: requiredText(values.confidence, "confidence"),
+    choice: requiredText(values.choice, "choice"),
+    reasoning: requiredText(values.reasoning, "reasoning"),
+    confidence: requiredText(values.confidence, "confidence"),
   };
   if (typeof values.feeds_into === "string") record.feeds_into = values.feeds_into;
   return record;
 }
 function envelope(command: string, published: { path: string; id: string; artifact: string; replay: boolean }, record: JsonObject, dryRun = false): StateWriteEnvelope {
-  return { schemaVersion: "agentera.stateWrite.v1", command, status: "pass", path: published.path, id: published.id, artifact: published.artifact, record, operation: { verb: command.split(" ").at(-1), dry_run: dryRun, idempotent_replay: published.replay }, validation: { status: "pass", violations: [] } };
+  return {
+    schemaVersion: "agentera.stateWrite.v1",
+    command,
+    status: "pass",
+    path: published.path,
+    id: published.id,
+    artifact: published.artifact,
+    record,
+    operation: {
+      verb: command.split(" ").at(-1),
+      dry_run: dryRun,
+      idempotent_replay: published.replay,
+    },
+    validation: { status: "pass", violations: [] },
+  };
 }
 function publish(req: StateWriteRequest, boundary: string, record: JsonObject, options: Options): StateWriteEnvelope {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   if (req.dryRun) {
     const id = options.id ?? allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);
-    return envelope(`state decisions ${req.spec.verb}`, { id, artifact: ARTIFACT, path: path.join(req.projectRoot, contract(sourceRoot).entityRoot, ARTIFACT, boundary, `${id}.yaml`), replay: false }, record, true);
+    return envelope(
+      `state decisions ${req.spec.verb}`,
+      {
+        id,
+        artifact: ARTIFACT,
+        path: path.join(req.projectRoot, contract(sourceRoot).entityRoot, ARTIFACT, boundary, `${id}.yaml`),
+        replay: false,
+      },
+      record,
+      true,
+    );
   }
   const result = options.id
-    ? publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary, id: options.id, record })
-    : allocateAndPublishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary, record }, options.candidate);
+    ? publishEntity({
+        projectRoot: req.projectRoot,
+        sourceRoot,
+        publicationContext: options.publicationContext,
+        artifact: ARTIFACT,
+        boundary,
+        id: options.id,
+        record,
+      })
+    : allocateAndPublishEntity(
+        {
+          projectRoot: req.projectRoot,
+          sourceRoot,
+          publicationContext: options.publicationContext,
+          artifact: ARTIFACT,
+          boundary,
+          record,
+        },
+        options.candidate,
+      );
   return envelope(`state decisions ${req.spec.verb}`, result, record);
 }
 
-function decisionLogicalReplay(
-  root: string,
-  sourceRoot: string,
-  record: JsonObject,
-): DiscoveredEntity | undefined {
-  return discoverEntities(root, sourceRoot).entities.find(
-    (entity) => entity.artifact === ARTIFACT
-      && entity.boundary === BASE
-      && entity.classification === "valid"
-      && entity.record
-      && canonicalRecordJson(entity.record) === canonicalRecordJson(record),
-  );
+function decisionLogicalReplay(root: string, sourceRoot: string, record: JsonObject): DiscoveredEntity | undefined {
+  return discoverEntities(root, sourceRoot).entities.find((entity) => entity.artifact === ARTIFACT && entity.boundary === BASE && entity.classification === "valid" && entity.record && canonicalRecordJson(entity.record) === canonicalRecordJson(record));
 }
 
 function appendDecisionEntityUnderLock(req: StateWriteRequest, options: Options, record: JsonObject): StateWriteEnvelope {
@@ -119,12 +190,7 @@ function appendDecisionEntityUnderLock(req: StateWriteRequest, options: Options,
     const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
     const replay = decisionLogicalReplay(options.publicationContext?.pinnedPath() ?? req.projectRoot, sourceRoot, record);
     if (replay?.record) {
-      return envelope(
-        "state decisions append",
-        { id: replay.id!, artifact: ARTIFACT, path: replay.path, replay: true },
-        replay.record,
-        req.dryRun,
-      );
+      return envelope("state decisions append", { id: replay.id!, artifact: ARTIFACT, path: replay.path, replay: true }, replay.record, req.dryRun);
     }
   }
   return publish(req, BASE, record, options);
@@ -133,8 +199,7 @@ function appendDecisionEntityUnderLock(req: StateWriteRequest, options: Options,
 export function appendDecisionEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const record = entityRecord(req.input ? normalizeDecisionRecordInput(req.input) : req.values);
   if (options.id || options.publicationContext) {
-    if (!options.id && options.publicationContext)
-      return withEntityWriterLock(options.publicationContext, () => appendDecisionEntityUnderLock(req, options, record));
+    if (!options.id && options.publicationContext) return withEntityWriterLock(options.publicationContext, () => appendDecisionEntityUnderLock(req, options, record));
     return publish(req, BASE, record, options);
   }
   if (req.dryRun) return publish(req, BASE, record, options);
@@ -187,8 +252,7 @@ export function applyDecisionChanges(record: JsonObject, changes: JsonObject): J
 function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], sourceRoot: string): JsonObject {
   let effective = structuredClone(base.record!);
   let hash = createHash("sha256").update(canonicalRecordJson(effective)).digest("hex");
-  let legacyConfidenceEvidence = base.migrationProvenance?.kind === "inherited_decision_confidence"
-    && base.migrationProvenance.confidence === effective.confidence;
+  let legacyConfidenceEvidence = base.migrationProvenance?.kind === "inherited_decision_confidence" && base.migrationProvenance.confidence === effective.confidence;
   const revisions: JsonObject[] = [];
   const candidates = all.filter((entity) => entity.boundary === REVISION && entity.record?.decision === base.id);
   const unused = new Set(candidates);
@@ -196,15 +260,22 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], 
     const next = [...unused].filter((entity) => entity.record?.base_sha256 === hash);
     if (next.length > 1) throw failure("ambiguous", `decision '${base.id}' has competing revisions for base ${hash}`, "Preserve both revision entities and resolve their ownership explicitly.", base.id!);
     if (next.length === 0) break;
-    const revision = next[0]; unused.delete(revision);
+    const revision = next[0];
+    unused.delete(revision);
     if (!mapping(revision.record!.changes)) throw failure("corrupt", `decision revision '${revision.id}' has invalid changes`, "Repair the canonical revision entity.", base.id!);
     if ("confidence" in revision.record!.changes) {
-      legacyConfidenceEvidence = revision.migrationProvenance?.kind === "inherited_decision_revision_confidence"
-        && revision.migrationProvenance.confidence === revision.record!.changes.confidence;
+      legacyConfidenceEvidence = revision.migrationProvenance?.kind === "inherited_decision_revision_confidence" && revision.migrationProvenance.confidence === revision.record!.changes.confidence;
     }
     effective = applyDecisionChanges(effective, revision.record!.changes as JsonObject);
     hash = createHash("sha256").update(canonicalRecordJson(effective)).digest("hex");
-    revisions.push({ id: revision.id!, artifact: ARTIFACT, base_sha256: revision.record!.base_sha256 as string, effective_sha256: hash, fields: Object.keys(revision.record!.changes as JsonObject), path: relative(root, revision.path) });
+    revisions.push({
+      id: revision.id!,
+      artifact: ARTIFACT,
+      base_sha256: revision.record!.base_sha256 as string,
+      effective_sha256: hash,
+      fields: Object.keys(revision.record!.changes as JsonObject),
+      path: relative(root, revision.path),
+    });
   }
   if (unused.size) throw failure("ambiguous", `decision '${base.id}' has stale or disconnected revision ownership`, "Preserve every revision and repair the revision chain explicitly.", base.id!);
   const satisfactions = all.filter((entity) => entity.boundary === SATISFACTION && entity.record?.decision === base.id);
@@ -213,14 +284,35 @@ function compose(root: string, base: DiscoveredEntity, all: DiscoveredEntity[], 
   if (satisfactions[0]) {
     const { decision: _decision, ...satisfaction } = satisfactions[0].record!;
     effective.satisfaction = satisfaction;
-    satisfactionProvenance = { id: satisfactions[0].id!, artifact: ARTIFACT, path: relative(root, satisfactions[0].path) };
+    satisfactionProvenance = {
+      id: satisfactions[0].id!,
+      artifact: ARTIFACT,
+      path: relative(root, satisfactions[0].path),
+    };
   }
   const inherited = base.migrationProvenance;
   const caveatSource = inherited?.source === "verified_archive" ? "archive" : "active";
-  const legacyCaveat = legacyConfidenceEvidence
-    ? knownLegacyConfidenceCaveat(effective, decisionLegacyCoexistence(sourceRoot), caveatSource)
-    : null;
-  return { id: base.id!, artifact: ARTIFACT, ...detailMetadata(base), record: effective, effective_sha256: hash, provenance: { ...detailProvenance(relative(root, base.path), base), base: { id: base.id!, artifact: ARTIFACT, path: relative(root, base.path), ...(inherited ? { migration_provenance: inherited } : {}) }, revisions, satisfaction: satisfactionProvenance }, ...(legacyCaveat ? { caveats: [legacyCaveat.caveat] } : {}), retrieval: { get: `agentera state decisions get --id ${base.id}` } };
+  const legacyCaveat = legacyConfidenceEvidence ? knownLegacyConfidenceCaveat(effective, decisionLegacyCoexistence(sourceRoot), caveatSource) : null;
+  return {
+    id: base.id!,
+    artifact: ARTIFACT,
+    ...detailMetadata(base),
+    record: effective,
+    effective_sha256: hash,
+    provenance: {
+      ...detailProvenance(relative(root, base.path), base),
+      base: {
+        id: base.id!,
+        artifact: ARTIFACT,
+        path: relative(root, base.path),
+        ...(inherited ? { migration_provenance: inherited } : {}),
+      },
+      revisions,
+      satisfaction: satisfactionProvenance,
+    },
+    ...(legacyCaveat ? { caveats: [legacyCaveat.caveat] } : {}),
+    retrieval: { get: `agentera state decisions get --id ${base.id}` },
+  };
 }
 export function getDecisionEntity(root: string, id: string, sourceRoot = resolveSourceRoot()): JsonObject {
   if (!ID_PATTERN.test(id)) throw failure("invalid_request", `decision ID '${id}' must be ten lowercase letters`, "Use an ID returned by decisions append or list.", id);
@@ -230,10 +322,37 @@ export function getDecisionEntity(root: string, id: string, sourceRoot = resolve
   if (summary.length || bases.length > 1) {
     if (summary.length !== 1 || bases.length) throw failure("ambiguous", `decision ID '${id}' has multiple base entities`, "Run agentera check validate state and resolve duplicate ownership.", id);
     const entity = summary[0];
-    return { schemaVersion: "agentera.stateRetrieval.v1", command: "state decisions get", status: "degraded", entry: { id, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${id}` } }, source: { artifact: ARTIFACT, authority: "canonical_entity_files" }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "summary" } };
+    return {
+      schemaVersion: "agentera.stateRetrieval.v1",
+      command: "state decisions get",
+      status: "degraded",
+      entry: {
+        id,
+        artifact: ARTIFACT,
+        ...detailMetadata(entity),
+        record: entity.record!,
+        provenance: detailProvenance(relative(root, entity.path), entity),
+        retrieval: { get: `agentera state decisions get --id ${id}` },
+      },
+      source: { artifact: ARTIFACT, authority: "canonical_entity_files" },
+      source_contract: {
+        authority: "references/artifacts/state-storage-authority.yaml",
+        detail: "summary",
+      },
+    };
   }
   if (bases.length !== 1) throw failure("not_found", `decision ID '${id}' was not found`, "Run agentera state decisions list and retry with a returned ID.", id);
-  return { schemaVersion: "agentera.stateRetrieval.v1", command: "state decisions get", status: "ok", entry: compose(root, bases[0], all, sourceRoot), source: { artifact: ARTIFACT, authority: "canonical_entity_files" }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full" } };
+  return {
+    schemaVersion: "agentera.stateRetrieval.v1",
+    command: "state decisions get",
+    status: "ok",
+    entry: compose(root, bases[0], all, sourceRoot),
+    source: { artifact: ARTIFACT, authority: "canonical_entity_files" },
+    source_contract: {
+      authority: "references/artifacts/state-storage-authority.yaml",
+      detail: "full",
+    },
+  };
 }
 
 export function updateDecisionSatisfactionEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
@@ -249,8 +368,30 @@ export function updateDecisionSatisfactionEntity(req: StateWriteRequest, options
   validateTransition(requested, historical ? { satisfaction: historical } : undefined, undefined, decisionOverlayContract(sourceRoot));
   const record = { decision: id, ...requested };
   if (!current) return publish(req, SATISFACTION, record, options);
-  if (req.dryRun) return envelope("state decisions update", { id: current.id!, artifact: ARTIFACT, path: current.path, replay: canonicalRecordJson(current.record) === canonicalRecordJson(record) }, record, true);
-  const result = replaceEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: SATISFACTION, id: current.id!, expectedRecord: current.record!, expectedBytes: exactDiscoveredEntityBytes(current), migrationProvenance: current.migrationProvenance, record });
+  if (req.dryRun)
+    return envelope(
+      "state decisions update",
+      {
+        id: current.id!,
+        artifact: ARTIFACT,
+        path: current.path,
+        replay: canonicalRecordJson(current.record) === canonicalRecordJson(record),
+      },
+      record,
+      true,
+    );
+  const result = replaceEntity({
+    projectRoot: req.projectRoot,
+    sourceRoot,
+    publicationContext: options.publicationContext,
+    artifact: ARTIFACT,
+    boundary: SATISFACTION,
+    id: current.id!,
+    expectedRecord: current.record!,
+    expectedBytes: exactDiscoveredEntityBytes(current),
+    migrationProvenance: current.migrationProvenance,
+    record,
+  });
   return envelope("state decisions update", result, record);
 }
 
@@ -261,18 +402,19 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
   const allowed = new Set(decisionRevisionContract(sourceRoot).amendablePaths);
   const content = req.input ? normalizeDecisionRecordInput(req.input) : req.values;
   const changes: JsonObject = {};
-  for (const [field, value] of Object.entries(content)) if (!["id", "base_sha256"].includes(field)) {
-    if (field === "alternatives" && mapping(value)) {
-      for (const [name, alternative] of Object.entries(value)) {
-        const target = `alternatives.${name}`;
-        if (!allowed.has(target)) throw failure("invalid_request", `'${target}' is not amendable decision content`, "Use only authority-declared content fields.", id);
-        changes[target] = structuredClone(alternative) as never;
+  for (const [field, value] of Object.entries(content))
+    if (!["id", "base_sha256"].includes(field)) {
+      if (field === "alternatives" && mapping(value)) {
+        for (const [name, alternative] of Object.entries(value)) {
+          const target = `alternatives.${name}`;
+          if (!allowed.has(target)) throw failure("invalid_request", `'${target}' is not amendable decision content`, "Use only authority-declared content fields.", id);
+          changes[target] = structuredClone(alternative) as never;
+        }
+      } else {
+        if (!allowed.has(field) || field === "satisfaction") throw failure("invalid_request", `'${field}' is not amendable decision content`, "Use only authority-declared content fields; update satisfaction separately.", id);
+        changes[field] = structuredClone(value) as never;
       }
-    } else {
-      if (!allowed.has(field) || field === "satisfaction") throw failure("invalid_request", `'${field}' is not amendable decision content`, "Use only authority-declared content fields; update satisfaction separately.", id);
-      changes[field] = structuredClone(value) as never;
     }
-  }
   if (!Object.keys(changes).length) throw failure("invalid_request", "decision amendment requires at least one content field", "Supply one amendable content field.", id);
   const { all } = baseFor(req.projectRoot, id, sourceRoot, "amend");
   const existingClaims = all.filter((entity) => entity.boundary === REVISION && entity.record?.decision === id && entity.record?.base_sha256 === expected);
@@ -283,14 +425,45 @@ export function amendDecisionEntity(req: StateWriteRequest, options: Options = {
   if (current.effective_sha256 !== expected) throw failure("immutable_conflict", `decision '${id}' changed from requested base ${expected}`, "Get the decision again, review the effective provenance, and retry with its current effective_sha256.", id);
   const effective = current.record as JsonObject;
   const projected = applyDecisionChanges(effective, changes);
-  if (canonicalRecordJson(projected) === canonicalRecordJson(effective)) return { schemaVersion: "agentera.stateWrite.v1", command: "state decisions amend", status: "pass", path: String(((current.provenance as JsonObject).base as JsonObject).path), id, artifact: ARTIFACT, record: changes, operation: { verb: "amend", dry_run: req.dryRun, idempotent_replay: true }, validation: { status: "pass", violations: [] } };
-  return publish(req, REVISION, { decision: id, date: localDate(), provenance: "historical_revision", base_sha256: expected, changes }, options);
+  if (canonicalRecordJson(projected) === canonicalRecordJson(effective))
+    return {
+      schemaVersion: "agentera.stateWrite.v1",
+      command: "state decisions amend",
+      status: "pass",
+      path: String(((current.provenance as JsonObject).base as JsonObject).path),
+      id,
+      artifact: ARTIFACT,
+      record: changes,
+      operation: { verb: "amend", dry_run: req.dryRun, idempotent_replay: true },
+      validation: { status: "pass", violations: [] },
+    };
+  return publish(
+    req,
+    REVISION,
+    {
+      decision: id,
+      date: localDate(),
+      provenance: "historical_revision",
+      base_sha256: expected,
+      changes,
+    },
+    options,
+  );
 }
 
-function key(entity: DiscoveredEntity): string { return `${String(entity.record!.date ?? "")}\0${entity.id}`; }
+function key(entity: DiscoveredEntity): string {
+  return `${String(entity.record!.date ?? "")}\0${entity.id}`;
+}
 function listEntry(root: string, entity: DiscoveredEntity, all: DiscoveredEntity[], sourceRoot: string): JsonObject {
   return entity.boundary === SUMMARY
-    ? { id: entity.id!, artifact: ARTIFACT, ...detailMetadata(entity), record: entity.record!, provenance: detailProvenance(relative(root, entity.path), entity), retrieval: { get: `agentera state decisions get --id ${entity.id}` } }
+    ? {
+        id: entity.id!,
+        artifact: ARTIFACT,
+        ...detailMetadata(entity),
+        record: entity.record!,
+        provenance: detailProvenance(relative(root, entity.path), entity),
+        retrieval: { get: `agentera state decisions get --id ${entity.id}` },
+      }
     : compose(root, entity, all, sourceRoot);
 }
 function snapshot(root: string, bases: DiscoveredEntity[], all: DiscoveredEntity[], sourceRoot: string, topic: string | undefined, entityRoot: string): string {
@@ -300,29 +473,127 @@ function snapshot(root: string, bases: DiscoveredEntity[], all: DiscoveredEntity
     order: ORDER,
     filters: { topic: topic ?? null },
     source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: entityRoot },
-    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
+    source_contract: {
+      authority: "references/artifacts/state-storage-authority.yaml",
+      detail: bases.some(isSummaryEntity) ? "mixed" : "full",
+      cursor: "opaque_snapshot_cursor",
+    },
     entries: bases.map((entity) => listEntry(root, entity, all, sourceRoot)),
   });
 }
-function encode(payload: JsonObject, root: string, authorityPath: string): string { return encodeListCursor(payload, root, authorityPath); }
-function decode(token: string, root: string, authorityPath: string): JsonObject {
-  try { return decodeListCursor(token, root, authorityPath); }
-  catch { throw failure("cursor_invalid", "decisions cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
+function encode(payload: JsonObject, root: string, authorityPath: string): string {
+  return encodeListCursor(payload, root, authorityPath);
 }
-export function listDecisionEntities(root: string, limit?: number, topic?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities>; selector?: EntityListSelectorInput } = {}): JsonObject {
-  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
+function decode(token: string, root: string, authorityPath: string): JsonObject {
+  try {
+    return decodeListCursor(token, root, authorityPath);
+  } catch {
+    throw failure("cursor_invalid", "decisions cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart.");
+  }
+}
+export function listDecisionEntities(
+  root: string,
+  limit?: number,
+  topic?: string,
+  cursor?: string,
+  options: {
+    sourceRoot?: string;
+    format?: string;
+    discovery?: ReturnType<typeof discoverEntities>;
+    selector?: EntityListSelectorInput;
+  } = {},
+): JsonObject {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const declared = contract(sourceRoot);
+  const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw failure("invalid_request", `decisions list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.");
-  const all = decisionEntities(root, sourceRoot, options.discovery); let bases = all.filter((entity) => [BASE, SUMMARY].includes(entity.boundary ?? "")).sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
-  if (topic) { const needle = topic.toLowerCase(); bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
+  const all = decisionEntities(root, sourceRoot, options.discovery);
+  let bases = all.filter((entity) => [BASE, SUMMARY].includes(entity.boundary ?? "")).sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
+  if (topic) {
+    const needle = topic.toLowerCase();
+    bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle));
+  }
   const format = options.format ?? "json";
-  const projectionOptions = { family: "decisions" as const, artifact: ARTIFACT, boundary: BASE, format, maxUtf8Bytes: declared.maxUtf8Bytes, selector: options.selector };
-  const selector = resolveEntityListSelector(options.selector, bases.map((entity) => listEntry(root, entity, all, sourceRoot)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
-  const snap = snapshot(root, bases, all, sourceRoot, topic, declared.entityRoot); let start = 0;
-  if (cursor) { const value = decode(cursor, root, declared.authorityPath); if (value.selector !== selectorKey) throw failure("cursor_invalid", "decisions cursor selectors do not match this request", "Repeat the original selector, or omit --cursor to restart from the current snapshot."); if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null)) throw failure("cursor_snapshot_unavailable", "decisions state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot."); const found = bases.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1; }
+  const projectionOptions = {
+    family: "decisions" as const,
+    artifact: ARTIFACT,
+    boundary: BASE,
+    format,
+    maxUtf8Bytes: declared.maxUtf8Bytes,
+    selector: options.selector,
+  };
+  const selector = resolveEntityListSelector(
+    options.selector,
+    bases.map((entity) => listEntry(root, entity, all, sourceRoot)),
+    projectionOptions,
+  );
+  const selectorKey = entityListSelectorKey(selector);
+  const snap = snapshot(root, bases, all, sourceRoot, topic, declared.entityRoot);
+  let start = 0;
+  if (cursor) {
+    const value = decode(cursor, root, declared.authorityPath);
+    if (value.selector !== selectorKey) throw failure("cursor_invalid", "decisions cursor selectors do not match this request", "Repeat the original selector, or omit --cursor to restart from the current snapshot.");
+    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.topic !== (topic ?? null))
+      throw failure("cursor_snapshot_unavailable", "decisions state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot.");
+    const found = bases.findIndex((entity) => key(entity) === value.after_key);
+    if (found < 0) throw failure("cursor_snapshot_unavailable", "decisions cursor continuation is unavailable", "Omit --cursor to restart.");
+    start = found + 1;
+  }
   const selected = bases.slice(start, start + effectiveLimit);
-  const remaining = bases.length - start - selected.length; const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, selector: selectorKey, topic: topic ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+  const remaining = bases.length - start - selected.length;
+  const next =
+    remaining && selected.length
+      ? encode(
+          {
+            version: 1,
+            artifact: ARTIFACT,
+            order: ORDER,
+            snapshot_id: snap,
+            selector: selectorKey,
+            topic: topic ?? null,
+            after_key: key(selected.at(-1)!),
+          },
+          root,
+          declared.authorityPath,
+        )
+      : undefined;
   const selectorFlags = entityListSelectorFlags(selector);
   const filterFlags = topic ? ` --topic ${shellQuoteArgument(topic)}` : "";
-  const response: JsonObject = { schemaVersion: "agentera.stateList.v1", command: "state decisions list", status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)), counts: { total: bases.length, returned: selected.length, remaining }, filters: { topic: topic ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: bases.length }, source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: bases.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" }, retrieval: { ...(next ? { continue: `agentera state decisions list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}` } : {}) }, ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}) };
+  const response: JsonObject = {
+    schemaVersion: "agentera.stateList.v1",
+    command: "state decisions list",
+    status: remaining || bases.some(isSummaryEntity) ? "degraded" : "ok",
+    entries: selected.map((entity) => listEntry(root, entity, all, sourceRoot)),
+    counts: { total: bases.length, returned: selected.length, remaining },
+    filters: { topic: topic ?? null },
+    snapshot: {
+      id: snap,
+      first_page: !cursor,
+      order: ORDER,
+      has_more: Boolean(remaining),
+      candidate_count: bases.length,
+    },
+    source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot },
+    source_contract: {
+      authority: "references/artifacts/state-storage-authority.yaml",
+      detail: bases.some(isSummaryEntity) ? "mixed" : "full",
+      cursor: "opaque_snapshot_cursor",
+    },
+    retrieval: {
+      ...(next
+        ? {
+            continue: `agentera state decisions list${filterFlags}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}`,
+          }
+        : {}),
+    },
+    ...(remaining
+      ? {
+          omitted: true,
+          omitted_count: remaining,
+          omission_reason: "page_limit",
+          next_cursor: next,
+        }
+      : {}),
+  };
   return projectEntityList(response, selector, projectionOptions);
 }

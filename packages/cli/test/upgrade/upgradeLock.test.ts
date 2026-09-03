@@ -4,11 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  acquireUpgradeLock,
-  releaseUpgradeLock,
-  upgradeLockPath,
-} from "../../src/upgrade/upgradeLock.js";
+import { acquireUpgradeLock, releaseUpgradeLock, upgradeLockPath } from "../../src/upgrade/upgradeLock.js";
 
 const roots: string[] = [];
 
@@ -27,9 +23,7 @@ describe("upgrade mutation ownership", () => {
     const project = root("project");
     const owner = acquireUpgradeLock(project, "project");
 
-    expect(() => acquireUpgradeLock(project, "project")).toThrow(
-      `inspect ${upgradeLockPath(project, "project")}`,
-    );
+    expect(() => acquireUpgradeLock(project, "project")).toThrow(`inspect ${upgradeLockPath(project, "project")}`);
     expect(JSON.parse(fs.readFileSync(owner.path, "utf8"))).toEqual({ token: owner.token });
 
     releaseUpgradeLock(owner);
@@ -66,13 +60,14 @@ describe("upgrade mutation ownership", () => {
   it("checks ownership on release and leaves stale state for manual recovery", () => {
     const project = root("release");
     const owner = acquireUpgradeLock(project, "project");
-    fs.writeFileSync(owner.path, `${JSON.stringify({
-      token: "stale-owner",
-    })}\n`);
-
-    expect(() => releaseUpgradeLock(owner)).toThrow(
-      `inspect ${owner.path}, remove that file only if no upgrade owns it, then rerun`,
+    fs.writeFileSync(
+      owner.path,
+      `${JSON.stringify({
+        token: "stale-owner",
+      })}\n`,
     );
+
+    expect(() => releaseUpgradeLock(owner)).toThrow(`inspect ${owner.path}, remove that file only if no upgrade owns it, then rerun`);
     expect(fs.existsSync(owner.path)).toBe(true);
     expect(() => acquireUpgradeLock(project, "project")).toThrow("remove that file only if no upgrade owns it");
   });

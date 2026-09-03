@@ -18,14 +18,7 @@ afterEach(() => {
 });
 
 function writeGuidance(rows: string[]): void {
-  fs.writeFileSync(path.join(project, "AGENTS.md"), [
-    "# Guidance",
-    "",
-    "| When | Command |",
-    "| ---- | ------- |",
-    ...rows,
-    "",
-  ].join("\n"));
+  fs.writeFileSync(path.join(project, "AGENTS.md"), ["# Guidance", "", "| When | Command |", "| ---- | ------- |", ...rows, ""].join("\n"));
 }
 
 function writePackage(directory: string, scripts: Record<string, string>, extra: Record<string, unknown> = {}): void {
@@ -38,7 +31,12 @@ function primeVerification(): any {
   let output = "";
   const rc = cmdPrime(
     { command: "prime", context: "build", format: "json", projectRoot: project },
-    { out: (text) => { output += text; }, err: () => {} },
+    {
+      out: (text) => {
+        output += text;
+      },
+      err: () => {},
+    },
   );
   expect(rc).toBe(0);
   return JSON.parse(output).capability_context.context.execution_context.verification_expectations;
@@ -47,21 +45,13 @@ function primeVerification(): any {
 describe("project verification command discovery", () => {
   it("accepts concrete AGENTS recipes and rejects placeholders and unsupported executables", () => {
     writePackage(".", { lint: "eslint ." });
-    writeGuidance([
-      "| Lint | `pnpm lint` |",
-      "| Validate capability | `pnpm run check:<name>` |",
-      "| Verification | `check validate` · `echo verify` |",
-    ]);
+    writeGuidance(["| Lint | `pnpm lint` |", "| Validate capability | `pnpm run check:<name>` |", "| Verification | `check validate` · `echo verify` |"]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result).toMatchObject({
       status: "partial",
       expected_commands: [{ command: "pnpm run lint" }],
-      rejections: [
-        expect.objectContaining({ reason: "placeholder_not_allowed" }),
-        expect.objectContaining({ reason: "unsupported_or_missing_executable" }),
-        expect.objectContaining({ reason: "unsupported_or_missing_executable" }),
-      ],
+      rejections: [expect.objectContaining({ reason: "placeholder_not_allowed" }), expect.objectContaining({ reason: "unsupported_or_missing_executable" }), expect.objectContaining({ reason: "unsupported_or_missing_executable" })],
       resolution_policy: { id: "agents_recipe_table_package_scripts_v1" },
     });
   });
@@ -73,12 +63,7 @@ describe("project verification command discovery", () => {
       cycle: "pnpm run cycle:next",
       "cycle:next": "pnpm cycle",
     });
-    writeGuidance([
-      "| Source tests | `pnpm -C packages/app test` |",
-      "| Package boundary | `pnpm -C packages/app run missing` |",
-      "| Verification | `pnpm -C packages/app cycle` |",
-      "| Typecheck | `pnpm -C ../outside typecheck` |",
-    ]);
+    writeGuidance(["| Source tests | `pnpm -C packages/app test` |", "| Package boundary | `pnpm -C packages/app run missing` |", "| Verification | `pnpm -C packages/app cycle` |", "| Typecheck | `pnpm -C ../outside typecheck` |"]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result.expected_commands).toEqual([
@@ -91,27 +76,26 @@ describe("project verification command discovery", () => {
             line: 5,
             recipe_label: "Source tests",
           }),
-          { source_family: "package_manifest", path: "packages/app/package.json", field: "scripts.test" },
-          { source_family: "package_manifest", path: "packages/app/package.json", field: "scripts.test:source" },
+          {
+            source_family: "package_manifest",
+            path: "packages/app/package.json",
+            field: "scripts.test",
+          },
+          {
+            source_family: "package_manifest",
+            path: "packages/app/package.json",
+            field: "scripts.test:source",
+          },
         ],
         provenance_omitted_count: 0,
       },
     ]);
-    expect(result.rejections.map(({ reason }: { reason: string }) => reason)).toEqual([
-      "package_script_missing",
-      "package_script_alias_cycle",
-      "package_path_outside_project",
-    ]);
+    expect(result.rejections.map(({ reason }: { reason: string }) => reason)).toEqual(["package_script_missing", "package_script_alias_cycle", "package_path_outside_project"]);
   });
 
   it("deduplicates identical labels and rejects conflicting duplicate definitions", () => {
     writePackage(".", { test: "node test.mjs", build: "node build.mjs", lint: "eslint ." });
-    writeGuidance([
-      "| Tests | `pnpm test` |",
-      "| Tests | `pnpm test` |",
-      "| Build | `pnpm build` |",
-      "| Build | `pnpm lint` |",
-    ]);
+    writeGuidance(["| Tests | `pnpm test` |", "| Tests | `pnpm test` |", "| Build | `pnpm build` |", "| Build | `pnpm lint` |"]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result.expected_commands).toHaveLength(1);
@@ -121,19 +105,14 @@ describe("project verification command discovery", () => {
       { source_family: "package_manifest", path: "package.json", field: "scripts.test" },
       expect.objectContaining({ source_family: "project_guidance", path: "AGENTS.md", line: 6 }),
     ]);
-    expect(result.rejections).toEqual([
-      expect.objectContaining({ when: "Build", reason: "conflicting_recipe_label" }),
-    ]);
+    expect(result.rejections).toEqual([expect.objectContaining({ when: "Build", reason: "conflicting_recipe_label" })]);
   });
 
   it("requires every Node target to exist even when package metadata claims it", () => {
     writePackage("packages/app", { build: "node scripts/build.mjs" }, { files: ["dist"] });
     fs.mkdirSync(path.join(project, "packages/app/dist"));
     fs.writeFileSync(path.join(project, "packages/app/dist/cli.js"), "");
-    writeGuidance([
-      "| Compaction | `pnpm -C packages/app build && node packages/app/dist/cli.js check compact` |",
-      "| Verification | `pnpm -C packages/app build && node packages/app/dist/never-generated.js check` |",
-    ]);
+    writeGuidance(["| Compaction | `pnpm -C packages/app build && node packages/app/dist/cli.js check compact` |", "| Verification | `pnpm -C packages/app build && node packages/app/dist/never-generated.js check` |"]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result.expected_commands).toEqual([
@@ -141,30 +120,17 @@ describe("project verification command discovery", () => {
         command: "pnpm -C packages/app run build && node packages/app/dist/cli.js check compact",
       }),
     ]);
-    expect(result.rejections).toEqual([
-      expect.objectContaining({ reason: "node_target_missing" }),
-    ]);
+    expect(result.rejections).toEqual([expect.objectContaining({ reason: "node_target_missing" })]);
   });
 
   it("rejects path-escaping Node arguments while preserving check compact", () => {
     fs.mkdirSync(path.join(project, "tools"));
     fs.writeFileSync(path.join(project, "tools/check.mjs"), "");
-    writeGuidance([
-      "| Verification safe | `node tools/check.mjs check compact` |",
-      "| Verification parent | `node tools/check.mjs ../../outside` |",
-      "| Verification absolute | `node tools/check.mjs /tmp/outside` |",
-      "| Verification option | `node tools/check.mjs --output=../outside` |",
-    ]);
+    writeGuidance(["| Verification safe | `node tools/check.mjs check compact` |", "| Verification parent | `node tools/check.mjs ../../outside` |", "| Verification absolute | `node tools/check.mjs /tmp/outside` |", "| Verification option | `node tools/check.mjs --output=../outside` |"]);
 
     const result = discoverProjectVerification(project) as any;
-    expect(result.expected_commands).toEqual([
-      expect.objectContaining({ command: "node tools/check.mjs check compact" }),
-    ]);
-    expect(result.rejections.map(({ reason }: { reason: string }) => reason)).toEqual([
-      "node_argument_path_unsafe",
-      "node_argument_path_unsafe",
-      "node_argument_path_unsafe",
-    ]);
+    expect(result.expected_commands).toEqual([expect.objectContaining({ command: "node tools/check.mjs check compact" })]);
+    expect(result.rejections.map(({ reason }: { reason: string }) => reason)).toEqual(["node_argument_path_unsafe", "node_argument_path_unsafe", "node_argument_path_unsafe"]);
   });
 
   it("canonicalizes @ script aliases before duplicate-label conflict checks", () => {
@@ -172,10 +138,7 @@ describe("project verification command discovery", () => {
       verify: "pnpm run verify@source",
       "verify@source": "node verify.mjs",
     });
-    writeGuidance([
-      "| Verification | `pnpm verify` |",
-      "| Verification | `pnpm verify@source` |",
-    ]);
+    writeGuidance(["| Verification | `pnpm verify` |", "| Verification | `pnpm verify@source` |"]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result.rejections).toEqual([]);
@@ -185,7 +148,11 @@ describe("project verification command discovery", () => {
         source_provenance: [
           expect.objectContaining({ source_family: "project_guidance", line: 5 }),
           { source_family: "package_manifest", path: "package.json", field: "scripts.verify" },
-          { source_family: "package_manifest", path: "package.json", field: "scripts.verify@source" },
+          {
+            source_family: "package_manifest",
+            path: "package.json",
+            field: "scripts.verify@source",
+          },
           expect.objectContaining({ source_family: "project_guidance", line: 6 }),
         ],
         provenance_omitted_count: 0,
@@ -223,12 +190,7 @@ describe("project verification command discovery", () => {
     });
     expect(rejections.rejections).toHaveLength(12);
 
-    fs.writeFileSync(path.join(project, "AGENTS.md"), [
-      "| When | Command |",
-      "| ---- | ------- |",
-      ...Array.from({ length: 9 }, () => "| malformed | row | with | extra | cells |"),
-      "",
-    ].join("\n"));
+    fs.writeFileSync(path.join(project, "AGENTS.md"), ["| When | Command |", "| ---- | ------- |", ...Array.from({ length: 9 }, () => "| malformed | row | with | extra | cells |"), ""].join("\n"));
     const diagnostics = discoverProjectVerification(project) as any;
     expect(diagnostics).toMatchObject({
       status: "partial",
@@ -241,10 +203,7 @@ describe("project verification command discovery", () => {
 
   it("rejects overlong source-pointer labels and commands without ellipsizing them", () => {
     writePackage(".", { test: "node test.mjs" });
-    writeGuidance([
-      `| Test ${"x".repeat(170)} | \`pnpm test\` |`,
-      `| Verification | \`pnpm ${"x".repeat(170)}\` |`,
-    ]);
+    writeGuidance([`| Test ${"x".repeat(170)} | \`pnpm test\` |`, `| Verification | \`pnpm ${"x".repeat(170)}\` |`]);
 
     const result = discoverProjectVerification(project) as any;
     expect(result.expected_commands).toEqual([]);
@@ -340,7 +299,12 @@ describe("project verification command discovery", () => {
     let output = "";
     const rc = cmdPrime(
       { command: "prime", context: "build", format: "json", projectRoot: project },
-      { out: (text) => { output += text; }, err: () => {} },
+      {
+        out: (text) => {
+          output += text;
+        },
+        err: () => {},
+      },
     );
 
     expect(rc).toBe(0);
@@ -349,18 +313,20 @@ describe("project verification command discovery", () => {
       status: "available",
       diagnostics: [],
       rejections: [],
-      expected_commands: [{
-        command: "pnpm run verify",
-        source_provenance: [
-          expect.objectContaining({
-            source_family: "project_guidance",
-            path: "AGENTS.md",
-            line: 5,
-            recipe_label: "Verification",
-          }),
-          { source_family: "package_manifest", path: "package.json", field: "scripts.verify" },
-        ],
-      }],
+      expected_commands: [
+        {
+          command: "pnpm run verify",
+          source_provenance: [
+            expect.objectContaining({
+              source_family: "project_guidance",
+              path: "AGENTS.md",
+              line: 5,
+              recipe_label: "Verification",
+            }),
+            { source_family: "package_manifest", path: "package.json", field: "scripts.verify" },
+          ],
+        },
+      ],
     });
   });
 });

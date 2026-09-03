@@ -42,20 +42,13 @@ export interface ResolveUpdateChannelArgs {
   sourceRoot?: string;
 }
 
-
 const CHANNEL_NAMES: readonly UpdateChannelName[] = ["stable", "development"];
-
 
 function authorityRootFor(sourceRoot: string): string {
   if (fs.existsSync(path.join(sourceRoot, UPDATE_CHANNELS_AUTHORITY))) {
     return sourceRoot;
   }
-  const moduleBundled = path.resolve(
-    path.dirname(fileURLToPath(import.meta.url)),
-    "..",
-    "..",
-    "bundle",
-  );
+  const moduleBundled = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "bundle");
   if (fs.existsSync(path.join(moduleBundled, UPDATE_CHANNELS_AUTHORITY))) {
     return moduleBundled;
   }
@@ -69,15 +62,10 @@ function isUpdateChannelName(value: string): value is UpdateChannelName {
   return (CHANNEL_NAMES as readonly string[]).includes(value);
 }
 
-function parseChannelValue(
-  raw: string,
-  source: UpdateChannelOverrideSource,
-): UpdateChannelName {
+function parseChannelValue(raw: string, source: UpdateChannelOverrideSource): UpdateChannelName {
   const normalized = raw.trim().toLowerCase();
   if (!isUpdateChannelName(normalized)) {
-    throw new Error(
-      `invalid update channel ${JSON.stringify(raw)} from ${source}; expected stable or development`,
-    );
+    throw new Error(`invalid update channel ${JSON.stringify(raw)} from ${source}; expected stable or development`);
   }
   return normalized;
 }

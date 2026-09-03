@@ -3,10 +3,7 @@ import { describe, expect, it } from "vitest";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 
-function capabilityNameSetsMatch(
-  names: readonly string[],
-  instructions: Record<string, string>,
-): boolean {
+function capabilityNameSetsMatch(names: readonly string[], instructions: Record<string, string>): boolean {
   const fromInstructions = Object.keys(instructions);
   if (names.length !== fromInstructions.length) return false;
   const instructionSet = new Set(fromInstructions);

@@ -7,8 +7,7 @@ const TIMESTAMP_RE = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{
 const TOOL_ARGUMENTS_RE = /\b(?:tool[ _-]?arguments?|argv)\b/iu;
 const CONTROL_RE = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/u;
 const PRIVATE_KEY_RE = /-----BEGIN(?: [A-Z]+)? PRIVATE KEY-----/u;
-const ASSIGNED_SENSITIVE_VALUE_RE =
-  /(?:^|[^A-Za-z0-9_])["']?(?:api[_-]?key|access[_-]?token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact)["']?\s*[:=]\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|([^\s,;}\]]+))/giu;
+const ASSIGNED_SENSITIVE_VALUE_RE = /(?:^|[^A-Za-z0-9_])["']?(?:api[_-]?key|access[_-]?token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact)["']?\s*[:=]\s*(?:"((?:\\.|[^"\\])*)"|'((?:\\.|[^'\\])*)'|([^\s,;}\]]+))/giu;
 const BEARER_VALUE_RE = /\bbearer\s+([A-Za-z0-9._~+/=-]{6,})/giu;
 const BARE_SESSION_VALUE_RE = /\bsession[-_]([A-Za-z0-9._~+/=-]{6,})\b/giu;
 const API_KEY_RE = /\b(?:sk|pk)_(?:live|test)_?[A-Za-z0-9_-]{8,}\b/u;
@@ -19,24 +18,9 @@ const PHONE_RE = /(?:\+?\d[\d .()-]{7,}\d)/u;
 const UNIX_PATH_RE = /(?:^|[\s("'`])(?:~\/|\/)(?:[^\s/]+\/)*[^\s/]+/u;
 const WINDOWS_PATH_RE = /\b[A-Za-z]:\\(?:[^\\\s]+\\)*[^\\\s]+/u;
 
-const SENSITIVE_CONTENT_PATTERNS = [
-  PRIVATE_KEY_RE,
-  API_KEY_RE,
-  AWS_KEY_RE,
-  JWT_RE,
-  EMAIL_RE,
-  PHONE_RE,
-  UNIX_PATH_RE,
-  WINDOWS_PATH_RE,
-] as const;
+const SENSITIVE_CONTENT_PATTERNS = [PRIVATE_KEY_RE, API_KEY_RE, AWS_KEY_RE, JWT_RE, EMAIL_RE, PHONE_RE, UNIX_PATH_RE, WINDOWS_PATH_RE] as const;
 
-export const EXCERPT_OMISSION_REASONS = [
-  "no_excerpt",
-  "unrelated_context",
-  "source_bound_exceeded",
-  "unsafe_tool_arguments",
-  "unsafe_content",
-] as const;
+export const EXCERPT_OMISSION_REASONS = ["no_excerpt", "unrelated_context", "source_bound_exceeded", "unsafe_tool_arguments", "unsafe_content"] as const;
 
 export type ExcerptOmissionReason = (typeof EXCERPT_OMISSION_REASONS)[number];
 
@@ -60,10 +44,7 @@ function validTimestamp(value: unknown): value is string {
   return typeof value === "string" && TIMESTAMP_RE.test(value) && !Number.isNaN(Date.parse(value));
 }
 
-export function personalGlossaryCandidateProjectionExcerptExpiry(
-  retainedAt: string,
-  pendingExcerptDays: number,
-): string {
+export function personalGlossaryCandidateProjectionExcerptExpiry(retainedAt: string, pendingExcerptDays: number): string {
   return new Date(Date.parse(retainedAt) + pendingExcerptDays * 24 * 60 * 60 * 1000).toISOString();
 }
 
@@ -101,20 +82,11 @@ function credentialShapedValue(value: string, allowLongLetters = true): boolean 
   const scheme = /^(?:bearer|basic)\s+(.+)$/iu.exec(candidate);
   if (scheme) return credentialShapedValue(scheme[1] ?? "");
   if (/\s/u.test(candidate)) return false;
-  return (
-    (candidate.length >= 6 && /[A-Za-z]/u.test(candidate) && /\d/u.test(candidate)) ||
-    (candidate.length >= 8 && /[A-Za-z]/u.test(candidate) && /[-_.=+/]/u.test(candidate)) ||
-    (allowLongLetters && candidate.length >= 16 && /^[A-Za-z]+$/u.test(candidate))
-  );
+  return (candidate.length >= 6 && /[A-Za-z]/u.test(candidate) && /\d/u.test(candidate)) || (candidate.length >= 8 && /[A-Za-z]/u.test(candidate) && /[-_.=+/]/u.test(candidate)) || (allowLongLetters && candidate.length >= 16 && /^[A-Za-z]+$/u.test(candidate));
 }
 
-export function validPersonalGlossarySafeExcerpt(
-  value: unknown,
-): value is PersonalGlossarySafeExcerpt {
-  const excerpt =
-    value !== null && typeof value === "object" && !Array.isArray(value)
-      ? (value as Record<string, unknown>)
-      : null;
+export function validPersonalGlossarySafeExcerpt(value: unknown): value is PersonalGlossarySafeExcerpt {
+  const excerpt = value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
   return (
     excerpt !== null &&
     typeof excerpt === "object" &&
@@ -131,12 +103,7 @@ export function validPersonalGlossarySafeExcerpt(
   );
 }
 
-function safeExcerpt(
-  source: string,
-  term: string,
-  retainedAt: string,
-  contract: PersonalGlossaryCandidateProjectionExcerptContract,
-): ExcerptSelection {
+function safeExcerpt(source: string, term: string, retainedAt: string, contract: PersonalGlossaryCandidateProjectionExcerptContract): ExcerptSelection {
   if (Buffer.byteLength(source, "utf8") > contract.sourceExcerptMaxUtf8Bytes) {
     return { excerpt: null, omission: "source_bound_exceeded", provided: 1, truncated: false };
   }
@@ -155,10 +122,7 @@ function safeExcerpt(
   }
   const excerpt = {
     text: bounded.text,
-    expires_at: personalGlossaryCandidateProjectionExcerptExpiry(
-      retainedAt,
-      contract.pendingExcerptDays,
-    ),
+    expires_at: personalGlossaryCandidateProjectionExcerptExpiry(retainedAt, contract.pendingExcerptDays),
     redacted: false,
   };
   if (!validPersonalGlossarySafeExcerpt(excerpt)) {
@@ -167,12 +131,7 @@ function safeExcerpt(
   return { excerpt, omission: null, provided: 1, truncated: bounded.truncated };
 }
 
-export function selectPersonalGlossarySafeExcerpt(
-  excerpts: ReadonlySet<string>,
-  term: string,
-  retainedAt: string,
-  contract: PersonalGlossaryCandidateProjectionExcerptContract,
-): ExcerptSelection {
+export function selectPersonalGlossarySafeExcerpt(excerpts: ReadonlySet<string>, term: string, retainedAt: string, contract: PersonalGlossaryCandidateProjectionExcerptContract): ExcerptSelection {
   if (excerpts.size === 0) {
     return { excerpt: null, omission: "no_excerpt", provided: 0, truncated: false };
   }

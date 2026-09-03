@@ -6,10 +6,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
-import {
-  decisionOverlayContract,
-  type DecisionOverlayContract,
-} from "./archiveDiscovery.js";
+import { decisionOverlayContract, type DecisionOverlayContract } from "./archiveDiscovery.js";
 import type { StateMutationTransaction } from "./write/mutation.js";
 import { reject } from "./write/errors.js";
 
@@ -52,17 +49,10 @@ function setAt(target: Record<string, unknown>, field: string, value: unknown): 
 }
 
 function pathAllowed(field: string, contract: DecisionOverlayContract): boolean {
-  return contract.mutablePaths.some(
-    (mutable) => mutable === field || mutable.startsWith(`${field}.`),
-  );
+  return contract.mutablePaths.some((mutable) => mutable === field || mutable.startsWith(`${field}.`));
 }
 
-function validateValueTypes(
-  field: string,
-  value: unknown,
-  contract: DecisionOverlayContract,
-  violations: string[],
-): void {
+function validateValueTypes(field: string, value: unknown, contract: DecisionOverlayContract, violations: string[]): void {
   if (field.endsWith(".state")) {
     if (typeof value !== "string" || !contract.stateValues.includes(value)) {
       violations.push(`${field} must be one of: ${contract.stateValues.join(", ")}`);
@@ -74,12 +64,7 @@ function validateValueTypes(
   }
 }
 
-function validateOverlayValue(
-  value: unknown,
-  contract: DecisionOverlayContract,
-  prefix = "",
-  violations: string[] = [],
-): string[] {
+function validateOverlayValue(value: unknown, contract: DecisionOverlayContract, prefix = "", violations: string[] = []): string[] {
   if (!isMapping(value)) {
     violations.push(`${prefix || "overlay entry"} must be a mapping`);
     return violations;
@@ -105,20 +90,14 @@ function decisionNumberFromId(id: string, contract: DecisionOverlayContract): nu
   return Number.isSafeInteger(parsed) && parsed > 0 ? parsed : null;
 }
 
-export function decisionOverlayPath(
-  projectRoot: string,
-  sourceRoot: string = resolveSourceRoot(),
-): string {
+export function decisionOverlayPath(projectRoot: string, sourceRoot: string = resolveSourceRoot()): string {
   const contract = decisionOverlayContract(sourceRoot);
   const target = path.resolve(projectRoot, contract.location);
   assertRealpathBoundary(projectRoot, target, "decision overlay");
   return target;
 }
 
-export function decisionOverlayViolations(
-  document: unknown,
-  contract: DecisionOverlayContract = decisionOverlayContract(),
-): string[] {
+export function decisionOverlayViolations(document: unknown, contract: DecisionOverlayContract = decisionOverlayContract()): string[] {
   if (!isMapping(document)) return ["decision overlay root must be a mapping keyed by stable decision ID"];
   const violations: string[] = [];
   for (const [stableId, value] of Object.entries(document)) {
@@ -131,10 +110,7 @@ export function decisionOverlayViolations(
   return violations;
 }
 
-function readOverlayDocument(
-  projectRoot: string,
-  sourceRoot: string = resolveSourceRoot(),
-): { path: string; document: DecisionOverlayDocument; contract: DecisionOverlayContract } {
+function readOverlayDocument(projectRoot: string, sourceRoot: string = resolveSourceRoot()): { path: string; document: DecisionOverlayDocument; contract: DecisionOverlayContract } {
   const contract = decisionOverlayContract(sourceRoot);
   const target = decisionOverlayPath(projectRoot, sourceRoot);
   if (!fs.existsSync(target)) return { path: target, document: {}, contract };
@@ -146,37 +122,25 @@ function readOverlayDocument(
     throw new Error(`cannot parse decision overlay '${target}': ${(error as Error).message}`);
   }
   const violations = decisionOverlayViolations(document, contract);
-  if (violations.length > 0)
-    throw new Error(`decision overlay '${target}' is invalid: ${violations.join("; ")}`);
+  if (violations.length > 0) throw new Error(`decision overlay '${target}' is invalid: ${violations.join("; ")}`);
   return { path: target, document: document as DecisionOverlayDocument, contract };
 }
 
-export function loadDecisionOverlay(
-  projectRoot: string = process.cwd(),
-  sourceRoot: string = resolveSourceRoot(),
-): DecisionOverlayDocument {
+export function loadDecisionOverlay(projectRoot: string = process.cwd(), sourceRoot: string = resolveSourceRoot()): DecisionOverlayDocument {
   return readOverlayDocument(projectRoot, sourceRoot).document;
 }
 
-export function hydrateDecisionRecords(
-  entries: JsonObject[],
-  source: string | DecisionOverlayDocument = process.cwd(),
-): JsonObject[] {
+export function hydrateDecisionRecords(entries: JsonObject[], source: string | DecisionOverlayDocument = process.cwd()): JsonObject[] {
   const overlay = typeof source === "string" ? loadDecisionOverlay(source) : source;
   const contract = decisionOverlayContract();
   return entries.map((entry) => {
     const number = entry.number;
-    const stableId =
-      typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
+    const stableId = typeof number === "number" || typeof number === "string" ? `decisions:${number}` : null;
     return composeDecisionOverlay(entry, stableId ? overlay[stableId] : undefined, contract);
   });
 }
 
-export function composeDecisionOverlay(
-  entry: JsonObject,
-  overlay: JsonObject | undefined,
-  contract: DecisionOverlayContract = decisionOverlayContract(),
-): JsonObject {
+export function composeDecisionOverlay(entry: JsonObject, overlay: JsonObject | undefined, contract: DecisionOverlayContract = decisionOverlayContract()): JsonObject {
   if (!overlay) return structuredClone(entry);
   const hydrated = structuredClone(entry);
   const historicalSatisfaction = mapping(hydrated.satisfaction);
@@ -191,10 +155,7 @@ export function composeDecisionOverlay(
   return hydrated;
 }
 
-export function requestedSatisfaction(
-  requested: unknown,
-  contract: DecisionOverlayContract,
-): JsonObject {
+export function requestedSatisfaction(requested: unknown, contract: DecisionOverlayContract): JsonObject {
   const violations = validateOverlayValue({ satisfaction: requested }, contract);
   if (violations.length > 0) {
     reject({
@@ -202,8 +163,7 @@ export function requestedSatisfaction(
       message: "decision satisfaction update contains invalid overlay fields",
       violations,
       syntax: "agentera state decisions update --id ID --satisfaction-state STATE",
-      example:
-        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
+      example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
     });
   }
   const result: Record<string, unknown> = {};
@@ -228,24 +188,14 @@ function evidencePath(contract: DecisionOverlayContract): string {
 }
 
 function confirmationPaths(contract: DecisionOverlayContract): string[] {
-  return contract.mutablePaths
-    .filter((field) => field.includes("user_confirmation."))
-    .map((field) => field.slice("satisfaction.".length));
+  return contract.mutablePaths.filter((field) => field.includes("user_confirmation.")).map((field) => field.slice("satisfaction.".length));
 }
 
-function effectiveState(
-  overlay: JsonObject | undefined,
-  historicalSatisfaction: unknown,
-): unknown {
+function effectiveState(overlay: JsonObject | undefined, historicalSatisfaction: unknown): unknown {
   return valueAt(overlay?.satisfaction, "state") ?? valueAt(historicalSatisfaction, "state");
 }
 
-export function validateTransition(
-  requested: JsonObject,
-  currentOverlay: JsonObject | undefined,
-  historicalSatisfaction: unknown,
-  contract: DecisionOverlayContract,
-): void {
+export function validateTransition(requested: JsonObject, currentOverlay: JsonObject | undefined, historicalSatisfaction: unknown, contract: DecisionOverlayContract): void {
   const nextState = valueAt(requested, statePath(contract));
   const evidence = valueAt(requested, evidencePath(contract));
   const confirmation = mapping(requested.user_confirmation);
@@ -254,8 +204,7 @@ export function validateTransition(
       class: "schema_violation",
       message: "provisionally_satisfied requires non-empty --satisfaction-evidence",
       syntax: "agentera state decisions update --id ID --satisfaction-state STATE --satisfaction-evidence TEXT",
-      example:
-        "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
+      example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence 'verified'",
     });
   }
   if (nextState === "user_confirmed_satisfied") {
@@ -265,39 +214,27 @@ export function validateTransition(
         class: "schema_violation",
         message: "user_confirmed_satisfied requires explicit current user confirmation metadata",
         syntax: "agentera state decisions update --id ID --satisfaction-state user_confirmed_satisfied --confirmed-by USER --confirmed-at TIME",
-        example:
-          "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
+        example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
       });
     }
   }
   const currentState = effectiveState(currentOverlay, historicalSatisfaction);
   if (typeof currentState === "string" && contract.stateValues.includes(currentState)) {
     if (!contract.allowedNext[currentState]?.includes(String(nextState))) {
-      const downgradeConfirmation = confirmationPaths(contract).every((field) =>
-        nonEmptyString(valueAt(confirmation, field.split(".").at(-1) as string)),
-      );
+      const downgradeConfirmation = confirmationPaths(contract).every((field) => nonEmptyString(valueAt(confirmation, field.split(".").at(-1) as string)));
       if (!(currentState === "user_confirmed_satisfied" && downgradeConfirmation)) {
         reject({
           class: "conflict",
           message: `decision satisfaction cannot transition from ${currentState} to ${String(nextState)} without explicit current user confirmation`,
           syntax: "agentera state decisions update --id ID --satisfaction-state STATE",
-          example:
-            "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
+          example: "agentera state decisions update --id qjtrmnpvka --satisfaction-state user_confirmed_satisfied --confirmed-by user --confirmed-at 2026-07-13T12:00:00Z",
         });
       }
     }
   }
 }
 
-export function updateDecisionOverlay(
-  projectRoot: string,
-  decisionNumber: number,
-  requested: unknown,
-  historicalSatisfaction: unknown,
-  transaction: StateMutationTransaction,
-  publish = true,
-  sourceRoot: string = resolveSourceRoot(),
-): DecisionOverlayUpdate {
+export function updateDecisionOverlay(projectRoot: string, decisionNumber: number, requested: unknown, historicalSatisfaction: unknown, transaction: StateMutationTransaction, publish = true, sourceRoot: string = resolveSourceRoot()): DecisionOverlayUpdate {
   const current = readOverlayDocument(projectRoot, sourceRoot);
   const stableId = `${current.contract.identityPrefix}:${decisionNumber}`;
   const currentEntry = current.document[stableId];

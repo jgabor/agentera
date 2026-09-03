@@ -4,33 +4,13 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  canonicalRecordJson,
-  decisionOverlayContract,
-  numberedArchiveArtifacts,
-  numberedArchiveContract,
-  readNumberedArchiveEntry,
-  stateCurrentProjectionPath,
-  validateStateRecord,
-  type DecisionOverlayContract,
-  type NumberedArchiveContract,
-} from "./archiveDiscovery.js";
+import { canonicalRecordJson, decisionOverlayContract, numberedArchiveArtifacts, numberedArchiveContract, readNumberedArchiveEntry, stateCurrentProjectionPath, validateStateRecord, type DecisionOverlayContract, type NumberedArchiveContract } from "./archiveDiscovery.js";
 import { composeDecisionOverlay, decisionOverlayPath, loadDecisionOverlay } from "./decisionOverlay.js";
 import { decisionContextEntry } from "../cli/commands/state/decisions.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
 import { legacyEntryNumber, legacyIdentity, type LegacyIdentityKind } from "./legacyIdentity.js";
 
-export type StateFailureClass =
-  | "invalid_request"
-  | "unsupported_artifact"
-  | "not_found"
-  | "ambiguous"
-  | "corrupt"
-  | "incomplete"
-  | "immutable_conflict"
-  | "cursor_invalid"
-  | "cursor_snapshot_unavailable"
-  | "unsupported_state";
+export type StateFailureClass = "invalid_request" | "unsupported_artifact" | "not_found" | "ambiguous" | "corrupt" | "incomplete" | "immutable_conflict" | "cursor_invalid" | "cursor_snapshot_unavailable" | "unsupported_state";
 
 export interface StateFailureBody {
   schemaVersion: "agentera.stateFailure.v1";
@@ -139,13 +119,7 @@ function failure(
   );
 }
 
-function inspectCurrentProjection(
-  projectRoot: string,
-  artifactId: string,
-  entryNumber: number,
-  contract: NumberedArchiveContract,
-  sourceRoot: string,
-): CurrentProjection {
+function inspectCurrentProjection(projectRoot: string, artifactId: string, entryNumber: number, contract: NumberedArchiveContract, sourceRoot: string): CurrentProjection {
   const projectionPath = stateCurrentProjectionPath(projectRoot, artifactId, sourceRoot);
   try {
     assertRealpathBoundary(projectRoot, projectionPath, `${artifactId} projection`);
@@ -248,13 +222,7 @@ function inspectCurrentProjection(
   return { path: projectionPath, state: "absent" };
 }
 
-function overlayFor(
-  projectRoot: string,
-  sourceRoot: string,
-  artifactId: string,
-  entryNumber: number,
-  record: JsonObject,
-): OverlayResult {
+function overlayFor(projectRoot: string, sourceRoot: string, artifactId: string, entryNumber: number, record: JsonObject): OverlayResult {
   if (artifactId !== "decisions") return { record, applied: false, fields: [], path: "" };
   const contract: DecisionOverlayContract = decisionOverlayContract(sourceRoot);
   const overlayPath = decisionOverlayPath(projectRoot, sourceRoot);
@@ -290,23 +258,18 @@ function overlayFor(
   };
 }
 
-function compose(
-  projectRoot: string,
-  sourceRoot: string,
-  artifactId: string,
-  entryNumber: number,
-  current: CurrentProjection,
-  archivePath: string,
-  archiveRecord: JsonObject | undefined,
-  archiveHash: string | undefined,
-): RetrievedStateEntry {
+function compose(projectRoot: string, sourceRoot: string, artifactId: string, entryNumber: number, current: CurrentProjection, archivePath: string, archiveRecord: JsonObject | undefined, archiveHash: string | undefined): RetrievedStateEntry {
   const record = archiveRecord ?? current.record;
   if (!record) {
     throw failure(1, "incomplete", `state ${artifactId}:${entryNumber} has no complete record available`, {
       artifactId,
       entryNumber,
       recovery: "Restore or publish the validated numbered archive for this ID before retrying; missing fields are not reconstructed.",
-      details: { current_projection_path: current.path, archive_path: archivePath, current_representation: current.state },
+      details: {
+        current_projection_path: current.path,
+        archive_path: archivePath,
+        current_representation: current.state,
+      },
     });
   }
   if (!archiveRecord && current.state === "summary" && current.identity !== "explicit_decision_shorthand") {
@@ -314,7 +277,11 @@ function compose(
       artifactId,
       entryNumber,
       recovery: "Restore or publish the validated numbered archive for this ID before retrying; missing fields are not reconstructed.",
-      details: { current_projection_path: current.path, archive_path: archivePath, current_representation: current.state },
+      details: {
+        current_projection_path: current.path,
+        archive_path: archivePath,
+        current_representation: current.state,
+      },
     });
   }
   const complete = archiveRecord !== undefined || current.state === "full";
@@ -350,12 +317,7 @@ function compose(
   };
 }
 
-export function retrieveStateEntry(
-  projectRoot: string,
-  artifactId: string,
-  entryNumber: number,
-  options: { sourceRoot?: string } = {},
-): StateGetResponse {
+export function retrieveStateEntry(projectRoot: string, artifactId: string, entryNumber: number, options: { sourceRoot?: string } = {}): StateGetResponse {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const artifacts = numberedArchiveArtifacts(sourceRoot);
   if (!artifacts.includes(artifactId)) {
@@ -379,16 +341,11 @@ export function retrieveStateEntry(
 
   const lookup = readNumberedArchiveEntry(projectRoot, artifactId, entryNumber, { sourceRoot });
   if (lookup.rejection) {
-    const unsupported =
-      lookup.rejection.class === "unsupported_artifact" ||
-      lookup.rejection.reason === "unsupported_artifact" ||
-      (lookup.rejection.reason === "invalid_envelope" && lookup.rejection.message.startsWith("schemaVersion must be"));
+    const unsupported = lookup.rejection.class === "unsupported_artifact" || lookup.rejection.reason === "unsupported_artifact" || (lookup.rejection.reason === "invalid_envelope" && lookup.rejection.message.startsWith("schemaVersion must be"));
     throw failure(1, unsupported ? "unsupported_state" : "corrupt", lookup.rejection.message, {
       artifactId,
       entryNumber,
-      recovery: unsupported
-        ? "Use a numbered archive schema supported by the storage authority, then retry the direct get command."
-        : "Preserve the affected archive bytes for diagnostics, repair the numbered record, then retry the direct get command.",
+      recovery: unsupported ? "Use a numbered archive schema supported by the storage authority, then retry the direct get command." : "Preserve the affected archive bytes for diagnostics, repair the numbered record, then retry the direct get command.",
       details: { archive_path: lookup.path, rejection: lookup.rejection.reason },
     });
   }
@@ -433,15 +390,6 @@ export function retrieveStateEntry(
   return {
     command: `state ${artifactId} get`,
     status: "ok",
-    entry: compose(
-      projectRoot,
-      sourceRoot,
-      artifactId,
-      entryNumber,
-      current,
-      lookup.path,
-      archiveRecord,
-      lookup.entry?.recordSha256,
-    ),
+    entry: compose(projectRoot, sourceRoot, artifactId, entryNumber, current, lookup.path, archiveRecord, lookup.entry?.recordSha256),
   };
 }

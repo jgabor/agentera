@@ -9,29 +9,11 @@ import path from "node:path";
  * Phase 7 via the `cliInvoker` option once the TS CLI commands exist.
  */
 
-export const TEXT_SURFACES = [
-  "README.md",
-  "UPGRADE.md",
-  "references/cli/vocabulary.md",
-  "skills/agentera/SKILL.md",
-  "packages/cli/src/capabilities/status/instructions.ts",
-] as const;
+export const TEXT_SURFACES = ["README.md", "UPGRADE.md", "references/cli/vocabulary.md", "skills/agentera/SKILL.md", "packages/cli/src/capabilities/status/instructions.ts"] as const;
 
-export const CLI_HELP_COMMANDS: string[][] = [
-  ["--help"],
-  ["prime", "--help"],
-  ["doctor", "--help"],
-  ["upgrade", "--help"],
-];
+export const CLI_HELP_COMMANDS: string[][] = [["--help"], ["prime", "--help"], ["doctor", "--help"], ["upgrade", "--help"]];
 
-export const CLI_OUTPUT_COMMANDS: string[][] = [
-  ["prime"],
-  ["prime", "--format", "json"],
-  ["doctor", "--json"],
-  ["upgrade", "--only", "bundle", "--dry-run"],
-  ["upgrade", "--only", "bundle", "--dry-run", "--json"],
-  ["upgrade", "--only", "runtime", "--runtime", "opencode", "--dry-run"],
-];
+export const CLI_OUTPUT_COMMANDS: string[][] = [["prime"], ["prime", "--format", "json"], ["doctor", "--json"], ["upgrade", "--only", "bundle", "--dry-run"], ["upgrade", "--only", "bundle", "--dry-run", "--json"], ["upgrade", "--only", "runtime", "--runtime", "opencode", "--dry-run"]];
 
 const FORBIDDEN: Array<[RegExp, string]> = [
   [/\bbundle[- ]root\b/i, "bundle-root wording"],
@@ -63,12 +45,7 @@ const INSTALL_ROOT_LABEL_RE = /\binstall root:/i;
 
 export function isPlainLanguageRuleLine(line: string): boolean {
   const lowered = line.toLowerCase();
-  return [
-    "never ask the user",
-    "bad labels",
-    "avoid these prompt labels",
-    "jargon in recovery wording",
-  ].some((marker) => lowered.includes(marker));
+  return ["never ask the user", "bad labels", "avoid these prompt labels", "jargon in recovery wording"].some((marker) => lowered.includes(marker));
 }
 
 /** Mirror Python str.splitlines(): split on line boundaries, no trailing empty. */
@@ -101,9 +78,7 @@ export function checkText(surface: string, text: string): string[] {
         errors.push(`${surface}:${number}: CLI output names app home as install root: ${line.trim()}`);
       }
       if (line.includes("installRoot")) {
-        errors.push(
-          `${surface}:${number}: public JSON exposes installRoot instead of appHome: ${line.trim()}`,
-        );
+        errors.push(`${surface}:${number}: public JSON exposes installRoot instead of appHome: ${line.trim()}`);
       }
     }
   });
@@ -118,10 +93,7 @@ function readSurface(root: string, relative: string): [string, string] | null {
   return [relative, fs.readFileSync(p, "utf8")];
 }
 
-export type CliInvoker = (
-  args: string[],
-  opts: { cwd: string; env: Record<string, string | undefined> },
-) => { stdout: string; stderr: string; status: number | null };
+export type CliInvoker = (args: string[], opts: { cwd: string; env: Record<string, string | undefined> }) => { stdout: string; stderr: string; status: number | null };
 
 /**
  * Run the help/output CLI surfaces through the provided invoker, returning

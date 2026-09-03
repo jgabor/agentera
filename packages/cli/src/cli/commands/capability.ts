@@ -7,10 +7,7 @@ import { preCutoverCommand } from "../preCutoverCommand.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
-export const CAPABILITY_ROUTING_NAMES = [
-  "vision", "discuss", "research", "plan", "build",
-  "optimize", "audit", "document", "profile", "design", "orchestrate",
-];
+export const CAPABILITY_ROUTING_NAMES = ["vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
 
 const PRIME_CAPABILITY_CONTEXT_COMMAND = preCutoverCommand("prime --context {capability}");
 
@@ -26,9 +23,7 @@ export function cmdCapability(capability: string, args: { format?: string }, io:
       skill_invocation: `/agentera ${capability}`,
       instructions_path: instructionsPath,
       startup_context: startupContext,
-      routine_state_reads:
-        "Use top-level agentera state commands for artifact reads; " +
-        `agentera ${capability} emits capability routing guidance only.`,
+      routine_state_reads: "Use top-level agentera state commands for artifact reads; " + `agentera ${capability} emits capability routing guidance only.`,
     },
   };
   emitStructured(payload, "json", out);

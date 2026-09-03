@@ -11,7 +11,10 @@ import { applyOutputPolicy, LIVE_OUTPUT_ROUTE_INVENTORY, OUTPUT_PATH_POLICIES } 
 function capture(args: string[]) {
   let out = "";
   let err = "";
-  const rc = main(["node", "agentera", ...args], { out: (text) => (out += text), err: (text) => (err += text) });
+  const rc = main(["node", "agentera", ...args], {
+    out: (text) => (out += text),
+    err: (text) => (err += text),
+  });
   return { rc, out, err };
 }
 
@@ -21,18 +24,7 @@ function withEntityProject<T>(run: (root: string) => T): T {
   const entities = path.join(root, ".agentera/entities/progress/progress_cycle");
   fs.mkdirSync(entities, { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-  fs.writeFileSync(path.join(entities, "aaaaaaaaaa.yaml"), [
-    "id: aaaaaaaaaa",
-    "artifact: progress",
-    "record:",
-    "  timestamp: 2026-08-31 00:00",
-    "  type: test",
-    "  phase: build",
-    "  what: Exercise output policy",
-    "  context:",
-    "    intent: Test nested dispatch",
-    "",
-  ].join("\n"));
+  fs.writeFileSync(path.join(entities, "aaaaaaaaaa.yaml"), ["id: aaaaaaaaaa", "artifact: progress", "record:", "  timestamp: 2026-08-31 00:00", "  type: test", "  phase: build", "  what: Exercise output policy", "  context:", "    intent: Test nested dispatch", ""].join("\n"));
   process.chdir(root);
   try {
     return run(root);
@@ -49,9 +41,7 @@ function explicitNestedJson(args: string[]): string[] {
 describe("shared output policy", () => {
   it("classifies every success and error path", () => {
     expect(Object.keys(OUTPUT_PATH_POLICIES).sort()).toEqual(["help", "operational", "prime_guidance", "version"]);
-    const operationalRoutes = LIVE_OUTPUT_ROUTE_INVENTORY
-      .filter(({ kind }) => kind === "operational")
-      .map(({ route }) => route);
+    const operationalRoutes = LIVE_OUTPUT_ROUTE_INVENTORY.filter(({ kind }) => kind === "operational").map(({ route }) => route);
     expect(operationalRoutes).toEqual(["version", ...DISPATCHER_TOP_LEVEL_COMMANDS]);
     expect(LIVE_OUTPUT_ROUTE_INVENTORY.every(({ producers }) => producers.length > 0)).toBe(true);
     expect(LIVE_OUTPUT_ROUTE_INVENTORY.every(({ error }) => error === "json")).toBe(true);
@@ -69,19 +59,47 @@ describe("shared output policy", () => {
   it("exercises every inventoried nested handler with passing and failing JSON behavior", () => {
     withEntityProject((root) => {
       const passing = [
-        { route: "check", producer: "runValidate", args: ["check", "validate", "vocabularyAuthority"] },
-        { route: "check", producer: "runVerify", args: ["check", "verify", "eval", "skills", "--dry-run"] },
-        { route: "check", producer: "runDurability", args: ["check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"] },
-        { route: "check", producer: "runLint", args: ["check", "lint", "--artifact", "PLAN.md", "--text", "Clear draft text."] },
-        { route: "check", producer: "runCompact", args: ["check", "compact", "--project", root, "--mode", "fix"] },
+        {
+          route: "check",
+          producer: "runValidate",
+          args: ["check", "validate", "vocabularyAuthority"],
+        },
+        {
+          route: "check",
+          producer: "runVerify",
+          args: ["check", "verify", "eval", "skills", "--dry-run"],
+        },
+        {
+          route: "check",
+          producer: "runDurability",
+          args: ["check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"],
+        },
+        {
+          route: "check",
+          producer: "runLint",
+          args: ["check", "lint", "--artifact", "PLAN.md", "--text", "Clear draft text."],
+        },
+        {
+          route: "check",
+          producer: "runCompact",
+          args: ["check", "compact", "--project", root, "--mode", "fix"],
+        },
         { route: "check", producer: "runGate", args: ["check", "compact", "--project", root] },
         { route: "state", producer: "runQuery", args: ["state", "query", "--list-artifacts"] },
-        { route: "state", producer: "runState", args: ["state", "progress", "list", "--limit", "1"] },
+        {
+          route: "state",
+          producer: "runState",
+          args: ["state", "progress", "list", "--limit", "1"],
+        },
       ];
       const failing = [
         { route: "check", producer: "runValidate", args: ["check", "validate"] },
         { route: "check", producer: "runVerify", args: ["check", "verify", "--bogus"] },
-        { route: "check", producer: "runDurability", args: ["check", "durability", "--artifact", "progress"] },
+        {
+          route: "check",
+          producer: "runDurability",
+          args: ["check", "durability", "--artifact", "progress"],
+        },
         { route: "check", producer: "runLint", args: ["check", "lint", "--text", "draft"] },
         { route: "state", producer: "runQuery", args: ["state", "query", "--bogus"] },
         { route: "state", producer: "runState", args: ["state", "progress", "bogus"] },
@@ -99,15 +117,29 @@ describe("shared output policy", () => {
 
       fs.writeFileSync(path.join(root, ".agentera/entities/progress/progress_cycle/bbbbbbbbbb.yaml"), "invalid: [\n");
       failing.push(
-        { route: "check", producer: "runCompact", args: ["check", "compact", "--project", root, "--mode", "fix"] },
+        {
+          route: "check",
+          producer: "runCompact",
+          args: ["check", "compact", "--project", root, "--mode", "fix"],
+        },
         { route: "check", producer: "runGate", args: ["check", "compact", "--project", root] },
       );
       for (const route of ["check", "state"]) {
-        const inventoried = LIVE_OUTPUT_ROUTE_INVENTORY.find((entry) => entry.route === route)?.producers
-          .filter((producer) => producer !== "applyOutputPolicy" && producer !== "emitInvalidInput")
+        const inventoried = LIVE_OUTPUT_ROUTE_INVENTORY.find((entry) => entry.route === route)
+          ?.producers.filter((producer) => producer !== "applyOutputPolicy" && producer !== "emitInvalidInput")
           .sort();
-        expect(passing.filter((entry) => entry.route === route).map(({ producer }) => producer).sort()).toEqual(inventoried);
-        expect(failing.filter((entry) => entry.route === route).map(({ producer }) => producer).sort()).toEqual(inventoried);
+        expect(
+          passing
+            .filter((entry) => entry.route === route)
+            .map(({ producer }) => producer)
+            .sort(),
+        ).toEqual(inventoried);
+        expect(
+          failing
+            .filter((entry) => entry.route === route)
+            .map(({ producer }) => producer)
+            .sort(),
+        ).toEqual(inventoried);
       }
       for (const { producer, args } of failing) {
         const implicit = capture(args);
@@ -137,7 +169,10 @@ describe("shared output policy", () => {
     const result = capture(["schema", "--format", format]);
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
-    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(JSON.parse(result.out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
   });
 
   it.each(["text", "yaml"])("rejects state mutation %s selectors before effects", (format) => {
@@ -148,7 +183,10 @@ describe("shared output policy", () => {
       const result = capture(["state", "progress", "append", "--input", input, "--format", format]);
       expect(result.rc).toBe(2);
       expect(result.err).toBe("");
-      expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+      expect(JSON.parse(result.out).error).toMatchObject({
+        class: "invalid_choice",
+        valid_values: ["json"],
+      });
       expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"))).toEqual(before);
     });
   });
@@ -159,7 +197,10 @@ describe("shared output policy", () => {
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
     expect(result.out).not.toContain(rejected);
-    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(JSON.parse(result.out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
     expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(32_768);
   });
 
@@ -186,11 +227,18 @@ describe("shared output policy", () => {
     const failure = capture(invalid);
     expect(failure.rc).toBe(2);
     expect(failure.err).toBe("");
-    expect(JSON.parse(failure.out)).toMatchObject({ schemaVersion: "agentera.invalidInputEnvelope.v2", status: "fail" });
+    expect(JSON.parse(failure.out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      status: "fail",
+    });
   });
 
   it("returns JSON errors for selectors on text exceptions", () => {
-    for (const args of [["--help", "--format", "json"], ["--version", "--format=json"], ["prime", "--guidance", "--format", "json"]]) {
+    for (const args of [
+      ["--help", "--format", "json"],
+      ["--version", "--format=json"],
+      ["prime", "--guidance", "--format", "json"],
+    ]) {
       const result = capture(args);
       expect(result.rc).toBe(2);
       expect(result.err).toBe("");
@@ -210,7 +258,10 @@ describe("shared output policy", () => {
   });
 
   it("rejects duplicate and missing operational selectors", () => {
-    for (const args of [["schema", "--format", "json", "--format=json"], ["schema", "--format"]]) {
+    for (const args of [
+      ["schema", "--format", "json", "--format=json"],
+      ["schema", "--format"],
+    ]) {
       let out = "";
       const result = applyOutputPolicy(args, { out: (text) => (out += text) });
       expect(result).toBe(2);

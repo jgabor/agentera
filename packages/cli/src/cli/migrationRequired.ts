@@ -25,10 +25,7 @@ export function requestedMigrationFailureFormat(argv: string[]): Format {
 export function requiresCompletedEntityCutover(argv: string[]): boolean {
   const [command, subcommand, verb] = argv;
   if (["--version", "version", "app-home", "doctor", "schema", "route", "upgrade"].includes(command)) return false;
-  if (
-    command === "report" &&
-    ["personal-glossary-publish", "profile-grounding", "personal-glossary-candidates", "personal-glossary-decision", "personal-glossary-reviews"].includes(subcommand)
-  ) return false;
+  if (command === "report" && ["personal-glossary-publish", "profile-grounding", "personal-glossary-candidates", "personal-glossary-decision", "personal-glossary-reviews"].includes(subcommand)) return false;
   if (command === "check" && subcommand === "verify" && verb === "eval" && argv[3] === "glossary") return false;
   if (command === "prime" && (argv.includes("--guidance") || !argv.includes("--context") || value(argv, "--context") === "status")) return false;
   if (command === "query") return !argv.includes("--list-artifacts");
@@ -51,24 +48,15 @@ export function migrationProject(argv: string[], fallback = process.cwd()): stri
 
 function permitsFreshPlanInitialization(argv: string[]): boolean {
   const [command, subcommand, verb] = argv;
-  return command === "state" && subcommand === "plan" && verb === "create"
-    || command === "prime" && value(argv, "--context") === "plan";
+  return (command === "state" && subcommand === "plan" && verb === "create") || (command === "prime" && value(argv, "--context") === "plan");
 }
 
 function freshPlanCreateCommand(project: string): string {
-  return commandText([
-    "npx", "-y", "agentera@next", "state", "plan", "create", "--project", project,
-    "--input", "PLAN.yaml", "--format", "json",
-  ]);
+  return commandText(["npx", "-y", "agentera@next", "state", "plan", "create", "--project", project, "--input", "PLAN.yaml", "--format", "json"]);
 }
 
 /** Read-only cutover gate. It only inspects the durable marker and emits a failure. */
-export function enforceCompletedEntityCutover(
-  projectRoot: string,
-  format: Format,
-  io: Io = {},
-  argv: string[] = [],
-): number | null {
+export function enforceCompletedEntityCutover(projectRoot: string, format: Format, io: Io = {}, argv: string[] = []): number | null {
   const project = path.resolve(projectRoot);
   let mode: "legacy" | "entities";
   try {
@@ -78,7 +66,12 @@ export function enforceCompletedEntityCutover(
     const envelope = {
       schemaVersion: "agentera.stateFailure.v1",
       status: "fail",
-      error: { class: "invalid_state_marker", message: (error as Error).message, project, recovery },
+      error: {
+        class: "invalid_state_marker",
+        message: (error as Error).message,
+        project,
+        recovery,
+      },
     };
     if (format === "json" || format === "yaml") emitStructured(envelope, format, io.out ?? ((text) => process.stdout.write(text)));
     else (io.err ?? ((text) => process.stderr.write(text)))(`Error: ${envelope.error.message}\nRecovery: ${recovery}\n`);
@@ -110,9 +103,7 @@ export function enforceCompletedEntityCutover(
     status: "fail",
     error: {
       class: "migration_required",
-      message: legacy
-        ? "This command requires the completed entity-state cutover; legacy aggregates remain migration input only."
-        : `This command cannot adopt marker-absent ${classification.state} Agentera state; inspect it with the read-only recovery command before any mutation.`,
+      message: legacy ? "This command requires the completed entity-state cutover; legacy aggregates remain migration input only." : `This command cannot adopt marker-absent ${classification.state} Agentera state; inspect it with the read-only recovery command before any mutation.`,
       project,
       recovery,
     },

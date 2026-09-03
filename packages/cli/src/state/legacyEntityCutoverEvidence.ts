@@ -27,9 +27,7 @@ function read(project: string, relative: string): Buffer {
 }
 
 function safeTarget(value: string): boolean {
-  return value.startsWith(".agentera/entities/")
-    && !path.isAbsolute(value)
-    && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  return value.startsWith(".agentera/entities/") && !path.isAbsolute(value) && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 }
 
 /** Minimal read-only compatibility required by public state validation. */
@@ -43,16 +41,18 @@ export function loadLegacyEntityCutoverTargets(projectRoot: string, markerBytes:
   const manifestBytes = read(project, `${root}/manifest.yaml`);
   const journal = loadYamlMapping(journalBytes.toString("utf8"));
   const manifest = loadYamlMapping(manifestBytes.toString("utf8"));
-  if (journal.schemaVersion !== "agentera.entityMigrationJournal.v1"
-    || journal.migration_id !== id
-    || journal.phase !== "cutover_complete"
-    || journal.manifest_sha256 !== hash(manifestBytes)
-    || manifest.schemaVersion !== "agentera.entityMigrationManifest.v1"
-    || manifest.migration_id !== id
-    || journal.source_fingerprint !== marker.source_fingerprint
-    || journal.preview_digest !== marker.preview_digest
-    || manifest.source_fingerprint !== marker.source_fingerprint
-    || manifest.preview_digest !== marker.preview_digest) {
+  if (
+    journal.schemaVersion !== "agentera.entityMigrationJournal.v1" ||
+    journal.migration_id !== id ||
+    journal.phase !== "cutover_complete" ||
+    journal.manifest_sha256 !== hash(manifestBytes) ||
+    manifest.schemaVersion !== "agentera.entityMigrationManifest.v1" ||
+    manifest.migration_id !== id ||
+    journal.source_fingerprint !== marker.source_fingerprint ||
+    journal.preview_digest !== marker.preview_digest ||
+    manifest.source_fingerprint !== marker.source_fingerprint ||
+    manifest.preview_digest !== marker.preview_digest
+  ) {
     throw new Error(`historical entity cutover evidence '${id}' does not match its marker`);
   }
   const receipts = mapping(manifest.receipts) ? manifest.receipts : {};
@@ -65,7 +65,12 @@ export function loadLegacyEntityCutoverTargets(projectRoot: string, markerBytes:
     if (typeof target.path !== "string" || !safeTarget(target.path) || typeof target.id !== "string" || typeof entry.artifact !== "string" || typeof entry.target_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(entry.target_sha256)) {
       throw new Error(`historical entity cutover manifest '${id}' has an invalid target`);
     }
-    return { path: target.path, sha256: entry.target_sha256, id: target.id, artifact: entry.artifact };
+    return {
+      path: target.path,
+      sha256: entry.target_sha256,
+      id: target.id,
+      artifact: entry.artifact,
+    };
   });
   if (new Set(targets.map(({ path: target }) => target)).size !== targets.length) {
     throw new Error(`historical entity cutover manifest '${id}' target inventory is duplicated`);

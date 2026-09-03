@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  evaluateTodoReadinessQueue,
-  type TodoReadinessEntity,
-} from "../../src/cli/todoReadinessSelection.js";
+import { evaluateTodoReadinessQueue, type TodoReadinessEntity } from "../../src/cli/todoReadinessSelection.js";
 
 function readiness(overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
@@ -18,10 +15,7 @@ function readiness(overrides: Record<string, unknown> = {}): Record<string, unkn
   };
 }
 
-function todo(
-  id: string,
-  overrides: Record<string, unknown> = {},
-): TodoReadinessEntity {
+function todo(id: string, overrides: Record<string, unknown> = {}): TodoReadinessEntity {
   return {
     id,
     artifact: "todo",
@@ -43,10 +37,58 @@ describe("TODO readiness selection", () => {
   it.each([
     ["todo_resolved", todo("aaaaaaaaaa", { status: "resolved" }), todo("aaaaaaaaaa"), "resolved", "actionable"],
     ["readiness_absent", todo("aaaaaaaaaa", { readiness: undefined }), todo("aaaaaaaaaa"), "needs-triage", "actionable"],
-    ["blocked", todo("aaaaaaaaaa", { readiness: readiness({ blocked: { reason: "Vendor outage.", recovery: "Wait for vendor recovery." } }) }), todo("aaaaaaaaaa"), "blocked", "actionable"],
-    ["gate_pending", todo("aaaaaaaaaa", { readiness: readiness({ gate: { state: "pending", reason: "Approval required.", recovery: "Obtain release approval." } }) }), todo("aaaaaaaaaa", { readiness: readiness({ gate: { state: "satisfied", reason: "Approved.", recovery: "Re-open approval if scope changes." } }) }), "gated", "actionable"],
-    ["dependency_cross_artifact", todo("aaaaaaaaaa", { readiness: readiness({ dependencies: [{ artifact: "plan", id: "bbbbbbbbbb" }] }) }), todo("aaaaaaaaaa"), "needs-triage", "actionable"],
-    ["dependency_missing", todo("aaaaaaaaaa", { readiness: readiness({ dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }] }) }), todo("aaaaaaaaaa"), "needs-triage", "actionable"],
+    [
+      "blocked",
+      todo("aaaaaaaaaa", {
+        readiness: readiness({
+          blocked: { reason: "Vendor outage.", recovery: "Wait for vendor recovery." },
+        }),
+      }),
+      todo("aaaaaaaaaa"),
+      "blocked",
+      "actionable",
+    ],
+    [
+      "gate_pending",
+      todo("aaaaaaaaaa", {
+        readiness: readiness({
+          gate: {
+            state: "pending",
+            reason: "Approval required.",
+            recovery: "Obtain release approval.",
+          },
+        }),
+      }),
+      todo("aaaaaaaaaa", {
+        readiness: readiness({
+          gate: {
+            state: "satisfied",
+            reason: "Approved.",
+            recovery: "Re-open approval if scope changes.",
+          },
+        }),
+      }),
+      "gated",
+      "actionable",
+    ],
+    [
+      "dependency_cross_artifact",
+      todo("aaaaaaaaaa", {
+        readiness: readiness({ dependencies: [{ artifact: "plan", id: "bbbbbbbbbb" }] }),
+      }),
+      todo("aaaaaaaaaa"),
+      "needs-triage",
+      "actionable",
+    ],
+    [
+      "dependency_missing",
+      todo("aaaaaaaaaa", {
+        readiness: readiness({ dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }] }),
+      }),
+      todo("aaaaaaaaaa"),
+      "needs-triage",
+      "actionable",
+    ],
   ])("handles %s before its adversarial non-match", (_name, positive, adversarial, expected, opposite) => {
     expect(outcome([positive], "aaaaaaaaaa")).toBe(expected);
     expect(outcome([adversarial], "aaaaaaaaaa")).toBe(opposite);
@@ -57,7 +99,10 @@ describe("TODO readiness selection", () => {
       readiness: readiness({ dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }] }),
     });
     const open = todo("bbbbbbbbbb", {
-      readiness: readiness({ queue_rank: 2, dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }] }),
+      readiness: readiness({
+        queue_rank: 2,
+        dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }],
+      }),
     });
     expect(outcome([dependent, open], "aaaaaaaaaa")).toBe("needs-triage");
 
@@ -72,10 +117,7 @@ describe("TODO readiness selection", () => {
     const duplicate = [todo("aaaaaaaaaa"), todo("bbbbbbbbbb")];
     const conflict = evaluateTodoReadinessQueue(duplicate);
     expect(conflict.selected).toBeNull();
-    expect(conflict.evaluations).toEqual([
-      expect.objectContaining({ outcome: "ordering_conflict", result: "needs-triage" }),
-      expect.objectContaining({ outcome: "ordering_conflict", result: "needs-triage" }),
-    ]);
+    expect(conflict.evaluations).toEqual([expect.objectContaining({ outcome: "ordering_conflict", result: "needs-triage" }), expect.objectContaining({ outcome: "ordering_conflict", result: "needs-triage" })]);
 
     duplicate[1].record.readiness = readiness({ queue_rank: 2 });
     const ordered = evaluateTodoReadinessQueue(duplicate);
@@ -86,10 +128,17 @@ describe("TODO readiness selection", () => {
   it("uses severity then declared queue rank without IDs, prose, or input order as a tie-breaker", () => {
     const lowerRank = todo("zzzzzzzzzz", {
       description: "A".repeat(20_000),
-      readiness: readiness({ capability: "discuss", reason: "Resolve the product decision.", queue_rank: 1 }),
+      readiness: readiness({
+        capability: "discuss",
+        reason: "Resolve the product decision.",
+        queue_rank: 1,
+      }),
     });
     const higherRank = todo("aaaaaaaaaa", { readiness: readiness({ queue_rank: 2 }) });
-    const critical = todo("mmmmmmmmmm", { severity: "critical", readiness: readiness({ queue_rank: 9 }) });
+    const critical = todo("mmmmmmmmmm", {
+      severity: "critical",
+      readiness: readiness({ queue_rank: 9 }),
+    });
 
     expect(evaluateTodoReadinessQueue([higherRank, lowerRank]).selected?.id).toBe("zzzzzzzzzz");
     expect(evaluateTodoReadinessQueue([lowerRank, higherRank]).selected?.id).toBe("zzzzzzzzzz");
@@ -97,49 +146,106 @@ describe("TODO readiness selection", () => {
   });
 
   it("uses managed Markdown order before queue rank and falls back deterministically for absent entities", () => {
-    const markdownFirst = { ...todo("zzzzzzzzzz", { readiness: readiness({ queue_rank: 9 }) }), projectedOrder: { kind: "managed" as const, markdownOrder: 1 } };
-    const queueFirst = { ...todo("yyyyyyyyyy", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "managed" as const, markdownOrder: 2 } };
-    const absentA = { ...todo("aaaaaaaaaa", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "absent" as const } };
-    const absentB = { ...todo("bbbbbbbbbb", { readiness: readiness({ queue_rank: 1 }) }), projectedOrder: { kind: "absent" as const } };
+    const markdownFirst = {
+      ...todo("zzzzzzzzzz", { readiness: readiness({ queue_rank: 9 }) }),
+      projectedOrder: { kind: "managed" as const, markdownOrder: 1 },
+    };
+    const queueFirst = {
+      ...todo("yyyyyyyyyy", { readiness: readiness({ queue_rank: 1 }) }),
+      projectedOrder: { kind: "managed" as const, markdownOrder: 2 },
+    };
+    const absentA = {
+      ...todo("aaaaaaaaaa", { readiness: readiness({ queue_rank: 1 }) }),
+      projectedOrder: { kind: "absent" as const },
+    };
+    const absentB = {
+      ...todo("bbbbbbbbbb", { readiness: readiness({ queue_rank: 1 }) }),
+      projectedOrder: { kind: "absent" as const },
+    };
 
-    expect(evaluateTodoReadinessQueue([queueFirst, markdownFirst]).selected).toMatchObject({ id: "zzzzzzzzzz", projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 9 });
+    expect(evaluateTodoReadinessQueue([queueFirst, markdownFirst]).selected).toMatchObject({
+      id: "zzzzzzzzzz",
+      projectedOrder: { kind: "managed", markdownOrder: 1 },
+      queueRank: 9,
+    });
     expect(evaluateTodoReadinessQueue([absentA, markdownFirst]).selected?.id).toBe("zzzzzzzzzz");
     expect(evaluateTodoReadinessQueue([absentB, absentA]).selected?.id).toBe("aaaaaaaaaa");
-    expect(evaluateTodoReadinessQueue([{ ...queueFirst, record: { ...queueFirst.record, readiness: readiness({ queue_rank: 9 }) } }, markdownFirst]).selected?.id).toBe("zzzzzzzzzz");
+    expect(
+      evaluateTodoReadinessQueue([
+        {
+          ...queueFirst,
+          record: { ...queueFirst.record, readiness: readiness({ queue_rank: 9 }) },
+        },
+        markdownFirst,
+      ]).selected?.id,
+    ).toBe("zzzzzzzzzz");
     expect(() => evaluateTodoReadinessQueue([markdownFirst, todo("cccccccccc")])).toThrow(/projectedOrder for every entity/);
   });
 
   it("keeps actionable work selected while reporting bounded triage", () => {
     const result = evaluateTodoReadinessQueue([
       todo("aaaaaaaaaa", { readiness: undefined, severity: "critical" }),
-      todo("bbbbbbbbbb", { readiness: readiness({ capability: "discuss", reason: "Choose the supported behavior." }) }),
+      todo("bbbbbbbbbb", {
+        readiness: readiness({ capability: "discuss", reason: "Choose the supported behavior." }),
+      }),
     ]);
 
-    expect(result.selected).toMatchObject({ id: "bbbbbbbbbb", capability: "discuss", phase: "deliberate" });
+    expect(result.selected).toMatchObject({
+      id: "bbbbbbbbbb",
+      capability: "discuss",
+      phase: "deliberate",
+    });
     expect(result.triage).toMatchObject({ count: 1, bounded: true });
   });
 
   it("abstains with contract-owned recovery when every item is non-actionable", () => {
     const result = evaluateTodoReadinessQueue([
       todo("aaaaaaaaaa", { readiness: undefined }),
-      todo("bbbbbbbbbb", { readiness: readiness({ blocked: { reason: "Blocked.", recovery: "Remove the blocker." }, queue_rank: 2 }) }),
-      todo("cccccccccc", { readiness: readiness({ gate: { state: "pending", reason: "Approval.", recovery: "Obtain approval." }, queue_rank: 3 }) }),
-      todo("dddddddddd", { readiness: readiness({ dependencies: [{ artifact: "todo", id: "eeeeeeeeee" }], queue_rank: 4 }) }),
-      todo("eeeeeeeeee", { readiness: readiness({ blocked: { reason: "Blocked prerequisite.", recovery: "Resolve the prerequisite blocker." }, queue_rank: 5 }) }),
+      todo("bbbbbbbbbb", {
+        readiness: readiness({
+          blocked: { reason: "Blocked.", recovery: "Remove the blocker." },
+          queue_rank: 2,
+        }),
+      }),
+      todo("cccccccccc", {
+        readiness: readiness({
+          gate: { state: "pending", reason: "Approval.", recovery: "Obtain approval." },
+          queue_rank: 3,
+        }),
+      }),
+      todo("dddddddddd", {
+        readiness: readiness({
+          dependencies: [{ artifact: "todo", id: "eeeeeeeeee" }],
+          queue_rank: 4,
+        }),
+      }),
+      todo("eeeeeeeeee", {
+        readiness: readiness({
+          blocked: {
+            reason: "Blocked prerequisite.",
+            recovery: "Resolve the prerequisite blocker.",
+          },
+          queue_rank: 5,
+        }),
+      }),
     ]);
 
     expect(result.selected).toBeNull();
-    expect(result.abstainRecovery).toBe(
-      "Review the item and declare readiness through the typed TODO writer.",
-    );
+    expect(result.abstainRecovery).toBe("Review the item and declare readiness through the typed TODO writer.");
   });
 
   it("surfaces declared blocker and gate recovery without recommending implementation", () => {
     const blocked = evaluateTodoReadinessQueue([
-      todo("aaaaaaaaaa", { readiness: readiness({ blocked: { reason: "Blocked.", recovery: "Remove the blocker." } }) }),
+      todo("aaaaaaaaaa", {
+        readiness: readiness({ blocked: { reason: "Blocked.", recovery: "Remove the blocker." } }),
+      }),
     ]);
     const gated = evaluateTodoReadinessQueue([
-      todo("bbbbbbbbbb", { readiness: readiness({ gate: { state: "pending", reason: "Approval.", recovery: "Obtain approval." } }) }),
+      todo("bbbbbbbbbb", {
+        readiness: readiness({
+          gate: { state: "pending", reason: "Approval.", recovery: "Obtain approval." },
+        }),
+      }),
     ]);
 
     expect(blocked).toMatchObject({ selected: null, abstainRecovery: "Remove the blocker." });

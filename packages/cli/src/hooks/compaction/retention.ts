@@ -13,11 +13,7 @@ import type { JsonObject } from "../../core/jsonValue.js";
 
 export function overLimitCount(activeCount: number, archiveCount: number): number {
   const totalCount = activeCount + archiveCount;
-  return Math.max(
-    Math.max(activeCount - MAX_FULL_ENTRIES, 0),
-    Math.max(archiveCount - MAX_ONELINE_ENTRIES, 0),
-    Math.max(totalCount - MAX_TOTAL_ENTRIES, 0),
-  );
+  return Math.max(Math.max(activeCount - MAX_FULL_ENTRIES, 0), Math.max(archiveCount - MAX_ONELINE_ENTRIES, 0), Math.max(totalCount - MAX_TOTAL_ENTRIES, 0));
 }
 
 export function stableSortBy<T>(arr: T[], key: (x: T) => number | string, reverse = false): T[] {
@@ -62,7 +58,9 @@ function yamlSummaryText(entry: JsonObject, ...fields: string[]): string {
     }
     if (value && typeof value === "object" && !Array.isArray(value) && Object.keys(value).length > 0) {
       return truncateWords(
-        Object.entries(value).map(([k, v]) => `${k}: ${v}`).join(", "),
+        Object.entries(value)
+          .map(([k, v]) => `${k}: ${v}`)
+          .join(", "),
         15,
       );
     }
@@ -71,13 +69,7 @@ function yamlSummaryText(entry: JsonObject, ...fields: string[]): string {
 }
 
 function isEmptyish(v: unknown): boolean {
-  return (
-    v === null ||
-    v === undefined ||
-    v === "" ||
-    (Array.isArray(v) && v.length === 0) ||
-    (typeof v === "object" && v !== null && !Array.isArray(v) && Object.keys(v).length === 0)
-  );
+  return v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0) || (typeof v === "object" && v !== null && !Array.isArray(v) && Object.keys(v).length === 0);
 }
 
 export function yamlArchiveEntry(specName: string, entry: unknown): JsonObject {
@@ -134,10 +126,7 @@ export function yamlSortEntries(entries: any[], specName: string): any[] {
 }
 
 export function yamlRecentFullAndOlder(entries: any[], specName: string, fullCapacity = MAX_FULL_ENTRIES): [any[], any[]] {
-  const newestFirst =
-    specName === "session"
-      ? stableSortBy(entries, yamlEntryTimestamp, true)
-      : stableSortBy(entries, yamlEntryNumber, true);
+  const newestFirst = specName === "session" ? stableSortBy(entries, yamlEntryTimestamp, true) : stableSortBy(entries, yamlEntryNumber, true);
   const recent = newestFirst.slice(0, fullCapacity);
   const older = newestFirst.slice(fullCapacity);
   return [yamlSortEntries(recent, specName), older];
@@ -182,15 +171,7 @@ export function decisionRequiresUserReview(entry: unknown): boolean {
   const confirmation = (satisfaction as JsonObject).user_confirmation;
   const confirmedBy = confirmation && typeof confirmation === "object" ? (confirmation as JsonObject).confirmed_by : null;
   const confirmedAt = confirmation && typeof confirmation === "object" ? (confirmation as JsonObject).confirmed_at : null;
-  return (
-    decisionSatisfactionState(entry) !== "user_confirmed_satisfied" ||
-    !confirmation ||
-    typeof confirmation !== "object" ||
-    typeof confirmedBy !== "string" ||
-    confirmedBy.trim() === "" ||
-    typeof confirmedAt !== "string" ||
-    confirmedAt.trim() === ""
-  );
+  return decisionSatisfactionState(entry) !== "user_confirmed_satisfied" || !confirmation || typeof confirmation !== "object" || typeof confirmedBy !== "string" || confirmedBy.trim() === "" || typeof confirmedAt !== "string" || confirmedAt.trim() === "";
 }
 
 export function decisionSatisfiedActiveCount(active: any[]): number {
@@ -200,12 +181,7 @@ export function decisionSatisfiedActiveCount(active: any[]): number {
 export function decisionProtectedOverflowCount(active: any[], archive: any[]): number {
   const protectedActive = active.filter((e) => decisionRequiresUserReview(e)).length;
   const protectedArchive = archive.filter((e) => decisionRequiresUserReview(e)).length;
-  return Math.max(
-    protectedActive - MAX_FULL_ENTRIES,
-    protectedArchive - MAX_ONELINE_ENTRIES,
-    protectedActive + protectedArchive - MAX_TOTAL_ENTRIES,
-    0,
-  );
+  return Math.max(protectedActive - MAX_FULL_ENTRIES, protectedArchive - MAX_ONELINE_ENTRIES, protectedActive + protectedArchive - MAX_TOTAL_ENTRIES, 0);
 }
 
 export function selectDecisionActiveEntries(active: any[], fullCapacity = MAX_FULL_ENTRIES): [any[], any[]] {

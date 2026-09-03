@@ -8,16 +8,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
-import {
-  buildOrientationJsonPayload,
-  printOrientationTextBriefing,
-} from "../../src/cli/commands/prime/orientationOutput.js";
+import { buildOrientationJsonPayload, printOrientationTextBriefing } from "../../src/cli/commands/prime/orientationOutput.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { discoverEntities, validateEntityState } from "../../src/state/entityStorage.js";
-import {
-  projectCurrentGlossaryCaveats,
-  validateProgressGlossaryCaveat,
-} from "../../src/state/progressGlossaryCaveat.js";
+import { projectCurrentGlossaryCaveats, validateProgressGlossaryCaveat } from "../../src/state/progressGlossaryCaveat.js";
 import { glossaryCaveatContract } from "../../src/registries/glossaryCaveatContract.js";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
@@ -34,9 +28,7 @@ function snapshot(root: string): Record<string, string> {
   const result: Record<string, string> = {};
   const visit = (directory: string): void => {
     if (!fs.existsSync(directory)) return;
-    for (const entry of fs
-      .readdirSync(directory, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const pathname = path.join(directory, entry.name);
       const relative = path.relative(root, pathname);
       if (entry.isDirectory()) visit(pathname);
@@ -47,11 +39,7 @@ function snapshot(root: string): Record<string, string> {
   return result;
 }
 
-function caveat(
-  caveatId: string,
-  event = "current",
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function caveat(caveatId: string, event = "current", overrides: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     caveat_id: caveatId,
     event,
@@ -63,16 +51,8 @@ function caveat(
   };
 }
 
-function progress(
-  entityId: string,
-  glossaryCaveat?: Record<string, unknown>,
-  timestamp = "2000-01-01 00:00",
-): void {
-  const target = path.join(
-    project,
-    ".agentera/entities/progress/progress_cycle",
-    `${entityId}.yaml`,
-  );
+function progress(entityId: string, glossaryCaveat?: Record<string, unknown>, timestamp = "2000-01-01 00:00"): void {
+  const target = path.join(project, ".agentera/entities/progress/progress_cycle", `${entityId}.yaml`);
   fs.mkdirSync(path.dirname(target), { recursive: true });
   fs.writeFileSync(
     target,
@@ -123,47 +103,26 @@ function runStatusContext(): { rc: number; out: string; err: string } {
 }
 
 function projection() {
-  return projectCurrentGlossaryCaveats(
-    discoverEntities(project, REPO_ROOT).entities,
-    glossaryCaveatContract(
-      path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml"),
-    ),
-  );
+  return projectCurrentGlossaryCaveats(discoverEntities(project, REPO_ROOT).entities, glossaryCaveatContract(path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml")));
 }
 
 function runBuilt(args: string[], stdin = ""): { rc: number | null; out: string; err: string } {
-  const result = spawnSync(
-    process.execPath,
-    [
-      process.env.AGENTERA_GLOSSARY_TEST_EXECUTABLE ??
-        path.join(sourceBuildOutputRoot(), "bin/agentera.js"),
-      ...args,
-    ],
-    {
-      cwd: project,
-      input: stdin,
-      env: sourceSubprocessEnv({
-        ...process.env,
-        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
-        AGENTERA_HOME: path.join(home, "agentera"),
-        HOME: home,
-      }),
-      encoding: "utf8",
-    },
-  );
+  const result = spawnSync(process.execPath, [process.env.AGENTERA_GLOSSARY_TEST_EXECUTABLE ?? path.join(sourceBuildOutputRoot(), "bin/agentera.js"), ...args], {
+    cwd: project,
+    input: stdin,
+    env: sourceSubprocessEnv({
+      ...process.env,
+      AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+      AGENTERA_HOME: path.join(home, "agentera"),
+      HOME: home,
+    }),
+    encoding: "utf8",
+  });
   return { rc: result.status, out: result.stdout, err: result.stderr };
 }
 
 function appendArgs(reason: string, ownershipState: string): string[] {
-  return [
-    "state",
-    "progress",
-    "append",
-    "--input",
-    "-",
-    "--format",
-    "json",
-  ];
+  return ["state", "progress", "append", "--input", "-", "--format", "json"];
 }
 
 function expectReadOnly(run: () => void): void {
@@ -181,10 +140,7 @@ beforeEach(() => {
   home = path.join(root, "home");
   fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
   fs.mkdirSync(home, { recursive: true });
-  fs.writeFileSync(
-    path.join(project, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   previousCwd = process.cwd();
   previousEnv = {
     AGENTERA_BOOTSTRAP_SOURCE_ROOT: process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT,
@@ -216,9 +172,7 @@ describe("prime glossary caveat attention", () => {
         const result = runPrime(format);
         expect(result.rc, `${result.err}\n${result.out}`).toBe(0);
         expect(result.out).toContain(REVIEW);
-        expect(result.out).not.toMatch(
-          /currentone|inferred_equivalence|review_required|2000-01-01/,
-        );
+        expect(result.out).not.toMatch(/currentone|inferred_equivalence|review_required|2000-01-01/);
       });
     expectReadOnly(() => {
       const result = runStatusContext();
@@ -230,18 +184,12 @@ describe("prime glossary caveat attention", () => {
 
   it("projects through freshly compiled prime and status processes without writes", () => {
     progress("aaaaaaaaaa", caveat("currentone"));
-    for (const args of [
-      ["prime", "--format", "json"],
-      ["prime"],
-      ["prime", "--context", "status", "--format", "json"],
-    ])
+    for (const args of [["prime", "--format", "json"], ["prime"], ["prime", "--context", "status", "--format", "json"]])
       expectReadOnly(() => {
         const result = runBuilt(args);
         expect(result.rc, `${args.join(" ")}: ${result.out}${result.err}`).toBe(0);
         expect(result.out).toContain(REVIEW);
-        expect(result.out).not.toMatch(
-          /currentone|inferred_equivalence|review_required|2000-01-01/,
-        );
+        expect(result.out).not.toMatch(/currentone|inferred_equivalence|review_required|2000-01-01/);
       });
   });
 
@@ -264,17 +212,13 @@ describe("prime glossary caveat attention", () => {
     progress("cccccccccc", caveat("currentone", "superseded", { transition_id: "currenttwo" }));
     const result = runPrime("json");
     expect(result.rc, result.err).toBe(0);
-    expect(
-      (JSON.parse(result.out).attention as string[]).filter((item) => item === REVIEW),
-    ).toHaveLength(1);
+    expect((JSON.parse(result.out).attention as string[]).filter((item) => item === REVIEW)).toHaveLength(1);
     expect(result.out).not.toMatch(/currentone|currenttwo|superseded/);
     expect(projection().currentCount).toBe(1);
   });
 
   it("accepts only canonical Build-owned progress-cycle sources", () => {
-    const contract = glossaryCaveatContract(
-      path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml"),
-    );
+    const contract = glossaryCaveatContract(path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml"));
     const record = { glossary_caveat: caveat("currentone") };
     const otherEntities = [
       { classification: "valid", artifact: "plan", boundary: "plan", record },
@@ -295,15 +239,8 @@ describe("prime glossary caveat attention", () => {
   });
 
   it("enforces all and only the four shared reason/state pairs in validation and writing", () => {
-    const contract = glossaryCaveatContract(
-      path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml"),
-    );
-    const valid = new Set([
-      "inferred_equivalence/review_required",
-      "inferred_equivalence/project_governs_exact",
-      "authority_unavailable/authority_unavailable",
-      "personal_input_unavailable/authority_unavailable",
-    ]);
+    const contract = glossaryCaveatContract(path.join(REPO_ROOT, "references/artifacts/glossary-entry-contract.yaml"));
+    const valid = new Set(["inferred_equivalence/review_required", "inferred_equivalence/project_governs_exact", "authority_unavailable/authority_unavailable", "personal_input_unavailable/authority_unavailable"]);
     const reasons = ["inferred_equivalence", "authority_unavailable", "personal_input_unavailable"];
     const states = ["review_required", "project_governs_exact", "authority_unavailable"];
     for (const reason of reasons) {
@@ -320,7 +257,16 @@ describe("prime glossary caveat attention", () => {
         );
         expect(parsed.status, pair).toBe(valid.has(pair) ? "valid" : "invalid");
         const before = snapshot(project);
-        const written = runBuilt(appendArgs(reason, ownershipState), JSON.stringify({ type: "test", phase: "build", what: "pair fixture", context: { intent: "validate shared pair" }, glossary_caveat: { event: "current", reason, ownership_state: ownershipState } }));
+        const written = runBuilt(
+          appendArgs(reason, ownershipState),
+          JSON.stringify({
+            type: "test",
+            phase: "build",
+            what: "pair fixture",
+            context: { intent: "validate shared pair" },
+            glossary_caveat: { event: "current", reason, ownership_state: ownershipState },
+          }),
+        );
         expect(written.rc, `${pair}: ${written.out}${written.err}`).toBe(valid.has(pair) ? 0 : 1);
         if (!valid.has(pair)) expect(snapshot(project), pair).toEqual(before);
       }
@@ -351,10 +297,7 @@ describe("prime glossary caveat attention", () => {
     printOrientationTextBriefing(state, "prime", (value) => (text += value));
     const retained = [...unrelated.slice(0, 5), REVIEW];
     for (const item of retained) expect(text.indexOf(`- ${item}`), item).toBeGreaterThanOrEqual(0);
-    for (let index = 1; index < retained.length; index += 1)
-      expect(text.indexOf(`- ${retained[index - 1]}`)).toBeLessThan(
-        text.indexOf(`- ${retained[index]}`),
-      );
+    for (let index = 1; index < retained.length; index += 1) expect(text.indexOf(`- ${retained[index - 1]}`)).toBeLessThan(text.indexOf(`- ${retained[index]}`));
     expect(text).not.toContain("normal: unrelated-6");
   });
 
@@ -384,30 +327,17 @@ describe("prime glossary caveat attention", () => {
     ["identity", { caveat_id: "SECRET_PROFILE_PATH" }],
   ])("fails closed or omits malformed %s evidence without leaking bytes", (_label, override) => {
     progress("aaaaaaaaaa", caveat("currentone", "current", override));
-    fs.writeFileSync(
-      path.join(project, "privacy-trap.txt"),
-      "SECRET_DEFINITION SECRET_ANCHOR SECRET_PROVENANCE",
-    );
+    fs.writeFileSync(path.join(project, "privacy-trap.txt"), "SECRET_DEFINITION SECRET_ANCHOR SECRET_PROVENANCE");
     const result = runPrime("json");
-    expect(`${result.out}${result.err}`).not.toMatch(
-      /private-event|private-definition|private-owner|SECRET_PROFILE_PATH|SECRET_DEFINITION|SECRET_ANCHOR|SECRET_PROVENANCE/,
-    );
+    expect(`${result.out}${result.err}`).not.toMatch(/private-event|private-definition|private-owner|SECRET_PROFILE_PATH|SECRET_DEFINITION|SECRET_ANCHOR|SECRET_PROVENANCE/);
   });
 
   it("omits malformed progress from prime and returns path-safe direct retrieval errors", () => {
     const target = path.join(project, ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml");
     fs.mkdirSync(path.dirname(target), { recursive: true });
-    fs.writeFileSync(
-      target,
-      `id: privatepath\nartifact: progress\nrecord:\n  timestamp: 2000-01-01 00:00\n  type: test\n  phase: build\n  what: SECRET_RAW_VALUE\n  context:\n    intent: SECRET_PRIVATE_PATH\n`,
-    );
-    const forbidden =
-      /privatepath|SECRET_RAW_VALUE|SECRET_PRIVATE_PATH|aaaaaaaaaa\.yaml|\.agentera\/entities/;
-    for (const args of [
-      ["prime", "--format", "json"],
-      ["prime"],
-      ["prime", "--context", "status", "--format", "json"],
-    ])
+    fs.writeFileSync(target, `id: privatepath\nartifact: progress\nrecord:\n  timestamp: 2000-01-01 00:00\n  type: test\n  phase: build\n  what: SECRET_RAW_VALUE\n  context:\n    intent: SECRET_PRIVATE_PATH\n`);
+    const forbidden = /privatepath|SECRET_RAW_VALUE|SECRET_PRIVATE_PATH|aaaaaaaaaa\.yaml|\.agentera\/entities/;
+    for (const args of [["prime", "--format", "json"], ["prime"], ["prime", "--context", "status", "--format", "json"]])
       expectReadOnly(() => {
         const result = runBuilt(args);
         expect(result.rc, `${args.join(" ")}: ${result.out}${result.err}`).toBe(0);
@@ -431,16 +361,10 @@ describe("prime glossary caveat attention", () => {
     for (let index = 0; index < 24; index += 1) {
       const caveatId = `caveat${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}xx`;
       const entityId = `${String.fromCharCode(97 + index)}aaaaaaaaa`.slice(0, 10);
-      progress(
-        entityId,
-        caveat(caveatId),
-        `1999-01-${String((index % 28) + 1).padStart(2, "0")} 00:00`,
-      );
+      progress(entityId, caveat(caveatId), `1999-01-${String((index % 28) + 1).padStart(2, "0")} 00:00`);
     }
     const result = runPrime("json");
     expect(result.rc, result.err).toBe(0);
-    expect(
-      (JSON.parse(result.out).attention as string[]).filter((item) => item === REVIEW),
-    ).toHaveLength(1);
+    expect((JSON.parse(result.out).attention as string[]).filter((item) => item === REVIEW)).toHaveLength(1);
   });
 });

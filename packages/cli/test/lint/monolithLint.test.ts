@@ -31,13 +31,8 @@ describe("T2 monolith lint gate", () => {
       }
     }
     if (offenders.length > 0) {
-      const detail = offenders
-        .map((o) => `  - ${o.file}: ${o.lines} lines`)
-        .join("\n");
-      throw new Error(
-        `monolith lint gate: ${offenders.length} source file(s) exceed ${LINE_LIMIT} lines.\n` +
-          `Split each by state family or responsibility. Offenders:\n${detail}`,
-      );
+      const detail = offenders.map((o) => `  - ${o.file}: ${o.lines} lines`).join("\n");
+      throw new Error(`monolith lint gate: ${offenders.length} source file(s) exceed ${LINE_LIMIT} lines.\n` + `Split each by state family or responsibility. Offenders:\n${detail}`);
     }
     expect(offenders).toEqual([]);
   });

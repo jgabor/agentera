@@ -11,11 +11,7 @@ import path from "node:path";
 
 import { resolvePath } from "../../core/paths.js";
 import { loadYamlMapping } from "../../core/yaml.js";
-import {
-  ARTIFACT_PROTOCOL_PATHS,
-  HUMAN_FACING_ARTIFACT_IDS,
-  normalizeArtifactProtocolId,
-} from "../../registries/artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS, normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction/index.js";
 import { withStateMutation } from "../../state/write/mutation.js";

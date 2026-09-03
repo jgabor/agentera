@@ -43,9 +43,7 @@ export function normalizeConstruction(packed, options) {
   const name = requireString(packed?.name, "name");
   const version = requireString(packed?.version, "version");
   if (name !== options.expectedName || version !== options.expectedVersion) {
-    throw new Error(
-      `constructed package identity ${name}@${version} does not match expected metadata ${options.expectedName}@${options.expectedVersion}`,
-    );
+    throw new Error(`constructed package identity ${name}@${version} does not match expected metadata ${options.expectedName}@${options.expectedVersion}`);
   }
   const files = normalizedPackedFiles(packed.files);
 
@@ -61,20 +59,12 @@ export function normalizeConstruction(packed, options) {
     integrity: requireString(packed.integrity, "integrity"),
     expectedTag: requireString(options.expectedTag, "expected tag"),
     artifact: options.artifact ?? null,
-    warnings: Array.isArray(options.warnings)
-      ? options.warnings.filter((warning) => typeof warning === "string" && warning.length > 0)
-      : [],
+    warnings: Array.isArray(options.warnings) ? options.warnings.filter((warning) => typeof warning === "string" && warning.length > 0) : [],
   };
 }
 
 export function npmChildEnvironment(environment, userConfig, globalConfig) {
-  const sanitized = Object.fromEntries(
-    Object.entries(environment).filter(
-      ([key]) => !/^(?:npm|pnpm)/i.test(key)
-        && !/^AGENTERA_VERIFICATION_/.test(key)
-        && !["NPM_TOKEN", "NODE_AUTH_TOKEN"].includes(key),
-    ),
-  );
+  const sanitized = Object.fromEntries(Object.entries(environment).filter(([key]) => !/^(?:npm|pnpm)/i.test(key) && !/^AGENTERA_VERIFICATION_/.test(key) && !["NPM_TOKEN", "NODE_AUTH_TOKEN"].includes(key)));
   return {
     ...sanitized,
     ...(userConfig ? { NPM_CONFIG_USERCONFIG: userConfig } : {}),

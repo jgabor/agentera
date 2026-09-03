@@ -18,10 +18,7 @@ function isSymlink(target: string): boolean {
 export function diagnoseCanonicalSkill(home: string): JsonObject {
   const target = path.join(home, CANONICAL_SHARED_SKILL_PATH.slice(2));
   const skillFile = path.join(target, "SKILL.md");
-  if (
-    fs.existsSync(skillFile) &&
-    declaresAgenteraSkill(fs.readFileSync(skillFile, "utf8").slice(0, 64 * 1024))
-  ) {
+  if (fs.existsSync(skillFile) && declaresAgenteraSkill(fs.readFileSync(skillFile, "utf8").slice(0, 64 * 1024))) {
     return {
       name: "canonical_skill",
       status: "pass",
@@ -32,10 +29,7 @@ export function diagnoseCanonicalSkill(home: string): JsonObject {
       details: [],
     };
   }
-  const details = [
-    `action: install or repair the shared Agentera skill at \`${CANONICAL_SHARED_SKILL_PATH}\``,
-    "action: use the Agentera CLI directly; runtime-native installation is retired",
-  ];
+  const details = [`action: install or repair the shared Agentera skill at \`${CANONICAL_SHARED_SKILL_PATH}\``, "action: use the Agentera CLI directly; runtime-native installation is retired"];
   if (pathExists(target) || isSymlink(target)) {
     details.unshift("existing target preserved; review and repair the shared-skill path manually");
   }

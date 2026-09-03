@@ -5,16 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  PROFILE_FILE_MEMBERS,
-  READER_PREFLIGHT_BUDGET_MS,
-  USER_DATA_CATALOG_DIRS,
-  V2_HANDOFF_MANIFEST_FILENAME,
-  V2_HANDOFF_SCHEMA_VERSION,
-  parseV2HandoffManifest,
-  readV2HandoffManifestFile,
-  resolveMigrationUserStatePreflight,
-} from "../../src/migrate/v2HandoffManifest.js";
+import { PROFILE_FILE_MEMBERS, READER_PREFLIGHT_BUDGET_MS, USER_DATA_CATALOG_DIRS, V2_HANDOFF_MANIFEST_FILENAME, V2_HANDOFF_SCHEMA_VERSION, parseV2HandoffManifest, readV2HandoffManifestFile, resolveMigrationUserStatePreflight } from "../../src/migrate/v2HandoffManifest.js";
 import { planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,13 +32,7 @@ describe("v2 handoff manifest contract", () => {
     expect(V2_HANDOFF_MANIFEST_FILENAME).toBe("v3-handoff.json");
     expect(V2_HANDOFF_SCHEMA_VERSION).toBe("agentera.v3_handoff_manifest.v1");
     expect(READER_PREFLIGHT_BUDGET_MS).toBe(100);
-    expect(USER_DATA_CATALOG_DIRS).toEqual([
-      "benchmarks",
-      "intermediate",
-      "sessions",
-      "history",
-      "corpus",
-    ]);
+    expect(USER_DATA_CATALOG_DIRS).toEqual(["benchmarks", "intermediate", "sessions", "history", "corpus"]);
     expect(PROFILE_FILE_MEMBERS).toEqual(["PROFILE.md", "USAGE.md"]);
   });
 
@@ -82,18 +67,14 @@ describe("v2 handoff manifest contract", () => {
           }
         : entry,
     );
-    expect(() => parseV2HandoffManifest({ ...base, user_data_inventory: inventory })).toThrow(
-      /profile_files/,
-    );
+    expect(() => parseV2HandoffManifest({ ...base, user_data_inventory: inventory })).toThrow(/profile_files/);
     const brokenProfile = (base.user_data_inventory as unknown[]).map((entry) => {
       if ((entry as { id?: string }).id !== "profile_files") {
         return entry;
       }
       return { ...(entry as object), members: [{ relative_path: "PROFILE.md", kind: "file" }] };
     });
-    expect(() => parseV2HandoffManifest({ ...base, user_data_inventory: brokenProfile })).toThrow(
-      /exists/,
-    );
+    expect(() => parseV2HandoffManifest({ ...base, user_data_inventory: brokenProfile })).toThrow(/exists/);
   });
 
   it("reads a manifest from disk within the preflight budget", () => {

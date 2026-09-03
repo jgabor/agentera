@@ -21,10 +21,7 @@ let home: string;
 let previousCwd: string;
 let previousEnv: Record<string, string | undefined>;
 
-function measurementDiagnostic(
-  label: string,
-  measured: Awaited<ReturnType<typeof measureColdCli>>,
-): string {
+function measurementDiagnostic(label: string, measured: Awaited<ReturnType<typeof measureColdCli>>): string {
   return `${label}: ${JSON.stringify({
     baselineHeapBytes: measured.baselineHeapBytes,
     peakHeapBytes: measured.peakHeapBytes,
@@ -86,12 +83,7 @@ describe("entity authority performance", () => {
     const measurementContract = authority.entity_target.measurement_contract;
     const targets = measurementContract.targets;
     const repetitions = measurementContract.sampling.repetitions as number;
-    const scales = Object.fromEntries(
-      ["small", "large", "archive_small", "archive_large"].map((scale) => [
-        scale,
-        Number(String(measurementContract.fixtures[scale]).match(/^\d+/)?.[0]),
-      ]),
-    ) as Record<"small" | "large" | "archive_small" | "archive_large", number>;
+    const scales = Object.fromEntries(["small", "large", "archive_small", "archive_large"].map((scale) => [scale, Number(String(measurementContract.fixtures[scale]).match(/^\d+/)?.[0])])) as Record<"small" | "large" | "archive_small" | "archive_large", number>;
     const samples: Array<Record<string, number | string>> = [];
     const fixtures: Record<string, unknown> = {};
     let runtime: Awaited<ReturnType<typeof measureColdCli>>["runtime"] | undefined;
@@ -103,21 +95,13 @@ describe("entity authority performance", () => {
     for (const scale of ["small", "large"] as const) {
       const entities = scales[scale];
       const fixture = createEntityAuthorityFixture(project, entities, authority);
-      const declaredBoundaries = (
-        authority.entity_target.entities as Array<Record<string, string>>
-      ).map(({ boundary }) => boundary);
-      const declaredRelationships = (
-        authority.entity_target.relationships.declarations as Array<Record<string, string>>
-      ).map(({ source, field, target }) => `${source}.${field}->${target}`);
+      const declaredBoundaries = (authority.entity_target.entities as Array<Record<string, string>>).map(({ boundary }) => boundary);
+      const declaredRelationships = (authority.entity_target.relationships.declarations as Array<Record<string, string>>).map(({ source, field, target }) => `${source}.${field}->${target}`);
       expect(Object.keys(fixture.boundaryCounts)).toEqual(declaredBoundaries);
       expect(Object.values(fixture.boundaryCounts).every((count) => count > 0)).toBe(true);
-      expect(Object.values(fixture.boundaryCounts).reduce((sum, count) => sum + count, 0)).toBe(
-        entities,
-      );
+      expect(Object.values(fixture.boundaryCounts).reduce((sum, count) => sum + count, 0)).toBe(entities);
       expect(fixture.relationshipEdges).toEqual(declaredRelationships);
-      const validated = capture((out, err) =>
-        main(["node", "agentera", "check", "validate", "state", "--format", "json"], { out, err }),
-      );
+      const validated = capture((out, err) => main(["node", "agentera", "check", "validate", "state", "--format", "json"], { out, err }));
       expect(validated.rc, validated.out || validated.err).toBe(0);
       fixtures[scale] = {
         entities,
@@ -127,32 +111,17 @@ describe("entity authority performance", () => {
 
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {
         for (const operation of ["startup", "bounded_list"] as const) {
-          const args =
-            operation === "startup"
-              ? ["prime", "--dashboard", "--format", "json"]
-              : ["state", "progress", "list", "--limit", "100", "--format", "json"];
+          const args = operation === "startup" ? ["prime", "--dashboard", "--format", "json"] : ["state", "progress", "list", "--limit", "100", "--format", "json"];
           const limits = targets[`${operation}_${scale}`];
           const measured = await measureColdCli({ args, project, home, repoRoot: REPO_ROOT });
           runtime ??= measured.runtime;
           expect(measured.runtime).toEqual(runtime);
           const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
-          const maxOutputBytes =
-            operation === "startup"
-              ? authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes
-              : limits.max_utf8_bytes;
-          expect(
-            measured.elapsedMs,
-            measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured),
-          ).toBeLessThanOrEqual(limits.max_latency_ms);
-          expect(
-            measured.heapDeltaBytes,
-            measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured),
-          ).toBeLessThanOrEqual(limits.max_heap_delta_bytes);
-          expect(outputBytes, `${operation} ${scale} repetition ${repetition}`).toBeLessThanOrEqual(
-            maxOutputBytes,
-          );
-          if (operation === "bounded_list")
-            expect(JSON.parse(measured.stdout).counts.total).toBe(fixture.progressCount);
+          const maxOutputBytes = operation === "startup" ? authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes : limits.max_utf8_bytes;
+          expect(measured.elapsedMs, measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured)).toBeLessThanOrEqual(limits.max_latency_ms);
+          expect(measured.heapDeltaBytes, measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured)).toBeLessThanOrEqual(limits.max_heap_delta_bytes);
+          expect(outputBytes, `${operation} ${scale} repetition ${repetition}`).toBeLessThanOrEqual(maxOutputBytes);
+          if (operation === "bounded_list") expect(JSON.parse(measured.stdout).counts.total).toBe(fixture.progressCount);
           samples.push({
             operation,
             scale,
@@ -179,21 +148,9 @@ describe("entity authority performance", () => {
           runtime ??= measured.runtime;
           expect(measured.runtime).toEqual(runtime);
           const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
-          expect(
-            measured.elapsedMs,
-            measurementDiagnostic(`exact_get repetition ${repetition}`, measured),
-          ).toBeLessThanOrEqual(
-            targets.exact_get.max_latency_ms,
-          );
-          expect(
-            measured.heapDeltaBytes,
-            measurementDiagnostic(`exact_get repetition ${repetition}`, measured),
-          ).toBeLessThanOrEqual(
-            targets.exact_get.max_heap_delta_bytes,
-          );
-          expect(outputBytes, `exact_get repetition ${repetition}`).toBeLessThanOrEqual(
-            targets.exact_get.max_utf8_bytes,
-          );
+          expect(measured.elapsedMs, measurementDiagnostic(`exact_get repetition ${repetition}`, measured)).toBeLessThanOrEqual(targets.exact_get.max_latency_ms);
+          expect(measured.heapDeltaBytes, measurementDiagnostic(`exact_get repetition ${repetition}`, measured)).toBeLessThanOrEqual(targets.exact_get.max_heap_delta_bytes);
+          expect(outputBytes, `exact_get repetition ${repetition}`).toBeLessThanOrEqual(targets.exact_get.max_utf8_bytes);
           expect(JSON.parse(measured.stdout).entry.id).toBe(fixture.exactId);
           samples.push({
             operation: "exact_get",
@@ -217,19 +174,28 @@ describe("entity authority performance", () => {
       const archiveProject = path.join(tmp, `archive-${scale}`);
       fs.mkdirSync(archiveProject, { recursive: true });
       for (let number = 1; number <= entries; number += 1) {
-        publishNumberedArchive(archiveProject, "progress", number, {
+        publishNumberedArchive(
+          archiveProject,
+          "progress",
           number,
-          timestamp: "2026-07-13 16:00",
-          type: "test",
-          phase: "build",
-          what: `Archive fixture ${number}`,
-          context: { intent: "Measure archive enumeration" },
-        }, { sourceRoot: REPO_ROOT });
+          {
+            number,
+            timestamp: "2026-07-13 16:00",
+            type: "test",
+            phase: "build",
+            what: `Archive fixture ${number}`,
+            context: { intent: "Measure archive enumeration" },
+          },
+          { sourceRoot: REPO_ROOT },
+        );
       }
       fixtures[`archive_${scale}`] = { entries };
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {
         const limits = targets[`archive_list_${scale}`];
-        const measured = await measureColdStateList({ project: archiveProject, repoRoot: REPO_ROOT });
+        const measured = await measureColdStateList({
+          project: archiveProject,
+          repoRoot: REPO_ROOT,
+        });
         runtime ??= measured.runtime;
         expect(measured.runtime).toEqual(runtime);
         const outputBytes = Buffer.byteLength(measured.stdout, "utf8");
@@ -256,38 +222,20 @@ describe("entity authority performance", () => {
     const targetNames = Object.keys(targets);
     const maxima = Object.fromEntries(
       targetNames.map((targetName) => {
-        const targetSamples = samples.filter((sample) =>
-          targetName === "exact_get"
-            ? sample.operation === "exact_get"
-            : `${sample.operation}_${sample.scale}` === targetName,
-        );
+        const targetSamples = samples.filter((sample) => (targetName === "exact_get" ? sample.operation === "exact_get" : `${sample.operation}_${sample.scale}` === targetName));
         return [
           targetName,
           {
             repetitions: targetSamples.length,
             maxElapsedMs: Math.max(...targetSamples.map((sample) => Number(sample.elapsedMs))),
-            maxHeapDeltaBytes: Math.max(
-              ...targetSamples.map((sample) => Number(sample.heapDeltaBytes)),
-            ),
-            minHeapDeltaBytes: Math.min(
-              ...targetSamples.map((sample) => Number(sample.heapDeltaBytes)),
-            ),
-            minBaselineHeapBytes: Math.min(
-              ...targetSamples.map((sample) => Number(sample.baselineHeapBytes)),
-            ),
-            maxBaselineHeapBytes: Math.max(
-              ...targetSamples.map((sample) => Number(sample.baselineHeapBytes)),
-            ),
-            maxPeakHeapBytes: Math.max(
-              ...targetSamples.map((sample) => Number(sample.peakHeapBytes)),
-            ),
+            maxHeapDeltaBytes: Math.max(...targetSamples.map((sample) => Number(sample.heapDeltaBytes))),
+            minHeapDeltaBytes: Math.min(...targetSamples.map((sample) => Number(sample.heapDeltaBytes))),
+            minBaselineHeapBytes: Math.min(...targetSamples.map((sample) => Number(sample.baselineHeapBytes))),
+            maxBaselineHeapBytes: Math.max(...targetSamples.map((sample) => Number(sample.baselineHeapBytes))),
+            maxPeakHeapBytes: Math.max(...targetSamples.map((sample) => Number(sample.peakHeapBytes))),
             maxOutputBytes: Math.max(...targetSamples.map((sample) => Number(sample.outputBytes))),
-            minInspectorSamples: Math.min(
-              ...targetSamples.map((sample) => Number(sample.inspectorSamples)),
-            ),
-            maxInspectorSamples: Math.max(
-              ...targetSamples.map((sample) => Number(sample.inspectorSamples)),
-            ),
+            minInspectorSamples: Math.min(...targetSamples.map((sample) => Number(sample.inspectorSamples))),
+            maxInspectorSamples: Math.max(...targetSamples.map((sample) => Number(sample.inspectorSamples))),
           },
         ];
       }),
@@ -313,8 +261,7 @@ describe("entity authority performance", () => {
         }),
       },
       measurement: {
-        authority:
-          "references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract",
+        authority: "references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract",
         scales,
         declaredFixtures: measurementContract.fixtures,
         repetitions,
@@ -326,8 +273,7 @@ describe("entity authority performance", () => {
           method: "Node inspector Runtime.getHeapUsage",
           intervalMs: 1,
           cadenceChanged: false,
-          changeRule:
-            "compare maxima and prove equivalent measurement behavior before reducing overhead",
+          changeRule: "compare maxima and prove equivalent measurement behavior before reducing overhead",
         },
       },
       fixtures,
@@ -337,9 +283,7 @@ describe("entity authority performance", () => {
     };
     const serializedEvidence = `${JSON.stringify(evidence)}\n`;
     expect(evidence.schemaVersion).toBe(policy.owners.performance.evidence.schema_version);
-    expect(Buffer.byteLength(serializedEvidence, "utf8")).toBeLessThanOrEqual(
-      policy.owners.performance.evidence.max_utf8_bytes,
-    );
+    expect(Buffer.byteLength(serializedEvidence, "utf8")).toBeLessThanOrEqual(policy.owners.performance.evidence.max_utf8_bytes);
     process.stdout.write(serializedEvidence);
   }, 120_000);
 });

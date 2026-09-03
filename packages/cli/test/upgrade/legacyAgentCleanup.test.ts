@@ -10,9 +10,7 @@ import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
-import {
-  RETIRE_DECLARED_RESOURCE_ACTION,
-} from "../../src/upgrade/declaredRetiredResourceCleanup.js";
+import { RETIRE_DECLARED_RESOURCE_ACTION } from "../../src/upgrade/declaredRetiredResourceCleanup.js";
 import {
   REMOVE_LEGACY_AGENT_ACTION,
   PRUNE_LEGACY_DIRECTORY_ACTION,
@@ -25,11 +23,7 @@ import {
   scanLegacyCapabilityAgentPaths,
   scanLegacySwedishVerbAgentViolations,
 } from "../../src/upgrade/legacyAgentCleanup.js";
-import {
-  applyCleanupPhase,
-  dryRunMigration,
-  planCleanupPhase,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyCleanupPhase, dryRunMigration, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 import { gitCommitArgs } from "../helpers/git.js";
 
@@ -61,14 +55,8 @@ function managedV2(appHome: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 function writeLegacyAgent(dir: string, name: string, body = "Read instructions.md\n"): void {
@@ -159,9 +147,7 @@ describe("legacy Swedish-verb agent cleanup (#20)", () => {
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planLegacyAgentCleanupItems(ctx);
     expect(items).toHaveLength(V2_SWEDISH_VERB_AGENT_FILES.length * 2);
-    expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(
-      true,
-    );
+    expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(true);
     for (const name of V2_SWEDISH_VERB_AGENT_FILES) {
       expect(items.some((item) => item.source?.endsWith(path.join(".cursor", "agents", name)))).toBe(true);
       expect(items.some((item) => item.source?.endsWith(path.join("agents", name)))).toBe(true);
@@ -341,18 +327,20 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
         format: "json",
         channel: "development",
       },
-      { out: (t) => { stdout += t; }, err: () => {} },
+      {
+        out: (t) => {
+          stdout += t;
+        },
+        err: () => {},
+      },
     );
 
     expect(code).toBe(1);
     const payload = JSON.parse(stdout);
     const cleanupItems = payload.phases.find((phase: { name: string }) => phase.name === "cleanup")?.items ?? [];
-    const legacyItems = cleanupItems.filter(
-      (item: { action: string }) => item.action === RETIRE_DECLARED_RESOURCE_ACTION,
-    );
+    const legacyItems = cleanupItems.filter((item: { action: string }) => item.action === RETIRE_DECLARED_RESOURCE_ACTION);
     expect(legacyItems).toHaveLength(V2_SWEDISH_VERB_AGENT_FILES.length * 2 + 1);
-    expect(legacyItems.every((item: { status: string; source?: string }) => item.status === "pending" && item.source))
-      .toBe(true);
+    expect(legacyItems.every((item: { status: string; source?: string }) => item.status === "pending" && item.source)).toBe(true);
   });
 
   it("upgrade --yes removes exactly the closed set and preserves non-listed agents", () => {
@@ -379,7 +367,14 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
         format: "json",
         channel: "development",
       },
-      { out: (text) => { output += text; }, err: (text) => { errors += text; } },
+      {
+        out: (text) => {
+          output += text;
+        },
+        err: (text) => {
+          errors += text;
+        },
+      },
     );
 
     expect({ code, output, errors }).toMatchObject({ code: 0, errors: "" });
@@ -405,29 +400,35 @@ describe("cmdUpgrade legacy agent cleanup integration", () => {
     let firstOutput = "";
     const firstCode = cmdUpgrade(
       { installRoot: appHome, home, project, yes: true, format: "json", channel: "development" },
-      { out: (text) => { firstOutput += text; }, err: () => {} },
+      {
+        out: (text) => {
+          firstOutput += text;
+        },
+        err: () => {},
+      },
     );
 
     expect(firstCode).toBe(1);
     expect(fs.existsSync(path.join(opencodeAgents, "hej.md"))).toBe(false);
     expect(fs.existsSync(path.join(opencodeAgents, "audit.md"))).toBe(true);
-    const cleanupItems = JSON.parse(firstOutput).phases.find(
-      (phase: { name: string }) => phase.name === "cleanup",
-    )?.items ?? [];
+    const cleanupItems = JSON.parse(firstOutput).phases.find((phase: { name: string }) => phase.name === "cleanup")?.items ?? [];
     expect(cleanupItems.find((item: { source?: string }) => item.source?.endsWith("hej.md"))?.status).toBe("applied");
     expect(cleanupItems.find((item: { source?: string }) => item.source?.endsWith("audit.md"))?.status).toBe("blocked");
 
     let replayOutput = "";
     const replayCode = cmdUpgrade(
       { installRoot: appHome, home, project, yes: true, format: "json", channel: "development" },
-      { out: (text) => { replayOutput += text; }, err: () => {} },
+      {
+        out: (text) => {
+          replayOutput += text;
+        },
+        err: () => {},
+      },
     );
 
     expect(replayCode).toBe(1);
     expect(fs.existsSync(path.join(opencodeAgents, "audit.md"))).toBe(true);
-    const replayCleanupItems = JSON.parse(replayOutput).phases.find(
-      (phase: { name: string }) => phase.name === "cleanup",
-    )?.items ?? [];
+    const replayCleanupItems = JSON.parse(replayOutput).phases.find((phase: { name: string }) => phase.name === "cleanup")?.items ?? [];
     expect(replayCleanupItems.find((item: { source?: string }) => item.source?.endsWith("audit.md"))?.status).toBe("blocked");
   });
 });
@@ -530,9 +531,7 @@ describe("legacy English per-capability agent cleanup", () => {
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const items = planLegacyCapabilityAgentCleanupItems(ctx);
     expect(items).toHaveLength(V2_ENGLISH_CAPABILITY_AGENT_FILES.length + 1);
-    expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(
-      true,
-    );
+    expect(items.every((item) => item.action === REMOVE_LEGACY_AGENT_ACTION && item.status === "pending")).toBe(true);
     for (const name of V2_ENGLISH_CAPABILITY_AGENT_FILES) {
       expect(items.some((item) => item.source?.endsWith(path.join(".cursor", "agents", name)))).toBe(true);
     }
@@ -605,9 +604,7 @@ describe("legacy English per-capability agent cleanup", () => {
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = planCleanupPhase(ctx);
     const legacyItems = preview.items.filter((item) => item.action === RETIRE_DECLARED_RESOURCE_ACTION);
-    expect(legacyItems).toHaveLength(
-      V2_SWEDISH_VERB_AGENT_FILES.length + V2_ENGLISH_CAPABILITY_AGENT_FILES.length + 1,
-    );
+    expect(legacyItems).toHaveLength(V2_SWEDISH_VERB_AGENT_FILES.length + V2_ENGLISH_CAPABILITY_AGENT_FILES.length + 1);
     expect(legacyItems.some((item) => item.source?.endsWith("agentera.md"))).toBe(true);
   });
 });

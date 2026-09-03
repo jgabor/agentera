@@ -35,10 +35,7 @@ describe("cli schema", () => {
     for (const artifact of artifacts) {
       for (const command of [artifact.explain_command, ...Object.values(artifact.explain_by_verb)]) {
         const argv = command.split(" ").slice(1);
-        const result = capture((io) => main(
-          ["node", "agentera", ...argv, "--project", projectRoot],
-          io,
-        ));
+        const result = capture((io) => main(["node", "agentera", ...argv, "--project", projectRoot], io));
         expect(result, command).toMatchObject({ rc: 0, err: "" });
         expect(JSON.parse(result.out), command).toMatchObject({
           artifact: artifact.artifact,
@@ -55,23 +52,21 @@ describe("cli schema", () => {
     expect(["ok", "incomplete"]).toContain(payload.status);
     expect(Array.isArray(payload.commands)).toBe(true);
     expect(payload.routine_state_commands).toContain("plan");
-    const prime = (payload.commands as Array<{ name: string; description: string }>).find(
-      (command) => command.name === "prime",
-    );
+    const prime = (payload.commands as Array<{ name: string; description: string }>).find((command) => command.name === "prime");
     expect(prime?.description).toContain("12000 UTF-8 bytes");
     expect(prime?.description).toContain("status startup at most 22500");
     expect(payload).not.toHaveProperty("state_backfill");
     expect(payload).not.toHaveProperty("state_migration");
     expect((payload.commands as Array<{ name: string }>).some((command) => command.name === "backfill")).toBe(false);
     expect(payload).not.toHaveProperty("entity_migration");
-    const upgrade = (payload.commands as Array<{
-      name: string;
-      description: string;
-      filters: string[];
-      structured_fields: string[];
-    }>).find(
-      (command) => command.name === "upgrade",
-    );
+    const upgrade = (
+      payload.commands as Array<{
+        name: string;
+        description: string;
+        filters: string[];
+        structured_fields: string[];
+      }>
+    ).find((command) => command.name === "upgrade");
     expect(upgrade?.structured_fields).toEqual(expect.arrayContaining(["phase", "phases"]));
     expect(upgrade?.description).toContain("app and project-state migration");
     expect(upgrade?.description).not.toMatch(/v2|native|hook/i);
@@ -79,27 +74,16 @@ describe("cli schema", () => {
     expect(upgrade?.filters).not.toContain("legacy_cleanup");
     expect(upgrade?.filters).toContain("only");
     expect(upgrade?.filters).not.toContain("runtime");
-    const doctor = (payload.commands as Array<{
-      name: string;
-      description: string;
-    }>).find((command) => command.name === "doctor");
-    expect(doctor?.description).toBe(
-      "Check Agentera CLI, app, shared-skill, and project-integration status.",
-    );
+    const doctor = (
+      payload.commands as Array<{
+        name: string;
+        description: string;
+      }>
+    ).find((command) => command.name === "doctor");
+    expect(doctor?.description).toBe("Check Agentera CLI, app, shared-skill, and project-integration status.");
     expect(payload.doctor.signal_kinds).toContain("missing_marker");
-    expect(payload.doctor.self_check_categories).toEqual([
-      "Agentera CLI self-check status",
-      "installed app and install-root status",
-      "canonical shared-skill diagnosis",
-      "project integration and project-state migration diagnostics",
-      "bounded offline smoke checks when requested",
-    ]);
-    expect(payload.doctor.self_check_categories).not.toEqual(
-      expect.arrayContaining([
-        expect.stringMatching(/runtime adapter/i),
-        expect.stringMatching(/hook, package/i),
-      ]),
-    );
+    expect(payload.doctor.self_check_categories).toEqual(["Agentera CLI self-check status", "installed app and install-root status", "canonical shared-skill diagnosis", "project integration and project-state migration diagnostics", "bounded offline smoke checks when requested"]);
+    expect(payload.doctor.self_check_categories).not.toEqual(expect.arrayContaining([expect.stringMatching(/runtime adapter/i), expect.stringMatching(/hook, package/i)]));
     expect(payload.integration).toMatchObject({
       authority: "skills/agentera/SKILL.md",
       active_contract: "one shared skill plus the Agentera CLI",
@@ -168,28 +152,30 @@ describe("cli schema", () => {
       source_class: "historical_import",
       default_view: "excluded",
     });
-    const decisions = (
-      payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
-    ).find((artifact) => artifact.name === "decisions");
+    const decisions = (payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>).find((artifact) => artifact.name === "decisions");
     expect(decisions?.write_interface).toMatchObject({
       artifact: "decisions",
       explain_command: "agentera state decisions explain",
     });
     const progress = (
-      payload.artifact_schemas as Array<{ name: string; write_interface: unknown; fields: unknown[] }>
+      payload.artifact_schemas as Array<{
+        name: string;
+        write_interface: unknown;
+        fields: unknown[];
+      }>
     ).find((artifact) => artifact.name === "progress");
     expect(progress?.write_interface).toMatchObject({
       artifact: "progress",
       writer_owned_fields: ["id", "artifact", "publication_order"],
     });
-    expect(progress?.fields).toContainEqual(expect.objectContaining({
-      field: "publication_order",
-      type: "integer",
-      required: false,
-    }));
-    const experiments = (
-      payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>
-    ).find((artifact) => artifact.name === "experiments");
+    expect(progress?.fields).toContainEqual(
+      expect.objectContaining({
+        field: "publication_order",
+        type: "integer",
+        required: false,
+      }),
+    );
+    const experiments = (payload.artifact_schemas as Array<{ name: string; write_interface: unknown }>).find((artifact) => artifact.name === "experiments");
     expect(experiments?.write_interface).toMatchObject({
       artifact: "experiments",
       mutations: ["publish"],
@@ -225,17 +211,11 @@ describe("cli schema", () => {
 
   it("describes the prime/hej commands with their structured fields", () => {
     const payload = buildSchemaPayload("schema");
-    const prime = (payload.commands as Array<{ name: string; structured_fields: string[] }>).find(
-      (c) => c.name === "prime",
-    );
+    const prime = (payload.commands as Array<{ name: string; structured_fields: string[] }>).find((c) => c.name === "prime");
     expect(prime?.structured_fields).toContain("capability_context");
-    const lint = (
-      payload.commands as Array<{ name: string; output_formats: string[]; description: string }>
-    ).find((c) => c.name === "lint");
+    const lint = (payload.commands as Array<{ name: string; output_formats: string[]; description: string }>).find((c) => c.name === "lint");
     expect(lint?.output_formats).toEqual(["text", "json"]);
-    expect(lint?.description).toBe(
-      "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",
-    );
+    expect(lint?.description).toBe("Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.");
   });
 });
 

@@ -75,53 +75,34 @@ function readTriggersYaml(filePath: string): JsonObject {
   return loadYamlMapping(fs.readFileSync(filePath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
 }
 
-function resolveDisambiguation(
-  value: unknown,
-  location: string,
-  allowedCapabilityIds: readonly string[],
-): DisambiguationEntry[] {
+function resolveDisambiguation(value: unknown, location: string, allowedCapabilityIds: readonly string[]): DisambiguationEntry[] {
   if (value === undefined || value === null) return [];
   if (!Array.isArray(value)) {
-    throw new TriggerLoaderError([
-      `${location} disambiguates_against must be a list of mappings`,
-    ]);
+    throw new TriggerLoaderError([`${location} disambiguates_against must be a list of mappings`]);
   }
   const entries: DisambiguationEntry[] = [];
   for (let i = 0; i < value.length; i++) {
     const item = value[i];
     if (!isMapping(item)) {
-      throw new TriggerLoaderError([
-        `${location} disambiguates_against[${i}] must be a mapping with 'capability' and 'hint'`,
-      ]);
+      throw new TriggerLoaderError([`${location} disambiguates_against[${i}] must be a mapping with 'capability' and 'hint'`]);
     }
     const capability = item.capability;
     if (typeof capability !== "string" || !capability) {
-      throw new TriggerLoaderError([
-        `${location} disambiguates_against[${i}] missing 'capability' (must be one of: ${allowedCapabilityIds.join(", ")})`,
-      ]);
+      throw new TriggerLoaderError([`${location} disambiguates_against[${i}] missing 'capability' (must be one of: ${allowedCapabilityIds.join(", ")})`]);
     }
     if (!allowedCapabilityIds.includes(capability)) {
-      throw new TriggerLoaderError([
-        `${location} disambiguates_against[${i}].capability=${JSON.stringify(capability)} is not a canonical capability ID (must be one of: ${allowedCapabilityIds.join(", ")})`,
-      ]);
+      throw new TriggerLoaderError([`${location} disambiguates_against[${i}].capability=${JSON.stringify(capability)} is not a canonical capability ID (must be one of: ${allowedCapabilityIds.join(", ")})`]);
     }
     const hint = item.hint;
     if (typeof hint !== "string" || hint.trim() === "") {
-      throw new TriggerLoaderError([
-        `${location} disambiguates_against[${i}] missing or empty 'hint' (must be a non-empty string)`,
-      ]);
+      throw new TriggerLoaderError([`${location} disambiguates_against[${i}] missing or empty 'hint' (must be a non-empty string)`]);
     }
     entries.push({ capability, hint });
   }
   return entries;
 }
 
-function buildTriggerEntry(
-  key: string,
-  raw: JsonObject,
-  capability: string,
-  contract: CapabilitySchemaContract,
-): CompiledTriggerEntry {
+function buildTriggerEntry(key: string, raw: JsonObject, capability: string, contract: CapabilitySchemaContract): CompiledTriggerEntry {
   const location = `TRIGGERS entry ${key} in ${capability}/schemas/triggers.yaml`;
 
   const id = raw.id;
@@ -133,21 +114,12 @@ function buildTriggerEntry(
     throw new TriggerLoaderError([`${location} missing 'description'`]);
   }
   const priorityRaw = raw.priority;
-  if (
-    typeof priorityRaw !== "string" ||
-    !contract.triggerPriorityRules.allowedValues.includes(priorityRaw)
-  ) {
-    throw new TriggerLoaderError([
-      `${location} has invalid priority=${JSON.stringify(priorityRaw)} (must be one of: ${contract.triggerPriorityRules.allowedValues.join(", ")})`,
-    ]);
+  if (typeof priorityRaw !== "string" || !contract.triggerPriorityRules.allowedValues.includes(priorityRaw)) {
+    throw new TriggerLoaderError([`${location} has invalid priority=${JSON.stringify(priorityRaw)} (must be one of: ${contract.triggerPriorityRules.allowedValues.join(", ")})`]);
   }
   const priority = priorityRaw as "high" | "medium" | "low";
 
-  const disambiguatesAgainst = resolveDisambiguation(
-    raw.disambiguates_against,
-    location,
-    contract.triggerEnrichment.allowedCapabilityIds,
-  );
+  const disambiguatesAgainst = resolveDisambiguation(raw.disambiguates_against, location, contract.triggerEnrichment.allowedCapabilityIds);
 
   const fallback = raw.fallback === true;
 
@@ -160,32 +132,22 @@ function buildTriggerEntry(
   };
 }
 
-function buildCapabilityTriggers(
-  capability: string,
-  contract: CapabilitySchemaContract,
-  sourceRoot: string,
-): CompiledCapabilityTriggers {
+function buildCapabilityTriggers(capability: string, contract: CapabilitySchemaContract, sourceRoot: string): CompiledCapabilityTriggers {
   const filePath = triggersYamlPath(capability, sourceRoot);
   const data = readTriggersYaml(filePath);
   const triggersGroup = data.TRIGGERS;
   if (!isMapping(triggersGroup)) {
-    throw new TriggerLoaderError([
-      `${capability}/schemas/triggers.yaml is missing the TRIGGERS group`,
-    ]);
+    throw new TriggerLoaderError([`${capability}/schemas/triggers.yaml is missing the TRIGGERS group`]);
   }
 
   const triggers: CompiledTriggerEntry[] = [];
   for (const key of Object.keys(triggersGroup)) {
     if (!isNumericKey(key)) {
-      throw new TriggerLoaderError([
-        `${capability}/schemas/triggers.yaml has non-numeric key ${JSON.stringify(key)} in TRIGGERS`,
-      ]);
+      throw new TriggerLoaderError([`${capability}/schemas/triggers.yaml has non-numeric key ${JSON.stringify(key)} in TRIGGERS`]);
     }
     const entry = (triggersGroup as JsonObject)[key];
     if (!isMapping(entry)) {
-      throw new TriggerLoaderError([
-        `TRIGGERS entry ${key} in ${capability}/schemas/triggers.yaml is not a mapping`,
-      ]);
+      throw new TriggerLoaderError([`TRIGGERS entry ${key} in ${capability}/schemas/triggers.yaml is not a mapping`]);
     }
     triggers.push(buildTriggerEntry(key, entry, capability, contract));
   }
@@ -202,10 +164,7 @@ function buildCapabilityTriggers(
  * capability IDs and each must resolve to a capability present in the returned
  * model.
  */
-export function loadTriggerModel(
-  contract: CapabilitySchemaContract,
-  options: { sourceRoot?: string } = {},
-): TriggerModel {
+export function loadTriggerModel(contract: CapabilitySchemaContract, options: { sourceRoot?: string } = {}): TriggerModel {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const capabilities = contract.routeAliases.primaryAliases.map((alias) => alias.capability);
 
@@ -236,13 +195,9 @@ export function loadTriggerModel(
       for (const ref of entry.disambiguatesAgainst) {
         const referenced = model.get(ref.capability);
         if (!referenced) {
-          resolutionErrors.push(
-            `TRIGGERS entry ${entry.id} in ${capability}/schemas/triggers.yaml disambiguates_against.capability=${JSON.stringify(ref.capability)} does not resolve to a loaded capability`,
-          );
+          resolutionErrors.push(`TRIGGERS entry ${entry.id} in ${capability}/schemas/triggers.yaml disambiguates_against.capability=${JSON.stringify(ref.capability)} does not resolve to a loaded capability`);
         } else if (referenced.triggers.length === 0) {
-          resolutionErrors.push(
-            `TRIGGERS entry ${entry.id} in ${capability}/schemas/triggers.yaml disambiguates_against.capability=${JSON.stringify(ref.capability)} resolves to a capability with no trigger entries`,
-          );
+          resolutionErrors.push(`TRIGGERS entry ${entry.id} in ${capability}/schemas/triggers.yaml disambiguates_against.capability=${JSON.stringify(ref.capability)} resolves to a capability with no trigger entries`);
         }
       }
     }

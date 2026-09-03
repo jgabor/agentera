@@ -1,9 +1,7 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-
 import YAML from "yaml";
-
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
@@ -28,213 +26,31 @@ import { applyCausalBlockers } from "./entityMigrationCausality.js";
 import { todoMigrationObservations, todoReconciliationMigrationPlan } from "./entityMigrationTodo.js";
 import { classifyProjectState } from "./stateMode.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
+import { projectPathIsStable as migrationPathIsStable, readProjectFileSnapshot, resolveProjectDescriptorPath, snapshotProjectPath as snapshotMigrationPath, type ProjectDescriptorPathResolver as DescriptorPathResolver } from "./safeProjectFile.js";
+
 import {
-  projectPathIsStable as migrationPathIsStable,
-  readProjectFileSnapshot,
-  resolveProjectDescriptorPath,
-  snapshotProjectPath as snapshotMigrationPath,
-  type ProjectDescriptorPathResolver as DescriptorPathResolver,
-} from "./safeProjectFile.js";
-
-export type EntityCutoverProjectState = "v3" | "fresh_uninitialized" | "legacy" | "partial" | "corrupt" | "unknown";
-
-export function classifyEntityCutoverProject(project: string, sourceRoot?: string): EntityCutoverProjectState {
-  const state = classifyProjectState(project, sourceRoot).state;
-  return state === "entities" ? "v3" : state;
-}
-
-export type EntityMigrationClassification =
-  | "verified_full"
-  | "recoverable_degraded_full_projection"
-  | "valid_compacted_summary"
-  | "duplicate"
-  | "conflict"
-  | "corrupt"
-  | "unsupported"
-  | "historical_projection_residue";
-
-export interface EntityMigrationRelationship {
-  field: string;
-  target_source_identity: string | null;
-  target_id: string | null;
-  status: "resolved" | "unresolved";
-}
-
-export interface EntityMigrationEntry {
-  source_identity: string;
-  source_paths: string[];
-  artifact: string | null;
-  boundary: string | null;
-  classification: EntityMigrationClassification;
-  detail_availability: "full" | "summary" | "unavailable";
-  compatibility: "current" | "degraded";
-  provenance: string[];
-  content_sha256: string | null;
-  content_sha256s: string[];
-  physical_record_count: number;
-  proposed_target: { id: string; path: string } | null;
-  target_sha256: string | null;
-  relationships: EntityMigrationRelationship[];
-  recovery: string;
-  migration_provenance?: JsonObject | JsonObject[];
-  canonical_migration_provenance?: JsonObject;
-}
-
-export interface DurableEntityMigrationEntry extends EntityMigrationEntry {
-  record: JsonObject;
-}
-
-export interface DurableEntityMigrationSource {
-  path: string;
-  presence: "file" | "missing";
-  size: number;
-  sha256: string | null;
-  mode: number | null;
-  dev: string | null;
-  ino: string | null;
-  type: "file" | null;
-  bytes_base64: string | null;
-}
-
-export interface DurableEntityMigrationPlan {
-  project: string;
-  source_fingerprint: string;
-  preview_digest: string;
-  authority_schema_version: string;
-  authority_sha256: string;
-  preserved_singletons: EntityMigrationPreview["preserved_singletons"];
-  entries: DurableEntityMigrationEntry[];
-  preserved_residues: DurableEntityMigrationEntry[];
-  sources: DurableEntityMigrationSource[];
-  counts: EntityMigrationPreview["counts"];
-  diagnostics: EntityMigrationPreview["diagnostics"];
-  todo_reconciliation?: {
-    public_path: string;
-    mapping_sha256: string;
-    markdown_before_base64: string;
-    markdown_after: string;
-    activation_after: string;
-  };
-}
-
-export interface EntityMigrationPreview {
-  schemaVersion: "agentera.entityMigrationPreview.v1";
-  command: "upgrade";
-  status: "ready" | "blocked";
-  mode: "preview";
-  project: string;
-  read_only: true;
-  mutation_intent: false;
-  mutation_performed: false;
-  source_fingerprint: string;
-  preview_digest: string;
-  preserved_singletons: Array<{ boundary: string; source_path: string; presence: "file" | "missing" | "unsafe"; content_sha256: string | null; preserved_sections?: string[] }>;
-  entries: EntityMigrationEntry[];
-  preserved_residues: EntityMigrationEntry[];
-  counts: Record<EntityMigrationClassification | "total" | "publishable_entities" | "physical_records" | "logical_identities" | "mirrors" | "duplicates" | "conflicts" | "relationships" | "unresolved_relationships" | "root_blockers" | "dependent_blockers" | "blockers", number>;
-  diagnostics: Array<{
-    classification: EntityMigrationClassification | "dependent_blocker";
-    path: string;
-    source_identity: string;
-    relationship_field?: string;
-    target_source_identity?: string | null;
-    /** Present on every generated graph dependent; identifies the causal source blocker. */
-    root_source_identity?: string;
-    message: string;
-    recovery: string;
-  }>;
-  omitted: boolean;
-  omitted_count: number;
-  diagnostics_omitted_count: number;
-  omission_reason: "result_limit" | "output_byte_budget" | null;
-  page_after: string | null;
-  next_after: string | null;
-  retrieval: { command: string };
-  source_contract: { authority: string; authority_schema_version: string; authority_sha256: string; zero_write: true; scalar_truncation: "forbidden"; apply_owner: "full development-channel upgrade --yes" };
-}
-
-interface Observation {
-  key: string;
-  artifact: string;
-  boundary: string;
-  path: string;
-  provenance: string;
-  record: JsonObject | null;
-  detail: "full" | "summary" | "corrupt";
-  relationships: Array<{ field: string; target: string | null }>;
-  message?: string;
-  migrationProvenance?: JsonObject;
-  inheritedConfidenceProvenance?: JsonObject;
-  sourceRecordSha256?: string;
-  explicitId?: string;
-}
-
-type SourceFile =
-  | { relative: string; bytes: Buffer; kind: "file"; dev: bigint; ino: bigint; type: "file"; mode: number }
-  | { relative: string; bytes: null; kind: "missing" | "unsafe" };
-
-export const ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES = 32_768;
-const DEFAULT_LIMIT = 100;
-const MAX_LIMIT = 1000;
-const NUMBERED = {
-  progress: { file: ".agentera/progress.yaml", collection: "cycles", boundary: "progress_cycle" },
-  decisions: { file: ".agentera/decisions.yaml", collection: "decisions", boundary: "decision" },
-  health: { file: ".agentera/health.yaml", collection: "audits", boundary: "health_audit" },
-} as const;
-const COMPACTED_SUMMARY_ARTIFACTS = new Set(["progress", "decisions", "health"]);
-const BLOCKING = new Set<EntityMigrationClassification>(["duplicate", "conflict", "corrupt", "unsupported"]);
-const INVENTORY_ORDER = "artifact_then_boundary_then_source_identity_then_source_path";
-const INVENTORY_FILTER = "complete_declared_inventory";
-const AUTHORITY_PATH = "references/artifacts/state-storage-authority.yaml";
-const PLAN_ARCHIVE_SOURCE = /^\.agentera\/archive\/PLAN-[^/]+\.ya?ml$/i;
-
-function mapping(value: unknown): JsonObject | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : null;
-}
-
-function hash(value: string | Buffer): string {
-  return createHash("sha256").update(value).digest("hex");
-}
-
-function completeRecordAssessment(
-  sourceRoot: string,
-  artifact: string,
-  record: JsonObject,
-  source: "active" | "archive",
-  sourcePath: string,
-): { valid: boolean; violations: string[]; inheritedConfidenceProvenance?: JsonObject } {
-  if (artifact !== "decisions") {
-    const violations = validateStateRecord(sourceRoot, artifact, record);
-    return { valid: violations.length === 0, violations };
-  }
-  const assessment = classifyCompleteDecisionConfidence(
-    record,
-    decisionLegacyCoexistence(sourceRoot),
-    (candidate) => validateStateRecord(sourceRoot, artifact, candidate as JsonObject),
-    source,
-  );
-  return {
-    valid: assessment.status !== "invalid",
-    violations: assessment.violations,
-    ...(assessment.status === "inherited" ? { inheritedConfidenceProvenance: {
-      kind: "inherited_decision_confidence",
-      source: source === "active" ? "current_projection" : "verified_archive",
-      source_path: sourcePath,
-      source_record_sha256: hash(canonicalRecordJson(record)),
-      confidence: record.confidence as string,
-    } } : {}),
-  };
-}
-
-function relative(root: string, target: string): string {
-  return path.relative(root, target).replaceAll(path.sep, "/");
-}
-
-/** Migration-only source seam: pin one project file to a verified descriptor. */
-function readMigrationSource(root: string | ValidatedProjectRoot, relativePath: string, descriptorPathResolver: DescriptorPathResolver): SourceFile {
-  return { relative: relativePath, ...readProjectFileSnapshot(root, relativePath, descriptorPathResolver) };
-}
-
+  AUTHORITY_PATH,
+  BLOCKING,
+  COMPACTED_SUMMARY_ARTIFACTS,
+  DEFAULT_LIMIT,
+  ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES,
+  INVENTORY_FILTER,
+  INVENTORY_ORDER,
+  MAX_LIMIT,
+  NUMBERED,
+  PLAN_ARCHIVE_SOURCE,
+  completeRecordAssessment,
+  hash,
+  mapping,
+  readMigrationSource,
+  relative,
+  type EntityCutoverProjectState,
+  type Observation,
+  type SourceFile,
+} from "./entityMigrationPreviewSupport.js";
+import type { DurableEntityMigrationEntry, DurableEntityMigrationPlan, DurableEntityMigrationSource, EntityMigrationClassification, EntityMigrationEntry, EntityMigrationPreview, EntityMigrationRelationship } from "./entityMigrationContracts.js";
+export { ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES, classifyEntityCutoverProject, type EntityCutoverProjectState } from "./entityMigrationPreviewSupport.js";
+export type { DurableEntityMigrationEntry, DurableEntityMigrationPlan, DurableEntityMigrationSource, EntityMigrationClassification, EntityMigrationEntry, EntityMigrationPreview, EntityMigrationRelationship } from "./entityMigrationContracts.js";
 function directoryFiles(root: string, validatedRoot: ValidatedProjectRoot, relativeRoot: string, accept: (relativePath: string) => boolean, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const absoluteRoot = path.join(root, relativeRoot);
   type Enumeration = { files: SourceFile[]; changed: string | null };
@@ -280,24 +96,32 @@ function directoryFiles(root: string, validatedRoot: ValidatedProjectRoot, relat
 
 function collectSources(root: string, validatedRoot: ValidatedProjectRoot, todoPath: string, docsSnapshot: SourceFile, descriptorPathResolver: DescriptorPathResolver): SourceFile[] {
   const exact = [
-    todoPath, "CHANGELOG.md", "DESIGN.md", ".agentera/vision.yaml", ".agentera/docs.yaml", ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml", ".agentera/plan.yaml",
-    ".agentera/overlays/decisions.yaml", ".agentera/revisions/decisions.yaml", ".agentera/archive/recovery/projection-correlation.yaml",
-  ].map((candidate) => candidate === docsSnapshot.relative ? docsSnapshot : readMigrationSource(validatedRoot, candidate, descriptorPathResolver));
-  const archives = directoryFiles(root, validatedRoot, ".agentera/archive", (candidate) =>
-    /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate)
-      || PLAN_ARCHIVE_SOURCE.test(candidate),
-    descriptorPathResolver,
-  );
-  const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) =>
-    directoryFiles(root, validatedRoot, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver),
-  );
+    todoPath,
+    "CHANGELOG.md",
+    "DESIGN.md",
+    ".agentera/vision.yaml",
+    ".agentera/docs.yaml",
+    ".agentera/progress.yaml",
+    ".agentera/decisions.yaml",
+    ".agentera/health.yaml",
+    ".agentera/plan.yaml",
+    ".agentera/overlays/decisions.yaml",
+    ".agentera/revisions/decisions.yaml",
+    ".agentera/archive/recovery/projection-correlation.yaml",
+  ].map((candidate) => (candidate === docsSnapshot.relative ? docsSnapshot : readMigrationSource(validatedRoot, candidate, descriptorPathResolver)));
+  const archives = directoryFiles(root, validatedRoot, ".agentera/archive", (candidate) => /^\.agentera\/archive\/(progress|decisions|health)\/.+/.test(candidate) || PLAN_ARCHIVE_SOURCE.test(candidate), descriptorPathResolver);
+  const objectives = [".agentera/optimize", ".agentera/optimera"].flatMap((directory) => directoryFiles(root, validatedRoot, directory, (candidate) => /\/(objective|experiments)\.yaml$/.test(candidate), descriptorPathResolver));
   const todoEntities = directoryFiles(root, validatedRoot, ".agentera/entities/todo/todo_item", (candidate) => candidate.endsWith(".yaml"), descriptorPathResolver);
   const activation = readMigrationSource(validatedRoot, TODO_RECONCILIATION_ACTIVATION_PATH, descriptorPathResolver);
   const collected = [...exact, ...archives, ...objectives, ...todoEntities, activation];
   const missingRoots = [".agentera/archive/", ".agentera/optimize/", ".agentera/optimera/", ".agentera/entities/todo/todo_item/"]
     .filter((directory) => {
       if (collected.some((source) => source.kind === "unsafe" && source.relative === directory)) return false;
-      try { return !fs.lstatSync(path.join(root, directory)).isDirectory(); } catch { return true; }
+      try {
+        return !fs.lstatSync(path.join(root, directory)).isDirectory();
+      } catch {
+        return true;
+      }
     })
     .map((directory): SourceFile => ({ relative: directory, bytes: null, kind: "missing" }));
   const byPath = new Map([...collected, ...missingRoots].map((source) => [source.relative, source]));
@@ -315,16 +139,20 @@ function authorityBinding(sourceRoot: string): { authority_schema_version: strin
 }
 
 function sourceFingerprint(files: SourceFile[]): string {
-  return hash(canonicalRecordJson(files.map((file) => ({
-    path: file.relative,
-    presence: file.kind,
-    size: file.bytes?.byteLength ?? 0,
-    sha256: file.bytes ? hash(file.bytes) : null,
-    mode: file.kind === "file" ? file.mode : null,
-    dev: file.kind === "file" ? String(file.dev) : null,
-    ino: file.kind === "file" ? String(file.ino) : null,
-    type: file.kind === "file" ? file.type : null,
-  }))));
+  return hash(
+    canonicalRecordJson(
+      files.map((file) => ({
+        path: file.relative,
+        presence: file.kind,
+        size: file.bytes?.byteLength ?? 0,
+        sha256: file.bytes ? hash(file.bytes) : null,
+        mode: file.kind === "file" ? file.mode : null,
+        dev: file.kind === "file" ? String(file.dev) : null,
+        ino: file.kind === "file" ? String(file.ino) : null,
+        type: file.kind === "file" ? file.type : null,
+      })),
+    ),
+  );
 }
 
 function parseYaml(source: SourceFile): JsonObject {
@@ -361,7 +189,8 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
   let correlationManifest: Map<string, JsonObject> | null = null;
   if (correlationSource?.kind === "file") {
     try {
-      const manifest = parseYaml(correlationSource); const entries = Array.isArray(manifest.entries) ? manifest.entries.map(mapping) : [];
+      const manifest = parseYaml(correlationSource);
+      const entries = Array.isArray(manifest.entries) ? manifest.entries.map(mapping) : [];
       const validEntries = entries.filter((entry): entry is JsonObject => Boolean(entry));
       const digest = hash(canonicalRecordJson({ schemaVersion: "agentera.projectionCorrelationSet.v1", entries: validEntries }));
       if (manifest.schemaVersion !== "agentera.projectionCorrelationManifest.v1" || manifest.recovery_set_digest !== digest || validEntries.length !== entries.length) throw new Error("projection correlation manifest schema or digest is invalid");
@@ -378,31 +207,56 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
       try {
         const document = parseYaml(current);
         const allowedCollections = new Set(aggregateCollections[declaration.file] ?? []);
-        for (const field of Object.keys(document).filter((field) => Array.isArray(document[field]) && !allowedCollections.has(field)).sort()) {
-          observations.push({ key: `${artifact}:undeclared_collection:${field}`, artifact, boundary: "migration_inventory", path: declaration.file, provenance: "source_inventory", record: null, detail: "corrupt", relationships: [], message: `aggregate collection '${field}' is not declared for '${declaration.file}' by the state storage authority` });
+        for (const field of Object.keys(document)
+          .filter((field) => Array.isArray(document[field]) && !allowedCollections.has(field))
+          .sort()) {
+          observations.push({
+            key: `${artifact}:undeclared_collection:${field}`,
+            artifact,
+            boundary: "migration_inventory",
+            path: declaration.file,
+            provenance: "source_inventory",
+            record: null,
+            detail: "corrupt",
+            relationships: [],
+            message: `aggregate collection '${field}' is not declared for '${declaration.file}' by the state storage authority`,
+          });
         }
         const currentValues = document[declaration.collection];
         if (!Array.isArray(currentValues)) throw new Error(`field '${declaration.collection}' must be a list`);
         const collections: Array<[string, unknown[]]> = [[declaration.collection, currentValues]];
         if (Array.isArray(document.archive)) collections.push(["archive", document.archive]);
-        collections.flatMap(([collection, values]) => values.map((value, index) => ({ collection, value, index }))).forEach(({ collection, value, index }) => {
-          const record = legacySummaryRecord(value);
-          const identity = legacyIdentity(record, artifact, "number");
-          const number = identity.number;
-          const key = number ? `${artifact}:${number}` : `${artifact}:${collection}[${index}]`;
-          const assessment = record && typeof record.number === "number"
-            ? completeRecordAssessment(sourceRoot, artifact, record, "active", declaration.file)
-            : { valid: false, violations: ["record number is required"] };
-          const valid = assessment.valid;
-          const summary = Boolean(record && (typeof record.summary === "string" || record.detail_availability === "summary_only"));
-          const text = typeof record?.summary === "string" ? record.summary : "";
-          const decisionRefs = artifact === "decisions" ? [...text.matchAll(/\bD([1-9][0-9]*)\b/g)] : [];
-          const residue = artifact === "decisions" && decisionRefs.length > 1 && !number;
-          observations.push({ key: residue ? `historical_projection_residue:${declaration.file}:${collection}[${index}]` : key, artifact, boundary: residue ? "historical_projection_residue" : declaration.boundary, path: declaration.file, provenance: residue ? "historical_projection_residue" : "current_projection", record, detail: valid ? "full" : summary ? "summary" : "corrupt", relationships: [], sourceRecordSha256: hash(canonicalRecordJson(value)), message: valid || summary ? undefined : "projection record does not satisfy the declared full-detail schema", ...(assessment.inheritedConfidenceProvenance ? { inheritedConfidenceProvenance: assessment.inheritedConfidenceProvenance } : {}), ...(residue ? { migrationProvenance: { classification: "historical_projection_residue", path: declaration.file, collection, index, content_sha256: hash(canonicalRecordJson(record)), text, inbound_structured_references: 0 } } : {}) });
-           if (artifact === "decisions" && valid && mapping(record?.satisfaction)) {
-            observations.push({ key: `decision_satisfaction:${key}`, artifact: "decisions", boundary: "decision_satisfaction", path: declaration.file, provenance: "current_projection", record: mapping(record?.satisfaction), detail: "full", relationships: [{ field: "decision", target: key }] });
-          }
-        });
+        collections
+          .flatMap(([collection, values]) => values.map((value, index) => ({ collection, value, index })))
+          .forEach(({ collection, value, index }) => {
+            const record = legacySummaryRecord(value);
+            const identity = legacyIdentity(record, artifact, "number");
+            const number = identity.number;
+            const key = number ? `${artifact}:${number}` : `${artifact}:${collection}[${index}]`;
+            const assessment = record && typeof record.number === "number" ? completeRecordAssessment(sourceRoot, artifact, record, "active", declaration.file) : { valid: false, violations: ["record number is required"] };
+            const valid = assessment.valid;
+            const summary = Boolean(record && (typeof record.summary === "string" || record.detail_availability === "summary_only"));
+            const text = typeof record?.summary === "string" ? record.summary : "";
+            const decisionRefs = artifact === "decisions" ? [...text.matchAll(/\bD([1-9][0-9]*)\b/g)] : [];
+            const residue = artifact === "decisions" && decisionRefs.length > 1 && !number;
+            observations.push({
+              key: residue ? `historical_projection_residue:${declaration.file}:${collection}[${index}]` : key,
+              artifact,
+              boundary: residue ? "historical_projection_residue" : declaration.boundary,
+              path: declaration.file,
+              provenance: residue ? "historical_projection_residue" : "current_projection",
+              record,
+              detail: valid ? "full" : summary ? "summary" : "corrupt",
+              relationships: [],
+              sourceRecordSha256: hash(canonicalRecordJson(value)),
+              message: valid || summary ? undefined : "projection record does not satisfy the declared full-detail schema",
+              ...(assessment.inheritedConfidenceProvenance ? { inheritedConfidenceProvenance: assessment.inheritedConfidenceProvenance } : {}),
+              ...(residue ? { migrationProvenance: { classification: "historical_projection_residue", path: declaration.file, collection, index, content_sha256: hash(canonicalRecordJson(record)), text, inbound_structured_references: 0 } } : {}),
+            });
+            if (artifact === "decisions" && valid && mapping(record?.satisfaction)) {
+              observations.push({ key: `decision_satisfaction:${key}`, artifact: "decisions", boundary: "decision_satisfaction", path: declaration.file, provenance: "current_projection", record: mapping(record?.satisfaction), detail: "full", relationships: [{ field: "decision", target: key }] });
+            }
+          });
       } catch (error) {
         observations.push({ key: `${artifact}:projection`, artifact, boundary: declaration.boundary, path: declaration.file, provenance: "current_projection", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
       }
@@ -426,12 +280,22 @@ function numberedObservations(root: string, sourceRoot: string, files: SourceFil
         if (mapping(envelope.recovery_provenance)) {
           const correlation = correlationManifest?.get(key);
           if (!correlation) throw new Error("recovered archive is absent from the immutable projection correlation manifest");
-          if (correlation.artifact !== artifact || correlation.identity !== key || correlation.archive_sha256 !== hash(source.bytes!)
-            || mapping(correlation.overlay)?.final_record_sha256 !== expected) throw new Error("recovered archive does not match its immutable projection correlation manifest entry");
+          if (correlation.artifact !== artifact || correlation.identity !== key || correlation.archive_sha256 !== hash(source.bytes!) || mapping(correlation.overlay)?.final_record_sha256 !== expected) throw new Error("recovered archive does not match its immutable projection correlation manifest entry");
         }
         const assessment = completeRecordAssessment(sourceRoot, artifact, record, "archive", source.relative);
         if (!assessment.valid) throw new Error(`archive record is invalid: ${assessment.violations.join("; ")}`);
-        observations.push({ key, artifact, boundary: declaration.boundary, path: source.relative, provenance: "verified_archive", record, detail: "full", relationships: [], ...(assessment.inheritedConfidenceProvenance ? { inheritedConfidenceProvenance: assessment.inheritedConfidenceProvenance } : {}), ...(mapping(envelope.recovery_provenance) ? { migrationProvenance: mapping(envelope.recovery_provenance)! } : {}) });
+        observations.push({
+          key,
+          artifact,
+          boundary: declaration.boundary,
+          path: source.relative,
+          provenance: "verified_archive",
+          record,
+          detail: "full",
+          relationships: [],
+          ...(assessment.inheritedConfidenceProvenance ? { inheritedConfidenceProvenance: assessment.inheritedConfidenceProvenance } : {}),
+          ...(mapping(envelope.recovery_provenance) ? { migrationProvenance: mapping(envelope.recovery_provenance)! } : {}),
+        });
         if (artifact === "decisions" && mapping(record.satisfaction)) {
           observations.push({
             key: `decision_satisfaction:${key}`,
@@ -461,7 +325,17 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
         const record = mapping(value);
         const match = /^decisions:([1-9][0-9]*)$/.exec(identity);
         const satisfaction = mapping(record?.satisfaction);
-        observations.push({ key: `decision_satisfaction:${identity}`, artifact: "decisions", boundary: "decision_satisfaction", path: overlay.relative, provenance: "overlay", record: satisfaction, detail: match && satisfaction ? "full" : "corrupt", relationships: [{ field: "decision", target: match ? `decisions:${match[1]}` : null }], message: match && satisfaction ? undefined : "decision satisfaction overlay has an unsupported identity or shape" });
+        observations.push({
+          key: `decision_satisfaction:${identity}`,
+          artifact: "decisions",
+          boundary: "decision_satisfaction",
+          path: overlay.relative,
+          provenance: "overlay",
+          record: satisfaction,
+          detail: match && satisfaction ? "full" : "corrupt",
+          relationships: [{ field: "decision", target: match ? `decisions:${match[1]}` : null }],
+          message: match && satisfaction ? undefined : "decision satisfaction overlay has an unsupported identity or shape",
+        });
       }
     } catch (error) {
       observations.push({ key: "decision_satisfaction:overlay", artifact: "decisions", boundary: "decision_satisfaction", path: overlay.relative, provenance: "overlay", record: null, detail: "corrupt", relationships: [{ field: "decision", target: null }], message: (error as Error).message });
@@ -477,13 +351,33 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
       for (const [identity, value] of Object.entries(document).sort(([left], [right]) => left.localeCompare(right))) {
         const target = new RegExp(`^${contract.identityPrefix}:[1-9][0-9]*$`).test(identity) ? identity : null;
         if (!Array.isArray(value)) {
-          observations.push({ key: `decision_revision:${identity}`, artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record: null, detail: "corrupt", relationships: [{ field: "decision", target }], message: `${identity} must be an ordered list of revision records` });
+          observations.push({
+            key: `decision_revision:${identity}`,
+            artifact: "decisions",
+            boundary: "decision_revision",
+            path: revisions.relative,
+            provenance: "revision",
+            record: null,
+            detail: "corrupt",
+            relationships: [{ field: "decision", target }],
+            message: `${identity} must be an ordered list of revision records`,
+          });
           continue;
         }
         value.forEach((candidate, index) => {
           const record = mapping(candidate);
           const violations = decisionRevisionViolations({ [identity]: [candidate] }, contract);
-          observations.push({ key: `decision_revision:${identity}:${index}`, artifact: "decisions", boundary: "decision_revision", path: revisions.relative, provenance: "revision", record, detail: record && violations.length === 0 ? "full" : "corrupt", relationships: [{ field: "decision", target }], message: violations.length === 0 ? undefined : violations.join("; ") });
+          observations.push({
+            key: `decision_revision:${identity}:${index}`,
+            artifact: "decisions",
+            boundary: "decision_revision",
+            path: revisions.relative,
+            provenance: "revision",
+            record,
+            detail: record && violations.length === 0 ? "full" : "corrupt",
+            relationships: [{ field: "decision", target }],
+            message: violations.length === 0 ? undefined : violations.join("; "),
+          });
         });
       }
     } catch (error) {
@@ -497,15 +391,8 @@ function decisionEvidence(sourceRoot: string, files: SourceFile[], observations:
 function planObservations(root: string, files: SourceFile[], observations: Observation[]): void {
   const active = path.join(root, ".agentera", "plan.yaml");
   const activeSource = files.find((source) => source.relative === ".agentera/plan.yaml");
-  const archiveBytes = new Map(files.flatMap((source): Array<[string, Buffer]> =>
-    source.kind === "file" && PLAN_ARCHIVE_SOURCE.test(source.relative)
-      ? [[path.join(root, source.relative), source.bytes]]
-      : [],
-  ));
-  const discovery = discoverPlanArtifacts(active, {
-    activeBytes: activeSource?.kind === "file" ? activeSource.bytes : null,
-    archiveBytes,
-  });
+  const archiveBytes = new Map(files.flatMap((source): Array<[string, Buffer]> => (source.kind === "file" && PLAN_ARCHIVE_SOURCE.test(source.relative) ? [[path.join(root, source.relative), source.bytes]] : [])));
+  const discovery = discoverPlanArtifacts(active, { activeBytes: activeSource?.kind === "file" ? activeSource.bytes : null, archiveBytes });
   const seen = new Set<string>();
   if (activeSource?.kind === "unsafe") {
     observations.push({ key: "plan:document", artifact: "plan", boundary: "plan", path: activeSource.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(activeSource.relative) });
@@ -525,15 +412,24 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
     const planRecord = structuredClone(identity.artifact.data);
     const migratedHeader = mapping(planRecord.header);
     if (archived && migratedHeader) migratedHeader.status = "archived";
-    const migrationProvenance = archived ? {
-      ...identity.artifact.migrationProvenance,
-      source_path: sourcePath,
-      source_lifecycle: "verified_plan_archive",
-      source_status: sourceStatus,
-      target_status: "archived",
-    } : identity.artifact.migrationProvenance ? { ...identity.artifact.migrationProvenance, source_path: sourcePath } : undefined;
+    const migrationProvenance = archived
+      ? { ...identity.artifact.migrationProvenance, source_path: sourcePath, source_lifecycle: "verified_plan_archive", source_status: sourceStatus, target_status: "archived" }
+      : identity.artifact.migrationProvenance
+        ? { ...identity.artifact.migrationProvenance, source_path: sourcePath }
+        : undefined;
     const classificationDetail = identity.ambiguous ? "corrupt" : "full";
-    observations.push({ key: identity.stableId, artifact: "plan", boundary: "plan", path: sourcePath, provenance: archived ? "verified_plan_archive" : "current_canonical", record: planRecord, detail: classificationDetail, relationships: [], message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined, ...(migrationProvenance ? { migrationProvenance } : {}) });
+    observations.push({
+      key: identity.stableId,
+      artifact: "plan",
+      boundary: "plan",
+      path: sourcePath,
+      provenance: archived ? "verified_plan_archive" : "current_canonical",
+      record: planRecord,
+      detail: classificationDetail,
+      relationships: [],
+      message: identity.ambiguous ? "plan identity resolves to conflicting documents" : undefined,
+      ...(migrationProvenance ? { migrationProvenance } : {}),
+    });
     const parts = planDocumentParts(identity.artifact.data);
     parts.tasks.forEach((task, index) => {
       const number = task.number;
@@ -549,7 +445,10 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
         detail: typeof number === "number" ? classificationDetail : "corrupt",
         relationships: [
           { field: "plan", target: identity.stableId },
-          ...depends.map((dependency) => { const normalized = /^Task ([1-9][0-9]*)$/.exec(String(dependency))?.[1] ?? String(dependency); return { field: "depends_on", target: /^[1-9][0-9]*$/.test(normalized) ? `${identity.stableId}/task:${normalized}` : null }; }),
+          ...depends.map((dependency) => {
+            const normalized = /^Task ([1-9][0-9]*)$/.exec(String(dependency))?.[1] ?? String(dependency);
+            return { field: "depends_on", target: /^[1-9][0-9]*$/.test(normalized) ? `${identity.stableId}/task:${normalized}` : null };
+          }),
         ],
         message: typeof number === "number" ? undefined : "plan task has no positive structured number",
         ...(identity.artifact.migrationProvenance ? { migrationProvenance: { ...identity.artifact.migrationProvenance, source_path: sourcePath, source_task_index: index } } : {}),
@@ -563,25 +462,43 @@ function planObservations(root: string, files: SourceFile[], observations: Obser
   }
   for (const source of files.filter((candidate) => PLAN_ARCHIVE_SOURCE.test(candidate.relative))) {
     if (!discovery.identities.some((identity) => relative(root, identity.artifact.path) === source.relative) && !observations.some((entry) => entry.path === source.relative)) {
-      observations.push({ key: `plan:corrupt:${source.relative}`, artifact: "plan", boundary: "plan", path: source.relative, provenance: "plan_candidate", record: null, detail: "corrupt", relationships: [], message: source.kind === "unsafe" ? unsafeSourceMessage(source.relative) : "plan archive could not be validated" });
+      observations.push({
+        key: `plan:corrupt:${source.relative}`,
+        artifact: "plan",
+        boundary: "plan",
+        path: source.relative,
+        provenance: "plan_candidate",
+        record: null,
+        detail: "corrupt",
+        relationships: [],
+        message: source.kind === "unsafe" ? unsafeSourceMessage(source.relative) : "plan archive could not be validated",
+      });
     }
   }
 }
 
 function objectiveObservations(root: string, files: SourceFile[], observations: Observation[]): void {
-  const sourceBytes = new Map(files.flatMap((source): Array<[string, Buffer]> =>
-    source.kind === "file" && /^\.agentera\/(optimize|optimera)\/.+\/(objective|experiments)\.yaml$/.test(source.relative)
-      ? [[path.join(root, source.relative), source.bytes]]
-      : [],
-  ));
+  const sourceBytes = new Map(files.flatMap((source): Array<[string, Buffer]> => (source.kind === "file" && /^\.agentera\/(optimize|optimera)\/.+\/(objective|experiments)\.yaml$/.test(source.relative) ? [[path.join(root, source.relative), source.bytes]] : [])));
   const discovery = discoverObjectiveArtifacts(root, sourceBytes);
   for (const objective of discovery.objectives) {
     for (const objectivePath of objective.paths) {
       const sourcePath = relative(root, objectivePath);
       const source = files.find((candidate) => candidate.relative === sourcePath);
       let document: JsonObject | null = null;
-      try { if (source?.kind === "file") document = parseYaml(source); } catch { /* discovery diagnostic accounts for it */ }
-      observations.push({ key: objective.stableId, artifact: "objective", boundary: "objective", path: sourcePath, provenance: sourcePath.startsWith(".agentera/optimize/") ? "current_canonical" : "legacy_objective_root", record: document, detail: objective.ambiguous || !document ? "corrupt" : "full", relationships: [], message: objective.ambiguous ? "objective identity is ambiguous" : undefined });
+      try {
+        if (source?.kind === "file") document = parseYaml(source);
+      } catch {}
+      observations.push({
+        key: objective.stableId,
+        artifact: "objective",
+        boundary: "objective",
+        path: sourcePath,
+        provenance: sourcePath.startsWith(".agentera/optimize/") ? "current_canonical" : "legacy_objective_root",
+        record: document,
+        detail: objective.ambiguous || !document ? "corrupt" : "full",
+        relationships: [],
+        message: objective.ambiguous ? "objective identity is ambiguous" : undefined,
+      });
     }
     if (objective.ambiguous) continue;
     const objectivePath = objective.paths[0];
@@ -593,13 +510,43 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
         const document = parseYaml(experiments);
         for (const experiment of inspectExperimentIdentities(objective.stableId, document).entries) {
           const key = experiment.stableId ?? `${objective.stableId}/experiment:${experiment.provenance.collection}[${experiment.provenance.index}]`;
-          observations.push({ key, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: experiment.data, detail: experiment.addressable ? "full" : experiment.compatibility === "legacy_missing_identity" ? "summary" : "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: experiment.caveats.join("; ") || undefined });
+          observations.push({
+            key,
+            artifact: "experiments",
+            boundary: "experiment",
+            path: experiments.relative,
+            provenance: "experiment_projection",
+            record: experiment.data,
+            detail: experiment.addressable ? "full" : experiment.compatibility === "legacy_missing_identity" ? "summary" : "corrupt",
+            relationships: [{ field: "objective", target: objective.stableId }],
+            message: experiment.caveats.join("; ") || undefined,
+          });
         }
       } catch (error) {
-        observations.push({ key: `${objective.stableId}/experiments`, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: null, detail: "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: (error as Error).message });
+        observations.push({
+          key: `${objective.stableId}/experiments`,
+          artifact: "experiments",
+          boundary: "experiment",
+          path: experiments.relative,
+          provenance: "experiment_projection",
+          record: null,
+          detail: "corrupt",
+          relationships: [{ field: "objective", target: objective.stableId }],
+          message: (error as Error).message,
+        });
       }
     } else if (experiments?.kind === "unsafe") {
-      observations.push({ key: `${objective.stableId}/experiments`, artifact: "experiments", boundary: "experiment", path: experiments.relative, provenance: "experiment_projection", record: null, detail: "corrupt", relationships: [{ field: "objective", target: objective.stableId }], message: unsafeSourceMessage(experiments.relative) });
+      observations.push({
+        key: `${objective.stableId}/experiments`,
+        artifact: "experiments",
+        boundary: "experiment",
+        path: experiments.relative,
+        provenance: "experiment_projection",
+        record: null,
+        detail: "corrupt",
+        relationships: [{ field: "objective", target: objective.stableId }],
+        message: unsafeSourceMessage(experiments.relative),
+      });
     }
   }
   for (const diagnostic of discovery.diagnostics) {
@@ -611,7 +558,17 @@ function objectiveObservations(root: string, files: SourceFile[], observations: 
   for (const source of files.filter((candidate) => candidate.kind === "unsafe" && /\/(objective|experiments)\.yaml$/.test(candidate.relative))) {
     if (observations.some((entry) => entry.path === source.relative)) continue;
     const artifact = source.relative.endsWith("/objective.yaml") ? "objective" : "experiments";
-    observations.push({ key: `${artifact}:corrupt:${source.relative}`, artifact, boundary: artifact === "objective" ? "objective" : "experiment", path: source.relative, provenance: artifact === "objective" ? "objective_candidate" : "experiment_projection", record: null, detail: "corrupt", relationships: [], message: unsafeSourceMessage(source.relative) });
+    observations.push({
+      key: `${artifact}:corrupt:${source.relative}`,
+      artifact,
+      boundary: artifact === "objective" ? "objective" : "experiment",
+      path: source.relative,
+      provenance: artifact === "objective" ? "objective_candidate" : "experiment_projection",
+      record: null,
+      detail: "corrupt",
+      relationships: [],
+      message: unsafeSourceMessage(source.relative),
+    });
   }
 }
 
@@ -626,10 +583,32 @@ function todoAndDocs(root: string, sourceRoot: string, todoPath: string, files: 
         const sourceRecord = mapping(value);
         const originalStatus = sourceRecord?.status;
         const normalizedStatus = originalStatus === "draft" ? "intent" : originalStatus === "archived" ? "stale" : originalStatus;
-        const record: JsonObject | null = sourceRecord ? { ...structuredClone(sourceRecord), ...(normalizedStatus !== originalStatus ? { status: normalizedStatus } : {}) } as JsonObject : null;
+        const record: JsonObject | null = sourceRecord ? ({ ...structuredClone(sourceRecord), ...(normalizedStatus !== originalStatus ? { status: normalizedStatus } : {}) } as JsonObject) : null;
         const identity = typeof record?.path === "string" ? `docs:path:${record.path}` : `docs:index:${index}`;
         const violations = record ? todoDocsRecordViolations("documentation_inventory_entry", record) : ["documentation inventory entry must be a mapping"];
-        observations.push({ key: identity, artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record, detail: violations.length ? "corrupt" : "full", relationships: [], message: violations.length ? violations.join("; ") : undefined, ...(normalizedStatus !== originalStatus ? { migrationProvenance: { kind: "legacy_docs_status_normalization", source_path: docs.relative, index, ...(sourceRecord?.path !== undefined ? { original_path: sourceRecord.path } : {}), ...(originalStatus !== undefined ? { original_status: originalStatus } : {}), ...(normalizedStatus !== undefined ? { normalized_status: normalizedStatus } : {}) } } : {}) });
+        observations.push({
+          key: identity,
+          artifact: "docs",
+          boundary: "documentation_inventory_entry",
+          path: docs.relative,
+          provenance: "current_canonical",
+          record,
+          detail: violations.length ? "corrupt" : "full",
+          relationships: [],
+          message: violations.length ? violations.join("; ") : undefined,
+          ...(normalizedStatus !== originalStatus
+            ? {
+                migrationProvenance: {
+                  kind: "legacy_docs_status_normalization",
+                  source_path: docs.relative,
+                  index,
+                  ...(sourceRecord?.path !== undefined ? { original_path: sourceRecord.path } : {}),
+                  ...(originalStatus !== undefined ? { original_status: originalStatus } : {}),
+                  ...(normalizedStatus !== undefined ? { normalized_status: normalizedStatus } : {}),
+                },
+              }
+            : {}),
+        });
       });
     } catch (error) {
       observations.push({ key: "docs:document", artifact: "docs", boundary: "documentation_inventory_entry", path: docs.relative, provenance: "current_canonical", record: null, detail: "corrupt", relationships: [], message: (error as Error).message });
@@ -659,9 +638,7 @@ function summaryBoundary(artifact: string, fallback: string): string {
 }
 
 function canonicalSummaryBodies(group: Observation[], forbiddenAliases: readonly string[]): Set<string> {
-  return new Set(group.flatMap((item) => item.record
-    ? [canonicalRecordJson(canonicalMigrationRecord(summaryBoundary(item.artifact, item.boundary), item.record, forbiddenAliases))]
-    : []));
+  return new Set(group.flatMap((item) => (item.record ? [canonicalRecordJson(canonicalMigrationRecord(summaryBoundary(item.artifact, item.boundary), item.record, forbiddenAliases))] : [])));
 }
 
 function classify(group: Observation[], forbiddenAliases: readonly string[]): EntityMigrationClassification {
@@ -704,9 +681,7 @@ function buildEntries(project: string, sourceRoot: string, fingerprint: string, 
   const ids = new Map<string, string>();
   for (const key of [...groups.keys()].sort()) {
     const group = groups.get(key)!;
-    const canonicalSummaries = group.every((item) => item.detail === "summary") && COMPACTED_SUMMARY_ARTIFACTS.has(group[0]?.artifact ?? "")
-      ? [...canonicalSummaryBodies(group, forbiddenAliases)].sort()
-      : [];
+    const canonicalSummaries = group.every((item) => item.detail === "summary") && COMPACTED_SUMMARY_ARTIFACTS.has(group[0]?.artifact ?? "") ? [...canonicalSummaryBodies(group, forbiddenAliases)].sort() : [];
     const identityBinding = canonicalSummaries.length === 1 ? hash(canonicalRecordJson(canonicalSummaries)) : fingerprint;
     const explicitIds = [...new Set(group.map((item) => item.explicitId).filter((id): id is string => id !== undefined))];
     ids.set(key, explicitIds.length === 1 ? explicitIds[0]! : entityMigrationId(identityBinding, key));
@@ -715,72 +690,77 @@ function buildEntries(project: string, sourceRoot: string, fingerprint: string, 
   const idOwners = new Map<string, string>();
   for (const [key, id] of ids) {
     const owner = idOwners.get(id);
-    if (owner) { collisions.add(owner); collisions.add(key); } else idOwners.set(id, key);
+    if (owner) {
+      collisions.add(owner);
+      collisions.add(key);
+    } else idOwners.set(id, key);
   }
-  const entries = [...groups.entries()].map(([key, unsortedGroup]): DurableEntityMigrationEntry => {
-    const group = [...unsortedGroup].sort((left, right) => `${left.path}\0${left.provenance}\0${canonicalRecordJson(left.record)}\0${left.sourceRecordSha256 ?? ""}`.localeCompare(`${right.path}\0${right.provenance}\0${canonicalRecordJson(right.record)}\0${right.sourceRecordSha256 ?? ""}`));
-    let classification = classify(group, forbiddenAliases);
-    if (collisions.has(key)) classification = "conflict";
-    const primary = group[0];
-    const contentObservation = group.find((item) => item.provenance === "verified_archive" && item.detail === "full" && item.record)
-      ?? group.find((item) => item.detail === "full" && item.record)
-      ?? group.find((item) => item.detail === "summary" && item.record);
-    const content = contentObservation?.record ?? null;
-    const contentSha256s = [...new Set(group.flatMap((item) => item.record ? [hash(canonicalRecordJson(item.record))] : []))].sort();
-    const mirrored = contentSha256s.length === 1 && group.filter((item) => item.record).length > 1;
-    const id = ids.get(key) as string;
-    const relationshipSources = new Map(group.flatMap((item) => item.relationships).map((relationship) => [`${relationship.field}\0${relationship.target ?? ""}`, relationship])).values();
-    const relationships = [...relationshipSources].map((relationship): EntityMigrationRelationship => ({
-      field: relationship.field,
-      target_source_identity: relationship.target,
-      target_id: relationship.target ? ids.get(relationship.target) ?? null : null,
-      status: relationship.target && groups.has(relationship.target) ? "resolved" : "unresolved",
-    }));
-    const summary = classification === "valid_compacted_summary";
-    const boundary = summary ? summaryBoundary(primary.artifact, primary.boundary) : contentObservation?.boundary ?? primary.boundary;
-    const record = content ? canonicalMigrationRecord(boundary, content, forbiddenAliases, summary ? [] : relationships) : {};
-    if (summary && contentObservation && content) {
-      record.migration_provenance = {
-        source_path: contentObservation.path,
-        source_record_sha256: contentObservation.sourceRecordSha256 ?? hash(canonicalRecordJson(content)),
+  const entries = [...groups.entries()]
+    .map(([key, unsortedGroup]): DurableEntityMigrationEntry => {
+      const group = [...unsortedGroup].sort((left, right) => `${left.path}\0${left.provenance}\0${canonicalRecordJson(left.record)}\0${left.sourceRecordSha256 ?? ""}`.localeCompare(`${right.path}\0${right.provenance}\0${canonicalRecordJson(right.record)}\0${right.sourceRecordSha256 ?? ""}`));
+      let classification = classify(group, forbiddenAliases);
+      if (collisions.has(key)) classification = "conflict";
+      const primary = group[0];
+      const contentObservation = group.find((item) => item.provenance === "verified_archive" && item.detail === "full" && item.record) ?? group.find((item) => item.detail === "full" && item.record) ?? group.find((item) => item.detail === "summary" && item.record);
+      const content = contentObservation?.record ?? null;
+      const contentSha256s = [...new Set(group.flatMap((item) => (item.record ? [hash(canonicalRecordJson(item.record))] : [])))].sort();
+      const mirrored = contentSha256s.length === 1 && group.filter((item) => item.record).length > 1;
+      const id = ids.get(key) as string;
+      const relationshipSources = new Map(group.flatMap((item) => item.relationships).map((relationship) => [`${relationship.field}\0${relationship.target ?? ""}`, relationship])).values();
+      const relationships = [...relationshipSources].map((relationship): EntityMigrationRelationship => ({
+        field: relationship.field,
+        target_source_identity: relationship.target,
+        target_id: relationship.target ? (ids.get(relationship.target) ?? null) : null,
+        status: relationship.target && groups.has(relationship.target) ? "resolved" : "unresolved",
+      }));
+      const summary = classification === "valid_compacted_summary";
+      const boundary = summary ? summaryBoundary(primary.artifact, primary.boundary) : (contentObservation?.boundary ?? primary.boundary);
+      const record = content ? canonicalMigrationRecord(boundary, content, forbiddenAliases, summary ? [] : relationships) : {};
+      if (summary && contentObservation && content) {
+        record.migration_provenance = { source_path: contentObservation.path, source_record_sha256: contentObservation.sourceRecordSha256 ?? hash(canonicalRecordJson(content)) };
+      }
+      const residue = classification === "historical_projection_residue";
+      const blocked = BLOCKING.has(classification) || relationships.some((relationship) => relationship.status === "unresolved");
+      return {
+        source_identity: key,
+        source_paths: [...new Set(group.map((item) => item.path))].sort(),
+        artifact: primary.artifact,
+        boundary,
+        classification,
+        detail_availability: summary ? "summary" : content ? "full" : "unavailable",
+        compatibility: summary ? "degraded" : "current",
+        provenance: [...new Set([...group.map((item) => item.provenance), ...(mirrored ? ["mirrored"] : [])])].sort(),
+        content_sha256: contentSha256s.length === 1 ? contentSha256s[0] : null,
+        content_sha256s: contentSha256s,
+        physical_record_count: group.length,
+        proposed_target: blocked || residue ? null : { id, path: `.agentera/entities/${primary.artifact}/${boundary}/${id}.yaml` },
+        target_sha256: null,
+        relationships,
+        record,
+        recovery: blocked ? recovery(project, primary.path) : "none",
+        ...(contentObservation?.inheritedConfidenceProvenance ? { canonical_migration_provenance: contentObservation.inheritedConfidenceProvenance } : {}),
+        ...(group.some((item) => item.migrationProvenance) ? { migration_provenance: group.flatMap((item) => (item.migrationProvenance ? [item.migrationProvenance] : [])) } : {}),
       };
-    }
-    const residue = classification === "historical_projection_residue";
-    const blocked = BLOCKING.has(classification) || relationships.some((relationship) => relationship.status === "unresolved");
-    return {
-      source_identity: key,
-      source_paths: [...new Set(group.map((item) => item.path))].sort(),
-      artifact: primary.artifact,
-      boundary,
-      classification,
-      detail_availability: summary ? "summary" : content ? "full" : "unavailable",
-      compatibility: summary ? "degraded" : "current",
-      provenance: [...new Set([...group.map((item) => item.provenance), ...(mirrored ? ["mirrored"] : [])])].sort(),
-      content_sha256: contentSha256s.length === 1 ? contentSha256s[0] : null,
-      content_sha256s: contentSha256s,
-      physical_record_count: group.length,
-      proposed_target: blocked || residue ? null : { id, path: `.agentera/entities/${primary.artifact}/${boundary}/${id}.yaml` },
-      target_sha256: null,
-      relationships,
-      record,
-      recovery: blocked ? recovery(project, primary.path) : "none",
-      ...(contentObservation?.inheritedConfidenceProvenance ? { canonical_migration_provenance: contentObservation.inheritedConfidenceProvenance } : {}),
-      ...(group.some((item) => item.migrationProvenance) ? { migration_provenance: group.flatMap((item) => item.migrationProvenance ? [item.migrationProvenance] : []) } : {}),
-    };
-  }).sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
+    })
+    .sort((a, b) => `${a.artifact}\0${a.boundary}\0${a.source_identity}\0${a.source_paths[0]}`.localeCompare(`${b.artifact}\0${b.boundary}\0${b.source_identity}\0${b.source_paths[0]}`));
   const decisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).map((entry) => [entry.proposed_target!.id, entry.record]));
-  const legacyDecisions = new Map(entries.filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target).flatMap((entry) => {
-    const group = groups.get(entry.source_identity) ?? [];
-    const source = group.find((item) => item.provenance === "verified_archive" && item.detail === "full" && item.record)
-      ?? group.find((item) => item.detail === "full" && item.record);
-    return source?.record ? [[entry.proposed_target!.id, source.record] as const] : [];
-  }));
+  const legacyDecisions = new Map(
+    entries
+      .filter(({ boundary, proposed_target }) => boundary === "decision" && proposed_target)
+      .flatMap((entry) => {
+        const group = groups.get(entry.source_identity) ?? [];
+        const source = group.find((item) => item.provenance === "verified_archive" && item.detail === "full" && item.record) ?? group.find((item) => item.detail === "full" && item.record);
+        return source?.record ? [[entry.proposed_target!.id, source.record] as const] : [];
+      }),
+  );
   migrateDecisionRevisionEntries(entries, decisions, legacyDecisions, sourceRoot, forbiddenAliases, fingerprint);
   return entries;
 }
 
 export function validateEntityMigrationTargets(project: string, entries: DurableEntityMigrationEntry[], sourceRoot: string): Array<{ sourceIdentity: string; path: string; message: string }> {
-  const targets = entries.flatMap((entry) => entry.proposed_target && entry.artifact && entry.boundary ? [{ sourceIdentity: entry.source_identity, path: entry.proposed_target.path, id: entry.proposed_target.id, artifact: entry.artifact, boundary: entry.boundary, record: entry.record, migrationProvenance: entry.canonical_migration_provenance }] : []);
+  const targets = entries.flatMap((entry) =>
+    entry.proposed_target && entry.artifact && entry.boundary ? [{ sourceIdentity: entry.source_identity, path: entry.proposed_target.path, id: entry.proposed_target.id, artifact: entry.artifact, boundary: entry.boundary, record: entry.record, migrationProvenance: entry.canonical_migration_provenance }] : [],
+  );
   const diagnostics = validateCanonicalEntityTargets(project, targets, sourceRoot);
   for (const entry of entries) {
     if (!entry.proposed_target || !entry.artifact) continue;
@@ -860,19 +840,25 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
     if (causal.rootReasons.has(entry.source_identity)) return [];
     return entry.relationships.flatMap((relationship) => {
       if (relationship.status !== "resolved" || !relationship.target_source_identity) return [];
-      return causal.rootsFor(relationship.target_source_identity).map((rootSourceIdentity) => ({
-        classification: "dependent_blocker" as const,
-        path: entry.source_paths[0],
-        source_identity: entry.source_identity,
-        relationship_field: relationship.field,
-        target_source_identity: relationship.target_source_identity,
-        root_source_identity: rootSourceIdentity,
-        message: `source '${entry.source_identity}' relationship '${relationship.field}' is blocked by root source '${rootSourceIdentity}'`,
-        recovery: recovery(project, entry.source_paths[0]),
-      }));
+      return causal
+        .rootsFor(relationship.target_source_identity)
+        .map((rootSourceIdentity) => ({
+          classification: "dependent_blocker" as const,
+          path: entry.source_paths[0],
+          source_identity: entry.source_identity,
+          relationship_field: relationship.field,
+          target_source_identity: relationship.target_source_identity,
+          root_source_identity: rootSourceIdentity,
+          message: `source '${entry.source_identity}' relationship '${relationship.field}' is blocked by root source '${rootSourceIdentity}'`,
+          recovery: recovery(project, entry.source_paths[0]),
+        }));
     });
   });
-  const diagnostics = [...rootDiagnostics, ...dependentDiagnostics].sort((left, right) => `${left.source_identity}\0${left.classification}\0${left.relationship_field ?? ""}\0${left.target_source_identity ?? ""}\0${left.root_source_identity ?? ""}`.localeCompare(`${right.source_identity}\0${right.classification}\0${right.relationship_field ?? ""}\0${right.target_source_identity ?? ""}\0${right.root_source_identity ?? ""}`));
+  const diagnostics = [...rootDiagnostics, ...dependentDiagnostics].sort((left, right) =>
+    `${left.source_identity}\0${left.classification}\0${left.relationship_field ?? ""}\0${left.target_source_identity ?? ""}\0${left.root_source_identity ?? ""}`.localeCompare(
+      `${right.source_identity}\0${right.classification}\0${right.relationship_field ?? ""}\0${right.target_source_identity ?? ""}\0${right.root_source_identity ?? ""}`,
+    ),
+  );
   counts.root_blockers = rootDiagnostics.length;
   counts.dependent_blockers = dependentDiagnostics.length;
   counts.blockers = counts.root_blockers + counts.dependent_blockers;
@@ -881,7 +867,17 @@ function migrationInventory(projectRoot: string, sourceRoot: string, resolveDesc
   const digestBody = { source_fingerprint: fingerprint, authority, selectors: { project, filter: INVENTORY_FILTER, order: INVENTORY_ORDER }, entries: digestEntries, preserved_residues: digestResidues, preserved_singletons: preserved, counts, diagnostics, todo_reconciliation: todoReconciliation ?? null };
   const previewDigest = hash(canonicalRecordJson(digestBody));
   const sources = files.map((file): DurableEntityMigrationSource => {
-    return { path: file.relative, presence: file.kind === "file" ? "file" : "missing", size: file.bytes?.byteLength ?? 0, sha256: file.bytes ? hash(file.bytes) : null, mode: file.kind === "file" ? file.mode : null, dev: file.kind === "file" ? String(file.dev) : null, ino: file.kind === "file" ? String(file.ino) : null, type: file.kind === "file" ? file.type : null, bytes_base64: file.bytes?.toString("base64") ?? null };
+    return {
+      path: file.relative,
+      presence: file.kind === "file" ? "file" : "missing",
+      size: file.bytes?.byteLength ?? 0,
+      sha256: file.bytes ? hash(file.bytes) : null,
+      mode: file.kind === "file" ? file.mode : null,
+      dev: file.kind === "file" ? String(file.dev) : null,
+      ino: file.kind === "file" ? String(file.ino) : null,
+      type: file.kind === "file" ? file.type : null,
+      bytes_base64: file.bytes?.toString("base64") ?? null,
+    };
   });
   return { project, source_fingerprint: fingerprint, preview_digest: previewDigest, ...authority, preserved_singletons: preserved, entries: completeEntries, preserved_residues: preservedResidues, sources, counts, diagnostics, ...(todoReconciliation ? { todo_reconciliation: todoReconciliation } : {}) };
 }
@@ -890,14 +886,18 @@ export function planEntityMigration(projectRoot: string, sourceRoot: string, opt
   return migrationInventory(projectRoot, sourceRoot, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
 }
 
-export function previewEntityMigration(projectRoot: string, sourceRoot: string, options: {
-  limit?: number;
-  after?: string;
-  sourceFingerprint?: string;
-  previewDigest?: string;
-  /** Test seam and optional platform strengthening; null means descriptor paths are unavailable. */
-  resolveDescriptorPath?: DescriptorPathResolver;
-} = {}): EntityMigrationPreview {
+export function previewEntityMigration(
+  projectRoot: string,
+  sourceRoot: string,
+  options: {
+    limit?: number;
+    after?: string;
+    sourceFingerprint?: string;
+    previewDigest?: string;
+    /** Test seam and optional platform strengthening; null means descriptor paths are unavailable. */
+    resolveDescriptorPath?: DescriptorPathResolver;
+  } = {},
+): EntityMigrationPreview {
   const inventory = migrationInventory(projectRoot, sourceRoot, options.resolveDescriptorPath ?? resolveProjectDescriptorPath);
   const { project, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, counts, diagnostics } = inventory;
   const authority = { authority_schema_version: inventory.authority_schema_version, authority_sha256: inventory.authority_sha256 };
@@ -916,12 +916,38 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
     return diagnostics.filter((diagnostic) => identities.has(diagnostic.source_identity));
   };
   let omissionReason: EntityMigrationPreview["omission_reason"] = start > 0 || start + entries.length < completeEntries.length ? "result_limit" : null;
-  const base = { schemaVersion: "agentera.entityMigrationPreview.v1", command: "upgrade", status: counts.blockers > 0 ? "blocked" : "ready", mode: "preview", project, read_only: true, mutation_intent: false, mutation_performed: false, source_fingerprint: fingerprint, preview_digest: previewDigest, preserved_singletons: preserved, preserved_residues: preservedResidues, counts, source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_owner: "full development-channel upgrade --yes" } } as const;
+  const base = {
+    schemaVersion: "agentera.entityMigrationPreview.v1",
+    command: "upgrade",
+    status: counts.blockers > 0 ? "blocked" : "ready",
+    mode: "preview",
+    project,
+    read_only: true,
+    mutation_intent: false,
+    mutation_performed: false,
+    source_fingerprint: fingerprint,
+    preview_digest: previewDigest,
+    preserved_singletons: preserved,
+    preserved_residues: preservedResidues,
+    counts,
+    source_contract: { authority: AUTHORITY_PATH, ...authority, zero_write: true, scalar_truncation: "forbidden", apply_owner: "full development-channel upgrade --yes" },
+  } as const;
   const serializedBytes = (): number => {
     const pageDiagnostics = diagnosticsForEntries();
-    const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
+    const nextAfter = start + entries.length < completeEntries.length ? (entries.at(-1)?.source_identity ?? null) : null;
     const command = restartCommand;
-    const body = { ...base, entries, diagnostics: pageDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval: { command } };
+    const body = {
+      ...base,
+      entries,
+      diagnostics: pageDiagnostics,
+      omitted: start > 0 || entries.length < completeEntries.length,
+      omitted_count: completeEntries.length - entries.length,
+      diagnostics_omitted_count: diagnostics.length - pageDiagnostics.length,
+      omission_reason: omissionReason,
+      page_after: options.after ?? null,
+      next_after: nextAfter,
+      retrieval: { command },
+    };
     return Math.max(Buffer.byteLength(JSON.stringify(body, null, 2), "utf8"), Buffer.byteLength(YAML.stringify(body), "utf8"));
   };
   while (entries.length > 0 && serializedBytes() > ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES) {
@@ -930,9 +956,22 @@ export function previewEntityMigration(projectRoot: string, sourceRoot: string, 
   }
   if (entries.length === 0 && start < completeEntries.length) throw new Error(`the next whole migration entry exceeds the ${ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES}-byte output budget; repair that source before retrying`);
   const outputDiagnostics = diagnosticsForEntries();
-  const nextAfter = start + entries.length < completeEntries.length ? entries.at(-1)?.source_identity ?? null : null;
+  const nextAfter = start + entries.length < completeEntries.length ? (entries.at(-1)?.source_identity ?? null) : null;
   const retrieval = { command: restartCommand };
-  return { ...base, status: base.status as "ready" | "blocked", mode: "preview", entries, diagnostics: outputDiagnostics, omitted: start > 0 || entries.length < completeEntries.length, omitted_count: completeEntries.length - entries.length, diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length, omission_reason: omissionReason, page_after: options.after ?? null, next_after: nextAfter, retrieval };
+  return {
+    ...base,
+    status: base.status as "ready" | "blocked",
+    mode: "preview",
+    entries,
+    diagnostics: outputDiagnostics,
+    omitted: start > 0 || entries.length < completeEntries.length,
+    omitted_count: completeEntries.length - entries.length,
+    diagnostics_omitted_count: diagnostics.length - outputDiagnostics.length,
+    omission_reason: omissionReason,
+    page_after: options.after ?? null,
+    next_after: nextAfter,
+    retrieval,
+  };
 }
 
 export class EntityMigrationContinuationError extends Error {

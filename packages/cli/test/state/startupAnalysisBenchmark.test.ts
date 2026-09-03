@@ -4,13 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  buildNoRuntimeStartupIntermediate,
-  buildStartupIntermediate,
-  extractStartupIntermediateFromCorpusFile,
-  persistStartupBenchmark,
-  previousBenchmarkWatermark,
-} from "../../src/state/startupAnalysis.js";
+import { buildNoRuntimeStartupIntermediate, buildStartupIntermediate, extractStartupIntermediateFromCorpusFile, persistStartupBenchmark, previousBenchmarkWatermark } from "../../src/state/startupAnalysis.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
@@ -28,8 +22,22 @@ function corpus(): any {
       adapter_version: "adapterX",
     },
     records: [
-      { source_kind: "conversation_turn", runtime: "codex", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
-      { source_kind: "tool_call", runtime: "codex", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
+      {
+        source_kind: "conversation_turn",
+        runtime: "codex",
+        source_id: "u1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:00Z",
+        data: { actor: "user", content: "/build build it" },
+      },
+      {
+        source_kind: "tool_call",
+        runtime: "codex",
+        source_id: "t1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:01Z",
+        data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } },
+      },
     ],
   };
 }
@@ -66,7 +74,11 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     const corpusPath = path.join(tmp, "corpus.json");
     fs.writeFileSync(corpusPath, JSON.stringify(corpus()));
     const outPath = path.join(tmp, "out", "intermediate.json");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT, outputPath: outPath });
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, {
+      salt: "SALT",
+      contract: CONTRACT,
+      outputPath: outPath,
+    });
     expect(inter.total_records_read).toBe(2);
     expect(fs.existsSync(outPath)).toBe(true);
     expect(fs.readFileSync(outPath, "utf8").endsWith("\n")).toBe(true);
@@ -75,7 +87,10 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
   it("degrades with the projected reason and recovery for a corrupt legacy corpus", () => {
     const corpusPath = path.join(tmp, "bad.json");
     fs.writeFileSync(corpusPath, "not json{");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, {
+      salt: "SALT",
+      contract: CONTRACT,
+    });
     expect(inter.total_records_read).toBe(0);
     const cov = inter.runtime_coverage[0];
     expect(cov.runtime).toBe("local-corpus");
@@ -89,7 +104,10 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
     const fd = fs.openSync(corpusPath, "w");
     fs.ftruncateSync(fd, bounds.readerByteCap + 1);
     fs.closeSync(fd);
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, {
+      salt: "SALT",
+      contract: CONTRACT,
+    });
     expect(inter.total_records_read).toBe(0);
     const cov = inter.runtime_coverage[0];
     expect(cov.runtime).toBe("local-corpus");
@@ -101,7 +119,10 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
 
   it("degrades with no_evidence and preserved recovery when no corpus or tiers exist", () => {
     const corpusPath = path.join(tmp, "never-existed.json");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT });
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, {
+      salt: "SALT",
+      contract: CONTRACT,
+    });
     expect(inter.total_records_read).toBe(0);
     const cov = inter.runtime_coverage[0];
     expect(cov.runtime).toBe("local-corpus");
@@ -115,11 +136,46 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
   it("reads from bounded tiers when published, without reading the monolithic corpus", () => {
     const corpusPath = path.join(tmp, "corpus.json");
     const records = [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", conversation_key: "c1", origin_id: originIdentity("fixture:u1"), content_fingerprint: contentFingerprint("/build build it"), author_class: "user", project_id: "agentera", timestamp: "2026-02-01T00:00:00.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { actor: "user", content: "/build build it" } },
-      { source_kind: "tool_call", source_id: "t1", session_id: "c1", project_id: "agentera", timestamp: "2026-02-01T00:00:01.000Z", runtime: "codex", source_class: "active_runtime", source_product: "codex", active_runtime: true, adapter_version: ADAPTER_VERSION, data: { tool: "bash", arguments: { command: "echo hello" } } },
+      {
+        source_kind: "conversation_turn",
+        source_id: "u1",
+        session_id: "c1",
+        conversation_key: "c1",
+        origin_id: originIdentity("fixture:u1"),
+        content_fingerprint: contentFingerprint("/build build it"),
+        author_class: "user",
+        project_id: "agentera",
+        timestamp: "2026-02-01T00:00:00.000Z",
+        runtime: "codex",
+        source_class: "active_runtime",
+        source_product: "codex",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", content: "/build build it" },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t1",
+        session_id: "c1",
+        project_id: "agentera",
+        timestamp: "2026-02-01T00:00:01.000Z",
+        runtime: "codex",
+        source_class: "active_runtime",
+        source_product: "codex",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { tool: "bash", arguments: { command: "echo hello" } },
+      },
     ];
     const runtimeStatuses = [
-      { runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "codex",
+        source_product: "codex",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publishEvidenceTiers(records, {
       tiersDir: tiersDirForCorpusPath(corpusPath),
@@ -137,7 +193,11 @@ describe("extractStartupIntermediateFromCorpusFile", () => {
       },
     });
     const outPath = path.join(tmp, "out", "intermediate.json");
-    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, { salt: "SALT", contract: CONTRACT, outputPath: outPath });
+    const inter = extractStartupIntermediateFromCorpusFile(corpusPath, {
+      salt: "SALT",
+      contract: CONTRACT,
+      outputPath: outPath,
+    });
     expect(inter.total_records_read).toBe(2);
     expect(fs.existsSync(outPath)).toBe(true);
   });

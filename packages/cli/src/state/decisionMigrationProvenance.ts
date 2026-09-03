@@ -23,14 +23,7 @@ function mapping(value: unknown): value is Record<string, unknown> {
 }
 
 /** Validate the sole authority-declared canonical migration metadata shape. */
-export function decisionMigrationProvenanceViolations(
-  record: JsonObject,
-  provenance: unknown,
-  declared: MigrationProvenanceDeclaration,
-  forbiddenAliases: readonly string[],
-  sourceRoot?: string,
-  binding?: MigrationSourceBindingContext,
-): string[] {
+export function decisionMigrationProvenanceViolations(record: JsonObject, provenance: unknown, declared: MigrationProvenanceDeclaration, forbiddenAliases: readonly string[], sourceRoot?: string, binding?: MigrationSourceBindingContext): string[] {
   if (declared.additionalFields !== "forbidden" || !declared.kind || declared.requiredFields.length === 0 || declared.sources.length === 0) {
     throw new Error("invalid migration provenance authority for 'decision'");
   }
@@ -57,14 +50,8 @@ export function decisionMigrationProvenanceViolations(
   return violations;
 }
 
-export function decisionRevisionMigrationProvenanceViolations(
-  record: JsonObject,
-  provenance: unknown,
-  declared: MigrationProvenanceDeclaration,
-  sourceRoot: string = resolveSourceRoot(),
-  binding?: MigrationSourceBindingContext,
-): string[] {
-  const changes = mapping(record.changes) ? record.changes as JsonObject : {};
+export function decisionRevisionMigrationProvenanceViolations(record: JsonObject, provenance: unknown, declared: MigrationProvenanceDeclaration, sourceRoot: string = resolveSourceRoot(), binding?: MigrationSourceBindingContext): string[] {
+  const changes = mapping(record.changes) ? (record.changes as JsonObject) : {};
   const confidence = changes.confidence;
   const coexistence = legacyLabelCoexistence(sourceRoot);
   if (confidence === undefined || coexistence.currentVocabulary.includes(String(confidence))) {
@@ -92,16 +79,22 @@ export function decisionRevisionMigrationProvenanceViolations(
     const markerFile = readBoundMigrationSource(binding, ".agentera/state-mode.yaml");
     if (markerFile.kind !== "file") return ["migration_provenance requires the durable entity cutover marker"];
     let marker: Record<string, unknown>;
-    try { marker = loadYamlMapping(markerFile.bytes); }
-    catch (error) { return [`entity cutover marker is invalid YAML: ${(error as Error).message}`]; }
+    try {
+      marker = loadYamlMapping(markerFile.bytes);
+    } catch (error) {
+      return [`entity cutover marker is invalid YAML: ${(error as Error).message}`];
+    }
     if (marker.schemaVersion !== "agentera.stateMode.v1" || marker.mode !== "entities" || marker.source_fingerprint !== provenance.source_fingerprint) return ["migration_provenance source_fingerprint does not match the durable entity cutover marker"];
   }
   const sourceFile = readBoundMigrationSource(binding, contract.location);
   if (sourceFile.kind !== "file") return [`migration_provenance source '${contract.location}' is ${sourceFile.kind === "missing" ? "missing" : `unsafe (${sourceFile.reason})`}`];
   let document: Record<string, unknown>;
-  try { document = loadYamlMapping(sourceFile.bytes); }
-  catch (error) { return [`migration_provenance source '${contract.location}' is invalid YAML: ${(error as Error).message}`]; }
-  const candidate = match && Array.isArray(document[match[1]]) ? mapping((document[match[1]] as unknown[])[Number(match[2])]) ? (document[match[1]] as JsonObject[])[Number(match[2])] : null : null;
+  try {
+    document = loadYamlMapping(sourceFile.bytes);
+  } catch (error) {
+    return [`migration_provenance source '${contract.location}' is invalid YAML: ${(error as Error).message}`];
+  }
+  const candidate = match && Array.isArray(document[match[1]]) ? (mapping((document[match[1]] as unknown[])[Number(match[2])]) ? (document[match[1]] as JsonObject[])[Number(match[2])] : null) : null;
   if (!match || !candidate) return ["migration_provenance source_identity does not resolve to one legacy decision revision"];
   if (sourceHash(candidate) !== provenance.source_record_sha256) return ["migration_provenance source_record_sha256 does not match the legacy decision revision"];
   const sourceViolations = decisionRevisionViolations({ [match[1]]: [candidate] }, contract);
@@ -114,12 +107,7 @@ export function decisionRevisionMigrationProvenanceViolations(
 }
 
 function sourceAssessment(record: JsonObject, sourceRoot: string, source: "active" | "archive") {
-  return classifyCompleteDecisionConfidence(
-    record,
-    legacyLabelCoexistence(sourceRoot),
-    (candidate) => validateStateRecord(sourceRoot, "decisions", candidate as JsonObject),
-    source,
-  );
+  return classifyCompleteDecisionConfidence(record, legacyLabelCoexistence(sourceRoot), (candidate) => validateStateRecord(sourceRoot, "decisions", candidate as JsonObject), source);
 }
 
 function sourceMatchesCanonical(source: JsonObject, canonical: JsonObject, forbiddenAliases: readonly string[]): boolean {
@@ -135,14 +123,20 @@ function sourceBindingViolations(record: JsonObject, provenance: JsonObject, bin
   const digest = String(provenance.source_record_sha256);
   const confidence = String(provenance.confidence);
   if (provenance.source === "current_projection") {
-    const declaredPath = path.relative("/", stateCurrentProjectionPath("/", "decisions", sourceRoot)).split(path.sep).join("/");
+    const declaredPath = path
+      .relative("/", stateCurrentProjectionPath("/", "decisions", sourceRoot))
+      .split(path.sep)
+      .join("/");
     if (sourcePath !== declaredPath) return [`migration_provenance.source_path must be the authority-declared current projection '${declaredPath}'`];
     const sourceFile = readBoundMigrationSource(binding, declaredPath);
     if (sourceFile.kind !== "file") return [`migration_provenance source '${declaredPath}' is ${sourceFile.kind === "missing" ? "missing" : `unsafe (${sourceFile.reason})`}`];
     let document: Record<string, unknown>;
-    try { document = loadYamlMapping(sourceFile.bytes); }
-    catch (error) { return [`migration_provenance source '${declaredPath}' is invalid YAML: ${(error as Error).message}`]; }
-    const candidates = [document.decisions, document.archive].flatMap((value) => Array.isArray(value) ? value.filter(mapping) as JsonObject[] : []);
+    try {
+      document = loadYamlMapping(sourceFile.bytes);
+    } catch (error) {
+      return [`migration_provenance source '${declaredPath}' is invalid YAML: ${(error as Error).message}`];
+    }
+    const candidates = [document.decisions, document.archive].flatMap((value) => (Array.isArray(value) ? (value.filter(mapping) as JsonObject[]) : []));
     const candidate = candidates.find((source) => sourceHash(source) === digest && source.confidence === confidence && sourceMatchesCanonical(source, record, forbiddenAliases));
     if (!candidate) return ["migration_provenance does not match any complete decision in the preserved current projection"];
     const assessment = sourceAssessment(candidate, sourceRoot, "active");

@@ -170,10 +170,7 @@ function phrasesFrom(root: string, contract: CapabilitySchemaContract): Phrase[]
   const capabilities = new Set(contract.routeAliases.primaryAliases.map(({ capability }) => capability));
   const errors: string[] = [];
   const seen = new Set<string>();
-  const directNames = new Set([
-    ...capabilities,
-    ...contract.routeAliases.primaryAliases.map(({ alias }) => alias),
-  ].map(normalized));
+  const directNames = new Set([...capabilities, ...contract.routeAliases.primaryAliases.map(({ alias }) => alias)].map(normalized));
   const phrases: Phrase[] = [];
   for (const [index, value] of entries.entries()) {
     if (value === null || typeof value !== "object" || Array.isArray(value)) {
@@ -197,7 +194,12 @@ function phrasesFrom(root: string, contract: CapabilitySchemaContract): Phrase[]
     if (directNames.has(normalizedPhrase) || directNames.has(normalizedPhrase.split(" ")[0])) {
       errors.push(`phrases[${index}] conflicts with direct-route grammar`);
     }
-    phrases.push({ id: id as string, capability: capability as string, phrase: phrase as string, status: status as string });
+    phrases.push({
+      id: id as string,
+      capability: capability as string,
+      phrase: phrase as string,
+      status: status as string,
+    });
   }
   if (errors.length > 0) throw new HybridRouteRegistryError(errors);
   return phrases;
@@ -222,13 +224,7 @@ function phraseMatch(request: string, phrase: Phrase): Utf8Span | undefined {
   };
 }
 
-function deterministic(
-  capability: string,
-  tier: DeterministicRoute["tier"],
-  recognizedSpan: Utf8Span,
-  request: string,
-  provenance: Record<string, string>,
-): DeterministicRoute {
+function deterministic(capability: string, tier: DeterministicRoute["tier"], recognizedSpan: Utf8Span, request: string, provenance: Record<string, string>): DeterministicRoute {
   return {
     schemaVersion: "agentera.route_response.v1",
     outcome: "deterministic_selection",
@@ -251,15 +247,19 @@ function directRoute(request: string, contract: CapabilitySchemaContract): Deter
     return deterministic("status", "bare", { start: byteOffset(request, start), end: byteOffset(request, prefixEnd) }, request, { tier: "bare" });
   }
   const normalizedName = normalized(name);
-  const alias = contract.routeAliases.primaryAliases.find(({ alias: value, capability }) =>
-    normalized(value) === normalizedName || normalized(capability) === normalizedName,
-  );
+  const alias = contract.routeAliases.primaryAliases.find(({ alias: value, capability }) => normalized(value) === normalizedName || normalized(capability) === normalizedName);
   if (!alias) return undefined;
   const nameStart = request.indexOf(name, prefixEnd);
-  return deterministic(alias.capability, "direct", {
-    start: byteOffset(request, request.search(/\S/u)),
-    end: byteOffset(request, nameStart + name.length),
-  }, request, { tier: "direct", route_alias: alias.alias });
+  return deterministic(
+    alias.capability,
+    "direct",
+    {
+      start: byteOffset(request, request.search(/\S/u)),
+      end: byteOffset(request, nameStart + name.length),
+    },
+    request,
+    { tier: "direct", route_alias: alias.alias },
+  );
 }
 
 function semanticCapsule(model: TriggerModel, contractVersion: string): SemanticRequiredRoute["semantic_capsule"] {
@@ -271,7 +271,10 @@ function semanticCapsule(model: TriggerModel, contractVersion: string): Semantic
         id: trigger.id,
         description: trigger.description,
         priority: trigger.priority,
-        disambiguates_against: trigger.disambiguatesAgainst.map(({ capability: target, hint }) => ({ capability: target, hint })),
+        disambiguates_against: trigger.disambiguatesAgainst.map(({ capability: target, hint }) => ({
+          capability: target,
+          hint,
+        })),
       })),
     })),
   };

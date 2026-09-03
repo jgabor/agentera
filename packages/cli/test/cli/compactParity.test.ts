@@ -9,17 +9,10 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { MAX_CORPUS_READ_BYTES } from "../../src/analytics/usageStats.js";
 import { main } from "../../src/cli/dispatch.js";
 import { MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
-import {
-  classifyDrift,
-  expectedShapeLiteralPins,
-  expectedShapeRequiredKeys,
-  normalizeEnvelope,
-} from "./parityOracle.js";
+import { classifyDrift, expectedShapeLiteralPins, expectedShapeRequiredKeys, normalizeEnvelope } from "./parityOracle.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const REMAINING_FAMILIES = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8"),
-) as {
+const REMAINING_FAMILIES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8")) as {
   normalizeEnvelope: { rules: Parameters<typeof normalizeEnvelope>[2] };
   families: Record<
     string,
@@ -83,12 +76,7 @@ describe("compaction parity (D56 T3)", () => {
     expect(rc).toBe(COMPACTION_SPEC.exitCode);
     const payload = JSON.parse(out) as Record<string, unknown>;
     const normalized = normalizeEnvelope(payload, null, NORMALIZE_RULES) as Record<string, unknown>;
-    const classification = classifyDrift(
-      normalized,
-      expectedShapeRequiredKeys(COMPACTION_SPEC.expectedShape),
-      expectedShapeLiteralPins(COMPACTION_SPEC.expectedShape),
-      COMPACTION_SPEC.forbiddenSubstrings,
-    );
+    const classification = classifyDrift(normalized, expectedShapeRequiredKeys(COMPACTION_SPEC.expectedShape), expectedShapeLiteralPins(COMPACTION_SPEC.expectedShape), COMPACTION_SPEC.forbiddenSubstrings);
     expect(classification.direction).toBe("equal");
     expect(payload.command).toBe("check compact");
     expect(payload).not.toHaveProperty("gate");
@@ -106,7 +94,15 @@ describe("compaction parity (D56 T3)", () => {
     const summary = payload.summary as Record<string, unknown>;
     expect(summary.mode).toBe("check");
     expect(summary.over_limit_count).toBe(0);
-    expect(payload.operations).toEqual(expect.arrayContaining([expect.objectContaining({ artifact: "entity_state", action: "skipped", classification: "canonical_entities" })]));
+    expect(payload.operations).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          artifact: "entity_state",
+          action: "skipped",
+          classification: "canonical_entities",
+        }),
+      ]),
+    );
     expect((payload.operations as Array<Record<string, unknown>>).some((op) => op.artifact === "progress")).toBe(false);
     expect(fs.readFileSync(progressPath)).toEqual(aggregateBytes);
   });

@@ -17,20 +17,10 @@ import {
   validPersonalGlossaryReviewGenerationBinding,
   type PersonalGlossaryReviewRecord,
 } from "../../src/analytics/personalGlossaryReviewRecords.js";
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
-import {
-  createGlossaryReviewRecord,
-  createGlossaryEvidenceCapsule,
-  createGlossaryHostClassificationReceipt,
-  type GlossaryEvidenceCapsule,
-} from "../../src/registries/glossaryCandidateContracts.js";
+import { createGlossaryReviewRecord, createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryEvidenceCapsule } from "../../src/registries/glossaryCandidateContracts.js";
 import { validatePersonalReviewApprovalReceipt } from "../../src/registries/glossaryMiningAuthority.js";
 import { decidePersonalGlossaryCandidate } from "../../src/analytics/personalGlossaryDecision.js";
 import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
@@ -53,27 +43,32 @@ beforeEach(() => {
 
 function publishCurrentTier(root: string, seed: string): string {
   const text = `review record tier generation ${seed}`;
-  return publishEvidenceTiers([{
-    source_id: `review-record-tier-source-${seed}`,
-    source_kind: "conversation_turn",
-    timestamp: RETAINED_AT,
-    project_id: "private-review-record-tier",
-    runtime: "opencode",
-    source_class: "active_runtime",
-    source_product: "opencode",
-    active_runtime: true,
-    adapter_version: ADAPTER_VERSION,
-    data: { actor: "user", signal_type: "decision", text },
-    origin_id: originIdentity(`review-record-tier-source-${seed}`),
-    content_fingerprint: contentFingerprint(text),
-    session_id: `review-record-tier-session-${seed}`,
-    conversation_key: `review-record-tier-session-${seed}`,
-    author_class: "user",
-  }], {
-    tiersDir: path.join(root, "intermediate", "tiers"),
-    adapterVersion: ADAPTER_VERSION,
-    publishedAt: RETAINED_AT,
-  }).generation;
+  return publishEvidenceTiers(
+    [
+      {
+        source_id: `review-record-tier-source-${seed}`,
+        source_kind: "conversation_turn",
+        timestamp: RETAINED_AT,
+        project_id: "private-review-record-tier",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", signal_type: "decision", text },
+        origin_id: originIdentity(`review-record-tier-source-${seed}`),
+        content_fingerprint: contentFingerprint(text),
+        session_id: `review-record-tier-session-${seed}`,
+        conversation_key: `review-record-tier-session-${seed}`,
+        author_class: "user",
+      },
+    ],
+    {
+      tiersDir: path.join(root, "intermediate", "tiers"),
+      adapterVersion: ADAPTER_VERSION,
+      publishedAt: RETAINED_AT,
+    },
+  ).generation;
 }
 
 afterEach(() => {
@@ -85,12 +80,7 @@ function storage(root = profileDir) {
   return { env: { AGENTERA_PROFILE_DIR: root } };
 }
 
-function candidate(
-  index: number,
-  candidateGeneration = generation,
-  policyVersion = POLICY,
-  evidenceVariant = "",
-): GlossaryEvidenceCapsule {
+function candidate(index: number, candidateGeneration = generation, policyVersion = POLICY, evidenceVariant = ""): GlossaryEvidenceCapsule {
   const variant = evidenceVariant ? `-${evidenceVariant}` : "";
   return createGlossaryEvidenceCapsule({
     term: `private review term ${index}`,
@@ -129,11 +119,7 @@ function persist(candidates: readonly GlossaryEvidenceCapsule[], root = profileD
   return projection;
 }
 
-function receipt(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  consistency: "inconsistent" | "uncertain" = "inconsistent",
-) {
+function receipt(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, consistency: "inconsistent" | "uncertain" = "inconsistent") {
   return createGlossaryHostClassificationReceipt({
     capsule,
     candidate_projection_sha256: projection.projection_sha256,
@@ -148,12 +134,7 @@ function receipt(
   });
 }
 
-function queue(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  options = storage(),
-  now = QUEUED_AT,
-) {
+function queue(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, options = storage(), now = QUEUED_AT) {
   return queuePersonalGlossaryReviewRecord({
     ...options,
     receipt: receipt(capsule, projection),
@@ -166,20 +147,14 @@ function writeTrustedHost(root = profileDir, subject = REVIEW_SUBJECT): void {
   fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
   const host = {
     owner: "current_user",
-    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey
-      .export({ format: "der", type: "spki" })
-      .toString("base64url"),
+    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey.export({ format: "der", type: "spki" }).toString("base64url"),
     schema_version: "agentera.personalGlossaryTrustedLocalHost.v1",
     subject,
   };
   fs.writeFileSync(pathname, `${canonicalGlossaryJson(host)}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
-function approval(
-  record: PersonalGlossaryReviewRecord,
-  disposition: "accept" | "correct" | "reject" | "defer",
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function approval(record: PersonalGlossaryReviewRecord, disposition: "accept" | "correct" | "reject" | "defer", overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const { signature: signatureOverride, ...fields } = overrides;
   const unsigned = {
     schema_version: "agentera.personalGlossaryReviewApproval.v1",
@@ -203,22 +178,11 @@ function approval(
   };
   return {
     ...unsigned,
-    signature: signatureOverride ?? sign(
-      null,
-      Buffer.from(JSON.stringify(unsigned), "utf8"),
-      REVIEW_KEY_PAIR.privateKey,
-    ).toString("base64url"),
+    signature: signatureOverride ?? sign(null, Buffer.from(JSON.stringify(unsigned), "utf8"), REVIEW_KEY_PAIR.privateKey).toString("base64url"),
   };
 }
 
-function dispose(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  record: PersonalGlossaryReviewRecord,
-  disposition: "accept" | "correct" | "reject" | "defer",
-  overrides: Record<string, unknown> = {},
-  now = "2026-08-11T00:02:00.000Z",
-) {
+function dispose(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, record: PersonalGlossaryReviewRecord, disposition: "accept" | "correct" | "reject" | "defer", overrides: Record<string, unknown> = {}, now = "2026-08-11T00:02:00.000Z") {
   return dispositionPersonalGlossaryReviewRecord({
     ...storage(),
     review_id: record.review_id,
@@ -297,7 +261,10 @@ describe("personal glossary review-record persistence", () => {
 
     fs.chmodSync(pathname, 0o644);
     const replay = queue(capsule, projection, storage(), "2026-08-12T00:00:00.000Z");
-    expect(replay).toMatchObject({ status: "unchanged_replay", record: { review_id: first.record!.review_id, queued_at: QUEUED_AT } });
+    expect(replay).toMatchObject({
+      status: "unchanged_replay",
+      record: { review_id: first.record!.review_id, queued_at: QUEUED_AT },
+    });
     expect(fs.readFileSync(pathname, "utf8")).toBe(bytes);
     expect(fs.statSync(pathname).mode & 0o777).toBe(0o600);
     expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
@@ -343,10 +310,20 @@ describe("personal glossary review-record persistence", () => {
     };
 
     const disposed = dispositionPersonalGlossaryReviewRecord(input);
-    expect(disposed).toMatchObject({ status: "disposed", record: { review_id: firstLegacy.review_id, disposition: "accept" } });
+    expect(disposed).toMatchObject({
+      status: "disposed",
+      record: { review_id: firstLegacy.review_id, disposition: "accept" },
+    });
     const migratedBytes = fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8");
-    const migrated = JSON.parse(migratedBytes) as { schema_version: string; replay_index: unknown[]; records: Record<string, unknown>[] };
-    expect(migrated).toMatchObject({ schema_version: "agentera.personalGlossaryReviewStore.v2", replay_index: [expect.any(Object)] });
+    const migrated = JSON.parse(migratedBytes) as {
+      schema_version: string;
+      replay_index: unknown[];
+      records: Record<string, unknown>[];
+    };
+    expect(migrated).toMatchObject({
+      schema_version: "agentera.personalGlossaryReviewStore.v2",
+      replay_index: [expect.any(Object)],
+    });
     expect(migrated.records.find((record) => record.review_id === firstLegacy.review_id)).toMatchObject({
       schema_version: "agentera.personalGlossaryReviewRecord.v2",
       review_id: firstLegacy.review_id,
@@ -357,12 +334,19 @@ describe("personal glossary review-record persistence", () => {
     });
     expect(migrated.records.find((record) => record.review_id === secondLegacy.review_id)).toEqual(secondLegacy);
     expect(fs.readFileSync(personalGlossaryCandidateProjectionPath(storage()), "utf8")).toBe(projectionBytes);
-    expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({ status: "unchanged_replay" });
+    expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({
+      status: "unchanged_replay",
+    });
     expect(fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8")).toBe(migratedBytes);
   });
 
   it.each([
-    ["invalid v1 digest", (record: Record<string, unknown>) => { record.record_sha256 = "0".repeat(64); }],
+    [
+      "invalid v1 digest",
+      (record: Record<string, unknown>) => {
+        record.record_sha256 = "0".repeat(64);
+      },
+    ],
     ["unavailable v1 scope", (_record: Record<string, unknown>) => undefined],
   ] as const)("fails %s before changing v1 bytes", (name, mutate) => {
     const capsule = candidate(13);
@@ -399,40 +383,56 @@ describe("personal glossary review-record persistence", () => {
       record: null,
       publication_authorization: null,
     });
-    expect(dispose(capsule, projection, queued.record!, "accept", {
-      disposed_at: "2026-08-11T00:00:00.000Z",
-      expires_at: "2026-08-11T00:01:00.000Z",
-    }, "2026-08-11T00:06:00.000Z")).toEqual({
+    expect(
+      dispose(
+        capsule,
+        projection,
+        queued.record!,
+        "accept",
+        {
+          disposed_at: "2026-08-11T00:00:00.000Z",
+          expires_at: "2026-08-11T00:01:00.000Z",
+        },
+        "2026-08-11T00:06:00.000Z",
+      ),
+    ).toEqual({
       status: "approval_invalid",
       record: null,
       publication_authorization: null,
     });
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
 
-    expect(validatePersonalReviewApprovalReceipt(approval(queued.record!, "accept"), {
-      currentUserSubject: REVIEW_SUBJECT,
-      reviewId: queued.record!.review_id,
-      candidateId: queued.record!.candidate_id,
-      candidateRevision: queued.record!.candidate_revision,
-      candidateProjectionSha256: queued.record!.candidate_projection_sha256,
-      semanticFingerprint: queued.record!.semantic_fingerprint,
-      generation: queued.record!.generation,
-      policyVersion: queued.record!.policy_version,
-      now: new Date("2026-08-11T00:02:00.000Z"),
-      trustedHostPublicKey: REVIEW_KEY_PAIR.publicKey,
-    })).toEqual([]);
+    expect(
+      validatePersonalReviewApprovalReceipt(approval(queued.record!, "accept"), {
+        currentUserSubject: REVIEW_SUBJECT,
+        reviewId: queued.record!.review_id,
+        candidateId: queued.record!.candidate_id,
+        candidateRevision: queued.record!.candidate_revision,
+        candidateProjectionSha256: queued.record!.candidate_projection_sha256,
+        semanticFingerprint: queued.record!.semantic_fingerprint,
+        generation: queued.record!.generation,
+        policyVersion: queued.record!.policy_version,
+        now: new Date("2026-08-11T00:02:00.000Z"),
+        trustedHostPublicKey: REVIEW_KEY_PAIR.publicKey,
+      }),
+    ).toEqual([]);
     const currentDecision = decidePersonalGlossaryCandidate(receipt(capsule, projection), storage());
-    expect(currentDecision).toMatchObject({ status: "review_required", decision: expect.any(Object) });
-    expect(() => createGlossaryReviewRecord({
-      capsule,
-      receipt: receipt(capsule, projection),
-      decision: currentDecision.decision!,
-      disposition: "accept",
-      corrected_meaning: null,
-      corrected_scope: null,
-      disposed_at: "2026-08-11T00:01:00.000Z",
-      expires_at: "2026-11-09T00:01:00.000Z",
-    })).not.toThrow();
+    expect(currentDecision).toMatchObject({
+      status: "review_required",
+      decision: expect.any(Object),
+    });
+    expect(() =>
+      createGlossaryReviewRecord({
+        capsule,
+        receipt: receipt(capsule, projection),
+        decision: currentDecision.decision!,
+        disposition: "accept",
+        corrected_meaning: null,
+        corrected_scope: null,
+        disposed_at: "2026-08-11T00:01:00.000Z",
+        expires_at: "2026-11-09T00:01:00.000Z",
+      }),
+    ).not.toThrow();
     const accepted = dispose(capsule, projection, queued.record!, "accept");
     expect(accepted).toMatchObject({
       status: "disposed",
@@ -470,7 +470,10 @@ describe("personal glossary review-record persistence", () => {
       now: "2026-08-11T00:02:00.000Z",
     };
     const first = dispositionPersonalGlossaryReviewRecord(input);
-    expect(first).toMatchObject({ status: "disposed", publication_authorization: expect.any(Object) });
+    expect(first).toMatchObject({
+      status: "disposed",
+      publication_authorization: expect.any(Object),
+    });
     const pathname = personalGlossaryReviewRecordsPath(storage());
     const afterFirst = fs.readFileSync(pathname, "utf8");
 
@@ -522,35 +525,27 @@ describe("personal glossary review-record persistence", () => {
     }
   });
 
-  it.each(["reject", "defer"] as const)(
-    "suppresses a semantically unchanged %s recurrence when only corroborating evidence changes",
-    (disposition) => {
-      const initial = candidate(11);
-      const initialProjection = persist([initial]);
-      const queued = queue(initial, initialProjection);
-      writeTrustedHost();
-      expect(dispose(initial, initialProjection, queued.record!, disposition)).toMatchObject({
-        status: "disposed",
-        record: { disposition },
-      });
+  it.each(["reject", "defer"] as const)("suppresses a semantically unchanged %s recurrence when only corroborating evidence changes", (disposition) => {
+    const initial = candidate(11);
+    const initialProjection = persist([initial]);
+    const queued = queue(initial, initialProjection);
+    writeTrustedHost();
+    expect(dispose(initial, initialProjection, queued.record!, disposition)).toMatchObject({
+      status: "disposed",
+      record: { disposition },
+    });
 
-      const corroborated = candidate(
-        11,
-        publishCurrentTier(profileDir, "corroborated"),
-        POLICY,
-        "corroborated",
-      );
-      const corroboratedProjection = persist([corroborated]);
-      const recurrence = queue(corroborated, corroboratedProjection, storage(), "2026-08-11T00:03:00.000Z");
-      expect(corroborated.candidate_id).toBe(initial.candidate_id);
-      expect(corroborated.candidate_revision).not.toBe(initial.candidate_revision);
-      expect(recurrence).toMatchObject({
-        status: "suppressed",
-        record: { review_id: queued.record!.review_id, disposition },
-        reopen_reason: null,
-      });
-    },
-  );
+    const corroborated = candidate(11, publishCurrentTier(profileDir, "corroborated"), POLICY, "corroborated");
+    const corroboratedProjection = persist([corroborated]);
+    const recurrence = queue(corroborated, corroboratedProjection, storage(), "2026-08-11T00:03:00.000Z");
+    expect(corroborated.candidate_id).toBe(initial.candidate_id);
+    expect(corroborated.candidate_revision).not.toBe(initial.candidate_revision);
+    expect(recurrence).toMatchObject({
+      status: "suppressed",
+      record: { review_id: queued.record!.review_id, disposition },
+      reopen_reason: null,
+    });
+  });
 
   it.each([
     ["reject", "policy", "policy_changed"],
@@ -564,7 +559,9 @@ describe("personal glossary review-record persistence", () => {
     const initialProjection = persist([initial]);
     const queued = queue(initial, initialProjection);
     writeTrustedHost();
-    const signed = approval(queued.record!, disposition, { nonce: `reopen-${disposition}-${change}` });
+    const signed = approval(queued.record!, disposition, {
+      nonce: `reopen-${disposition}-${change}`,
+    });
     const input = {
       ...storage(),
       review_id: queued.record!.review_id,
@@ -576,7 +573,9 @@ describe("personal glossary review-record persistence", () => {
       status: "disposed",
       record: { disposition },
     });
-    expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({ status: "unchanged_replay" });
+    expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({
+      status: "unchanged_replay",
+    });
 
     if (change === "policy") {
       const changed = candidate(12, generation, "agentera.personalGlossaryMiningPolicy.v2", "policy");
@@ -600,11 +599,13 @@ describe("personal glossary review-record persistence", () => {
         confidence: 83,
       },
     });
-    expect(queuePersonalGlossaryReviewRecord({
-      ...storage(),
-      receipt: changedReceipt,
-      now: "2026-08-11T00:03:00.000Z",
-    })).toMatchObject({
+    expect(
+      queuePersonalGlossaryReviewRecord({
+        ...storage(),
+        receipt: changedReceipt,
+        now: "2026-08-11T00:03:00.000Z",
+      }),
+    ).toMatchObject({
       status: "reopened",
       reopen_reason: reopenReason,
     });
@@ -625,27 +626,16 @@ describe("personal glossary review-record persistence", () => {
     expect(second.record!.review_id).not.toBe(first.record!.review_id);
     expect(readPersonalGlossaryReviewRecords(storage())).toMatchObject({
       status: "current",
-      store: { records: expect.arrayContaining([
-        expect.objectContaining({ review_id: first.record!.review_id }),
-        expect.objectContaining({ review_id: second.record!.review_id }),
-      ]) },
+      store: {
+        records: expect.arrayContaining([expect.objectContaining({ review_id: first.record!.review_id }), expect.objectContaining({ review_id: second.record!.review_id })]),
+      },
     });
   });
 
   it("rejects secret or path-shaped binding metadata before it persists review records", () => {
     const unsafeBindings = [
-      [
-        "/home/current-user/private-generation",
-        POLICY,
-        "decision_not_review_required",
-        "projection_stale",
-      ],
-      [
-        generation,
-        "api_key=review-secret-123456",
-        "current_binding_mismatch",
-        "record_binding_mismatch",
-      ],
+      ["/home/current-user/private-generation", POLICY, "decision_not_review_required", "projection_stale"],
+      [generation, "api_key=review-secret-123456", "current_binding_mismatch", "record_binding_mismatch"],
     ] as const;
 
     for (const [unsafeGeneration, policyVersion, status, reason] of unsafeBindings) {
@@ -660,7 +650,10 @@ describe("personal glossary review-record persistence", () => {
         record: null,
       });
       expect(fs.existsSync(personalGlossaryReviewRecordsPath(storage()))).toBe(false);
-      expect(readPersonalGlossaryReviewRecords(storage())).toEqual({ status: "missing", store: null });
+      expect(readPersonalGlossaryReviewRecords(storage())).toEqual({
+        status: "missing",
+        store: null,
+      });
       expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
     }
 
@@ -695,7 +688,10 @@ describe("personal glossary review-record persistence", () => {
       status: "decision_not_review_required",
       record: null,
     });
-    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({ status: "missing", store: null });
+    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({
+      status: "missing",
+      store: null,
+    });
     expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
   });
 
@@ -712,12 +708,21 @@ describe("personal glossary review-record persistence", () => {
     const ownerMismatch = `${canonicalGlossaryJson(altered)}\n`;
     fs.writeFileSync(pathname, ownerMismatch, "utf8");
 
-    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({ status: "corrupt", store: null });
-    expect(queue(capsule, projection)).toMatchObject({ status: "records_unavailable", record: null });
+    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({
+      status: "corrupt",
+      store: null,
+    });
+    expect(queue(capsule, projection)).toMatchObject({
+      status: "records_unavailable",
+      record: null,
+    });
     expect(fs.readFileSync(pathname, "utf8")).toBe(ownerMismatch);
 
     fs.writeFileSync(pathname, "x".repeat(262_145), "utf8");
-    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({ status: "corrupt", store: null });
+    expect(readPersonalGlossaryReviewRecords(storage())).toEqual({
+      status: "corrupt",
+      store: null,
+    });
     expect(first.record!.record_sha256).toMatch(SHA256);
   });
 
@@ -753,16 +758,20 @@ describe("personal glossary review-record persistence", () => {
 
     const second = queue(capsule, projection, storage(), "2026-08-13T00:00:00.000Z");
     expect(second.status).toBe("queued");
-    expect(maintainPersonalGlossaryReviewRecords({
-      ...storage(),
-      now: "2027-08-13T00:00:00.000Z",
-    })).toEqual({ status: "unchanged", expired_records: 0, expired_receipts: 0 });
+    expect(
+      maintainPersonalGlossaryReviewRecords({
+        ...storage(),
+        now: "2027-08-13T00:00:00.000Z",
+      }),
+    ).toEqual({ status: "unchanged", expired_records: 0, expired_receipts: 0 });
     expect(fs.existsSync(pathname)).toBe(true);
-    expect(maintainPersonalGlossaryReviewRecords({
-      ...storage(),
-      now: "2026-08-13T00:00:00.000Z",
-      current_user_purge_authorized: true,
-    })).toEqual({ status: "purged", expired_records: 0, expired_receipts: 0 });
+    expect(
+      maintainPersonalGlossaryReviewRecords({
+        ...storage(),
+        now: "2026-08-13T00:00:00.000Z",
+        current_user_purge_authorized: true,
+      }),
+    ).toEqual({ status: "purged", expired_records: 0, expired_receipts: 0 });
     expect(fs.existsSync(pathname)).toBe(false);
     expect(fs.readFileSync(projectionPath, "utf8")).toBe(projectionBefore);
     expect(fs.readFileSync(profilePath, "utf8")).toBe(profileBefore);
@@ -778,10 +787,12 @@ describe("personal glossary review-record persistence", () => {
       record: { status: "pending", disposition: "defer" },
     });
 
-    expect(maintainPersonalGlossaryReviewRecords({
-      ...storage(),
-      now: "2026-11-11T00:00:00.000Z",
-    })).toEqual({ status: "changed", expired_records: 0, expired_receipts: 1 });
+    expect(
+      maintainPersonalGlossaryReviewRecords({
+        ...storage(),
+        now: "2026-11-11T00:00:00.000Z",
+      }),
+    ).toEqual({ status: "changed", expired_records: 0, expired_receipts: 1 });
     expect(currentPersonalGlossaryReviewRecords(storage(), "2026-11-11T00:00:00.000Z")).toMatchObject({
       status: "current",
       expired_records: 0,
@@ -806,12 +817,17 @@ describe("personal glossary review-record persistence", () => {
     const obstructed = path.join(profileDir, "not-a-directory");
     fs.writeFileSync(obstructed, "host-owned obstruction", "utf8");
     const obstructedOptions = storage(obstructed);
-    expect(readPersonalGlossaryReviewRecords(obstructedOptions)).toEqual({ status: "corrupt", store: null });
-    expect(maintainPersonalGlossaryReviewRecords({
-      ...obstructedOptions,
-      now: "2026-08-12T00:00:00.000Z",
-      current_user_purge_authorized: true,
-    })).toEqual({ status: "corrupt", expired_records: 0, expired_receipts: 0 });
+    expect(readPersonalGlossaryReviewRecords(obstructedOptions)).toEqual({
+      status: "corrupt",
+      store: null,
+    });
+    expect(
+      maintainPersonalGlossaryReviewRecords({
+        ...obstructedOptions,
+        now: "2026-08-12T00:00:00.000Z",
+        current_user_purge_authorized: true,
+      }),
+    ).toEqual({ status: "corrupt", expired_records: 0, expired_receipts: 0 });
     expect(fs.readFileSync(obstructed, "utf8")).toBe("host-owned obstruction");
   });
 });

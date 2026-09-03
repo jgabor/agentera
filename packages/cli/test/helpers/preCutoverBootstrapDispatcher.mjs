@@ -2,16 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-export async function dispatchPreCutoverBootstrap({
-  identityJson,
-  candidate,
-  runtimeRoot,
-  project,
-  sentinel,
-  environmentEvidence,
-  environment = process.env,
-  spawn = spawnSync,
-}) {
+export async function dispatchPreCutoverBootstrap({ identityJson, candidate, runtimeRoot, project, sentinel, environmentEvidence, environment = process.env, spawn = spawnSync }) {
   try {
     const authority = await import(pathToFileURL(path.join(runtimeRoot, "dist/core/developmentInvocation.js")).href);
     const identity = JSON.parse(identityJson);
@@ -46,9 +37,7 @@ export async function dispatchPreCutoverBootstrap({
       stderr: result.stderr ?? "",
     };
   } catch (error) {
-    const classification = error && typeof error === "object" && "classification" in error
-      ? error.classification
-      : "invalid_authority";
+    const classification = error && typeof error === "object" && "classification" in error ? error.classification : "invalid_authority";
     const diagnostic = String(error?.message ?? error);
     return {
       status: 64,

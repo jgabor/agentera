@@ -1,19 +1,7 @@
 import { hashLabel, loadContract, parseTimestamp } from "./contract.js";
 import type { JsonObject } from "../../core/jsonValue.js";
-import {
-  argumentsText,
-  capabilityInvocation,
-  extractText,
-  introCapability,
-  recordLabel,
-} from "./helpers.js";
-import {
-  BOUNDARY_DEGRADATION_REASONS,
-  STATE_EVENT_CLASSES,
-  boundedRuntimeStatus,
-  classifyStartupEvent,
-  startupConversationKey,
-} from "./threshold.js";
+import { argumentsText, capabilityInvocation, extractText, introCapability, recordLabel } from "./helpers.js";
+import { BOUNDARY_DEGRADATION_REASONS, STATE_EVENT_CLASSES, boundedRuntimeStatus, classifyStartupEvent, startupConversationKey } from "./threshold.js";
 
 function hasTranscriptBearingField(record: JsonObject): boolean {
   if ("transcript" in record) return true;
@@ -80,8 +68,7 @@ function eventOutput(
 export function classifyStartupRecords(corpus: JsonObject, opts: { salt: string; contract?: JsonObject | null }): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
-  const boundaryInfo =
-    loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
+  const boundaryInfo = loaded.boundary && typeof loaded.boundary === "object" && !Array.isArray(loaded.boundary) ? loaded.boundary : {};
   const boundary = timestampUtc(boundaryInfo.committed_at);
   const records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
   const degradations: JsonObject[] = [];
@@ -92,7 +79,10 @@ export function classifyStartupRecords(corpus: JsonObject, opts: { salt: string;
       continue;
     }
     if (hasTranscriptBearingField(record)) {
-      degradations.push({ record: recordLabel(record, salt), reason: "privacy_redaction_required" });
+      degradations.push({
+        record: recordLabel(record, salt),
+        reason: "privacy_redaction_required",
+      });
       continue;
     }
     const timestamp = timestampUtc(record.timestamp);
@@ -184,10 +174,7 @@ export function classifyStartupRecords(corpus: JsonObject, opts: { salt: string;
       if (eventClass === "cli_state_call") {
         for (const label of cliArtifactLabels) state.cliArtifactsSeen.add(label);
       }
-      const redundant =
-        eventClass === "raw_artifact_access" && artifactLabel
-          ? state.cliArtifactsSeen.has(artifactLabel)
-          : null;
+      const redundant = eventClass === "raw_artifact_access" && artifactLabel ? state.cliArtifactsSeen.has(artifactLabel) : null;
       const phase = eventClass === "implementation_boundary" ? "implementation_boundary" : "state_gathering";
       active.counts[eventClass] += 1;
       active.events.push(

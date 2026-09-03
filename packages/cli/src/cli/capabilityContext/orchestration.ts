@@ -1,14 +1,6 @@
 import { capabilityContext } from "./contract.js";
 import { entryStatus, sourceProvenance, uniqueList } from "./shared.js";
-import {
-  formatPlanTaskDepRef,
-  indexPlanTasksByNumber,
-  orchestrationTaskSummary,
-  planDependsOnList,
-  resolvePlanTaskByRef,
-  DONE_STATUSES_ORCH,
-  BLOCKED_STATUSES_ORCH,
-} from "./planState.js";
+import { formatPlanTaskDepRef, indexPlanTasksByNumber, orchestrationTaskSummary, planDependsOnList, resolvePlanTaskByRef, DONE_STATUSES_ORCH, BLOCKED_STATUSES_ORCH } from "./planState.js";
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
@@ -18,29 +10,19 @@ import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 import { deferredStartupFamilies } from "./startupAggregation.js";
 import { preCutoverCommand, preCutoverCommandFromBare } from "../preCutoverCommand.js";
 
-export function orchestrationContext(
-  capability: string | null,
-  plan: JsonObject,
-  progress: JsonObject,
-  health: JsonObject,
-  todoItems: JsonObject[],
-  docs: JsonObject,
-  profile: JsonObject,
-  nextAction: JsonObject,
-): JsonObject | null {
+export function orchestrationContext(capability: string | null, plan: JsonObject, progress: JsonObject, health: JsonObject, todoItems: JsonObject[], docs: JsonObject, profile: JsonObject, nextAction: JsonObject): JsonObject | null {
   if (capability !== "orchestrate") return null;
   const lifecycle = planLifecycleState(plan);
-  const tasks =
-    lifecycle.current_plan_degraded === true
-      ? []
-      : planTaskIndex(plan);
+  const tasks = lifecycle.current_plan_degraded === true ? [] : planTaskIndex(plan);
   const taskByNumber = indexPlanTasksByNumber(tasks);
   const dependencyReady: JsonObject[] = [];
   const blocked: JsonObject[] = [];
   const complete = tasks.filter((task) => entryStatus(task, "pending") === "complete").length;
   const superseded = tasks.filter((task) => entryStatus(task, "pending") === "superseded").length;
   const statusCounts = tasks.reduce<Record<string, number>>((counts, task) => {
-    const status = entryStatus(task, "pending"); counts[status] = (counts[status] ?? 0) + 1; return counts;
+    const status = entryStatus(task, "pending");
+    counts[status] = (counts[status] ?? 0) + 1;
+    return counts;
   }, {});
   for (const task of tasks) {
     const status = entryStatus(task, "pending");
@@ -59,12 +41,8 @@ export function orchestrationContext(
   }
   const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
   const planTasks = entityListFamily("plan_tasks");
-  const queueCommand = plan.id
-    ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100`)
-    : null;
-  const queueRetrieval = queueCommand
-    ? { list: queueCommand, restart: queueCommand, get: preCutoverCommandFromBare(planTasks.get) }
-    : null;
+  const queueCommand = plan.id ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100`) : null;
+  const queueRetrieval = queueCommand ? { list: queueCommand, restart: queueCommand, get: preCutoverCommandFromBare(planTasks.get) } : null;
   const stateCaveats: string[] = [];
   let fallbackCommands: string[] = [];
   const capabilityContract = capabilityContext(capability) ?? {};
@@ -81,11 +59,11 @@ export function orchestrationContext(
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; latest verification is not summarized here.");
-     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
   }
   if (!health.exists) {
     stateCaveats.push("health state is unavailable or incomplete.");
-     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
@@ -107,7 +85,15 @@ export function orchestrationContext(
   const contextComplete = Boolean(plan.exists) && tasks.length > 0 && stateCaveats.length === 0 && (dependencyReady.length + blocked.length === 0 || queueRetrieval !== null);
   return {
     capability: "orchestrate",
-    task_queue: { total: tasks.length, complete, superseded, status_counts: statusCounts, dependency_ready_tasks: dependencyReady, blocked_tasks: blocked, retrieval: queueRetrieval },
+    task_queue: {
+      total: tasks.length,
+      complete,
+      superseded,
+      status_counts: statusCounts,
+      dependency_ready_tasks: dependencyReady,
+      blocked_tasks: blocked,
+      retrieval: queueRetrieval,
+    },
     selected_next_task: selected,
     selected_next_action: nextAction,
     progress_verification: progressVerification,
@@ -120,23 +106,10 @@ export function orchestrationContext(
     source_contract: {
       complete_for_orchestration_context: contextComplete,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy:
-        "Use this orchestration_context and included status state first. Run listed routine CLI fallback commands " +
-        "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior.",
+      raw_artifact_read_policy: "Use this orchestration_context and included status state first. Run listed routine CLI fallback commands " + "for missing or incomplete state families; raw artifact reads are last-resort diagnostics, not normal startup behavior.",
       fallback_commands: fallbackCommands,
       caveats: stateCaveats,
-      owns: [
-        "dependency-ready task queue",
-        "blocked task reasons",
-        "selected next task",
-        "task acceptance summaries",
-        "task evidence summaries",
-        "latest progress verification summary",
-        "retry_state provenance",
-        "evaluator handoff inputs",
-        "state-family caveats",
-        "plan lifecycle state",
-      ],
+      owns: ["dependency-ready task queue", "blocked task reasons", "selected next task", "task acceptance summaries", "task evidence summaries", "latest progress verification summary", "retry_state provenance", "evaluator handoff inputs", "state-family caveats", "plan lifecycle state"],
       deferred: [],
     },
   };

@@ -4,9 +4,19 @@ record:
   name: Normalize the formatter-owned surface
   depends_on:
     - ogzqmopftv
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN the declared static-quality surface WHEN normalization runs THEN included files are formatter-clean and excluded fixtures and generated outputs remain unchanged.
     - GIVEN the mechanical change WHEN behavioral verification runs THEN runtime, fixture, and package behavior remain unchanged.
     - GIVEN clean and deliberately drifted samples WHEN checked THEN the clean surface passes and a formatting regression fails.
   plan: seltbrpsin
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: Complete formatting raises three maintained source files above the governed 1000-line limit; exclusions violate formatter scope and decomposition is outside this task.
+    provenance:
+      attempt_id: orchestrate-audit-obhhyoadbq-2
+      source: "Independent correction audit: criteria 1 and 3 pass; evidence audit pass; criterion 2 fails on deterministic monolith gate."
+      recorded_at: 2026-09-03 20:52
+      writer_command: agentera state plan record-evaluation

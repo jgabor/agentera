@@ -26,7 +26,10 @@ function frontmatterVersion(p: string): string | null {
     const stripped = line.trim();
     if (stripped === "---") return null;
     if (stripped.startsWith("version:")) {
-      const version = stripped.split(":", 2)[1].trim().replace(/^["']|["']$/g, "");
+      const version = stripped
+        .split(":", 2)[1]
+        .trim()
+        .replace(/^["']|["']$/g, "");
       return version || null;
     }
   }
@@ -53,12 +56,7 @@ function versionKeyGe(a: number[], b: number[]): boolean {
   return true;
 }
 
-function visibleSkillVersion(
-  home: string,
-  env: Env,
-  installRoot: string,
-  sourceRoot: string,
-): [string | null, string | null] {
+function visibleSkillVersion(home: string, env: Env, installRoot: string, sourceRoot: string): [string | null, string | null] {
   const candidates: string[] = [];
   if (env.AGENTERA_VISIBLE_SKILL_ROOT) candidates.push(env.AGENTERA_VISIBLE_SKILL_ROOT);
   candidates.push(path.join(installRoot, "skills", "agentera"));
@@ -75,12 +73,7 @@ function visibleSkillVersion(
   return [versions[0][1], versions[0][2]];
 }
 
-function recognizedSkillRoots(
-  home: string,
-  env: Env,
-  installRoot: string,
-  sourceRoot: string,
-): string[] {
+function recognizedSkillRoots(home: string, env: Env, installRoot: string, sourceRoot: string): string[] {
   const roots: string[] = [];
   if (env.AGENTERA_VISIBLE_SKILL_ROOT) roots.push(env.AGENTERA_VISIBLE_SKILL_ROOT);
   roots.push(path.join(installRoot, "skills", "agentera"));
@@ -95,13 +88,7 @@ interface DivergentSkillRoot {
   version: string;
 }
 
-function detectSkillRootDivergence(
-  home: string,
-  env: Env,
-  installRoot: string,
-  sourceRoot: string,
-  expected: string | null,
-): DivergentSkillRoot[] {
+function detectSkillRootDivergence(home: string, env: Env, installRoot: string, sourceRoot: string, expected: string | null): DivergentSkillRoot[] {
   if (!expected) return [];
   const expectedKey = versionKey(expected);
   if (expectedKey.length === 0) return [];
@@ -119,14 +106,7 @@ function detectSkillRootDivergence(
   return divergent;
 }
 
-function statusExpectedVersion(
-  opts: PrimeOpts,
-  sourceRoot: string,
-  home: string,
-  env: Env,
-  installRoot: string,
-  channel: ResolvedUpdateChannel,
-): [string | null, string] {
+function statusExpectedVersion(opts: PrimeOpts, sourceRoot: string, home: string, env: Env, installRoot: string, channel: ResolvedUpdateChannel): [string | null, string] {
   if (opts.expectedVersion) return [opts.expectedVersion, "--expected-version"];
   if (env.AGENTERA_EXPECTED_VERSION) return [env.AGENTERA_EXPECTED_VERSION, "AGENTERA_EXPECTED_VERSION"];
   if (channel.channel === "stable") {

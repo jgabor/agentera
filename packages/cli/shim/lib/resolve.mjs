@@ -128,20 +128,10 @@ function contentLanguage(body) {
   const lines = body.split("\n").slice(0, 30);
   for (const raw of lines) {
     const t = raw.trimStart();
-    if (
-      /^import\s+\w+\s*$/.test(t) ||
-      t.startsWith("from ") ||
-      t.startsWith("def ") ||
-      t.startsWith("class ")
-    ) {
+    if (/^import\s+\w+\s*$/.test(t) || t.startsWith("from ") || t.startsWith("def ") || t.startsWith("class ")) {
       return "python";
     }
-    if (
-      t.startsWith("const ") ||
-      t.startsWith("let ") ||
-      t.startsWith("var ") ||
-      t.startsWith("export ")
-    ) {
+    if (t.startsWith("const ") || t.startsWith("let ") || t.startsWith("var ") || t.startsWith("export ")) {
       return "js";
     }
   }
@@ -221,14 +211,7 @@ export function findAppHomeScript(agenteraHome, options = {}) {
  * @param {ResolveOptions} [options]
  * @returns {ResolveResult}
  */
-export function resolveBackend({
-  cwd = process.cwd(),
-  env = process.env,
-  gitRef = "v2.7.7",
-  gitRepo = DEFAULT_GIT_REPO,
-  excludeAppHome = false,
-  logStderr,
-} = {}) {
+export function resolveBackend({ cwd = process.cwd(), env = process.env, gitRef = "v2.7.7", gitRepo = DEFAULT_GIT_REPO, excludeAppHome = false, logStderr } = {}) {
   if (!excludeAppHome) {
     const scriptPath = findAppHomeScript(env.AGENTERA_HOME, { logStderr });
     if (scriptPath) {

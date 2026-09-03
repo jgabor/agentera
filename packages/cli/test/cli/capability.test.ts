@@ -51,7 +51,10 @@ describe("cli capability routing", () => {
     try {
       const { rc, out } = capture((io) => main(["node", "agentera", "vision", "--project", root, "--format", "json"], io));
       expect(rc).toBe(1);
-      expect(JSON.parse(out).error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+      expect(JSON.parse(out).error).toMatchObject({
+        class: "migration_required",
+        recovery: expect.stringContaining("upgrade --channel development"),
+      });
       expect(fs.readdirSync(root)).toEqual([]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

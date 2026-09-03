@@ -31,11 +31,19 @@ export interface InactiveTodoActivationSafety {
 }
 
 function publicSnapshot(record: JsonObject): TodoPublicSnapshot {
-  return { present: true, description: renderTodoPublicRecord(record), severity: String(record.severity), status: String(record.status) };
+  return {
+    present: true,
+    description: renderTodoPublicRecord(record),
+    severity: String(record.severity),
+    status: String(record.status),
+  };
 }
 
 function rowSnapshot(row: TodoActivationRow, record: JsonObject): TodoPublicSnapshot {
-  return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
+  return {
+    ...row.snapshot,
+    severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity,
+  };
 }
 
 function samePublic(left: TodoPublicSnapshot, right: TodoPublicSnapshot): boolean {
@@ -51,7 +59,12 @@ export function unsafeInactiveDuplicateDiagnosis(conflicting = 0): JsonObject {
 
 /** The one read-only decision that gates both activation preview and apply. */
 export function inactiveTodoActivationSafety(
-  scan: { rows: ReadonlyMap<string, TodoActivationRow>; retainedLegacyRows: readonly string[]; matchedRows: number; convertedRows: number },
+  scan: {
+    rows: ReadonlyMap<string, TodoActivationRow>;
+    retainedLegacyRows: readonly string[];
+    matchedRows: number;
+    convertedRows: number;
+  },
   entities: readonly TodoActivationEntity[],
 ): InactiveTodoActivationSafety {
   const todoEntities = entities.filter(({ boundary, id, record }) => boundary === "todo_item" && id && record);

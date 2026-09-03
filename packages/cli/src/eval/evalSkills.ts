@@ -46,10 +46,7 @@ const realWhich: WhichFn = (name) => {
   return result.status === 0 ? result.stdout.trim().split(/\r?\n/)[0] : null;
 };
 
-export function detectRuntime(
-  explicit: string | null,
-  opts: { which?: WhichFn; err?: (line: string) => void } = {},
-): string {
+export function detectRuntime(explicit: string | null, opts: { which?: WhichFn; err?: (line: string) => void } = {}): string {
   const which = opts.which ?? realWhich;
   const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
   if (explicit && explicit !== "auto") {
@@ -59,10 +56,7 @@ export function detectRuntime(
     }
     if (explicit === "cursor") {
       if (which("cursor-agent") === null && which("agent") === null) {
-        err(
-          "ERROR: 'cursor-agent' not found on PATH. Install Cursor Agent CLI " +
-            "and ensure the binary is accessible.",
-        );
+        err("ERROR: 'cursor-agent' not found on PATH. Install Cursor Agent CLI " + "and ensure the binary is accessible.");
         throw new ExitError(1);
       }
     }
@@ -75,10 +69,7 @@ export function detectRuntime(
   if (hasOpencode) return "opencode";
   if (hasCursorAgent) return "cursor";
 
-  err(
-    "ERROR: Neither the OpenCode nor Cursor eval surface was found on PATH. " +
-      "Install an active eval runtime host and ensure the binary is accessible.",
-  );
+  err("ERROR: Neither the OpenCode nor Cursor eval surface was found on PATH. " + "Install an active eval runtime host and ensure the binary is accessible.");
   throw new ExitError(1);
 }
 
@@ -115,10 +106,7 @@ export function discoverSkills(repoRoot: string = resolveSourceRoot()): Array<{ 
   return entries;
 }
 
-export type RunFn = (
-  cmd: string[],
-  opts: { input?: string | null; timeout: number; cwd: string },
-) => { status: number | null; stdout: string; stderr: string; timedOut?: boolean };
+export type RunFn = (cmd: string[], opts: { input?: string | null; timeout: number; cwd: string }) => { status: number | null; stdout: string; stderr: string; timedOut?: boolean };
 
 const realRun: RunFn = (cmd, opts) => {
   const result = spawnSync(cmd[0], cmd.slice(1), {
@@ -135,13 +123,7 @@ const realRun: RunFn = (cmd, opts) => {
   };
 };
 
-export function invokeSkill(
-  name: string,
-  prompt: string,
-  timeout: number,
-  runtime = "opencode",
-  opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
-): JsonObject {
+export function invokeSkill(name: string, prompt: string, timeout: number, runtime = "opencode", opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {}): JsonObject {
   const which = opts.which ?? realWhich;
   const run = opts.run ?? realRun;
   const repoRoot = opts.repoRoot ?? resolveSourceRoot();
@@ -177,12 +159,7 @@ export function invokeSkill(
     status = "fail";
   } else {
     const combined = (result.stdout ?? "") + (result.stderr ?? "");
-    const errorIndicators = [
-      /\bTraceback \(most recent call last\)\b/i,
-      /\bError:\s/i,
-      /\bfatal error\b/i,
-      /"is_error"\s*:\s*true/i,
-    ];
+    const errorIndicators = [/\bTraceback \(most recent call last\)\b/i, /\bError:\s/i, /\bfatal error\b/i, /"is_error"\s*:\s*true/i];
     for (const pattern of errorIndicators) {
       const m = pattern.exec(combined);
       if (m) {
@@ -202,13 +179,7 @@ export function invokeSkill(
   };
 }
 
-export function runSkills(
-  skills: Array<{ name: string; prompt: string }>,
-  timeout: number,
-  _parallel: number,
-  runtime = "opencode",
-  opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {},
-): JsonObject[] {
+export function runSkills(skills: Array<{ name: string; prompt: string }>, timeout: number, _parallel: number, runtime = "opencode", opts: { which?: WhichFn; run?: RunFn; repoRoot?: string } = {}): JsonObject[] {
   // Parallelism in the Python runner is a maintainer perf detail; the smoke
   // semantics (one result per skill, original order) are preserved sequentially.
   return skills.map((entry) => invokeSkill(entry.name, entry.prompt, timeout, runtime, opts));
@@ -226,11 +197,7 @@ export function buildReport(results: JsonObject[]): JsonObject {
   };
 }
 
-export function buildDryRun(
-  skills: Array<{ name: string; prompt: string }>,
-  runtime = "opencode",
-  runtimeSource = "auto-detected",
-): JsonObject {
+export function buildDryRun(skills: Array<{ name: string; prompt: string }>, runtime = "opencode", runtimeSource = "auto-detected"): JsonObject {
   return {
     mode: "dry-run",
     runtime: `${runtime} (${runtimeSource})`,

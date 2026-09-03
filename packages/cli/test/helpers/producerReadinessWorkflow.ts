@@ -65,13 +65,7 @@ function environment(root: string): NodeJS.ProcessEnv {
     XDG_CACHE_HOME: path.join(root, "xdg-cache"),
     AGENTERA_PROFILE_DIR: path.join(root, "profile-data"),
   };
-  for (const directory of [
-    env.HOME,
-    env.XDG_DATA_HOME,
-    env.XDG_CONFIG_HOME,
-    env.XDG_CACHE_HOME,
-    env.AGENTERA_PROFILE_DIR,
-  ]) {
+  for (const directory of [env.HOME, env.XDG_DATA_HOME, env.XDG_CONFIG_HOME, env.XDG_CACHE_HOME, env.AGENTERA_PROFILE_DIR]) {
     fs.mkdirSync(directory, { recursive: true });
   }
   for (const key of Object.keys(env)) {
@@ -82,13 +76,7 @@ function environment(root: string): NodeJS.ProcessEnv {
   return env;
 }
 
-function invoke(
-  executable: string,
-  args: string[],
-  cwd: string,
-  env: NodeJS.ProcessEnv,
-  input?: string,
-) {
+function invoke(executable: string, args: string[], cwd: string, env: NodeJS.ProcessEnv, input?: string) {
   return spawnSync(process.execPath, [executable, ...args], { cwd, env, input, encoding: "utf8" });
 }
 
@@ -109,11 +97,7 @@ function trapValues(traps: GroundingTrapSet): string[] {
   return Object.values(traps);
 }
 
-function assertTrapsAbsent(
-  result: ReturnType<typeof invoke>,
-  traps: GroundingTrapSet,
-  family: string,
-): void {
+function assertTrapsAbsent(result: ReturnType<typeof invoke>, traps: GroundingTrapSet, family: string): void {
   for (const channel of ["stdout", "stderr"] as const) {
     for (const trap of trapValues(traps)) {
       assert(!result[channel].includes(trap), `${family} leaked ${trap} through ${channel}`);
@@ -148,9 +132,7 @@ function trappedDocument(traps: GroundingTrapSet, entries = [trappedEntry(traps)
     {
       schema_version: "agentera.personalGlossarySection.v1",
       as_of: "2026-07-26",
-      confidence_basis: Object.fromEntries(
-        entries.map((entry) => [String(entry.term).trim().normalize("NFC").toLowerCase(), 88]),
-      ),
+      confidence_basis: Object.fromEntries(entries.map((entry) => [String(entry.term).trim().normalize("NFC").toLowerCase(), 88])),
       entries,
     },
     null,
@@ -165,15 +147,10 @@ function ownedProfile(body: string): string {
 function digestTree(root: string): string {
   const records: string[] = [];
   const visit = (directory: string): void => {
-    for (const entry of fs
-      .readdirSync(directory, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const target = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(target);
-      else if (entry.isFile())
-        records.push(
-          `${path.relative(root, target)}:${createHash("sha256").update(fs.readFileSync(target)).digest("hex")}`,
-        );
+      else if (entry.isFile()) records.push(`${path.relative(root, target)}:${createHash("sha256").update(fs.readFileSync(target)).digest("hex")}`);
     }
   };
   visit(root);
@@ -185,23 +162,15 @@ async function load(executable: string, relative: string): Promise<any> {
   return import(pathToFileURL(path.join(dist, relative)).href);
 }
 
-function evidenceRecord(
-  sourceId: string,
-  sourceKind: string,
-  signalType: string,
-  data: Record<string, unknown>,
-  adapterVersion: string,
-) {
+function evidenceRecord(sourceId: string, sourceKind: string, signalType: string, data: Record<string, unknown>, adapterVersion: string) {
   const record = {
     source_id: sourceId,
     source_kind: sourceKind,
     timestamp: "2026-07-26T00:00:00.000Z",
     project_id: "producer-readiness",
-    runtime:
-      sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
+    runtime: sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
     source_class: "active_runtime",
-    source_product:
-      sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
+    source_product: sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
     active_runtime: true,
     adapter_version: adapterVersion,
     data: { ...data, signal_type: signalType },
@@ -221,18 +190,12 @@ function evidenceRecord(
   return record;
 }
 
-export async function runProducerReadinessWorkflow(
-  executable: string,
-  root: string,
-): Promise<ProducerReadinessObservation> {
+export async function runProducerReadinessWorkflow(executable: string, root: string): Promise<ProducerReadinessObservation> {
   fs.mkdirSync(root, { recursive: true });
   const project = path.join(root, "project");
   fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
   const env = environment(project);
-  fs.writeFileSync(
-    path.join(project, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
 
   const tiers = await load(executable, "analytics/extractCorpus/evidenceTiers.js");
   const corpus = await load(executable, "analytics/extractCorpus/core.js");
@@ -240,27 +203,9 @@ export async function runProducerReadinessWorkflow(
   const tiersDir = path.join(env.AGENTERA_PROFILE_DIR!, "intermediate", "tiers");
   tiers.publishEvidenceTiers(
     [
-      evidenceRecord(
-        "explicit",
-        "conversation_turn",
-        "correction",
-        { actor: "user", text: "Actually, `ship shape` means the complete form of a deliverable." },
-        corpus.ADAPTER_VERSION,
-      ),
-      evidenceRecord(
-        "instruction",
-        "instruction_document",
-        "instruction",
-        { content: "Keep the signal braid explicit." },
-        corpus.ADAPTER_VERSION,
-      ),
-      evidenceRecord(
-        "configuration",
-        "project_config_signal",
-        "configuration",
-        { signals: ["signal braid"] },
-        corpus.ADAPTER_VERSION,
-      ),
+      evidenceRecord("explicit", "conversation_turn", "correction", { actor: "user", text: "Actually, `ship shape` means the complete form of a deliverable." }, corpus.ADAPTER_VERSION),
+      evidenceRecord("instruction", "instruction_document", "instruction", { content: "Keep the signal braid explicit." }, corpus.ADAPTER_VERSION),
+      evidenceRecord("configuration", "project_config_signal", "configuration", { signals: ["signal braid"] }, corpus.ADAPTER_VERSION),
     ],
     { tiersDir, adapterVersion: corpus.ADAPTER_VERSION, publishedAt: "2026-07-26T00:00:00.000Z" },
   );
@@ -268,12 +213,8 @@ export async function runProducerReadinessWorkflow(
     tiersDir,
     requestedTerms: ["signal braid"],
   });
-  const explicit = admitted.candidates.find(
-    (entry: any) => entry.kind === "personal_explicit_definition",
-  );
-  const inferred = admitted.candidates.find(
-    (entry: any) => entry.kind === "personal_inferred_usage",
-  );
+  const explicit = admitted.candidates.find((entry: any) => entry.kind === "personal_explicit_definition");
+  const inferred = admitted.candidates.find((entry: any) => entry.kind === "personal_inferred_usage");
   assert.equal(explicit?.evidence.length, 1);
   assert.equal(inferred?.evidence.length, 2);
 
@@ -327,24 +268,12 @@ export async function runProducerReadinessWorkflow(
     decision: decisionPayload.decision,
     as_of: "2026-07-26",
   });
-  const publication = invoke(
-    executable,
-    ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
-    project,
-    env,
-    publicationRequest,
-  );
+  const publication = invoke(executable, ["report", "personal-glossary-publish", "--input", "-", "--format", "json"], project, env, publicationRequest);
   assert.equal(publication.status, 0, publication.stderr || publication.stdout);
   const publicationStatus = JSON.parse(publication.stdout).status;
   assert.equal(publicationStatus, "changed");
   const publishedProfile = fs.readFileSync(profilePath);
-  const personalReplay = invoke(
-    executable,
-    ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
-    project,
-    env,
-    publicationRequest,
-  );
+  const personalReplay = invoke(executable, ["report", "personal-glossary-publish", "--input", "-", "--format", "json"], project, env, publicationRequest);
   assert.equal(personalReplay.status, 0, personalReplay.stderr || personalReplay.stdout);
   const replayStatus = JSON.parse(personalReplay.stdout).status;
   assert.equal(replayStatus, "unchanged_replay");
@@ -355,14 +284,8 @@ export async function runProducerReadinessWorkflow(
 
   const audit = await load(executable, "audit/terminologyDrift.js");
   fs.mkdirSync(path.join(project, "src"));
-  fs.writeFileSync(
-    path.join(project, "src/canonical.ts"),
-    "export type ProjectCanonical = string;\n",
-  );
-  fs.writeFileSync(
-    path.join(project, "src/canonical-extra.ts"),
-    "export type Alias = ProjectCanonical;\n",
-  );
+  fs.writeFileSync(path.join(project, "src/canonical.ts"), "export type ProjectCanonical = string;\n");
+  fs.writeFileSync(path.join(project, "src/canonical-extra.ts"), "export type Alias = ProjectCanonical;\n");
   fs.writeFileSync(path.join(project, "src/variant.ts"), "export type ProjectVariant = string;\n");
   const beforeAudit = digestTree(project);
   const proposal = audit.assessTerminologyDrift({
@@ -398,82 +321,37 @@ export async function runProducerReadinessWorkflow(
       confirmed_at: "2026-07-26T14:00:00Z",
     },
   };
-  const published = invoke(
-    executable,
-    ["state", "glossary", "publish", "--input", "-", "--format", "json", "--project", project],
-    project,
-    env,
-    JSON.stringify(request),
-  );
+  const published = invoke(executable, ["state", "glossary", "publish", "--input", "-", "--format", "json", "--project", project], project, env, JSON.stringify(request));
   assert.equal(published.status, 0, published.stderr || published.stdout);
-  const document = YAML.parse(
-    fs.readFileSync(path.join(project, ".agentera/glossary.yaml"), "utf8"),
-  );
+  const document = YAML.parse(fs.readFileSync(path.join(project, ".agentera/glossary.yaml"), "utf8"));
   const entryFields = Object.keys(document.entries[0]);
-  const replay = invoke(
-    executable,
-    ["state", "glossary", "publish", "--input", "-", "--format", "json", "--project", project],
-    project,
-    env,
-    JSON.stringify(request),
-  );
+  const replay = invoke(executable, ["state", "glossary", "publish", "--input", "-", "--format", "json", "--project", project], project, env, JSON.stringify(request));
   assert.equal(replay.status, 0, replay.stderr || replay.stdout);
   const replayChanged = JSON.parse(replay.stdout).operation.changed;
-  const discovery = invoke(
-    executable,
-    ["state", "query", "--list-artifacts", "--format", "json"],
-    project,
-    env,
-  );
+  const discovery = invoke(executable, ["state", "query", "--list-artifacts", "--format", "json"], project, env);
   assert.equal(discovery.status, 0, discovery.stderr || discovery.stdout);
-  const glossaryArtifact = JSON.parse(discovery.stdout).artifacts.find(
-    (item: any) => item.artifact === "glossary",
-  );
+  const glossaryArtifact = JSON.parse(discovery.stdout).artifacts.find((item: any) => item.artifact === "glossary");
   assert(glossaryArtifact, `artifact discovery omitted glossary: ${discovery.stdout}`);
 
   const beforeCleanValidation = digestTree(project);
-  const cleanValidation = invoke(
-    executable,
-    ["check", "validate", "state", "--format", "json"],
-    project,
-    env,
-  );
+  const cleanValidation = invoke(executable, ["check", "validate", "state", "--format", "json"], project, env);
   assert.equal(cleanValidation.status, 0, cleanValidation.stderr || cleanValidation.stdout);
   assert.equal(JSON.parse(cleanValidation.stdout).status, "pass");
   assert.equal(digestTree(project), beforeCleanValidation, "clean glossary validation mutated project state");
 
-  fs.writeFileSync(
-    path.join(project, "src/reintroduced.ts"),
-    "export type Broken = ProjectVariant;\n",
-  );
+  fs.writeFileSync(path.join(project, "src/reintroduced.ts"), "export type Broken = ProjectVariant;\n");
   const beforeFailedValidation = digestTree(project);
-  const failedValidation = invoke(
-    executable,
-    ["check", "validate", "state", "--format", "json"],
-    project,
-    env,
-  );
+  const failedValidation = invoke(executable, ["check", "validate", "state", "--format", "json"], project, env);
   assert.notEqual(failedValidation.status, 0, "reintroduced confirmed variant passed state validation");
   const failedValidationPayload = JSON.parse(failedValidation.stdout);
-  const confirmedVariantViolations = failedValidationPayload.issues
-    .filter((issue: any) =>
-      issue.code === "confirmed_glossary_variant" &&
-      String(issue.message).includes("ProjectVariant") &&
-      String(issue.message).includes("ProjectCanonical") &&
-      String(issue.message).includes("src/reintroduced.ts:1")
-    ).length;
+  const confirmedVariantViolations = failedValidationPayload.issues.filter((issue: any) => issue.code === "confirmed_glossary_variant" && String(issue.message).includes("ProjectVariant") && String(issue.message).includes("ProjectCanonical") && String(issue.message).includes("src/reintroduced.ts:1")).length;
   assert.equal(digestTree(project), beforeFailedValidation, "failed glossary validation mutated project state");
   const profileUnchanged = fs.readFileSync(profilePath).equals(profileBeforeProject);
 
   const trapTerm = "PRIVATE_CONSUMER_TRAP_7F31";
   fs.writeFileSync(path.join(project, ".agentera/consumer-trap.yaml"), `term: ${trapTerm}\n`);
   fs.writeFileSync(path.join(project, "profile-data/consumer-trap.txt"), trapTerm);
-  const observedFiles = [
-    profilePath,
-    path.join(project, ".agentera/glossary.yaml"),
-    path.join(project, ".agentera/consumer-trap.yaml"),
-    path.join(project, "profile-data/consumer-trap.txt"),
-  ];
+  const observedFiles = [profilePath, path.join(project, ".agentera/glossary.yaml"), path.join(project, ".agentera/consumer-trap.yaml"), path.join(project, "profile-data/consumer-trap.txt")];
   const beforeStartup = observedFiles.map((file) => fs.readFileSync(file));
   const startupCapabilities = ["discuss", "plan", "build"];
   const startupOutput: string[] = [];
@@ -482,20 +360,11 @@ export async function runProducerReadinessWorkflow(
   const validProfile = fs.readFileSync(profilePath);
   const validProfileText = validProfile.toString("utf8");
   const ownedStart = validProfileText.indexOf(PROFILE_GLOSSARY_START);
-  const ownedEnd =
-    validProfileText.indexOf(PROFILE_GLOSSARY_END, ownedStart) + PROFILE_GLOSSARY_END.length;
-  assert(
-    ownedStart >= 0 && ownedEnd >= PROFILE_GLOSSARY_END.length,
-    "valid profile omitted its owned glossary section",
-  );
+  const ownedEnd = validProfileText.indexOf(PROFILE_GLOSSARY_END, ownedStart) + PROFILE_GLOSSARY_END.length;
+  assert(ownedStart >= 0 && ownedEnd >= PROFILE_GLOSSARY_END.length, "valid profile omitted its owned glossary section");
   const expectedGrounding = `${validProfileText.slice(0, ownedStart)}${validProfileText.slice(ownedEnd)}`;
   for (const capability of startupCapabilities) {
-    const result = invoke(
-      executable,
-      ["prime", "--context", capability, "--format", "json"],
-      project,
-      env,
-    );
+    const result = invoke(executable, ["prime", "--context", capability, "--format", "json"], project, env);
     assert.equal(result.status, 0, result.stderr || result.stdout);
     startupOutput.push(result.stdout);
     const served = JSON.parse(result.stdout).capability_context;
@@ -503,54 +372,29 @@ export async function runProducerReadinessWorkflow(
     assert.equal(grounding?.detail_command, "npx -y agentera@next report profile-grounding");
     assert.equal(grounding?.availability, "deferred");
     assert.equal(served.profile, undefined);
-    assert(
-      served.instructions.includes("npx -y agentera@next report profile-grounding"),
-      `${capability} pre-cutover instructions omit channel-bound grounding command`,
-    );
-    for (const forbidden of [
-      "profile path for high-confidence entries",
-      "served via `planning_context.profile.path` — read directly",
-      "Every cycle runs the effective profile.",
-    ]) {
-      assert(
-        !served.instructions.includes(forbidden),
-        `${capability} instructions retain raw profile grounding: ${forbidden}`,
-      );
+    assert(served.instructions.includes("npx -y agentera@next report profile-grounding"), `${capability} pre-cutover instructions omit channel-bound grounding command`);
+    for (const forbidden of ["profile path for high-confidence entries", "served via `planning_context.profile.path` — read directly", "Every cycle runs the effective profile."]) {
+      assert(!served.instructions.includes(forbidden), `${capability} instructions retain raw profile grounding: ${forbidden}`);
     }
-    const command = grounding.detail_command.replace(/^npx -y agentera@next /, "agentera ").split(" ").slice(1);
+    const command = grounding.detail_command
+      .replace(/^npx -y agentera@next /, "agentera ")
+      .split(" ")
+      .slice(1);
     const grounded = invoke(executable, command, project, env);
     assert.equal(grounded.status, 0, grounded.stderr || grounded.stdout);
     const payload = JSON.parse(grounded.stdout);
     groundingStatuses.push(payload.status);
     nonGlossaryBytesExact &&= payload.content === expectedGrounding;
-    assert(
-      payload.content.includes("High confidence: preserve semantic seams."),
-      `${capability} lost non-glossary profile grounding`,
-    );
+    assert(payload.content.includes("High confidence: preserve semantic seams."), `${capability} lost non-glossary profile grounding`);
     for (const hidden of ["ship shape", "complete form of a deliverable", "source", "anchor"]) {
-      assert(
-        !payload.content.includes(hidden),
-        `${capability} grounding leaked personal glossary ${hidden}`,
-      );
+      assert(!payload.content.includes(hidden), `${capability} grounding leaked personal glossary ${hidden}`);
     }
   }
-  const producerStateUnchanged = observedFiles.every((file, index) =>
-    fs.readFileSync(file).equals(beforeStartup[index]!),
-  );
-  const producerTermsHidden = startupOutput.every(
-    (output) =>
-      !output.includes("ProjectCanonical") &&
-      !output.includes("ship shape") &&
-      !output.includes(trapTerm),
-  );
+  const producerStateUnchanged = observedFiles.every((file, index) => fs.readFileSync(file).equals(beforeStartup[index]!));
+  const producerTermsHidden = startupOutput.every((output) => !output.includes("ProjectCanonical") && !output.includes("ship shape") && !output.includes(trapTerm));
 
   const authorityRoot = path.resolve(path.dirname(executable), "../..");
-  const authority = YAML.parse(
-    fs.readFileSync(
-      path.join(authorityRoot, "bundle/references/artifacts/glossary-entry-contract.yaml"),
-      "utf8",
-    ),
-  );
+  const authority = YAML.parse(fs.readFileSync(path.join(authorityRoot, "bundle/references/artifacts/glossary-entry-contract.yaml"), "utf8"));
   const malformedProfiles = [
     (() => {
       const traps = groundingTraps("unowned");
@@ -620,25 +464,12 @@ export async function runProducerReadinessWorkflow(
   for (const { family, traps, profile: malformed } of malformedProfiles) {
     fs.writeFileSync(profilePath, malformed);
     const before = fs.readFileSync(profilePath);
-    const rejected = invoke(
-      executable,
-      ["report", "profile-grounding", "--format", "json"],
-      project,
-      env,
-    );
+    const rejected = invoke(executable, ["report", "profile-grounding", "--format", "json"], project, env);
     assert.notEqual(rejected.status, 0, `${family} profile grounding succeeded`);
     assertTrapsAbsent(rejected, traps, family);
-    assert(
-      fs.readFileSync(profilePath).equals(before),
-      `${family} profile bytes changed after rejection`,
-    );
+    assert(fs.readFileSync(profilePath).equals(before), `${family} profile bytes changed after rejection`);
     const rejectedPayload = JSON.parse(rejected.stdout);
-    groundingErrorsSanitized &&=
-      rejected.stderr === "" &&
-      rejectedPayload.status === "repair_needed" &&
-      ["malformed", "ambiguous", "oversized"].includes(rejectedPayload.validity?.class) &&
-      rejectedPayload.content === null &&
-      rejectedPayload.recovery === rejectedPayload.validity?.recovery;
+    groundingErrorsSanitized &&= rejected.stderr === "" && rejectedPayload.status === "repair_needed" && ["malformed", "ambiguous", "oversized"].includes(rejectedPayload.validity?.class) && rejectedPayload.content === null && rejectedPayload.recovery === rejectedPayload.validity?.recovery;
     malformedGroundingCasesRejected += 1;
   }
   fs.writeFileSync(profilePath, validProfile);
@@ -646,26 +477,18 @@ export async function runProducerReadinessWorkflow(
   for (const requestFamily of ["request-choice", "request-argument"]) {
     const requestTraps = groundingTraps(requestFamily);
     const privateValue = trapValues(requestTraps).join("-");
-    const args =
-      requestFamily === "request-choice" ? [`--format=${privateValue}`] : [`--${privateValue}`];
-    const invalidRequest = invoke(
-      executable,
-      ["report", "profile-grounding", ...args],
-      project,
-      env,
-    );
+    const args = requestFamily === "request-choice" ? [`--format=${privateValue}`] : [`--${privateValue}`];
+    const invalidRequest = invoke(executable, ["report", "profile-grounding", ...args], project, env);
     assert.notEqual(invalidRequest.status, 0, `${requestFamily} private value was accepted`);
     assertTrapsAbsent(invalidRequest, requestTraps, requestFamily);
   }
 
   const pathTraps = groundingTraps("path");
   const trappedProfileDir = path.join(root, trapValues(pathTraps).join("-"));
-  const unavailable = invoke(
-    executable,
-    ["report", "profile-grounding", "--format", "json"],
-    project,
-    { ...env, AGENTERA_PROFILE_DIR: trappedProfileDir },
-  );
+  const unavailable = invoke(executable, ["report", "profile-grounding", "--format", "json"], project, {
+    ...env,
+    AGENTERA_PROFILE_DIR: trappedProfileDir,
+  });
   assert.notEqual(unavailable.status, 0, "missing profile grounding succeeded");
   const unavailablePayload = JSON.parse(unavailable.stdout);
   assert.equal(unavailablePayload.status, "absent");
@@ -681,13 +504,7 @@ export async function runProducerReadinessWorkflow(
     ["prime", "--context", "build", "--input", "-", "--format", "json"],
     project,
     { ...env, AGENTERA_PROFILE_DIR: trappedProfileDir },
-    [
-      "schema_version: agentera.buildExecutionRequest.v1",
-      "scope: Verify self-contained work without profile grounding",
-      "acceptance:",
-      "  - Execution remains available without profile grounding",
-      "",
-    ].join("\n"),
+    ["schema_version: agentera.buildExecutionRequest.v1", "scope: Verify self-contained work without profile grounding", "acceptance:", "  - Execution remains available without profile grounding", ""].join("\n"),
   );
   assert.equal(selfContained.status, 0, selfContained.stderr || selfContained.stdout);
   const selfContainedPayload = JSON.parse(selfContained.stdout);
@@ -697,13 +514,9 @@ export async function runProducerReadinessWorkflow(
     selfContainedExecution?.mode === "no_plan" &&
     selfContainedExecution?.work_selection?.status === "selected" &&
     selfContainedExecution?.acceptance_criteria?.status === "available" &&
-    !selfContainedExecution?.fallback_commands?.includes(
-      "npx -y agentera@next report profile-grounding",
-    );
+    !selfContainedExecution?.fallback_commands?.includes("npx -y agentera@next report profile-grounding");
   assert.equal(selfContainedRequestAvailable, true, "absent profile blocked self-contained Build work");
-  const unavailablePrivateDataHidden = !trapValues(pathTraps).some(
-    (trap) => selfContained.stdout.includes(trap) || selfContained.stderr.includes(trap),
-  );
+  const unavailablePrivateDataHidden = !trapValues(pathTraps).some((trap) => selfContained.stdout.includes(trap) || selfContained.stderr.includes(trap));
   assert.equal(unavailablePrivateDataHidden, true, "absent profile path leaked into Build startup");
 
   const readTraps = groundingTraps("read");
@@ -724,22 +537,15 @@ export async function runProducerReadinessWorkflow(
       "",
     ].join("\n"),
   );
-  const nodeOptions = [env.NODE_OPTIONS, `--import=${pathToFileURL(readHook).href}`]
-    .filter(Boolean)
-    .join(" ");
+  const nodeOptions = [env.NODE_OPTIONS, `--import=${pathToFileURL(readHook).href}`].filter(Boolean).join(" ");
   const beforeReadFailure = fs.readFileSync(profilePath);
-  const unreadable = invoke(
-    executable,
-    ["report", "profile-grounding", "--format", "json"],
-    project,
-    { ...env, NODE_OPTIONS: nodeOptions },
-  );
+  const unreadable = invoke(executable, ["report", "profile-grounding", "--format", "json"], project, {
+    ...env,
+    NODE_OPTIONS: nodeOptions,
+  });
   assert.notEqual(unreadable.status, 0, "profile read failure was accepted");
   assertTrapsAbsent(unreadable, readTraps, "read");
-  assert(
-    fs.readFileSync(profilePath).equals(beforeReadFailure),
-    "profile bytes changed after read failure",
-  );
+  assert(fs.readFileSync(profilePath).equals(beforeReadFailure), "profile bytes changed after read failure");
 
   return {
     personal: {
@@ -753,8 +559,7 @@ export async function runProducerReadinessWorkflow(
     project: {
       auditReadOnly,
       entryFields,
-      approvalStoredSeparately:
-        document.approvals.length === 1 && !("proposal_digest" in document.entries[0]),
+      approvalStoredSeparately: document.approvals.length === 1 && !("proposal_digest" in document.entries[0]),
       discoveryStatus: glossaryArtifact?.implementation_status,
       replayChanged,
       confirmedVariantViolations,

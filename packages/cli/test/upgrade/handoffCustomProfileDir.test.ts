@@ -5,13 +5,8 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  resolveMigrationUserStatePreflight,
-} from "../../src/migrate/v2HandoffManifest.js";
-import {
-  dryRunMigration,
-  planCleanupPhase,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { resolveMigrationUserStatePreflight } from "../../src/migrate/v2HandoffManifest.js";
+import { dryRunMigration, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -89,18 +84,14 @@ describe("handoffCustomProfileDir", () => {
       XDG_CONFIG_HOME: xdg,
     };
     const preflight = resolveMigrationUserStatePreflight(appHome, { home, env });
-    const opencodeEntry = preflight.handoffCatalog.find(
-      (entry) => entry.surface === "opencode_runtime_config_dir",
-    );
+    const opencodeEntry = preflight.handoffCatalog.find((entry) => entry.surface === "opencode_runtime_config_dir");
     expect(opencodeEntry?.root).toBe(opencodeDir);
     expect(opencodeEntry?.envVar).toBe("XDG_CONFIG_HOME");
     expect(preflight.preservedAbsolutePaths).toContain(opencodeDir);
     expect(preflight.preservedAbsolutePaths).toContain(path.join(opencodeDir, "plugins", "agentera.js"));
 
     const cleanup = planCleanupPhase(migrationCtx(appHome, appHome, home, REPO_ROOT, env));
-    const catalogItem = cleanup.items.find(
-      (item) => item.action === "catalog-handoff" && item.source === opencodeDir,
-    );
+    const catalogItem = cleanup.items.find((item) => item.action === "catalog-handoff" && item.source === opencodeDir);
     expect(catalogItem?.message).toContain("opencode runtime config dir");
     expect(catalogItem?.message).toContain("XDG_CONFIG_HOME");
   });
@@ -127,9 +118,7 @@ describe("handoffCustomProfileDir", () => {
 
     const preflight = resolveMigrationUserStatePreflight(appHome, { home, env });
     expect(preflight.handoffCatalog).toEqual([]);
-    expect(preflight.preservedTopLevel).toEqual(
-      expect.arrayContaining(["benchmarks", "intermediate", "sessions"]),
-    );
+    expect(preflight.preservedTopLevel).toEqual(expect.arrayContaining(["benchmarks", "intermediate", "sessions"]));
     expect(preflight.preservedAbsolutePaths.some((p) => p.includes("benchmarks"))).toBe(true);
 
     const result = dryRunMigration(migrationCtx(appHome, appHome, home, REPO_ROOT, env));

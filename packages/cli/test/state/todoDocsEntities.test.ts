@@ -14,7 +14,19 @@ import { FILE_REPLACEMENT_RECOVERY_VERSION } from "../../src/state/entityPublica
 import { ExactReplacementConflictError } from "../../src/state/exactReplacementRecovery.js";
 import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
-import { todoLegacyRowFingerprint, todoReconciliationActivationBytes, todoRepairEffect, TODO_ACTIVATION_APPLY_COMMAND, TODO_ACTIVATION_PREVIEW_COMMAND, TODO_OWNER_CORRECTION_APPLY_COMMAND, TODO_OWNER_CORRECTION_INPUT_VERSION, TODO_OWNER_CORRECTION_PREVIEW_COMMAND, TODO_REPAIR_APPLY_COMMAND, TODO_REPAIR_PREVIEW_COMMAND, TODO_RECONCILIATION_ACTIVATION_PATH } from "../../src/state/todoReconciliationActivation.js";
+import {
+  todoLegacyRowFingerprint,
+  todoReconciliationActivationBytes,
+  todoRepairEffect,
+  TODO_ACTIVATION_APPLY_COMMAND,
+  TODO_ACTIVATION_PREVIEW_COMMAND,
+  TODO_OWNER_CORRECTION_APPLY_COMMAND,
+  TODO_OWNER_CORRECTION_INPUT_VERSION,
+  TODO_OWNER_CORRECTION_PREVIEW_COMMAND,
+  TODO_REPAIR_APPLY_COMMAND,
+  TODO_REPAIR_PREVIEW_COMMAND,
+  TODO_RECONCILIATION_ACTIVATION_PATH,
+} from "../../src/state/todoReconciliationActivation.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { writeMigratedDecisionAndProgressSummaries } from "../helpers/migratedSummaryFixture.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
@@ -36,23 +48,46 @@ function project(entity = true): string {
   if (entity) fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER);
   if (entity) fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([]));
   fs.writeFileSync(path.join(root, "TODO.md"), "# legacy TODO sentinel\n");
-  fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({
-    last_audit: "2026-07-17 (fixture)",
-    conventions: { doc_root: ".", style: "concise" },
-    mapping: [{ artifact: "TODO.md", path: "TODO.md", producers: ["build"] }],
-    coverage: { documented: 1, undocumented: 0, stale: 0, tests: "covered" },
-    index: [{ document: "legacy sentinel", path: "legacy.md", last_updated: "2026-01-01", status: "stale" }],
-    audit_log: [{ date: "2026-07-17", label: "editorial singleton", findings: [] }],
-  }));
+  fs.writeFileSync(
+    path.join(root, ".agentera/docs.yaml"),
+    dumpYamlMapping({
+      last_audit: "2026-07-17 (fixture)",
+      conventions: { doc_root: ".", style: "concise" },
+      mapping: [{ artifact: "TODO.md", path: "TODO.md", producers: ["build"] }],
+      coverage: { documented: 1, undocumented: 0, stale: 0, tests: "covered" },
+      index: [
+        {
+          document: "legacy sentinel",
+          path: "legacy.md",
+          last_updated: "2026-01-01",
+          status: "stale",
+        },
+      ],
+      audit_log: [{ date: "2026-07-17", label: "editorial singleton", findings: [] }],
+    }),
+  );
   return root;
 }
 
 function capture(root: string, args: string[], input?: Record<string, unknown> | string): { rc: number; out: string; err: string; json: any } {
-  const cwd = process.cwd(); let out = ""; let err = ""; process.chdir(root);
+  const cwd = process.cwd();
+  let out = "";
+  let err = "";
+  process.chdir(root);
   try {
-    const rc = main(["node", "agentera", ...args], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: input === undefined ? undefined : () => typeof input === "string" ? input : dumpYamlMapping(input) });
+    const rc = main(["node", "agentera", ...args], {
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
+      stdin: input === undefined ? undefined : () => (typeof input === "string" ? input : dumpYamlMapping(input)),
+    });
     return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
-  } finally { process.chdir(cwd); }
+  } finally {
+    process.chdir(cwd);
+  }
 }
 
 function files(root: string): Record<string, string> {
@@ -69,56 +104,69 @@ function files(root: string): Record<string, string> {
 }
 
 function recoveryFiles(root: string): string[] {
-  const recovery = path.join(root, ".agentera/.entity-recovery"); if (!fs.existsSync(recovery)) return [];
-  return fs.readdirSync(recovery, { recursive: true, encoding: "utf8" }).map((name) => path.join(recovery, name)).filter((file) => path.basename(file) !== ".gitignore" && fs.statSync(file).isFile());
+  const recovery = path.join(root, ".agentera/.entity-recovery");
+  if (!fs.existsSync(recovery)) return [];
+  return fs
+    .readdirSync(recovery, { recursive: true, encoding: "utf8" })
+    .map((name) => path.join(recovery, name))
+    .filter((file) => path.basename(file) !== ".gitignore" && fs.statSync(file).isFile());
 }
 
 function todo(root: string, title: string, severity = "normal"): any {
   const result = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
-    kind: "task", target_version: "3.0.0", title, requirements: [], acceptance: [], release_blocker: false, severity,
+    kind: "task",
+    target_version: "3.0.0",
+    title,
+    requirements: [],
+    acceptance: [],
+    release_blocker: false,
+    severity,
   });
-  expect(result.rc, result.err || result.out).toBe(0); return result.json;
+  expect(result.rc, result.err || result.out).toBe(0);
+  return result.json;
 }
 
 const TODO_TRANSITION_VERBS = ["set-severity", "resolve"] as const;
 type TodoTransitionVerb = (typeof TODO_TRANSITION_VERBS)[number];
 
 function transitionBatchInput(verb: TodoTransitionVerb, ids: string[]): Record<string, unknown> {
-  const entries = ids.map((id) => verb === "set-severity"
-    ? { id, severity: "degraded", reason: "Batch transition", date: "2026-08-23" }
-    : { id, reason: "Batch transition", date: "2026-08-23" });
-  return verb === "set-severity"
-    ? { schema_version: "agentera.todoSetSeverityBatch.v1", transitions: entries }
-    : { schema_version: "agentera.todoResolveBatch.v1", resolutions: entries };
+  const entries = ids.map((id) => (verb === "set-severity" ? { id, severity: "degraded", reason: "Batch transition", date: "2026-08-23" } : { id, reason: "Batch transition", date: "2026-08-23" }));
+  return verb === "set-severity" ? { schema_version: "agentera.todoSetSeverityBatch.v1", transitions: entries } : { schema_version: "agentera.todoResolveBatch.v1", resolutions: entries };
 }
 
 function transitionSingletonArgs(verb: TodoTransitionVerb, id: string): string[] {
-  return verb === "set-severity"
-    ? ["state", "todo", verb, "--id", id, "--severity", "degraded", "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"]
-    : ["state", "todo", verb, "--id", id, "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"];
+  return verb === "set-severity" ? ["state", "todo", verb, "--id", id, "--severity", "degraded", "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"] : ["state", "todo", verb, "--id", id, "--reason", "Batch transition", "--date", "2026-08-23", "--format", "json"];
 }
 
 function seedTodoEntity(root: string, id: string, title: string, severity = "normal"): string {
   const target = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, dumpYamlMapping({
-    id,
-    artifact: "todo",
-    record: {
-      kind: "task",
-      target_version: "3.0.0",
-      title,
-      requirements: [],
-      acceptance: [],
-      release_blocker: false,
-      severity,
-      status: "open",
-    },
-  }));
+  fs.writeFileSync(
+    target,
+    dumpYamlMapping({
+      id,
+      artifact: "todo",
+      record: {
+        kind: "task",
+        target_version: "3.0.0",
+        title,
+        requirements: [],
+        acceptance: [],
+        release_blocker: false,
+        severity,
+        status: "open",
+      },
+    }),
+  );
   return target;
 }
 
-function damagedActiveProject(): { root: string; ids: string[]; entityBytes: Record<string, string>; markdown: string } {
+function damagedActiveProject(): {
+  root: string;
+  ids: string[];
+  entityBytes: Record<string, string>;
+  markdown: string;
+} {
   const root = project();
   const rows = {
     openLegacy: "- [ ] [task:3.0.0] Keep current open text",
@@ -127,11 +175,7 @@ function damagedActiveProject(): { root: string; ids: string[]; entityBytes: Rec
   };
   const markdown = `# TODO fixture\n\nUnrelated introduction survives.\n\n## → Normal\n${rows.openLegacy}\n${rows.retained}\n- [ ] [id:abcdefghij] [task:3.0.0] Keep current open text\n- [ ] [id:bbbbbbbbbb] [fix:3.0.0] Keep completed Markdown state\n- [ ] [id:cccccccccc] [task:3.0.0] Keep matched managed row\n\n## ✓ Resolved\n${rows.completedLegacy}\n\nUnrelated footer survives.\n`;
   fs.writeFileSync(path.join(root, "TODO.md"), markdown);
-  fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([
-    todoLegacyRowFingerprint("normal", rows.openLegacy),
-    todoLegacyRowFingerprint("normal", rows.retained),
-    todoLegacyRowFingerprint("resolved", rows.completedLegacy),
-  ]));
+  fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([todoLegacyRowFingerprint("normal", rows.openLegacy), todoLegacyRowFingerprint("normal", rows.retained), todoLegacyRowFingerprint("resolved", rows.completedLegacy)]));
   const entityBytes: Record<string, string> = {};
   for (const [id, kind, title] of [
     ["abcdefghij", "task", "Keep current open text"],
@@ -141,10 +185,33 @@ function damagedActiveProject(): { root: string; ids: string[]; entityBytes: Rec
     const target = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
     fs.mkdirSync(path.dirname(target), { recursive: true });
     const record = {
-      kind, target_version: "3.0.0", title, requirements: ["Operational requirement"], acceptance: ["Operational acceptance"], release_blocker: true,
-      severity: "normal", status: "open",
-      readiness: { capability: "build", reason: "Operational fields survive repair.", dependencies: [], blocked: null, gate: null, queue_rank: id === "abcdefghij" ? 1 : id === "bbbbbbbbbb" ? 2 : 3, order_reason: "Stable operational order." },
-      reconciliation: { schema_version: "agentera.todoReconciliation.v1", public: { present: true, description: `[${kind}:3.0.0] ${title}`, severity: "normal", status: "open", order: id === "abcdefghij" ? 3 : id === "bbbbbbbbbb" ? 4 : 5 } },
+      kind,
+      target_version: "3.0.0",
+      title,
+      requirements: ["Operational requirement"],
+      acceptance: ["Operational acceptance"],
+      release_blocker: true,
+      severity: "normal",
+      status: "open",
+      readiness: {
+        capability: "build",
+        reason: "Operational fields survive repair.",
+        dependencies: [],
+        blocked: null,
+        gate: null,
+        queue_rank: id === "abcdefghij" ? 1 : id === "bbbbbbbbbb" ? 2 : 3,
+        order_reason: "Stable operational order.",
+      },
+      reconciliation: {
+        schema_version: "agentera.todoReconciliation.v1",
+        public: {
+          present: true,
+          description: `[${kind}:3.0.0] ${title}`,
+          severity: "normal",
+          status: "open",
+          order: id === "abcdefghij" ? 3 : id === "bbbbbbbbbb" ? 4 : 5,
+        },
+      },
     };
     fs.writeFileSync(target, dumpYamlMapping({ id, artifact: "todo", record }));
     entityBytes[id] = fs.readFileSync(target, "utf8");
@@ -191,8 +258,10 @@ function unsafeInactiveStaleProject(count = 161): { root: string; ids: string[] 
 }
 
 function ownerCorrectionInput(root: string, ids: readonly string[]): Record<string, unknown> {
-  const sourceLines = fs.readFileSync(path.join(root, "TODO.md"), "utf8").split(/\r?\n/)
-    .flatMap((line, index) => line.trimStart().startsWith("- [") ? [index + 1] : []);
+  const sourceLines = fs
+    .readFileSync(path.join(root, "TODO.md"), "utf8")
+    .split(/\r?\n/)
+    .flatMap((line, index) => (line.trimStart().startsWith("- [") ? [index + 1] : []));
   expect(sourceLines).toHaveLength(ids.length);
   return {
     schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
@@ -204,12 +273,19 @@ function runOwnerCorrectionClient(root: string, input: Record<string, unknown>, 
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [path.join(sourceBuildOutputRoot(), "bin/agentera.js"), "state", "todo", "correct-owners", "--input", "-", "--effect-sha256", effect, "--yes", "--format", "json"], {
       cwd: root,
-      env: sourceSubprocessEnv({ ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../..") }),
+      env: sourceSubprocessEnv({
+        ...process.env,
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."),
+      }),
     });
     let stdout = "";
     let stderr = "";
-    child.stdout.on("data", (chunk) => { stdout += String(chunk); });
-    child.stderr.on("data", (chunk) => { stderr += String(chunk); });
+    child.stdout.on("data", (chunk) => {
+      stdout += String(chunk);
+    });
+    child.stderr.on("data", (chunk) => {
+      stderr += String(chunk);
+    });
     child.on("close", (code) => resolve({ code, stdout, stderr }));
     child.stdin.end(JSON.stringify(input));
   });
@@ -226,21 +302,39 @@ function readinessInput(overrides: Record<string, unknown> = {}): Record<string,
     orderReason: "Highest-value ready work.",
     ...overrides,
   };
-  return { capability: values.capability, reason: values.reason, dependencies: values.dependencies, blocked: values.blocked, gate: values.gate, queue_rank: values.queue_rank, order_reason: values.orderReason };
+  return {
+    capability: values.capability,
+    reason: values.reason,
+    dependencies: values.dependencies,
+    blocked: values.blocked,
+    gate: values.gate,
+    queue_rank: values.queue_rank,
+    order_reason: values.orderReason,
+  };
 }
 
 function indexedId(index: number): string {
   let value = index;
   return Array.from({ length: 10 }, () => {
-    const character = String.fromCharCode(97 + value % 26);
+    const character = String.fromCharCode(97 + (value % 26));
     value = Math.floor(value / 26);
     return character;
-  }).reverse().join("");
+  })
+    .reverse()
+    .join("");
 }
 
-function realisticTodoProject(count = 120): { root: string; orderedIds: string[]; criticalOpenIds: string[] } {
+function realisticTodoProject(count = 120): {
+  root: string;
+  orderedIds: string[];
+  criticalOpenIds: string[];
+} {
   const root = project();
-  const sections: Record<"critical" | "normal" | "resolved", string[]> = { critical: [], normal: [], resolved: [] };
+  const sections: Record<"critical" | "normal" | "resolved", string[]> = {
+    critical: [],
+    normal: [],
+    resolved: [],
+  };
   const criticalOpenIds: string[] = [];
   const criticalResolvedIds: string[] = [];
   const normalOpenIds: string[] = [];
@@ -286,26 +380,44 @@ function realisticTodoProject(count = 120): { root: string; orderedIds: string[]
     else normalOpenIds.push(id);
   }
   fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([]));
-  fs.writeFileSync(path.join(root, "TODO.md"), [
-    "# TODO", "", "## ⇶ Critical", ...sections.critical, "", "## → Normal", ...sections.normal,
-    "", "## ✓ Resolved", ...sections.resolved, "",
-  ].join("\n"));
-  return { root, orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds], criticalOpenIds };
+  fs.writeFileSync(path.join(root, "TODO.md"), ["# TODO", "", "## ⇶ Critical", ...sections.critical, "", "## → Normal", ...sections.normal, "", "## ✓ Resolved", ...sections.resolved, ""].join("\n"));
+  return {
+    root,
+    orderedIds: [...criticalOpenIds, ...criticalResolvedIds, ...normalOpenIds],
+    criticalOpenIds,
+  };
 }
 
 const REALISTIC_TODO_CURSOR_TIMEOUT_MS = 90_000;
 
 function doc(root: string, document: string, filePath: string, status = "current"): any {
-  const result = capture(root, ["state", "docs", "create", "--input", "-", "--format", "json"], { document, path: filePath, last_updated: "2026-07-17", status });
-  expect(result.rc, result.err || result.out).toBe(0); return result.json;
+  const result = capture(root, ["state", "docs", "create", "--input", "-", "--format", "json"], {
+    document,
+    path: filePath,
+    last_updated: "2026-07-17",
+    status,
+  });
+  expect(result.rc, result.err || result.out).toBe(0);
+  return result.json;
 }
 
 function git(root: string, ...args: string[]): string {
-  const env = { ...process.env }; delete env.GIT_DIR; delete env.GIT_WORK_TREE; delete env.GIT_INDEX_FILE;
-  return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], { cwd: root, env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  const env = { ...process.env };
+  delete env.GIT_DIR;
+  delete env.GIT_WORK_TREE;
+  delete env.GIT_INDEX_FILE;
+  return execFileSync("git", ["-c", "commit.gpgsign=false", ...args], {
+    cwd: root,
+    env,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  }).trim();
 }
 
-afterEach(() => { vi.restoreAllMocks(); while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
+afterEach(() => {
+  vi.restoreAllMocks();
+  while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true });
+});
 
 describe("TODO item and documentation inventory entity authority", () => {
   it("discovers and round-trips canonical readiness through create, list, and exact get", () => {
@@ -316,8 +428,18 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(explain.json.guidance.join(" ")).toContain("full typed TODO record");
 
     const created = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
-      kind: "fix", target_version: "3.0.0", title: "Implement the boundary", requirements: [], acceptance: [], release_blocker: false, severity: "normal",
-      readiness: { ...readinessInput(), dependencies: [dependency.id], gate: { state: "satisfied", reason: "Review complete", recovery: "Re-review if changed" } },
+      kind: "fix",
+      target_version: "3.0.0",
+      title: "Implement the boundary",
+      requirements: [],
+      acceptance: [],
+      release_blocker: false,
+      severity: "normal",
+      readiness: {
+        ...readinessInput(),
+        dependencies: [dependency.id],
+        gate: { state: "satisfied", reason: "Review complete", recovery: "Re-review if changed" },
+      },
     });
     expect(created.rc, created.err || created.out).toBe(0);
     const readiness = {
@@ -333,7 +455,15 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(capture(root, ["state", "todo", "get", "--id", created.json.id, "--format", "json"]).json.entry.record.readiness).toEqual(readiness);
 
     const updated = capture(root, ["state", "todo", "update", "--id", created.json.id, "--input", "-", "--format", "json"], {
-      readiness: { ...readinessInput({ capability: "discuss", reason: "A decision is required.", queue_rank: 2, orderReason: "Resolve intent before implementation." }), blocked: { reason: "Decision missing", recovery: "Run agentera discuss" } },
+      readiness: {
+        ...readinessInput({
+          capability: "discuss",
+          reason: "A decision is required.",
+          queue_rank: 2,
+          orderReason: "Resolve intent before implementation.",
+        }),
+        blocked: { reason: "Decision missing", recovery: "Run agentera discuss" },
+      },
     });
     expect(updated.rc, updated.err || updated.out).toBe(0);
     const updatedReadiness = {
@@ -354,49 +484,108 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("publishes the typed record contract, patch clears, lifecycle transitions, and public conflicts", () => {
     const root = project();
     const input = path.join(root, "todo.yaml");
-    fs.writeFileSync(input, dumpYamlMapping({ kind: "fix", target_version: "3.0.0", title: "Typed boundary", requirements: ["Use typed input"], acceptance: ["Preserve omissions"], release_blocker: true, severity: "normal", readiness: { ...readinessInput(), gate: null } }));
+    fs.writeFileSync(
+      input,
+      dumpYamlMapping({
+        kind: "fix",
+        target_version: "3.0.0",
+        title: "Typed boundary",
+        requirements: ["Use typed input"],
+        acceptance: ["Preserve omissions"],
+        release_blocker: true,
+        severity: "normal",
+        readiness: { ...readinessInput(), gate: null },
+      }),
+    );
     const created = capture(root, ["state", "todo", "create", "--input", input, "--format", "json"]);
     expect(created.rc, created.err).toBe(0);
     const id = created.json.id;
-    expect(created.json.record).toMatchObject({ kind: "fix", target_version: "3.0.0", title: "Typed boundary", requirements: ["Use typed input"], acceptance: ["Preserve omissions"], release_blocker: true, severity: "normal", status: "open" });
+    expect(created.json.record).toMatchObject({
+      kind: "fix",
+      target_version: "3.0.0",
+      title: "Typed boundary",
+      requirements: ["Use typed input"],
+      acceptance: ["Preserve omissions"],
+      release_blocker: true,
+      severity: "normal",
+      status: "open",
+    });
     expect(created.json.record).not.toHaveProperty("description");
     const implicitJson = capture(root, ["state", "todo"]);
     const explicitJson = capture(root, ["state", "todo", "list", "--format", "json"]);
     expect(implicitJson).toEqual(explicitJson);
     expect(implicitJson.out).toContain(id);
 
-    const omitted = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Typed boundary v2" });
+    const omitted = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      title: "Typed boundary v2",
+    });
     expect(omitted.rc).toBe(0);
     expect(omitted.json.record.readiness).toEqual(created.json.record.readiness);
-    const cleared = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { target_version: null, requirements: [], acceptance: [], release_blocker: false });
+    const cleared = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      target_version: null,
+      requirements: [],
+      acceptance: [],
+      release_blocker: false,
+    });
     expect(cleared.rc).toBe(0);
-    expect(cleared.json.record).toMatchObject({ title: "Typed boundary v2", release_blocker: false, requirements: [], acceptance: [] });
+    expect(cleared.json.record).toMatchObject({
+      title: "Typed boundary v2",
+      release_blocker: false,
+      requirements: [],
+      acceptance: [],
+    });
     expect(cleared.json.record).not.toHaveProperty("target_version");
-    const replay = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { target_version: null, requirements: [], acceptance: [], release_blocker: false });
+    const replay = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      target_version: null,
+      requirements: [],
+      acceptance: [],
+      release_blocker: false,
+    });
     expect(replay.json.operation.idempotent_replay).toBe(true);
 
     const beforeLifecycle = fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`));
     const contentLifecycle = capture(root, ["state", "todo", "resolve", "--id", id, "--reason", "closed", "--date", "2026-07-31", "--input", "-", "--format", "json"], {});
-    expect(contentLifecycle.rc).toBe(2); expect(contentLifecycle.json.error.class).toBe("mutually_exclusive"); expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(beforeLifecycle);
-    const owned = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { status: "resolved" });
-    expect(owned.rc).toBe(2); expect(owned.json.error.class).toBe("schema_violation");
+    expect(contentLifecycle.rc).toBe(2);
+    expect(contentLifecycle.json.error.class).toBe("mutually_exclusive");
+    expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(beforeLifecycle);
+    const owned = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      status: "resolved",
+    });
+    expect(owned.rc).toBe(2);
+    expect(owned.json.error.class).toBe("schema_violation");
     const graphBefore = fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`));
-    const graph = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: { ...readinessInput(), dependencies: [id] } });
-    expect(graph.rc).toBe(2); expect(graph.json.error.class).toBe("schema_violation"); expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(graphBefore);
+    const graph = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      readiness: { ...readinessInput(), dependencies: [id] },
+    });
+    expect(graph.rc).toBe(2);
+    expect(graph.json.error.class).toBe("schema_violation");
+    expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(graphBefore);
 
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${id}] [fix] Typed boundary v2\n`);
-    const divergent = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Divergent public title" });
-    expect(divergent.rc).toBe(0); expect(divergent.json.record.title).toBe("Divergent public title"); expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Divergent public title");
+    const divergent = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      title: "Divergent public title",
+    });
+    expect(divergent.rc).toBe(0);
+    expect(divergent.json.record.title).toBe("Divergent public title");
+    expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Divergent public title");
 
     const resolved = capture(root, ["state", "todo", "resolve", "--id", id, "--reason", "closed", "--date", "2026-07-31", "--format", "json"]);
-    expect(resolved.rc).toBe(0); expect(resolved.json.record.lifecycle).toMatchObject({ operation: "resolve", reason: "closed", date: "2026-07-31" });
+    expect(resolved.rc).toBe(0);
+    expect(resolved.json.record.lifecycle).toMatchObject({
+      operation: "resolve",
+      reason: "closed",
+      date: "2026-07-31",
+    });
     const resolvedReplay = capture(root, ["state", "todo", "resolve", "--id", id, "--reason", "closed", "--date", "2026-07-31", "--format", "json"]);
-    expect(resolvedReplay.rc).toBe(0); expect(resolvedReplay.json.operation.idempotent_replay).toBe(true);
+    expect(resolvedReplay.rc).toBe(0);
+    expect(resolvedReplay.json.operation.idempotent_replay).toBe(true);
     fs.writeFileSync(path.join(root, "TODO.md"), "# TODO\n");
     const reopened = capture(root, ["state", "todo", "reopen", "--id", id, "--reason", "scope returned", "--date", "2026-07-31", "--format", "json"]);
-    expect(reopened.rc).toBe(0); expect(reopened.json.record.status).toBe("open");
+    expect(reopened.rc).toBe(0);
+    expect(reopened.json.record.status).toBe("open");
     const reopenedReplay = capture(root, ["state", "todo", "reopen", "--id", id, "--reason", "scope returned", "--date", "2026-07-31", "--format", "json"]);
-    expect(reopenedReplay.rc).toBe(0); expect(reopenedReplay.json.operation.idempotent_replay).toBe(true);
+    expect(reopenedReplay.rc).toBe(0);
+    expect(reopenedReplay.json.operation.idempotent_replay).toBe(true);
   });
 
   it("preserves the exact singleton no-ID rejection before malformed input parsing", () => {
@@ -416,7 +605,9 @@ describe("TODO item and documentation inventory entity authority", () => {
     const malformed = capture(root, ["state", "todo", "update", "--input", "-", "--format", "json"], "[");
     expect(malformed.rc).toBe(2);
     expect(malformed.json).toEqual(expected);
-    const singleton = capture(root, ["state", "todo", "update", "--input", "-", "--format", "json"], { title: "Missing selector" });
+    const singleton = capture(root, ["state", "todo", "update", "--input", "-", "--format", "json"], {
+      title: "Missing selector",
+    });
     expect(singleton.rc).toBe(2);
     expect(singleton.json).toEqual(expected);
   });
@@ -426,14 +617,21 @@ describe("TODO item and documentation inventory entity authority", () => {
     const create = (title: string) => todo(root, title).id as string;
     const first = create("First batch item");
     const second = create("Second batch item");
-    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [
-      { id: first, patch: { title: "First updated item" } },
-      { id: second, patch: { title: "Second updated item" } },
-    ] };
+    const input = {
+      schema_version: "agentera.todoUpdateBatch.v1",
+      updates: [
+        { id: first, patch: { title: "First updated item" } },
+        { id: second, patch: { title: "Second updated item" } },
+      ],
+    };
 
     const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
     expect(preview.rc, preview.err || preview.out).toBe(0);
-    expect(preview.json).toMatchObject({ effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), apply_command: expect.stringContaining("--yes"), reconciliation: { transaction_id: null } });
+    expect(preview.json).toMatchObject({
+      effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      apply_command: expect.stringContaining("--yes"),
+      reconciliation: { transaction_id: null },
+    });
     expect(capture(root, ["state", "todo", "get", "--id", first, "--format", "json"]).json.entry.record.title).toBe("First batch item");
 
     const applied = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
@@ -441,22 +639,39 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
     expect(applied.json.records.map((entry: any) => entry.record.title)).toEqual(["First updated item", "Second updated item"]);
     const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
-    expect(markdown).toContain("First updated item"); expect(markdown).toContain("Second updated item");
+    expect(markdown).toContain("First updated item");
+    expect(markdown).toContain("Second updated item");
   });
 
   it.each(TODO_TRANSITION_VERBS)("previews and atomically applies a %s batch", (verb) => {
-    const root = project(); const first = todo(root, `${verb} first`).id as string; const second = todo(root, `${verb} second`).id as string;
+    const root = project();
+    const first = todo(root, `${verb} first`).id as string;
+    const second = todo(root, `${verb} second`).id as string;
     const input = transitionBatchInput(verb, [first, second]);
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-    expect(preview.rc, preview.err || preview.out).toBe(0); expect(preview.json).toMatchObject({ effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/), apply_command: expect.stringContaining("--yes") });
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(preview.json).toMatchObject({
+      effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      apply_command: expect.stringContaining("--yes"),
+    });
     const applied = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(applied.rc, applied.err || applied.out).toBe(0); expect(applied.json.records).toHaveLength(2); expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
-    const replay = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input); expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true);
-    for (const id of [first, second]) { const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record; expect(record.lifecycle.operation).toBe(verb); if (verb === "resolve") expect(record.status).toBe("resolved"); else expect(record.severity).toBe("degraded"); }
+    expect(applied.rc, applied.err || applied.out).toBe(0);
+    expect(applied.json.records).toHaveLength(2);
+    expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
+    const replay = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(replay.json.operation.idempotent_replay).toBe(true);
+    for (const id of [first, second]) {
+      const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record;
+      expect(record.lifecycle.operation).toBe(verb);
+      if (verb === "resolve") expect(record.status).toBe("resolved");
+      else expect(record.severity).toBe("degraded");
+    }
   });
 
   it.each(TODO_TRANSITION_VERBS)("rejects missing, invalid, duplicate, and unconfirmed %s batches without effects", (verb) => {
-    const root = project(); const id = todo(root, `${verb} target`).id as string;
+    const root = project();
+    const id = todo(root, `${verb} target`).id as string;
     const cases: Array<{ input: Record<string, unknown>; rc: number; errorClass: string }> = [
       { input: transitionBatchInput(verb, ["zzzzzzzzzz"]), rc: 1, errorClass: "not_found" },
       { input: transitionBatchInput(verb, [id]), rc: 2, errorClass: "schema_violation" },
@@ -467,142 +682,345 @@ describe("TODO item and documentation inventory entity authority", () => {
     for (const { input, rc, errorClass } of cases) {
       const before = files(root);
       const result = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-      expect(result.rc).toBe(rc); expect(result.json.error.class).toBe(errorClass); expect(files(root)).toEqual(before);
+      expect(result.rc).toBe(rc);
+      expect(result.json.error.class).toBe(errorClass);
+      expect(files(root)).toEqual(before);
     }
-    const input = transitionBatchInput(verb, [id]); const before = files(root);
+    const input = transitionBatchInput(verb, [id]);
+    const before = files(root);
     const unconfirmed = capture(root, ["state", "todo", verb, "--input", "-", "--format", "json"], input);
-    expect(unconfirmed.rc).toBe(2); expect(unconfirmed.json.error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("--yes") }); expect(files(root)).toEqual(before);
+    expect(unconfirmed.rc).toBe(2);
+    expect(unconfirmed.json.error).toMatchObject({
+      class: "invalid_request",
+      message: expect.stringContaining("--yes"),
+    });
+    expect(files(root)).toEqual(before);
   });
 
   it.each(TODO_TRANSITION_VERBS)("rejects stale %s batch effects and state without effects", (verb) => {
-    const root = project(); const first = todo(root, `${verb} stale first`).id as string; const second = todo(root, `${verb} stale second`).id as string;
+    const root = project();
+    const first = todo(root, `${verb} stale first`).id as string;
+    const second = todo(root, `${verb} stale second`).id as string;
     const input = transitionBatchInput(verb, [first, second]);
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
     const beforeWrongEffect = files(root);
     const wrongEffect = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"], input);
-    expect(wrongEffect.rc).toBe(2); expect(wrongEffect.json.error.class).toBe("conflict"); expect(files(root)).toEqual(beforeWrongEffect);
+    expect(wrongEffect.rc).toBe(2);
+    expect(wrongEffect.json.error.class).toBe("conflict");
+    expect(files(root)).toEqual(beforeWrongEffect);
 
-    expect(capture(root, ["state", "todo", "update", "--id", first, "--input", "-", "--format", "json"], { requirements: ["Concurrent change"] }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", first, "--input", "-", "--format", "json"], {
+        requirements: ["Concurrent change"],
+      }).rc,
+    ).toBe(0);
     const afterConcurrent = files(root);
     const staleState = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(staleState.rc).toBe(2); expect(staleState.json.error.class).toBe("conflict"); expect(files(root)).toEqual(afterConcurrent);
+    expect(staleState.rc).toBe(2);
+    expect(staleState.json.error.class).toBe("conflict");
+    expect(files(root)).toEqual(afterConcurrent);
   });
 
   it.each(TODO_TRANSITION_VERBS)("rejects a mapping change during %s batch publication without target effects", (verb) => {
-    const root = project(); const first = todo(root, `${verb} mapping first`).id as string; const second = todo(root, `${verb} mapping second`).id as string;
+    const root = project();
+    const first = todo(root, `${verb} mapping first`).id as string;
+    const second = todo(root, `${verb} mapping second`).id as string;
     const input = transitionBatchInput(verb, [first, second]);
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-    const docs = path.join(root, ".agentera/docs.yaml"); const todoPath = path.join(root, "TODO.md"); const mapped = path.join(root, "mapped/WORK.md");
-    fs.mkdirSync(path.dirname(mapped), { recursive: true }); fs.writeFileSync(mapped, fs.readFileSync(todoPath));
+    const docs = path.join(root, ".agentera/docs.yaml");
+    const todoPath = path.join(root, "TODO.md");
+    const mapped = path.join(root, "mapped/WORK.md");
+    fs.mkdirSync(path.dirname(mapped), { recursive: true });
+    fs.writeFileSync(mapped, fs.readFileSync(todoPath));
     const targetBytes = [first, second].map((id) => fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`)));
-    const markdownBytes = fs.readFileSync(todoPath); const concurrentMapping = dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] });
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext); let injected = false;
-    vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
-      const result = original(...args); if (!injected) { injected = true; fs.writeFileSync(docs, concurrentMapping); } return result;
+    const markdownBytes = fs.readFileSync(todoPath);
+    const concurrentMapping = dumpYamlMapping({
+      mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
     });
-    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext);
+    let injected = false;
+    vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
+      const result = original(...args);
+      if (!injected) {
+        injected = true;
+        fs.writeFileSync(docs, concurrentMapping);
+      }
+      return result;
+    });
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", verb)!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
     expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext })).toThrow(new RegExp(`mapping changed during ${verb} batch publication`));
     binding.publicationContext.close();
-    expect(injected).toBe(true); expect(fs.readFileSync(docs, "utf8")).toBe(concurrentMapping); expect(fs.readFileSync(todoPath)).toEqual(markdownBytes);
+    expect(injected).toBe(true);
+    expect(fs.readFileSync(docs, "utf8")).toBe(concurrentMapping);
+    expect(fs.readFileSync(todoPath)).toEqual(markdownBytes);
     for (const [index, id] of [first, second].entries()) expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`))).toEqual(targetBytes[index]);
-    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0); expect(recoveryFiles(root)).toEqual([]);
+    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0);
+    expect(recoveryFiles(root)).toEqual([]);
   });
 
   it.each(TODO_TRANSITION_VERBS)("recovers only an interrupted exact %s batch retry", (verb) => {
-    const root = project(); const first = todo(root, `${verb} interrupted first`).id as string; const second = todo(root, `${verb} interrupted second`).id as string;
+    const root = project();
+    const first = todo(root, `${verb} interrupted first`).id as string;
+    const second = todo(root, `${verb} interrupted second`).id as string;
     const input = transitionBatchInput(verb, [first, second]);
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
-    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
-    const interrupted = files(root); const divergentInput = structuredClone(input); const member = verb === "set-severity" ? "transitions" : "resolutions";
-    ((divergentInput[member] as Array<Record<string, unknown>>)[0]!).reason = "Divergent retry";
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", verb)!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
+    expect(() =>
+      mutateTodoDocsEntity(request, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
+    binding.publicationContext.close();
+    const interrupted = files(root);
+    const divergentInput = structuredClone(input);
+    const member = verb === "set-severity" ? "transitions" : "resolutions";
+    (divergentInput[member] as Array<Record<string, unknown>>)[0]!.reason = "Divergent retry";
     const divergent = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], divergentInput);
-    expect(divergent.rc).toBe(2); expect(divergent.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("exact original TODO update batch") }); expect(files(root)).toEqual(interrupted);
+    expect(divergent.rc).toBe(2);
+    expect(divergent.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("exact original TODO update batch"),
+    });
+    expect(files(root)).toEqual(interrupted);
     const recovered = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json).toMatchObject({ effect_sha256: preview.json.effect_sha256, operation: { verb, dry_run: false, idempotent_replay: true }, reconciliation: { transaction_id: expect.any(String), recovered: [expect.any(String)] } });
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(recovered.json).toMatchObject({
+      effect_sha256: preview.json.effect_sha256,
+      operation: { verb, dry_run: false, idempotent_replay: true },
+      reconciliation: { transaction_id: expect.any(String), recovered: [expect.any(String)] },
+    });
   });
 
   it.each(TODO_TRANSITION_VERBS)("recovers only an interrupted exact repeated %s batch retry", (verb) => {
-    const root = project(); const first = todo(root, `${verb} repeated first`).id as string; const second = todo(root, `${verb} repeated second`).id as string;
-    const priorInput = transitionBatchInput(verb, [first, second]); const priorPreview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], priorInput);
+    const root = project();
+    const first = todo(root, `${verb} repeated first`).id as string;
+    const second = todo(root, `${verb} repeated second`).id as string;
+    const priorInput = transitionBatchInput(verb, [first, second]);
+    const priorPreview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], priorInput);
     expect(capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", priorPreview.json.effect_sha256, "--yes", "--format", "json"], priorInput).rc).toBe(0);
     if (verb === "resolve") for (const id of [first, second]) expect(capture(root, ["state", "todo", "reopen", "--id", id, "--reason", "Prepare repeated batch", "--date", "2026-08-24", "--format", "json"]).rc).toBe(0);
-    const input = transitionBatchInput(verb, [first, second]); const member = verb === "set-severity" ? "transitions" : "resolutions";
-    for (const entry of input[member] as Array<Record<string, unknown>>) { entry.reason = "Repeated batch"; entry.date = "2026-08-25"; if (verb === "set-severity") entry.severity = "critical"; }
+    const input = transitionBatchInput(verb, [first, second]);
+    const member = verb === "set-severity" ? "transitions" : "resolutions";
+    for (const entry of input[member] as Array<Record<string, unknown>>) {
+      entry.reason = "Repeated batch";
+      entry.date = "2026-08-25";
+      if (verb === "set-severity") entry.severity = "critical";
+    }
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", verb)!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
-    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
-    const interrupted = files(root); const divergentInput = structuredClone(input); ((divergentInput[member] as Array<Record<string, unknown>>)[0]!).reason = "Divergent repeated retry";
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", verb)!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
+    expect(() =>
+      mutateTodoDocsEntity(request, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
+    binding.publicationContext.close();
+    const interrupted = files(root);
+    const divergentInput = structuredClone(input);
+    (divergentInput[member] as Array<Record<string, unknown>>)[0]!.reason = "Divergent repeated retry";
     const divergent = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], divergentInput);
-    expect(divergent.rc).toBe(2); expect(divergent.json.error.class).toBe("conflict"); expect(files(root)).toEqual(interrupted);
+    expect(divergent.rc).toBe(2);
+    expect(divergent.json.error.class).toBe("conflict");
+    expect(files(root)).toEqual(interrupted);
     const recovered = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json).toMatchObject({ effect_sha256: preview.json.effect_sha256, operation: { verb, idempotent_replay: true }, reconciliation: { recovered: [expect.any(String)] } });
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(recovered.json).toMatchObject({
+      effect_sha256: preview.json.effect_sha256,
+      operation: { verb, idempotent_replay: true },
+      reconciliation: { recovered: [expect.any(String)] },
+    });
     expect(recovered.json.records.map(({ id }: { id: string }) => id)).toEqual([first, second]);
-    for (const id of [first, second]) { const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record; expect(record.reconciliation.transition_batch).toMatchObject({ verb, effect_sha256: preview.json.effect_sha256, post_state_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) }); expect(record.lifecycle).toEqual({ operation: verb, reason: "Repeated batch", date: "2026-08-25" }); if (verb === "resolve") expect(record.status).toBe("resolved"); else expect(record.severity).toBe("critical"); }
-    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0); expect(recoveryFiles(root)).toEqual([]);
+    for (const id of [first, second]) {
+      const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record;
+      expect(record.reconciliation.transition_batch).toMatchObject({
+        verb,
+        effect_sha256: preview.json.effect_sha256,
+        post_state_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+      });
+      expect(record.lifecycle).toEqual({
+        operation: verb,
+        reason: "Repeated batch",
+        date: "2026-08-25",
+      });
+      if (verb === "resolve") expect(record.status).toBe("resolved");
+      else expect(record.severity).toBe("critical");
+    }
+    expect(Object.keys(files(root)).filter((file) => file.startsWith(".agentera/.todo-reconciliation/") && file.endsWith(".json"))).toHaveLength(0);
+    expect(recoveryFiles(root)).toEqual([]);
   });
 
   it.each(TODO_TRANSITION_VERBS)("rejects exact %s batch replay after singleton post-state divergence", (verb) => {
-    const root = project(); const first = todo(root, `${verb} divergence first`).id as string; const second = todo(root, `${verb} divergence second`).id as string;
-    const input = transitionBatchInput(verb, [first, second]); const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
+    const root = project();
+    const first = todo(root, `${verb} divergence first`).id as string;
+    const second = todo(root, `${verb} divergence second`).id as string;
+    const input = transitionBatchInput(verb, [first, second]);
+    const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
     expect(capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input).rc).toBe(0);
-    const singleton = verb === "set-severity"
-      ? ["state", "todo", verb, "--id", first, "--severity", "critical", "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"]
-      : ["state", "todo", "reopen", "--id", first, "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"];
-    expect(capture(root, singleton).rc).toBe(0); const diverged = files(root);
+    const singleton = verb === "set-severity" ? ["state", "todo", verb, "--id", first, "--severity", "critical", "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"] : ["state", "todo", "reopen", "--id", first, "--reason", "Singleton divergence", "--date", "2026-08-24", "--format", "json"];
+    expect(capture(root, singleton).rc).toBe(0);
+    const diverged = files(root);
     const replay = capture(root, ["state", "todo", verb, "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(replay.rc).toBe(2); expect(replay.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("post-state") }); expect(files(root)).toEqual(diverged);
+    expect(replay.rc).toBe(2);
+    expect(replay.json.error).toMatchObject({
+      class: "conflict",
+      message: expect.stringContaining("post-state"),
+    });
+    expect(files(root)).toEqual(diverged);
   });
 
   it("requires every new resolve batch member to be open before transition replay logic", () => {
-    const root = project(); const first = todo(root, "Already resolved batch member").id as string; const second = todo(root, "Open batch member").id as string;
+    const root = project();
+    const first = todo(root, "Already resolved batch member").id as string;
+    const second = todo(root, "Open batch member").id as string;
     const input = transitionBatchInput("resolve", [first, second]);
-    expect(capture(root, transitionSingletonArgs("resolve", first)).rc).toBe(0); const before = files(root);
+    expect(capture(root, transitionSingletonArgs("resolve", first)).rc).toBe(0);
+    const before = files(root);
     const result = capture(root, ["state", "todo", "resolve", "--input", "-", "--dry-run", "--format", "json"], input);
-    expect(result.rc).toBe(2); expect(result.json.error).toMatchObject({ class: "conflict", message: "TODO resolve requires an open item" }); expect(files(root)).toEqual(before);
+    expect(result.rc).toBe(2);
+    expect(result.json.error).toMatchObject({
+      class: "conflict",
+      message: "TODO resolve requires an open item",
+    });
+    expect(files(root)).toEqual(before);
   });
 
   it("previews, applies, and replays an atomic TODO create batch with local references", () => {
     const root = project();
-    const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [
-      { local_ref: "foundation", record: { title: "Batch foundation", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false, readiness: readinessInput({ queue_rank: 1 }) } },
-      { local_ref: "dependent", record: { title: "Batch dependent", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false, readiness: readinessInput({ dependencies: [{ local_ref: "foundation" }], queue_rank: 2 }) } },
-    ] };
+    const input = {
+      schema_version: "agentera.todoCreateBatch.v1",
+      creates: [
+        {
+          local_ref: "foundation",
+          record: {
+            title: "Batch foundation",
+            kind: "feat",
+            target_version: "3.0.0",
+            severity: "normal",
+            requirements: [],
+            acceptance: [],
+            release_blocker: false,
+            readiness: readinessInput({ queue_rank: 1 }),
+          },
+        },
+        {
+          local_ref: "dependent",
+          record: {
+            title: "Batch dependent",
+            kind: "feat",
+            target_version: "3.0.0",
+            severity: "normal",
+            requirements: [],
+            acceptance: [],
+            release_blocker: false,
+            readiness: readinessInput({
+              dependencies: [{ local_ref: "foundation" }],
+              queue_rank: 2,
+            }),
+          },
+        },
+      ],
+    };
     const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
     expect(preview.rc, preview.err || preview.out).toBe(0);
-    expect(preview.json.local_refs).toEqual({ foundation: expect.stringMatching(/^[a-z]{10}$/), dependent: expect.stringMatching(/^[a-z]{10}$/) });
+    expect(preview.json.local_refs).toEqual({
+      foundation: expect.stringMatching(/^[a-z]{10}$/),
+      dependent: expect.stringMatching(/^[a-z]{10}$/),
+    });
     expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(0);
     const applied = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.local_refs).toEqual(preview.json.local_refs);
     expect(applied.json.records[1].record.readiness.dependencies).toEqual([{ artifact: "todo", id: preview.json.local_refs.foundation }]);
     const replay = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(replay.json.local_refs).toEqual(preview.json.local_refs);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(replay.json.operation.idempotent_replay).toBe(true);
+    expect(replay.json.local_refs).toEqual(preview.json.local_refs);
     expect(Object.keys(files(root)).filter((file) => file.includes("/todo_item/"))).toHaveLength(2);
   });
 
   it("rejects a stale TODO mapping at create-batch commit and permits only fresh recovery", () => {
     const root = project();
-    const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [
-      { local_ref: "one", record: { title: "Mapping-bound batch", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false } },
-    ] };
+    const input = {
+      schema_version: "agentera.todoCreateBatch.v1",
+      creates: [
+        {
+          local_ref: "one",
+          record: {
+            title: "Mapping-bound batch",
+            kind: "feat",
+            target_version: "3.0.0",
+            severity: "normal",
+            requirements: [],
+            acceptance: [],
+            release_blocker: false,
+          },
+        },
+      ],
+    };
     const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
     const docs = path.join(root, ".agentera/docs.yaml");
     const mapped = path.join(root, "mapped/WORK.md");
     fs.mkdirSync(path.dirname(mapped), { recursive: true });
     fs.writeFileSync(mapped, fs.readFileSync(path.join(root, "TODO.md")));
-    const concurrentMapping = dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] });
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext); let injected = false;
+    const concurrentMapping = dumpYamlMapping({
+      mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+    });
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext);
+    let injected = false;
     vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
       const result = original(...args);
-      if (!injected) { injected = true; fs.writeFileSync(docs, concurrentMapping); }
+      if (!injected) {
+        injected = true;
+        fs.writeFileSync(docs, concurrentMapping);
+      }
       return result;
     });
-    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "create")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
     expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext })).toThrow(/mapping changed during create batch publication/);
     binding.publicationContext.close();
 
@@ -622,37 +1040,118 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("rejects duplicate, missing, cyclic, and invalid TODO create batches without effects", () => {
     const cases = [
-      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "same", record: {} }, { local_ref: "same", record: {} }] },
-      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { readiness: readinessInput({ dependencies: [{ local_ref: "missing" }] }) } }] },
-      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { readiness: readinessInput({ dependencies: [{ local_ref: "two" }] }) } }, { local_ref: "two", record: { readiness: readinessInput({ dependencies: [{ local_ref: "one" }] }) } }] },
-      { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { status: "resolved" } }] },
+      {
+        schema_version: "agentera.todoCreateBatch.v1",
+        creates: [
+          { local_ref: "same", record: {} },
+          { local_ref: "same", record: {} },
+        ],
+      },
+      {
+        schema_version: "agentera.todoCreateBatch.v1",
+        creates: [
+          {
+            local_ref: "one",
+            record: { readiness: readinessInput({ dependencies: [{ local_ref: "missing" }] }) },
+          },
+        ],
+      },
+      {
+        schema_version: "agentera.todoCreateBatch.v1",
+        creates: [
+          {
+            local_ref: "one",
+            record: { readiness: readinessInput({ dependencies: [{ local_ref: "two" }] }) },
+          },
+          {
+            local_ref: "two",
+            record: { readiness: readinessInput({ dependencies: [{ local_ref: "one" }] }) },
+          },
+        ],
+      },
+      {
+        schema_version: "agentera.todoCreateBatch.v1",
+        creates: [{ local_ref: "one", record: { status: "resolved" } }],
+      },
     ];
-    for (const input of cases) { const root = project(); const before = files(root); const result = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input); expect(result.rc).toBe(2); expect(result.json.error.class).toBe("schema_violation"); expect(files(root)).toEqual(before); }
+    for (const input of cases) {
+      const root = project();
+      const before = files(root);
+      const result = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
+      expect(result.rc).toBe(2);
+      expect(result.json.error.class).toBe("schema_violation");
+      expect(files(root)).toEqual(before);
+    }
   });
 
   it("recovers only an interrupted exact TODO create batch", () => {
-    const root = project(); const input = { schema_version: "agentera.todoCreateBatch.v1", creates: [{ local_ref: "one", record: { title: "Interrupted create", kind: "feat", target_version: "3.0.0", severity: "normal", requirements: [], acceptance: [], release_blocker: false } }] };
+    const root = project();
+    const input = {
+      schema_version: "agentera.todoCreateBatch.v1",
+      creates: [
+        {
+          local_ref: "one",
+          record: {
+            title: "Interrupted create",
+            kind: "feat",
+            target_version: "3.0.0",
+            severity: "normal",
+            requirements: [],
+            acceptance: [],
+            release_blocker: false,
+          },
+        },
+      ],
+    };
     const preview = capture(root, ["state", "todo", "create", "--input", "-", "--dry-run", "--format", "json"], input);
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const request: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.effect_sha256 }, callerPayload: input, input };
-    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/); binding.publicationContext.close();
-    const interrupted = files(root); const divergent = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], { ...input, creates: [{ local_ref: "other", record: input.creates[0].record }] });
-    expect(divergent.rc).toBe(2); expect(divergent.json.error.class).toBe("conflict"); expect(files(root)).toEqual(interrupted);
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const request: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "create")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.effect_sha256 },
+      callerPayload: input,
+      input,
+    };
+    expect(() =>
+      mutateTodoDocsEntity(request, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
+    binding.publicationContext.close();
+    const interrupted = files(root);
+    const divergent = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], {
+      ...input,
+      creates: [{ local_ref: "other", record: input.creates[0].record }],
+    });
+    expect(divergent.rc).toBe(2);
+    expect(divergent.json.error.class).toBe("conflict");
+    expect(files(root)).toEqual(interrupted);
     const recovered = capture(root, ["state", "todo", "create", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(recovered.rc, recovered.err || recovered.out).toBe(0); expect(recovered.json.operation.idempotent_replay).toBe(true); expect(recovered.json.local_refs).toEqual(preview.json.local_refs);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(recovered.json.operation.idempotent_replay).toBe(true);
+    expect(recovered.json.local_refs).toEqual(preview.json.local_refs);
   });
 
   it("recovers only an interrupted exact TODO update batch retry", () => {
     const root = project();
     const first = todo(root, "First interrupted batch item").id as string;
     const second = todo(root, "Second interrupted batch item").id as string;
-    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [
-      { id: first, patch: { title: "First recovered batch item" } },
-      { id: second, patch: { title: "Second recovered batch item" } },
-    ] };
+    const input = {
+      schema_version: "agentera.todoUpdateBatch.v1",
+      updates: [
+        { id: first, patch: { title: "First recovered batch item" } },
+        { id: second, patch: { title: "Second recovered batch item" } },
+      ],
+    };
     const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
     expect(preview.rc, preview.err || preview.out).toBe(0);
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
     const request: StateWriteRequest = {
       artifact: "todo",
       spec: operationSpec("todo", "update")!,
@@ -663,7 +1162,12 @@ describe("TODO item and documentation inventory entity authority", () => {
       callerPayload: input,
       input,
     };
-    expect(() => mutateTodoDocsEntity(request, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/);
+    expect(() =>
+      mutateTodoDocsEntity(request, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
     binding.publicationContext.close();
 
     const interrupted = files(root);
@@ -672,7 +1176,10 @@ describe("TODO item and documentation inventory entity authority", () => {
       updates: [{ id: first, patch: { title: "Divergent retry" } }],
     });
     expect(divergent.rc).toBe(2);
-    expect(divergent.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("exact original TODO update batch") });
+    expect(divergent.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("exact original TODO update batch"),
+    });
     expect(files(root)).toEqual(interrupted);
 
     const recovered = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
@@ -689,11 +1196,27 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const contract = (verb: "update" | "set-severity" | "resolve") => {
       const spec = operationSpec("todo", verb)!;
-      return { inputMode: spec.inputMode, inputRoot: spec.inputRoot, required: spec.fields.filter((field) => field.required).map((field) => field.flag) };
+      return {
+        inputMode: spec.inputMode,
+        inputRoot: spec.inputRoot,
+        required: spec.fields.filter((field) => field.required).map((field) => field.flag),
+      };
     };
-    expect(contract("update")).toEqual({ inputMode: "structured", inputRoot: "TODO record patch or agentera.todoUpdateBatch.v1 envelope", required: ["--id"] });
-    expect(contract("set-severity")).toEqual({ inputMode: "structured", inputRoot: "agentera.todoSetSeverityBatch.v1 envelope", required: ["--id", "--severity", "--reason", "--date"] });
-    expect(contract("resolve")).toEqual({ inputMode: "structured", inputRoot: "agentera.todoResolveBatch.v1 envelope", required: ["--id", "--reason", "--date"] });
+    expect(contract("update")).toEqual({
+      inputMode: "structured",
+      inputRoot: "TODO record patch or agentera.todoUpdateBatch.v1 envelope",
+      required: ["--id"],
+    });
+    expect(contract("set-severity")).toEqual({
+      inputMode: "structured",
+      inputRoot: "agentera.todoSetSeverityBatch.v1 envelope",
+      required: ["--id", "--severity", "--reason", "--date"],
+    });
+    expect(contract("resolve")).toEqual({
+      inputMode: "structured",
+      inputRoot: "agentera.todoResolveBatch.v1 envelope",
+      required: ["--id", "--reason", "--date"],
+    });
 
     const severity = todo(root, "Transition parser severity");
     const severityBefore = files(root);
@@ -705,14 +1228,21 @@ describe("TODO item and documentation inventory entity authority", () => {
       error: {
         class: "mutually_exclusive",
         message: "todo set-severity accepts field flags, not --input",
-        example: "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31",
+        example: 'agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31',
         recovery: "Correct the input and retry; no state was changed.",
       },
     });
     expect(files(root)).toEqual(severityBefore);
     const severitySuccess = capture(root, ["state", "todo", "set-severity", "--id", severity.id, "--severity", "critical", "--reason", "Immediate impact", "--date", "2026-08-23", "--format", "json"]);
     expect(severitySuccess.rc, severitySuccess.err || severitySuccess.out).toBe(0);
-    expect(severitySuccess.json).toMatchObject({ id: severity.id, record: { severity: "critical", lifecycle: { operation: "set-severity", reason: "Immediate impact", date: "2026-08-23" } }, operation: { dry_run: false, idempotent_replay: false } });
+    expect(severitySuccess.json).toMatchObject({
+      id: severity.id,
+      record: {
+        severity: "critical",
+        lifecycle: { operation: "set-severity", reason: "Immediate impact", date: "2026-08-23" },
+      },
+      operation: { dry_run: false, idempotent_replay: false },
+    });
 
     const resolved = todo(root, "Transition parser resolve");
     const resolveBefore = files(root);
@@ -724,27 +1254,36 @@ describe("TODO item and documentation inventory entity authority", () => {
       error: {
         class: "mutually_exclusive",
         message: "todo resolve accepts field flags, not --input",
-        example: "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31",
+        example: 'agentera state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31',
         recovery: "Correct the input and retry; no state was changed.",
       },
     });
     expect(files(root)).toEqual(resolveBefore);
     const resolveSuccess = capture(root, ["state", "todo", "resolve", "--id", resolved.id, "--reason", "Work complete", "--date", "2026-08-23", "--format", "json"]);
     expect(resolveSuccess.rc, resolveSuccess.err || resolveSuccess.out).toBe(0);
-    expect(resolveSuccess.json).toMatchObject({ id: resolved.id, record: { status: "resolved", lifecycle: { operation: "resolve", reason: "Work complete", date: "2026-08-23" } }, operation: { dry_run: false, idempotent_replay: false } });
+    expect(resolveSuccess.json).toMatchObject({
+      id: resolved.id,
+      record: {
+        status: "resolved",
+        lifecycle: { operation: "resolve", reason: "Work complete", date: "2026-08-23" },
+      },
+      operation: { dry_run: false, idempotent_replay: false },
+    });
 
     const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]);
     expect(explain.rc, explain.err || explain.out).toBe(0);
-    expect(explain.json.guidance).toEqual(expect.arrayContaining([
-      "for a singleton, select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable",
-      "for a batch, omit --id and supply one strict agentera.todoUpdateBatch.v1 envelope; preview it with --dry-run before exact confirmed apply",
-    ]));
+    expect(explain.json.guidance).toEqual(
+      expect.arrayContaining(["for a singleton, select one TODO item with its bare ten-letter --id; numeric, prefixed, composite, alias, and path identities are unavailable", "for a batch, omit --id and supply one strict agentera.todoUpdateBatch.v1 envelope; preview it with --dry-run before exact confirmed apply"]),
+    );
   });
 
   it.each(TODO_TRANSITION_VERBS)("rejects batch-only effect flags on singleton %s with the exact prior envelope", (verb) => {
     for (const flag of ["--effect-sha256", "--yes"] as const) {
-      const root = project(); const item = todo(root, `${verb} singleton effect flag`); const before = files(root);
-      const args = transitionSingletonArgs(verb, item.id); args.splice(-2, 0, flag, ...(flag === "--effect-sha256" ? ["a".repeat(64)] : []));
+      const root = project();
+      const item = todo(root, `${verb} singleton effect flag`);
+      const before = files(root);
+      const args = transitionSingletonArgs(verb, item.id);
+      args.splice(-2, 0, flag, ...(flag === "--effect-sha256" ? ["a".repeat(64)] : []));
       const result = capture(root, args);
       expect(result.rc).toBe(2);
       expect(result.json).toEqual({
@@ -753,9 +1292,7 @@ describe("TODO item and documentation inventory entity authority", () => {
         error: {
           class: "unrecognized_argument",
           message: `unrecognized arguments: ${flag}`,
-          example: verb === "set-severity"
-            ? "agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason \"Impact changed\" --date 2026-07-31"
-            : "agentera state todo resolve --id qjtrmnpvka --reason \"Shipped\" --date 2026-07-31",
+          example: verb === "set-severity" ? 'agentera state todo set-severity --id qjtrmnpvka --severity degraded --reason "Impact changed" --date 2026-07-31' : 'agentera state todo resolve --id qjtrmnpvka --reason "Shipped" --date 2026-07-31',
           recovery: "Correct the input and retry; no state was changed.",
         },
       });
@@ -768,30 +1305,47 @@ describe("TODO item and documentation inventory entity authority", () => {
     const id = todo(root, "Batch target").id as string;
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
     const before = fs.readFileSync(entity);
-    const duplicate = { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { title: "One" } }, { id, patch: { title: "Two" } }] };
+    const duplicate = {
+      schema_version: "agentera.todoUpdateBatch.v1",
+      updates: [
+        { id, patch: { title: "One" } },
+        { id, patch: { title: "Two" } },
+      ],
+    };
     const rejectedDuplicate = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], duplicate);
-    expect(rejectedDuplicate.rc).toBe(2); expect(rejectedDuplicate.json.error.violations).toContain(`duplicate update target '${id}'`); expect(fs.readFileSync(entity)).toEqual(before);
-    const rejectedPatch = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { status: "resolved" } }] });
-    expect(rejectedPatch.rc).toBe(2); expect(fs.readFileSync(entity)).toEqual(before);
+    expect(rejectedDuplicate.rc).toBe(2);
+    expect(rejectedDuplicate.json.error.violations).toContain(`duplicate update target '${id}'`);
+    expect(fs.readFileSync(entity)).toEqual(before);
+    const rejectedPatch = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], {
+      schema_version: "agentera.todoUpdateBatch.v1",
+      updates: [{ id, patch: { status: "resolved" } }],
+    });
+    expect(rejectedPatch.rc).toBe(2);
+    expect(fs.readFileSync(entity)).toEqual(before);
 
-    const input = { schema_version: "agentera.todoUpdateBatch.v1", updates: [{ id, patch: { title: "Batch title" } }] };
+    const input = {
+      schema_version: "agentera.todoUpdateBatch.v1",
+      updates: [{ id, patch: { title: "Batch title" } }],
+    };
     const preview = capture(root, ["state", "todo", "update", "--input", "-", "--dry-run", "--format", "json"], input);
-    expect(capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { requirements: ["Concurrent change"] }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+        requirements: ["Concurrent change"],
+      }).rc,
+    ).toBe(0);
     const afterConcurrent = fs.readFileSync(entity);
     const stale = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
-    expect(stale.rc).toBe(2); expect(stale.json.error.class).toBe("conflict"); expect(stale.json.error.recovery).toContain("no state was changed"); expect(fs.readFileSync(entity)).toEqual(afterConcurrent);
+    expect(stale.rc).toBe(2);
+    expect(stale.json.error.class).toBe("conflict");
+    expect(stale.json.error.recovery).toContain("no state was changed");
+    expect(fs.readFileSync(entity)).toEqual(afterConcurrent);
   });
 
   it("replays all TODO lifecycle transitions exactly and rejects divergent retries without effects", () => {
     const root = project();
     const entityFile = (id: string): string => path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
     const persistedRecord = (id: string): Record<string, unknown> => loadYamlMapping(fs.readFileSync(entityFile(id), "utf8")).record as Record<string, unknown>;
-    const assertReplayAndConflict = (
-      id: string,
-      exact: string[],
-      divergent: string[][],
-      expected: Record<string, unknown>,
-    ): void => {
+    const assertReplayAndConflict = (id: string, exact: string[], divergent: string[][], expected: Record<string, unknown>): void => {
       const before = fs.readFileSync(entityFile(id));
       const replay = capture(root, exact);
       expect(replay.rc, replay.err || replay.out).toBe(0);
@@ -822,7 +1376,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const severityApplied = capture(root, setSeverity);
     expect(severityApplied.rc, severityApplied.err || severityApplied.out).toBe(0);
     expect(severityApplied.json.operation.idempotent_replay).toBe(false);
-    assertReplayAndConflict(severity.id, setSeverity, [setSeverity.map((value) => value === "critical" ? "degraded" : value)], {
+    assertReplayAndConflict(severity.id, setSeverity, [setSeverity.map((value) => (value === "critical" ? "degraded" : value))], {
       severity: "critical",
       lifecycle: { operation: "set-severity", reason: "Immediate impact", date: "2026-07-31" },
     });
@@ -834,13 +1388,14 @@ describe("TODO item and documentation inventory entity authority", () => {
     const supersedeApplied = capture(root, supersede);
     expect(supersedeApplied.rc, supersedeApplied.err || supersedeApplied.out).toBe(0);
     expect(supersedeApplied.json.operation.idempotent_replay).toBe(false);
-    assertReplayAndConflict(superseded.id, supersede, [
-      supersede.map((value) => value === replacement.id ? otherReplacement.id : value),
-      supersede.map((value) => value === "Replaced safely" ? "Different rationale" : value),
-      supersede.map((value) => value === "2026-07-31" ? "2026-08-01" : value),
-    ], {
+    assertReplayAndConflict(superseded.id, supersede, [supersede.map((value) => (value === replacement.id ? otherReplacement.id : value)), supersede.map((value) => (value === "Replaced safely" ? "Different rationale" : value)), supersede.map((value) => (value === "2026-07-31" ? "2026-08-01" : value))], {
       status: "resolved",
-      lifecycle: { operation: "supersede", replacement: replacement.id, reason: "Replaced safely", date: "2026-07-31" },
+      lifecycle: {
+        operation: "supersede",
+        replacement: replacement.id,
+        reason: "Replaced safely",
+        date: "2026-07-31",
+      },
     });
 
     const resolved = todo(root, "Resolve replay");
@@ -848,10 +1403,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const resolveApplied = capture(root, resolve);
     expect(resolveApplied.rc, resolveApplied.err || resolveApplied.out).toBe(0);
     expect(resolveApplied.json.operation.idempotent_replay).toBe(false);
-    assertReplayAndConflict(resolved.id, resolve, [
-      resolve.map((value) => value === "Work complete" ? "Different closeout" : value),
-      resolve.map((value) => value === "2026-07-31" ? "2026-08-01" : value),
-    ], {
+    assertReplayAndConflict(resolved.id, resolve, [resolve.map((value) => (value === "Work complete" ? "Different closeout" : value)), resolve.map((value) => (value === "2026-07-31" ? "2026-08-01" : value))], {
       status: "resolved",
       lifecycle: { operation: "resolve", reason: "Work complete", date: "2026-07-31" },
     });
@@ -862,10 +1414,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const reopenApplied = capture(root, reopen);
     expect(reopenApplied.rc, reopenApplied.err || reopenApplied.out).toBe(0);
     expect(reopenApplied.json.operation.idempotent_replay).toBe(false);
-    assertReplayAndConflict(reopened.id, reopen, [
-      reopen.map((value) => value === "Scope returned" ? "Different reopening" : value),
-      reopen.map((value) => value === "2026-07-31" ? "2026-08-01" : value),
-    ], {
+    assertReplayAndConflict(reopened.id, reopen, [reopen.map((value) => (value === "Scope returned" ? "Different reopening" : value)), reopen.map((value) => (value === "2026-07-31" ? "2026-08-01" : value))], {
       status: "open",
       lifecycle: { operation: "reopen", reason: "Scope returned", date: "2026-07-31" },
     });
@@ -877,55 +1426,119 @@ describe("TODO item and documentation inventory entity authority", () => {
     const mapped = path.join(root, "mapped", "WORK.md");
     fs.mkdirSync(path.dirname(mapped), { recursive: true });
     fs.writeFileSync(mapped, `# TODO\n\n## → Normal\n- [ ] [id:${created.id}] [task:3.0.0] Mapped public title\n`);
-    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
-    const result = capture(root, ["state", "todo", "update", "--id", created.id, "--input", "-", "--format", "json"], { title: "Bypass attempt" });
+    fs.writeFileSync(
+      path.join(root, ".agentera/docs.yaml"),
+      dumpYamlMapping({
+        mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+      }),
+    );
+    const result = capture(root, ["state", "todo", "update", "--id", created.id, "--input", "-", "--format", "json"], {
+      title: "Bypass attempt",
+    });
     expect(result.rc).toBe(0);
     expect(fs.readFileSync(mapped, "utf8")).toContain("Bypass attempt");
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Mapped public title");
   });
 
   it("rejects a cross-filesystem public mapping before journal or target effects", () => {
-    const root = project(); const item = todo(root, "Cross-filesystem mapping");
-    const mapped = path.join(root, "mapped", "WORK.md"); fs.mkdirSync(path.dirname(mapped), { recursive: true });
+    const root = project();
+    const item = todo(root, "Cross-filesystem mapping");
+    const mapped = path.join(root, "mapped", "WORK.md");
+    fs.mkdirSync(path.dirname(mapped), { recursive: true });
     fs.writeFileSync(mapped, `# TODO\n\n## → Normal\n- [ ] [id:${item.id}] [task:3.0.0] Cross-filesystem mapping\n`);
-    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
-    const before = files(root); const originalStat = fs.statSync.bind(fs);
+    fs.writeFileSync(
+      path.join(root, ".agentera/docs.yaml"),
+      dumpYamlMapping({
+        mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+      }),
+    );
+    const before = files(root);
+    const originalStat = fs.statSync.bind(fs);
     vi.spyOn(fs, "statSync").mockImplementation((candidate, options) => {
       const result = originalStat(candidate, options as never);
       if (path.resolve(String(candidate)) === path.dirname(mapped) && typeof result.dev === "bigint") return { ...result, dev: result.dev + 1n } as fs.BigIntStats;
       return result;
     });
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Must not publish" });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Must not publish",
+    });
     expect(rejected.rc).toBe(2);
-    expect(rejected.json.error).toMatchObject({ class: "unsupported_target", recovery: expect.stringContaining("no journal or target bytes were changed") });
+    expect(rejected.json.error).toMatchObject({
+      class: "unsupported_target",
+      recovery: expect.stringContaining("no journal or target bytes were changed"),
+    });
     expect(files(root)).toEqual(before);
   });
 
   it("binds a pending transaction to the exact docs mapping snapshot", () => {
-    const root = project(); const item = todo(root, "Mapped binding"); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const spec = operationSpec("todo", "update")!; const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: "Pending mapped binding" } };
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: 0 })).toThrow(/interruption/); binding.publicationContext.close();
-    fs.mkdirSync(path.join(root, "mapped"), { recursive: true }); fs.writeFileSync(path.join(root, "mapped/WORK.md"), fs.readFileSync(path.join(root, "TODO.md")));
-    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
-    const before = files(root); const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Pending mapped binding" });
-    expect(retry.rc).toBe(2); expect(retry.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("Restore the docs mapping") }); expect(files(root)).toEqual(before);
+    const root = project();
+    const item = todo(root, "Mapped binding");
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const spec = operationSpec("todo", "update")!;
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { id: item.id },
+      callerPayload: {},
+      input: { title: "Pending mapped binding" },
+    };
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 0,
+      }),
+    ).toThrow(/interruption/);
+    binding.publicationContext.close();
+    fs.mkdirSync(path.join(root, "mapped"), { recursive: true });
+    fs.writeFileSync(path.join(root, "mapped/WORK.md"), fs.readFileSync(path.join(root, "TODO.md")));
+    fs.writeFileSync(
+      path.join(root, ".agentera/docs.yaml"),
+      dumpYamlMapping({
+        mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+      }),
+    );
+    const before = files(root);
+    const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Pending mapped binding",
+    });
+    expect(retry.rc).toBe(2);
+    expect(retry.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("Restore the docs mapping"),
+    });
+    expect(files(root)).toEqual(before);
   });
 
   it("rolls back targets without overwriting concurrent mapping or activation changes at commit", () => {
     for (const competitor of ["mapping", "activation"] as const) {
-      const root = project(); const item = todo(root, `Commit binding ${competitor}`);
-      const mapped = path.join(root, "mapped", "WORK.md"); fs.mkdirSync(path.dirname(mapped), { recursive: true });
+      const root = project();
+      const item = todo(root, `Commit binding ${competitor}`);
+      const mapped = path.join(root, "mapped", "WORK.md");
+      fs.mkdirSync(path.dirname(mapped), { recursive: true });
       const publicBefore = `# TODO\n\n## → Normal\n- [ ] [id:${item.id}] [task:3.0.0] Commit binding ${competitor}\n`;
       fs.writeFileSync(mapped, publicBefore);
       const docs = path.join(root, ".agentera/docs.yaml");
-      fs.writeFileSync(docs, dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
+      fs.writeFileSync(
+        docs,
+        dumpYamlMapping({
+          mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+        }),
+      );
       const activation = path.join(root, ".agentera/todo-reconciliation-activation.json");
       const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
       const entityBefore = fs.readFileSync(entity);
-      const competitorBytes = competitor === "mapping"
-        ? dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "concurrent/WORK.md", producers: ["build"] }] })
-        : `${JSON.stringify({ schema_version: "agentera.todoReconciliationActivation.v1", retained_legacy_rows: ["a".repeat(64)] })}\n`;
-      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const competitorBytes =
+        competitor === "mapping"
+          ? dumpYamlMapping({
+              mapping: [{ artifact: "TODO.md", path: "concurrent/WORK.md", producers: ["build"] }],
+            })
+          : `${JSON.stringify({ schema_version: "agentera.todoReconciliationActivation.v1", retained_legacy_rows: ["a".repeat(64)] })}\n`;
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
       const original = binding.publicationContext.replaceVisible.bind(binding.publicationContext);
       vi.spyOn(binding.publicationContext, "replaceVisible").mockImplementation((...args) => {
         const result = original(...args);
@@ -933,7 +1546,16 @@ describe("TODO item and documentation inventory entity authority", () => {
         return result;
       });
       const spec = operationSpec("todo", "update")!;
-      const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: `Rejected ${competitor}` } };
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { id: item.id },
+        callerPayload: {},
+        input: { title: `Rejected ${competitor}` },
+      };
       expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext })).toThrow(new RegExp(`${competitor} changed during transaction publication`));
       binding.publicationContext.close();
       expect(fs.readFileSync(mapped, "utf8")).toBe(publicBefore);
@@ -945,7 +1567,9 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("rejects retired description, invalid UTF-8, and over-bound lifecycle reasons before effects", () => {
     const root = project();
     const created = todo(root, "Validation boundary");
-    const retired = capture(root, ["state", "todo", "update", "--id", created.id, "--input", "-", "--format", "json"], { description: "retired" });
+    const retired = capture(root, ["state", "todo", "update", "--id", created.id, "--input", "-", "--format", "json"], {
+      description: "retired",
+    });
     expect(retired.rc).toBe(2);
     expect(retired.json.error.class).toBe("schema_violation");
     const invalidInput = path.join(root, "invalid.yaml");
@@ -962,15 +1586,33 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("projects typed TODO fields and filters closeout blockers by selected target", () => {
     const root = project();
     const selected = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
-      kind: "fix", target_version: "3.0.0", title: "Selected blocker", requirements: ["r"], acceptance: ["a"], release_blocker: true, severity: "normal",
+      kind: "fix",
+      target_version: "3.0.0",
+      title: "Selected blocker",
+      requirements: ["r"],
+      acceptance: ["a"],
+      release_blocker: true,
+      severity: "normal",
     });
     const other = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
-      kind: "fix", target_version: "2.7.7", title: "Other blocker", requirements: [], acceptance: [], release_blocker: true, severity: "normal",
+      kind: "fix",
+      target_version: "2.7.7",
+      title: "Other blocker",
+      requirements: [],
+      acceptance: [],
+      release_blocker: true,
+      severity: "normal",
     });
-    expect(selected.rc).toBe(0); expect(other.rc).toBe(0);
+    expect(selected.rc).toBe(0);
+    expect(other.rc).toBe(0);
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
     const item = projection.todoItems.find((candidate) => candidate.id === selected.json.id);
-    expect(item).toMatchObject({ title: "Selected blocker", target_version: "3.0.0", release_blocker: true, text: "[fix:3.0.0] Selected blocker" });
+    expect(item).toMatchObject({
+      title: "Selected blocker",
+      target_version: "3.0.0",
+      release_blocker: true,
+      text: "[fix:3.0.0] Selected blocker",
+    });
     const closeout = closeoutTodoBlockers({}, projection.todoItems, "3.0.0");
     expect(closeout.open_count).toBe(1);
     expect((closeout.items as any[]).map((entry) => entry.id)).toEqual([selected.json.id]);
@@ -983,20 +1625,40 @@ describe("TODO item and documentation inventory entity authority", () => {
     const resolvedCandidate = todo(root, "Open entity resolved by Markdown");
     const fallback = todo(root, "Projected critical fallback");
     expect(capture(root, ["state", "todo", "resolve", "--id", dependency.id, "--reason", "fixture", "--date", "2026-08-02", "--format", "json"]).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", dependent.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ dependencies: [{ artifact: "todo", id: dependency.id }], queue_rank: 1 }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", resolvedCandidate.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2 }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", fallback.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 3 }) }).rc).toBe(0);
-    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## ⇶ Critical\n- [ ] [id:${fallback.id}] [task:3.0.0] Projected critical fallback\n\n## → Normal\n- [ ] [id:${dependent.id}] [task:3.0.0] Must wait for projected dependency\n- [x] [id:${resolvedCandidate.id}] [task:3.0.0] Open entity resolved by Markdown\n\n## ✓ Resolved\n- [ ] [id:${dependency.id}] [task:3.0.0] Resolved entity reopened by Markdown\n`);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", dependent.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({
+          dependencies: [{ artifact: "todo", id: dependency.id }],
+          queue_rank: 1,
+        }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", resolvedCandidate.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 2 }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", fallback.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 3 }),
+      }).rc,
+    ).toBe(0);
+    fs.writeFileSync(
+      path.join(root, "TODO.md"),
+      `# TODO\n\n## ⇶ Critical\n- [ ] [id:${fallback.id}] [task:3.0.0] Projected critical fallback\n\n## → Normal\n- [ ] [id:${dependent.id}] [task:3.0.0] Must wait for projected dependency\n- [x] [id:${resolvedCandidate.id}] [task:3.0.0] Open entity resolved by Markdown\n\n## ✓ Resolved\n- [ ] [id:${dependency.id}] [task:3.0.0] Resolved entity reopened by Markdown\n`,
+    );
     const before = files(root);
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
 
-    expect(projection.todoReadiness.selected).toMatchObject({ id: fallback.id, severity: "critical", result: "actionable" });
-    expect(projection.todoReadiness.evaluations).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: dependent.id, result: "waiting", eligible: false }),
-      expect.objectContaining({ id: resolvedCandidate.id, result: "resolved", eligible: false }),
-      expect.objectContaining({ id: dependency.id, result: "needs-triage", eligible: false }),
-    ]));
+    expect(projection.todoReadiness.selected).toMatchObject({
+      id: fallback.id,
+      severity: "critical",
+      result: "actionable",
+    });
+    expect(projection.todoReadiness.evaluations).toEqual(
+      expect.arrayContaining([expect.objectContaining({ id: dependent.id, result: "waiting", eligible: false }), expect.objectContaining({ id: resolvedCandidate.id, result: "resolved", eligible: false }), expect.objectContaining({ id: dependency.id, result: "needs-triage", eligible: false })]),
+    );
     expect(projection.todoCounts).toEqual({ critical: 1, degraded: 0, normal: 2, annoying: 0 });
     expect(projection.todoItems.map((entry) => entry.id)).not.toContain(resolvedCandidate.id);
     expect(files(root)).toEqual(before);
@@ -1006,14 +1668,28 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const queueFirst = todo(root, "Entity queue first");
     const markdownFirst = todo(root, "Markdown order first");
-    expect(capture(root, ["state", "todo", "update", "--id", queueFirst.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", markdownFirst.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 9 }) }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", queueFirst.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 1 }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", markdownFirst.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 9 }),
+      }).rc,
+    ).toBe(0);
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${markdownFirst.id}] [task:3.0.0] Markdown order first\n- [ ] [id:${queueFirst.id}] [task:3.0.0] Entity queue first\n`);
     const before = files(root);
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
 
-    expect(projection.todoReadiness.selected).toMatchObject({ id: markdownFirst.id, severity: "normal", projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 9, result: "actionable" });
+    expect(projection.todoReadiness.selected).toMatchObject({
+      id: markdownFirst.id,
+      severity: "normal",
+      projectedOrder: { kind: "managed", markdownOrder: 1 },
+      queueRank: 9,
+      result: "actionable",
+    });
     expect(projection.todoReadiness.evaluations.map((entry) => entry.id)).toEqual([markdownFirst.id, queueFirst.id]);
     expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
     expect(files(root)).toEqual(before);
@@ -1023,14 +1699,27 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const first = todo(root, "Equal rank first");
     const second = todo(root, "Equal rank second");
-    expect(capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 1 }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 1 }),
+      }).rc,
+    ).toBe(0);
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] Equal rank first\n- [ ] [id:${second.id}] [task:3.0.0] Equal rank second\n`);
     const before = files(root);
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
 
-    expect(projection.todoReadiness.selected).toMatchObject({ id: first.id, projectedOrder: { kind: "managed", markdownOrder: 1 }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.selected).toMatchObject({
+      id: first.id,
+      projectedOrder: { kind: "managed", markdownOrder: 1 },
+      queueRank: 1,
+      result: "actionable",
+    });
     expect(projection.todoReadiness.evaluations.map((entry) => entry.id)).toEqual([first.id, second.id]);
     expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
     expect(files(root)).toEqual(before);
@@ -1040,8 +1729,19 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const blocked = todo(root, "Blocked Markdown first");
     const managed = todo(root, "Eligible managed second");
-    expect(capture(root, ["state", "todo", "update", "--id", blocked.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 9, blocked: { reason: "Fixture blocker.", recovery: "Remove the fixture blocker." } }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", managed.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", blocked.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({
+          queue_rank: 9,
+          blocked: { reason: "Fixture blocker.", recovery: "Remove the fixture blocker." },
+        }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", managed.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 1 }),
+      }).rc,
+    ).toBe(0);
     const absentId = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"].find((id) => id !== blocked.id && id !== managed.id)!;
     seedAbsentTodoEntity(root, absentId, "Eligible absent fallback", 1);
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n- [ ] [id:${blocked.id}] [task:3.0.0] Blocked Markdown first\n- [ ] [id:${managed.id}] [task:3.0.0] Eligible managed second\n`);
@@ -1049,9 +1749,22 @@ describe("TODO item and documentation inventory entity authority", () => {
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
 
-    expect(projection.todoReadiness.selected).toMatchObject({ id: managed.id, projectedOrder: { kind: "managed", markdownOrder: 2 }, queueRank: 1, result: "actionable" });
-    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === blocked.id)).toMatchObject({ projectedOrder: { kind: "managed", markdownOrder: 1 }, result: "blocked", eligible: false });
-    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === absentId)).toMatchObject({ projectedOrder: { kind: "absent" }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.selected).toMatchObject({
+      id: managed.id,
+      projectedOrder: { kind: "managed", markdownOrder: 2 },
+      queueRank: 1,
+      result: "actionable",
+    });
+    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === blocked.id)).toMatchObject({
+      projectedOrder: { kind: "managed", markdownOrder: 1 },
+      result: "blocked",
+      eligible: false,
+    });
+    expect(projection.todoReadiness.evaluations.find((entry) => entry.id === absentId)).toMatchObject({
+      projectedOrder: { kind: "absent" },
+      queueRank: 1,
+      result: "actionable",
+    });
     expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 3, annoying: 0 });
     expect(files(root)).toEqual(before);
   });
@@ -1060,14 +1773,22 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const anchor = todo(root, "Resolved activation anchor");
     expect(capture(root, ["state", "todo", "resolve", "--id", anchor.id, "--reason", "fixture", "--date", "2026-08-02", "--format", "json"]).rc).toBe(0);
-    const absentIds = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"].filter((id) => id !== anchor.id).slice(0, 2).sort();
+    const absentIds = ["aaaaaaaaaa", "bbbbbbbbbb", "cccccccccc"]
+      .filter((id) => id !== anchor.id)
+      .slice(0, 2)
+      .sort();
     seedAbsentTodoEntity(root, absentIds[1]!, "Absent later ID", 1);
     seedAbsentTodoEntity(root, absentIds[0]!, "Absent first ID", 1);
     const before = files(root);
 
     const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
 
-    expect(projection.todoReadiness.selected).toMatchObject({ id: absentIds[0], projectedOrder: { kind: "absent" }, queueRank: 1, result: "actionable" });
+    expect(projection.todoReadiness.selected).toMatchObject({
+      id: absentIds[0],
+      projectedOrder: { kind: "absent" },
+      queueRank: 1,
+      result: "actionable",
+    });
     expect(projection.todoReadiness.evaluations.filter((entry) => entry.eligible).map((entry) => entry.id)).toEqual(absentIds);
     expect(projection.todoCounts).toEqual({ critical: 0, degraded: 0, normal: 2, annoying: 0 });
     expect(files(root)).toEqual(before);
@@ -1083,7 +1804,16 @@ describe("TODO item and documentation inventory entity authority", () => {
       ["ordering", readinessInput({ queue_rank: 0 })],
     ] as const;
     for (const [name, readiness] of cases) {
-      const result = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], { kind: "task", target_version: "3.0.0", title: name, requirements: [], acceptance: [], release_blocker: false, severity: "normal", readiness });
+      const result = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
+        kind: "task",
+        target_version: "3.0.0",
+        title: name,
+        requirements: [],
+        acceptance: [],
+        release_blocker: false,
+        severity: "normal",
+        readiness,
+      });
       expect(result.rc, name).not.toBe(0);
       expect(result.json.error.class, name).toBe("schema_violation");
       expect(result.json.error.recovery ?? result.json.error.valid_values ?? result.json.error.syntax, name).toBeTruthy();
@@ -1095,8 +1825,13 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const item = todo(root, "Needs review", "normal");
     const pathToItem = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
-    const ordinary = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Still needs review" });
-    expect(ordinary.json).toMatchObject({ id: item.id, record: { severity: "normal", status: "open", title: "Still needs review" } });
+    const ordinary = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Still needs review",
+    });
+    expect(ordinary.json).toMatchObject({
+      id: item.id,
+      record: { severity: "normal", status: "open", title: "Still needs review" },
+    });
     expect(ordinary.json.record).not.toHaveProperty("readiness");
 
     const beforeDryRun = fs.readFileSync(pathToItem);
@@ -1104,18 +1839,60 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(dryRun.json.operation).toMatchObject({ dry_run: true, idempotent_replay: false });
     expect(fs.readFileSync(pathToItem)).toEqual(beforeDryRun);
 
-    const first = detectStateModeBinding(root); const second = detectStateModeBinding(root);
+    const first = detectStateModeBinding(root);
+    const second = detectStateModeBinding(root);
     if (first.mode !== "entities" || second.mode !== "entities") throw new Error("entity mode expected");
     try {
       const updateSpec = operationSpec("todo", "update")!;
-      mutateTodoDocsEntity({ artifact: "todo", spec: updateSpec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, severity: "critical" }, callerPayload: {}, input: null }, { publicationContext: first.publicationContext });
-      mutateTodoDocsEntity({ artifact: "todo", spec: updateSpec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, readiness: { capability: "build", reason: "Ready now.", dependencies: [], queue_rank: 1, order_reason: "Reviewed first." } }, callerPayload: {}, input: null }, { publicationContext: second.publicationContext });
+      mutateTodoDocsEntity(
+        {
+          artifact: "todo",
+          spec: updateSpec,
+          projectRoot: root,
+          dryRun: false,
+          force: false,
+          values: { id: item.id, severity: "critical" },
+          callerPayload: {},
+          input: null,
+        },
+        { publicationContext: first.publicationContext },
+      );
+      mutateTodoDocsEntity(
+        {
+          artifact: "todo",
+          spec: updateSpec,
+          projectRoot: root,
+          dryRun: false,
+          force: false,
+          values: {
+            id: item.id,
+            readiness: {
+              capability: "build",
+              reason: "Ready now.",
+              dependencies: [],
+              queue_rank: 1,
+              order_reason: "Reviewed first.",
+            },
+          },
+          callerPayload: {},
+          input: null,
+        },
+        { publicationContext: second.publicationContext },
+      );
     } finally {
-      first.publicationContext.close(); second.publicationContext.close();
+      first.publicationContext.close();
+      second.publicationContext.close();
     }
     const current = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]).json.entry.record;
-    expect(current).toMatchObject({ severity: "critical", status: "open", title: "Still needs review", readiness: { capability: "build", blocked: null, gate: null } });
-    const replay = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ reason: "Ready now.", orderReason: "Reviewed first." }) });
+    expect(current).toMatchObject({
+      severity: "critical",
+      status: "open",
+      title: "Still needs review",
+      readiness: { capability: "build", blocked: null, gate: null },
+    });
+    const replay = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput({ reason: "Ready now.", orderReason: "Reviewed first." }),
+    });
     expect(replay.json.operation.idempotent_replay).toBe(true);
   });
 
@@ -1125,11 +1902,31 @@ describe("TODO item and documentation inventory entity authority", () => {
     const docsBytes = fs.readFileSync(path.join(root, ".agentera/docs.yaml"));
     const item = todo(root, "Ship entity-backed TODOs");
     const inventory = doc(root, "CLI guide", "docs/cli.md");
-    expect(item).toMatchObject({ artifact: "todo", id: expect.stringMatching(/^[a-z]{10}$/), record: { severity: "normal", status: "open", title: "Ship entity-backed TODOs" } });
-    expect(inventory).toMatchObject({ artifact: "docs", id: expect.stringMatching(/^[a-z]{10}$/), record: { document: "CLI guide", path: "docs/cli.md", status: "current" } });
-    expect(capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { severity: "degraded", title: "Ship safely" }).rc).toBe(0);
+    expect(item).toMatchObject({
+      artifact: "todo",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { severity: "normal", status: "open", title: "Ship entity-backed TODOs" },
+    });
+    expect(inventory).toMatchObject({
+      artifact: "docs",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { document: "CLI guide", path: "docs/cli.md", status: "current" },
+    });
+    expect(
+      capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        severity: "degraded",
+        title: "Ship safely",
+      }).rc,
+    ).toBe(0);
     expect(capture(root, ["state", "todo", "resolve", "--id", item.id, "--reason", "Shipped", "--date", "2026-07-31", "--format", "json"]).json.record.status).toBe("resolved");
-    expect(capture(root, ["state", "docs", "update", "--id", inventory.id, "--input", "-", "--format", "json"], { document: "CLI guide", path: "docs/cli.md", last_updated: "2026-07-18", status: "stale" }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "docs", "update", "--id", inventory.id, "--input", "-", "--format", "json"], {
+        document: "CLI guide",
+        path: "docs/cli.md",
+        last_updated: "2026-07-18",
+        status: "stale",
+      }).rc,
+    ).toBe(0);
     expect(fs.readFileSync(path.join(root, "TODO.md"))).not.toEqual(todoBytes);
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`[x] [id:${item.id}] [task:3.0.0] Ship safely`);
     expect(fs.readFileSync(path.join(root, ".agentera/docs.yaml"))).toEqual(docsBytes);
@@ -1137,11 +1934,21 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("updates a valid noncanonical TODO through the public writer and publishes canonical bytes", () => {
-    const root = project(); const id = "ldzkfdcopb"; const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
-    const noncanonical = `id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: resolved\n  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n  readiness:\n    capability: plan\n    reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.\n    dependencies: []\n    blocked: null\n    gate: null\n    queue_rank: 1\n    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.\n  reconciliation:\n    schema_version: agentera.todoReconciliation.v1\n    public:\n      present: true\n      description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n      status: resolved\n      order: 1\n`.replaceAll("\n", "\r\n");
+    const root = project();
+    const id = "ldzkfdcopb";
+    const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    const noncanonical =
+      `id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: resolved\n  description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n  readiness:\n    capability: plan\n    reason: Shared semantics and ownership shipped as the prerequisite for both glossary producers and their consumer.\n    dependencies: []\n    blocked: null\n    gate: null\n    queue_rank: 1\n    order_reason: Resolved prerequisite; downstream order is owned by the open producer and consumer TODOs.\n  reconciliation:\n    schema_version: agentera.todoReconciliation.v1\n    public:\n      present: true\n      description: "[feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists."\n      status: resolved\n      order: 1\n`.replaceAll(
+        "\n",
+        "\r\n",
+      );
     const validNoncanonical = noncanonical.replace("      status: resolved\r\n      order: 1", "      severity: normal\r\n      status: resolved\r\n      order: 1");
-    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, validNoncanonical);
-    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## ✓ Resolved\n- [x] [id:${id}] [feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists.\n`);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, validNoncanonical);
+    fs.writeFileSync(
+      path.join(root, "TODO.md"),
+      `# TODO\n\n## ✓ Resolved\n- [x] [id:${id}] [feat:3.0.0] Resolved 2026-07-26: Shipped the shared glossary-entry primitive, personal and project ownership contracts, canonical project identity and conformance, deferred capability alignment, development metadata, and source/package verification. Confidence remains protocol CS1-CS5; personal evidence uses bounded history, project evidence uses repository-file provenance, and collision/review behavior remains consumer-owned. Producers remain deferred and open; no producer, persistence, lookup, or live project glossary exists.\n`,
+    );
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
     expect(dumpYamlMapping(loadYamlMapping(validNoncanonical))).not.toBe(validNoncanonical);
 
@@ -1150,24 +1957,49 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(dryRun.rc, dryRun.err || dryRun.out).toBe(0);
     expect(fs.readFileSync(file)).toEqual(beforeDryRun);
 
-    const updated = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Shipped and synchronized." });
+    const updated = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      title: "Shipped and synchronized.",
+    });
     expect(updated.rc, updated.err || updated.out).toBe(0);
     expect(fs.readFileSync(file, "utf8")).toBe(dumpYamlMapping({ id, artifact: "todo", record: updated.json.record }));
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
   });
 
   it("rejects a target byte change after discovery without overwriting the concurrent owner", () => {
-    const root = project(); const item = todo(root, "Original owner"); const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
-    const competingBytes = dumpYamlMapping({ id: item.id, artifact: "todo", record: { ...item.record, title: "Concurrent owner" } });
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const root = project();
+    const item = todo(root, "Original owner");
+    const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    const competingBytes = dumpYamlMapping({
+      id: item.id,
+      artifact: "todo",
+      record: { ...item.record, title: "Concurrent owner" },
+    });
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
     const original = binding.publicationContext.replaceExisting.bind(binding.publicationContext);
-    vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => { fs.writeFileSync(file, competingBytes); return original(...args); });
+    vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => {
+      fs.writeFileSync(file, competingBytes);
+      return original(...args);
+    });
     const spec = operationSpec("todo", "update")!;
-    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, description: "Writer update" }, callerPayload: { id: item.id, description: "Writer update" }, input: null };
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { id: item.id, description: "Writer update" },
+      callerPayload: { id: item.id, description: "Writer update" },
+      input: null,
+    };
     let failure: unknown;
-    try { mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext }); }
-    catch (error) { failure = error; }
-    finally { binding.publicationContext.close(); }
+    try {
+      mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext });
+    } catch (error) {
+      failure = error;
+    } finally {
+      binding.publicationContext.close();
+    }
 
     expect(String(failure)).toMatch(/ownership or bytes changed before replacement/);
     expect(fs.readFileSync(file, "utf8")).toBe(competingBytes);
@@ -1176,16 +2008,28 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("preserves an in-place competitor write that lands while replacement bytes are staged", () => {
-    const root = project(); const item = todo(root, "Initial owner"); const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
-    const competingBytes = dumpYamlMapping({ id: item.id, artifact: "todo", record: { ...item.record, title: "Competing in-place write" } });
-    const originalOpen = fs.openSync.bind(fs); let injected = false;
+    const root = project();
+    const item = todo(root, "Initial owner");
+    const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    const competingBytes = dumpYamlMapping({
+      id: item.id,
+      artifact: "todo",
+      record: { ...item.record, title: "Competing in-place write" },
+    });
+    const originalOpen = fs.openSync.bind(fs);
+    let injected = false;
     vi.spyOn(fs, "openSync").mockImplementation((target, flags, mode) => {
       const descriptor = originalOpen(target, flags, mode);
-      if (!injected && String(target).endsWith("/replacement.tmp")) { injected = true; fs.writeFileSync(file, competingBytes); }
+      if (!injected && String(target).endsWith("/replacement.tmp")) {
+        injected = true;
+        fs.writeFileSync(file, competingBytes);
+      }
       return descriptor;
     });
 
-    const updated = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Writer replacement" });
+    const updated = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Writer replacement",
+    });
     expect(injected).toBe(true);
     expect(updated.rc).toBe(2);
     expect(updated.json?.error).toMatchObject({
@@ -1200,48 +2044,97 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("rejects invalid UTF-8 through validation, reads, and updates without changing source bytes", () => {
-    const root = project(); const id = "cccccccccc"; const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
-    const invalid = Buffer.concat([
-      Buffer.from(`id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: open\n  description: "invalid `),
-      Buffer.from([0xc3, 0x28]),
-      Buffer.from(` bytes"\n`),
-    ]);
-    fs.mkdirSync(path.dirname(file), { recursive: true }); fs.writeFileSync(file, invalid); const before = fs.readFileSync(file);
+    const root = project();
+    const id = "cccccccccc";
+    const file = path.join(root, `.agentera/entities/todo/todo_item/${id}.yaml`);
+    const invalid = Buffer.concat([Buffer.from(`id: ${id}\nartifact: todo\nrecord:\n  severity: normal\n  status: open\n  description: "invalid `), Buffer.from([0xc3, 0x28]), Buffer.from(` bytes"\n`)]);
+    fs.mkdirSync(path.dirname(file), { recursive: true });
+    fs.writeFileSync(file, invalid);
+    const before = fs.readFileSync(file);
 
     const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
     expect(validation.rc).toBe(1);
-    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "malformed_entity", path: expect.stringContaining(`${id}.yaml`), message: expect.stringMatching(/valid UTF-8/i), recovery: expect.stringMatching(/UTF-8 YAML/i) })]));
+    expect(validation.json.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "malformed_entity",
+          path: expect.stringContaining(`${id}.yaml`),
+          message: expect.stringMatching(/valid UTF-8/i),
+          recovery: expect.stringMatching(/UTF-8 YAML/i),
+        }),
+      ]),
+    );
     expect(JSON.stringify(validation.json)).not.toContain('"type":"Buffer"');
     const read = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]);
-    const update = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "Valid replacement description that must not publish." });
-    expect(read.rc).toBe(1); expect(read.json.error).toMatchObject({ class: "corrupt", recovery: expect.stringContaining("check validate state") });
-    expect(update.rc).toBeGreaterThan(0); expect(update.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("no state was changed") });
+    const update = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      title: "Valid replacement description that must not publish.",
+    });
+    expect(read.rc).toBe(1);
+    expect(read.json.error).toMatchObject({
+      class: "corrupt",
+      recovery: expect.stringContaining("check validate state"),
+    });
+    expect(update.rc).toBeGreaterThan(0);
+    expect(update.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("no state was changed"),
+    });
     expect(fs.readFileSync(file)).toEqual(before);
-    expect(validateEntityState(root)).toMatchObject({ valid: false, entityCount: 1, issues: expect.arrayContaining([expect.objectContaining({ code: "malformed_entity" })]) });
+    expect(validateEntityState(root)).toMatchObject({
+      valid: false,
+      entityCount: 1,
+      issues: expect.arrayContaining([expect.objectContaining({ code: "malformed_entity" })]),
+    });
   });
 
   it("creates a valid TODO when logical validation reaches migrated summary sources through the real root", () => {
     const root = project();
     writeMigratedDecisionAndProgressSummaries(root);
     const item = todo(root, "Publish beside migrated summaries");
-    expect(item).toMatchObject({ id: expect.stringMatching(/^[a-z]{10}$/), record: { title: "Publish beside migrated summaries" } });
+    expect(item).toMatchObject({
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { title: "Publish beside migrated summaries" },
+    });
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
   });
 
   it("rolls back a TODO when a migrated summary source becomes a symlink after publication", () => {
-    const root = project(); const { progressSource } = writeMigratedDecisionAndProgressSummaries(root);
-    const unrelated = path.join(root, ".agentera/unrelated.txt"); fs.writeFileSync(unrelated, "preserve me\n");
-    const external = path.join(root, "external-progress.yaml"); fs.writeFileSync(external, "archive: []\n");
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext); let mutated = false;
+    const root = project();
+    const { progressSource } = writeMigratedDecisionAndProgressSummaries(root);
+    const unrelated = path.join(root, ".agentera/unrelated.txt");
+    fs.writeFileSync(unrelated, "preserve me\n");
+    const external = path.join(root, "external-progress.yaml");
+    fs.writeFileSync(external, "archive: []\n");
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const original = binding.publicationContext.publishImmutable.bind(binding.publicationContext);
+    let mutated = false;
     vi.spyOn(binding.publicationContext, "publishImmutable").mockImplementation((target, bytes) => {
       const result = original(target, bytes);
-      if (target.includes("/todo_item/")) { fs.rmSync(progressSource); fs.symlinkSync(external, progressSource); mutated = true; }
+      if (target.includes("/todo_item/")) {
+        fs.rmSync(progressSource);
+        fs.symlinkSync(external, progressSource);
+        mutated = true;
+      }
       return result;
     });
     const spec = operationSpec("todo", "create")!;
-    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { severity: "normal", description: "unsafe source" }, callerPayload: { severity: "normal", description: "unsafe source" }, input: null };
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: () => "cccccccccc" })).toThrow(/migration_provenance|unsafe|symbolic link/i);
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { severity: "normal", description: "unsafe source" },
+      callerPayload: { severity: "normal", description: "unsafe source" },
+      input: null,
+    };
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        candidate: () => "cccccccccc",
+      }),
+    ).toThrow(/migration_provenance|unsafe|symbolic link/i);
     binding.publicationContext.close();
     expect(mutated).toBe(true);
     expect(fs.existsSync(path.join(root, ".agentera/entities/todo/todo_item/cccccccccc.yaml"))).toBe(false);
@@ -1249,84 +2142,157 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("rejects aliases and non-bare selectors before effects while marker-absent commands retain legacy behavior", () => {
-    const root = project(); const item = todo(root, "valid"); const before = fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`));
+    const root = project();
+    const item = todo(root, "valid");
+    const before = fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`));
     for (const id of ["1", "todo:abcdefghij", "abcdefghij/path", "TODO.md", "ABCDEFGHIJ"]) {
-      const result = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { title: "invalid" });
-      expect(result.rc).toBe(2); expect(result.json.error.class).toBe("invalid_request");
+      const result = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+        title: "invalid",
+      });
+      expect(result.rc).toBe(2);
+      expect(result.json.error.class).toBe("invalid_request");
     }
     for (const alias of ["id", "artifact", "number", "stable_id", "artifact_id", "entry_number", "task_number", "experiment_number", "plan_id", "objective_id", "type_prefixed_id"]) {
-      const result = capture(root, ["state", "docs", "create", "--input", "-", "--format", "json"], { document: "invalid", path: "invalid.md", last_updated: "2026-07-17", status: "current", [alias]: "forbidden" });
-      expect(result.rc, alias).toBe(2); expect(result.json.error.class).toBe("schema_violation");
+      const result = capture(root, ["state", "docs", "create", "--input", "-", "--format", "json"], {
+        document: "invalid",
+        path: "invalid.md",
+        last_updated: "2026-07-17",
+        status: "current",
+        [alias]: "forbidden",
+      });
+      expect(result.rc, alias).toBe(2);
+      expect(result.json.error.class).toBe("schema_violation");
     }
     expect(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`))).toEqual(before);
-    const legacy = project(false); const queried = capture(legacy, ["state", "todo", "--format", "json"]); expect(queried.rc).toBe(1); expect(queried.json.error.class).toBe("migration_required"); expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
-    const malformed = path.join(root, ".agentera/entities/docs/documentation_inventory_entry/bbbbbbbbbb.yaml"); fs.mkdirSync(path.dirname(malformed), { recursive: true }); fs.writeFileSync(malformed, "id: bbbbbbbbbb\nartifact: docs\nrecord:\n  document: bad\n  path: bad.md\n  last_updated: nope\n  status: invented\n  stable_id: alias\n"); expect(validateEntityState(root).valid).toBe(false); fs.rmSync(malformed);
-    const duplicate = path.join(root, `.agentera/entities/docs/documentation_inventory_entry/${item.id}.yaml`); fs.copyFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`), duplicate); expect(validateEntityState(root).issues.some((issue) => issue.code === "duplicate_id")).toBe(true);
+    const legacy = project(false);
+    const queried = capture(legacy, ["state", "todo", "--format", "json"]);
+    expect(queried.rc).toBe(1);
+    expect(queried.json.error.class).toBe("migration_required");
+    expect(fs.existsSync(path.join(legacy, ".agentera/entities"))).toBe(false);
+    const malformed = path.join(root, ".agentera/entities/docs/documentation_inventory_entry/bbbbbbbbbb.yaml");
+    fs.mkdirSync(path.dirname(malformed), { recursive: true });
+    fs.writeFileSync(malformed, "id: bbbbbbbbbb\nartifact: docs\nrecord:\n  document: bad\n  path: bad.md\n  last_updated: nope\n  status: invented\n  stable_id: alias\n");
+    expect(validateEntityState(root).valid).toBe(false);
+    fs.rmSync(malformed);
+    const duplicate = path.join(root, `.agentera/entities/docs/documentation_inventory_entry/${item.id}.yaml`);
+    fs.copyFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`), duplicate);
+    expect(validateEntityState(root).issues.some((issue) => issue.code === "duplicate_id")).toBe(true);
   });
 
   it("renders bounded deterministic views with snapshot cursors, provenance, and exact full recovery", () => {
     const root = project();
-    const low = todo(root, "normal", "normal"); const high = todo(root, "critical", "critical");
-    const firstDoc = doc(root, "Zulu", "z.md"); const secondDoc = doc(root, "Alpha", "a.md");
+    const low = todo(root, "normal", "normal");
+    const high = todo(root, "critical", "critical");
+    const firstDoc = doc(root, "Zulu", "z.md");
+    const secondDoc = doc(root, "Alpha", "a.md");
     const todoPage = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]);
-    expect(todoPage.json).toMatchObject({ status: "degraded", order: "severity_then_status_then_markdown_order_then_id", omitted: true, omitted_count: 1, entries: [{ id: high.id, artifact: "todo", queue_rank: 1, provenance: { storage: "canonical_entity_file" } }] });
+    expect(todoPage.json).toMatchObject({
+      status: "degraded",
+      order: "severity_then_status_then_markdown_order_then_id",
+      omitted: true,
+      omitted_count: 1,
+      entries: [
+        {
+          id: high.id,
+          artifact: "todo",
+          queue_rank: 1,
+          provenance: { storage: "canonical_entity_file" },
+        },
+      ],
+    });
     todo(root, "critical second", "critical");
     const filteredTodo = capture(root, ["state", "todo", "list", "--status", "open", "--severity", "critical", "--ids-only", "--limit", "1", "--format", "json"]);
     expect(filteredTodo.json.retrieval.continue).toMatch(/^agentera state todo list --severity 'critical' --status 'open' --ids-only --limit 1 --cursor \S+$/);
-    const todoGet = capture(root, ["state", "todo", "get", "--id", low.id, "--format", "json"]); expect(todoGet.json.entry.record.title).toBe("normal");
-    const docsList = capture(root, ["state", "docs", "list", "--format", "json"]); expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
+    const todoGet = capture(root, ["state", "todo", "get", "--id", low.id, "--format", "json"]);
+    expect(todoGet.json.entry.record.title).toBe("normal");
+    const docsList = capture(root, ["state", "docs", "list", "--format", "json"]);
+    expect(docsList.json.entries.map((entry: any) => entry.id)).toEqual([secondDoc.id, firstDoc.id]);
     const filteredDocs = capture(root, ["state", "docs", "list", "--status", "current", "--topic", ".md", "--ids-only", "--limit", "1", "--format", "json"]);
     expect(filteredDocs.json.retrieval.continue).toMatch(/^agentera state docs list --topic '\.md' --status 'current' --ids-only --limit 1 --cursor \S+$/);
-    const docsDefault = capture(root, ["state", "docs", "--format", "json"]); expect(docsDefault.rc).toBe(2); expect(docsDefault.json.error).toMatchObject({ class: "invalid_request", recovery: expect.stringContaining("state docs list") });
-    todo(root, "cursor invalidator"); const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]); expect(stale.rc).toBe(1); expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
-    const detail = "x".repeat(18_000); const large = todo(root, detail); todo(root, `y${detail}`); const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]); expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768); expect(bounded.json).toMatchObject({ status: "degraded", counts: { returned: 6, omitted: 0 }, degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 }, retrieval: { get: "agentera state todo get --id ID" } }); expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]); expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
-    expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({ document: "Alpha", path: "a.md", last_updated: "2026-07-17", status: "current" });
+    const docsDefault = capture(root, ["state", "docs", "--format", "json"]);
+    expect(docsDefault.rc).toBe(2);
+    expect(docsDefault.json.error).toMatchObject({
+      class: "invalid_request",
+      recovery: expect.stringContaining("state docs list"),
+    });
+    todo(root, "cursor invalidator");
+    const stale = capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", todoPage.json.next_cursor, "--format", "json"]);
+    expect(stale.rc).toBe(1);
+    expect(stale.json.error.class).toBe("cursor_snapshot_unavailable");
+    const detail = "x".repeat(18_000);
+    const large = todo(root, detail);
+    todo(root, `y${detail}`);
+    const bounded = capture(root, ["state", "todo", "list", "--limit", "100", "--format", "json"]);
+    expect(Buffer.byteLength(bounded.out)).toBeLessThanOrEqual(32_768);
+    expect(bounded.json).toMatchObject({
+      status: "degraded",
+      counts: { returned: 6, omitted: 0 },
+      degradation: { reason: "optional_detail_byte_budget", detail_omitted_count: 6 },
+      retrieval: { get: "agentera state todo get --id ID" },
+    });
+    expect(bounded.json.entries.map((entry: any) => entry.queue_rank)).toEqual([1, 2, 3, 4, 5, 6]);
+    expect(capture(root, ["state", "todo", "get", "--id", large.id, "--format", "json"]).json.entry.record.title).toBe(detail);
+    expect(capture(root, ["state", "docs", "get", "--id", secondDoc.id, "--format", "json"]).json.entry.record).toEqual({
+      document: "Alpha",
+      path: "a.md",
+      last_updated: "2026-07-17",
+      status: "current",
+    });
   });
 
-  it("binds TODO cursors to normalized limit and preserves exact unfiltered continuation", () => {
-    const { root, orderedIds } = realisticTodoProject(21);
-    const before = files(root);
-    const cursorFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
-    expect(cursorFirst.rc, cursorFirst.err || cursorFirst.out).toBe(0);
-    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
-    const cursorPayload = decodeListCursor(cursorFirst.json.next_cursor, root, authorityPath);
-    expect(cursorPayload).toMatchObject({
-      limit: 10,
-      order: "severity_then_status_then_markdown_order_then_id",
-      filters: {},
-      selector: expect.any(String),
-      snapshot_id: expect.any(String),
-      after: cursorFirst.json.entries.at(-1).id,
-    });
+  it(
+    "binds TODO cursors to normalized limit and preserves exact unfiltered continuation",
+    () => {
+      const { root, orderedIds } = realisticTodoProject(21);
+      const before = files(root);
+      const cursorFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+      expect(cursorFirst.rc, cursorFirst.err || cursorFirst.out).toBe(0);
+      const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+      const cursorPayload = decodeListCursor(cursorFirst.json.next_cursor, root, authorityPath);
+      expect(cursorPayload).toMatchObject({
+        limit: 10,
+        order: "severity_then_status_then_markdown_order_then_id",
+        filters: {},
+        selector: expect.any(String),
+        snapshot_id: expect.any(String),
+        after: cursorFirst.json.entries.at(-1).id,
+      });
 
-    const cursorPages = [cursorFirst.json];
-    while (cursorPages.at(-1).retrieval.continue) {
-      const next = capture(root, shellCommandArgs(cursorPages.at(-1).retrieval.continue));
-      expect(next.rc, next.err || next.out).toBe(0);
-      cursorPages.push(next.json);
-    }
-    const cursorEntries = cursorPages.flatMap((page) => page.entries);
-    expect(cursorPages.map((page) => page.entries.length)).toEqual([10, 10, 1]);
-    cursorPages.forEach((page, index) => expect(page.counts).toMatchObject({
-      total: 21,
-      candidate: 21,
-      returned: [10, 10, 1][index],
-      remaining: [11, 1, 0][index],
-      omitted: [11, 1, 0][index],
-      continuation: [11, 1, 0][index],
-    }));
-    expect(cursorPages.at(-1)).toMatchObject({ status: "ok", counts: { remaining: 0, omitted: 0, continuation: 0 } });
-    expect(cursorPages.at(-1).next_cursor).toBeUndefined();
-    expect(cursorPages.at(-1).retrieval.continue).toBeUndefined();
-    expect(cursorEntries.map((entry: any) => entry.id)).toEqual(orderedIds);
-    expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 21 }, (_, index) => index + 1));
-    expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(21);
-    const cursorExact = capture(root, shellCommandArgs(cursorEntries.at(-1).retrieval.get));
-    expect(cursorExact.rc, cursorExact.err || cursorExact.out).toBe(0);
-    expect(cursorExact.json.entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
+      const cursorPages = [cursorFirst.json];
+      while (cursorPages.at(-1).retrieval.continue) {
+        const next = capture(root, shellCommandArgs(cursorPages.at(-1).retrieval.continue));
+        expect(next.rc, next.err || next.out).toBe(0);
+        cursorPages.push(next.json);
+      }
+      const cursorEntries = cursorPages.flatMap((page) => page.entries);
+      expect(cursorPages.map((page) => page.entries.length)).toEqual([10, 10, 1]);
+      cursorPages.forEach((page, index) =>
+        expect(page.counts).toMatchObject({
+          total: 21,
+          candidate: 21,
+          returned: [10, 10, 1][index],
+          remaining: [11, 1, 0][index],
+          omitted: [11, 1, 0][index],
+          continuation: [11, 1, 0][index],
+        }),
+      );
+      expect(cursorPages.at(-1)).toMatchObject({
+        status: "ok",
+        counts: { remaining: 0, omitted: 0, continuation: 0 },
+      });
+      expect(cursorPages.at(-1).next_cursor).toBeUndefined();
+      expect(cursorPages.at(-1).retrieval.continue).toBeUndefined();
+      expect(cursorEntries.map((entry: any) => entry.id)).toEqual(orderedIds);
+      expect(cursorEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 21 }, (_, index) => index + 1));
+      expect(new Set(cursorEntries.map((entry: any) => entry.id)).size).toBe(21);
+      const cursorExact = capture(root, shellCommandArgs(cursorEntries.at(-1).retrieval.get));
+      expect(cursorExact.rc, cursorExact.err || cursorExact.out).toBe(0);
+      expect(cursorExact.json.entry).toMatchObject({ id: orderedIds.at(-1), artifact: "todo" });
 
-    expect(files(root)).toEqual(before);
-  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
+      expect(files(root)).toEqual(before);
+    },
+    REALISTIC_TODO_CURSOR_TIMEOUT_MS,
+  );
 
   it("preserves filtered TODO continuation and pre-filter queue rank", () => {
     const { root, orderedIds } = realisticTodoProject();
@@ -1362,37 +2328,13 @@ describe("TODO item and documentation inventory entity authority", () => {
       expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(expectedIds);
     };
 
-    assertInvalid(
-      ["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "json"],
-      "todo cursor is bound to --limit 10, not --limit 5",
-      "agentera state todo list --ids-only --limit 5",
-      orderedIds.slice(0, 5),
-    );
-    assertInvalid(
-      ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", first.json.next_cursor, "--format", "json"],
-      "todo cursor is bound to --limit 10, not --limit 20",
-      "agentera state todo list --ids-only --limit 20",
-      orderedIds.slice(0, 20),
-    );
-    assertInvalid(
-      ["state", "todo", "list", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
-      "todo cursor selectors do not match this request",
-      "agentera state todo list --limit 10",
-      orderedIds.slice(0, 10),
-    );
-    assertInvalid(
-      ["state", "todo", "list", "--status", "open", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"],
-      "todo cursor filters do not match this request",
-      "agentera state todo list --status 'open' --ids-only --limit 10",
-      orderedIds.slice(0, 10),
-    );
-    const changedOrder = structuredClone(payload); changedOrder.order = "changed_order";
-    assertInvalid(
-      ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(changedOrder, root, authorityPath), "--format", "json"],
-      "todo cursor order does not match this request",
-      "agentera state todo list --ids-only --limit 10",
-      orderedIds.slice(0, 10),
-    );
+    assertInvalid(["state", "todo", "list", "--ids-only", "--limit", "5", "--cursor", first.json.next_cursor, "--format", "json"], "todo cursor is bound to --limit 10, not --limit 5", "agentera state todo list --ids-only --limit 5", orderedIds.slice(0, 5));
+    assertInvalid(["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", first.json.next_cursor, "--format", "json"], "todo cursor is bound to --limit 10, not --limit 20", "agentera state todo list --ids-only --limit 20", orderedIds.slice(0, 20));
+    assertInvalid(["state", "todo", "list", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"], "todo cursor selectors do not match this request", "agentera state todo list --limit 10", orderedIds.slice(0, 10));
+    assertInvalid(["state", "todo", "list", "--status", "open", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"], "todo cursor filters do not match this request", "agentera state todo list --status 'open' --ids-only --limit 10", orderedIds.slice(0, 10));
+    const changedOrder = structuredClone(payload);
+    changedOrder.order = "changed_order";
+    assertInvalid(["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(changedOrder, root, authorityPath), "--format", "json"], "todo cursor order does not match this request", "agentera state todo list --ids-only --limit 10", orderedIds.slice(0, 10));
 
     const defaultFirst = capture(root, ["state", "todo", "list", "--ids-only", "--format", "json"]);
     expect(decodeListCursor(defaultFirst.json.next_cursor, root, authorityPath).limit).toBe(20);
@@ -1406,33 +2348,62 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(before);
   });
 
-  it("fails closed for malformed, signed legacy, signature, base64, and payload cursors", () => {
-    const { root, orderedIds } = realisticTodoProject(11);
-    const before = files(root);
-    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
-    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
-    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
-    const [body, signature] = String(first.json.next_cursor).split(".");
-    const legacy = structuredClone(payload); delete legacy.limit;
-    const recovery = "agentera state todo list --ids-only --limit 10";
-    const variants = [
-      { label: "malformed", cursor: "not-a-cursor", message: "todo cursor is malformed or belongs to another project" },
-      { label: "signature", cursor: `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`, message: "todo cursor is malformed or belongs to another project" },
-      { label: "base64", cursor: `${body}=.${signature}`, message: "todo cursor is malformed or belongs to another project" },
-      { label: "payload", cursor: encodeListCursor([] as any, root, authorityPath), message: "todo cursor is malformed or belongs to another project" },
-      { label: "legacy", cursor: encodeListCursor(legacy, root, authorityPath), message: "todo cursor lacks the required effective limit binding" },
-    ];
-    for (const variant of variants) {
-      const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", variant.cursor, "--format", "json"]);
-      expect(result.rc, variant.label).toBe(1);
-      expect(result.json).not.toHaveProperty("entries");
-      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: variant.message, recovery });
-    }
-    const restarted = capture(root, shellCommandArgs(recovery));
-    expect(restarted.rc, restarted.err || restarted.out).toBe(0);
-    expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
-    expect(files(root)).toEqual(before);
-  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
+  it(
+    "fails closed for malformed, signed legacy, signature, base64, and payload cursors",
+    () => {
+      const { root, orderedIds } = realisticTodoProject(11);
+      const before = files(root);
+      const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+      const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+      const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+      const [body, signature] = String(first.json.next_cursor).split(".");
+      const legacy = structuredClone(payload);
+      delete legacy.limit;
+      const recovery = "agentera state todo list --ids-only --limit 10";
+      const variants = [
+        {
+          label: "malformed",
+          cursor: "not-a-cursor",
+          message: "todo cursor is malformed or belongs to another project",
+        },
+        {
+          label: "signature",
+          cursor: `${body}.${signature.slice(0, -1)}${signature.endsWith("A") ? "B" : "A"}`,
+          message: "todo cursor is malformed or belongs to another project",
+        },
+        {
+          label: "base64",
+          cursor: `${body}=.${signature}`,
+          message: "todo cursor is malformed or belongs to another project",
+        },
+        {
+          label: "payload",
+          cursor: encodeListCursor([] as any, root, authorityPath),
+          message: "todo cursor is malformed or belongs to another project",
+        },
+        {
+          label: "legacy",
+          cursor: encodeListCursor(legacy, root, authorityPath),
+          message: "todo cursor lacks the required effective limit binding",
+        },
+      ];
+      for (const variant of variants) {
+        const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", variant.cursor, "--format", "json"]);
+        expect(result.rc, variant.label).toBe(1);
+        expect(result.json).not.toHaveProperty("entries");
+        expect(result.json.error).toMatchObject({
+          class: "cursor_invalid",
+          message: variant.message,
+          recovery,
+        });
+      }
+      const restarted = capture(root, shellCommandArgs(recovery));
+      expect(restarted.rc, restarted.err || restarted.out).toBe(0);
+      expect(restarted.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+      expect(files(root)).toEqual(before);
+    },
+    REALISTIC_TODO_CURSOR_TIMEOUT_MS,
+  );
 
   it("rejects signed invalid TODO limits and preserves YAML and text cursor errors", () => {
     const { root } = realisticTodoProject(20);
@@ -1441,11 +2412,16 @@ describe("TODO item and documentation inventory entity authority", () => {
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
     const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
     for (const invalidLimit of [0, -1, 1.5, 101, "10", null]) {
-      const invalid = structuredClone(payload); invalid.limit = invalidLimit as any;
+      const invalid = structuredClone(payload);
+      invalid.limit = invalidLimit as any;
       const result = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(invalid, root, authorityPath), "--format", "json"]);
       expect(result.rc, String(invalidLimit)).toBe(1);
       expect(result.json).not.toHaveProperty("entries");
-      expect(result.json.error).toMatchObject({ class: "cursor_invalid", message: "todo cursor has an invalid effective limit binding", recovery: "agentera state todo list --ids-only --limit 10" });
+      expect(result.json.error).toMatchObject({
+        class: "cursor_invalid",
+        message: "todo cursor has an invalid effective limit binding",
+        recovery: "agentera state todo list --ids-only --limit 10",
+      });
       expect(capture(root, shellCommandArgs(result.json.error.recovery)).rc).toBe(0);
     }
 
@@ -1459,59 +2435,97 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(before);
   });
 
-  it("reserves snapshot-unavailable for actual state loss and missing continuation identity", () => {
-    const { root, orderedIds } = realisticTodoProject(11);
-    const initial = files(root);
-    const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
-    const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
-    const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
-    const missingAfter = structuredClone(payload); missingAfter.after = "zzzzzzzzzz";
-    const missing = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(missingAfter, root, authorityPath), "--format", "json"]);
-    expect(missing.rc).toBe(1);
-    expect(missing.json).not.toHaveProperty("entries");
-    expect(missing.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor continuation identity is no longer available", recovery: "agentera state todo list --ids-only --limit 10" });
-    expect(capture(root, shellCommandArgs(missing.json.error.recovery)).json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
-    expect(files(root)).toEqual(initial);
+  it(
+    "reserves snapshot-unavailable for actual state loss and missing continuation identity",
+    () => {
+      const { root, orderedIds } = realisticTodoProject(11);
+      const initial = files(root);
+      const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
+      const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
+      const payload = decodeListCursor(first.json.next_cursor, root, authorityPath);
+      const missingAfter = structuredClone(payload);
+      missingAfter.after = "zzzzzzzzzz";
+      const missing = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", encodeListCursor(missingAfter, root, authorityPath), "--format", "json"]);
+      expect(missing.rc).toBe(1);
+      expect(missing.json).not.toHaveProperty("entries");
+      expect(missing.json.error).toMatchObject({
+        class: "cursor_snapshot_unavailable",
+        message: "todo cursor continuation identity is no longer available",
+        recovery: "agentera state todo list --ids-only --limit 10",
+      });
+      expect(capture(root, shellCommandArgs(missing.json.error.recovery)).json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(0, 10));
+      expect(files(root)).toEqual(initial);
 
-    todo(root, "Actual cursor snapshot mutation", "critical");
-    const mutated = files(root);
-    const stale = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"]);
-    expect(stale.rc).toBe(1);
-    expect(stale.json).not.toHaveProperty("entries");
-    expect(stale.json.error).toMatchObject({ class: "cursor_snapshot_unavailable", message: "todo cursor snapshot is no longer available", recovery: "agentera state todo list --ids-only --limit 10" });
-    expect(capture(root, shellCommandArgs(stale.json.error.recovery)).rc).toBe(0);
-    expect(files(root)).toEqual(mutated);
-  }, REALISTIC_TODO_CURSOR_TIMEOUT_MS);
+      todo(root, "Actual cursor snapshot mutation", "critical");
+      const mutated = files(root);
+      const stale = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--cursor", first.json.next_cursor, "--format", "json"]);
+      expect(stale.rc).toBe(1);
+      expect(stale.json).not.toHaveProperty("entries");
+      expect(stale.json.error).toMatchObject({
+        class: "cursor_snapshot_unavailable",
+        message: "todo cursor snapshot is no longer available",
+        recovery: "agentera state todo list --ids-only --limit 10",
+      });
+      expect(capture(root, shellCommandArgs(stale.json.error.recovery)).rc).toBe(0);
+      expect(files(root)).toEqual(mutated);
+    },
+    REALISTIC_TODO_CURSOR_TIMEOUT_MS,
+  );
 
   it("uses static final help and explain with bare IDs", () => {
     const root = project();
-    const todoHelp = capture(root, ["state", "todo", "--help"]); const docsHelp = capture(root, ["state", "docs", "--help"]);
-    expect(todoHelp.out).toContain("todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD"); expect(todoHelp.out).toContain("todo create --input TODO.yaml"); expect(docsHelp.out).toContain("docs update --id ID"); expect(todoHelp.out + docsHelp.out).not.toContain("--number"); expect(docsHelp.out).toContain("path is record data, not identity");
-    const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]); expect(explain.json.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", required: true })])); expect(explain.json.example).toContain("--id qjtrmnpvka");
+    const todoHelp = capture(root, ["state", "todo", "--help"]);
+    const docsHelp = capture(root, ["state", "docs", "--help"]);
+    expect(todoHelp.out).toContain("todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD");
+    expect(todoHelp.out).toContain("todo create --input TODO.yaml");
+    expect(docsHelp.out).toContain("docs update --id ID");
+    expect(todoHelp.out + docsHelp.out).not.toContain("--number");
+    expect(docsHelp.out).toContain("path is record data, not identity");
+    const explain = capture(root, ["state", "todo", "explain", "--verb", "update", "--format", "json"]);
+    expect(explain.json.fields).toEqual(expect.arrayContaining([expect.objectContaining({ flag: "--id", required: true })]));
+    expect(explain.json.example).toContain("--id qjtrmnpvka");
     expect(capture(root, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
-    const legacy = project(false); expect(capture(legacy, ["state", "todo", "--help"]).out).toContain("todo create"); expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.example).toContain("todo activate"); expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
+    const legacy = project(false);
+    expect(capture(legacy, ["state", "todo", "--help"]).out).toContain("todo create");
+    expect(capture(legacy, ["state", "todo", "explain", "--format", "json"]).json.example).toContain("todo activate");
+    expect(capture(legacy, ["schema", "--format", "json"]).json.state_writer.artifacts.map((artifact: any) => artifact.artifact)).toEqual(expect.arrayContaining(["todo", "docs"]));
   });
 
   it("reconciles one-sided Markdown edits with the requested mutation in one transaction", () => {
-    const root = project(); const item = todo(root, "Original public title");
+    const root = project();
+    const item = todo(root, "Original public title");
     const markdown = path.join(root, "TODO.md");
     fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace("Original public title", "Human public title"));
     const drifted = files(root);
     const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
     expect(read.json).toMatchObject({
-      entry: { record: { title: "Human public title" }, public: { owner: "markdown", source: "TODO.md" } },
-      reconciliation: { status: "drift", read_effect: "none", next_write_boundary: "atomic_reconciliation", items: [{ id: item.id, state: "markdown_only", markdown_changed_fields: ["description"] }] },
+      entry: {
+        record: { title: "Human public title" },
+        public: { owner: "markdown", source: "TODO.md" },
+      },
+      reconciliation: {
+        status: "drift",
+        read_effect: "none",
+        next_write_boundary: "atomic_reconciliation",
+        items: [{ id: item.id, state: "markdown_only", markdown_changed_fields: ["description"] }],
+      },
     });
     expect(files(root)).toEqual(drifted);
-    const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput(),
+    });
     expect(result.rc, result.err || result.out).toBe(0);
-    expect(result.json).toMatchObject({ record: { title: "Human public title", readiness: { capability: "build" } }, reconciliation: { targets: 1, recovered: [] } });
+    expect(result.json).toMatchObject({
+      record: { title: "Human public title", readiness: { capability: "build" } },
+      reconciliation: { targets: 1, recovered: [] },
+    });
     expect(loadYamlMapping(fs.readFileSync(path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`), "utf8")).record).toEqual(result.json.record);
     expect(fs.readFileSync(markdown, "utf8")).toContain("Human public title");
   });
 
   it("projects a one-sided entity edit with the requested operational mutation in one transaction", () => {
-    const root = project(); const item = todo(root, "Original entity title");
+    const root = project();
+    const item = todo(root, "Original entity title");
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
     const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
     (envelope.record as any).title = "Agentera entity title";
@@ -1519,15 +2533,26 @@ describe("TODO item and documentation inventory entity authority", () => {
     const drifted = files(root);
     const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
     expect(read.json).toMatchObject({
-      entry: { record: { title: "Original entity title" }, public: { description: "[task:3.0.0] Original entity title", owner: "markdown" } },
-      reconciliation: { status: "drift", items: [{ id: item.id, state: "entity_only", entity_changed_fields: ["description"] }] },
+      entry: {
+        record: { title: "Original entity title" },
+        public: { description: "[task:3.0.0] Original entity title", owner: "markdown" },
+      },
+      reconciliation: {
+        status: "drift",
+        items: [{ id: item.id, state: "entity_only", entity_changed_fields: ["description"] }],
+      },
     });
     expect(files(root)).toEqual(drifted);
 
-    const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput(),
+    });
 
     expect(result.rc, result.err || result.out).toBe(0);
-    expect(result.json).toMatchObject({ record: { title: "Agentera entity title", readiness: { capability: "build" } }, reconciliation: { targets: 2, recovered: [] } });
+    expect(result.json).toMatchObject({
+      record: { title: "Agentera entity title", readiness: { capability: "build" } },
+      reconciliation: { targets: 2, recovered: [] },
+    });
     expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`[id:${item.id}] [task:3.0.0] Agentera entity title`);
     expect(loadYamlMapping(fs.readFileSync(entity, "utf8")).record).toEqual(result.json.record);
   });
@@ -1536,8 +2561,19 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const first = todo(root, "First public row");
     const second = todo(root, "Second public row");
-    expect(capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 1 }) }).rc).toBe(0);
-    expect(capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput({ queue_rank: 2, gate: { state: "pending", reason: "Approval required.", recovery: "Obtain approval." } }) }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", first.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({ queue_rank: 1 }),
+      }).rc,
+    ).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput({
+          queue_rank: 2,
+          gate: { state: "pending", reason: "Approval required.", recovery: "Obtain approval." },
+        }),
+      }).rc,
+    ).toBe(0);
     const markdown = path.join(root, "TODO.md");
     fs.writeFileSync(markdown, `# TODO\n\n## ⇶ Critical\n- [ ] [id:${second.id}] [task:3.0.0] Human changed second row\n\n## → Normal\n- [ ] [id:${first.id}] [task:3.0.0] First public row\n`);
 
@@ -1545,20 +2581,43 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(list.rc, list.err || list.out).toBe(0);
     expect(list.json).toMatchObject({
       order: "severity_then_status_then_markdown_order_then_id",
-      reconciliation: { status: "drift", read_effect: "none", authority: { public: { owner: "markdown" }, operational: { owner: "agentera" } } },
+      reconciliation: {
+        status: "drift",
+        read_effect: "none",
+        authority: { public: { owner: "markdown" }, operational: { owner: "agentera" } },
+      },
     });
     expect(list.json.entries.map((entry: any) => entry.id)).toEqual([second.id, first.id]);
-    const selection = evaluateTodoReadinessQueue(list.json.entries.map((entry: any) => ({ id: entry.id, artifact: entry.artifact, record: entry.record })));
+    const selection = evaluateTodoReadinessQueue(
+      list.json.entries.map((entry: any) => ({
+        id: entry.id,
+        artifact: entry.artifact,
+        record: entry.record,
+      })),
+    );
     expect(selection.selected?.id).toBe(first.id);
-    expect(selection.evaluations.find((entry) => entry.id === second.id)).toMatchObject({ result: "gated", eligible: false });
+    expect(selection.evaluations.find((entry) => entry.id === second.id)).toMatchObject({
+      result: "gated",
+      eligible: false,
+    });
 
     fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(`- [ ] [id:${second.id}]`, `- [x] [id:${second.id}]`));
     const beforeReads = files(root);
     const exact = capture(root, ["state", "todo", "get", "--id", second.id, "--format", "json"]);
     expect(exact.json.entry).toMatchObject({
       id: second.id,
-      record: { title: "Human changed second row", severity: "critical", status: "resolved", readiness: { gate: { state: "pending" }, queue_rank: 2 } },
-      public: { description: "[task:3.0.0] Human changed second row", severity: "critical", status: "resolved", order: 1 },
+      record: {
+        title: "Human changed second row",
+        severity: "critical",
+        status: "resolved",
+        readiness: { gate: { state: "pending" }, queue_rank: 2 },
+      },
+      public: {
+        description: "[task:3.0.0] Human changed second row",
+        severity: "critical",
+        status: "resolved",
+        order: 1,
+      },
     });
     const validation = capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]);
     expect(validation.rc).toBe(1);
@@ -1574,17 +2633,33 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("reports divergent edits and unchecked removal on reads and validation without effects", () => {
     for (const kind of ["divergent", "removed"] as const) {
-      const root = project(); const item = todo(root, `Read ${kind}`); const markdown = path.join(root, "TODO.md");
-      if (kind === "removed") fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").split("\n").filter((line) => !line.includes(item.id)).join("\n"));
+      const root = project();
+      const item = todo(root, `Read ${kind}`);
+      const markdown = path.join(root, "TODO.md");
+      if (kind === "removed")
+        fs.writeFileSync(
+          markdown,
+          fs
+            .readFileSync(markdown, "utf8")
+            .split("\n")
+            .filter((line) => !line.includes(item.id))
+            .join("\n"),
+        );
       else {
         fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(`Read ${kind}`, "Markdown branch"));
         const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
-        const value = loadYamlMapping(fs.readFileSync(entity, "utf8")); (value.record as any).title = "Entity branch"; fs.writeFileSync(entity, dumpYamlMapping(value));
+        const value = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+        (value.record as any).title = "Entity branch";
+        fs.writeFileSync(entity, dumpYamlMapping(value));
       }
       const before = files(root);
       const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
       expect(read.rc, read.err || read.out).toBe(0);
-      expect(read.json.reconciliation).toMatchObject({ status: "conflict", read_effect: "none", items: [expect.objectContaining({ id: item.id, state: "conflict" })] });
+      expect(read.json.reconciliation).toMatchObject({
+        status: "conflict",
+        read_effect: "none",
+        items: [expect.objectContaining({ id: item.id, state: "conflict" })],
+      });
       const validation = capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]);
       expect(validation.rc).toBe(1);
       expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "todo_reconciliation_drift", id: item.id })]));
@@ -1593,7 +2668,9 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("bounds read-only Markdown inspection without exposing rejected bytes", () => {
-    const root = project(); const item = todo(root, "Bounded read"); const markdown = path.join(root, "TODO.md");
+    const root = project();
+    const item = todo(root, "Bounded read");
+    const markdown = path.join(root, "TODO.md");
     const privateBytes = `PRIVATE_REJECTED_TODO_BYTES_${"x".repeat(1024 * 1024)}`;
     fs.writeFileSync(markdown, privateBytes);
     const before = files(root);
@@ -1608,36 +2685,73 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("uses within-severity Markdown order for reads and reconciles independent public fields", () => {
-    const root = project(); const first = todo(root, "First ordered"); const second = todo(root, "Second ordered");
+    const root = project();
+    const first = todo(root, "First ordered");
+    const second = todo(root, "Second ordered");
     const markdown = path.join(root, "TODO.md");
     fs.writeFileSync(markdown, `# TODO\n\n## → Normal\n- [ ] [id:${second.id}] [task:3.0.0] Second ordered\n- [ ] [id:${first.id}] [task:3.0.0] First ordered\n`);
     const firstEntity = path.join(root, `.agentera/entities/todo/todo_item/${first.id}.yaml`);
-    const value = loadYamlMapping(fs.readFileSync(firstEntity, "utf8")); (value.record as any).title = "Entity-only first title"; fs.writeFileSync(firstEntity, dumpYamlMapping(value));
+    const value = loadYamlMapping(fs.readFileSync(firstEntity, "utf8"));
+    (value.record as any).title = "Entity-only first title";
+    fs.writeFileSync(firstEntity, dumpYamlMapping(value));
     const secondEntity = path.join(root, `.agentera/entities/todo/todo_item/${second.id}.yaml`);
-    const secondValue = loadYamlMapping(fs.readFileSync(secondEntity, "utf8")); (secondValue.record as any).readiness = readinessInput({ blocked: { reason: "Decision missing", recovery: "Run agentera discuss" }, capability: "discuss" }); fs.writeFileSync(secondEntity, dumpYamlMapping(secondValue));
+    const secondValue = loadYamlMapping(fs.readFileSync(secondEntity, "utf8"));
+    (secondValue.record as any).readiness = readinessInput({
+      blocked: { reason: "Decision missing", recovery: "Run agentera discuss" },
+      capability: "discuss",
+    });
+    fs.writeFileSync(secondEntity, dumpYamlMapping(secondValue));
 
     const beforeReads = files(root);
     const read = capture(root, ["state", "todo", "list", "--format", "json"]);
     expect(read.json.entries.map((entry: any) => entry.id)).toEqual([second.id, first.id]);
-    expect(read.json.entries[0]).toMatchObject({ id: second.id, public_order: 1, readiness: { state: "open", blocked: true }, actionability: { outcome: "blocked", eligible: false }, queue_rank: 1, reconciliation: { status: "drift", drifted: true } });
-    expect(read.json.entries[1]).toMatchObject({ id: first.id, public_order: 2, readiness: { state: "open", blocked: false }, actionability: { outcome: "readiness_absent", eligible: false }, queue_rank: 2, reconciliation: { status: "drift", drifted: true } });
+    expect(read.json.entries[0]).toMatchObject({
+      id: second.id,
+      public_order: 1,
+      readiness: { state: "open", blocked: true },
+      actionability: { outcome: "blocked", eligible: false },
+      queue_rank: 1,
+      reconciliation: { status: "drift", drifted: true },
+    });
+    expect(read.json.entries[1]).toMatchObject({
+      id: first.id,
+      public_order: 2,
+      readiness: { state: "open", blocked: false },
+      actionability: { outcome: "readiness_absent", eligible: false },
+      queue_rank: 2,
+      reconciliation: { status: "drift", drifted: true },
+    });
     expect(read.json.reconciliation).toMatchObject({
       status: "drift",
       items: expect.arrayContaining([
-        expect.objectContaining({ id: first.id, state: "convergent", markdown_changed_fields: ["order"], entity_changed_fields: ["description"], conflicting_fields: [] }),
-        expect.objectContaining({ id: second.id, state: "markdown_only", markdown_changed_fields: ["order"] }),
+        expect.objectContaining({
+          id: first.id,
+          state: "convergent",
+          markdown_changed_fields: ["order"],
+          entity_changed_fields: ["description"],
+          conflicting_fields: [],
+        }),
+        expect.objectContaining({
+          id: second.id,
+          state: "markdown_only",
+          markdown_changed_fields: ["order"],
+        }),
       ]),
     });
-    const bare = capture(root, ["state", "todo", "--format", "json"]); expect(bare).toEqual(read);
+    const bare = capture(root, ["state", "todo", "--format", "json"]);
+    expect(bare).toEqual(read);
     expect(capture(root, ["state", "todo", "list", "--format", "yaml"]).rc).toBe(2);
     expect(capture(root, ["state", "todo", "list", "--format", "text"]).rc).toBe(2);
-    const page = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]); expect(page.json.next_cursor).toEqual(expect.any(String));
+    const page = capture(root, ["state", "todo", "list", "--limit", "1", "--format", "json"]);
+    expect(page.json.next_cursor).toEqual(expect.any(String));
     expect(capture(root, ["state", "todo", "list", "--limit", "1", "--cursor", page.json.next_cursor, "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["state", "todo", "get", "--id", second.id, "--format", "json"]).rc).toBe(0);
     expect(capture(root, ["state", "todo", "list", "--help"]).rc).toBe(0);
     expect(capture(root, ["state", "todo", "get", "extra", "--format", "json"]).rc).toBe(2);
     expect(files(root)).toEqual(beforeReads);
-    const applied = capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const applied = capture(root, ["state", "todo", "update", "--id", second.id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput(),
+    });
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(fs.readFileSync(markdown, "utf8")).toMatch(new RegExp(`id:${second.id}[\\s\\S]*id:${first.id}`));
     expect(fs.readFileSync(markdown, "utf8")).toContain("Entity-only first title");
@@ -1645,41 +2759,65 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("lets ordinary Git merge independent authorities and reports semantic public conflicts", () => {
     for (const divergent of [false, true]) {
-      const root = project(); const item = todo(root, divergent ? "Merge conflict base" : "Merge success base");
-      git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", "."); git(root, "commit", "-m", "baseline");
+      const root = project();
+      const item = todo(root, divergent ? "Merge conflict base" : "Merge success base");
+      git(root, "init", "-b", "main");
+      git(root, "config", "user.name", "Fixture");
+      git(root, "config", "user.email", "fixture@example.test");
+      git(root, "add", ".");
+      git(root, "commit", "-m", "baseline");
       git(root, "switch", "-c", "markdown-edit");
-      const markdown = path.join(root, "TODO.md"); fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(divergent ? "Merge conflict base" : "Merge success base", divergent ? "Markdown branch title" : "Markdown-only title"));
-      git(root, "add", "TODO.md"); git(root, "commit", "-m", "edit markdown");
+      const markdown = path.join(root, "TODO.md");
+      fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(divergent ? "Merge conflict base" : "Merge success base", divergent ? "Markdown branch title" : "Markdown-only title"));
+      git(root, "add", "TODO.md");
+      git(root, "commit", "-m", "edit markdown");
       git(root, "switch", "main");
-      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`); const value = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+      const value = loadYamlMapping(fs.readFileSync(entity, "utf8"));
       if (divergent) (value.record as any).title = "Entity branch title";
       else (value.record as any).readiness = readinessInput();
-      fs.writeFileSync(entity, dumpYamlMapping(value)); git(root, "add", path.relative(root, entity)); git(root, "commit", "-m", "edit entity");
+      fs.writeFileSync(entity, dumpYamlMapping(value));
+      git(root, "add", path.relative(root, entity));
+      git(root, "commit", "-m", "edit entity");
       git(root, "merge", "--no-edit", "markdown-edit");
 
       const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
       expect(read.rc, read.err || read.out).toBe(0);
       expect(read.json.reconciliation.status).toBe(divergent ? "conflict" : "drift");
       const beforeWrite = files(root);
-      const write = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+      const write = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput(),
+      });
       if (divergent) {
-        expect(write.rc).toBe(2); expect(write.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("description") }); expect(files(root)).toEqual(beforeWrite);
+        expect(write.rc).toBe(2);
+        expect(write.json.error).toMatchObject({
+          class: "conflict",
+          message: expect.stringContaining("description"),
+        });
+        expect(files(root)).toEqual(beforeWrite);
       } else {
-        expect(write.rc, write.err || write.out).toBe(0); expect(write.json.record).toMatchObject({ title: "Markdown-only title", readiness: { capability: "build" } });
+        expect(write.rc, write.err || write.out).toBe(0);
+        expect(write.json.record).toMatchObject({
+          title: "Markdown-only title",
+          readiness: { capability: "build" },
+        });
         expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
       }
     }
   });
 
   it("rejects a missing post-activation baseline as stale before target effects", () => {
-    const root = project(); const item = todo(root, "Stale baseline");
+    const root = project();
+    const item = todo(root, "Stale baseline");
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
     const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
     delete (envelope.record as any).reconciliation;
     fs.writeFileSync(entity, dumpYamlMapping(envelope));
     const before = files(root);
 
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput(),
+    });
 
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
@@ -1693,17 +2831,37 @@ describe("TODO item and documentation inventory entity authority", () => {
   it("rejects duplicate, orphaned, removed-open, and divergent managed rows before effects", () => {
     const cases = ["duplicate", "orphan", "removed", "divergent"] as const;
     for (const kind of cases) {
-      const root = project(); const item = todo(root, `Conflict ${kind}`); const markdown = path.join(root, "TODO.md"); const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+      const root = project();
+      const item = todo(root, `Conflict ${kind}`);
+      const markdown = path.join(root, "TODO.md");
+      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
       if (kind === "duplicate") fs.appendFileSync(markdown, `- [ ] [id:${item.id}] [task:3.0.0] Duplicate\n`);
       if (kind === "orphan") fs.appendFileSync(markdown, "- [ ] [id:cccccccccc] [task:3.0.0] Orphan\n");
-      if (kind === "removed") fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").split("\n").filter((line) => !line.includes(item.id)).join("\n"));
+      if (kind === "removed")
+        fs.writeFileSync(
+          markdown,
+          fs
+            .readFileSync(markdown, "utf8")
+            .split("\n")
+            .filter((line) => !line.includes(item.id))
+            .join("\n"),
+        );
       if (kind === "divergent") {
         fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace(`Conflict ${kind}`, "Markdown branch"));
-        const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8")); (envelope.record as any).title = "Entity branch"; fs.writeFileSync(entity, dumpYamlMapping(envelope));
+        const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+        (envelope.record as any).title = "Entity branch";
+        fs.writeFileSync(entity, dumpYamlMapping(envelope));
       }
       const before = files(root);
-      const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
-      expect(result.rc, kind).toBe(2); expect(result.json.error, kind).toMatchObject({ class: "conflict", recovery: expect.stringMatching(/retry once|exactly one/) }); expect(files(root), kind).toEqual(before);
+      const result = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput(),
+      });
+      expect(result.rc, kind).toBe(2);
+      expect(result.json.error, kind).toMatchObject({
+        class: "conflict",
+        recovery: expect.stringMatching(/retry once|exactly one/),
+      });
+      expect(files(root), kind).toEqual(before);
     }
   });
 
@@ -1711,7 +2869,9 @@ describe("TODO item and documentation inventory entity authority", () => {
     const { root, id, entity } = preactivationProject();
     const activation = path.join(root, ".agentera/todo-reconciliation-activation.json");
     const beforePreview = files(root);
-    const blocked = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() });
+    const blocked = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      readiness: readinessInput(),
+    });
     expect(blocked.rc).toBe(2);
     expect(blocked.json.error).toMatchObject({
       class: "conflict",
@@ -1724,13 +2884,13 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json.activation).toMatchObject({
       counts: { matched: 0, converted: 1, retained: 1, conflicting: 0 },
-      public_document: { path: "TODO.md", changed: true, changed_lines: { count: 1, omitted_count: 0 } },
+      public_document: {
+        path: "TODO.md",
+        changed: true,
+        changed_lines: { count: 1, omitted_count: 0 },
+      },
       risks: { resurrected_count: 0 },
-      targets: expect.arrayContaining([
-        expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${id}.yaml` }),
-        expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }),
-        expect.objectContaining({ path: "TODO.md" }),
-      ]),
+      targets: expect.arrayContaining([expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${id}.yaml` }), expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }), expect.objectContaining({ path: "TODO.md" })]),
       effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
     expect(files(root)).toEqual(beforePreview);
@@ -1765,14 +2925,23 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(activeBytes);
     const legitimateReplay = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
     expect(legitimateReplay.rc, legitimateReplay.err || legitimateReplay.out).toBe(0);
-    expect(legitimateReplay.json).toMatchObject({ activation: { effect_sha256: preview.json.activation.effect_sha256 }, operation: { idempotent_replay: true } });
+    expect(legitimateReplay.json).toMatchObject({
+      activation: { effect_sha256: preview.json.activation.effect_sha256 },
+      operation: { idempotent_replay: true },
+    });
     expect(files(root)).toEqual(activeBytes);
-    expect(capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: readinessInput() }).rc).toBe(0);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput(),
+      }).rc,
+    ).toBe(0);
 
     const activeMarkdown = path.join(root, "TODO.md");
     fs.writeFileSync(activeMarkdown, fs.readFileSync(activeMarkdown, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] New ID-less managed row\n"));
     const beforeReject = files(root);
-    const rejected = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], { readiness: null });
+    const rejected = capture(root, ["state", "todo", "update", "--id", id, "--input", "-", "--format", "json"], {
+      readiness: null,
+    });
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
       class: "conflict",
@@ -1790,7 +2959,10 @@ describe("TODO item and documentation inventory entity authority", () => {
 
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json.repair).toMatchObject({
-      diagnosis: { counts: { duplicate: 2, stale: 1, matched: 1, retained: 1, conflicting: 0 }, omitted_count: 0 },
+      diagnosis: {
+        counts: { duplicate: 2, stale: 1, matched: 1, retained: 1, conflicting: 0 },
+        omitted_count: 0,
+      },
       public_document: { path: "TODO.md", changed: true },
       effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
     });
@@ -1799,13 +2971,16 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(files(root)).toEqual(before);
 
     const staleApply = capture(root, ["state", "todo", "repair", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
-    expect(staleApply.rc).toBe(2); expect(staleApply.json.error.message).toContain("changed after preview"); expect(files(root)).toEqual(before);
+    expect(staleApply.rc).toBe(2);
+    expect(staleApply.json.error.message).toContain("changed after preview");
+    expect(files(root)).toEqual(before);
     const applied = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.repair).toEqual(preview.json.repair);
     const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
     for (const id of ids) expect(repaired.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
-    expect(repaired).toContain("Unrelated introduction survives."); expect(repaired).toContain("Unrelated footer survives.");
+    expect(repaired).toContain("Unrelated introduction survives.");
+    expect(repaired).toContain("Unrelated footer survives.");
     expect(repaired).toContain("- [x] [id:bbbbbbbbbb] [fix:3.0.0] Keep completed Markdown state");
     expect(repaired).toContain("- [ ] [note] Keep unrelated retained prose");
     for (const id of ids) {
@@ -1816,18 +2991,27 @@ describe("TODO item and documentation inventory entity authority", () => {
       expect((afterEnvelope.record as any).requirements).toEqual(beforeRecord.requirements);
     }
     expect((loadYamlMapping(fs.readFileSync(path.join(root, ".agentera/entities/todo/todo_item/bbbbbbbbbb.yaml"), "utf8")).record as any).status).toBe("resolved");
-    expect(JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"))).toMatchObject({ effect_operation: "repair", effect_sha256: preview.json.repair.effect_sha256 });
+    expect(JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"))).toMatchObject({
+      effect_operation: "repair",
+      effect_sha256: preview.json.repair.effect_sha256,
+    });
     expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
     const stable = files(root);
     const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
-    expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(files(root)).toEqual(stable);
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(replay.json.operation.idempotent_replay).toBe(true);
+    expect(files(root)).toEqual(stable);
     expect(markdown).not.toBe(repaired);
   });
 
   it("refuses legacy-only identity even when a resolved publicly absent entity has identical prose", () => {
-    const root = project(); const id = "abcdefghij"; const row = "- [ ] [task:3.0.0] Identical legacy-only prose";
+    const root = project();
+    const id = "abcdefghij";
+    const row = "- [ ] [task:3.0.0] Identical legacy-only prose";
     const entity = seedAbsentTodoEntity(root, id, "Identical legacy-only prose");
-    const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8")); (envelope.record as any).status = "resolved"; fs.writeFileSync(entity, dumpYamlMapping(envelope));
+    const envelope = loadYamlMapping(fs.readFileSync(entity, "utf8"));
+    (envelope.record as any).status = "resolved";
+    fs.writeFileSync(entity, dumpYamlMapping(envelope));
     fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n${row}\n`);
     fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), todoReconciliationActivationBytes([todoLegacyRowFingerprint("normal", row)]));
     const before = files(root);
@@ -1837,17 +3021,46 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
       class: "conflict",
-      diagnosis: { items: expect.arrayContaining([expect.objectContaining({ decision: "legacy_without_managed_identity", id, source_line: 4 })]) },
+      diagnosis: {
+        items: expect.arrayContaining([
+          expect.objectContaining({
+            decision: "legacy_without_managed_identity",
+            id,
+            source_line: 4,
+          }),
+        ]),
+      },
     });
     expect(files(root)).toEqual(before);
     expect((loadYamlMapping(fs.readFileSync(entity, "utf8")).record as any).status).toBe("resolved");
   });
 
   it("binds repair authorization to normalized exact activation after-content", () => {
-    const markdown = Buffer.from("# TODO\n"); const diagnosis = { counts: { duplicate: 0, stale: 0, matched: 0, retained: 1, conflicting: 0 }, items: [], omitted_count: 0 };
-    const effect = (retained: string, operation: "activate" | "repair" = "repair") => todoRepairEffect(diagnosis, [{ path: TODO_RECONCILIATION_ACTIVATION_PATH, before: Buffer.from(todoReconciliationActivationBytes([])), after: todoReconciliationActivationBytes([retained], "0".repeat(64), operation) }], "TODO.md", markdown, markdown.toString("utf8"));
+    const markdown = Buffer.from("# TODO\n");
+    const diagnosis = {
+      counts: { duplicate: 0, stale: 0, matched: 0, retained: 1, conflicting: 0 },
+      items: [],
+      omitted_count: 0,
+    };
+    const effect = (retained: string, operation: "activate" | "repair" = "repair") =>
+      todoRepairEffect(
+        diagnosis,
+        [
+          {
+            path: TODO_RECONCILIATION_ACTIVATION_PATH,
+            before: Buffer.from(todoReconciliationActivationBytes([])),
+            after: todoReconciliationActivationBytes([retained], "0".repeat(64), operation),
+          },
+        ],
+        "TODO.md",
+        markdown,
+        markdown.toString("utf8"),
+      );
 
-    const first = effect("a".repeat(64)); const replay = effect("a".repeat(64)); const different = effect("b".repeat(64)); const differentOperation = effect("a".repeat(64), "activate");
+    const first = effect("a".repeat(64));
+    const replay = effect("a".repeat(64));
+    const different = effect("b".repeat(64));
+    const differentOperation = effect("a".repeat(64), "activate");
 
     expect(first.effect_sha256).toBe(replay.effect_sha256);
     expect(first.effect_sha256).not.toBe(different.effect_sha256);
@@ -1857,7 +3070,8 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("rejects ambiguous and unmatched active repair evidence before effects with bounded diagnosis", () => {
     for (const kind of ["ambiguous", "unmatched"] as const) {
-      const { root } = damagedActiveProject(); const todoPath = path.join(root, "TODO.md");
+      const { root } = damagedActiveProject();
+      const todoPath = path.join(root, "TODO.md");
       if (kind === "ambiguous") {
         const text = fs.readFileSync(todoPath, "utf8");
         fs.writeFileSync(todoPath, text.replace("- [ ] [note] Keep unrelated retained prose", "- [ ] [task:3.0.0] Keep current open text"));
@@ -1868,7 +3082,12 @@ describe("TODO item and documentation inventory entity authority", () => {
       const before = files(root);
       const rejected = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
       expect(rejected.rc, kind).toBe(2);
-      expect(rejected.json.error).toMatchObject({ class: "conflict", message: expect.stringContaining("complete one-to-one evidence"), violations: expect.any(Array), diagnosis: { counts: { conflicting: expect.any(Number) } } });
+      expect(rejected.json.error).toMatchObject({
+        class: "conflict",
+        message: expect.stringContaining("complete one-to-one evidence"),
+        violations: expect.any(Array),
+        diagnosis: { counts: { conflicting: expect.any(Number) } },
+      });
       expect(rejected.json.error.violations.join("\n")).toContain(kind === "ambiguous" ? "matches retained rows" : "has no activation provenance");
       expect(rejected.json.error.violations.length).toBeLessThanOrEqual(20);
       expect(files(root), kind).toEqual(before);
@@ -1879,16 +3098,34 @@ describe("TODO item and documentation inventory entity authority", () => {
     for (const boundary of [0, 1, 2, 3, 4]) {
       const { root, ids } = damagedActiveProject();
       const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
-      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "repair")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 }, input: null };
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: boundary })).toThrow(/interruption/);
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec: operationSpec("todo", "repair")!,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 },
+        callerPayload: { confirmed: true, effect_sha256: preview.json.repair.effect_sha256 },
+        input: null,
+      };
+      expect(() =>
+        mutateTodoDocsEntity(req, {
+          publicationContext: binding.publicationContext,
+          interruptAfterTarget: boundary,
+        }),
+      ).toThrow(/interruption/);
       binding.publicationContext.close();
       const retry = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
-      expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1);
-      const stable = files(root); const markdownAfter = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect(retry.rc, retry.err || retry.out).toBe(0);
+      expect(retry.json.reconciliation.recovered).toHaveLength(1);
+      const stable = files(root);
+      const markdownAfter = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
       for (const id of ids) expect(markdownAfter.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
       const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
-      expect(replay.rc, replay.err || replay.out).toBe(0); expect(files(root)).toEqual(stable);
+      expect(replay.rc, replay.err || replay.out).toBe(0);
+      expect(files(root)).toEqual(stable);
     }
   });
 
@@ -1897,7 +3134,9 @@ describe("TODO item and documentation inventory entity authority", () => {
       const { root, ids, markdown } = damagedActiveProject();
       const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
       const script = path.join(root, `kill-repair-${phase}.mjs`);
-      fs.writeFileSync(script, `import fs from "node:fs";
+      fs.writeFileSync(
+        script,
+        `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, phase, effect] = process.argv.slice(2);
@@ -1914,28 +3153,55 @@ fs.renameSync = (from, to) => {
 };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: effect }, callerPayload: { confirmed: true, effect_sha256: effect }, input: null }, { publicationContext: binding.publicationContext });
-`);
+`,
+      );
       const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), phase, preview.json.repair.effect_sha256], { encoding: "utf8" });
-      expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+      expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+      expect(killed.signal).toBe("SIGKILL");
       const interrupted = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
       expect([markdown, preview.json.repair.public_document.after_sha256]).toContain(interrupted === markdown ? markdown : createHash("sha256").update(interrupted).digest("hex"));
       const retry = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
-      expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1);
-      const stable = files(root); const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect(retry.rc, retry.err || retry.out).toBe(0);
+      expect(retry.json.reconciliation.recovered).toHaveLength(1);
+      const stable = files(root);
+      const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
       for (const id of ids) expect(repaired.match(new RegExp(`id:${id}`, "g"))).toHaveLength(1);
       const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
-      expect(replay.rc, replay.err || replay.out).toBe(0); expect(files(root)).toEqual(stable);
+      expect(replay.rc, replay.err || replay.out).toBe(0);
+      expect(files(root)).toEqual(stable);
     }
   });
 
   it("rejects every ordinary inactive TODO mutation without changing project bytes", () => {
     const cases: Array<{ args: string[]; input?: Record<string, unknown> }> = [
-      { args: ["state", "todo", "create", "--input", "-", "--format", "json"], input: { kind: "task", target_version: "3.0.0", title: "Blocked create", requirements: [], acceptance: [], release_blocker: false, severity: "normal" } },
-      { args: ["state", "todo", "update", "--id", "abcdefghij", "--input", "-", "--format", "json"], input: { readiness: readinessInput() } },
-      { args: ["state", "todo", "set-severity", "--id", "abcdefghij", "--severity", "degraded", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
-      { args: ["state", "todo", "supersede", "--id", "abcdefghij", "--replacement", "bbbbbbbbbb", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
-      { args: ["state", "todo", "resolve", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
-      { args: ["state", "todo", "reopen", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"] },
+      {
+        args: ["state", "todo", "create", "--input", "-", "--format", "json"],
+        input: {
+          kind: "task",
+          target_version: "3.0.0",
+          title: "Blocked create",
+          requirements: [],
+          acceptance: [],
+          release_blocker: false,
+          severity: "normal",
+        },
+      },
+      {
+        args: ["state", "todo", "update", "--id", "abcdefghij", "--input", "-", "--format", "json"],
+        input: { readiness: readinessInput() },
+      },
+      {
+        args: ["state", "todo", "set-severity", "--id", "abcdefghij", "--severity", "degraded", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"],
+      },
+      {
+        args: ["state", "todo", "supersede", "--id", "abcdefghij", "--replacement", "bbbbbbbbbb", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"],
+      },
+      {
+        args: ["state", "todo", "resolve", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"],
+      },
+      {
+        args: ["state", "todo", "reopen", "--id", "abcdefghij", "--reason", "Blocked", "--date", "2026-08-07", "--format", "json"],
+      },
     ];
     for (const testCase of cases) {
       const { root } = preactivationProject();
@@ -2026,7 +3292,10 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const missingInput = capture(root, ["state", "todo", "correct-owners", "--dry-run", "--format", "json"]);
     const malformed = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], {
       schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
-      owners: [{ id: ids[0], source_line: 6 }, { id: ids[0], source_line: 7 }],
+      owners: [
+        { id: ids[0], source_line: 6 },
+        { id: ids[0], source_line: 7 },
+      ],
     });
     const bounded = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], {
       schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
@@ -2040,13 +3309,18 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       requested_verb: "correct-owners",
       mutation_class: "batch_transaction",
       input: { mode: "structured", root: "one unsafe TODO owner mapping" },
-      input_schema: { record_fields: ["schema_version", "owners", "owners.id", "owners.source_line"] },
+      input_schema: {
+        record_fields: ["schema_version", "owners", "owners.id", "owners.source_line"],
+      },
     });
     expect(schema.rc).toBe(0);
     expect(JSON.stringify(schema.json)).toContain("correct-owners");
     expect(missingInput.rc).toBe(2);
     expect(malformed.rc).toBe(2);
-    expect(malformed.json.error).toMatchObject({ class: "schema_violation", message: expect.stringContaining("duplicates another owner claim") });
+    expect(malformed.json.error).toMatchObject({
+      class: "schema_violation",
+      message: expect.stringContaining("duplicates another owner claim"),
+    });
     expect(bounded.rc).toBe(2);
     expect(bounded.json.error.violations).toHaveLength(21);
     expect(bounded.json.error.violations.at(-1)).toBe("22 additional input violations omitted");
@@ -2059,13 +3333,13 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       command: "state todo correct-owners",
       operation: { verb: "correct-owners", dry_run: true, idempotent_replay: false },
       correction: {
-        diagnosis: { counts: { matched: 161, converted: 161, retained: 0, conflicting: 0 }, items: expect.any(Array), omitted_count: 141 },
+        diagnosis: {
+          counts: { matched: 161, converted: 161, retained: 0, conflicting: 0 },
+          items: expect.any(Array),
+          omitted_count: 141,
+        },
         owner_mapping_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-        targets: expect.arrayContaining([
-          expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${ids[0]}.yaml` }),
-          expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }),
-          expect.objectContaining({ path: "TODO.md" }),
-        ]),
+        targets: expect.arrayContaining([expect.objectContaining({ path: `.agentera/entities/todo/todo_item/${ids[0]}.yaml` }), expect.objectContaining({ path: TODO_RECONCILIATION_ACTIVATION_PATH }), expect.objectContaining({ path: "TODO.md" })]),
         effect_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       },
       apply_command: expect.stringMatching(/state todo correct-owners --input OWNER_MAPPING\.yaml --effect-sha256 [a-f0-9]{64} --yes/),
@@ -2083,22 +3357,41 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(markdown).toContain("## Client-specific work");
     expect(markdown).toContain("Unrelated closing note.");
     for (const id of ids) expect(markdown.match(new RegExp(`\\[id:${id}\\]`, "g"))).toHaveLength(1);
-    expect(markdown.split("\n").filter((line) => line.includes("PRIVATE_STALE_TODO_")).every((line) => line.includes("[x]"))).toBe(true);
+    expect(
+      markdown
+        .split("\n")
+        .filter((line) => line.includes("PRIVATE_STALE_TODO_"))
+        .every((line) => line.includes("[x]")),
+    ).toBe(true);
     const correctedRecord = loadYamlMapping(fs.readFileSync(firstEntity, "utf8")).record as any;
-    expect(correctedRecord).toMatchObject({ status: "resolved", readiness: operational, reconciliation: { public: { present: true, status: "resolved" } } });
+    expect(correctedRecord).toMatchObject({
+      status: "resolved",
+      readiness: operational,
+      reconciliation: { public: { present: true, status: "resolved" } },
+    });
     const activation = JSON.parse(fs.readFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), "utf8"));
-    expect(activation).toMatchObject({ effect_operation: "correct-owners", effect_sha256: preview.json.correction.effect_sha256, owner_mapping_sha256: preview.json.correction.owner_mapping_sha256 });
+    expect(activation).toMatchObject({
+      effect_operation: "correct-owners",
+      effect_sha256: preview.json.correction.effect_sha256,
+      owner_mapping_sha256: preview.json.correction.owner_mapping_sha256,
+    });
     expect(capture(root, ["check", "validate", "state", "--format", "json"]).rc).toBe(0);
     const stable = files(root);
     const replay = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
     expect(replay.rc, replay.err || replay.out).toBe(0);
-    expect(replay.json).toMatchObject({ correction: { effect_sha256: preview.json.correction.effect_sha256 }, operation: { idempotent_replay: true } });
+    expect(replay.json).toMatchObject({
+      correction: { effect_sha256: preview.json.correction.effect_sha256 },
+      operation: { idempotent_replay: true },
+    });
     expect(files(root)).toEqual(stable);
   });
 
   it("rejects invalid correction states, evidence, reopened work, and stale effects before writes", () => {
     const safe = preactivationProject();
-    const safeInput = { schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION, owners: [{ id: safe.id, source_line: 4 }] };
+    const safeInput = {
+      schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
+      owners: [{ id: safe.id, source_line: 4 }],
+    };
     const safeBefore = files(safe.root);
     const safeRejected = capture(safe.root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], safeInput);
     expect(safeRejected.rc).toBe(2);
@@ -2109,7 +3402,10 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const input = ownerCorrectionInput(root, ids);
     const before = files(root);
     const missingOwner = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], { ...input, owners: (input.owners as any[]).slice(0, 1) });
-    const unmatchedOwner = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], { ...input, owners: (input.owners as any[]).map((owner, index) => index === 1 ? { ...owner, id: "zzzzzzzzzz" } : owner) });
+    const unmatchedOwner = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], {
+      ...input,
+      owners: (input.owners as any[]).map((owner, index) => (index === 1 ? { ...owner, id: "zzzzzzzzzz" } : owner)),
+    });
     expect(missingOwner.rc).toBe(2);
     expect(unmatchedOwner.rc).toBe(2);
     expect(missingOwner.json.error.message).toContain("complete one-to-one evidence");
@@ -2141,9 +3437,24 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const { root, ids } = unsafeInactiveStaleProject();
     const input = ownerCorrectionInput(root, ids);
     const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "correct-owners")!, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 }, input };
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: 1 })).toThrow(/interruption/);
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "correct-owners")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 },
+      callerPayload: { confirmed: true, effect_sha256: preview.json.correction.effect_sha256 },
+      input,
+    };
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
     binding.publicationContext.close();
     const pending = files(root);
     const blocked = capture(root, ["state", "todo", "list", "--format", "json"]);
@@ -2152,7 +3463,10 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const changedInput = { ...input, owners: changedOwners };
     const wrongEvidence = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], changedInput);
     expect(blocked.rc).toBe(1);
-    expect(blocked.json.error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("no mixed TODO state is readable") });
+    expect(blocked.json.error).toMatchObject({
+      class: "unsupported_state",
+      message: expect.stringContaining("no mixed TODO state is readable"),
+    });
     expect(wrongEvidence.rc).toBe(2);
     expect(wrongEvidence.json.error.message).toContain("owner mapping");
     expect(files(root)).toEqual(pending);
@@ -2166,11 +3480,11 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     const { root, ids } = unsafeInactiveStaleProject(2);
     const input = ownerCorrectionInput(root, ids);
     const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
-    const results = await Promise.all([
-      runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256),
-      runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256),
-    ]);
-    expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual([0, 0]);
+    const results = await Promise.all([runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256), runOwnerCorrectionClient(root, input, preview.json.correction.effect_sha256)]);
+    expect(
+      results.map(({ code }) => code),
+      JSON.stringify(results),
+    ).toEqual([0, 0]);
     const payloads = results.map(({ stdout }) => JSON.parse(stdout));
     expect(payloads.filter(({ operation }: any) => operation.idempotent_replay)).toHaveLength(1);
     expect(payloads.filter(({ operation }: any) => !operation.idempotent_replay)).toHaveLength(1);
@@ -2189,20 +3503,28 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(preview.rc).toBe(2);
     expect(preview.json.error).toMatchObject({
       class: "conflict",
-      diagnosis: { counts: { stale: 1, conflicting: 0 }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } },
+      diagnosis: {
+        counts: { stale: 1, conflicting: 0 },
+        risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 },
+      },
     });
     expect(preview.json).not.toHaveProperty("apply_command");
     expect(files(root)).toEqual(before);
   });
 
   it("authorizes legacy active replay only through its current no-op preview", () => {
-    const root = project(); const before = files(root);
+    const root = project();
+    const before = files(root);
     const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
-    expect(preview.rc).toBe(0); expect(files(root)).toEqual(before);
+    expect(preview.rc).toBe(0);
+    expect(files(root)).toEqual(before);
     const rejected = capture(root, ["state", "todo", "activate", "--effect-sha256", "b".repeat(64), "--yes", "--format", "json"]);
-    expect(rejected.rc).toBe(2); expect(files(root)).toEqual(before);
+    expect(rejected.rc).toBe(2);
+    expect(files(root)).toEqual(before);
     const replay = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
-    expect(replay.rc).toBe(0); expect(replay.json.operation.idempotent_replay).toBe(true); expect(files(root)).toEqual(before);
+    expect(replay.rc).toBe(0);
+    expect(replay.json.operation.idempotent_replay).toBe(true);
+    expect(files(root)).toEqual(before);
   });
 
   it("exposes duplicate activation risk without assigning either row an entity ID", () => {
@@ -2217,7 +3539,10 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(rejected.json.error).toMatchObject({
       class: "conflict",
       message: expect.stringMatching(/duplicates canonical public work/i),
-      diagnosis: { counts: { duplicate: 1 }, risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 } },
+      diagnosis: {
+        counts: { duplicate: 1 },
+        risks: { resurrected_count: 0, resurrected_ids: [], omitted_count: 0 },
+      },
       recovery: expect.stringContaining("exactly one public row"),
     });
     expect(rejected.json.error).not.toHaveProperty("effect_sha256");
@@ -2231,29 +3556,79 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
   });
 
   it("rejects ID-less rows only inside managed sections", () => {
-    const root = project(); const item = todo(root, "Managed identity"); const markdown = path.join(root, "TODO.md");
+    const root = project();
+    const item = todo(root, "Managed identity");
+    const markdown = path.join(root, "TODO.md");
     fs.appendFileSync(markdown, "\n## Notes\n- [ ] ordinary unchecked note\n");
-    expect(capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: readinessInput() }).rc).toBe(0);
-    fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] Missing managed identity\n")); const before = files(root);
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { readiness: null });
-    expect(rejected.rc).toBe(2); expect(rejected.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("[id:abcdefghij]") }); expect(files(root)).toEqual(before);
+    expect(
+      capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        readiness: readinessInput(),
+      }).rc,
+    ).toBe(0);
+    fs.writeFileSync(markdown, fs.readFileSync(markdown, "utf8").replace("## → Normal\n", "## → Normal\n- [ ] [fix:3.0.0] Missing managed identity\n"));
+    const before = files(root);
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      readiness: null,
+    });
+    expect(rejected.rc).toBe(2);
+    expect(rejected.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("[id:abcdefghij]"),
+    });
+    expect(files(root)).toEqual(before);
   });
 
   it("resumes deterministic publication after every injected target boundary", () => {
     for (const boundary of [0, 1, 2]) {
-      const root = project(); const item = todo(root, `Interrupted ${boundary}`); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      const spec = operationSpec("todo", "update")!; const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: `Recovered ${boundary}` } };
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: boundary })).toThrow(/interruption/); binding.publicationContext.close();
+      const root = project();
+      const item = todo(root, `Interrupted ${boundary}`);
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const spec = operationSpec("todo", "update")!;
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { id: item.id },
+        callerPayload: {},
+        input: { title: `Recovered ${boundary}` },
+      };
+      expect(() =>
+        mutateTodoDocsEntity(req, {
+          publicationContext: binding.publicationContext,
+          interruptAfterTarget: boundary,
+        }),
+      ).toThrow(/interruption/);
+      binding.publicationContext.close();
       expect(fs.readdirSync(path.join(root, ".agentera/.todo-reconciliation")).filter((name) => name.endsWith(".json"))).toHaveLength(1);
-      const pending = files(root); const ordinaryMarkdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8"); expect(ordinaryMarkdown).toMatch(/^# legacy TODO sentinel/); expect(ordinaryMarkdown.includes(`Interrupted ${boundary}`) || ordinaryMarkdown.includes(`Recovered ${boundary}`)).toBe(true);
-      for (const read of [["state", "todo", "get", "--id", item.id, "--format", "json"], ["state", "todo", "list", "--format", "json"]]) {
-        const blocked = capture(root, read); expect(blocked.rc).toBe(1); expect(blocked.json.error).toMatchObject({ class: "unsupported_state", message: expect.stringContaining("no mixed TODO state is readable") });
+      const pending = files(root);
+      const ordinaryMarkdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
+      expect(ordinaryMarkdown).toMatch(/^# legacy TODO sentinel/);
+      expect(ordinaryMarkdown.includes(`Interrupted ${boundary}`) || ordinaryMarkdown.includes(`Recovered ${boundary}`)).toBe(true);
+      for (const read of [
+        ["state", "todo", "get", "--id", item.id, "--format", "json"],
+        ["state", "todo", "list", "--format", "json"],
+      ]) {
+        const blocked = capture(root, read);
+        expect(blocked.rc).toBe(1);
+        expect(blocked.json.error).toMatchObject({
+          class: "unsupported_state",
+          message: expect.stringContaining("no mixed TODO state is readable"),
+        });
       }
       expect(() => collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"))).toThrow(/no mixed TODO state is readable/);
       const dryRun = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--dry-run", "--format", "json"], { title: `Recovered ${boundary}` });
-      expect(dryRun.rc).toBe(2); expect(dryRun.json.error.recovery).toContain("without --dry-run"); expect(files(root)).toEqual(pending);
-      const replay = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: `Recovered ${boundary}` });
-      expect(replay.rc, replay.err || replay.out).toBe(0); expect(replay.json.reconciliation.recovered).toHaveLength(1); expect(replay.json.record.title).toBe(`Recovered ${boundary}`);
+      expect(dryRun.rc).toBe(2);
+      expect(dryRun.json.error.recovery).toContain("without --dry-run");
+      expect(files(root)).toEqual(pending);
+      const replay = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        title: `Recovered ${boundary}`,
+      });
+      expect(replay.rc, replay.err || replay.out).toBe(0);
+      expect(replay.json.reconciliation.recovered).toHaveLength(1);
+      expect(replay.json.record.title).toBe(`Recovered ${boundary}`);
       expect(fs.readdirSync(path.join(root, ".agentera/.todo-reconciliation")).filter((name) => name.endsWith(".json"))).toEqual([]);
       expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain(`Recovered ${boundary}`);
     }
@@ -2262,11 +3637,35 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
   it("recovers interrupted create at every target boundary without allocating a second ID", () => {
     for (const boundary of [0, 1, 2]) {
       const root = project();
-      const input = { kind: "task", target_version: "3.0.0", title: `Interrupted create ${boundary}`, requirements: [], acceptance: [], release_blocker: false, severity: "normal" };
-      const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: {}, callerPayload: {}, input };
+      const input = {
+        kind: "task",
+        target_version: "3.0.0",
+        title: `Interrupted create ${boundary}`,
+        requirements: [],
+        acceptance: [],
+        release_blocker: false,
+        severity: "normal",
+      };
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec: operationSpec("todo", "create")!,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: {},
+        callerPayload: {},
+        input,
+      };
       const firstCandidate = vi.fn(() => "aaaaaaaaaa");
-      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: firstCandidate, interruptAfterTarget: boundary })).toThrow(/interruption/);
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
+      expect(() =>
+        mutateTodoDocsEntity(req, {
+          publicationContext: binding.publicationContext,
+          candidate: firstCandidate,
+          interruptAfterTarget: boundary,
+        }),
+      ).toThrow(/interruption/);
       binding.publicationContext.close();
       expect(firstCandidate).toHaveBeenCalledTimes(1);
 
@@ -2276,16 +3675,20 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       const journal = JSON.parse(fs.readFileSync(path.join(journalDirectory, journalName), "utf8"));
       expect(journal).toMatchObject({
         id: journalName.replace(/\.json$/, ""),
-        create: { created_id: "aaaaaaaaaa", request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) },
+        create: {
+          created_id: "aaaaaaaaaa",
+          request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+        },
       });
-      expect(journal.targets.map((target: any) => target.path)).toEqual([
-        ".agentera/entities/todo/todo_item/aaaaaaaaaa.yaml",
-        "TODO.md",
-      ]);
+      expect(journal.targets.map((target: any) => target.path)).toEqual([".agentera/entities/todo/todo_item/aaaaaaaaaa.yaml", "TODO.md"]);
 
       const retryCandidate = vi.fn(() => "bbbbbbbbbb");
-      const retryBinding = detectStateModeBinding(root); if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
-      const replay = mutateTodoDocsEntity(req, { publicationContext: retryBinding.publicationContext, candidate: retryCandidate });
+      const retryBinding = detectStateModeBinding(root);
+      if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
+      const replay = mutateTodoDocsEntity(req, {
+        publicationContext: retryBinding.publicationContext,
+        candidate: retryCandidate,
+      });
       retryBinding.publicationContext.close();
 
       expect(retryCandidate).not.toHaveBeenCalled();
@@ -2308,14 +3711,41 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
 
   it("rejects a divergent create while its journal is pending without additional effects", () => {
     const root = project();
-    const original = { kind: "task", target_version: "3.0.0", title: "Original interrupted create", requirements: [], acceptance: [], release_blocker: false, severity: "normal" };
-    const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: {}, callerPayload: {}, input: original };
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: () => "aaaaaaaaaa", interruptAfterTarget: 1 })).toThrow(/interruption/);
+    const original = {
+      kind: "task",
+      target_version: "3.0.0",
+      title: "Original interrupted create",
+      requirements: [],
+      acceptance: [],
+      release_blocker: false,
+      severity: "normal",
+    };
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "create")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: {},
+      callerPayload: {},
+      input: original,
+    };
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        candidate: () => "aaaaaaaaaa",
+        interruptAfterTarget: 1,
+      }),
+    ).toThrow(/interruption/);
     binding.publicationContext.close();
     const before = files(root);
 
-    const rejected = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], { ...original, title: "Different create request" });
+    const rejected = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
+      ...original,
+      title: "Different create request",
+    });
 
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
@@ -2326,8 +3756,12 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(files(root)).toEqual(before);
 
     const retryCandidate = vi.fn(() => "bbbbbbbbbb");
-    const retryBinding = detectStateModeBinding(root); if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
-    const replay = mutateTodoDocsEntity(req, { publicationContext: retryBinding.publicationContext, candidate: retryCandidate });
+    const retryBinding = detectStateModeBinding(root);
+    if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
+    const replay = mutateTodoDocsEntity(req, {
+      publicationContext: retryBinding.publicationContext,
+      candidate: retryCandidate,
+    });
     retryBinding.publicationContext.close();
     expect(replay).toMatchObject({ id: "aaaaaaaaaa", operation: { idempotent_replay: true } });
     expect(retryCandidate).not.toHaveBeenCalled();
@@ -2337,10 +3771,34 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
 
   it("derives the original create receipt from a pending pre-receipt journal", () => {
     const root = project();
-    const input = { kind: "task", target_version: "3.0.0", title: "Pre-receipt interrupted create", requirements: [], acceptance: [], release_blocker: false, severity: "normal" };
-    const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "create")!, projectRoot: root, dryRun: false, force: false, values: {}, callerPayload: {}, input };
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, candidate: () => "aaaaaaaaaa", interruptAfterTarget: 0 })).toThrow(/interruption/);
+    const input = {
+      kind: "task",
+      target_version: "3.0.0",
+      title: "Pre-receipt interrupted create",
+      requirements: [],
+      acceptance: [],
+      release_blocker: false,
+      severity: "normal",
+    };
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec: operationSpec("todo", "create")!,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: {},
+      callerPayload: {},
+      input,
+    };
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        candidate: () => "aaaaaaaaaa",
+        interruptAfterTarget: 0,
+      }),
+    ).toThrow(/interruption/);
     binding.publicationContext.close();
 
     const journalDirectory = path.join(root, ".agentera/.todo-reconciliation");
@@ -2355,11 +3813,19 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     fs.unlinkSync(currentPath);
 
     const retryCandidate = vi.fn(() => "bbbbbbbbbb");
-    const retryBinding = detectStateModeBinding(root); if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
-    const replay = mutateTodoDocsEntity(req, { publicationContext: retryBinding.publicationContext, candidate: retryCandidate });
+    const retryBinding = detectStateModeBinding(root);
+    if (retryBinding.mode !== "entities") throw new Error("entity mode expected");
+    const replay = mutateTodoDocsEntity(req, {
+      publicationContext: retryBinding.publicationContext,
+      candidate: retryCandidate,
+    });
     retryBinding.publicationContext.close();
 
-    expect(replay).toMatchObject({ id: "aaaaaaaaaa", operation: { idempotent_replay: true }, reconciliation: { recovered: [journal.id] } });
+    expect(replay).toMatchObject({
+      id: "aaaaaaaaaa",
+      operation: { idempotent_replay: true },
+      reconciliation: { recovered: [journal.id] },
+    });
     expect(retryCandidate).not.toHaveBeenCalled();
     expect(fs.existsSync(path.join(root, ".agentera/entities/todo/todo_item/bbbbbbbbbb.yaml"))).toBe(false);
     expect(fs.readdirSync(journalDirectory).filter((name) => name.endsWith(".json"))).toEqual([]);
@@ -2367,23 +3833,50 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
   });
 
   it("rejects an invalid pending journal through structured read and write corrections without effects", () => {
-    const root = project(); const item = todo(root, "Invalid journal");
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const root = project();
+    const item = todo(root, "Invalid journal");
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
     const spec = operationSpec("todo", "update")!;
-    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: "Must not publish" } };
-    expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: 0 })).toThrow(/interruption/);
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { id: item.id },
+      callerPayload: {},
+      input: { title: "Must not publish" },
+    };
+    expect(() =>
+      mutateTodoDocsEntity(req, {
+        publicationContext: binding.publicationContext,
+        interruptAfterTarget: 0,
+      }),
+    ).toThrow(/interruption/);
     binding.publicationContext.close();
     const journalDirectory = path.join(root, ".agentera/.todo-reconciliation");
-    const journal = path.join(journalDirectory, fs.readdirSync(journalDirectory).find((name) => name.endsWith(".json"))!);
-    fs.writeFileSync(journal, "{\"invalid\":true}\n");
+    const journal = path.join(
+      journalDirectory,
+      fs.readdirSync(journalDirectory).find((name) => name.endsWith(".json"))!,
+    );
+    fs.writeFileSync(journal, '{"invalid":true}\n');
     const before = files(root);
 
     const read = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
     expect(read.rc).toBe(1);
-    expect(read.json.error).toMatchObject({ class: "unsupported_state", recovery: expect.stringContaining("restore its last valid committed journal bytes") });
-    const write = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Must not publish" });
+    expect(read.json.error).toMatchObject({
+      class: "unsupported_state",
+      recovery: expect.stringContaining("restore its last valid committed journal bytes"),
+    });
+    const write = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Must not publish",
+    });
     expect(write.rc).toBe(2);
-    expect(write.json.error).toMatchObject({ class: "conflict", recovery: expect.stringContaining("no target bytes were changed") });
+    expect(write.json.error).toMatchObject({
+      class: "conflict",
+      recovery: expect.stringContaining("no target bytes were changed"),
+    });
     const withoutLock = (snapshot: Record<string, string>) => Object.fromEntries(Object.entries(snapshot).filter(([name]) => !name.startsWith(".agentera/.writer.lock/")));
     expect(withoutLock(files(root))).toEqual(withoutLock(before));
   });
@@ -2392,17 +3885,35 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     for (const boundary of [0, 1, 2, 3]) {
       const { root, id } = preactivationProject("abcdefghij", `Activation ${boundary}`);
       const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
-      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
       const spec = operationSpec("todo", "activate")!;
-      const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 }, callerPayload: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 }, input: null };
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: boundary })).toThrow(/interruption/);
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 },
+        callerPayload: { confirmed: true, effect_sha256: preview.json.activation.effect_sha256 },
+        input: null,
+      };
+      expect(() =>
+        mutateTodoDocsEntity(req, {
+          publicationContext: binding.publicationContext,
+          interruptAfterTarget: boundary,
+        }),
+      ).toThrow(/interruption/);
       binding.publicationContext.close();
       expect(fs.existsSync(path.join(root, "TODO.md"))).toBe(true);
       const blocked = capture(root, ["state", "todo", "list", "--format", "json"]);
-      expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
+      expect(blocked.rc).toBe(1);
+      expect(blocked.json.error.class).toBe("unsupported_state");
       const pending = files(root);
       const arbitrary = capture(root, ["state", "todo", "activate", "--effect-sha256", "b".repeat(64), "--yes", "--format", "json"]);
-      expect(arbitrary.rc).toBe(2); expect(arbitrary.json.error.message).toContain("pending TODO activation"); expect(files(root)).toEqual(pending);
+      expect(arbitrary.rc).toBe(2);
+      expect(arbitrary.json.error.message).toContain("pending TODO activation");
+      expect(files(root)).toEqual(pending);
       const retry = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
       expect(retry.rc, retry.err || retry.out).toBe(0);
       expect(retry.json.reconciliation.recovered).toHaveLength(1);
@@ -2417,7 +3928,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
       const { root, id } = preactivationProject("abcdefghij", `Activation kill ${phase}`);
       const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
       const script = path.join(root, `kill-activation-${phase}.mjs`);
-      fs.writeFileSync(script, `import fs from "node:fs";
+      fs.writeFileSync(
+        script,
+        `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, phase, effect] = process.argv.slice(2);
@@ -2434,12 +3947,15 @@ fs.linkSync = (source, target) => {
 };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "activate"), projectRoot: root, dryRun: false, force: false, values: { confirmed: true, effect_sha256: effect }, callerPayload: { confirmed: true, effect_sha256: effect }, input: null }, { publicationContext: binding.publicationContext });
-`);
+`,
+      );
       const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), phase, preview.json.activation.effect_sha256], { encoding: "utf8" });
-      expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+      expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+      expect(killed.signal).toBe("SIGKILL");
       expect(fs.existsSync(path.join(root, "TODO.md"))).toBe(true);
       const blocked = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]);
-      expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
+      expect(blocked.rc).toBe(1);
+      expect(blocked.json.error.class).toBe("unsupported_state");
       const retry = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
       expect(retry.rc, retry.err || retry.out).toBe(0);
       expect(retry.json.reconciliation.recovered).toHaveLength(1);
@@ -2450,15 +3966,24 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "activate")
 
   it("keeps a mapped public TODO complete old-or-new across real SIGKILL and converges on retry", () => {
     for (const phase of ["before", "after"] as const) {
-      const root = project(); const item = todo(root, `Mapped crash ${phase}`);
-      const mapped = path.join(root, "mapped", "WORK.md"); fs.mkdirSync(path.dirname(mapped), { recursive: true });
+      const root = project();
+      const item = todo(root, `Mapped crash ${phase}`);
+      const mapped = path.join(root, "mapped", "WORK.md");
+      fs.mkdirSync(path.dirname(mapped), { recursive: true });
       const oldBytes = `# TODO\n\n## → Normal\n- [ ] [id:${item.id}] [task:3.0.0] Mapped crash ${phase}\n`;
       const newBytes = oldBytes.replace(`Mapped crash ${phase}`, `Mapped recovered ${phase}`);
       fs.writeFileSync(mapped, oldBytes);
-      fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
+      fs.writeFileSync(
+        path.join(root, ".agentera/docs.yaml"),
+        dumpYamlMapping({
+          mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+        }),
+      );
       const rootTodoBefore = fs.readFileSync(path.join(root, "TODO.md"));
       const script = path.join(root, `kill-mapped-${phase}.mjs`);
-      fs.writeFileSync(script, `import fs from "node:fs";
+      fs.writeFileSync(
+        script,
+        `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, id, phase] = process.argv.slice(2);
@@ -2475,15 +4000,22 @@ fs.renameSync = (from, to) => {
 };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { title: "Mapped recovered ${phase}" } }, { publicationContext: binding.publicationContext });
-`);
-      const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id, phase], { encoding: "utf8" });
-      expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+`,
+      );
+      const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id, phase], {
+        encoding: "utf8",
+      });
+      expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+      expect(killed.signal).toBe("SIGKILL");
       expect(fs.existsSync(mapped)).toBe(true);
       expect([oldBytes, newBytes]).toContain(fs.readFileSync(mapped, "utf8"));
       expect(fs.readFileSync(path.join(root, "TODO.md"))).toEqual(rootTodoBefore);
       const blocked = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
-      expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
-      const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: `Mapped recovered ${phase}` });
+      expect(blocked.rc).toBe(1);
+      expect(blocked.json.error.class).toBe("unsupported_state");
+      const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        title: `Mapped recovered ${phase}`,
+      });
       expect(retry.rc, retry.err || retry.out).toBe(0);
       expect(retry.json.reconciliation.recovered).toHaveLength(1);
       expect(fs.readFileSync(mapped, "utf8")).toBe(newBytes);
@@ -2492,22 +4024,25 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("preserves a mapped public change detected at the final validation boundary", () => {
-    const root = project(); const item = todo(root, "Mapped concurrent baseline");
-    const mapped = path.join(root, "mapped", "WORK.md"); fs.mkdirSync(path.dirname(mapped), { recursive: true });
+    const root = project();
+    const item = todo(root, "Mapped concurrent baseline");
+    const mapped = path.join(root, "mapped", "WORK.md");
+    fs.mkdirSync(path.dirname(mapped), { recursive: true });
     const baseline = `# TODO\n\n## → Normal\n- [ ] [id:${item.id}] [task:3.0.0] Mapped concurrent baseline\n`;
     const competitor = baseline.replace("Mapped concurrent baseline", "Concurrent public owner");
     fs.writeFileSync(mapped, baseline);
-    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), dumpYamlMapping({ mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }] }));
-    const originalOpen = fs.openSync.bind(fs); let injected = false;
+    fs.writeFileSync(
+      path.join(root, ".agentera/docs.yaml"),
+      dumpYamlMapping({
+        mapping: [{ artifact: "TODO.md", path: "mapped/WORK.md", producers: ["build"] }],
+      }),
+    );
+    const originalOpen = fs.openSync.bind(fs);
+    let injected = false;
     vi.spyOn(fs, "openSync").mockImplementation((candidate, flags, mode) => {
       const descriptor = originalOpen(candidate, flags, mode);
       const replacement = path.join(path.dirname(String(candidate)), "replacement.tmp");
-      if (
-        !injected
-        && String(candidate).endsWith("/replacement.json")
-        && fs.existsSync(replacement)
-        && fs.readFileSync(replacement, "utf8").startsWith("# TODO")
-      ) {
+      if (!injected && String(candidate).endsWith("/replacement.json") && fs.existsSync(replacement) && fs.readFileSync(replacement, "utf8").startsWith("# TODO")) {
         injected = true;
         const competitorStage = path.join(path.dirname(mapped), ".competitor.tmp");
         fs.writeFileSync(competitorStage, competitor);
@@ -2516,7 +4051,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       return descriptor;
     });
 
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Agentera public owner" });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Agentera public owner",
+    });
     expect(injected).toBe(true);
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
@@ -2530,7 +4067,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("maps an operational standard-rename failure to bounded recovery without target effects", () => {
-    const root = project(); const item = todo(root, "Standard rename failure"); const before = files(root);
+    const root = project();
+    const item = todo(root, "Standard rename failure");
+    const before = files(root);
     const originalRename = fs.renameSync.bind(fs);
     vi.spyOn(fs, "renameSync").mockImplementation((source, target) => {
       if (String(source).endsWith("/replacement.tmp") && String(target).endsWith("/TODO.md")) {
@@ -2538,7 +4077,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       }
       return originalRename(source, target);
     });
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Rejected rename" });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Rejected rename",
+    });
     expect(rejected.rc, rejected.err || rejected.out).toBe(2);
     expect(rejected.json.error).toMatchObject({
       class: "unsupported_target",
@@ -2549,36 +4090,53 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("attempts every rollback target after one target reports a CAS conflict", () => {
-    const root = project(); const item = todo(root, "Rollback exhaustion baseline");
+    const root = project();
+    const item = todo(root, "Rollback exhaustion baseline");
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
     const entityBefore = fs.readFileSync(entity);
     const markdown = path.join(root, "TODO.md");
-    const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+    const binding = detectStateModeBinding(root);
+    if (binding.mode !== "entities") throw new Error("entity mode expected");
     const context = binding.publicationContext;
     const originalReplaceVisible = context.replaceVisible.bind(context);
     vi.spyOn(context, "replaceVisible").mockImplementation((...args) => {
       const result = originalReplaceVisible(...args);
-      fs.writeFileSync(path.join(root, ".agentera/todo-reconciliation-activation.json"), `${JSON.stringify({
-        schema_version: "agentera.todoReconciliationActivation.v1",
-        retained_legacy_rows: ["a".repeat(64)],
-      })}\n`);
+      fs.writeFileSync(
+        path.join(root, ".agentera/todo-reconciliation-activation.json"),
+        `${JSON.stringify({
+          schema_version: "agentera.todoReconciliationActivation.v1",
+          retained_legacy_rows: ["a".repeat(64)],
+        })}\n`,
+      );
       return result;
     });
     vi.spyOn(context, "restoreVisible").mockImplementation(() => {
       throw new ExactReplacementConflictError("injected public rollback CAS conflict", [".agentera/.entity-recovery/injected/competitor"]);
     });
     const spec = operationSpec("todo", "update")!;
-    const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: "Rollback exhaustion requested" } };
+    const req: StateWriteRequest = {
+      artifact: "todo",
+      spec,
+      projectRoot: root,
+      dryRun: false,
+      force: false,
+      values: { id: item.id },
+      callerPayload: {},
+      input: { title: "Rollback exhaustion requested" },
+    };
     let failure: any;
-    try { mutateTodoDocsEntity(req, { publicationContext: context }); } catch (error) { failure = error; } finally { context.close(); }
+    try {
+      mutateTodoDocsEntity(req, { publicationContext: context });
+    } catch (error) {
+      failure = error;
+    } finally {
+      context.close();
+    }
 
     expect(failure?.body).toMatchObject({
       class: "conflict",
       message: expect.stringMatching(/attempted rollback for every published target.*1 target could not be restored/i),
-      violations: expect.arrayContaining([
-        expect.stringContaining("rollback target 'TODO.md'"),
-        expect.stringContaining("preserved recovery role"),
-      ]),
+      violations: expect.arrayContaining([expect.stringContaining("rollback target 'TODO.md'"), expect.stringContaining("preserved recovery role")]),
       recovery: expect.stringContaining("Targets not listed were restored"),
     });
     expect(fs.readFileSync(entity)).toEqual(entityBefore);
@@ -2587,8 +4145,12 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("recovers a real SIGKILL before complete-file replacement", () => {
-    const root = project(); const item = todo(root, "Hard crash baseline"); const script = path.join(root, "kill-exact-replacement.mjs");
-    fs.writeFileSync(script, `import fs from "node:fs";
+    const root = project();
+    const item = todo(root, "Hard crash baseline");
+    const script = path.join(root, "kill-exact-replacement.mjs");
+    fs.writeFileSync(
+      script,
+      `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, id] = process.argv.slice(2);
@@ -2600,20 +4162,41 @@ fs.renameSync = (source, target) => { if (String(source).endsWith("/replacement.
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 const spec = operationSpec("todo", "update");
 mutateTodoDocsEntity({ artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { title: "Hard crash recovered" } }, { publicationContext: binding.publicationContext });
-`);
-    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], { encoding: "utf8" });
-    expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
-    const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`); expect(fs.existsSync(entity)).toBe(true); expect(fs.readFileSync(entity, "utf8")).toContain("Hard crash baseline");
-    const roles = recoveryFiles(root); expect(roles.some((file) => file.endsWith("original.previous"))).toBe(true); expect(roles.some((file) => file.endsWith("replacement.tmp"))).toBe(true); expect(roles.some((file) => file.endsWith("replacement.json"))).toBe(true);
-    const blocked = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]); expect(blocked.rc).toBe(1); expect(blocked.json.error.class).toBe("unsupported_state");
-    const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Hard crash recovered" });
-    expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1); expect(retry.json.record.title).toBe("Hard crash recovered");
-    expect(fs.existsSync(entity)).toBe(true); expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Hard crash recovered"); expect(recoveryFiles(root)).toEqual([]);
+`,
+    );
+    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], {
+      encoding: "utf8",
+    });
+    expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+    expect(killed.signal).toBe("SIGKILL");
+    const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+    expect(fs.existsSync(entity)).toBe(true);
+    expect(fs.readFileSync(entity, "utf8")).toContain("Hard crash baseline");
+    const roles = recoveryFiles(root);
+    expect(roles.some((file) => file.endsWith("original.previous"))).toBe(true);
+    expect(roles.some((file) => file.endsWith("replacement.tmp"))).toBe(true);
+    expect(roles.some((file) => file.endsWith("replacement.json"))).toBe(true);
+    const blocked = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    expect(blocked.rc).toBe(1);
+    expect(blocked.json.error.class).toBe("unsupported_state");
+    const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Hard crash recovered",
+    });
+    expect(retry.rc, retry.err || retry.out).toBe(0);
+    expect(retry.json.reconciliation.recovered).toHaveLength(1);
+    expect(retry.json.record.title).toBe("Hard crash recovered");
+    expect(fs.existsSync(entity)).toBe(true);
+    expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Hard crash recovered");
+    expect(recoveryFiles(root)).toEqual([]);
   });
 
   it("recovers a real SIGKILL after complete-file replacement and before role cleanup", () => {
-    const root = project(); const item = todo(root, "Hard crash after entity link"); const script = path.join(root, "kill-after-entity-link.mjs");
-    fs.writeFileSync(script, `import fs from "node:fs";
+    const root = project();
+    const item = todo(root, "Hard crash after entity link");
+    const script = path.join(root, "kill-after-entity-link.mjs");
+    fs.writeFileSync(
+      script,
+      `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, id] = process.argv.slice(2);
@@ -2628,24 +4211,52 @@ fs.renameSync = (source, target) => {
 };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { title: "Entity link committed" } }, { publicationContext: binding.publicationContext });
-`);
-    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], { encoding: "utf8" });
-    expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+`,
+    );
+    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], {
+      encoding: "utf8",
+    });
+    expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+    expect(killed.signal).toBe("SIGKILL");
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
-    expect(fs.existsSync(entity)).toBe(true); expect(fs.readFileSync(entity, "utf8")).toContain("Entity link committed");
-    const blocked = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]); expect(blocked.rc).toBe(1);
-    const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Entity link committed" });
-    expect(retry.rc, retry.err || retry.out).toBe(0); expect(retry.json.reconciliation.recovered).toHaveLength(1);
-    expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Entity link committed"); expect(recoveryFiles(root)).toEqual([]);
+    expect(fs.existsSync(entity)).toBe(true);
+    expect(fs.readFileSync(entity, "utf8")).toContain("Entity link committed");
+    const blocked = capture(root, ["state", "todo", "get", "--id", item.id, "--format", "json"]);
+    expect(blocked.rc).toBe(1);
+    const retry = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Entity link committed",
+    });
+    expect(retry.rc, retry.err || retry.out).toBe(0);
+    expect(retry.json.reconciliation.recovered).toHaveLength(1);
+    expect(fs.readFileSync(path.join(root, "TODO.md"), "utf8")).toContain("Entity link committed");
+    expect(recoveryFiles(root)).toEqual([]);
   });
 
   it("rejects symlinked recovery roots and attempts without changing external recovery bytes", () => {
     for (const boundary of ["root", "attempt"] as const) {
-      const root = project(); const item = todo(root, `External recovery ${boundary}`); const requestedTitle = `Rejected external recovery ${boundary}`;
-      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`); const entityBefore = fs.readFileSync(entity);
-      const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
-      const req: StateWriteRequest = { artifact: "todo", spec: operationSpec("todo", "update")!, projectRoot: root, dryRun: false, force: false, values: { id: item.id }, callerPayload: {}, input: { title: requestedTitle } };
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext, interruptAfterTarget: 0 })).toThrow(/interruption/);
+      const root = project();
+      const item = todo(root, `External recovery ${boundary}`);
+      const requestedTitle = `Rejected external recovery ${boundary}`;
+      const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+      const entityBefore = fs.readFileSync(entity);
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec: operationSpec("todo", "update")!,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { id: item.id },
+        callerPayload: {},
+        input: { title: requestedTitle },
+      };
+      expect(() =>
+        mutateTodoDocsEntity(req, {
+          publicationContext: binding.publicationContext,
+          interruptAfterTarget: 0,
+        }),
+      ).toThrow(/interruption/);
       binding.publicationContext.close();
 
       const journalDirectory = path.join(root, ".agentera/.todo-reconciliation");
@@ -2654,19 +4265,28 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       const journal = JSON.parse(fs.readFileSync(path.join(journalDirectory, journalName), "utf8"));
       const target = journal.targets.find((candidate: any) => candidate.path.endsWith(`/${item.id}.yaml`));
       if (!target || target.before === null) throw new Error("replacement target fixture missing");
-      const before = Buffer.from(target.before, "base64"); const after = Buffer.from(target.after, "base64");
+      const before = Buffer.from(target.before, "base64");
+      const after = Buffer.from(target.after, "base64");
 
-      const external = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-external-recovery-${boundary}-`)); roots.push(external);
-      const externalRecovery = path.join(external, "recovery"); const attemptName = "entity-external-fixture"; const externalAttempt = path.join(externalRecovery, attemptName);
-      fs.mkdirSync(externalAttempt, { recursive: true, mode: 0o700 }); fs.chmodSync(externalRecovery, 0o700); fs.chmodSync(externalAttempt, 0o700);
+      const external = fs.mkdtempSync(path.join(os.tmpdir(), `agentera-external-recovery-${boundary}-`));
+      roots.push(external);
+      const externalRecovery = path.join(external, "recovery");
+      const attemptName = "entity-external-fixture";
+      const externalAttempt = path.join(externalRecovery, attemptName);
+      fs.mkdirSync(externalAttempt, { recursive: true, mode: 0o700 });
+      fs.chmodSync(externalRecovery, 0o700);
+      fs.chmodSync(externalAttempt, 0o700);
       fs.writeFileSync(path.join(externalAttempt, "original.previous"), before);
       fs.writeFileSync(path.join(externalAttempt, "replacement.tmp"), after);
-      fs.writeFileSync(path.join(externalAttempt, "replacement.json"), `${JSON.stringify({
-        schema_version: FILE_REPLACEMENT_RECOVERY_VERSION,
-        target_path: target.path,
-        before_sha256: createHash("sha256").update(before).digest("hex"),
-        after_sha256: createHash("sha256").update(after).digest("hex"),
-      })}\n`);
+      fs.writeFileSync(
+        path.join(externalAttempt, "replacement.json"),
+        `${JSON.stringify({
+          schema_version: FILE_REPLACEMENT_RECOVERY_VERSION,
+          target_path: target.path,
+          before_sha256: createHash("sha256").update(before).digest("hex"),
+          after_sha256: createHash("sha256").update(after).digest("hex"),
+        })}\n`,
+      );
       const externalBefore = files(external);
 
       const recoveryRoot = path.join(root, ".agentera/.entity-recovery");
@@ -2677,7 +4297,9 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
         fs.symlinkSync(externalAttempt, path.join(recoveryRoot, attemptName), "dir");
       }
 
-      const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: requestedTitle });
+      const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+        title: requestedTitle,
+      });
       expect(rejected.rc, rejected.err || rejected.out).toBe(2);
       expect(rejected.json.error).toMatchObject({
         class: "unsupported_target",
@@ -2691,8 +4313,12 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("rejects a retained-role competitor with one structured correction and no byte changes", () => {
-    const root = project(); const item = todo(root, "Retained conflict baseline"); const script = path.join(root, "kill-retained-conflict.mjs");
-    fs.writeFileSync(script, `import fs from "node:fs";
+    const root = project();
+    const item = todo(root, "Retained conflict baseline");
+    const script = path.join(root, "kill-retained-conflict.mjs");
+    fs.writeFileSync(
+      script,
+      `import fs from "node:fs";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 const [root, build, id] = process.argv.slice(2);
@@ -2703,19 +4329,27 @@ const rename = fs.renameSync.bind(fs);
 fs.renameSync = (source, target) => { if (String(source).endsWith("/replacement.tmp") && String(target).endsWith("/${item.id}.yaml")) process.kill(process.pid, "SIGKILL"); return rename(source, target); };
 const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
 mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), projectRoot: root, dryRun: false, force: false, values: { id }, callerPayload: {}, input: { title: "Requested transaction bytes" } }, { publicationContext: binding.publicationContext });
-`);
-    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], { encoding: "utf8" });
-    expect(killed.status, killed.stderr || killed.stdout).toBeNull(); expect(killed.signal).toBe("SIGKILL");
+`,
+    );
+    const killed = spawnSync(process.execPath, [script, root, inject("sourceBuildRoot"), item.id], {
+      encoding: "utf8",
+    });
+    expect(killed.status, killed.stderr || killed.stdout).toBeNull();
+    expect(killed.signal).toBe("SIGKILL");
     const entity = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
     expect(fs.existsSync(entity)).toBe(true);
-    const competitor = dumpYamlMapping({ id: item.id, artifact: "todo", record: { ...item.record, title: "Concurrent canonical owner" } });
+    const competitor = dumpYamlMapping({
+      id: item.id,
+      artifact: "todo",
+      record: { ...item.record, title: "Concurrent canonical owner" },
+    });
     fs.writeFileSync(entity, competitor);
     const before = files(root);
-    const durableBytes = (snapshot: Record<string, string>): Record<string, string> => Object.fromEntries(
-      Object.entries(snapshot).filter(([name]) => !name.startsWith(".agentera/.writer.lock/")),
-    );
+    const durableBytes = (snapshot: Record<string, string>): Record<string, string> => Object.fromEntries(Object.entries(snapshot).filter(([name]) => !name.startsWith(".agentera/.writer.lock/")));
 
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Requested transaction bytes" });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Requested transaction bytes",
+    });
     expect(rejected.rc).toBe(2);
     expect(rejected.json).toMatchObject({
       status: "fail",
@@ -2731,26 +4365,103 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   });
 
   it("lets real Git worktrees merge unrelated additions and updates while same-entity updates conflict", () => {
-    const root = project(); const leftItem = todo(root, "left base"); const rightDoc = doc(root, "right base", "right.md");
-    git(root, "init", "-b", "main"); git(root, "config", "user.name", "Fixture"); git(root, "config", "user.email", "fixture@example.test"); git(root, "add", "."); git(root, "commit", "-m", "base");
-    const left = `${root}-left`, right = `${root}-right`; roots.push(left, right); git(root, "worktree", "add", "-b", "left", left, "main"); git(root, "worktree", "add", "-b", "right", right, "main");
-    expect(capture(left, ["state", "todo", "update", "--id", leftItem.id, "--input", "-", "--format", "json"], { title: "left update" }).rc).toBe(0); doc(left, "left addition", "left.md");
-    expect(capture(right, ["state", "docs", "update", "--id", rightDoc.id, "--input", "-", "--format", "json"], { document: "right update", path: "right.md", last_updated: "2026-07-18", status: "current" }).rc).toBe(0); doc(right, "right addition", "addition.md");
-    for (const checkout of [left, right]) { git(checkout, "add", ".agentera/entities", "TODO.md"); git(checkout, "commit", "-m", path.basename(checkout)); }
-    git(root, "merge", "--ff-only", "left"); git(root, "merge", "--no-edit", "right"); expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 4 });
-    const a = `${root}-a`, b = `${root}-b`; roots.push(a, b); git(root, "worktree", "add", "-b", "a", a, "main"); git(root, "worktree", "add", "-b", "b", b, "main");
-    for (const [checkout, description] of [[a, "A"], [b, "B"]]) { expect(capture(checkout, ["state", "todo", "update", "--id", leftItem.id, "--input", "-", "--format", "json"], { title: description }).rc).toBe(0); git(checkout, "add", ".agentera/entities", "TODO.md"); git(checkout, "commit", "-m", description); }
-    git(root, "merge", "--no-edit", "a"); expect(() => git(root, "merge", "--no-edit", "b")).toThrow(); git(root, "merge", "--abort");
+    const root = project();
+    const leftItem = todo(root, "left base");
+    const rightDoc = doc(root, "right base", "right.md");
+    git(root, "init", "-b", "main");
+    git(root, "config", "user.name", "Fixture");
+    git(root, "config", "user.email", "fixture@example.test");
+    git(root, "add", ".");
+    git(root, "commit", "-m", "base");
+    const left = `${root}-left`,
+      right = `${root}-right`;
+    roots.push(left, right);
+    git(root, "worktree", "add", "-b", "left", left, "main");
+    git(root, "worktree", "add", "-b", "right", right, "main");
+    expect(
+      capture(left, ["state", "todo", "update", "--id", leftItem.id, "--input", "-", "--format", "json"], {
+        title: "left update",
+      }).rc,
+    ).toBe(0);
+    doc(left, "left addition", "left.md");
+    expect(
+      capture(right, ["state", "docs", "update", "--id", rightDoc.id, "--input", "-", "--format", "json"], {
+        document: "right update",
+        path: "right.md",
+        last_updated: "2026-07-18",
+        status: "current",
+      }).rc,
+    ).toBe(0);
+    doc(right, "right addition", "addition.md");
+    for (const checkout of [left, right]) {
+      git(checkout, "add", ".agentera/entities", "TODO.md");
+      git(checkout, "commit", "-m", path.basename(checkout));
+    }
+    git(root, "merge", "--ff-only", "left");
+    git(root, "merge", "--no-edit", "right");
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 4 });
+    const a = `${root}-a`,
+      b = `${root}-b`;
+    roots.push(a, b);
+    git(root, "worktree", "add", "-b", "a", a, "main");
+    git(root, "worktree", "add", "-b", "b", b, "main");
+    for (const [checkout, description] of [
+      [a, "A"],
+      [b, "B"],
+    ]) {
+      expect(
+        capture(checkout, ["state", "todo", "update", "--id", leftItem.id, "--input", "-", "--format", "json"], {
+          title: description,
+        }).rc,
+      ).toBe(0);
+      git(checkout, "add", ".agentera/entities", "TODO.md");
+      git(checkout, "commit", "-m", description);
+    }
+    git(root, "merge", "--no-edit", "a");
+    expect(() => git(root, "merge", "--no-edit", "b")).toThrow();
+    git(root, "merge", "--abort");
   });
 
   it("rolls back exact bytes on marker/root races and failed postvalidation", () => {
     for (const invalidation of ["marker", "root", "validation"] as const) {
-      const root = project(); const item = todo(root, invalidation); const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`); const before = fs.readFileSync(file); const binding = detectStateModeBinding(root); if (binding.mode !== "entities") throw new Error("entity mode expected");
+      const root = project();
+      const item = todo(root, invalidation);
+      const file = path.join(root, `.agentera/entities/todo/todo_item/${item.id}.yaml`);
+      const before = fs.readFileSync(file);
+      const binding = detectStateModeBinding(root);
+      if (binding.mode !== "entities") throw new Error("entity mode expected");
       const original = binding.publicationContext.replaceExisting.bind(binding.publicationContext);
-      vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => { if (invalidation === "marker") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER + "# changed\n"); else if (invalidation === "root") { const held = `${root}-held`; roots.push(held); fs.renameSync(root, held); fs.mkdirSync(root); } const result = original(...args); if (invalidation === "validation") { const bad = path.join(root, ".agentera/entities/docs/documentation_inventory_entry/bbbbbbbbbb.yaml"); fs.mkdirSync(path.dirname(bad), { recursive: true }); fs.writeFileSync(bad, "id: bbbbbbbbbb\nartifact: docs\nrecord: {}\n"); } return result; });
-      const spec = operationSpec("todo", "update")!; const req: StateWriteRequest = { artifact: "todo", spec, projectRoot: root, dryRun: false, force: false, values: { id: item.id, description: "changed" }, callerPayload: { id: item.id, description: "changed" }, input: null };
-      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext })).toThrow(/changed|conflict|invalid/i); binding.publicationContext.close();
-      const actualRoot = invalidation === "root" ? `${root}-held` : root; expect(fs.readFileSync(path.join(actualRoot, path.relative(root, file)))).toEqual(before);
+      vi.spyOn(binding.publicationContext, "replaceExisting").mockImplementation((...args) => {
+        if (invalidation === "marker") fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), MARKER + "# changed\n");
+        else if (invalidation === "root") {
+          const held = `${root}-held`;
+          roots.push(held);
+          fs.renameSync(root, held);
+          fs.mkdirSync(root);
+        }
+        const result = original(...args);
+        if (invalidation === "validation") {
+          const bad = path.join(root, ".agentera/entities/docs/documentation_inventory_entry/bbbbbbbbbb.yaml");
+          fs.mkdirSync(path.dirname(bad), { recursive: true });
+          fs.writeFileSync(bad, "id: bbbbbbbbbb\nartifact: docs\nrecord: {}\n");
+        }
+        return result;
+      });
+      const spec = operationSpec("todo", "update")!;
+      const req: StateWriteRequest = {
+        artifact: "todo",
+        spec,
+        projectRoot: root,
+        dryRun: false,
+        force: false,
+        values: { id: item.id, description: "changed" },
+        callerPayload: { id: item.id, description: "changed" },
+        input: null,
+      };
+      expect(() => mutateTodoDocsEntity(req, { publicationContext: binding.publicationContext })).toThrow(/changed|conflict|invalid/i);
+      binding.publicationContext.close();
+      const actualRoot = invalidation === "root" ? `${root}-held` : root;
+      expect(fs.readFileSync(path.join(actualRoot, path.relative(root, file)))).toEqual(before);
     }
   });
 
@@ -2790,10 +4501,15 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
       expect(prime.rc, `${testCase.name} prime: ${prime.err}`).toBe(0);
       expect(prime.json.outcome).toBe("blocked");
-      expect(prime.json.todo_reconciliation).toMatchObject({ state: testCase.state, status: "action_required", preview_command: testCase.preview, apply_command: testCase.apply });
+      expect(prime.json.todo_reconciliation).toMatchObject({
+        state: testCase.state,
+        status: "action_required",
+        preview_command: testCase.preview,
+        apply_command: testCase.apply,
+      });
       expect(prime.json.attention.join("\n")).toContain(testCase.preview ?? "Owner correction required");
       const primeText = capture(root, ["prime"]);
-      expect(primeText.out).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : testCase.apply ?? "Owner correction required");
+      expect(primeText.out).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : (testCase.apply ?? "Owner correction required"));
       if (testCase.state === "unsafe_inactive") {
         expect(prime.json.next_action).toMatchObject({ capability: "build", phase: "build" });
         expect(primeText.out).not.toContain("state todo activate");
@@ -2801,7 +4517,11 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       }
       expect(doctor.rc, `${testCase.name} doctor: ${doctor.err}`).toBe(1);
       const signal = doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation");
-      expect(signal).toMatchObject({ reconciliationState: testCase.state, previewCommand: testCase.preview, applyCommand: testCase.apply });
+      expect(signal).toMatchObject({
+        reconciliationState: testCase.state,
+        previewCommand: testCase.preview,
+        applyCommand: testCase.apply,
+      });
       const doctorText = capture(root, ["doctor"]);
       expect(doctorText.out).toContain(testCase.apply ?? "Owner correction required");
       if (testCase.state === "unsafe_inactive") {
@@ -2810,9 +4530,15 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       }
       expect(validation.rc, `${testCase.name} validation: ${validation.err}`).toBe(1);
       const issue = validation.json.issues.find((entry: any) => entry.code === testCase.validationCode);
-      expect(issue).toMatchObject({ diagnosis: { state: testCase.state, preview_command: testCase.preview, apply_command: testCase.apply } });
+      expect(issue).toMatchObject({
+        diagnosis: {
+          state: testCase.state,
+          preview_command: testCase.preview,
+          apply_command: testCase.apply,
+        },
+      });
       const validationText = capture(root, ["check", "validate", "state"]);
-      expect(validationText.out + validationText.err).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : testCase.apply ?? "Owner correction required");
+      expect(validationText.out + validationText.err).toContain(testCase.state === "unsafe_inactive" ? testCase.preview! : (testCase.apply ?? "Owner correction required"));
       expect(files(root), testCase.name).toEqual(before);
     }
   });
@@ -2835,7 +4561,11 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
     const unsafeRoot = damagedActiveProject().root;
     const unsafe = capture(unsafeRoot, ["prime", "--format", "json"]);
     const diagnosis = unsafe.json.todo_reconciliation;
-    expect(diagnosis).toMatchObject({ state: "unsafe_active", counts: { matched: 1, retained: 1, duplicate: 2, stale: 1, conflicting: 0 }, omitted_count: 0 });
+    expect(diagnosis).toMatchObject({
+      state: "unsafe_active",
+      counts: { matched: 1, retained: 1, duplicate: 2, stale: 1, conflicting: 0 },
+      omitted_count: 0,
+    });
     expect(diagnosis).not.toHaveProperty("items");
     expect(JSON.stringify(diagnosis)).not.toContain("Keep current open text");
     for (const count of Object.values(diagnosis.counts)) expect(count).toBeLessThanOrEqual(20);
@@ -2844,17 +4574,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   it("diagnoses malformed severity structure on reads and shared inspection surfaces, then rejects writes without effects", () => {
     const root = project();
     const item = todo(root, "PRIVATE_STRUCTURE_ROW_TEXT");
-    fs.writeFileSync(path.join(root, "TODO.md"), [
-      "# TODO",
-      "",
-      "## → Normal",
-      `- [ ] [id:${item.id}] [task:3.0.0] PRIVATE_STRUCTURE_ROW_TEXT`,
-      "",
-      "## ✓ Resolved",
-      "",
-      "## → Critical",
-      "",
-    ].join("\n"));
+    fs.writeFileSync(path.join(root, "TODO.md"), ["# TODO", "", "## → Normal", `- [ ] [id:${item.id}] [task:3.0.0] PRIVATE_STRUCTURE_ROW_TEXT`, "", "## ✓ Resolved", "", "## → Critical", ""].join("\n"));
     const before = files(root);
 
     const list = capture(root, ["state", "todo", "list", "--format", "json"]);
@@ -2867,8 +4587,18 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
         diagnosis: {
           classification: "todo_severity_heading_structure",
           diagnostics: [
-            expect.objectContaining({ code: "todo_severity_heading_mismatch", classification: "glyph_name_mismatch", line: 8, expected_heading: "## ⇶ Critical" }),
-            expect.objectContaining({ code: "todo_severity_heading_out_of_order", classification: "out_of_order", line: 8, expected_heading: "## ⇶ Critical" }),
+            expect.objectContaining({
+              code: "todo_severity_heading_mismatch",
+              classification: "glyph_name_mismatch",
+              line: 8,
+              expected_heading: "## ⇶ Critical",
+            }),
+            expect.objectContaining({
+              code: "todo_severity_heading_out_of_order",
+              classification: "out_of_order",
+              line: 8,
+              expected_heading: "## ⇶ Critical",
+            }),
           ],
           omitted_count: 0,
         },
@@ -2884,22 +4614,39 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
       status: "action_required",
       preview_command: null,
       apply_command: null,
-      risks: { classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) },
+      risks: {
+        classification: "todo_severity_heading_structure",
+        diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]),
+      },
     });
     expect(doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({
       reconciliationState: "unsafe_active",
       previewCommand: null,
       applyCommand: null,
-      reconciliationRisks: { classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) },
+      reconciliationRisks: {
+        classification: "todo_severity_heading_structure",
+        diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]),
+      },
     });
     expect(validation.rc).toBe(1);
-    expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({
-      code: "todo_reconciliation_unsafe_active",
-      diagnosis: expect.objectContaining({ risks: expect.objectContaining({ classification: "todo_severity_heading_structure", diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]) }) }),
-    })]));
+    expect(validation.json.issues).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          code: "todo_reconciliation_unsafe_active",
+          diagnosis: expect.objectContaining({
+            risks: expect.objectContaining({
+              classification: "todo_severity_heading_structure",
+              diagnostics: expect.arrayContaining([expect.objectContaining({ line: 8, expected_heading: "## ⇶ Critical" })]),
+            }),
+          }),
+        }),
+      ]),
+    );
     expect(files(root)).toEqual(before);
 
-    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], { title: "Should not be written" });
+    const rejected = capture(root, ["state", "todo", "update", "--id", item.id, "--input", "-", "--format", "json"], {
+      title: "Should not be written",
+    });
     expect(rejected.rc).toBe(2);
     expect(rejected.json.error).toMatchObject({
       class: "conflict",
@@ -2912,18 +4659,30 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "update"), 
   it("classifies invalid reconciliation lifecycle metadata without generic corruption", () => {
     const root = project();
     todo(root, "Invalid lifecycle row");
-    fs.writeFileSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH), JSON.stringify({
-      schema_version: "agentera.todoReconciliationActivation.v1",
-      retained_legacy_rows: [],
-      effect_sha256: "a".repeat(64),
-      effect_operation: "invalid",
-    }) + "\n");
+    fs.writeFileSync(
+      path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH),
+      JSON.stringify({
+        schema_version: "agentera.todoReconciliationActivation.v1",
+        retained_legacy_rows: [],
+        effect_sha256: "a".repeat(64),
+        effect_operation: "invalid",
+      }) + "\n",
+    );
     const before = files(root);
     const prime = capture(root, ["prime", "--format", "json"]);
     const doctor = capture(root, ["doctor", "--format", "json"]);
     const validation = capture(root, ["check", "validate", "state", "--format", "json"]);
-    expect(prime.json.todo_reconciliation).toMatchObject({ state: "invalid_lifecycle", status: "action_required", preview_command: null, apply_command: null });
-    expect(doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({ reconciliationState: "invalid_lifecycle", previewCommand: null, applyCommand: null });
+    expect(prime.json.todo_reconciliation).toMatchObject({
+      state: "invalid_lifecycle",
+      status: "action_required",
+      preview_command: null,
+      apply_command: null,
+    });
+    expect(doctor.json.signals.find((entry: any) => entry.kind === "todo_reconciliation")).toMatchObject({
+      reconciliationState: "invalid_lifecycle",
+      previewCommand: null,
+      applyCommand: null,
+    });
     expect(validation.rc).toBe(1);
     expect(validation.json.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "todo_reconciliation_invalid_lifecycle" })]));
     expect(validation.json.issues).not.toEqual(expect.arrayContaining([expect.objectContaining({ code: "invalid_todo_reconciliation" })]));

@@ -5,15 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  checkCompaction,
-  compactYamlFile,
-  compactEntries,
-  computeCompactionStatus,
-  fixCompaction,
-  parseEntries,
-  runCompaction,
-} from "../../src/hooks/compaction/index.js";
+import { checkCompaction, compactYamlFile, compactEntries, computeCompactionStatus, fixCompaction, parseEntries, runCompaction } from "../../src/hooks/compaction/index.js";
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
@@ -74,9 +66,7 @@ describe("checkCompaction (repo-state fixtures)", () => {
   it("reports ok for all compactable artifacts within uniform_10_40_50", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
-    const present = checkCompaction(root).filter(
-      (o) => o.status.classification === "compactable" && o.status.exists,
-    );
+    const present = checkCompaction(root).filter((o) => o.status.classification === "compactable" && o.status.exists);
     expect(present.length).toBeGreaterThan(0);
     expect(present.every((o) => o.action === "ok")).toBe(true);
     expect(present.every((o) => (o.status.over_limit_count ?? 0) === 0)).toBe(true);

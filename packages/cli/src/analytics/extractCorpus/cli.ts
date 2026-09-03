@@ -1,26 +1,13 @@
 import os from "node:os";
 import path from "node:path";
 
-import {
-  type Env,
-  defaultOutputPath,
-} from "./core.js";
+import { type Env, defaultOutputPath } from "./core.js";
 import { defaultTiersDir, publishEvidenceTiers } from "./evidenceTiers.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { buildCorpus } from "./corpus.js";
-import {
-  COVERAGE_EXIT_FLAGGED,
-  corpusEnvelopeCoverage,
-  formatCoverageSummaryText,
-  runCoverageAudit,
-} from "./coverageAudit.js";
+import { COVERAGE_EXIT_FLAGGED, corpusEnvelopeCoverage, formatCoverageSummaryText, runCoverageAudit } from "./coverageAudit.js";
 import { formatTruncationWarnings, resolveSqliteCaps } from "./sqliteCaps.js";
-import {
-  resolveCopilotStorePath,
-  resolveCursorChatsPath,
-  resolveCursorProjectsPath,
-  resolveOpencodeDbPath,
-} from "./cursorSessions.js";
+import { resolveCopilotStorePath, resolveCursorChatsPath, resolveCursorProjectsPath, resolveOpencodeDbPath } from "./cursorSessions.js";
 
 export interface ExtractArgs {
   output: string;
@@ -85,12 +72,10 @@ export function parseExtractArgs(argv: string[], env: Env = process.env, platfor
     else if ((v = val("--claude-projects-dir")) !== null) {
       args.claudeProjectsDir = v;
       claudeProjectsDirExplicit = true;
-    }
-    else if ((v = val("--import-source")) !== null) {
+    } else if ((v = val("--import-source")) !== null) {
       if (v !== "claude") throw new Error(`extract-corpus: unsupported historical import source '${v}'; valid source: claude`);
       if (!args.importSources.includes(v)) args.importSources.push(v);
-    }
-    else if ((v = val("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
+    } else if ((v = val("--opencode-conversations-dir")) !== null) args.opencodeConversationsDir = v;
     else if ((v = val("--copilot-conversations-dir")) !== null) args.copilotConversationsDir = v;
     else if ((v = val("--cursor-projects-dir")) !== null) args.cursorProjectsDir = v;
     else if ((v = val("--cursor-chats-dir")) !== null) args.cursorChatsDir = v;
@@ -145,10 +130,7 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
   }
   const projectRoots = args.projectRoot.length > 0 ? args.projectRoot : [cwd];
   if (args.importSources.includes("claude")) {
-    err(
-      "Historical import warning: Claude transcripts can contain secrets, file contents, and command output. " +
-      "Import is local and read-only; records are labeled historical_import and excluded from active-runtime analytics.",
-    );
+    err("Historical import warning: Claude transcripts can contain secrets, file contents, and command output. " + "Import is local and read-only; records are labeled historical_import and excluded from active-runtime analytics.");
   }
   const audit = runCoverageAudit(args, env, platform, args.acceptCoverageGap);
   if (args.format === "json") {
@@ -206,10 +188,6 @@ export function extractCorpusMain(argv: string[], io: ExtractMainIo = {}): numbe
       },
     },
   });
-  out(
-    `published tiers: ${tiersDir} (generation ${publication.generation}; ` +
-      `${publication.shard_count} shards; ${publication.signal_count} signals; ` +
-      `${publication.signal_bytes} bytes${publication.signal_selection.capped ? "; selection applied" : ""}) [${total} records; ${familyBits}]`,
-  );
+  out(`published tiers: ${tiersDir} (generation ${publication.generation}; ` + `${publication.shard_count} shards; ${publication.signal_count} signals; ` + `${publication.signal_bytes} bytes${publication.signal_selection.capped ? "; selection applied" : ""}) [${total} records; ${familyBits}]`);
   return 0;
 }

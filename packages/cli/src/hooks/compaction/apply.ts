@@ -20,25 +20,13 @@ import { loadYamlMapping } from "../../core/yaml.js";
 import { MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, MAX_TOTAL_ENTRIES, applyRetentionCaps } from "../common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, SPECS, YAML_SPEC_BY_ARTIFACT, formatTodoOneline } from "./dryRun.js";
 import { CompactResult } from "./types.js";
-import {
-  decisionRequiresUserReview,
-  selectDecisionActiveEntries,
-  selectDecisionArchiveEntries,
-  stableSortBy,
-  yamlArchiveEntry,
-  yamlEntryNumber,
-  yamlRecentFullAndOlder,
-  yamlSortEntries,
-} from "./retention.js";
+import { decisionRequiresUserReview, selectDecisionActiveEntries, selectDecisionArchiveEntries, stableSortBy, yamlArchiveEntry, yamlEntryNumber, yamlRecentFullAndOlder, yamlSortEntries } from "./retention.js";
 import { normalizeTodoResolvedLayout, parseEntries, parseTodoResolved, extractResolvedSection, countTodoResolvedSectionHeadings, countTodoPendingSummarization, TODO_DROPPED_RECOVERY_GUIDANCE } from "./parse.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";
 import { gateProjectionEntries } from "../../state/archiveRecovery.js";
-import {
-  loadProjectionPolicy,
-  projectionOmission,
-} from "../../state/projectionPolicy.js";
+import { loadProjectionPolicy, projectionOmission } from "../../state/projectionPolicy.js";
 import type { ProjectionOmissionProvenance } from "../../state/projectionPolicy.js";
 
 export interface CompactYamlBytesResult {
@@ -62,19 +50,11 @@ function existingOmissionCount(data: JsonObject): number {
   return typeof count === "number" && Number.isSafeInteger(count) && count > 0 ? count : 0;
 }
 
-function archiveProjectionCandidates(
-  specName: string,
-  rawArchive: any[],
-  generatedArchive: any[],
-  summaryCapacity: number,
-): { archive: any[]; omitted: number; provenance: ProjectionOmissionProvenance[] } {
+function archiveProjectionCandidates(specName: string, rawArchive: any[], generatedArchive: any[], summaryCapacity: number): { archive: any[]; omitted: number; provenance: ProjectionOmissionProvenance[] } {
   // Inline summaries have no independently verified complete record. They
   // participate in the same bounded projection as verified summaries, but
   // their omission explicitly remains degraded legacy history.
-  const candidates = [
-    ...rawArchive.map((entry) => ({ entry, source: "legacy_summary" as const, index: 0 })),
-    ...generatedArchive.map((entry) => ({ entry, source: "archive" as const, index: 1 })),
-  ];
+  const candidates = [...rawArchive.map((entry) => ({ entry, source: "legacy_summary" as const, index: 0 })), ...generatedArchive.map((entry) => ({ entry, source: "archive" as const, index: 1 }))];
   const ordered = candidates.sort((left, right) => {
     const leftTimestamp = String(left.entry?.timestamp ?? left.entry?.date ?? "");
     const rightTimestamp = String(right.entry?.timestamp ?? right.entry?.date ?? "");
@@ -84,13 +64,7 @@ function archiveProjectionCandidates(
     if (leftNumber !== rightNumber) return rightNumber - leftNumber;
     return left.index - right.index;
   });
-  const reviewFirst =
-    specName === "decisions"
-      ? [
-          ...ordered.filter((candidate) => decisionRequiresUserReview(candidate.entry)),
-          ...ordered.filter((candidate) => !decisionRequiresUserReview(candidate.entry)),
-        ]
-      : ordered;
+  const reviewFirst = specName === "decisions" ? [...ordered.filter((candidate) => decisionRequiresUserReview(candidate.entry)), ...ordered.filter((candidate) => !decisionRequiresUserReview(candidate.entry))] : ordered;
   const retained = reviewFirst.slice(0, summaryCapacity);
   const omitted = reviewFirst.slice(summaryCapacity);
   const provenance: ProjectionOmissionProvenance[] = [];
@@ -106,7 +80,10 @@ function archiveProjectionCandidates(
     });
   }
   return {
-    archive: yamlSortEntries(retained.map((candidate) => candidate.entry), specName),
+    archive: yamlSortEntries(
+      retained.map((candidate) => candidate.entry),
+      specName,
+    ),
     omitted: omitted.length,
     provenance,
   };
@@ -115,17 +92,10 @@ function archiveProjectionCandidates(
 function existingOmissionProvenance(data: JsonObject): ProjectionOmissionProvenance[] {
   const raw = data.omission_provenance;
   const values = Array.isArray(raw) ? raw : raw && typeof raw === "object" ? [raw] : [];
-  return values.filter(
-    (entry): entry is ProjectionOmissionProvenance =>
-      Boolean(entry && typeof entry === "object" && !Array.isArray(entry)),
-  );
+  return values.filter((entry): entry is ProjectionOmissionProvenance => Boolean(entry && typeof entry === "object" && !Array.isArray(entry)));
 }
 
-export function compactYamlBytes(
-  bytes: string,
-  artifact: string,
-  projectRoot?: string,
-): CompactYamlBytesResult {
+export function compactYamlBytes(bytes: string, artifact: string, projectRoot?: string): CompactYamlBytesResult {
   if (!(artifact in COMPACTABLE_YAML_ARTIFACTS)) {
     throw new Error(`unsupported YAML artifact: ${artifact}`);
   }
@@ -140,10 +110,7 @@ export function compactYamlBytes(
   const rawActive = active;
   const rawArchive = archive;
   const policy = loadProjectionPolicy();
-  const selectionActive =
-    specName === "decisions" && projectRoot
-      ? hydrateDecisionRecords(rawActive as JsonObject[], projectRoot)
-      : rawActive;
+  const selectionActive = specName === "decisions" && projectRoot ? hydrateDecisionRecords(rawActive as JsonObject[], projectRoot) : rawActive;
 
   const fullBefore = rawActive.length;
   const onelineBefore = rawArchive.length;
@@ -175,38 +142,29 @@ export function compactYamlBytes(
   // Experiment summaries are the pre-existing 10/40/50 projection itself.
   // Durable experiment archives are introduced separately; publication must
   // not silently disable the current projection while that policy is pending.
-  const gated = specName === "experiments"
-    ? {
-        verified: olderActive as JsonObject[],
-        refused: [],
-        recovery: {
-          status: "unsupported" as const,
-          attempted: olderActive.length,
-          verified: 0,
-          retained_full: 0,
-          refused_count: 0,
-          refusals: [],
-        },
-      }
-    : gateProjectionEntries(projectionRoot, specName, olderActive as JsonObject[]);
+  const gated =
+    specName === "experiments"
+      ? {
+          verified: olderActive as JsonObject[],
+          refused: [],
+          recovery: {
+            status: "unsupported" as const,
+            attempted: olderActive.length,
+            verified: 0,
+            retained_full: 0,
+            refused_count: 0,
+            refusals: [],
+          },
+        }
+      : gateProjectionEntries(projectionRoot, specName, olderActive as JsonObject[]);
   const compactedFromActive = gated.verified.map((entry) => yamlArchiveEntry(specName, entry));
   const retainedFull = gated.refused.map(({ entry }) => entry);
   recentFull = yamlSortEntries([...recentFull, ...retainedFull], specName);
-  const archiveProjection = archiveProjectionCandidates(
-    specName,
-    rawArchive,
-    compactedFromActive,
-    policy.summaryEntries,
-  );
+  const archiveProjection = archiveProjectionCandidates(specName, rawArchive, compactedFromActive, policy.summaryEntries);
   let archiveAfter: any[] = archiveProjection.archive;
   if (specName === "decisions") {
-    const selectionArchiveCandidates = projectRoot
-      ? hydrateDecisionRecords(archiveAfter as JsonObject[], projectRoot)
-      : archiveAfter;
-    archiveAfter = restoreRawSatisfaction(
-      selectDecisionArchiveEntries(selectionArchiveCandidates),
-      archiveAfter,
-    );
+    const selectionArchiveCandidates = projectRoot ? hydrateDecisionRecords(archiveAfter as JsonObject[], projectRoot) : archiveAfter;
+    archiveAfter = restoreRawSatisfaction(selectDecisionArchiveEntries(selectionArchiveCandidates), archiveAfter);
   }
 
   const omittedCount = existingOmissionCount(data) + archiveProjection.omitted;
@@ -252,8 +210,7 @@ export function compactYamlBytes(
 
 export function compactYamlFile(p: string, artifact: string, projectRoot?: string): CompactResult {
   if (!fs.existsSync(p)) throw new Error(p);
-  const inferredProjectRoot =
-    path.basename(path.dirname(p)) === ".agentera" ? path.dirname(path.dirname(p)) : path.dirname(p);
+  const inferredProjectRoot = path.basename(path.dirname(p)) === ".agentera" ? path.dirname(path.dirname(p)) : path.dirname(p);
   const compacted = compactYamlBytes(fs.readFileSync(p, "utf8"), artifact, projectRoot ?? inferredProjectRoot);
   if (compacted.result.changed) fs.writeFileSync(p, compacted.bytes);
   return compacted.result;
@@ -273,12 +230,7 @@ function detectDirection(entries: JsonObject[]): string {
   return asc > desc ? "ascending" : "descending";
 }
 
-export function compactEntries(
-  entries: JsonObject[],
-  maxFull = MAX_FULL_ENTRIES,
-  maxOneline = MAX_ONELINE_ENTRIES,
-  formatOneline: ((entry: JsonObject) => string) | null = null,
-): JsonObject[] {
+export function compactEntries(entries: JsonObject[], maxFull = MAX_FULL_ENTRIES, maxOneline = MAX_ONELINE_ENTRIES, formatOneline: ((entry: JsonObject) => string) | null = null): JsonObject[] {
   const maxTotal = maxFull + maxOneline;
   if (entries.length === 0) return [];
   const ascending = detectDirection(entries) === "ascending";
@@ -316,9 +268,7 @@ function compactTodoEntries(entries: JsonObject[]): JsonObject[] {
     if (i < MAX_FULL_ENTRIES) {
       // First 10: full-detail tier — preserve body if present, promote
       // kind to "full" so the writer keeps the header (not formatOneline).
-      result.push(entries[i].kind === "oneline"
-        ? { ...entries[i], kind: "full" }
-        : entries[i]);
+      result.push(entries[i].kind === "oneline" ? { ...entries[i], kind: "full" } : entries[i]);
     } else if (i < MAX_TOTAL_ENTRIES) {
       // Items 11-50: summary tier — force ≤15-word summary formatting
       // by passing kind="full" to formatTodoOneline so it goes through
@@ -389,11 +339,7 @@ function compactTodoResolved(p: string): CompactResult {
   // guard protects direct callers (e.g. validate-artifact auto-compact).
   const headingCount = countTodoResolvedSectionHeadings(text);
   if (headingCount > 1) {
-    throw new Error(
-      `TODO.md has ${headingCount} '## ✓ Resolved' sections; merge into exactly one before compacting. ` +
-        `Compaction drops oldest resolved entries and is destructive (no lossless archive); ` +
-        TODO_DROPPED_RECOVERY_GUIDANCE,
-    );
+    throw new Error(`TODO.md has ${headingCount} '## ✓ Resolved' sections; merge into exactly one before compacting. ` + `Compaction drops oldest resolved entries and is destructive (no lossless archive); ` + TODO_DROPPED_RECOVERY_GUIDANCE);
   }
   if (headingCount === 0) {
     throw new Error("TODO.md has no required '## ✓ Resolved' section; add exactly one before compacting.");
@@ -405,7 +351,15 @@ function compactTodoResolved(p: string): CompactResult {
     text = normalized.text;
   }
   const [start, end, currentBody] = extractResolvedSection(text);
-  if (start < 0) return { full_before: 0, oneline_before: 0, full_after: 0, oneline_after: 0, dropped: 0, changed: normalized.changed };
+  if (start < 0)
+    return {
+      full_before: 0,
+      oneline_before: 0,
+      full_after: 0,
+      oneline_after: 0,
+      dropped: 0,
+      changed: normalized.changed,
+    };
 
   const entries = parseTodoResolved(text, spec);
   const totalBefore = entries.length;
@@ -477,10 +431,16 @@ export function compactFile(p: string, specName: string): CompactResult {
   const fullBefore = entries.filter((e) => e.kind === "full").length;
   const onelineBefore = entries.filter((e) => e.kind === "oneline").length;
   const totalBefore = fullBefore + onelineBefore;
-  const needsCompact =
-    fullBefore > MAX_FULL_ENTRIES || onelineBefore > MAX_ONELINE_ENTRIES || totalBefore > MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES;
+  const needsCompact = fullBefore > MAX_FULL_ENTRIES || onelineBefore > MAX_ONELINE_ENTRIES || totalBefore > MAX_FULL_ENTRIES + MAX_ONELINE_ENTRIES;
   if (!needsCompact) {
-    return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullBefore, oneline_after: onelineBefore, dropped: 0, changed: false };
+    return {
+      full_before: fullBefore,
+      oneline_before: onelineBefore,
+      full_after: fullBefore,
+      oneline_after: onelineBefore,
+      dropped: 0,
+      changed: false,
+    };
   }
   const compacted = compactEntries(entries, MAX_FULL_ENTRIES, MAX_ONELINE_ENTRIES, spec.formatOneline);
   const fullAfter = compacted.filter((e) => e.kind === "full").length;
@@ -489,7 +449,14 @@ export function compactFile(p: string, specName: string): CompactResult {
   const headerPrefix = extractHeaderPrefix(text, spec);
   const newText = formatProgressLike(headerPrefix, compacted, spec);
   fs.writeFileSync(p, newText);
-  return { full_before: fullBefore, oneline_before: onelineBefore, full_after: fullAfter, oneline_after: onelineAfter, dropped, changed: true };
+  return {
+    full_before: fullBefore,
+    oneline_before: onelineBefore,
+    full_after: fullAfter,
+    oneline_after: onelineAfter,
+    dropped,
+    changed: true,
+  };
 }
 
 export function detectOverflow(text: string, specName: string): [number, number] {

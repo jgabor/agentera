@@ -2,16 +2,9 @@ import path from "node:path";
 
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  ARTIFACT_PROTOCOL_PATHS,
-  normalizeArtifactProtocolId,
-} from "./artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_PATHS, normalizeArtifactProtocolId } from "./artifactProtocolIds.js";
 
-export type VerbosityBudgetClassification =
-  | "numeric_limit"
-  | "explicit_no_limit"
-  | "non_word_unit"
-  | "invalid_declaration";
+export type VerbosityBudgetClassification = "numeric_limit" | "explicit_no_limit" | "non_word_unit" | "invalid_declaration";
 
 export interface VerbosityBudgetDimension {
   scope: string;
@@ -49,9 +42,7 @@ export function verbosityBudgetAuthorityPath(): string {
 }
 
 function mapping(value: unknown): Record<string, unknown> | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : null;
 }
 
 function positiveNumber(value: unknown): value is number {
@@ -62,26 +53,20 @@ function readMapping(filePath: string, label: string): Record<string, unknown> {
   try {
     return loadYamlMappingFile(filePath);
   } catch (error) {
-    throw new VerbosityBudgetContractError(
-      `${label} ${filePath} is unreadable or malformed: ${(error as Error).message}`,
-    );
+    throw new VerbosityBudgetContractError(`${label} ${filePath} is unreadable or malformed: ${(error as Error).message}`);
   }
 }
 
 function loadContract(contractPath: string): ContractModel {
   const contract = readMapping(contractPath, "verbosity budget authority");
   if (contract.schema_version !== "agentera.verbosityBudgetAuthority.v1") {
-    throw new VerbosityBudgetContractError(
-      `verbosity budget authority ${contractPath} has unsupported schema_version`,
-    );
+    throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} has unsupported schema_version`);
   }
   const authority = mapping(contract.authority);
   const scope = mapping(contract.scope);
   const supported = scope?.supported_artifacts;
   if (!authority || typeof authority.schema_directory !== "string" || !Array.isArray(supported)) {
-    throw new VerbosityBudgetContractError(
-      `verbosity budget authority ${contractPath} must declare authority.schema_directory and scope.supported_artifacts`,
-    );
+    throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} must declare authority.schema_directory and scope.supported_artifacts`);
   }
   const schemaDirectory = path.resolve(path.dirname(contractPath), authority.schema_directory);
   const owners = new Map<string, VerbosityBudgetOwner>();
@@ -90,19 +75,13 @@ function loadContract(contractPath: string): ContractModel {
     const artifactId = entry?.artifact_id;
     const schema = entry?.schema;
     if (typeof artifactId !== "string" || normalizeArtifactProtocolId(artifactId) !== artifactId) {
-      throw new VerbosityBudgetContractError(
-        `verbosity budget authority ${contractPath} contains an invalid artifact_id`,
-      );
+      throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} contains an invalid artifact_id`);
     }
     if (typeof schema !== "string" || !schema.endsWith(".yaml") || path.basename(schema) !== schema) {
-      throw new VerbosityBudgetContractError(
-        `verbosity budget authority ${contractPath} contains an invalid schema owner for ${artifactId}`,
-      );
+      throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} contains an invalid schema owner for ${artifactId}`);
     }
     if (owners.has(artifactId)) {
-      throw new VerbosityBudgetContractError(
-        `verbosity budget authority ${contractPath} declares ambiguous owners for ${artifactId}`,
-      );
+      throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} declares ambiguous owners for ${artifactId}`);
     }
     owners.set(artifactId, {
       artifactId,
@@ -111,9 +90,7 @@ function loadContract(contractPath: string): ContractModel {
     });
   }
   if (owners.size === 0) {
-    throw new VerbosityBudgetContractError(
-      `verbosity budget authority ${contractPath} declares no supported artifacts`,
-    );
+    throw new VerbosityBudgetContractError(`verbosity budget authority ${contractPath} declares no supported artifacts`);
   }
   return { contractPath, owners };
 }
@@ -131,18 +108,12 @@ function protocolIdForOwner(input: string): string | null {
   return null;
 }
 
-export function resolveVerbosityBudgetOwner(
-  artifact: string,
-  contractPath: string = verbosityBudgetAuthorityPath(),
-): VerbosityBudgetOwner {
+export function resolveVerbosityBudgetOwner(artifact: string, contractPath: string = verbosityBudgetAuthorityPath()): VerbosityBudgetOwner {
   const contract = loadContract(contractPath);
   const artifactId = protocolIdForOwner(artifact);
   const owner = artifactId ? contract.owners.get(artifactId) : undefined;
   if (!owner) {
-    throw new VerbosityBudgetContractError(
-      `unsupported artifact ${JSON.stringify(artifact)} in verbosity budget authority; ` +
-        `valid artifact_id values: ${[...contract.owners.keys()].sort().join(", ")}`,
-    );
+    throw new VerbosityBudgetContractError(`unsupported artifact ${JSON.stringify(artifact)} in verbosity budget authority; ` + `valid artifact_id values: ${[...contract.owners.keys()].sort().join(", ")}`);
   }
   return owner;
 }
@@ -161,9 +132,7 @@ function invalidDimension(scope: string, declarationId: string | null, error: st
 function classifyDeclaration(raw: unknown, index: string): VerbosityBudgetDimension {
   const declaration = mapping(raw);
   if (!declaration) return invalidDimension(`<entry:${index}>`, null, "budget declaration must be a mapping");
-  const scope = typeof declaration.scope === "string" && declaration.scope.trim()
-    ? declaration.scope.trim()
-    : `<entry:${index}>`;
+  const scope = typeof declaration.scope === "string" && declaration.scope.trim() ? declaration.scope.trim() : `<entry:${index}>`;
   const declarationId = typeof declaration.id === "string" ? declaration.id : null;
   if (scope.startsWith("<entry:")) {
     return invalidDimension(scope, declarationId, "budget declaration must define a non-empty scope");
@@ -171,15 +140,17 @@ function classifyDeclaration(raw: unknown, index: string): VerbosityBudgetDimens
   const hasWords = Object.hasOwn(declaration, "max_words");
   const hasTokens = Object.hasOwn(declaration, "token_budget");
   if (Number(hasWords) + Number(hasTokens) !== 1) {
-    return invalidDimension(
-      scope,
-      declarationId,
-      "budget declaration must define exactly one of max_words or token_budget",
-    );
+    return invalidDimension(scope, declarationId, "budget declaration must define exactly one of max_words or token_budget");
   }
   if (hasWords) {
     if (declaration.max_words === null) {
-      return { scope, classification: "explicit_no_limit", unit: "words", limit: null, declarationId };
+      return {
+        scope,
+        classification: "explicit_no_limit",
+        unit: "words",
+        limit: null,
+        declarationId,
+      };
     }
     if (positiveNumber(declaration.max_words)) {
       return {
@@ -206,18 +177,10 @@ function classifyDeclaration(raw: unknown, index: string): VerbosityBudgetDimens
 
 function isNonVerbosityBudgetEntry(raw: unknown): boolean {
   const declaration = mapping(raw);
-  return Boolean(
-    declaration &&
-      typeof declaration.rule === "string" &&
-      !Object.hasOwn(declaration, "max_words") &&
-      !Object.hasOwn(declaration, "token_budget"),
-  );
+  return Boolean(declaration && typeof declaration.rule === "string" && !Object.hasOwn(declaration, "max_words") && !Object.hasOwn(declaration, "token_budget"));
 }
 
-export function inspectArtifactVerbosityBudget(
-  artifact: string,
-  contractPath: string = verbosityBudgetAuthorityPath(),
-): ArtifactVerbosityBudget {
+export function inspectArtifactVerbosityBudget(artifact: string, contractPath: string = verbosityBudgetAuthorityPath()): ArtifactVerbosityBudget {
   const owner = resolveVerbosityBudgetOwner(artifact, contractPath);
   let schema: Record<string, unknown>;
   try {
@@ -248,17 +211,11 @@ export function inspectArtifactVerbosityBudget(
   for (const dimension of dimensions) counts.set(dimension.scope, (counts.get(dimension.scope) ?? 0) + 1);
   return {
     ...owner,
-    dimensions: dimensions.map((dimension) =>
-      (counts.get(dimension.scope) ?? 0) > 1
-        ? invalidDimension(dimension.scope, dimension.declarationId, `duplicate budget scope ${dimension.scope}`)
-        : dimension,
-    ),
+    dimensions: dimensions.map((dimension) => ((counts.get(dimension.scope) ?? 0) > 1 ? invalidDimension(dimension.scope, dimension.declarationId, `duplicate budget scope ${dimension.scope}`) : dimension)),
   };
 }
 
-export function validateVerbosityBudgetContract(
-  contractPath: string = verbosityBudgetAuthorityPath(),
-): string[] {
+export function validateVerbosityBudgetContract(contractPath: string = verbosityBudgetAuthorityPath()): string[] {
   let contract: ContractModel;
   try {
     contract = loadContract(contractPath);

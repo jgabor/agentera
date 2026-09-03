@@ -5,27 +5,10 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
-import {
-  authorClassForRole,
-  type Env,
-  MAX_TOOL_ARG_TEXT,
-  eventTimestamp,
-  isFilePath,
-  isoFromMtime,
-  iterJsonl,
-  record,
-  signalType,
-  textFromContent,
-  transportProvenance,
-  toolCallRecordFromItem,
-} from "./core.js";
+import { authorClassForRole, type Env, MAX_TOOL_ARG_TEXT, eventTimestamp, isFilePath, isoFromMtime, iterJsonl, record, signalType, textFromContent, transportProvenance, toolCallRecordFromItem } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isDir } from "./core.js";
-import {
-  type SqliteDb,
-  openSqlite,
-  jsonDict,
-} from "./sqliteSessions.js";
+import { type SqliteDb, openSqlite, jsonDict } from "./sqliteSessions.js";
 
 function pathStem(p: string): string {
   const base = path.basename(p);
@@ -86,7 +69,10 @@ export function cursorProjectDirSlug(projectRoot: string): string {
   let segs = resolved.split(path.sep).filter((s) => s !== "");
   // (leading-"/" anchor already dropped by filtering empties)
   const slug = segs.join("-").toLowerCase();
-  const cleaned = slug.replace(/[^a-z0-9._-]+/g, "-").replace(/^-+/, "").replace(/-+$/, "");
+  const cleaned = slug
+    .replace(/[^a-z0-9._-]+/g, "-")
+    .replace(/^-+/, "")
+    .replace(/-+$/, "");
   return cleaned || "global";
 }
 
@@ -106,9 +92,7 @@ function boundToolArguments(args: JsonObject): JsonObject {
     } else if (isPlainObject(value)) {
       bounded[key] = boundToolArguments(value);
     } else if (Array.isArray(value)) {
-      bounded[key] = value.map((it) =>
-        typeof it === "string" && it.length > MAX_TOOL_ARG_TEXT ? it.slice(0, MAX_TOOL_ARG_TEXT) + "…" : it,
-      );
+      bounded[key] = value.map((it) => (typeof it === "string" && it.length > MAX_TOOL_ARG_TEXT ? it.slice(0, MAX_TOOL_ARG_TEXT) + "…" : it));
     } else {
       bounded[key] = value;
     }
@@ -149,11 +133,7 @@ function iterCursorTranscriptPaths(projectsDir: string, projectRoots: string[]):
   return paths;
 }
 
-export function extractCursorSessions(
-  projectsDir: string | null,
-  errors: string[],
-  projectRoots: string[] | null = null,
-): JsonObject[] {
+export function extractCursorSessions(projectsDir: string | null, errors: string[], projectRoots: string[] | null = null): JsonObject[] {
   if (projectsDir === null || !fs.existsSync(projectsDir)) return [];
   const roots = projectRoots || [];
   const slugToRoot = new Map<string, string>();
@@ -212,9 +192,9 @@ export function extractCursorSessions(
       records.push(
         record({
           sourceKind: "conversation_turn",
-           timestamp,
-           projectPath,
-           runtime: "cursor",
+          timestamp,
+          projectPath,
+          runtime: "cursor",
           sourceParts: [resolvePath(p), index, role, content.slice(0, 80)],
           sessionId,
           originId,
@@ -283,16 +263,16 @@ function cursorAgentToolItems(message: JsonObject): JsonObject[] {
     const toolName = item.toolName || item.tool_name || item.name;
     if (typeof toolName !== "string" || !toolName) continue;
     const args = item.args || item.arguments || item.input || {};
-    items.push({ type: "tool_use", name: toolName, input: isPlainObject(args) ? args : { value: args } });
+    items.push({
+      type: "tool_use",
+      name: toolName,
+      input: isPlainObject(args) ? args : { value: args },
+    });
   }
   return items;
 }
 
-function iterCursorAgentStorePaths(
-  chatsDir: string,
-  projectRoots: string[],
-  jsonlSessionIds: Set<string>,
-): Array<[string, string | null, string]> {
+function iterCursorAgentStorePaths(chatsDir: string, projectRoots: string[], jsonlSessionIds: Set<string>): Array<[string, string | null, string]> {
   if (!isDir(chatsDir)) return [];
   const workspaceDirs: Array<[string, string | null]> = [];
   if (projectRoots.length > 0) {
@@ -360,12 +340,7 @@ function cursorAgentBlobMessages(storeDb: string, errors: string[]): Array<[stri
   return messages;
 }
 
-export function extractCursorAgentSessions(
-  chatsDir: string | null,
-  errors: string[],
-  projectRoots: string[] | null = null,
-  cursorProjectsDir: string | null = null,
-): JsonObject[] {
+export function extractCursorAgentSessions(chatsDir: string | null, errors: string[], projectRoots: string[] | null = null, cursorProjectsDir: string | null = null): JsonObject[] {
   if (chatsDir === null || !fs.existsSync(chatsDir)) return [];
   const roots = projectRoots || [];
   const jsonlSessionIds = cursorJsonlSessionIds(cursorProjectsDir, roots);
@@ -418,8 +393,8 @@ export function extractCursorAgentSessions(
           sourceKind: "conversation_turn",
           timestamp,
           projectPath,
-           runtime: "cursor",
-           sourceProduct: "cursor-agent",
+          runtime: "cursor",
+          sourceProduct: "cursor-agent",
           sourceParts: [resolvePath(storeDb), blobId, role, content.slice(0, 80)],
           sessionId,
           originId,

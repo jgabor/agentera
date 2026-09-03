@@ -14,10 +14,7 @@ import { reject } from "./errors.js";
 
 export type { StateWriteEnvelope, StateWriteRequest } from "./operations.js";
 
-export function executeStateWrite(
-  req: StateWriteRequest,
-  _options: StateMutationOptions = {},
-): StateWriteEnvelope {
+export function executeStateWrite(req: StateWriteRequest, _options: StateMutationOptions = {}): StateWriteEnvelope {
   assertMutationGrammarParity();
   const inputViolations = structuredRecordInputViolations(req.artifact, req.spec.verb, req.input);
   if (inputViolations.length > 0)
@@ -39,9 +36,7 @@ export function executeStateWrite(
     if (req.artifact === "progress") return withEntityWriterLock(publicationContext, () => appendProgressEntity(req, { publicationContext }));
     if (req.artifact === "decisions") {
       if (req.spec.verb === "append") return appendDecisionEntity(req, { publicationContext });
-      return withEntityWriterLock(publicationContext, () => req.spec.verb === "update"
-        ? updateDecisionSatisfactionEntity(req, { publicationContext })
-        : amendDecisionEntity(req, { publicationContext }));
+      return withEntityWriterLock(publicationContext, () => (req.spec.verb === "update" ? updateDecisionSatisfactionEntity(req, { publicationContext }) : amendDecisionEntity(req, { publicationContext })));
     }
     if (req.artifact === "health") {
       return appendHealthEntity(req, { publicationContext });

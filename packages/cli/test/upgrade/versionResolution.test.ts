@@ -10,13 +10,7 @@ import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { resolveUpdateChannel } from "../../src/upgrade/channels.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
-import {
-  classifyUpgradeOutcome,
-  parseSemverMajor,
-  resolveLatestOnChannel,
-  resolveRunningVersion,
-  setVersionCatalogForTests,
-} from "../../src/upgrade/versionResolution.js";
+import { classifyUpgradeOutcome, parseSemverMajor, resolveLatestOnChannel, resolveRunningVersion, setVersionCatalogForTests } from "../../src/upgrade/versionResolution.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -44,10 +38,7 @@ function managedV2(appHome: string, marker = "2.7.0"): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 describe("parseSemverMajor", () => {
@@ -63,7 +54,11 @@ describe("classifyUpgradeOutcome", () => {
     fs.mkdirSync(appHome, { recursive: true });
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     expect(install.kind).toBe("source_checkout");
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
     const outcome = classifyUpgradeOutcome({
       appHome,
       sourceRoot: REPO_ROOT,
@@ -80,7 +75,11 @@ describe("classifyUpgradeOutcome", () => {
     const appHome = path.join(tmp, "v2-unannounced");
     managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
     const outcome = classifyUpgradeOutcome({
       appHome,
       sourceRoot: REPO_ROOT,
@@ -96,7 +95,11 @@ describe("classifyUpgradeOutcome", () => {
     const appHome = path.join(tmp, "v2");
     managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
     const outcome = classifyUpgradeOutcome({
       appHome,
       sourceRoot: REPO_ROOT,
@@ -112,10 +115,7 @@ describe("classifyUpgradeOutcome", () => {
     const appHome = path.join(tmp, "v3");
     fs.mkdirSync(path.join(appHome, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(appHome, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(appHome, BUNDLE_MARKER),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "3.1.3" }),
-    );
+    fs.writeFileSync(path.join(appHome, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "3.1.3" }));
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "stable", home: tmp });
     const outcome = classifyUpgradeOutcome({
@@ -132,12 +132,13 @@ describe("classifyUpgradeOutcome", () => {
     const appHome = path.join(tmp, "v4dev");
     fs.mkdirSync(path.join(appHome, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(appHome, "skills", "agentera", "SKILL.md"), "x");
-    fs.writeFileSync(
-      path.join(appHome, BUNDLE_MARKER),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "4.0.0" }),
-    );
+    fs.writeFileSync(path.join(appHome, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "4.0.0" }));
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
     const outcome = classifyUpgradeOutcome({
       appHome,
       sourceRoot: REPO_ROOT,
@@ -154,18 +155,18 @@ describe("resolveRunningVersion", () => {
     const appHome = path.join(tmp, "v2");
     managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
-    expect(
-      resolveRunningVersion({ appHome, sourceRoot: REPO_ROOT, install }),
-    ).toBe("2.7.7");
+    expect(resolveRunningVersion({ appHome, sourceRoot: REPO_ROOT, install })).toBe("2.7.7");
   });
 });
 
 describe("resolveLatestOnChannel", () => {
   it("uses injectable catalog without network", () => {
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
-    expect(
-      resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-next.0" }),
-    ).toBe("3.0.0-next.0");
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
+    expect(resolveLatestOnChannel(channel, REPO_ROOT, { stable: "2.7.7", development: "3.0.0-next.0" })).toBe("3.0.0-next.0");
   });
 });
 
@@ -173,7 +174,11 @@ describe("resolution", () => {
   it("networkFailureFallback: without a catalog it falls back to offline defaults, running version to 0.0.0, and the upgrade gate still produces", () => {
     setVersionCatalogForTests(null);
 
-    const channel = resolveUpdateChannel({ sourceRoot: REPO_ROOT, channel: "development", home: tmp });
+    const channel = resolveUpdateChannel({
+      sourceRoot: REPO_ROOT,
+      channel: "development",
+      home: tmp,
+    });
     const latest = resolveLatestOnChannel(channel, REPO_ROOT, null);
     expect(typeof latest).toBe("string");
     expect(latest.length).toBeGreaterThan(0);
@@ -198,8 +203,6 @@ describe("resolution", () => {
     fs.writeFileSync(path.join(npxRoot, "registry.json"), "{}");
     fs.writeFileSync(path.join(npxRoot, NPX_BUNDLE_SENTINEL), "{}");
     const npxInstall = classifyInstall({ appHome: npxRoot, sourceRoot: npxRoot });
-    expect(
-      resolveRunningVersion({ appHome: npxRoot, sourceRoot: npxRoot, install: npxInstall }),
-    ).toBe("0.0.0");
+    expect(resolveRunningVersion({ appHome: npxRoot, sourceRoot: npxRoot, install: npxInstall })).toBe("0.0.0");
   });
 });

@@ -6,11 +6,7 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 
-import {
-  loadVerificationPolicy,
-  normalizeReporterSuiteAggregates,
-  validatePendingAuthority,
-} from "./overlap-pending.mjs";
+import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
@@ -18,10 +14,7 @@ const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "
 const defaultRoot = path.resolve(packageRoot, "../..");
 const root = path.resolve(process.env.AGENTERA_VERIFICATION_ROOT ?? defaultRoot);
 const inventoryPackageRoot = path.join(root, "packages/cli");
-const contractPath = path.resolve(
-  process.env.AGENTERA_VERIFICATION_CONTRACT
-    ?? path.join(root, "references/analysis/verification-policy.yaml"),
-);
+const contractPath = path.resolve(process.env.AGENTERA_VERIFICATION_CONTRACT ?? path.join(root, "references/analysis/verification-policy.yaml"));
 
 function relative(file) {
   return path.relative(root, file).split(path.sep).join("/");
@@ -33,7 +26,8 @@ function activeVerificationOwners() {
   for (const entry of fs.readdirSync("/proc", { withFileTypes: true })) {
     if (!entry.isDirectory() || !/^\d+$/.test(entry.name) || Number(entry.name) === process.pid) continue;
     try {
-      const owner = fs.readFileSync(path.join("/proc", entry.name, "environ"))
+      const owner = fs
+        .readFileSync(path.join("/proc", entry.name, "environ"))
         .toString("utf8")
         .split("\0")
         .find((value) => value.startsWith("AGENTERA_VERIFICATION_OWNER="))
@@ -52,12 +46,11 @@ function runnerPath(file) {
 
 function filesBelow(directory, suffix) {
   if (!fs.existsSync(directory)) return [];
-  return fs.readdirSync(directory, { withFileTypes: true })
-    .flatMap((entry) => {
-      const candidate = path.join(directory, entry.name);
-      if (entry.isSymbolicLink()) return [];
-      return entry.isDirectory() ? filesBelow(candidate, suffix) : candidate.endsWith(suffix) ? [candidate] : [];
-    });
+  return fs.readdirSync(directory, { withFileTypes: true }).flatMap((entry) => {
+    const candidate = path.join(directory, entry.name);
+    if (entry.isSymbolicLink()) return [];
+    return entry.isDirectory() ? filesBelow(candidate, suffix) : candidate.endsWith(suffix) ? [candidate] : [];
+  });
 }
 
 function loadContract() {
@@ -66,8 +59,7 @@ function loadContract() {
 }
 
 function matches(rule, file) {
-  return (rule.path !== undefined && rule.path === file)
-    || (rule.prefix !== undefined && file.startsWith(rule.prefix));
+  return (rule.path !== undefined && rule.path === file) || (rule.prefix !== undefined && file.startsWith(rule.prefix));
 }
 
 function inventory(contract, policyBytes) {
@@ -144,13 +136,10 @@ function inventory(contract, policyBytes) {
 
   for (const [owner, definition] of Object.entries(contract.owners ?? {})) {
     if (definition.execution !== undefined) {
-      if (definition.execution.workers !== undefined
-        && (!Number.isSafeInteger(definition.execution.workers) || definition.execution.workers < 1)) {
+      if (definition.execution.workers !== undefined && (!Number.isSafeInteger(definition.execution.workers) || definition.execution.workers < 1)) {
         errors.push(`${owner} execution workers must be a positive integer`);
       }
-      if (definition.execution.wall_time_budget_ms !== undefined
-        && (!Number.isSafeInteger(definition.execution.wall_time_budget_ms)
-          || definition.execution.wall_time_budget_ms < 1)) {
+      if (definition.execution.wall_time_budget_ms !== undefined && (!Number.isSafeInteger(definition.execution.wall_time_budget_ms) || definition.execution.wall_time_budget_ms < 1)) {
         errors.push(`${owner} execution wall_time_budget_ms must be a positive integer`);
       }
     }
@@ -162,11 +151,7 @@ function inventory(contract, policyBytes) {
   }
 
   try {
-    validatePendingAuthority(
-      policyBytes,
-      Buffer.from(JSON.stringify(files.filter((file) => assignments.get(file) === "source"))),
-      root,
-    );
+    validatePendingAuthority(policyBytes, Buffer.from(JSON.stringify(files.filter((file) => assignments.get(file) === "source"))), root);
   } catch (error) {
     errors.push(error.message);
   }
@@ -248,14 +233,9 @@ function normalizedSelection(owner, state, forwarded) {
   if (files.length > 0 && producer !== undefined && !files.includes(producer)) {
     throw new Error(`selection omits required evidence producer '${runnerPath(producer)}'`);
   }
-  const selectedFiles = files.length > 0
-    ? files
-    : state.files.filter((file) => state.assignments.get(file) === owner);
+  const selectedFiles = files.length > 0 ? files : state.files.filter((file) => state.assignments.get(file) === owner);
   return {
-    argv: [
-      ...options,
-      ...selectedFiles.map(runnerPath),
-    ],
+    argv: [...options, ...selectedFiles.map(runnerPath)],
   };
 }
 
@@ -301,9 +281,7 @@ function runOwner(owner, state, forwarded = []) {
   }
   const config = path.relative(packageRoot, path.join(root, definition.config)).split(path.sep).join("/");
   const resultChannel = process.env.AGENTERA_VERIFICATION_RESULT;
-  const reporter = resultChannel
-    ? ["--reporter=json", `--outputFile=${resultChannel}`]
-    : [];
+  const reporter = resultChannel ? ["--reporter=json", `--outputFile=${resultChannel}`] : [];
   const captureEvidence = definition.evidence !== undefined;
   const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
   if (definition.execution?.workers !== undefined) {
@@ -335,23 +313,20 @@ function runOwner(owner, state, forwarded = []) {
   }
   if (result.error) console.error(`${owner} owner failed: ${result.error.message}`);
   else if (result.status !== 0) console.error(`${owner} owner failed (exit ${result.status ?? "signal"})`);
-  const evidenceErrors = !result.error && result.status === 0 && captureEvidence
-    ? validatePerformanceEvidence(result.stdout ?? "", definition, root)
-    : [];
+  const evidenceErrors = !result.error && result.status === 0 && captureEvidence ? validatePerformanceEvidence(result.stdout ?? "", definition, root) : [];
   for (const error of evidenceErrors.slice(0, 10)) console.error(`${owner} owner evidence invalid: ${error}`);
   const wallTimeBudgetMs = definition.execution?.wall_time_budget_ms;
   if (Number.isSafeInteger(wallTimeBudgetMs)) {
     console.log(`${owner} owner wall time ${elapsedMs}ms; budget ${wallTimeBudgetMs}ms`);
   }
-  if (!result.error && result.status === 0 && evidenceErrors.length === 0
-    && Number.isSafeInteger(wallTimeBudgetMs) && elapsedMs > wallTimeBudgetMs) {
+  if (!result.error && result.status === 0 && evidenceErrors.length === 0 && Number.isSafeInteger(wallTimeBudgetMs) && elapsedMs > wallTimeBudgetMs) {
     console.error(`${owner} owner exceeded its ${wallTimeBudgetMs}ms wall-time budget (${elapsedMs}ms)`);
     console.error(`correction: ${definition.correction}`);
     return 1;
   }
   if (result.error || result.status !== 0 || evidenceErrors.length > 0) {
     console.error(`correction: ${definition.correction}`);
-    return result.error || result.status !== 0 ? result.status ?? 1 : 1;
+    return result.error || result.status !== 0 ? (result.status ?? 1) : 1;
   }
   return 0;
 }
@@ -359,7 +334,11 @@ function runOwner(owner, state, forwarded = []) {
 function runIntegration(owner, state) {
   const integration = state.contract.owners[owner].integration;
   const [executable, ...args] = integration.command;
-  const result = spawnSync(executable, args, { cwd: packageRoot, stdio: "inherit", env: process.env });
+  const result = spawnSync(executable, args, {
+    cwd: packageRoot,
+    stdio: "inherit",
+    env: process.env,
+  });
   if (result.error || result.status !== 0) {
     console.error(`${owner} integration failed (${result.error?.message ?? `exit ${result.status ?? "signal"}`})`);
     console.error(`correction: ${state.contract.owners[owner].correction}`);
@@ -376,9 +355,7 @@ function runPolicy(name, state, forwarded) {
   }
   for (const owner of owners) {
     const definition = state.contract.owners[owner];
-    const status = definition.integration
-      ? runIntegration(owner, state)
-      : runOwner(owner, state, owners.length === 1 ? forwarded : []);
+    const status = definition.integration ? runIntegration(owner, state) : runOwner(owner, state, owners.length === 1 ? forwarded : []);
     if (status !== 0) return status;
   }
   return 0;
@@ -416,9 +393,15 @@ if (command === "validate") process.exit(0);
 if (command === "inventory") {
   const counts = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, [...state.assignments.values()].filter((value) => value === owner).length]));
   const files = Object.fromEntries(OWNER_NAMES.map((owner) => [owner, state.files.filter((file) => state.assignments.get(file) === owner)]));
-  const integrations = Object.fromEntries(Object.entries(state.contract.owners).flatMap(([owner, definition]) => definition.integration ? [[owner, definition.integration.path]] : []));
+  const integrations = Object.fromEntries(Object.entries(state.contract.owners).flatMap(([owner, definition]) => (definition.integration ? [[owner, definition.integration.path]] : [])));
   const evidence_producers = Object.fromEntries(state.evidenceProducers);
-  const output = { counts: { total: state.files.length, ...counts }, files, integrations, evidence_producers, mixed_files: state.contract.mixed_files ?? [] };
+  const output = {
+    counts: { total: state.files.length, ...counts },
+    files,
+    integrations,
+    evidence_producers,
+    mixed_files: state.contract.mixed_files ?? [],
+  };
   console.log(process.argv.includes("--json") ? JSON.stringify(output, null, 2) : YAML.stringify(output).trim());
   process.exit(0);
 }

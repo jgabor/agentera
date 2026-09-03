@@ -85,13 +85,7 @@ test("dispatch returns 0 when app-home script succeeds", () => {
   const appHome = mktmp("shim-app-home-");
   const uvDir = mktmp("shim-uv-bin-");
   try {
-    writeAppHomeScript(appHome, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(appHome, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
     const { logPath } = writeFakeUv(uvDir);
 
     const code = withPath(uvDir, () =>
@@ -115,20 +109,8 @@ test("dispatch falls through to repo when app-home spawns a runtime crash", () =
   const repoRoot = mktmp("shim-repo-");
   const uvDir = mktmp("shim-uv-bin-");
   try {
-    const appHomeScript = writeAppHomeScript(appHome, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
-    writeRepoScript(repoRoot, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    const appHomeScript = writeAppHomeScript(appHome, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
+    writeRepoScript(repoRoot, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
     const { logPath } = writeFakeUv(uvDir, {
       crashScriptPath: appHomeScript,
     });
@@ -148,10 +130,7 @@ test("dispatch falls through to repo when app-home spawns a runtime crash", () =
     assert.equal(invocations.length, 2, `expected 2 invocations, got:\n${log}`);
     assert.match(invocations[0], new RegExp(`uv run .*${path.basename(appHomeScript)}`));
     assert.match(invocations[1], /uv run scripts\/agentera/);
-    assert.match(
-      stderr,
-      /app-home backend crashed .* falling through to next resolution strategy/,
-    );
+    assert.match(stderr, /app-home backend crashed .* falling through to next resolution strategy/);
   } finally {
     clean(appHome);
     clean(repoRoot);
@@ -162,13 +141,7 @@ test("dispatch falls through to repo when app-home spawns a runtime crash", () =
 test("dispatch prints install help when app-home crashes and no other backend is available", () => {
   const appHome = mktmp("shim-app-home-");
   try {
-    writeAppHomeScript(appHome, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(appHome, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
 
     const stderr = captureStderr(() => {
       const code = withPath("", () =>
@@ -180,10 +153,7 @@ test("dispatch prints install help when app-home crashes and no other backend is
       assert.notEqual(code, 0);
     });
 
-    assert.match(
-      stderr,
-      /app-home backend crashed .* falling through to next resolution strategy/,
-    );
+    assert.match(stderr, /app-home backend crashed .* falling through to next resolution strategy/);
     assert.match(stderr, /upgrade --channel development --project "\$PWD" --dry-run/);
     assert.doesNotMatch(stderr, /npx skills add/);
   } finally {

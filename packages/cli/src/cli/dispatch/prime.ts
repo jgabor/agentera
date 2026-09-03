@@ -15,9 +15,13 @@ function emitStateFailure(error: StateRetrievalFailure, format: string | undefin
 export function runCapability(command: string, argv: string[], io: Io, prog: string): number {
   let format = "json";
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null = null;
@@ -59,12 +63,25 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
 }
 
 export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
-  const args: PrimeArgs = { command, guidance: false, context: null, dashboard: false, orientation: false, format: "json", input: null, termInput: null };
+  const args: PrimeArgs = {
+    command,
+    guidance: false,
+    context: null,
+    dashboard: false,
+    orientation: false,
+    format: "json",
+    input: null,
+    termInput: null,
+  };
   const invalidInputFormat = () => "json" as const;
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null = null;
@@ -75,13 +92,21 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     else if (a === "--input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
       return emitInvalidInput(io, {
         format: invalidInputFormat(),
-        body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
+        body: {
+          class: "missing_argument",
+          message: "--input requires a file path or -",
+          syntax: "--input <file|->",
+        },
       });
     } else if ((v = value("--input")) !== null) {
       if (v.length === 0) {
         return emitInvalidInput(io, {
           format: invalidInputFormat(),
-          body: { class: "missing_argument", message: "--input requires a file path or -", syntax: "--input <file|->" },
+          body: {
+            class: "missing_argument",
+            message: "--input requires a file path or -",
+            syntax: "--input <file|->",
+          },
         });
       }
       if (args.input !== null) {
@@ -94,13 +119,21 @@ export function runPrime(command: string, argv: string[], io: Io, prog: string):
     } else if (a === "--term-input" && (!argv[i + 1] || argv[i + 1].startsWith("--"))) {
       return emitInvalidInput(io, {
         format: invalidInputFormat(),
-        body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
+        body: {
+          class: "missing_argument",
+          message: "--term-input requires a file path or -",
+          syntax: "--term-input <file|->",
+        },
       });
     } else if ((v = value("--term-input")) !== null) {
       if (v.length === 0) {
         return emitInvalidInput(io, {
           format: invalidInputFormat(),
-          body: { class: "missing_argument", message: "--term-input requires a file path or -", syntax: "--term-input <file|->" },
+          body: {
+            class: "missing_argument",
+            message: "--term-input requires a file path or -",
+            syntax: "--term-input <file|->",
+          },
         });
       }
       if (args.termInput !== null) {

@@ -9,12 +9,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { retrieveStateEntry, StateRetrievalFailure } from "../../src/state/directRetrieval.js";
-import {
-  boundStateList,
-  listStateEntries,
-  renderStateListText,
-  type StateListResponse,
-} from "../../src/state/listRetrieval.js";
+import { boundStateList, listStateEntries, renderStateListText, type StateListResponse } from "../../src/state/listRetrieval.js";
 import { measureColdStateList } from "../helpers/coldCliMeasurement.js";
 
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
@@ -101,12 +96,7 @@ function captureMigrationFixture(root: string, args: string[]): { rc: number; ou
       else if (flag === "--cursor") cursor = value;
       else if (flag === "--format") format = value as typeof format;
     }
-    const response = boundStateList(
-      listStateEntries(root, "progress", limit, {}, cursor, { sourceRoot }),
-      format,
-      sourceRoot,
-      root,
-    );
+    const response = boundStateList(listStateEntries(root, "progress", limit, {}, cursor, { sourceRoot }), format, sourceRoot, root);
     out = format === "json" ? JSON.stringify(response, null, 2) + "\n" : format === "yaml" ? YAML.stringify(response) : renderStateListText(response);
     return { rc: 0, out, err };
   } catch (error) {
@@ -119,12 +109,7 @@ function captureMigrationFixture(root: string, args: string[]): { rc: number; ou
   }
 }
 
-function migrationFixturePage(
-  root: string,
-  format: "json" | "yaml" | "text",
-  limit: number,
-  cursor?: string,
-): { ids: string[]; nextCursor?: string } {
+function migrationFixturePage(root: string, format: "json" | "yaml" | "text", limit: number, cursor?: string): { ids: string[]; nextCursor?: string } {
   const result = captureMigrationFixture(root, ["--limit", String(limit), ...(cursor ? ["--cursor", cursor] : []), "--format", format]);
   expect(result.rc).toBe(0);
   if (format === "json" || format === "yaml") {
@@ -170,42 +155,34 @@ describe("read-only migration fixture state listing", () => {
     const page3 = directList(root, 3, page2.next_cursor);
     const ids = [...page1.entries, ...page2.entries, ...page3.entries].map((entry) => (entry as Record<string, unknown>).stable_id);
 
-    expect(ids).toEqual([
-      "progress:7",
-      "progress:6",
-      "progress:5",
-      "progress:4",
-      "progress:3",
-      "progress:2",
-      "progress:1",
-    ]);
+    expect(ids).toEqual(["progress:7", "progress:6", "progress:5", "progress:4", "progress:3", "progress:2", "progress:1"]);
     expect(new Set(ids).size).toBe(7);
     expect(page3.next_cursor).toBeUndefined();
     expect(page1.snapshot.order).toBe("entry_number_desc");
   });
 
   it("exhaustively follows every bounded JSON cursor without repeating a page boundary", () => {
-      for (const size of [0, 1, 2, 5, 9]) {
-        const root = project();
-        for (let number = 1; number <= size; number += 1) writeArchiveFixture(root, number);
-        for (let limit = 1; limit <= 5; limit += 1) {
-          const ids: string[] = [];
-          const cursors = new Set<string>();
-          let cursor: string | undefined;
-          for (let pageNumber = 0; pageNumber <= size + 1; pageNumber += 1) {
-            const page = migrationFixturePage(root, "json", limit, cursor);
-            ids.push(...page.ids);
-            if (!page.nextCursor) break;
-            expect(cursors.has(page.nextCursor)).toBe(false);
-            cursors.add(page.nextCursor);
-            cursor = page.nextCursor;
-            if (pageNumber === size + 1) throw new Error("cursor traversal did not terminate");
-          }
-
-          expect(ids).toEqual(Array.from({ length: size }, (_, index) => `progress:${size - index}`));
-          expect(new Set(ids).size).toBe(size);
+    for (const size of [0, 1, 2, 5, 9]) {
+      const root = project();
+      for (let number = 1; number <= size; number += 1) writeArchiveFixture(root, number);
+      for (let limit = 1; limit <= 5; limit += 1) {
+        const ids: string[] = [];
+        const cursors = new Set<string>();
+        let cursor: string | undefined;
+        for (let pageNumber = 0; pageNumber <= size + 1; pageNumber += 1) {
+          const page = migrationFixturePage(root, "json", limit, cursor);
+          ids.push(...page.ids);
+          if (!page.nextCursor) break;
+          expect(cursors.has(page.nextCursor)).toBe(false);
+          cursors.add(page.nextCursor);
+          cursor = page.nextCursor;
+          if (pageNumber === size + 1) throw new Error("cursor traversal did not terminate");
         }
+
+        expect(ids).toEqual(Array.from({ length: size }, (_, index) => `progress:${size - index}`));
+        expect(new Set(ids).size).toBe(size);
       }
+    }
   });
 
   it.each(["yaml", "text"] as const)("continues a bounded %s page with compatible cursor and payload", (format) => {
@@ -245,14 +222,8 @@ describe("read-only migration fixture state listing", () => {
     const continued = directList(root, 2, first.next_cursor);
     const fresh = directList(root, 2);
 
-    expect(continued.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
-      "progress:3",
-      "progress:2",
-    ]);
-    expect(fresh.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
-      "progress:6",
-      "progress:5",
-    ]);
+    expect(continued.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual(["progress:3", "progress:2"]);
+    expect(fresh.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual(["progress:6", "progress:5"]);
   });
 
   it("rejects invalid, tampered, filter-bound, and stale cursors with recovery guidance", () => {
@@ -331,24 +302,14 @@ describe("read-only migration fixture state listing", () => {
 
     const response = directList(root, 10);
     expect(response.counts).toMatchObject({ total: 4, returned: 4, summary: 4 });
-    expect(response.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
-      "progress:4",
-      "progress:3",
-      "progress:2",
-      "progress:1",
-    ]);
+    expect(response.entries.map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual(["progress:4", "progress:3", "progress:2", "progress:1"]);
     expect(response.entries.every((entry) => (entry as Record<string, unknown>).source === "legacy_summary")).toBe(true);
     expect(response.entries.every((entry) => (entry as Record<string, unknown>).detail_availability === "summary")).toBe(true);
   });
 
   it("keeps explicit Dnn shorthand addressable and staging rows list-only", () => {
     const root = project();
-    writeArtifactProjection(root, "decisions", [], [
-      "D76 (feeds into D75 and D77): explicit decision shorthand",
-      "D3+D4 (2026-06-05): merged staging material",
-      "Staging D3+D4 (2026-06-05): merged staging material",
-      "staging note without an identity",
-    ]);
+    writeArtifactProjection(root, "decisions", [], ["D76 (feeds into D75 and D77): explicit decision shorthand", "D3+D4 (2026-06-05): merged staging material", "Staging D3+D4 (2026-06-05): merged staging material", "staging note without an identity"]);
 
     const response = listStateEntries(root, "decisions", 10, {}, undefined, { sourceRoot });
     expect(response.entries).toEqual(
@@ -396,12 +357,7 @@ describe("read-only migration fixture state listing", () => {
     const page2 = listStateEntries(root, "decisions", 1, {}, page1.next_cursor, { sourceRoot });
     const page3 = listStateEntries(root, "decisions", 1, {}, page2.next_cursor, { sourceRoot });
     const page4 = listStateEntries(root, "decisions", 1, {}, page3.next_cursor, { sourceRoot });
-    expect([...page1.entries, ...page2.entries, ...page3.entries, ...page4.entries].map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual([
-      "decisions:76",
-      null,
-      null,
-      null,
-    ]);
+    expect([...page1.entries, ...page2.entries, ...page3.entries, ...page4.entries].map((entry) => (entry as Record<string, unknown>).stable_id)).toEqual(["decisions:76", null, null, null]);
     expect(page4.next_cursor).toBeUndefined();
 
     const listed = response.entries.find((entry) => (entry as Record<string, unknown>).stable_id === "decisions:76") as Record<string, unknown>;
@@ -427,8 +383,16 @@ describe("read-only migration fixture state listing", () => {
     const response = listStateEntries(root, "progress", 10, {}, undefined, { sourceRoot });
     expect(response.entries).toEqual(
       expect.arrayContaining([
-        expect.objectContaining({ stable_id: "progress:5", classification: "duplicate", physical_count: 3 }),
-        expect.objectContaining({ stable_id: "progress:6", classification: "conflict", physical_count: 2 }),
+        expect.objectContaining({
+          stable_id: "progress:5",
+          classification: "duplicate",
+          physical_count: 3,
+        }),
+        expect.objectContaining({
+          stable_id: "progress:6",
+          classification: "conflict",
+          physical_count: 2,
+        }),
       ]),
     );
     expect(response.counts).toMatchObject({
@@ -475,9 +439,7 @@ describe("read-only migration fixture state listing", () => {
       entry.provenance.current_projection.path = "projection-path-".repeat(2000);
     }
 
-    expect(() => boundStateList(response, format, sourceRoot, root)).toThrow(
-      /cannot emit an advancing row page/,
-    );
+    expect(() => boundStateList(response, format, sourceRoot, root)).toThrow(/cannot emit an advancing row page/);
   });
 
   it("trims an over-budget page only to an advancing row boundary", () => {
@@ -500,29 +462,56 @@ describe("read-only migration fixture state listing", () => {
   });
 
   it("bounds the requested YAML serialization rather than only the JSON estimate", () => {
-    const entries = [{
-      stable_id: "progress:1",
-      artifact_id: "progress",
-      entry_number: 1,
-      current_status: "summary",
-      detail_availability: "summary",
-      source: "legacy_summary",
-      compatibility: "degraded",
-      summary: ("x\n").repeat(9000),
-      provenance: {
-        archive: { path: "x", available: false, verified: false },
-        current_projection: { path: "x", present: true, representation: "summary" },
+    const entries = [
+      {
+        stable_id: "progress:1",
+        artifact_id: "progress",
+        entry_number: 1,
+        current_status: "summary",
+        detail_availability: "summary",
+        source: "legacy_summary",
+        compatibility: "degraded",
+        summary: "x\n".repeat(9000),
+        provenance: {
+          archive: { path: "x", available: false, verified: false },
+          current_projection: { path: "x", present: true, representation: "summary" },
+        },
       },
-    }];
+    ];
     const response = {
       command: "state progress list",
       status: "ok" as const,
       entries,
-      counts: { total: entries.length, returned: entries.length, remaining: 0, active: 0, summary: entries.length, archive_only: 0 },
-      source: { artifact: "progress", current_projection: { path: "x", exists: true }, archive: { root: "x", validated_entries: 0, rejected_count: 0 } },
+      counts: {
+        total: entries.length,
+        returned: entries.length,
+        remaining: 0,
+        active: 0,
+        summary: entries.length,
+        archive_only: 0,
+      },
+      source: {
+        artifact: "progress",
+        current_projection: { path: "x", exists: true },
+        archive: { root: "x", validated_entries: 0, rejected_count: 0 },
+      },
       filters: { topic: null, status: null },
-      snapshot: { id: "a".repeat(64), first_page: true, order: "entry_number_desc", has_more: false, candidate_count: entries.length, candidate_max: entries.length, page_start: entries.length + 1 },
-      source_contract: { authority: "references/artifacts/state-storage-authority.yaml", compatibility: "degraded", detail: "summary", retrieval: "agentera state progress get --number N", cursor: "opaque" },
+      snapshot: {
+        id: "a".repeat(64),
+        first_page: true,
+        order: "entry_number_desc",
+        has_more: false,
+        candidate_count: entries.length,
+        candidate_max: entries.length,
+        page_start: entries.length + 1,
+      },
+      source_contract: {
+        authority: "references/artifacts/state-storage-authority.yaml",
+        compatibility: "degraded",
+        detail: "summary",
+        retrieval: "agentera state progress get --number N",
+        cursor: "opaque",
+      },
     };
     const rawJsonBytes = Buffer.byteLength(JSON.stringify(response, null, 2) + "\n", "utf8");
     const rawYamlBytes = Buffer.byteLength(YAML.stringify(response), "utf8");
@@ -540,7 +529,12 @@ describe("read-only migration fixture state listing", () => {
     archiveDecision(root, 1);
     const overlay = path.join(root, ".agentera", "overlays", "decisions.yaml");
     fs.mkdirSync(path.dirname(overlay), { recursive: true });
-    fs.writeFileSync(overlay, YAML.stringify({ "decisions:1": { satisfaction: { state: "provisionally_satisfied", evidence: "listed" } } }));
+    fs.writeFileSync(
+      overlay,
+      YAML.stringify({
+        "decisions:1": { satisfaction: { state: "provisionally_satisfied", evidence: "listed" } },
+      }),
+    );
 
     const response = listStateEntries(root, "decisions", 10, {}, undefined, { sourceRoot });
     expect(response.entries[0]).toMatchObject({
@@ -548,7 +542,9 @@ describe("read-only migration fixture state listing", () => {
       current_status: "archive_only",
       record_status: "provisionally_satisfied",
       overlay_applied: true,
-      provenance: { overlay: { applied: true, fields: ["satisfaction.state", "satisfaction.evidence"] } },
+      provenance: {
+        overlay: { applied: true, fields: ["satisfaction.state", "satisfaction.evidence"] },
+      },
     });
     expect(String(response.source_contract.cursor)).toContain("overlay revision");
   });

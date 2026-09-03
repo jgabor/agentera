@@ -2,17 +2,10 @@ import crypto from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  canonicalTerminologyJson,
-  type TerminologyDriftFinding,
-  validateTerminologyProposal,
-} from "../../audit/terminologyDrift.js";
+import { canonicalTerminologyJson, type TerminologyDriftFinding, validateTerminologyProposal } from "../../audit/terminologyDrift.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../core/yaml.js";
-import {
-  loadArtifactRecord,
-  resolveArtifactPath,
-} from "../../registries/artifactRegistry.js";
+import { loadArtifactRecord, resolveArtifactPath } from "../../registries/artifactRegistry.js";
 import { GlossaryEntryBoundError, validateGlossaryEntry } from "../../registries/glossaryEntryContract.js";
 import { unicodeCaselessExact } from "../../registries/glossaryTermIdentity.js";
 import { containsGlossaryTerm } from "../../registries/glossaryTermOccurrence.js";
@@ -58,21 +51,10 @@ function validTimestamp(value: unknown): value is string {
   if (!match || Number.isNaN(Date.parse(value))) return false;
   const [, year, month, day, hour, minute, second, offsetHour = "00", offsetMinute = "00"] = match;
   const calendar = new Date(Date.UTC(Number(year), Number(month) - 1, Number(day)));
-  return calendar.getUTCFullYear() === Number(year)
-    && calendar.getUTCMonth() + 1 === Number(month)
-    && calendar.getUTCDate() === Number(day)
-    && Number(hour) <= 23
-    && Number(minute) <= 59
-    && Number(second) <= 59
-    && Number(offsetHour) <= 23
-    && Number(offsetMinute) <= 59;
+  return calendar.getUTCFullYear() === Number(year) && calendar.getUTCMonth() + 1 === Number(month) && calendar.getUTCDate() === Number(day) && Number(hour) <= 23 && Number(minute) <= 59 && Number(second) <= 59 && Number(offsetHour) <= 23 && Number(offsetMinute) <= 59;
 }
 
-function correction(
-  message: string,
-  classification: "schema_violation" | "conflict" = "schema_violation",
-  recovery = "Rerun audit against current project files, obtain explicit user confirmation for the returned proposal_digest, and retry the same glossary publish command.",
-): never {
+function correction(message: string, classification: "schema_violation" | "conflict" = "schema_violation", recovery = "Rerun audit against current project files, obtain explicit user confirmation for the returned proposal_digest, and retry the same glossary publish command."): never {
   reject({
     class: classification,
     message,
@@ -106,10 +88,7 @@ function confirmation(value: unknown, digest: string): Confirmation {
 }
 
 function revalidateEvidence(root: ValidatedProjectRoot, proposalValue: TerminologyDriftFinding): void {
-  const groups = [
-    { term: proposalValue.proposed_canonical_term, evidence: proposalValue.canonical_evidence },
-    ...proposalValue.variants,
-  ];
+  const groups = [{ term: proposalValue.proposed_canonical_term, evidence: proposalValue.canonical_evidence }, ...proposalValue.variants];
   for (const group of groups) {
     for (const record of group.evidence) {
       assertValidatedProjectRoot(root);
@@ -169,7 +148,11 @@ function parseApproval(value: unknown, index: number): { approval: ProjectGlossa
     correction(`existing approvals[${index}] has conflicting digest identity`, "conflict");
   }
   return {
-    approval: { proposal_digest: proposed.proposal_digest, proposal: proposed as TerminologyDriftFinding & JsonObject, confirmation: confirmed },
+    approval: {
+      proposal_digest: proposed.proposal_digest,
+      proposal: proposed as TerminologyDriftFinding & JsonObject,
+      confirmation: confirmed,
+    },
     entry: deriveEntry(proposed, confirmed),
   };
 }
@@ -223,9 +206,7 @@ function validateCandidateBytes(bytes: string): ProjectGlossaryDocument {
   return parseProjectGlossaryDocument(bytes);
 }
 
-export function loadProjectGlossaryDocument(
-  projectRoot: string,
-): { path: string; document: ProjectGlossaryDocument } | null {
+export function loadProjectGlossaryDocument(projectRoot: string): { path: string; document: ProjectGlossaryDocument } | null {
   const record = loadArtifactRecord("glossary");
   if (!record) correction("registered glossary artifact is unavailable");
   const target = resolveArtifactPath(record, projectRoot);
@@ -233,11 +214,7 @@ export function loadProjectGlossaryDocument(
   return { path: target, document: parseProjectGlossaryDocument(fs.readFileSync(target, "utf8")) };
 }
 
-export function publishGlossary(
-  req: StateWriteRequest,
-  root: ValidatedProjectRoot,
-  options: StateMutationOptions = {},
-): StateWriteEnvelope {
+export function publishGlossary(req: StateWriteRequest, root: ValidatedProjectRoot, options: StateMutationOptions = {}): StateWriteEnvelope {
   if (!req.input || !exactFields(req.input, REQUEST_FIELDS) || req.input.schema_version !== REQUEST_VERSION) {
     correction(`publication request must use ${REQUEST_VERSION} and contain only proposal and confirmation`);
   }
@@ -252,56 +229,59 @@ export function publishGlossary(
   const record = loadArtifactRecord("glossary");
   if (!record) correction("registered glossary artifact is unavailable");
 
-  return withStateMutation(root.path, (transaction) => {
-    assertValidatedProjectRoot(root);
-    const target = resolveArtifactPath(record, root.path, { strictWrite: true });
-    const relativePath = path.relative(root.path, target).split(path.sep).join("/");
-    revalidateEvidence(root, proposed);
-    const previousBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
-    const current: ProjectGlossaryDocument = previousBytes
-      ? parseProjectGlossaryDocument(previousBytes)
-      : { schema_version: DOCUMENT_VERSION, approvals: [], entries: [] };
-    const approvalIndex = current.approvals.findIndex((item) => item.proposal_digest === proposed.proposal_digest);
-    const termIndex = current.entries.findIndex((item) => unicodeCaselessExact(String(item.term), proposed.proposed_canonical_term));
-    if (approvalIndex >= 0 || termIndex >= 0) {
-      if (approvalIndex === termIndex && approvalIndex >= 0 && same(current.approvals[approvalIndex], approval) && same(current.entries[termIndex], entry)) {
-        return {
-          schemaVersion: "agentera.stateWrite.v1",
-          status: "pass",
-          command: "state glossary publish",
-          artifact: "glossary",
-          path: relativePath,
-          operation: { dry_run: req.dryRun, changed: false, idempotent_replay: true },
-          candidate: current,
-        };
+  return withStateMutation(
+    root.path,
+    (transaction) => {
+      assertValidatedProjectRoot(root);
+      const target = resolveArtifactPath(record, root.path, { strictWrite: true });
+      const relativePath = path.relative(root.path, target).split(path.sep).join("/");
+      revalidateEvidence(root, proposed);
+      const previousBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
+      const current: ProjectGlossaryDocument = previousBytes ? parseProjectGlossaryDocument(previousBytes) : { schema_version: DOCUMENT_VERSION, approvals: [], entries: [] };
+      const approvalIndex = current.approvals.findIndex((item) => item.proposal_digest === proposed.proposal_digest);
+      const termIndex = current.entries.findIndex((item) => unicodeCaselessExact(String(item.term), proposed.proposed_canonical_term));
+      if (approvalIndex >= 0 || termIndex >= 0) {
+        if (approvalIndex === termIndex && approvalIndex >= 0 && same(current.approvals[approvalIndex], approval) && same(current.entries[termIndex], entry)) {
+          return {
+            schemaVersion: "agentera.stateWrite.v1",
+            status: "pass",
+            command: "state glossary publish",
+            artifact: "glossary",
+            path: relativePath,
+            operation: { dry_run: req.dryRun, changed: false, idempotent_replay: true },
+            candidate: current,
+          };
+        }
+        correction(`confirmed term '${proposed.proposed_canonical_term}' conflicts with existing approval or entry state`, "conflict");
       }
-      correction(`confirmed term '${proposed.proposed_canonical_term}' conflicts with existing approval or entry state`, "conflict");
-    }
-    const candidate: ProjectGlossaryDocument = {
-      schema_version: DOCUMENT_VERSION,
-      approvals: [...current.approvals, approval],
-      entries: [...current.entries, entry],
-    };
-    const bytes = dumpYamlMapping(candidate);
-    validateCandidateBytes(bytes);
-    if (!req.dryRun) {
-      const stage = transaction.stageProjection(target, bytes);
-      try {
-        transaction.syncStaged(stage);
-        assertValidatedProjectRoot(root);
-        transaction.publishProjection(stage, target, previousBytes);
-      } finally {
-        transaction.removeStage(stage);
+      const candidate: ProjectGlossaryDocument = {
+        schema_version: DOCUMENT_VERSION,
+        approvals: [...current.approvals, approval],
+        entries: [...current.entries, entry],
+      };
+      const bytes = dumpYamlMapping(candidate);
+      validateCandidateBytes(bytes);
+      if (!req.dryRun) {
+        const stage = transaction.stageProjection(target, bytes);
+        try {
+          transaction.syncStaged(stage);
+          assertValidatedProjectRoot(root);
+          transaction.publishProjection(stage, target, previousBytes);
+        } finally {
+          transaction.removeStage(stage);
+        }
       }
-    }
-    return {
-      schemaVersion: "agentera.stateWrite.v1",
-      status: "pass",
-      command: "state glossary publish",
-      artifact: "glossary",
-      path: relativePath,
-      operation: { dry_run: req.dryRun, changed: true, idempotent_replay: false },
-      candidate,
-    };
-  }, options, root);
+      return {
+        schemaVersion: "agentera.stateWrite.v1",
+        status: "pass",
+        command: "state glossary publish",
+        artifact: "glossary",
+        path: relativePath,
+        operation: { dry_run: req.dryRun, changed: true, idempotent_replay: false },
+        candidate,
+      };
+    },
+    options,
+    root,
+  );
 }

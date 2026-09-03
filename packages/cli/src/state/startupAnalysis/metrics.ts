@@ -1,17 +1,9 @@
 import type { JsonObject } from "../../core/jsonValue.js";
-import {
-  inc,
-  counterDict,
-  nowIsoSeconds,
-  flt,
-  pyRound,
-  safeInt,
-} from "./helpers.js";
+import { inc, counterDict, nowIsoSeconds, flt, pyRound, safeInt } from "./helpers.js";
 import { boundedRuntimeStatus } from "./threshold.js";
 
 export const STARTUP_METRICS_ENVELOPE = "startup_state_metrics_v1";
 export const TOKEN_ESTIMATOR_VERSION = "approx_bytes_div_4_v1";
-
 
 function mergeTokenEstimates(counter: Record<string, number>, value: unknown): void {
   if (!value || typeof value !== "object" || Array.isArray(value)) return;
@@ -28,9 +20,7 @@ function sequenceCount(sequence: JsonObject, eventClass: string): number {
     return (counts as JsonObject)[eventClass] as number;
   }
   const events = Array.isArray(sequence.events) ? sequence.events : [];
-  return events.filter(
-    (event) => Boolean(event && typeof event === "object" && !Array.isArray(event) && (event as JsonObject).event_class === eventClass),
-  ).length;
+  return events.filter((event) => Boolean(event && typeof event === "object" && !Array.isArray(event) && (event as JsonObject).event_class === eventClass)).length;
 }
 
 function distribution(values: number[]): JsonObject {
@@ -45,7 +35,9 @@ function distribution(values: number[]): JsonObject {
   const histCounts: Record<string, number> = {};
   for (const v of ordered) histCounts[v] = (histCounts[v] ?? 0) + 1;
   const histogram: Record<string, number> = {};
-  for (const key of Object.keys(histCounts).map(Number).sort((a, b) => a - b)) {
+  for (const key of Object.keys(histCounts)
+    .map(Number)
+    .sort((a, b) => a - b)) {
     histogram[String(key)] = histCounts[key];
   }
   return {
@@ -65,15 +57,7 @@ function unionAll(map: Record<string, Set<string>>): Set<string> {
   return out;
 }
 
-function deriveStateThresholds(args: {
-  totalSequences: number;
-  perCapability: Record<string, JsonObject>;
-  rawAfterCliPerSequence: number[];
-  redundantRawPerSequence: number[];
-  redundantCounts: Record<string, number>;
-  redundantCapabilities: Record<string, Set<string>>;
-  confidenceCaveats: string[];
-}): JsonObject {
+function deriveStateThresholds(args: { totalSequences: number; perCapability: Record<string, JsonObject>; rawAfterCliPerSequence: number[]; redundantRawPerSequence: number[]; redundantCounts: Record<string, number>; redundantCapabilities: Record<string, Set<string>>; confidenceCaveats: string[] }): JsonObject {
   const capabilityCount = Object.keys(args.perCapability).length;
   const credibleDistribution = args.totalSequences >= 3;
   const rawDistribution = distribution(args.rawAfterCliPerSequence);
@@ -89,17 +73,13 @@ function deriveStateThresholds(args: {
     }
   }
   const redundantSequenceCount = args.redundantRawPerSequence.filter((v) => v > 0).length;
-  const aggregateRedundantCapabilities =
-    Object.keys(args.redundantCapabilities).length > 0 ? unionAll(args.redundantCapabilities) : new Set<string>();
+  const aggregateRedundantCapabilities = Object.keys(args.redundantCapabilities).length > 0 ? unionAll(args.redundantCapabilities) : new Set<string>();
 
   let redundantSequenceThreshold: number | null;
   let thresholdReason: string;
   if (credibleDistribution) {
     redundantSequenceThreshold = Math.max(2, Math.ceil(args.totalSequences * 0.2));
-    thresholdReason =
-      "Selected from post-boundary state-gathering distribution: raw artifact " +
-      "access after CLI state must recur in at least 20% of measured sequences, " +
-      "with a floor of two sequences.";
+    thresholdReason = "Selected from post-boundary state-gathering distribution: raw artifact " + "access after CLI state must recur in at least 20% of measured sequences, " + "with a floor of two sequences.";
   } else {
     redundantSequenceThreshold = null;
     thresholdReason = "No broad-envelope threshold: fewer than three state-gathering sequences were measured.";
@@ -133,10 +113,7 @@ function deriveStateThresholds(args: {
 
   let recommendation: JsonObject;
   if (broadTrigger !== null) {
-    const trigger = broadTrigger.aggregate
-      ? `redundant_raw_artifact_access in ${broadTrigger.count} of ${args.totalSequences} state sequences`
-      : `raw_artifact_access_after_cli:${broadTrigger.artifact_label} repeated ` +
-        `${broadTrigger.count} times across ${broadTrigger.capability_count} capabilities`;
+    const trigger = broadTrigger.aggregate ? `redundant_raw_artifact_access in ${broadTrigger.count} of ${args.totalSequences} state sequences` : `raw_artifact_access_after_cli:${broadTrigger.artifact_label} repeated ` + `${broadTrigger.count} times across ${broadTrigger.capability_count} capabilities`;
     recommendation = {
       action: "plan_cli_startup_envelope",
       measured_trigger: trigger,
@@ -179,8 +156,7 @@ function deriveStateThresholds(args: {
       },
       targeted_guidance: {
         credible: Object.keys(redundantArtifacts).length > 0,
-        selection_reason:
-          "Selected when raw artifact access after CLI state is narrow or below the broad-envelope threshold.",
+        selection_reason: "Selected when raw artifact access after CLI state is narrow or below the broad-envelope threshold.",
       },
     },
     recommendation,
@@ -269,9 +245,7 @@ export function aggregateStartupMetrics(intermediateInput: JsonObject): JsonObje
   }
 
   const totalSequences = sequences.filter((s) => Boolean(s && typeof s === "object" && !Array.isArray(s))).length;
-  const runtimeCoverage = (Array.isArray(intermediate.runtime_coverage) ? intermediate.runtime_coverage : [])
-    .filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s)))
-    .map((s) => boundedRuntimeStatus(s));
+  const runtimeCoverage = (Array.isArray(intermediate.runtime_coverage) ? intermediate.runtime_coverage : []).filter((s): s is JsonObject => Boolean(s && typeof s === "object" && !Array.isArray(s))).map((s) => boundedRuntimeStatus(s));
   const runtimeStatusCounts: Record<string, number> = {};
   for (const status of runtimeCoverage) {
     const st = status.status;
@@ -296,10 +270,7 @@ export function aggregateStartupMetrics(intermediateInput: JsonObject): JsonObje
   });
   const sequencesWithRaw = rawAfterCliPerSequence.filter((v) => v > 0).length;
   const sequencesWithRedundant = redundantRawPerSequence.filter((v) => v > 0).length;
-  const recommendation =
-    thresholdDerivation.recommendation && typeof thresholdDerivation.recommendation === "object" && !Array.isArray(thresholdDerivation.recommendation)
-      ? thresholdDerivation.recommendation
-      : {};
+  const recommendation = thresholdDerivation.recommendation && typeof thresholdDerivation.recommendation === "object" && !Array.isArray(thresholdDerivation.recommendation) ? thresholdDerivation.recommendation : {};
 
   const sortedPerCapability: Record<string, JsonObject> = {};
   for (const key of Object.keys(perCapability).sort()) sortedPerCapability[key] = perCapability[key];

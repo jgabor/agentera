@@ -13,9 +13,7 @@ const OWNER_PREPARATION_NAME = ".owner.json.tmp";
 const CLAIM_NAME = ".reclaim.json";
 const MAX_OWNER_BYTES = 8 * 1024;
 const MAX_RECOVERY_ENTRIES = 128;
-const DIRECTORY_FLAGS = fs.constants.O_RDONLY
-  | (fs.constants.O_DIRECTORY ?? 0)
-  | (fs.constants.O_NOFOLLOW ?? 0);
+const DIRECTORY_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_DIRECTORY ?? 0) | (fs.constants.O_NOFOLLOW ?? 0);
 const FILE_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
 const PRIVATE_NAME = /^\.writer\.(?:(\d+)\.)?([0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})\.tmp$/;
 const LEGACY_CLAIM_NAME = /^\.writer\.[0-9a-f-]{36}\.claim$/;
@@ -45,11 +43,7 @@ interface DirectoryInspection {
   owner: RecordInspection;
 }
 
-type LockInspection =
-  | { state: "absent" }
-  | DirectoryInspection
-  | { state: "legacy_file"; fd: number }
-  | { state: "unsupported"; kind: string };
+type LockInspection = { state: "absent" } | DirectoryInspection | { state: "legacy_file"; fd: number } | { state: "unsupported"; kind: string };
 
 interface PreparedLock {
   path: string;
@@ -67,14 +61,15 @@ type PrivateRecovery = "recovered" | "live" | "unknown";
 
 function lockRecord(value: unknown): LockRecord | null {
   if (
-    value === null
-    || typeof value !== "object"
-    || !Number.isSafeInteger((value as { pid?: unknown }).pid)
-    || (value as { pid: number }).pid <= 0
-    || typeof (value as { token?: unknown }).token !== "string"
-    || (value as { token: string }).token.length === 0
-    || typeof (value as { created_at?: unknown }).created_at !== "string"
-  ) return null;
+    value === null ||
+    typeof value !== "object" ||
+    !Number.isSafeInteger((value as { pid?: unknown }).pid) ||
+    (value as { pid: number }).pid <= 0 ||
+    typeof (value as { token?: unknown }).token !== "string" ||
+    (value as { token: string }).token.length === 0 ||
+    typeof (value as { created_at?: unknown }).created_at !== "string"
+  )
+    return null;
   return value as LockRecord;
 }
 
@@ -88,9 +83,7 @@ function sameIdentity(left: FileIdentity, right: FileIdentity): boolean {
 }
 
 function sameRecord(left: LockRecord, right: LockRecord): boolean {
-  return left.pid === right.pid
-    && left.token === right.token
-    && left.created_at === right.created_at;
+  return left.pid === right.pid && left.token === right.token && left.created_at === right.created_at;
 }
 
 function fdPath(fd: number, name?: string): string {
@@ -186,7 +179,10 @@ function inspectLock(lockPath: string): LockInspection {
     }
     if (stat.isDirectory() && !stat.isSymbolicLink()) continue;
     if (!stat.isFile() || stat.isSymbolicLink()) {
-      return { state: "unsupported", kind: stat.isSymbolicLink() ? "symbolic link" : "non-file entry" };
+      return {
+        state: "unsupported",
+        kind: stat.isSymbolicLink() ? "symbolic link" : "non-file entry",
+      };
     }
     try {
       const fd = fs.openSync(lockPath, FILE_FLAGS);
@@ -271,13 +267,7 @@ function recordCanBeRecovered(inspection: RecordInspection, token?: string): boo
   return (token === undefined || inspection.record!.token === token) && ownerIsDead(inspection.record!);
 }
 
-function recoverPrivateDirectory(
-  parentFd: number,
-  name: string,
-  token: string,
-  pid: number | undefined,
-  transitionedTokens: ReadonlySet<string>,
-): PrivateRecovery {
+function recoverPrivateDirectory(parentFd: number, name: string, token: string, pid: number | undefined, transitionedTokens: ReadonlySet<string>): PrivateRecovery {
   // Preparation may pause indefinitely; only positive owner-death evidence permits mutation.
   const privatePath = fdPath(parentFd, name);
   let directoryFd: number | undefined;
@@ -293,9 +283,7 @@ function recoverPrivateDirectory(
       if (names.length === 0) {
         if (namedPidState === "live") return "live";
         if (!transitioned && namedPidState !== "dead") return "unknown";
-        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
-          ? "recovered"
-          : "unknown";
+        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name) ? "recovered" : "unknown";
       }
       if (names.includes(OWNER_PREPARATION_NAME)) {
         if (names.length !== 1) return "unknown";
@@ -305,26 +293,21 @@ function recoverPrivateDirectory(
             if (entryAbsent(directoryFd, OWNER_PREPARATION_NAME)) continue;
             return "unknown";
           }
-          if (
-            preparation.state === "valid"
-            && (preparation.record!.token !== token || preparation.record!.pid !== pid)
-          ) return "unknown";
+          if (preparation.state === "valid" && (preparation.record!.token !== token || preparation.record!.pid !== pid)) return "unknown";
           if (namedPidState === "live") return "live";
           if (namedPidState !== "dead") return "unknown";
           unlinkPinnedFile(directoryFd, OWNER_PREPARATION_NAME, preparation.fd);
-          return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
-            ? "recovered"
-            : "unknown";
+          return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name) ? "recovered" : "unknown";
         } finally {
           closeRecord(preparation);
         }
       }
-      if (
-        names.length > MAX_RECOVERY_ENTRIES
-        || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))
-      ) return "unknown";
+      if (names.length > MAX_RECOVERY_ENTRIES || names.some((entry) => entry !== OWNER_NAME && !LEGACY_CLAIM_NAME.test(entry))) return "unknown";
 
-      const records = names.map((entry) => ({ entry, inspection: inspectRecord(directoryFd!, entry) }));
+      const records = names.map((entry) => ({
+        entry,
+        inspection: inspectRecord(directoryFd!, entry),
+      }));
       try {
         const missing = records.filter(({ inspection }) => !inspection.file || inspection.fd === undefined);
         if (missing.length > 0) {
@@ -334,27 +317,18 @@ function recoverPrivateDirectory(
         if (records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.token !== token)) {
           return "unknown";
         }
-        if (
-          pid !== undefined
-          && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)
-        ) return "unknown";
+        if (pid !== undefined && records.some(({ inspection }) => inspection.state === "valid" && inspection.record!.pid !== pid)) return "unknown";
         const validRecords = records.filter(({ inspection }) => inspection.state === "valid");
         const recordPidStates = validRecords.map(({ inspection }) => pidState(inspection.record!.pid));
         if (namedPidState === "indeterminate" || recordPidStates.includes("indeterminate")) return "unknown";
-        const fullyInitializedLivePreparation = pid !== undefined
-          && namedPidState === "live"
-          && records.every(({ inspection }) => inspection.state === "valid")
-          && records.some(({ entry }) => entry === OWNER_NAME)
-          && recordPidStates.every((state) => state === "live");
+        const fullyInitializedLivePreparation = pid !== undefined && namedPidState === "live" && records.every(({ inspection }) => inspection.state === "valid") && records.some(({ entry }) => entry === OWNER_NAME) && recordPidStates.every((state) => state === "live");
         if (fullyInitializedLivePreparation) return "live";
         if (namedPidState === "live" || recordPidStates.includes("live")) return "unknown";
         if (!transitioned && (pid === undefined || namedPidState !== "dead")) return "unknown";
         for (const { entry, inspection } of records) {
           unlinkPinnedFile(directoryFd, entry, inspection.fd!);
         }
-        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name)
-          ? "recovered"
-          : "unknown";
+        return removePinnedDirectory(parentFd, name, directoryFd) || entryAbsent(parentFd, name) ? "recovered" : "unknown";
       } finally {
         for (const { inspection } of records) closeRecord(inspection);
       }
@@ -392,11 +366,15 @@ function staleTransitionTokens(parentFd: number): Set<string> {
 }
 
 function recoverPreparedLocks(parentFd: number, lockPath: string): boolean {
-  const candidates = fs.readdirSync(fdPath(parentFd), { withFileTypes: true })
+  const candidates = fs
+    .readdirSync(fdPath(parentFd), { withFileTypes: true })
     .map((entry) => ({ entry, match: PRIVATE_NAME.exec(entry.name) }))
     .filter(({ match }) => match !== null);
   if (candidates.length > MAX_RECOVERY_ENTRIES) {
-    privateResidue(lockPath, candidates.map(({ entry }) => entry.name));
+    privateResidue(
+      lockPath,
+      candidates.map(({ entry }) => entry.name),
+    );
   }
   const transitionedTokens = staleTransitionTokens(parentFd);
   const live: string[] = [];
@@ -406,13 +384,7 @@ function recoverPreparedLocks(parentFd: number, lockPath: string): boolean {
       unresolved.push(entry.name);
       continue;
     }
-    const recovery = recoverPrivateDirectory(
-      parentFd,
-      entry.name,
-      match![2]!,
-      match![1] === undefined ? undefined : Number(match![1]),
-      transitionedTokens,
-    );
+    const recovery = recoverPrivateDirectory(parentFd, entry.name, match![2]!, match![1] === undefined ? undefined : Number(match![1]), transitionedTokens);
     if (recovery === "live") live.push(entry.name);
     if (recovery === "unknown") unresolved.push(entry.name);
   }
@@ -434,11 +406,7 @@ function prepareLock(parentFd: number): PreparedLock {
   try {
     fs.mkdirSync(preparedPath, { mode: 0o700 });
     dirFd = fs.openSync(preparedPath, DIRECTORY_FLAGS);
-    ownerFd = fs.openSync(
-      fdPath(dirFd, ownerName),
-      fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
-      0o600,
-    );
+    ownerFd = fs.openSync(fdPath(dirFd, ownerName), fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
     fs.writeFileSync(ownerFd, `${JSON.stringify(record)}\n`);
     fs.fsyncSync(ownerFd);
     const validated = readRecord(ownerFd);
@@ -481,8 +449,7 @@ function disposePrepared(prepared: PreparedLock, parentFd: number): void {
     fs.closeSync(prepared.ownerFd);
     prepared.ownerFd = -1;
   }
-  const exactDirectory = prepared.dirFd >= 0
-    && pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS);
+  const exactDirectory = prepared.dirFd >= 0 && pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS);
   if (prepared.dirFd >= 0) {
     fs.closeSync(prepared.dirFd);
     prepared.dirFd = -1;
@@ -497,14 +464,7 @@ function disposePrepared(prepared: PreparedLock, parentFd: number): void {
   }
 }
 
-function verifyCanonicalLock(
-  projectDirectory: string,
-  parentFd: number,
-  lockPath: string,
-  lockFd: number,
-  ownerFd: number,
-  expected: LockRecord,
-): boolean {
+function verifyCanonicalLock(projectDirectory: string, parentFd: number, lockPath: string, lockFd: number, ownerFd: number, expected: LockRecord): boolean {
   if (!pathMatches(projectDirectory, parentFd, DIRECTORY_FLAGS)) return false;
   let canonicalFd: number | undefined;
   let canonicalOwnerFd: number | undefined;
@@ -528,16 +488,7 @@ function removeOwnedDirectory(parentFd: number, lockName: string, lockFd: number
   return removePinnedDirectory(parentFd, lockName, lockFd);
 }
 
-function writerLock(
-  projectDirectory: string,
-  lockPath: string,
-  lockName: string,
-  parentFd: number,
-  lockFd: number,
-  ownerFd: number,
-  record: LockRecord,
-  createdDirectory: boolean,
-): WriterLock {
+function writerLock(projectDirectory: string, lockPath: string, lockName: string, parentFd: number, lockFd: number, ownerFd: number, record: LockRecord, createdDirectory: boolean): WriterLock {
   let released = false;
   return {
     path: lockPath,
@@ -566,36 +517,17 @@ function writerLock(
   };
 }
 
-function publishPrepared(
-  prepared: PreparedLock,
-  projectDirectory: string,
-  parentFd: number,
-  lockPath: string,
-  lockName: string,
-  createdDirectory: boolean,
-): WriterLock | null {
+function publishPrepared(prepared: PreparedLock, projectDirectory: string, parentFd: number, lockPath: string, lockName: string, createdDirectory: boolean): WriterLock | null {
   try {
     fs.renameSync(prepared.path, fdPath(parentFd, lockName));
   } catch (error) {
-    if (
-      (error as NodeJS.ErrnoException).code === "ENOENT"
-      && !pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS)
-    ) return null;
+    if ((error as NodeJS.ErrnoException).code === "ENOENT" && !pathMatches(prepared.path, prepared.dirFd, DIRECTORY_FLAGS)) return null;
     if (renameConflict(error)) return null;
     throw error;
   }
   syncDirectory(parentFd);
   if (verifyCanonicalLock(projectDirectory, parentFd, lockPath, prepared.dirFd, prepared.ownerFd, prepared.record)) {
-    return writerLock(
-      projectDirectory,
-      lockPath,
-      lockName,
-      parentFd,
-      prepared.dirFd,
-      prepared.ownerFd,
-      prepared.record,
-      createdDirectory,
-    );
+    return writerLock(projectDirectory, lockPath, lockName, parentFd, prepared.dirFd, prepared.ownerFd, prepared.record, createdDirectory);
   }
   try {
     removeOwnedDirectory(parentFd, lockName, prepared.dirFd, prepared.ownerFd);
@@ -610,9 +542,7 @@ function publishPrepared(
 }
 
 function inspectedOwnerMatches(inspection: DirectoryInspection): boolean {
-  return inspection.owner.fd === undefined
-    ? entryAbsent(inspection.fd, OWNER_NAME)
-    : pathMatches(fdPath(inspection.fd, OWNER_NAME), inspection.owner.fd, FILE_FLAGS);
+  return inspection.owner.fd === undefined ? entryAbsent(inspection.fd, OWNER_NAME) : pathMatches(fdPath(inspection.fd, OWNER_NAME), inspection.owner.fd, FILE_FLAGS);
 }
 
 function recoverLegacyClaims(inspection: DirectoryInspection): boolean {
@@ -637,18 +567,9 @@ function removeClaim(inspection: DirectoryInspection, claim: ReclaimClaim): bool
   return removed;
 }
 
-function claimInspectedDirectory(
-  inspection: DirectoryInspection,
-  prepared: PreparedLock,
-  parentFd: number,
-  lockName: string,
-): ReclaimClaim | null {
+function claimInspectedDirectory(inspection: DirectoryInspection, prepared: PreparedLock, parentFd: number, lockName: string): ReclaimClaim | null {
   const canonicalPath = fdPath(parentFd, lockName);
-  if (
-    !pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS)
-    || !inspectedOwnerMatches(inspection)
-    || !recoverLegacyClaims(inspection)
-  ) return null;
+  if (!pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS) || !inspectedOwnerMatches(inspection) || !recoverLegacyClaims(inspection)) return null;
 
   const claimPath = fdPath(inspection.fd, CLAIM_NAME);
   try {
@@ -669,21 +590,14 @@ function claimInspectedDirectory(
   let claimFd: number | undefined;
   try {
     claimFd = fs.openSync(claimPath, FILE_FLAGS);
-    if (
-      !sameIdentity(identity(claimFd), identity(prepared.ownerFd))
-      || fs.fstatSync(claimFd, { bigint: true }).nlink !== 2n
-    ) {
+    if (!sameIdentity(identity(claimFd), identity(prepared.ownerFd)) || fs.fstatSync(claimFd, { bigint: true }).nlink !== 2n) {
       fs.closeSync(claimFd);
       unlinkPinnedFile(inspection.fd, CLAIM_NAME, prepared.ownerFd);
       return null;
     }
     const claim = { fd: claimFd };
     syncDirectory(inspection.fd);
-    if (
-      pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS)
-      && pathMatches(claimPath, claimFd, FILE_FLAGS)
-      && inspectedOwnerMatches(inspection)
-    ) return claim;
+    if (pathMatches(canonicalPath, inspection.fd, DIRECTORY_FLAGS) && pathMatches(claimPath, claimFd, FILE_FLAGS) && inspectedOwnerMatches(inspection)) return claim;
     removeClaim(inspection, claim);
     return null;
   } catch (error) {
@@ -697,15 +611,7 @@ function claimInspectedDirectory(
   }
 }
 
-function adoptInspectedDirectory(
-  inspection: DirectoryInspection,
-  prepared: PreparedLock,
-  projectDirectory: string,
-  parentFd: number,
-  lockPath: string,
-  lockName: string,
-  createdDirectory: boolean,
-): WriterLock | null {
+function adoptInspectedDirectory(inspection: DirectoryInspection, prepared: PreparedLock, projectDirectory: string, parentFd: number, lockPath: string, lockName: string, createdDirectory: boolean): WriterLock | null {
   const claim = claimInspectedDirectory(inspection, prepared, parentFd, lockName);
   if (!claim) return null;
 
@@ -744,16 +650,7 @@ function adoptInspectedDirectory(
       unlinkPinnedFile(inspection.fd, OWNER_NAME, prepared.ownerFd);
       return null;
     }
-    return writerLock(
-      projectDirectory,
-      lockPath,
-      lockName,
-      parentFd,
-      inspection.fd,
-      prepared.ownerFd,
-      prepared.record,
-      createdDirectory,
-    );
+    return writerLock(projectDirectory, lockPath, lockName, parentFd, inspection.fd, prepared.ownerFd, prepared.record, createdDirectory);
   } catch (error) {
     if (transitioned) {
       try {
@@ -794,7 +691,10 @@ function waitForContention(lockPath: string, deadline: number): void {
 
 function privateResidue(lockPath: string, names: string[]): never {
   const directory = path.dirname(lockPath);
-  const listed = names.slice(0, 3).map((name) => `'${path.join(directory, name)}'`).join(", ");
+  const listed = names
+    .slice(0, 3)
+    .map((name) => `'${path.join(directory, name)}'`)
+    .join(", ");
   const omitted = names.length > 3 ? `, and ${names.length - 3} more` : "";
   reject({
     class: "conflict",
@@ -823,10 +723,7 @@ function cleanupCreatedDirectory(projectDirectory: string, createdDirectory: boo
   }
 }
 
-function openProjectDirectory(
-  projectRoot: string,
-  expectedRoot?: ValidatedProjectRoot,
-): { projectDirectory: string; createdDirectory: boolean; parentFd: number } {
+function openProjectDirectory(projectRoot: string, expectedRoot?: ValidatedProjectRoot): { projectDirectory: string; createdDirectory: boolean; parentFd: number } {
   if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
   const projectDirectory = path.join(projectRoot, ".agentera");
   assertRealpathBoundary(projectRoot, projectDirectory, "writer lock");
@@ -850,15 +747,8 @@ export interface WriterLock {
   release: () => void;
 }
 
-export function acquireWriterLock(
-  projectRoot: string,
-  timeoutMs = 2000,
-  expectedRoot?: ValidatedProjectRoot,
-): WriterLock {
-  const { projectDirectory, createdDirectory, parentFd } = openProjectDirectory(
-    projectRoot,
-    expectedRoot,
-  );
+export function acquireWriterLock(projectRoot: string, timeoutMs = 2000, expectedRoot?: ValidatedProjectRoot): WriterLock {
+  const { projectDirectory, createdDirectory, parentFd } = openProjectDirectory(projectRoot, expectedRoot);
   const lockName = ".writer.lock";
   const lockPath = path.join(projectDirectory, lockName);
   const anchoredLockPath = fdPath(parentFd, lockName);
@@ -875,14 +765,7 @@ export function acquireWriterLock(
     prepared = prepareLock(parentFd);
     while (true) {
       if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
-      const published = publishPrepared(
-        prepared,
-        projectDirectory,
-        parentFd,
-        lockPath,
-        lockName,
-        createdDirectory,
-      );
+      const published = publishPrepared(prepared, projectDirectory, parentFd, lockPath, lockName, createdDirectory);
       if (published) {
         try {
           if (expectedRoot) assertValidatedProjectRoot(expectedRoot);
@@ -907,19 +790,9 @@ export function acquireWriterLock(
       }
       if (existing.state === "unsupported") unsupportedLock(lockPath, existing.kind);
       if (existing.state === "directory") {
-        const reclaimable = existing.owner.state === "valid"
-          ? ownerIsDead(existing.owner.record!)
-          : existing.owner.stale;
+        const reclaimable = existing.owner.state === "valid" ? ownerIsDead(existing.owner.record!) : existing.owner.stale;
         if (reclaimable) {
-          const lock = adoptInspectedDirectory(
-            existing,
-            prepared,
-            projectDirectory,
-            parentFd,
-            lockPath,
-            lockName,
-            createdDirectory,
-          );
+          const lock = adoptInspectedDirectory(existing, prepared, projectDirectory, parentFd, lockPath, lockName, createdDirectory);
           if (lock) return lock;
         }
       }

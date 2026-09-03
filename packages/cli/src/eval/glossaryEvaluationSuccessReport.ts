@@ -29,20 +29,7 @@ import {
 
 const MAX_SUCCESS_REPORT_UTF8_BYTES = 1_048_576;
 const POLICY_PATH = "references/artifacts/glossary-entry-contract.yaml";
-const SUCCESS_REPORT_FIELDS = [
-  "schemaVersion",
-  "status",
-  "report",
-  "authority",
-  "policy",
-  "holdout",
-  "behavior_fixture",
-  "observations",
-  "metrics",
-  "metrics_sha256",
-  "gates",
-  "denominator_counts",
-] as const;
+const SUCCESS_REPORT_FIELDS = ["schemaVersion", "status", "report", "authority", "policy", "holdout", "behavior_fixture", "observations", "metrics", "metrics_sha256", "gates", "denominator_counts"] as const;
 
 export interface GlossaryEvaluationSuccessInput {
   returncode: number;
@@ -111,11 +98,7 @@ function currentBindings(root: string): CurrentBindings | null {
     const authority = loadGlossaryEvaluationAuthority(root);
     const holdout = loadGlossaryEvaluationHoldout(root);
     const behavior = loadGlossaryEvaluationBehaviorFixture(root);
-    if (
-      validateGlossaryEvaluationAuthority(authority).length > 0 ||
-      validateFrozenGlossaryHoldout(authority, holdout, holdoutBytes).length > 0 ||
-      validateFrozenGlossaryBehaviorFixture(authority, holdout, behavior, behaviorBytes).length > 0
-    ) {
+    if (validateGlossaryEvaluationAuthority(authority).length > 0 || validateFrozenGlossaryHoldout(authority, holdout, holdoutBytes).length > 0 || validateFrozenGlossaryBehaviorFixture(authority, holdout, behavior, behaviorBytes).length > 0) {
       return null;
     }
     return {
@@ -134,11 +117,7 @@ function currentBindings(root: string): CurrentBindings | null {
   }
 }
 
-function passedMetric(
-  value: unknown,
-  expectedMetric: GlossaryMetricId,
-  authority: Mapping,
-): MetricResult | null {
+function passedMetric(value: unknown, expectedMetric: GlossaryMetricId, authority: Mapping): MetricResult | null {
   const source = record(value);
   if (source === null || source.metric !== expectedMetric) return null;
   const uncertainty = record(source.uncertainty);
@@ -217,20 +196,10 @@ function validObservationSeams(value: unknown, counts: GlossaryEvaluationCaseCou
   if (seams === null || seams.length !== expected.length) return false;
   return expected.every(([metric, family, producer, hasAbstentions], index) => {
     const seam = record(seams[index]);
-    if (seam === null || !exactFields(seam, hasAbstentions
-      ? ["metric", "producer", "cases", "candidates", "abstentions"]
-      : ["metric", "producer", "cases", "candidates"])) return false;
+    if (seam === null || !exactFields(seam, hasAbstentions ? ["metric", "producer", "cases", "candidates", "abstentions"] : ["metric", "producer", "cases", "candidates"])) return false;
     const candidates = seam.candidates;
     const abstentions = seam.abstentions;
-    return seam.metric === metric &&
-      seam.producer === producer &&
-      seam.cases === counts[family] &&
-      nonNegativeInteger(candidates) &&
-      candidates <= counts[family] &&
-      (!hasAbstentions || (
-        nonNegativeInteger(abstentions) &&
-        candidates + abstentions <= counts[family]
-      ));
+    return seam.metric === metric && seam.producer === producer && seam.cases === counts[family] && nonNegativeInteger(candidates) && candidates <= counts[family] && (!hasAbstentions || (nonNegativeInteger(abstentions) && candidates + abstentions <= counts[family]));
   });
 }
 
@@ -258,21 +227,13 @@ function validBindings(source: Mapping, bindings: CurrentBindings): boolean {
     case_counts: bindings.behaviorCaseCounts,
   };
   const observations = record(source.observations);
-  return same(source.authority, expectedAuthority) &&
+  return (
+    same(source.authority, expectedAuthority) &&
     same(source.policy, expectedPolicy) &&
     same(source.holdout, expectedHoldout) &&
     same(source.behavior_fixture, expectedBehavior) &&
     observations !== null &&
-    exactFields(observations, [
-      "schema_version",
-      "source",
-      "sha256",
-      "holdout_fixture_sha256",
-      "behavior_fixture_sha256",
-      "case_counts",
-      "seams",
-      "effects",
-    ]) &&
+    exactFields(observations, ["schema_version", "source", "sha256", "holdout_fixture_sha256", "behavior_fixture_sha256", "case_counts", "seams", "effects"]) &&
     observations.schema_version === "agentera.personalGlossaryEvaluationObservations.v2" &&
     observations.source === "current_product_behavior" &&
     isLowerSha256(observations.sha256) &&
@@ -280,7 +241,8 @@ function validBindings(source: Mapping, bindings: CurrentBindings): boolean {
     observations.behavior_fixture_sha256 === expectedBehavior.fixture_sha256 &&
     same(observations.case_counts, bindings.holdoutCaseCounts) &&
     same(observations.effects, []) &&
-    validObservationSeams(observations.seams, bindings.holdoutCaseCounts);
+    validObservationSeams(observations.seams, bindings.holdoutCaseCounts)
+  );
 }
 
 function validReleaseReport(source: Mapping, metrics: MetricResult[]): boolean {
@@ -312,22 +274,15 @@ function validReleaseReport(source: Mapping, metrics: MetricResult[]): boolean {
     },
     release_authorizing: "pass",
   };
-  const denominatorCounts = Object.fromEntries(
-    metrics.map(({ metric, denominator }) => [metric, denominator]),
-  );
-  return same(source.report, expectedReport) &&
-    same(source.gates, expectedGates) &&
-    same(source.denominator_counts, denominatorCounts);
+  const denominatorCounts = Object.fromEntries(metrics.map(({ metric, denominator }) => [metric, denominator]));
+  return same(source.report, expectedReport) && same(source.gates, expectedGates) && same(source.denominator_counts, denominatorCounts);
 }
 
 /**
  * Accept only the current, complete, successful glossary evaluator report.
  * This parser reads authority inputs but never imports or runs the evaluator.
  */
-export function validateGlossaryEvaluationSuccessReport(
-  result: GlossaryEvaluationSuccessInput,
-  root: string = resolveSourceRoot(),
-): GlossaryEvaluationSuccessReport | null {
+export function validateGlossaryEvaluationSuccessReport(result: GlossaryEvaluationSuccessInput, root: string = resolveSourceRoot()): GlossaryEvaluationSuccessReport | null {
   if (result.returncode !== 0 || Buffer.byteLength(result.stdout, "utf8") > MAX_SUCCESS_REPORT_UTF8_BYTES) {
     return null;
   }
@@ -337,12 +292,7 @@ export function validateGlossaryEvaluationSuccessReport(
   } catch {
     return null;
   }
-  if (
-    source === null ||
-    !exactFields(source, SUCCESS_REPORT_FIELDS) ||
-    source.schemaVersion !== GLOSSARY_EVALUATION_SCHEMA_VERSION ||
-    source.status !== "pass"
-  ) {
+  if (source === null || !exactFields(source, SUCCESS_REPORT_FIELDS) || source.schemaVersion !== GLOSSARY_EVALUATION_SCHEMA_VERSION || source.status !== "pass") {
     return null;
   }
   const bindings = currentBindings(root);
@@ -357,12 +307,7 @@ export function validateGlossaryEvaluationSuccessReport(
     metrics.push(passed);
   }
   const metricsSha256 = source.metrics_sha256;
-  if (
-    !isLowerSha256(metricsSha256) ||
-    metricsSha256 !== canonicalDigest(metrics) ||
-    canonicalDigest(sourceMetrics) !== canonicalDigest(metrics) ||
-    !validReleaseReport(source, metrics)
-  ) {
+  if (!isLowerSha256(metricsSha256) || metricsSha256 !== canonicalDigest(metrics) || canonicalDigest(sourceMetrics) !== canonicalDigest(metrics) || !validReleaseReport(source, metrics)) {
     return null;
   }
   return { metrics, metrics_sha256: metricsSha256 };

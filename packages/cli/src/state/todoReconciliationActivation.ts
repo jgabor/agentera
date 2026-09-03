@@ -44,18 +44,9 @@ export function todoLegacyRowFingerprint(section: string, line: string): string 
   return createHash("sha256").update(section).update("\0").update(line).digest("hex");
 }
 
-export function todoReconciliationActivationBytes(
-  retainedLegacyRows: Iterable<string>,
-  effectSha256?: string,
-  effectOperation: "activate" | "repair" | "correct-owners" = "activate",
-  ownerMappingSha256?: string,
-): string {
+export function todoReconciliationActivationBytes(retainedLegacyRows: Iterable<string>, effectSha256?: string, effectOperation: "activate" | "repair" | "correct-owners" = "activate", ownerMappingSha256?: string): string {
   const retained = [...retainedLegacyRows].sort();
-  if (
-    retained.length > TODO_RECONCILIATION_ITEM_LIMIT
-    || new Set(retained).size !== retained.length
-    || retained.some((digest) => !SHA256.test(digest))
-  ) activationFailure("TODO reconciliation activation has invalid retained legacy-row identities");
+  if (retained.length > TODO_RECONCILIATION_ITEM_LIMIT || new Set(retained).size !== retained.length || retained.some((digest) => !SHA256.test(digest))) activationFailure("TODO reconciliation activation has invalid retained legacy-row identities");
   if (effectSha256 !== undefined && !SHA256.test(effectSha256)) activationFailure("TODO reconciliation activation has an invalid effect authorization");
   if (ownerMappingSha256 !== undefined && !SHA256.test(ownerMappingSha256)) activationFailure("TODO reconciliation activation has an invalid owner-mapping authorization");
   if (effectOperation === "correct-owners" && (effectSha256 === undefined || ownerMappingSha256 === undefined)) activationFailure("TODO owner correction activation requires effect and owner-mapping authorization");
@@ -69,9 +60,7 @@ export function todoReconciliationActivationBytes(
   })}\n`;
 }
 
-export function loadTodoReconciliationActivation(
-  root: string,
-): { record: TodoReconciliationActivation; bytes: Buffer } | null {
+export function loadTodoReconciliationActivation(root: string): { record: TodoReconciliationActivation; bytes: Buffer } | null {
   const target = path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH);
   if (!fs.existsSync(target)) return null;
   const stat = fs.lstatSync(target);
@@ -93,22 +82,25 @@ export function loadTodoReconciliationActivation(
   }
   const record = value as Partial<TodoReconciliationActivation>;
   if (
-    !["retained_legacy_rows,schema_version", "effect_operation,effect_sha256,retained_legacy_rows,schema_version", "effect_operation,effect_sha256,owner_mapping_sha256,retained_legacy_rows,schema_version", "effect_sha256,retained_legacy_rows,schema_version"].includes(Object.keys(record).sort().join(","))
-    || record.schema_version !== TODO_RECONCILIATION_ACTIVATION_VERSION
-    || !Array.isArray(record.retained_legacy_rows)
-    || record.retained_legacy_rows.length > TODO_RECONCILIATION_ITEM_LIMIT
-    || record.retained_legacy_rows.some((digest) => typeof digest !== "string" || !SHA256.test(digest))
-    || new Set(record.retained_legacy_rows).size !== record.retained_legacy_rows.length
-    || (record.effect_sha256 !== undefined && (typeof record.effect_sha256 !== "string" || !SHA256.test(record.effect_sha256)))
-    || (record.effect_operation !== undefined && !["activate", "repair", "correct-owners"].includes(record.effect_operation))
-    || (record.owner_mapping_sha256 !== undefined && (typeof record.owner_mapping_sha256 !== "string" || !SHA256.test(record.owner_mapping_sha256)))
-    || (record.effect_operation === "correct-owners" && (record.effect_sha256 === undefined || record.owner_mapping_sha256 === undefined))
-    || (record.effect_operation !== "correct-owners" && record.owner_mapping_sha256 !== undefined)
-  ) activationFailure("TODO reconciliation activation has an invalid canonical record");
+    !["retained_legacy_rows,schema_version", "effect_operation,effect_sha256,retained_legacy_rows,schema_version", "effect_operation,effect_sha256,owner_mapping_sha256,retained_legacy_rows,schema_version", "effect_sha256,retained_legacy_rows,schema_version"].includes(Object.keys(record).sort().join(",")) ||
+    record.schema_version !== TODO_RECONCILIATION_ACTIVATION_VERSION ||
+    !Array.isArray(record.retained_legacy_rows) ||
+    record.retained_legacy_rows.length > TODO_RECONCILIATION_ITEM_LIMIT ||
+    record.retained_legacy_rows.some((digest) => typeof digest !== "string" || !SHA256.test(digest)) ||
+    new Set(record.retained_legacy_rows).size !== record.retained_legacy_rows.length ||
+    (record.effect_sha256 !== undefined && (typeof record.effect_sha256 !== "string" || !SHA256.test(record.effect_sha256))) ||
+    (record.effect_operation !== undefined && !["activate", "repair", "correct-owners"].includes(record.effect_operation)) ||
+    (record.owner_mapping_sha256 !== undefined && (typeof record.owner_mapping_sha256 !== "string" || !SHA256.test(record.owner_mapping_sha256))) ||
+    (record.effect_operation === "correct-owners" && (record.effect_sha256 === undefined || record.owner_mapping_sha256 === undefined)) ||
+    (record.effect_operation !== "correct-owners" && record.owner_mapping_sha256 !== undefined)
+  )
+    activationFailure("TODO reconciliation activation has an invalid canonical record");
   return { record: record as TodoReconciliationActivation, bytes };
 }
 
-function sha256(bytes: Buffer | string): string { return createHash("sha256").update(bytes).digest("hex"); }
+function sha256(bytes: Buffer | string): string {
+  return createHash("sha256").update(bytes).digest("hex");
+}
 export function todoActivationRisks(resurrectedIds: readonly string[]): JsonObject {
   return {
     resurrected_count: resurrectedIds.length,
@@ -117,38 +109,84 @@ export function todoActivationRisks(resurrectedIds: readonly string[]): JsonObje
   };
 }
 function boundedPublicChanges(before: string, after: string): JsonObject {
-  const beforeLines = before.split(/\r?\n/); const afterLines = after.split(/\r?\n/); const changes: JsonObject[] = []; let count = 0;
+  const beforeLines = before.split(/\r?\n/);
+  const afterLines = after.split(/\r?\n/);
+  const changes: JsonObject[] = [];
+  let count = 0;
   for (let index = 0; index < Math.max(beforeLines.length, afterLines.length); index += 1) {
-    if (beforeLines[index] === afterLines[index]) continue; count += 1;
-    if (changes.length < TODO_ACTIVATION_RISK_LIMIT) changes.push({ line: index + 1, before: (beforeLines[index] ?? "").slice(0, 240), after: (afterLines[index] ?? "").slice(0, 240) });
+    if (beforeLines[index] === afterLines[index]) continue;
+    count += 1;
+    if (changes.length < TODO_ACTIVATION_RISK_LIMIT)
+      changes.push({
+        line: index + 1,
+        before: (beforeLines[index] ?? "").slice(0, 240),
+        after: (afterLines[index] ?? "").slice(0, 240),
+      });
   }
   return { count, items: changes, omitted_count: count - changes.length };
 }
 export function todoActivationEffect(scan: { matchedRows: number; convertedRows: number; retainedLegacyRows: string[] }, targets: readonly TodoReconciliationTarget[], publicPath: string, markdownBefore: Buffer, rendered: string, resurrectedIds: readonly string[]): JsonObject {
-  const changedTargets = targets.filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after))).map((target) => ({ path: target.path, before_sha256: target.before === null ? null : sha256(target.before), after_sha256: sha256(target.after) }));
-  const evidence: JsonObject = {
-    counts: { matched: scan.matchedRows, converted: scan.convertedRows, retained: scan.retainedLegacyRows.length, conflicting: 0 }, targets: changedTargets,
-    public_document: { path: publicPath, changed: !markdownBefore.equals(Buffer.from(rendered)), before_bytes: markdownBefore.length, after_bytes: Buffer.byteLength(rendered), before_sha256: sha256(markdownBefore), after_sha256: sha256(rendered), changed_lines: boundedPublicChanges(markdownBefore.toString("utf8"), rendered) },
-    risks: todoActivationRisks(resurrectedIds),
-  };
-  const authorizedTargets = changedTargets.map((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: "activation_effect_authorization" } : target);
-  return { ...evidence, effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })) };
-}
-export function unchangedTodoActivationEffect(publicPath: string, markdown: Buffer, retained: number, authorizedEffectSha256?: string): JsonObject {
-  const evidence: JsonObject = { counts: { matched: 0, converted: 0, retained, conflicting: 0 }, targets: [], public_document: { path: publicPath, changed: false, before_bytes: markdown.length, after_bytes: markdown.length, before_sha256: sha256(markdown), after_sha256: sha256(markdown), changed_lines: { count: 0, items: [], omitted_count: 0 } }, risks: todoActivationRisks([]) };
-  return { ...evidence, effect_sha256: authorizedEffectSha256 ?? sha256(canonicalRecordJson(evidence)) };
-}
-
-export function todoRepairEffect(
-  diagnosis: JsonObject,
-  targets: readonly TodoReconciliationTarget[],
-  publicPath: string,
-  markdownBefore: Buffer,
-  rendered: string,
-): JsonObject {
   const changedTargets = targets
     .filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after)))
-    .map((target) => ({ path: target.path, before_sha256: target.before === null ? null : sha256(target.before), after_sha256: sha256(target.after) }));
+    .map((target) => ({
+      path: target.path,
+      before_sha256: target.before === null ? null : sha256(target.before),
+      after_sha256: sha256(target.after),
+    }));
+  const evidence: JsonObject = {
+    counts: {
+      matched: scan.matchedRows,
+      converted: scan.convertedRows,
+      retained: scan.retainedLegacyRows.length,
+      conflicting: 0,
+    },
+    targets: changedTargets,
+    public_document: {
+      path: publicPath,
+      changed: !markdownBefore.equals(Buffer.from(rendered)),
+      before_bytes: markdownBefore.length,
+      after_bytes: Buffer.byteLength(rendered),
+      before_sha256: sha256(markdownBefore),
+      after_sha256: sha256(rendered),
+      changed_lines: boundedPublicChanges(markdownBefore.toString("utf8"), rendered),
+    },
+    risks: todoActivationRisks(resurrectedIds),
+  };
+  const authorizedTargets = changedTargets.map((target) => (target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: "activation_effect_authorization" } : target));
+  return {
+    ...evidence,
+    effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })),
+  };
+}
+export function unchangedTodoActivationEffect(publicPath: string, markdown: Buffer, retained: number, authorizedEffectSha256?: string): JsonObject {
+  const evidence: JsonObject = {
+    counts: { matched: 0, converted: 0, retained, conflicting: 0 },
+    targets: [],
+    public_document: {
+      path: publicPath,
+      changed: false,
+      before_bytes: markdown.length,
+      after_bytes: markdown.length,
+      before_sha256: sha256(markdown),
+      after_sha256: sha256(markdown),
+      changed_lines: { count: 0, items: [], omitted_count: 0 },
+    },
+    risks: todoActivationRisks([]),
+  };
+  return {
+    ...evidence,
+    effect_sha256: authorizedEffectSha256 ?? sha256(canonicalRecordJson(evidence)),
+  };
+}
+
+export function todoRepairEffect(diagnosis: JsonObject, targets: readonly TodoReconciliationTarget[], publicPath: string, markdownBefore: Buffer, rendered: string): JsonObject {
+  const changedTargets = targets
+    .filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after)))
+    .map((target) => ({
+      path: target.path,
+      before_sha256: target.before === null ? null : sha256(target.before),
+      after_sha256: sha256(target.after),
+    }));
   const evidence: JsonObject = {
     diagnosis,
     targets: changedTargets,
@@ -167,23 +205,28 @@ export function todoRepairEffect(
   if (activationTarget) {
     const parsed = JSON.parse(activationTarget.after) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || typeof (parsed as Record<string, unknown>).effect_sha256 !== "string") throw new Error("TODO repair activation target cannot be normalized for effect authorization");
-    normalizedActivationSha256 = sha256(canonicalRecordJson({ ...(parsed as JsonObject), effect_sha256: "activation_effect_authorization" }));
+    normalizedActivationSha256 = sha256(
+      canonicalRecordJson({
+        ...(parsed as JsonObject),
+        effect_sha256: "activation_effect_authorization",
+      }),
+    );
   }
-  const authorizedTargets = changedTargets.map((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: normalizedActivationSha256! } : target);
-  return { ...evidence, effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })) };
+  const authorizedTargets = changedTargets.map((target) => (target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: normalizedActivationSha256! } : target));
+  return {
+    ...evidence,
+    effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })),
+  };
 }
 
-export function todoOwnerCorrectionEffect(
-  diagnosis: JsonObject,
-  ownerMappingSha256: string,
-  targets: readonly TodoReconciliationTarget[],
-  publicPath: string,
-  markdownBefore: Buffer,
-  rendered: string,
-): JsonObject {
+export function todoOwnerCorrectionEffect(diagnosis: JsonObject, ownerMappingSha256: string, targets: readonly TodoReconciliationTarget[], publicPath: string, markdownBefore: Buffer, rendered: string): JsonObject {
   const changedTargets = targets
     .filter((target) => target.before === null || !target.before.equals(Buffer.from(target.after)))
-    .map((target) => ({ path: target.path, before_sha256: target.before === null ? null : sha256(target.before), after_sha256: sha256(target.after) }));
+    .map((target) => ({
+      path: target.path,
+      before_sha256: target.before === null ? null : sha256(target.before),
+      after_sha256: sha256(target.after),
+    }));
   const evidence: JsonObject = {
     diagnosis,
     owner_mapping_sha256: ownerMappingSha256,
@@ -203,8 +246,16 @@ export function todoOwnerCorrectionEffect(
   if (activationTarget) {
     const parsed = JSON.parse(activationTarget.after) as unknown;
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed) || typeof (parsed as Record<string, unknown>).effect_sha256 !== "string") throw new Error("TODO owner correction activation target cannot be normalized for effect authorization");
-    normalizedActivationSha256 = sha256(canonicalRecordJson({ ...(parsed as JsonObject), effect_sha256: "activation_effect_authorization" }));
+    normalizedActivationSha256 = sha256(
+      canonicalRecordJson({
+        ...(parsed as JsonObject),
+        effect_sha256: "activation_effect_authorization",
+      }),
+    );
   }
-  const authorizedTargets = changedTargets.map((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: normalizedActivationSha256! } : target);
-  return { ...evidence, effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })) };
+  const authorizedTargets = changedTargets.map((target) => (target.path === TODO_RECONCILIATION_ACTIVATION_PATH ? { ...target, after_sha256: normalizedActivationSha256! } : target));
+  return {
+    ...evidence,
+    effect_sha256: sha256(canonicalRecordJson({ ...evidence, targets: authorizedTargets })),
+  };
 }

@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  loadTodoReadinessContract,
-  todoReadinessRecordViolations,
-  todoReadinessReferenceViolations,
-  validateTodoReadinessContract,
-} from "../../src/registries/todoReadinessContract.js";
+import { loadTodoReadinessContract, todoReadinessRecordViolations, todoReadinessReferenceViolations, validateTodoReadinessContract } from "../../src/registries/todoReadinessContract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -51,18 +46,7 @@ describe("TODO readiness contract", () => {
     const model = loadTodoReadinessContract(TODO_PATH, PROTOCOL_PATH, CAPABILITY_CONTRACT_PATH);
 
     expect(model.schemaVersion).toBe("agentera.todoReadiness.v1");
-    expect(model.allowedDestinations).toEqual([
-      "vision",
-      "discuss",
-      "research",
-      "plan",
-      "build",
-      "optimize",
-      "document",
-      "profile",
-      "design",
-      "audit",
-    ]);
+    expect(model.allowedDestinations).toEqual(["vision", "discuss", "research", "plan", "build", "optimize", "document", "profile", "design", "audit"]);
     expect(Object.fromEntries(model.phaseByCapability)).toEqual({
       vision: "envision",
       discuss: "deliberate",
@@ -83,21 +67,56 @@ describe("TODO readiness contract", () => {
     expect(model.fields).toHaveProperty("reason.non_empty", true);
     expect(model.fields).toHaveProperty("dependencies.entries.artifact.const", "todo");
     expect(model.fields).toHaveProperty("gate.fields.state.enum", ["pending", "satisfied"]);
-    expect(model.outcomes.readiness_absent).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
-    expect(model.outcomes.blocked).toMatchObject({ result: "blocked", eligible: false, attention: "item" });
-    expect(model.outcomes.gate_pending).toMatchObject({ result: "gated", eligible: false, attention: "none" });
-    expect(model.outcomes.dependency_missing).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
-    expect(model.outcomes.dependency_cycle).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
-    expect(model.outcomes.dependency_resolved).toEqual({ result: "satisfied", eligible: null, attention: "none", recovery: null });
-    expect(model.outcomes.dependency_cross_artifact).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(model.outcomes.readiness_absent).toMatchObject({
+      result: "needs-triage",
+      eligible: false,
+      attention: "item",
+    });
+    expect(model.outcomes.blocked).toMatchObject({
+      result: "blocked",
+      eligible: false,
+      attention: "item",
+    });
+    expect(model.outcomes.gate_pending).toMatchObject({
+      result: "gated",
+      eligible: false,
+      attention: "none",
+    });
+    expect(model.outcomes.dependency_missing).toMatchObject({
+      result: "needs-triage",
+      eligible: false,
+      attention: "item",
+    });
+    expect(model.outcomes.dependency_cycle).toMatchObject({
+      result: "needs-triage",
+      eligible: false,
+      attention: "item",
+    });
+    expect(model.outcomes.dependency_resolved).toEqual({
+      result: "satisfied",
+      eligible: null,
+      attention: "none",
+      recovery: null,
+    });
+    expect(model.outcomes.dependency_cross_artifact).toMatchObject({
+      result: "needs-triage",
+      eligible: false,
+      attention: "item",
+    });
     expect(model.queueOutcomes).toMatchObject({
-      mixed_actionable_and_triage: { selection: "highest_ordered_actionable", attention: "bounded_triage_summary" },
+      mixed_actionable_and_triage: {
+        selection: "highest_ordered_actionable",
+        attention: "bounded_triage_summary",
+      },
       all_non_actionable: { selection: "abstain", attention: "bounded_highest_severity_summary" },
     });
     expect(model.ordering).toMatchObject({
       primary: "protocol.yaml#SEVERITY_ISSUE",
       modes: {
-        nonprojected: { within_severity: "queue_rank_ascending", duplicate_rank: "ordering_conflict" },
+        nonprojected: {
+          within_severity: "queue_rank_ascending",
+          duplicate_rank: "ordering_conflict",
+        },
         projected_startup: {
           entity_annotation: "required_for_every_entity",
           eligibility: "before_order",
@@ -109,23 +128,12 @@ describe("TODO readiness contract", () => {
         },
       },
     });
-    expect((model.ordering.modes as any).nonprojected.prohibited_tiebreakers).toEqual([
-      "entity_id",
-      "file_order",
-      "filesystem_time",
-      "created_or_modified_time",
-      "description_text",
-    ]);
+    expect((model.ordering.modes as any).nonprojected.prohibited_tiebreakers).toEqual(["entity_id", "file_order", "filesystem_time", "created_or_modified_time", "description_text"]);
   });
 
   it("passes criterion 5 with every exact outcome and both deterministic ordering modes", () => {
     const documents = validDocuments();
-    expect(validateTodoReadinessContract(
-      documents.todo,
-      documents.protocol,
-      documents.capabilities,
-      "fixture",
-    )).toEqual([]);
+    expect(validateTodoReadinessContract(documents.todo, documents.protocol, documents.capabilities, "fixture")).toEqual([]);
 
     for (const [name, expected] of Object.entries(EXPECTED_OUTCOMES)) {
       expect(documents.todo.READINESS.outcomes[name]).toMatchObject({
@@ -141,69 +149,229 @@ describe("TODO readiness contract", () => {
     expect(documents.todo.READINESS.ordering).toMatchObject({
       primary: "protocol.yaml#SEVERITY_ISSUE",
       modes: {
-        nonprojected: { within_severity: "queue_rank_ascending", duplicate_rank: "ordering_conflict" },
-        projected_startup: { managed_duplicate_rank: "ignored", absent_duplicate_rank: "entity_id_ascending" },
+        nonprojected: {
+          within_severity: "queue_rank_ascending",
+          duplicate_rank: "ordering_conflict",
+        },
+        projected_startup: {
+          managed_duplicate_rank: "ignored",
+          absent_duplicate_rank: "entity_id_ascending",
+        },
       },
     });
   });
 
-  const outcomeRules: FailingRule[] = Object.entries(EXPECTED_OUTCOMES).flatMap(([name, expected]) => [
-    [
-      `${name} has its exact result`,
-      ({ todo }) => { todo.READINESS.outcomes[name].result = "wrong"; },
-      `READINESS.outcomes.${name}.result must be ${expected.result}`,
-    ],
-    [
-      `${name} has its exact eligibility`,
-      ({ todo }) => { todo.READINESS.outcomes[name].eligible = expected.eligible === true ? false : true; },
-      `READINESS.outcomes.${name}.eligible must be ${String(expected.eligible)}`,
-    ],
-    [
-      `${name} has its exact recovery shape`,
-      ({ todo }) => { todo.READINESS.outcomes[name].recovery = expected.recovery === "null" ? "unexpected" : ""; },
-      `READINESS.outcomes.${name}.recovery must be ${expected.recovery === "null" ? "null" : "a non-empty string"}`,
-    ],
-  ] as FailingRule[]);
+  const outcomeRules: FailingRule[] = Object.entries(EXPECTED_OUTCOMES).flatMap(
+    ([name, expected]) =>
+      [
+        [
+          `${name} has its exact result`,
+          ({ todo }) => {
+            todo.READINESS.outcomes[name].result = "wrong";
+          },
+          `READINESS.outcomes.${name}.result must be ${expected.result}`,
+        ],
+        [
+          `${name} has its exact eligibility`,
+          ({ todo }) => {
+            todo.READINESS.outcomes[name].eligible = expected.eligible === true ? false : true;
+          },
+          `READINESS.outcomes.${name}.eligible must be ${String(expected.eligible)}`,
+        ],
+        [
+          `${name} has its exact recovery shape`,
+          ({ todo }) => {
+            todo.READINESS.outcomes[name].recovery = expected.recovery === "null" ? "unexpected" : "";
+          },
+          `READINESS.outcomes.${name}.recovery must be ${expected.recovery === "null" ? "null" : "a non-empty string"}`,
+        ],
+      ] as FailingRule[],
+  );
 
   const failingRules: FailingRule[] = [
-    ["readiness authority is required", ({ todo }) => { delete todo.READINESS; }, "READINESS must be a mapping"],
-    ["schema version is fixed", ({ todo }) => { todo.READINESS.schema_version = "other"; }, "schema_version must be agentera.todoReadiness.v1"],
-    ["phase mapping has one source", ({ todo }) => { todo.READINESS.destination.phase_authority = "local"; }, "phase_authority must be protocol.yaml#PHASES[*].capabilities"],
-    ["destination values are not duplicated", ({ todo }) => { todo.READINESS.destination.allowed_destinations = ["build"]; }, "allowed_destinations duplicates the canonical PHASES authority"],
-    ["phase capabilities are unique", ({ protocol }) => { protocol.PHASES[3].capabilities.push("research"); }, "capability 'research' appears in multiple PHASES entries"],
-    ["phase capabilities are canonical", ({ protocol }) => { protocol.PHASES[3].capabilities.push("ghost"); }, "PHASES capability 'ghost' is not canonical"],
-    ["every canonical capability is mapped or excluded", ({ todo }) => { delete todo.READINESS.destination.excluded_capabilities.status; }, "canonical capability 'status' must be mapped to one phase or explicitly excluded"],
-    ["exclusions carry a reason", ({ todo }) => { todo.READINESS.destination.excluded_capabilities.status = ""; }, "excluded capability 'status' must have a non-empty reason"],
-    ["readiness fields are complete", ({ todo }) => { delete todo.READINESS.fields.reason; }, "READINESS.fields.reason must be a mapping"],
-    ["readiness fields are required when readiness exists", ({ todo }) => { todo.READINESS.fields.queue_rank.required = false; }, "READINESS.fields.queue_rank.required must be true"],
-    ["capability values use the phase authority", ({ todo }) => { todo.READINESS.fields.capability.enum_source = "local"; }, "READINESS.fields.capability.enum_source must be protocol.yaml#PHASES[*].capabilities"],
-    ["dependencies remain TODO-local", ({ todo }) => { todo.READINESS.fields.dependencies.entries.artifact.const = "plan"; }, "dependency artifact const must be todo"],
-    ["evaluation precedence is exact", ({ todo }) => { todo.READINESS.evaluation.precedence.pop(); }, "READINESS.evaluation.precedence must equal"],
-    ["all bounded outcomes exist", ({ todo }) => { delete todo.READINESS.outcomes.dependency_cycle; }, "READINESS.outcomes.dependency_cycle must be a mapping"],
-    ["outcomes use bounded attention values", ({ todo }) => { todo.READINESS.outcomes.blocked.attention = "verbose"; }, "READINESS.outcomes.blocked.attention must be one of: none, item"],
+    [
+      "readiness authority is required",
+      ({ todo }) => {
+        delete todo.READINESS;
+      },
+      "READINESS must be a mapping",
+    ],
+    [
+      "schema version is fixed",
+      ({ todo }) => {
+        todo.READINESS.schema_version = "other";
+      },
+      "schema_version must be agentera.todoReadiness.v1",
+    ],
+    [
+      "phase mapping has one source",
+      ({ todo }) => {
+        todo.READINESS.destination.phase_authority = "local";
+      },
+      "phase_authority must be protocol.yaml#PHASES[*].capabilities",
+    ],
+    [
+      "destination values are not duplicated",
+      ({ todo }) => {
+        todo.READINESS.destination.allowed_destinations = ["build"];
+      },
+      "allowed_destinations duplicates the canonical PHASES authority",
+    ],
+    [
+      "phase capabilities are unique",
+      ({ protocol }) => {
+        protocol.PHASES[3].capabilities.push("research");
+      },
+      "capability 'research' appears in multiple PHASES entries",
+    ],
+    [
+      "phase capabilities are canonical",
+      ({ protocol }) => {
+        protocol.PHASES[3].capabilities.push("ghost");
+      },
+      "PHASES capability 'ghost' is not canonical",
+    ],
+    [
+      "every canonical capability is mapped or excluded",
+      ({ todo }) => {
+        delete todo.READINESS.destination.excluded_capabilities.status;
+      },
+      "canonical capability 'status' must be mapped to one phase or explicitly excluded",
+    ],
+    [
+      "exclusions carry a reason",
+      ({ todo }) => {
+        todo.READINESS.destination.excluded_capabilities.status = "";
+      },
+      "excluded capability 'status' must have a non-empty reason",
+    ],
+    [
+      "readiness fields are complete",
+      ({ todo }) => {
+        delete todo.READINESS.fields.reason;
+      },
+      "READINESS.fields.reason must be a mapping",
+    ],
+    [
+      "readiness fields are required when readiness exists",
+      ({ todo }) => {
+        todo.READINESS.fields.queue_rank.required = false;
+      },
+      "READINESS.fields.queue_rank.required must be true",
+    ],
+    [
+      "capability values use the phase authority",
+      ({ todo }) => {
+        todo.READINESS.fields.capability.enum_source = "local";
+      },
+      "READINESS.fields.capability.enum_source must be protocol.yaml#PHASES[*].capabilities",
+    ],
+    [
+      "dependencies remain TODO-local",
+      ({ todo }) => {
+        todo.READINESS.fields.dependencies.entries.artifact.const = "plan";
+      },
+      "dependency artifact const must be todo",
+    ],
+    [
+      "evaluation precedence is exact",
+      ({ todo }) => {
+        todo.READINESS.evaluation.precedence.pop();
+      },
+      "READINESS.evaluation.precedence must equal",
+    ],
+    [
+      "all bounded outcomes exist",
+      ({ todo }) => {
+        delete todo.READINESS.outcomes.dependency_cycle;
+      },
+      "READINESS.outcomes.dependency_cycle must be a mapping",
+    ],
+    [
+      "outcomes use bounded attention values",
+      ({ todo }) => {
+        todo.READINESS.outcomes.blocked.attention = "verbose";
+      },
+      "READINESS.outcomes.blocked.attention must be one of: none, item",
+    ],
     ...outcomeRules,
-    ["queue outcomes are complete", ({ todo }) => { delete todo.READINESS.queue_outcomes.all_non_actionable; }, "READINESS.queue_outcomes.all_non_actionable must be a mapping"],
-    ["mixed queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.mixed_actionable_and_triage.recovery = ""; }, "READINESS.queue_outcomes.mixed_actionable_and_triage.recovery must be a non-empty string"],
-    ["all-non-actionable queue recovery is bounded", ({ todo }) => { todo.READINESS.queue_outcomes.all_non_actionable.recovery = ""; }, "READINESS.queue_outcomes.all_non_actionable.recovery must be a non-empty string"],
-    ["canonical severity owns primary ordering", ({ todo }) => { todo.READINESS.ordering.primary = "queue_rank"; }, "READINESS.ordering.primary must be protocol.yaml#SEVERITY_ISSUE"],
-    ["nonprojected severity and intent own ordering", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.within_severity = "entity_id"; }, "READINESS.ordering.modes.nonprojected.within_severity must be queue_rank_ascending"],
-    ["nonprojected duplicate ranks require triage", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.duplicate_rank = "entity_id"; }, "READINESS.ordering.modes.nonprojected.duplicate_rank must be ordering_conflict"],
-    ["nonprojected fabricated chronology is prohibited", ({ todo }) => { todo.READINESS.ordering.modes.nonprojected.prohibited_tiebreakers.pop(); }, "READINESS.ordering.modes.nonprojected.prohibited_tiebreakers must equal"],
-    ["projected managed duplicate ranks remain eligible", ({ todo }) => { todo.READINESS.ordering.modes.projected_startup.managed_duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.modes.projected_startup.managed_duplicate_rank must be ignored"],
-    ["projected absent duplicate ranks use ID fallback", ({ todo }) => { todo.READINESS.ordering.modes.projected_startup.absent_duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.modes.projected_startup.absent_duplicate_rank must be entity_id_ascending"],
-    ["top-level ordering cannot contradict mode authority", ({ todo }) => { todo.READINESS.ordering.duplicate_rank = "ordering_conflict"; }, "READINESS.ordering.duplicate_rank must be declared under one ordering mode"],
+    [
+      "queue outcomes are complete",
+      ({ todo }) => {
+        delete todo.READINESS.queue_outcomes.all_non_actionable;
+      },
+      "READINESS.queue_outcomes.all_non_actionable must be a mapping",
+    ],
+    [
+      "mixed queue recovery is bounded",
+      ({ todo }) => {
+        todo.READINESS.queue_outcomes.mixed_actionable_and_triage.recovery = "";
+      },
+      "READINESS.queue_outcomes.mixed_actionable_and_triage.recovery must be a non-empty string",
+    ],
+    [
+      "all-non-actionable queue recovery is bounded",
+      ({ todo }) => {
+        todo.READINESS.queue_outcomes.all_non_actionable.recovery = "";
+      },
+      "READINESS.queue_outcomes.all_non_actionable.recovery must be a non-empty string",
+    ],
+    [
+      "canonical severity owns primary ordering",
+      ({ todo }) => {
+        todo.READINESS.ordering.primary = "queue_rank";
+      },
+      "READINESS.ordering.primary must be protocol.yaml#SEVERITY_ISSUE",
+    ],
+    [
+      "nonprojected severity and intent own ordering",
+      ({ todo }) => {
+        todo.READINESS.ordering.modes.nonprojected.within_severity = "entity_id";
+      },
+      "READINESS.ordering.modes.nonprojected.within_severity must be queue_rank_ascending",
+    ],
+    [
+      "nonprojected duplicate ranks require triage",
+      ({ todo }) => {
+        todo.READINESS.ordering.modes.nonprojected.duplicate_rank = "entity_id";
+      },
+      "READINESS.ordering.modes.nonprojected.duplicate_rank must be ordering_conflict",
+    ],
+    [
+      "nonprojected fabricated chronology is prohibited",
+      ({ todo }) => {
+        todo.READINESS.ordering.modes.nonprojected.prohibited_tiebreakers.pop();
+      },
+      "READINESS.ordering.modes.nonprojected.prohibited_tiebreakers must equal",
+    ],
+    [
+      "projected managed duplicate ranks remain eligible",
+      ({ todo }) => {
+        todo.READINESS.ordering.modes.projected_startup.managed_duplicate_rank = "ordering_conflict";
+      },
+      "READINESS.ordering.modes.projected_startup.managed_duplicate_rank must be ignored",
+    ],
+    [
+      "projected absent duplicate ranks use ID fallback",
+      ({ todo }) => {
+        todo.READINESS.ordering.modes.projected_startup.absent_duplicate_rank = "ordering_conflict";
+      },
+      "READINESS.ordering.modes.projected_startup.absent_duplicate_rank must be entity_id_ascending",
+    ],
+    [
+      "top-level ordering cannot contradict mode authority",
+      ({ todo }) => {
+        todo.READINESS.ordering.duplicate_rank = "ordering_conflict";
+      },
+      "READINESS.ordering.duplicate_rank must be declared under one ordering mode",
+    ],
   ];
 
   it.each(failingRules)("rejects invalid contract: %s", (_name, mutate, expected) => {
     const documents = validDocuments();
     mutate(documents);
 
-    expect(validateTodoReadinessContract(
-      documents.todo,
-      documents.protocol,
-      documents.capabilities,
-      "fixture",
-    )).toContainEqual(expect.stringContaining(expected));
+    expect(validateTodoReadinessContract(documents.todo, documents.protocol, documents.capabilities, "fixture")).toContainEqual(expect.stringContaining(expected));
   });
 
   it("validates each persisted readiness field rule at the contract authority", () => {
@@ -223,7 +391,15 @@ describe("TODO readiness contract", () => {
     const cases: Array<[string, unknown, string]> = [
       ["mapping", null, "readiness must be a mapping"],
       ["exact fields", { ...valid, extra: true }, "unsupported field 'extra'"],
-      ["complete fields", (() => { const value: any = structuredClone(valid); delete value.reason; return value; })(), "reason is required"],
+      [
+        "complete fields",
+        (() => {
+          const value: any = structuredClone(valid);
+          delete value.reason;
+          return value;
+        })(),
+        "reason is required",
+      ],
       ["capability", { ...valid, capability: "status" }, "capability must be one of"],
       ["reason", { ...valid, reason: "" }, "reason must be a non-empty string"],
       ["dependencies list", { ...valid, dependencies: {} }, "dependencies must be a list"],
@@ -262,14 +438,20 @@ describe("TODO readiness contract", () => {
       order_reason: "Dependency-aware order.",
     };
     const records = [
-      { id: "aaaaaaaaaa", record: { severity: "normal", status: "open", description: "A", readiness } },
+      {
+        id: "aaaaaaaaaa",
+        record: { severity: "normal", status: "open", description: "A", readiness },
+      },
       { id: "bbbbbbbbbb", record: { severity: "normal", status: "open", description: "B" } },
     ];
     expect(todoReadinessReferenceViolations("aaaaaaaaaa", readiness, records)).toEqual([]);
     expect(todoReadinessReferenceViolations("aaaaaaaaaa", { ...readiness, dependencies: [{ artifact: "todo", id: "cccccccccc" }] }, records)).toContainEqual(expect.stringContaining("does not exist"));
     expect(todoReadinessReferenceViolations("aaaaaaaaaa", { ...readiness, dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }] }, records)).toContainEqual(expect.stringContaining("cannot depend on itself"));
     const cycle = structuredClone(records);
-    cycle[1].record.readiness = { ...readiness, dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }] };
+    cycle[1].record.readiness = {
+      ...readiness,
+      dependencies: [{ artifact: "todo", id: "aaaaaaaaaa" }],
+    };
     expect(todoReadinessReferenceViolations("aaaaaaaaaa", readiness, cycle)).toContainEqual(expect.stringContaining("dependency cycle"));
   });
 });

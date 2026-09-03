@@ -6,11 +6,7 @@ import path from "node:path";
 
 import { ACTIVATION_CANONICAL_TUPLES } from "../registries/activationTuples.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
-import {
-  packageCommandDeclarations,
-  packageDescriptorSemantics,
-  packageDescriptors,
-} from "./activationPackageSemantics.js";
+import { packageCommandDeclarations, packageDescriptorSemantics, packageDescriptors } from "./activationPackageSemantics.js";
 import {
   GENERATED_OWNER_EVIDENCE_SCHEMA,
   OWNER_EVIDENCE_MAX_BYTES,
@@ -82,16 +78,21 @@ interface CapabilityProjection {
   artifacts: Record<string, string>;
 }
 
-const CAPABILITY_IDS = Object.freeze(ACTIVATION_CANONICAL_TUPLES
-  .filter((tuple) => tuple.class === "capability")
-  .map((tuple) => tuple.surface_id)
-  .sort());
+const CAPABILITY_IDS = Object.freeze(
+  ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability")
+    .map((tuple) => tuple.surface_id)
+    .sort(),
+);
 
 function canonical(value: unknown): unknown {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
     const object = value as Record<string, unknown>;
-    return Object.fromEntries(Object.keys(object).sort().map((key) => [key, canonical(object[key])]));
+    return Object.fromEntries(
+      Object.keys(object)
+        .sort()
+        .map((key) => [key, canonical(object[key])]),
+    );
   }
   return value;
 }
@@ -109,12 +110,7 @@ function fileSha256(file: string): string {
 }
 
 function artifactDigest(root: string, relatives: readonly string[]): string {
-  return observationDigest([...relatives].sort().map((relative) => ({
-    path: relative.split(path.sep).join("/"),
-    sha256: fs.existsSync(path.join(root, relative)) && fs.statSync(path.join(root, relative)).isFile()
-      ? fileSha256(path.join(root, relative))
-      : "missing",
-  })));
+  return observationDigest([...relatives].sort().map((relative) => ({ path: relative.split(path.sep).join("/"), sha256: fs.existsSync(path.join(root, relative)) && fs.statSync(path.join(root, relative)).isFile() ? fileSha256(path.join(root, relative)) : "missing" })));
 }
 
 function filesBelow(root: string, relative = ""): string[] {
@@ -152,29 +148,16 @@ function completeTreeObservation(root: string, options: TreeObservationOptions =
         fileCount += 1;
         totalBytes += bytes.length;
         if (totalBytes > (options.maxTotalBytes ?? PACKAGE_SNAPSHOT_EXTRACTED_MAX_BYTES)) throw new Error("authoritative extracted package exceeds its byte bound");
-        entries.push({
-          path: normalized,
-          type: "file",
-          mode: stat.mode & 0o777,
-          size: bytes.length,
-          sha256: createHash("sha256").update(bytes).digest("hex"),
-        });
+        entries.push({ path: normalized, type: "file", mode: stat.mode & 0o777, size: bytes.length, sha256: createHash("sha256").update(bytes).digest("hex") });
       } else if (stat.isSymbolicLink()) {
         if (options.allowSymlinks === false) throw new Error("authoritative extracted package contains a symlink");
-        entries.push({
-          path: normalized,
-          type: "symlink",
-          mode: stat.mode & 0o777,
-          targetSha256: observationDigest(fs.readlinkSync(target)),
-        });
+        entries.push({ path: normalized, type: "symlink", mode: stat.mode & 0o777, targetSha256: observationDigest(fs.readlinkSync(target)) });
       } else {
         throw new Error(`authoritative extracted package contains unsupported entry '${normalized}'`);
       }
     }
     const directoryAfter = fs.lstatSync(directoryPath);
-    if (names.join("\0") !== fs.readdirSync(directoryPath).sort().join("\0")
-      || directoryBefore.dev !== directoryAfter.dev || directoryBefore.ino !== directoryAfter.ino
-      || directoryBefore.mtimeMs !== directoryAfter.mtimeMs) {
+    if (names.join("\0") !== fs.readdirSync(directoryPath).sort().join("\0") || directoryBefore.dev !== directoryAfter.dev || directoryBefore.ino !== directoryAfter.ino || directoryBefore.mtimeMs !== directoryAfter.mtimeMs) {
       throw new Error("authoritative extracted package changed while it was observed");
     }
   };
@@ -182,18 +165,12 @@ function completeTreeObservation(root: string, options: TreeObservationOptions =
   return { entries, digest: observationDigest(entries), fileCount, totalBytes };
 }
 
-function readBoundedRegularFile(
-  file: string,
-  maximumBytes: number,
-  allowEmpty = false,
-  expected?: fs.Stats,
-): Buffer {
+function readBoundedRegularFile(file: string, maximumBytes: number, allowEmpty = false, expected?: fs.Stats): Buffer {
   const noFollow = (fs.constants as typeof fs.constants & { O_NOFOLLOW?: number }).O_NOFOLLOW ?? 0;
   const descriptor = fs.openSync(file, fs.constants.O_RDONLY | noFollow);
   try {
     const before = fs.fstatSync(descriptor);
-    if (!before.isFile() || (!allowEmpty && before.size <= 0) || before.size > maximumBytes
-      || (expected && (expected.dev !== before.dev || expected.ino !== before.ino))) {
+    if (!before.isFile() || (!allowEmpty && before.size <= 0) || before.size > maximumBytes || (expected && (expected.dev !== before.dev || expected.ino !== before.ino))) {
       throw new Error("authoritative package file violates its regular-file or byte bound");
     }
     const bytes = fs.readFileSync(descriptor);
@@ -208,23 +185,11 @@ function readBoundedRegularFile(
 }
 
 function packageArtifactIdentity(filename: string, bytes: Buffer): ActivationPackageArtifactIdentity {
-  return {
-    filename,
-    integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`,
-    shasum: createHash("sha1").update(bytes).digest("hex"),
-    tarballSha256: createHash("sha256").update(bytes).digest("hex"),
-  };
+  return { filename, integrity: `sha512-${createHash("sha512").update(bytes).digest("base64")}`, shasum: createHash("sha1").update(bytes).digest("hex"), tarballSha256: createHash("sha256").update(bytes).digest("hex") };
 }
 
 function preflightPackageBytes(bytes: Buffer): void {
-  const listed = spawnSync("tar", ["-tvzf", "-", "--numeric-owner", "--full-time"], {
-    input: bytes,
-    encoding: "utf8",
-    env: { ...process.env, LC_ALL: "C", TZ: "UTC" },
-    stdio: ["pipe", "pipe", "pipe"],
-    timeout: 30_000,
-    maxBuffer: PACKAGE_SNAPSHOT_MAX_ENTRIES * 2_048,
-  });
+  const listed = spawnSync("tar", ["-tvzf", "-", "--numeric-owner", "--full-time"], { input: bytes, encoding: "utf8", env: { ...process.env, LC_ALL: "C", TZ: "UTC" }, stdio: ["pipe", "pipe", "pipe"], timeout: 30_000, maxBuffer: PACKAGE_SNAPSHOT_MAX_ENTRIES * 2_048 });
   if (listed.status !== 0) throw new Error("authoritative package tarball cannot be listed");
   const lines = listed.stdout.trimEnd() === "" ? [] : listed.stdout.trimEnd().split("\n");
   if (lines.length < 1 || lines.length > PACKAGE_SNAPSHOT_MAX_ENTRIES) throw new Error("authoritative package tarball violates its entry bound");
@@ -242,13 +207,7 @@ function preflightPackageBytes(bytes: Buffer): void {
 
 function extractPackageBytes(bytes: Buffer, temporary: string): string {
   preflightPackageBytes(bytes);
-  const extracted = spawnSync("tar", ["-xzf", "-", "-C", temporary], {
-    input: bytes,
-    encoding: "utf8",
-    stdio: ["pipe", "pipe", "pipe"],
-    timeout: 30_000,
-    maxBuffer: 65_536,
-  });
+  const extracted = spawnSync("tar", ["-xzf", "-", "-C", temporary], { input: bytes, encoding: "utf8", stdio: ["pipe", "pipe", "pipe"], timeout: 30_000, maxBuffer: 65_536 });
   if (extracted.status !== 0) throw new Error("authoritative package tarball cannot be extracted");
   const topLevel = fs.readdirSync(temporary, { withFileTypes: true });
   if (topLevel.length !== 1 || topLevel[0]?.name !== "package" || !topLevel[0].isDirectory() || topLevel[0].isSymbolicLink()) {
@@ -257,25 +216,12 @@ function extractPackageBytes(bytes: Buffer, temporary: string): string {
   return path.join(temporary, "package");
 }
 
-function snapshotMarker(
-  artifact: ActivationPackageArtifactIdentity,
-  tree: CompleteTreeObservation,
-): PackageSnapshotMarker {
-  const unsigned: Omit<PackageSnapshotMarker, "snapshotDigest"> = {
-    schemaVersion: PACKAGE_SNAPSHOT_SCHEMA,
-    packageArtifact: artifact,
-    tarballTree: { count: tree.entries.length, digest: tree.digest, fileCount: tree.fileCount, totalBytes: tree.totalBytes },
-  };
+function snapshotMarker(artifact: ActivationPackageArtifactIdentity, tree: CompleteTreeObservation): PackageSnapshotMarker {
+  const unsigned: Omit<PackageSnapshotMarker, "snapshotDigest"> = { schemaVersion: PACKAGE_SNAPSHOT_SCHEMA, packageArtifact: artifact, tarballTree: { count: tree.entries.length, digest: tree.digest, fileCount: tree.fileCount, totalBytes: tree.totalBytes } };
   return { ...unsigned, snapshotDigest: observationDigest(unsigned) };
 }
 
-function writeRetainedPackageSnapshot(
-  directory: string,
-  bytes: Buffer,
-  packageRoot: string,
-  artifact: ActivationPackageArtifactIdentity,
-  tree: CompleteTreeObservation,
-): void {
+function writeRetainedPackageSnapshot(directory: string, bytes: Buffer, packageRoot: string, artifact: ActivationPackageArtifactIdentity, tree: CompleteTreeObservation): void {
   const parent = path.dirname(path.resolve(directory));
   fs.mkdirSync(parent, { recursive: true, mode: 0o700 });
   const parentReal = fs.realpathSync(parent);
@@ -298,9 +244,7 @@ function writeRetainedPackageSnapshot(
 
 export function observeCurrentPackageArtifact(tarball: string, extractedRoot: string, snapshotDirectory?: string): any {
   const bytes = readBoundedRegularFile(tarball, PACKAGE_SNAPSHOT_TARBALL_MAX_BYTES);
-  const packageArtifact: ActivationPackageArtifactIdentity = {
-    ...packageArtifactIdentity(path.basename(tarball), bytes),
-  };
+  const packageArtifact: ActivationPackageArtifactIdentity = { ...packageArtifactIdentity(path.basename(tarball), bytes) };
   const extractedTree = completeTreeObservation(extractedRoot, { allowSymlinks: true });
   const temporary = fs.mkdtempSync(path.join(process.env.TMPDIR ?? os.tmpdir(), "activation-tarball-tree-"));
   let tarballTree: CompleteTreeObservation;
@@ -311,9 +255,7 @@ export function observeCurrentPackageArtifact(tarball: string, extractedRoot: st
   } finally {
     fs.rmSync(temporary, { recursive: true, force: true });
   }
-  const runtimeSupportPaths = extractedTree.entries
-    .filter((entry) => entry.path === "node_modules" && entry.type === "symlink")
-    .map((entry) => entry.path);
+  const runtimeSupportPaths = extractedTree.entries.filter((entry) => entry.path === "node_modules" && entry.type === "symlink").map((entry) => entry.path);
   const extractedPayload = extractedTree.entries.filter((entry) => !runtimeSupportPaths.includes(entry.path));
   if (canonicalObservationJson(extractedPayload) !== canonicalObservationJson(tarballTree.entries)) {
     throw new Error("authoritative extracted package tree does not exactly match the current tarball payload");
@@ -338,15 +280,29 @@ function packageSnapshotRootViolations(snapshotRoot: string, expectedIdentity: u
       if (snapshotReal !== path.join(rootReal, PACKAGE_SNAPSHOT_DIRECTORY)) return [invalid];
     }
     const entries = fs.readdirSync(snapshotReal, { withFileTypes: true });
-    if (entries.map((entry) => entry.name).sort().join("\0") !== ["extracted", "package.tgz", "snapshot.json"].join("\0")
-      || entries.some((entry) => entry.isSymbolicLink())) return [invalid];
+    if (
+      entries
+        .map((entry) => entry.name)
+        .sort()
+        .join("\0") !== ["extracted", "package.tgz", "snapshot.json"].join("\0") ||
+      entries.some((entry) => entry.isSymbolicLink())
+    )
+      return [invalid];
     const markerBytes = readBoundedRegularFile(path.join(snapshotReal, "snapshot.json"), PACKAGE_SNAPSHOT_MARKER_MAX_BYTES);
     const marker = JSON.parse(markerBytes.toString("utf8")) as PackageSnapshotMarker;
     const { snapshotDigest, ...unsignedMarker } = marker;
-    if (Object.keys(marker).sort().join("\0") !== ["packageArtifact", "schemaVersion", "snapshotDigest", "tarballTree"].join("\0")
-      || Object.keys(marker.packageArtifact ?? {}).sort().join("\0") !== ["filename", "integrity", "shasum", "tarballSha256"].join("\0")
-      || Object.keys(marker.tarballTree ?? {}).sort().join("\0") !== ["count", "digest", "fileCount", "totalBytes"].join("\0")
-      || marker.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA || snapshotDigest !== observationDigest(unsignedMarker)) return [invalid];
+    if (
+      Object.keys(marker).sort().join("\0") !== ["packageArtifact", "schemaVersion", "snapshotDigest", "tarballTree"].join("\0") ||
+      Object.keys(marker.packageArtifact ?? {})
+        .sort()
+        .join("\0") !== ["filename", "integrity", "shasum", "tarballSha256"].join("\0") ||
+      Object.keys(marker.tarballTree ?? {})
+        .sort()
+        .join("\0") !== ["count", "digest", "fileCount", "totalBytes"].join("\0") ||
+      marker.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA ||
+      snapshotDigest !== observationDigest(unsignedMarker)
+    )
+      return [invalid];
     const tarballBytes = readBoundedRegularFile(path.join(snapshotReal, "package.tgz"), PACKAGE_SNAPSHOT_TARBALL_MAX_BYTES);
     const artifact = packageArtifactIdentity(identity.packageArtifact.filename, tarballBytes);
     const extractedTree = completeTreeObservation(path.join(snapshotReal, "extracted"), { allowSymlinks: false });
@@ -354,14 +310,17 @@ function packageSnapshotRootViolations(snapshotRoot: string, expectedIdentity: u
     const reextractedRoot = extractPackageBytes(tarballBytes, temporary);
     const tarballTree = completeTreeObservation(reextractedRoot, { allowSymlinks: false });
     const treeSummary = { count: tarballTree.entries.length, digest: tarballTree.digest };
-    if (canonicalObservationJson(artifact) !== canonicalObservationJson(identity.packageArtifact)
-      || canonicalObservationJson(treeSummary) !== canonicalObservationJson(identity.tarballTree)
-      || canonicalObservationJson(extractedTree.entries) !== canonicalObservationJson(tarballTree.entries)
-      || canonicalObservationJson(marker.packageArtifact) !== canonicalObservationJson(identity.packageArtifact)
-      || marker.tarballTree.count !== tarballTree.entries.length
-      || marker.tarballTree.digest !== tarballTree.digest
-      || marker.tarballTree.fileCount !== tarballTree.fileCount
-      || marker.tarballTree.totalBytes !== tarballTree.totalBytes) return [invalid];
+    if (
+      canonicalObservationJson(artifact) !== canonicalObservationJson(identity.packageArtifact) ||
+      canonicalObservationJson(treeSummary) !== canonicalObservationJson(identity.tarballTree) ||
+      canonicalObservationJson(extractedTree.entries) !== canonicalObservationJson(tarballTree.entries) ||
+      canonicalObservationJson(marker.packageArtifact) !== canonicalObservationJson(identity.packageArtifact) ||
+      marker.tarballTree.count !== tarballTree.entries.length ||
+      marker.tarballTree.digest !== tarballTree.digest ||
+      marker.tarballTree.fileCount !== tarballTree.fileCount ||
+      marker.tarballTree.totalBytes !== tarballTree.totalBytes
+    )
+      return [invalid];
     return [];
   } catch {
     return [invalid];
@@ -371,18 +330,10 @@ function packageSnapshotRootViolations(snapshotRoot: string, expectedIdentity: u
 }
 
 export function retainedPackageSnapshotViolations(generationRoot: string, expectedIdentity: unknown): string[] {
-  return packageSnapshotRootViolations(
-    path.join(path.resolve(generationRoot), PACKAGE_SNAPSHOT_DIRECTORY),
-    expectedIdentity,
-    generationRoot,
-  );
+  return packageSnapshotRootViolations(path.join(path.resolve(generationRoot), PACKAGE_SNAPSHOT_DIRECTORY), expectedIdentity, generationRoot);
 }
 
-export function installRetainedPackageSnapshot(
-  sourceSnapshot: string,
-  generationRoot: string,
-  expectedIdentity: ActivationPackageIdentity,
-): { schemaVersion: typeof PACKAGE_SNAPSHOT_SCHEMA; path: typeof PACKAGE_SNAPSHOT_DIRECTORY; identityDigest: string } {
+export function installRetainedPackageSnapshot(sourceSnapshot: string, generationRoot: string, expectedIdentity: ActivationPackageIdentity): { schemaVersion: typeof PACKAGE_SNAPSHOT_SCHEMA; path: typeof PACKAGE_SNAPSHOT_DIRECTORY; identityDigest: string } {
   const sourceViolations = packageSnapshotRootViolations(sourceSnapshot, expectedIdentity);
   if (sourceViolations.length > 0) throw new Error(sourceViolations[0]);
   const generationStat = fs.lstatSync(generationRoot);
@@ -416,10 +367,11 @@ export function removeRetainedPackageSnapshot(generationRoot: string): void {
 function bodyObservation(bodies: Record<string, string>): CapabilityBodies {
   return {
     identities: Object.keys(bodies).sort(),
-    bodies: Object.fromEntries(Object.entries(bodies).sort(([left], [right]) => left.localeCompare(right)).map(([id, body]) => [id, {
-      sha256: createHash("sha256").update(body, "utf8").digest("hex"),
-      bytes: Buffer.byteLength(body, "utf8"),
-    }])),
+    bodies: Object.fromEntries(
+      Object.entries(bodies)
+        .sort(([left], [right]) => left.localeCompare(right))
+        .map(([id, body]) => [id, { sha256: createHash("sha256").update(body, "utf8").digest("hex"), bytes: Buffer.byteLength(body, "utf8") }]),
+    ),
   };
 }
 
@@ -429,10 +381,10 @@ function registryCapabilities(file: string): string[] {
 }
 
 function schemaCapabilities(root: string): string[] {
-  return fs.readdirSync(root, { withFileTypes: true })
+  return fs
+    .readdirSync(root, { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
-    .filter((entry) => ["triggers.yaml", "artifacts.yaml", "validation.yaml", "exit.yaml"]
-      .every((file) => fs.existsSync(path.join(root, entry.name, "schemas", file))))
+    .filter((entry) => ["triggers.yaml", "artifacts.yaml", "validation.yaml", "exit.yaml"].every((file) => fs.existsSync(path.join(root, entry.name, "schemas", file))))
     .map((entry) => entry.name)
     .sort();
 }
@@ -442,13 +394,7 @@ export function loadSourceCapabilityInstructions(root: string): { modules: Recor
   const cached = sourceCapabilityCache.get(cacheKey);
   if (cached) return structuredClone(cached);
   const script = path.join(root, "packages/cli/scripts/observe-capability-source.mjs");
-  const result = spawnSync(process.execPath, [script, root], {
-    cwd: root,
-    env: process.env,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: 30_000,
-  });
+  const result = spawnSync(process.execPath, [script, root], { cwd: root, env: process.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 30_000 });
   if (result.status !== 0) throw new Error(`source capability observation failed: ${(result.stderr || result.stdout).trim()}`);
   const observed = JSON.parse(result.stdout) as { modules: Record<string, string>; runtimeRegistry: Record<string, string>; routes: string[] };
   sourceCapabilityCache.set(cacheKey, observed);
@@ -476,77 +422,44 @@ function sourceProjection(root: string): CapabilityProjection {
   };
 }
 
-function runtimeArtifactObservation(
-  runtimeRoot: string,
-  projectRoot: string,
-  sourceRoot: string,
-  mode: "full" | "package-smoke" = "full",
-): { projection: CapabilityProjection; bootstrap: unknown } {
+function runtimeArtifactObservation(runtimeRoot: string, projectRoot: string, sourceRoot: string, mode: "full" | "package-smoke" = "full"): { projection: CapabilityProjection; bootstrap: unknown } {
   const script = path.join(sourceRoot, "packages/cli/scripts/observe-runtime-artifact.mjs");
-  const result = spawnSync(process.execPath, [script, runtimeRoot, projectRoot, mode], {
-    cwd: projectRoot,
-    env: process.env,
-    encoding: "utf8",
-    stdio: ["ignore", "pipe", "pipe"],
-    timeout: 120_000,
-  });
+  const result = spawnSync(process.execPath, [script, runtimeRoot, projectRoot, mode], { cwd: projectRoot, env: process.env, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"], timeout: 120_000 });
   if (result.status !== 0) throw new Error(`runtime artifact observation failed: ${(result.stderr || result.stdout).trim()}`);
-  const parsed = JSON.parse(result.stdout) as {
-    capabilities: { modules: Record<string, string>; runtimeRegistry: Record<string, string>; served: Record<string, string>; routes: string[]; startupProducers: Array<{ path: string; value: string }> };
-    bootstrap: unknown;
-  };
+  const parsed = JSON.parse(result.stdout) as { capabilities: { modules: Record<string, string>; runtimeRegistry: Record<string, string>; served: Record<string, string>; routes: string[]; startupProducers: Array<{ path: string; value: string }> }; bootstrap: unknown };
   const registryFile = path.join(runtimeRoot, "bundle/registry.json");
   const schemaRelative = "bundle/skills/agentera/capabilities";
   const schemaRoot = path.join(runtimeRoot, schemaRelative);
   const moduleFiles = CAPABILITY_IDS.map((id) => `dist/capabilities/${id}/instructions.js`);
-  return { bootstrap: parsed.bootstrap, projection: {
-    modules: bodyObservation(parsed.capabilities.modules),
-    runtimeRegistry: bodyObservation(parsed.capabilities.runtimeRegistry),
-    served: bodyObservation(parsed.capabilities.served),
-    registry: registryCapabilities(registryFile),
-    routes: [...parsed.capabilities.routes].sort(),
-    schemas: schemaCapabilities(schemaRoot),
-    startupProducers: parsed.capabilities.startupProducers,
-    artifacts: {
-      modules: artifactDigest(runtimeRoot, moduleFiles),
-      runtimeRegistry: artifactDigest(runtimeRoot, [...moduleFiles, "dist/capabilities/index.js"]),
-      served: artifactDigest(runtimeRoot, ["dist/bin/agentera.js"]),
-      registry: artifactDigest(runtimeRoot, ["bundle/registry.json"]),
-      routes: artifactDigest(runtimeRoot, ["dist/cli/commands/capability.js"]),
-      schemas: artifactDigest(runtimeRoot, filesBelow(runtimeRoot, schemaRelative)),
-      startupProducers: artifactDigest(runtimeRoot, ["dist/bin/agentera.js", "bundle/skills/agentera/SKILL.md"]),
+  return {
+    bootstrap: parsed.bootstrap,
+    projection: {
+      modules: bodyObservation(parsed.capabilities.modules),
+      runtimeRegistry: bodyObservation(parsed.capabilities.runtimeRegistry),
+      served: bodyObservation(parsed.capabilities.served),
+      registry: registryCapabilities(registryFile),
+      routes: [...parsed.capabilities.routes].sort(),
+      schemas: schemaCapabilities(schemaRoot),
+      startupProducers: parsed.capabilities.startupProducers,
+      artifacts: {
+        modules: artifactDigest(runtimeRoot, moduleFiles),
+        runtimeRegistry: artifactDigest(runtimeRoot, [...moduleFiles, "dist/capabilities/index.js"]),
+        served: artifactDigest(runtimeRoot, ["dist/bin/agentera.js"]),
+        registry: artifactDigest(runtimeRoot, ["bundle/registry.json"]),
+        routes: artifactDigest(runtimeRoot, ["dist/cli/commands/capability.js"]),
+        schemas: artifactDigest(runtimeRoot, filesBelow(runtimeRoot, schemaRelative)),
+        startupProducers: artifactDigest(runtimeRoot, ["dist/bin/agentera.js", "bundle/skills/agentera/SKILL.md"]),
+      },
     },
-  } };
+  };
 }
 
-function runtimeProjection(
-  runtimeRoot: string,
-  projectRoot: string,
-  sourceRoot: string,
-  mode: "full" | "package-smoke" = "full",
-): CapabilityProjection {
+function runtimeProjection(runtimeRoot: string, projectRoot: string, sourceRoot: string, mode: "full" | "package-smoke" = "full"): CapabilityProjection {
   return runtimeArtifactObservation(runtimeRoot, projectRoot, sourceRoot, mode).projection;
 }
 
-function createRecord(
-  producerKind: ActivationProducerKind,
-  artifactClass: string,
-  artifactIdentity: string,
-  artifactContentDigest: string,
-  content: unknown,
-  generation: string | null,
-  packageIntegrity: string | null,
-): ActivationArtifactRecord {
-  return {
-    producerKind,
-    artifactClass,
-    artifactIdentity,
-    artifactContentDigest,
-    generation,
-    packageIntegrity,
-    content,
-    observationDigest: observationDigest(content),
-  };
+function createRecord(producerKind: ActivationProducerKind, artifactClass: string, artifactIdentity: string, artifactContentDigest: string, content: unknown, generation: string | null, packageIntegrity: string | null): ActivationArtifactRecord {
+  return { producerKind, artifactClass, artifactIdentity, artifactContentDigest, generation, packageIntegrity, content, observationDigest: observationDigest(content) };
 }
 
 function finishEvidence(value: Omit<ActivationOwnerEvidence, "evidenceDigest">): ActivationOwnerEvidence {
@@ -554,9 +467,7 @@ function finishEvidence(value: Omit<ActivationOwnerEvidence, "evidenceDigest">):
 }
 
 function packageManifestSummary(files: readonly { path: string; size: number; mode: number }[]): { count: number; digest: string } {
-  const normalized = [...files]
-    .map(({ path: file, size, mode }) => ({ path: file, size, mode }))
-    .sort((left, right) => left.path.localeCompare(right.path));
+  const normalized = [...files].map(({ path: file, size, mode }) => ({ path: file, size, mode })).sort((left, right) => left.path.localeCompare(right.path));
   return { count: normalized.length, digest: observationDigest(normalized) };
 }
 
@@ -565,13 +476,7 @@ function packageRecord(root: string): any {
 }
 
 export function activationSourceDigest(root: string): string {
-  const files = new Set([
-    "registry.json",
-    "references/adapters/package-registry.yaml",
-    "references/meta/retained-reference-authority.yaml",
-    "skills/agentera/capability_schema_contract.yaml",
-    ...ACTIVATION_CANONICAL_TUPLES.map((tuple) => tuple.owner_path),
-  ]);
+  const files = new Set(["registry.json", "references/adapters/package-registry.yaml", "references/meta/retained-reference-authority.yaml", "skills/agentera/capability_schema_contract.yaml", ...ACTIVATION_CANONICAL_TUPLES.map((tuple) => tuple.owner_path)]);
   return observationDigest([...files].sort().map((file) => ({ path: file, sha256: fs.existsSync(path.join(root, file)) ? fileSha256(path.join(root, file)) : "missing" })));
 }
 
@@ -634,11 +539,7 @@ function genericDimensionObservation(classId: string, dimension: string, input: 
   return { bounds: input.bounds, inputBounds: writes.map((entry: any) => ({ id: `${entry.artifact}.${entry.verb}`, bytes: entry.inputMaxBytes, formats: entry.projection.formatValues })) };
 }
 
-export function createSourceOwnerEvidence(
-  root: string,
-  productionInputs?: any,
-  packageExecution?: SourcePackageExecutionEvidence,
-): ActivationOwnerEvidence {
+export function createSourceOwnerEvidence(root: string, productionInputs?: any, packageExecution?: SourcePackageExecutionEvidence): ActivationOwnerEvidence {
   const capabilities = sourceProjection(root);
   const record = packageRecord(root);
   const records: Record<string, ActivationArtifactRecord> = {
@@ -648,23 +549,31 @@ export function createSourceOwnerEvidence(
     "capability.source-routes": createRecord("source-owner", "capability-source-routes", "packages/cli/src/cli/commands/capability.ts#CAPABILITY_ROUTING_NAMES", capabilities.artifacts.routes, capabilities.routes, null, null),
     "capability.source-schemas": createRecord("source-owner", "capability-source-schemas", "skills/agentera/capabilities/*/schemas", capabilities.artifacts.schemas, capabilities.schemas, null, null),
     "package.source-registry": createRecord("source-owner", "package-source-registry", "references/adapters/package-registry.yaml#records[agentera]", artifactDigest(root, ["references/adapters/package-registry.yaml"]), packageDescriptorSemantics(packageDescriptors(record)), null, null),
-    "package.source-construction": createRecord("source-owner", "package-source-construction", "references/adapters/package-registry.yaml#records[agentera].bundle_surfaces", artifactDigest(root, ["references/adapters/package-registry.yaml", "packages/cli/scripts/package-construction.mjs"]), packageDescriptors(record).map(({ id, entry }) => ({ id, path: entry.path })), null, null),
-    "package.source-selectors": createRecord("source-owner", "package-source-selectors", "references/adapters/package-registry.yaml#records[agentera].semantic_fields", artifactDigest(root, ["references/adapters/package-registry.yaml"]), { semanticSelectors: packageDescriptorSemantics(packageDescriptors(record)) }, null, null),
+    "package.source-construction": createRecord(
+      "source-owner",
+      "package-source-construction",
+      "references/adapters/package-registry.yaml#records[agentera].bundle_surfaces",
+      artifactDigest(root, ["references/adapters/package-registry.yaml", "packages/cli/scripts/package-construction.mjs"]),
+      packageDescriptors(record).map(({ id, entry }) => ({ id, path: entry.path })),
+      null,
+      null,
+    ),
+    "package.source-selectors": createRecord(
+      "source-owner",
+      "package-source-selectors",
+      "references/adapters/package-registry.yaml#records[agentera].semantic_fields",
+      artifactDigest(root, ["references/adapters/package-registry.yaml"]),
+      { semanticSelectors: packageDescriptorSemantics(packageDescriptors(record)) },
+      null,
+      null,
+    ),
     "bootstrap.source-authority": createRecord("source-owner", "bootstrap-source-authority", "packages/cli/src/validate/bootstrapAuthority.ts#bootstrapMatrixAuthority", artifactDigest(root, ["packages/cli/src/validate/bootstrapAuthority.ts"]), bootstrapMatrixAuthority(), null, null),
   };
   if (productionInputs?.classes) {
     for (const classId of ["cli", "runtime", "reference", "state"]) {
       for (const dimension of ["discovery", "behavior", "diagnostics", "instructions", "adversarial"]) {
         const content = productionInputs.classes[classId]?.dimensions?.[dimension];
-        records[`generic.${classId}.${dimension}`] = createRecord(
-          "source-owner",
-          `${classId}-${dimension}-source-observation`,
-          `${classId}.${dimension}`,
-          artifactDigest(root, GENERIC_SOURCE_ARTIFACTS[`${classId}.${dimension}`] ?? []),
-          genericDimensionObservation(classId, dimension, content),
-          null,
-          null,
-        );
+        records[`generic.${classId}.${dimension}`] = createRecord("source-owner", `${classId}-${dimension}-source-observation`, `${classId}.${dimension}`, artifactDigest(root, GENERIC_SOURCE_ARTIFACTS[`${classId}.${dimension}`] ?? []), genericDimensionObservation(classId, dimension, content), null, null);
       }
     }
   }
@@ -692,21 +601,11 @@ export function createSourceOwnerEvidence(
     records["package.adversarial"] = createRecord("source-owner", "package-adversarial", "source-integration/runtime-matrix/rejections", observationDigest(rejectedRows), adversarial, null, null);
     records["bootstrap.extracted-classifications"] = createRecord("source-owner", "bootstrap-extracted-classifications", "source-integration/runtime-matrix/rows", observationDigest(packageRows), packageRows, null, null);
     records["bootstrap.extracted-diagnostics"] = createRecord("source-owner", "bootstrap-extracted-diagnostics", "source-integration/runtime-matrix/rejection-diagnostics", observationDigest(rejectedRows), rejectedRows, null, null);
-    const parity = {
-      ...(runtimeSummary.runtimeObservationDigests ?? {}),
-      packageArtifact: runtimeSummary.packageArtifact ?? null,
-    };
+    const parity = { ...(runtimeSummary.runtimeObservationDigests ?? {}), packageArtifact: runtimeSummary.packageArtifact ?? null };
     records["bootstrap.source-package-parity"] = createRecord("source-owner", "bootstrap-source-package-parity", "source-integration/runtime-matrix/parity", observationDigest(parity), parity, null, null);
     records["bootstrap.missing-surface"] = createRecord("source-owner", "bootstrap-missing-surface", "source-integration/runtime-matrix/missing-required-surfaces", observationDigest(missingSurfaceResults), missingSurfaceResults, null, null);
   }
-  return finishEvidence({
-    schemaVersion: SOURCE_OWNER_EVIDENCE_SCHEMA,
-    producerKind: "source-owner",
-    sourceDigest: activationSourceDigest(root),
-    generation: null,
-    packageIntegrity: null,
-    records,
-  });
+  return finishEvidence({ schemaVersion: SOURCE_OWNER_EVIDENCE_SCHEMA, producerKind: "source-owner", sourceDigest: activationSourceDigest(root), generation: null, packageIntegrity: null, records });
 }
 
 function packageArtifactObservation(runtimeRoot: string, fixture: any, requiredFiles: readonly string[], snapshotDirectory?: string): any {
@@ -718,12 +617,7 @@ function packageArtifactObservation(runtimeRoot: string, fixture: any, requiredF
   return {
     ...currentWithoutTarballEntries,
     tarballTree: { count: tarballTree.entries.length, digest: tarballTree.digest },
-    manifest: {
-      path: "package.json",
-      type: "file",
-      mode: manifestEntry?.mode ?? null,
-      contentDigest: fileSha256(manifestFile),
-    },
+    manifest: { path: "package.json", type: "file", mode: manifestEntry?.mode ?? null, contentDigest: fileSha256(manifestFile) },
     requiredSurfaces: requiredFiles.map((relative) => {
       const file = path.join(runtimeRoot, relative);
       const stat = fs.lstatSync(file);
@@ -742,12 +636,7 @@ function resetObservationProject(project: string): void {
   seedObservationProject(project);
 }
 
-export async function finalizePackageOwnerEvidence(options: {
-  root: string;
-  fixture: any;
-  requiredFiles: readonly string[];
-  snapshotDirectory?: string;
-}): Promise<FinalizedPackageOwnerEvidence> {
+export async function finalizePackageOwnerEvidence(options: { root: string; fixture: any; requiredFiles: readonly string[]; snapshotDirectory?: string }): Promise<FinalizedPackageOwnerEvidence> {
   const { root, fixture } = options;
   const runtimeRoot = fixture.packageRoot;
   const capabilityProject = path.join(fixture.root, "activation-capability-project");
@@ -769,12 +658,7 @@ export async function finalizePackageOwnerEvidence(options: {
     contentSha256: fixture.pathIndependence.contentSha256,
     forbiddenPathMatches: fixture.pathIndependence.forbiddenPathMatches,
     pathNeedleClasses: fixture.pathIndependence.pathNeedleClasses,
-    secondManifest: {
-      filename: fixture.pathIndependence.secondManifest.filename,
-      integrity: fixture.pathIndependence.secondManifest.integrity,
-      shasum: fixture.pathIndependence.secondManifest.shasum,
-      files: packageManifestSummary(secondManifestFiles),
-    },
+    secondManifest: { filename: fixture.pathIndependence.secondManifest.filename, integrity: fixture.pathIndependence.secondManifest.integrity, shasum: fixture.pathIndependence.secondManifest.shasum, files: packageManifestSummary(secondManifestFiles) },
   };
   const records: Record<string, ActivationArtifactRecord> = {
     "capability.extracted-modules": createRecord("package-owner", "capability-extracted-modules", "package/dist/capabilities/*/instructions.js", capabilities.artifacts.modules, capabilities.modules, null, integrity),
@@ -783,18 +667,35 @@ export async function finalizePackageOwnerEvidence(options: {
     "capability.extracted-routes": createRecord("package-owner", "capability-extracted-routes", "package/dist/cli/commands/capability.js#CAPABILITY_ROUTING_NAMES", capabilities.artifacts.routes, capabilities.routes, null, integrity),
     "capability.extracted-schemas": createRecord("package-owner", "capability-extracted-schemas", "package/bundle/skills/agentera/capabilities/*/schemas", capabilities.artifacts.schemas, capabilities.schemas, null, integrity),
     "package.extracted-artifact": createRecord("package-owner", "package-extracted-artifact", "npm-tarball/extracted-package", observationDigest(packageArtifact), packageArtifact, null, integrity),
-    "package.extracted-registry": createRecord("package-owner", "package-extracted-registry", "package/bundle/references/adapters/package-registry.yaml#records[agentera]", artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]), packageDescriptorSemantics(packageDescriptors(record)), null, integrity),
+    "package.extracted-registry": createRecord(
+      "package-owner",
+      "package-extracted-registry",
+      "package/bundle/references/adapters/package-registry.yaml#records[agentera]",
+      artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]),
+      packageDescriptorSemantics(packageDescriptors(record)),
+      null,
+      integrity,
+    ),
     "package.extracted-smoke": createRecord("package-owner", "package-extracted-smoke", "package/dist/bin/agentera.js#prime-context-status", capabilities.artifacts.served!, capabilities.served, null, integrity),
     "package.portability": createRecord("package-owner", "package-portability", "npm-tarball/path-portability", fixture.pathIndependence.contentSha256, portability, null, integrity),
     "bootstrap.extracted-startup": createRecord("package-owner", "bootstrap-extracted-startup", "package/dist/bin/agentera.js#startup-producers", capabilities.artifacts.startupProducers!, capabilities.startupProducers, null, integrity),
-    "bootstrap.extracted-declarations": createRecord("package-owner", "bootstrap-extracted-declarations", "package/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority", artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]), packageCommandDeclarations(record), null, integrity),
+    "bootstrap.extracted-declarations": createRecord(
+      "package-owner",
+      "bootstrap-extracted-declarations",
+      "package/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority",
+      artifactDigest(runtimeRoot, ["bundle/references/adapters/package-registry.yaml"]),
+      packageCommandDeclarations(record),
+      null,
+      integrity,
+    ),
   };
   for (const classId of ["runtime", "reference", "state"]) {
-    const relative = classId === "runtime"
-      ? [["bundle", "references", "adapters", "runtime-lifecycle-authority.yaml"].join("/"), ["bundle", "references", "adapters", "runtime-retired-resources.yaml"].join("/")]
-      : classId === "reference"
-        ? ["bundle/references/meta/retained-reference-authority.yaml"]
-        : ["dist/state/entityListRuntimeRegistry.js", "dist/state/write/runtimeOperations.js", "dist/state/write/operations.js"];
+    const relative =
+      classId === "runtime"
+        ? [["bundle", "references", "adapters", "runtime-lifecycle-authority.yaml"].join("/"), ["bundle", "references", "adapters", "runtime-retired-resources.yaml"].join("/")]
+        : classId === "reference"
+          ? ["bundle/references/meta/retained-reference-authority.yaml"]
+          : ["dist/state/entityListRuntimeRegistry.js", "dist/state/write/runtimeOperations.js", "dist/state/write/operations.js"];
     records[`generic.${classId}.package_projection`] = createRecord(
       "package-owner",
       `${classId}-package-projection`,
@@ -805,23 +706,11 @@ export async function finalizePackageOwnerEvidence(options: {
       integrity,
     );
   }
-  const evidence = finishEvidence({
-    schemaVersion: PACKAGE_OWNER_EVIDENCE_SCHEMA,
-    producerKind: "package-owner",
-    sourceDigest: activationSourceDigest(root),
-    generation: null,
-    packageIntegrity: integrity,
-    records,
-  });
+  const evidence = finishEvidence({ schemaVersion: PACKAGE_OWNER_EVIDENCE_SCHEMA, producerKind: "package-owner", sourceDigest: activationSourceDigest(root), generation: null, packageIntegrity: integrity, records });
   const unsignedIdentity: Omit<ActivationPackageIdentity, "identityDigest"> = {
     schemaVersion: PACKAGE_IDENTITY_SCHEMA,
     packageEvidenceDigest: evidence.evidenceDigest,
-    packageArtifact: {
-      filename: packageArtifact.filename,
-      integrity: packageArtifact.integrity,
-      shasum: packageArtifact.shasum,
-      tarballSha256: packageArtifact.tarballSha256,
-    },
+    packageArtifact: { filename: packageArtifact.filename, integrity: packageArtifact.integrity, shasum: packageArtifact.shasum, tarballSha256: packageArtifact.tarballSha256 },
     packageArtifactObservationDigest: records["package.extracted-artifact"].observationDigest,
     extractedTree: { count: packageArtifact.extractedTree.entries.length, digest: packageArtifact.extractedTree.digest },
     tarballTree: { count: packageArtifact.tarballTree.count, digest: packageArtifact.tarballTree.digest },
@@ -829,12 +718,7 @@ export async function finalizePackageOwnerEvidence(options: {
   return { evidence, packageIdentity: { ...unsignedIdentity, identityDigest: observationDigest(unsignedIdentity) } };
 }
 
-export function createGeneratedOwnerEvidence(options: {
-  root: string;
-  generationRoot: string;
-  generation: string;
-  productionInputs: any;
-}): ActivationOwnerEvidence {
+export function createGeneratedOwnerEvidence(options: { root: string; generationRoot: string; generation: string; productionInputs: any }): ActivationOwnerEvidence {
   const project = fs.mkdtempSync(path.join(process.env.TMPDIR ?? options.generationRoot, "activation-generated-project-"));
   seedObservationProject(project);
   let runtimeObservation: ReturnType<typeof runtimeArtifactObservation>;
@@ -847,8 +731,9 @@ export function createGeneratedOwnerEvidence(options: {
   const bundleRoot = path.join(options.generationRoot, "bundle");
   const record = packageRecord(bundleRoot);
   const bootstrap = runtimeObservation.bootstrap;
-  const generationFiles = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json", "dist/.agentera-build-source.json", "bundle/.agentera-build-source.json", "bundle/.agentera-npx-bundle.json", "bundle/extract-corpus-parity.json"]
-    .filter((file) => fs.existsSync(path.join(options.generationRoot, file)));
+  const generationFiles = [".agentera-generation.json", "dist/.agentera-generation.json", "bundle/.agentera-generation.json", "dist/.agentera-build-source.json", "bundle/.agentera-build-source.json", "bundle/.agentera-npx-bundle.json", "bundle/extract-corpus-parity.json"].filter((file) =>
+    fs.existsSync(path.join(options.generationRoot, file)),
+  );
   const records: Record<string, ActivationArtifactRecord> = {
     "capability.generated-modules": createRecord("generated-owner", "capability-generated-modules", "generation/dist/capabilities/*/instructions.js", capabilities.artifacts.modules, capabilities.modules, options.generation, null),
     "capability.generated-runtime-registry": createRecord("generated-owner", "capability-generated-runtime-registry", "generation/dist/capabilities/index.js#CAPABILITY_INSTRUCTIONS", capabilities.artifacts.runtimeRegistry, capabilities.runtimeRegistry, options.generation, null),
@@ -856,23 +741,64 @@ export function createGeneratedOwnerEvidence(options: {
     "capability.generated-registry": createRecord("generated-owner", "capability-generated-registry", "generation/bundle/registry.json#skills[0].capabilities", capabilities.artifacts.registry, capabilities.registry, options.generation, null),
     "capability.generated-routes": createRecord("generated-owner", "capability-generated-routes", "generation/dist/cli/commands/capability.js#CAPABILITY_ROUTING_NAMES", capabilities.artifacts.routes, capabilities.routes, options.generation, null),
     "capability.generated-schemas": createRecord("generated-owner", "capability-generated-schemas", "generation/bundle/skills/agentera/capabilities/*/schemas", capabilities.artifacts.schemas, capabilities.schemas, options.generation, null),
-    "package.generated-construction": createRecord("generated-owner", "package-generated-construction", "generation/package-construction-markers", artifactDigest(options.generationRoot, generationFiles), generationFiles.map((file) => ({ file, sha256: fileSha256(path.join(options.generationRoot, file)) })), options.generation, null),
-    "package.generated-registry": createRecord("generated-owner", "package-generated-registry", "generation/bundle/references/adapters/package-registry.yaml#records[agentera]", artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]), packageDescriptorSemantics(packageDescriptors(record)), options.generation, null),
-    "package.generated-selectors": createRecord("generated-owner", "package-generated-selectors", "generation/bundle/references/adapters/package-registry.yaml#semantic_fields", artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]), { semanticSelectors: packageDescriptorSemantics(packageDescriptors(record)) }, options.generation, null),
-    "bootstrap.generated-binder": createRecord("generated-owner", "bootstrap-generated-binder", "generation/dist/core/developmentInvocation.js#bindDevelopmentInvocation", artifactDigest(options.generationRoot, ["dist/core/developmentInvocation.js", "dist/validate/bootstrapAuthority.js"]), bootstrap, options.generation, null),
-    "bootstrap.generated-diagnostics": createRecord("generated-owner", "bootstrap-generated-diagnostics", "generation/dist/core/developmentInvocation.js#DevelopmentInvocationError", artifactDigest(options.generationRoot, ["dist/core/developmentInvocation.js"]), (bootstrap as any).rows.filter((row: any) => row.classification !== "accepted"), options.generation, null),
+    "package.generated-construction": createRecord(
+      "generated-owner",
+      "package-generated-construction",
+      "generation/package-construction-markers",
+      artifactDigest(options.generationRoot, generationFiles),
+      generationFiles.map((file) => ({ file, sha256: fileSha256(path.join(options.generationRoot, file)) })),
+      options.generation,
+      null,
+    ),
+    "package.generated-registry": createRecord(
+      "generated-owner",
+      "package-generated-registry",
+      "generation/bundle/references/adapters/package-registry.yaml#records[agentera]",
+      artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]),
+      packageDescriptorSemantics(packageDescriptors(record)),
+      options.generation,
+      null,
+    ),
+    "package.generated-selectors": createRecord(
+      "generated-owner",
+      "package-generated-selectors",
+      "generation/bundle/references/adapters/package-registry.yaml#semantic_fields",
+      artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]),
+      { semanticSelectors: packageDescriptorSemantics(packageDescriptors(record)) },
+      options.generation,
+      null,
+    ),
+    "bootstrap.generated-binder": createRecord(
+      "generated-owner",
+      "bootstrap-generated-binder",
+      "generation/dist/core/developmentInvocation.js#bindDevelopmentInvocation",
+      artifactDigest(options.generationRoot, ["dist/core/developmentInvocation.js", "dist/validate/bootstrapAuthority.js"]),
+      bootstrap,
+      options.generation,
+      null,
+    ),
+    "bootstrap.generated-diagnostics": createRecord(
+      "generated-owner",
+      "bootstrap-generated-diagnostics",
+      "generation/dist/core/developmentInvocation.js#DevelopmentInvocationError",
+      artifactDigest(options.generationRoot, ["dist/core/developmentInvocation.js"]),
+      (bootstrap as any).rows.filter((row: any) => row.classification !== "accepted"),
+      options.generation,
+      null,
+    ),
     "bootstrap.generated-startup": createRecord("generated-owner", "bootstrap-generated-startup", "generation/dist/bin/agentera.js#startup-producers", capabilities.artifacts.startupProducers!, capabilities.startupProducers, options.generation, null),
-    "bootstrap.generated-declarations": createRecord("generated-owner", "bootstrap-generated-declarations", "generation/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority", artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]), packageCommandDeclarations(record), options.generation, null),
+    "bootstrap.generated-declarations": createRecord(
+      "generated-owner",
+      "bootstrap-generated-declarations",
+      "generation/bundle/references/adapters/package-registry.yaml#bootstrap_command_authority",
+      artifactDigest(options.generationRoot, ["bundle/references/adapters/package-registry.yaml"]),
+      packageCommandDeclarations(record),
+      options.generation,
+      null,
+    ),
     "generic.cli.package_projection": createRecord("generated-owner", "cli-package-projection", "generation/dist/cli/dispatch/projections.js", artifactDigest(options.generationRoot, ["dist/cli/dispatch/projections.js"]), options.productionInputs.classes.cli.dimensions.package_projection, options.generation, null),
   };
-  return finishEvidence({
-    schemaVersion: GENERATED_OWNER_EVIDENCE_SCHEMA,
-    producerKind: "generated-owner",
-    sourceDigest: activationSourceDigest(options.root),
-    generation: options.generation,
-    packageIntegrity: null,
-    records,
-  });
+  return finishEvidence({ schemaVersion: GENERATED_OWNER_EVIDENCE_SCHEMA, producerKind: "generated-owner", sourceDigest: activationSourceDigest(options.root), generation: options.generation, packageIntegrity: null, records });
 }
 
 export function writeContentAddressedOwnerEvidence(directory: string, evidence: ActivationOwnerEvidence): { path: string; digest: string; bytes: number } {
@@ -896,47 +822,51 @@ export function writeContentAddressedOwnerEvidence(directory: string, evidence: 
   return { path: target, digest: evidence.evidenceDigest, bytes: byteLength };
 }
 
-export function activationPackageIdentityViolations(
-  identity: unknown,
-  packageEvidence?: ActivationOwnerEvidence,
-): string[] {
+export function activationPackageIdentityViolations(identity: unknown, packageEvidence?: ActivationOwnerEvidence): string[] {
   if (!identity || typeof identity !== "object") return ["trusted immutable package identity is missing or malformed"];
   const actual = identity as ActivationPackageIdentity;
   const { identityDigest, ...unsigned } = actual;
   const violations: string[] = [];
-  if (Object.keys(actual).sort().join("\0") !== ["extractedTree", "identityDigest", "packageArtifact", "packageArtifactObservationDigest", "packageEvidenceDigest", "schemaVersion", "tarballTree"].join("\0")
-    || Object.keys(actual.packageArtifact ?? {}).sort().join("\0") !== ["filename", "integrity", "shasum", "tarballSha256"].join("\0")
-    || Object.keys(actual.extractedTree ?? {}).sort().join("\0") !== ["count", "digest"].join("\0")
-    || Object.keys(actual.tarballTree ?? {}).sort().join("\0") !== ["count", "digest"].join("\0")
-    || actual.schemaVersion !== PACKAGE_IDENTITY_SCHEMA
-    || !/^[a-f0-9]{64}$/.test(actual.packageEvidenceDigest ?? "")
-    || !/^[a-f0-9]{64}$/.test(actual.packageArtifactObservationDigest ?? "")
-    || !/^agentera-\d+\.\d+\.\d+(?:-dev\.\d+)?\.tgz$/.test(actual.packageArtifact?.filename ?? "")
-    || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(actual.packageArtifact?.integrity ?? "")
-    || !/^[a-f0-9]{40}$/.test(actual.packageArtifact?.shasum ?? "")
-    || !/^[a-f0-9]{64}$/.test(actual.packageArtifact?.tarballSha256 ?? "")
-    || !Number.isInteger(actual.extractedTree?.count) || actual.extractedTree.count < 1
-    || !/^[a-f0-9]{64}$/.test(actual.extractedTree?.digest ?? "")
-    || !Number.isInteger(actual.tarballTree?.count) || actual.tarballTree.count < 1
-    || !/^[a-f0-9]{64}$/.test(actual.tarballTree?.digest ?? "")
-    || identityDigest !== observationDigest(unsigned)) {
+  if (
+    Object.keys(actual).sort().join("\0") !== ["extractedTree", "identityDigest", "packageArtifact", "packageArtifactObservationDigest", "packageEvidenceDigest", "schemaVersion", "tarballTree"].join("\0") ||
+    Object.keys(actual.packageArtifact ?? {})
+      .sort()
+      .join("\0") !== ["filename", "integrity", "shasum", "tarballSha256"].join("\0") ||
+    Object.keys(actual.extractedTree ?? {})
+      .sort()
+      .join("\0") !== ["count", "digest"].join("\0") ||
+    Object.keys(actual.tarballTree ?? {})
+      .sort()
+      .join("\0") !== ["count", "digest"].join("\0") ||
+    actual.schemaVersion !== PACKAGE_IDENTITY_SCHEMA ||
+    !/^[a-f0-9]{64}$/.test(actual.packageEvidenceDigest ?? "") ||
+    !/^[a-f0-9]{64}$/.test(actual.packageArtifactObservationDigest ?? "") ||
+    !/^agentera-\d+\.\d+\.\d+(?:-dev\.\d+)?\.tgz$/.test(actual.packageArtifact?.filename ?? "") ||
+    !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(actual.packageArtifact?.integrity ?? "") ||
+    !/^[a-f0-9]{40}$/.test(actual.packageArtifact?.shasum ?? "") ||
+    !/^[a-f0-9]{64}$/.test(actual.packageArtifact?.tarballSha256 ?? "") ||
+    !Number.isInteger(actual.extractedTree?.count) ||
+    actual.extractedTree.count < 1 ||
+    !/^[a-f0-9]{64}$/.test(actual.extractedTree?.digest ?? "") ||
+    !Number.isInteger(actual.tarballTree?.count) ||
+    actual.tarballTree.count < 1 ||
+    !/^[a-f0-9]{64}$/.test(actual.tarballTree?.digest ?? "") ||
+    identityDigest !== observationDigest(unsigned)
+  ) {
     violations.push("trusted immutable package identity is missing or malformed");
   }
   if (packageEvidence) {
     const artifact = packageEvidence.records?.["package.extracted-artifact"];
     const content = artifact?.content as any;
-    if (packageEvidence.evidenceDigest !== actual.packageEvidenceDigest
-      || artifact?.observationDigest !== actual.packageArtifactObservationDigest
-      || canonicalObservationJson({
-        filename: content?.filename,
-        integrity: content?.integrity,
-        shasum: content?.shasum,
-        tarballSha256: content?.tarballSha256,
-      }) !== canonicalObservationJson(actual.packageArtifact)
-      || content?.extractedTree?.entries?.length !== actual.extractedTree?.count
-      || content?.extractedTree?.digest !== actual.extractedTree?.digest
-      || content?.tarballTree?.count !== actual.tarballTree?.count
-      || content?.tarballTree?.digest !== actual.tarballTree?.digest) {
+    if (
+      packageEvidence.evidenceDigest !== actual.packageEvidenceDigest ||
+      artifact?.observationDigest !== actual.packageArtifactObservationDigest ||
+      canonicalObservationJson({ filename: content?.filename, integrity: content?.integrity, shasum: content?.shasum, tarballSha256: content?.tarballSha256 }) !== canonicalObservationJson(actual.packageArtifact) ||
+      content?.extractedTree?.entries?.length !== actual.extractedTree?.count ||
+      content?.extractedTree?.digest !== actual.extractedTree?.digest ||
+      content?.tarballTree?.count !== actual.tarballTree?.count ||
+      content?.tarballTree?.digest !== actual.tarballTree?.digest
+    ) {
       violations.push("package-owner evidence differs from the independently retained package identity");
     }
   }
@@ -967,8 +897,7 @@ export function readContentAddressedPackageIdentity(directory: string): Activati
   const stat = fs.statSync(file);
   if (stat.size <= 0 || stat.size > PACKAGE_IDENTITY_MAX_BYTES) throw new Error("package identity violates its byte bound");
   const identity = JSON.parse(fs.readFileSync(file, "utf8")) as ActivationPackageIdentity;
-  if (entries[0].name !== `package-identity-${identity.identityDigest}.json`
-    || activationPackageIdentityViolations(identity).length > 0) {
+  if (entries[0].name !== `package-identity-${identity.identityDigest}.json` || activationPackageIdentityViolations(identity).length > 0) {
     throw new Error("package identity has wrong content-addressed provenance");
   }
   return identity;

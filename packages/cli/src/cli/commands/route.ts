@@ -50,18 +50,36 @@ function parse(argv: string[]): { input: string; format: "json" } | InvalidInput
     const [name, inline] = argument.split("=", 2);
     if (name === "--input" || name === "--format") {
       const value = inline ?? argv[++index];
-      if (!value || value.startsWith("--")) return { class: "missing_argument", message: `${name} requires a value`, syntax: `${name} VALUE` };
+      if (!value || value.startsWith("--"))
+        return {
+          class: "missing_argument",
+          message: `${name} requires a value`,
+          syntax: `${name} VALUE`,
+        };
       if (name === "--input") {
         if (input) return { class: "mutually_exclusive", message: "--input may only be supplied once" };
         input = value;
       } else if (value !== "json") {
-        return { class: "invalid_choice", message: `argument --format: invalid choice: '${value}' (choose from 'json')`, valid_values: ["json"] };
+        return {
+          class: "invalid_choice",
+          message: `argument --format: invalid choice: '${value}' (choose from 'json')`,
+          valid_values: ["json"],
+        };
       }
       continue;
     }
-    return { class: "unrecognized_argument", message: "unrecognized route argument; request text must be supplied through --input" };
+    return {
+      class: "unrecognized_argument",
+      message: "unrecognized route argument; request text must be supplied through --input",
+    };
   }
-  if (!input) return { class: "missing_argument", message: "--input is required so request text is not placed in argv", syntax: "--input PATH", example: preCutoverCommand("route request --input -") };
+  if (!input)
+    return {
+      class: "missing_argument",
+      message: "--input is required so request text is not placed in argv",
+      syntax: "--input PATH",
+      example: preCutoverCommand("route request --input -"),
+    };
   return { input, format };
 }
 
@@ -74,25 +92,44 @@ export function runRouteRequest(argv: string[], io: RouteIo): number {
   try {
     input = loadRouteInput(parsed.input, io.stdin ?? readStdin);
   } catch {
-    return invalidRouteInput(io, { class: "invalid_format", message: "route request input must be a readable YAML or JSON mapping", syntax: "--input PATH" });
+    return invalidRouteInput(io, {
+      class: "invalid_format",
+      message: "route request input must be a readable YAML or JSON mapping",
+      syntax: "--input PATH",
+    });
   }
   if (Object.keys(input).some((key) => key !== "version" && key !== "request")) {
-    return invalidRouteInput(io, { class: "schema_violation", message: "route request input contains unsupported fields" });
+    return invalidRouteInput(io, {
+      class: "schema_violation",
+      message: "route request input contains unsupported fields",
+    });
   }
   if (input.version !== undefined && input.version !== "agentera.route_request.v1") {
-    return invalidRouteInput(io, { class: "schema_violation", message: "route request version must be agentera.route_request.v1" });
+    return invalidRouteInput(io, {
+      class: "schema_violation",
+      message: "route request version must be agentera.route_request.v1",
+    });
   }
   if (typeof input.request !== "string") {
-    return invalidRouteInput(io, { class: "invalid_request", message: "route request input requires a string request field" });
+    return invalidRouteInput(io, {
+      class: "invalid_request",
+      message: "route request input requires a string request field",
+    });
   }
   try {
     emitStructured(resolveRouteRequest(input.request), parsed.format, io.out ?? ((text) => process.stdout.write(text)));
     return 0;
   } catch (error) {
     if (error instanceof HybridRouteRegistryError) {
-      return invalidRouteInput(io, { class: "conflict", message: "routing authority validation failed before routing" });
+      return invalidRouteInput(io, {
+        class: "conflict",
+        message: "routing authority validation failed before routing",
+      });
     }
-    return invalidRouteInput(io, { class: "invalid_request", message: "route request could not be resolved" });
+    return invalidRouteInput(io, {
+      class: "invalid_request",
+      message: "route request could not be resolved",
+    });
   }
 }
 
@@ -108,18 +145,19 @@ export function runRouteReceipt(argv: string[], io: RouteIo): number {
     emitStructured(validateRouteReceiptSubmission(input), parsed.format, io.out ?? ((text) => process.stdout.write(text)));
     return 0;
   } catch (error) {
-    const message = error instanceof RouteReceiptValidationError
-      ? `invalid route receipt at ${error.field}: ${error.message}`
-      : "route receipt input must be a readable UTF-8 YAML or JSON mapping";
-    return emitInvalidInput({ out: io.out, err: io.err }, {
-      format: "json",
-      body: {
-        class: "invalid_receipt",
-        message,
-        recovery: "Submit the original request and a complete nullable host receipt through --input; no capability was started.",
+    const message = error instanceof RouteReceiptValidationError ? `invalid route receipt at ${error.field}: ${error.message}` : "route receipt input must be a readable UTF-8 YAML or JSON mapping";
+    return emitInvalidInput(
+      { out: io.out, err: io.err },
+      {
+        format: "json",
+        body: {
+          class: "invalid_receipt",
+          message,
+          recovery: "Submit the original request and a complete nullable host receipt through --input; no capability was started.",
+        },
+        exitCode: 64,
       },
-      exitCode: 64,
-    });
+    );
   }
 }
 

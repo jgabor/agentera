@@ -7,14 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
-import {
-  cmdValidate,
-  cmdValidateCapability,
-  cmdValidateCapabilityContract,
-  cmdValidateArtifact,
-  cmdValidateState,
-  isDelegatedValidateFamily,
-} from "../../src/cli/commands/validate.js";
+import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, cmdValidateArtifact, cmdValidateState, isDelegatedValidateFamily } from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
@@ -39,39 +32,16 @@ function runMalformedVocabularyAuthority(mutate: (authority: Record<string, any>
   const previousRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   try {
     fs.mkdirSync(path.join(root, "references", "artifacts"), { recursive: true });
-    fs.symlinkSync(
-      path.join(repoRoot, "references", "cli"),
-      path.join(root, "references", "cli"),
-      "dir",
-    );
-    fs.symlinkSync(
-      path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"),
-      path.join(root, "references", "artifacts", "state-storage-authority.yaml"),
-      "file",
-    );
+    fs.symlinkSync(path.join(repoRoot, "references", "cli"), path.join(root, "references", "cli"), "dir");
+    fs.symlinkSync(path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml"), path.join(root, "references", "artifacts", "state-storage-authority.yaml"), "file");
     fs.symlinkSync(path.join(repoRoot, "skills"), path.join(root, "skills"), "dir");
     fs.symlinkSync(path.join(repoRoot, "registry.json"), path.join(root, "registry.json"), "file");
-    const authorityPath = path.join(
-      root,
-      "references",
-      "artifacts",
-      "glossary-entry-contract.yaml",
-    );
-    const authority = YAML.parse(
-      fs.readFileSync(
-        path.join(repoRoot, "references", "artifacts", "glossary-entry-contract.yaml"),
-        "utf8",
-      ),
-    );
+    const authorityPath = path.join(root, "references", "artifacts", "glossary-entry-contract.yaml");
+    const authority = YAML.parse(fs.readFileSync(path.join(repoRoot, "references", "artifacts", "glossary-entry-contract.yaml"), "utf8"));
     mutate(authority);
     fs.writeFileSync(authorityPath, YAML.stringify(authority));
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = root;
-    const result = capture((io) =>
-      main(
-        ["node", "agentera", "check", "validate", "vocabularyAuthority", "--format", "json"],
-        io,
-      ),
-    );
+    const result = capture((io) => main(["node", "agentera", "check", "validate", "vocabularyAuthority", "--format", "json"], io));
     const persisted = YAML.parse(fs.readFileSync(authorityPath, "utf8"));
     return { ...result, implementation: persisted.consumer_boundary.implementation };
   } finally {
@@ -131,9 +101,7 @@ describe("cli validate (delegated families)", () => {
 
       const help = capture((io) => main(["node", "agentera", "check", "validate", "--help"], io));
       const schema = capture((io) => main(["node", "agentera", "schema", "--format", "json"], io));
-      const validation = capture((io) =>
-        main(["node", "agentera", "check", "validate", "retained-references", "--format", "json"], io),
-      );
+      const validation = capture((io) => main(["node", "agentera", "check", "validate", "retained-references", "--format", "json"], io));
 
       expect(help.rc).toBe(0);
       expect(help.out).not.toContain("retained-references");
@@ -143,9 +111,7 @@ describe("cli validate (delegated families)", () => {
       const payload = JSON.parse(validation.out);
       expect(payload.status).toBe("fail");
       expect(payload.failure_class).toBe("unsupported_source_checkout");
-      expect(payload.violations).toEqual([
-        "retained-reference validation is unavailable outside a source checkout",
-      ]);
+      expect(payload.violations).toEqual(["retained-reference validation is unavailable outside a source checkout"]);
       expect(payload.recovery).toContain("source-checkout-only");
       expect(payload.engine.command).toBe("packages/cli/src/validate/retainedReferenceAuthority.ts");
     } finally {
@@ -181,19 +147,13 @@ describe("cli validate (delegated families)", () => {
 
   it("fails the documented vocabularyAuthority command on an overlapping consumer matrix", () => {
     const { rc, out } = runMalformedVocabularyAuthority((authority) => {
-      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push(
-        "present",
-      );
+      authority.consumer_boundary.outcome_matrix.no_applicable_entry.match.inferred_candidate.push("present");
     });
     const payload = JSON.parse(out);
     expect(rc).toBe(1);
     expect(payload.status).toBe("fail");
-    expect(payload.engine.stdout.join("\n")).toContain(
-      "consumer_boundary.primary_selection must be exhaustive and non-overlapping",
-    );
-    expect(payload.engine.stdout.join("\n")).toContain(
-      "correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority",
-    );
+    expect(payload.engine.stdout.join("\n")).toContain("consumer_boundary.primary_selection must be exhaustive and non-overlapping");
+    expect(payload.engine.stdout.join("\n")).toContain("correct outcome_matrix[*].match and rerun agentera check validate vocabularyAuthority");
   });
 
   it.each([
@@ -209,12 +169,8 @@ describe("cli validate (delegated families)", () => {
     const payload = JSON.parse(out);
     expect(rc).toBe(1);
     expect(payload.status).toBe("fail");
-    expect(payload.engine.stdout.join("\n")).toContain(
-      `consumer_boundary.outcome_matrix.${outcomeName}.${field}`,
-    );
-    expect(payload.engine.stdout.join("\n")).toContain(
-      "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority",
-    );
+    expect(payload.engine.stdout.join("\n")).toContain(`consumer_boundary.outcome_matrix.${outcomeName}.${field}`);
+    expect(payload.engine.stdout.join("\n")).toContain("restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority");
     expect(implementation).toEqual({
       acquisition: "active",
       advice_resolution: "active",
@@ -227,34 +183,27 @@ describe("cli validate (delegated families)", () => {
     });
   });
 
-  it.each(["judgment", "selected_owner", "selected_meaning", "review", "tension"])(
-    "fails the documented command on missing %s semantics without activating integrations",
-    (field) => {
-      const { rc, out, implementation } = runMalformedVocabularyAuthority((authority) => {
-        delete authority.consumer_boundary.outcome_matrix.equivalent_exact_collision[field];
-      });
-      const payload = JSON.parse(out);
-      expect(rc).toBe(1);
-      expect(payload.status).toBe("fail");
-      expect(payload.engine.stdout.join("\n")).toContain(
-        `consumer_boundary.outcome_matrix.equivalent_exact_collision.${field}`,
-      );
-      expect(payload.engine.stdout.join("\n")).toContain("(found missing)");
-      expect(payload.engine.stdout.join("\n")).toContain(
-        "restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority",
-      );
-      expect(implementation).toEqual({
-        acquisition: "active",
-        advice_resolution: "active",
-        capability_integrations: {
-          build: "active",
-          discuss: "active",
-          plan: "active",
-          prime: "active",
-        },
-      });
-    },
-  );
+  it.each(["judgment", "selected_owner", "selected_meaning", "review", "tension"])("fails the documented command on missing %s semantics without activating integrations", (field) => {
+    const { rc, out, implementation } = runMalformedVocabularyAuthority((authority) => {
+      delete authority.consumer_boundary.outcome_matrix.equivalent_exact_collision[field];
+    });
+    const payload = JSON.parse(out);
+    expect(rc).toBe(1);
+    expect(payload.status).toBe("fail");
+    expect(payload.engine.stdout.join("\n")).toContain(`consumer_boundary.outcome_matrix.equivalent_exact_collision.${field}`);
+    expect(payload.engine.stdout.join("\n")).toContain("(found missing)");
+    expect(payload.engine.stdout.join("\n")).toContain("restore the canonical primary-outcome semantics and rerun agentera check validate vocabularyAuthority");
+    expect(implementation).toEqual({
+      acquisition: "active",
+      advice_resolution: "active",
+      capability_integrations: {
+        build: "active",
+        discuss: "active",
+        plan: "active",
+        prime: "active",
+      },
+    });
+  });
 
   it("validates self-audit conventions against the repo", () => {
     const { rc, out } = capture((io) => cmdValidate("selfAudit", {}, io));
@@ -269,9 +218,7 @@ describe("cli validate (delegated families)", () => {
 
 describe("cli dispatch: validate routing", () => {
   it("routes check validate cross-capability", () => {
-    const { rc } = capture((io) =>
-      main(["node", "agentera", "check", "validate", "cross-capability"], io),
-    );
+    const { rc } = capture((io) => main(["node", "agentera", "check", "validate", "cross-capability"], io));
     expect(rc).toBe(0);
   });
 
@@ -289,9 +236,7 @@ describe("cli dispatch: validate routing", () => {
   });
 
   it("requires a family", () => {
-    const { rc, out } = capture((io) =>
-      main(["node", "agentera", "check", "validate", "--format", "json"], io),
-    );
+    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "--format", "json"], io));
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload.error.valid_values).not.toContain("descriptors");
@@ -302,12 +247,7 @@ describe("cli validate state", () => {
   it("emits a successful whole-state JSON envelope", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "validate-state-"));
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) =>
-      main(
-        ["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"],
-        io,
-      ),
-    );
+    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "state", "--cwd", root, "--format", "json"], io));
     expect(rc).toBe(0);
     expect(JSON.parse(out)).toMatchObject({
       command: "check validate state",
@@ -343,13 +283,9 @@ describe("cli validate state", () => {
     const id = "0123456789abcdefabcd";
     const fingerprint = "a".repeat(64);
     const digest = "b".repeat(64);
-    const marker = Buffer.from(
-      `schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${id}\nsource_fingerprint: ${fingerprint}\npreview_digest: ${digest}\n`,
-    );
+    const marker = Buffer.from(`schemaVersion: agentera.stateMode.v1\nmode: entities\nmigration_id: ${id}\nsource_fingerprint: ${fingerprint}\npreview_digest: ${digest}\n`);
     const target = ".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml";
-    const entity = Buffer.from(
-      "id: aaaaaaaaaa\nartifact: progress\nrecord:\n  timestamp: 2026-07-18 12:00\n  type: fix\n  phase: build\n  what: retained evidence\n  context:\n    intent: validate historical cutover\n",
-    );
+    const entity = Buffer.from("id: aaaaaaaaaa\nartifact: progress\nrecord:\n  timestamp: 2026-07-18 12:00\n  type: fix\n  phase: build\n  what: retained evidence\n  context:\n    intent: validate historical cutover\n");
     const hash = (bytes: Buffer): string => createHash("sha256").update(bytes).digest("hex");
     const manifest = Buffer.from(
       JSON.stringify({
@@ -415,18 +351,14 @@ describe("cli validate capability (structure; exact output covered by parity har
   });
 
   it("rejects an unknown capability name", () => {
-    expect(() => cmdValidateCapability("notacapability", {}, {})).toThrow(
-      /unsupported capability target/,
-    );
+    expect(() => cmdValidateCapability("notacapability", {}, {})).toThrow(/unsupported capability target/);
   });
 });
 
 describe("cli validate capability-contract (structure)", () => {
   it("prints contract, protocol, and TODO readiness headers (text)", () => {
     const { out } = capture((io) => cmdValidateCapabilityContract({}, io));
-    expect(out).toContain(
-      "Self-validating contract: skills/agentera/capability_schema_contract.yaml",
-    );
+    expect(out).toContain("Self-validating contract: skills/agentera/capability_schema_contract.yaml");
     expect(out).toContain("Validating protocol: skills/agentera/protocol.yaml");
     expect(out).toContain("Validating TODO readiness: skills/agentera/schemas/artifacts/todo.yaml");
   });
@@ -436,39 +368,20 @@ describe("cli validate capability-contract (structure)", () => {
     const payload = JSON.parse(out);
     expect(payload.target_family).toBe("capability-contract");
     expect(payload.checks).toHaveLength(3);
-    expect(payload.checks.map((c: { target_family: string }) => c.target_family)).toEqual([
-      "capability-contract-self",
-      "capability-protocol",
-      "todo-readiness",
-    ]);
+    expect(payload.checks.map((c: { target_family: string }) => c.target_family)).toEqual(["capability-contract-self", "capability-protocol", "todo-readiness"]);
   });
 });
 
 describe("retired cli validate descriptors", () => {
   it("rejects the retired family with the bounded current-family correction", () => {
-    const { rc, out } = capture((io) =>
-      main(["node", "agentera", "check", "validate", "descriptors", "--format", "json"], io),
-    );
+    const { rc, out } = capture((io) => main(["node", "agentera", "check", "validate", "descriptors", "--format", "json"], io));
     expect(rc).toBe(2);
     const payload = JSON.parse(out);
     expect(payload.error).toMatchObject({
       class: "unsupported_target",
-      message:
-        "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
+      message: "unsupported validate family 'descriptors'; valid families are listed in valid_values.",
     });
-    expect(payload.error.valid_values).toEqual([
-        "cross-capability",
-        "app-home-contract",
-        "vocabularyAuthority",
-        "retained-references",
-        "activation-conjunction",
-        "selfAudit",
-      "release-metadata",
-      "capability",
-      "capability-contract",
-      "artifact",
-      "state",
-    ]);
+    expect(payload.error.valid_values).toEqual(["cross-capability", "app-home-contract", "vocabularyAuthority", "retained-references", "activation-conjunction", "selfAudit", "release-metadata", "capability", "capability-contract", "artifact", "state"]);
   });
 });
 
@@ -481,9 +394,7 @@ describe("cli validate artifact", () => {
   it("validates a canonical artifact against a repo-state fixture (text)", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) =>
-      cmdValidateArtifact({ artifact: "PLAN.md", cwd: root }, io),
-    );
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", cwd: root }, io));
     expect(rc).toBe(0);
     expect(out).toContain("status=pass | artifact=PLAN.md");
     expect(out).toContain("path_source=docs_mapped_default");
@@ -492,9 +403,7 @@ describe("cli validate artifact", () => {
   it("emits a wrapped JSON envelope", () => {
     const root = useFixtureProject("ok");
     fixtureRoots.push(root);
-    const { rc, out } = capture((io) =>
-      cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: root, format: "json" }, io),
-    );
+    const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PROGRESS.md", cwd: root, format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("validate");
@@ -508,9 +417,7 @@ describe("cli validate artifact", () => {
     const bad = path.join(f, "bad.yaml");
     try {
       fs.writeFileSync(bad, "x");
-      const { rc, out } = capture((io) =>
-        cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io),
-      );
+      const { rc, out } = capture((io) => cmdValidateArtifact({ artifact: "PLAN.md", file: bad, format: "json" }, io));
       expect(rc).toBe(2);
       const payload = JSON.parse(out);
       expect(payload.status).toBe("fail");

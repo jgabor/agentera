@@ -1,24 +1,13 @@
 import fs from "node:fs";
 
-import {
-  ADAPTER_VERSION,
-  FAMILIES,
-  isoNow,
-  runtimeStatus,
-  discoverRuntimeStore,
-  COPILOT_SPARSE_REMEDIATION,
-  assessProvenance,
-} from "./core.js";
+import { ADAPTER_VERSION, FAMILIES, isoNow, runtimeStatus, discoverRuntimeStore, COPILOT_SPARSE_REMEDIATION, assessProvenance } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject } from "./core.js";
 import { extractInstructionDocuments, extractProjectConfigSignals } from "./filesystemSources.js";
 import { extractCodexSessions, extractClaudeProjectSessions } from "./jsonlSessions.js";
 import { extractOpencodeSessions, PermissionDeniedError } from "./sqliteSessions.js";
 import { extractCopilotSessions } from "./copilotSessions.js";
-import {
-  extractCursorSessions,
-  extractCursorAgentSessions,
-} from "./cursorSessions.js";
+import { extractCursorSessions, extractCursorAgentSessions } from "./cursorSessions.js";
 import { resolvePath } from "../../core/paths.js";
 import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
 import type { SqliteCaps } from "./sqliteCaps.js";
@@ -88,12 +77,41 @@ function extractRuntimeStore(
   } catch (exc) {
     const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
     if (exc instanceof ExtractionNotImplementedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "extractor_unimplemented", storePath, fileCount: fc, recordCount: 0, errorCount: 0, ...provenance })];
+      return [
+        [],
+        runtimeStatus(runtime, {
+          status: "degraded",
+          reason: "extractor_unimplemented",
+          storePath,
+          fileCount: fc,
+          recordCount: 0,
+          errorCount: 0,
+          ...provenance,
+        }),
+      ];
     }
     if (exc instanceof PermissionDeniedError) {
-      return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_locked", storePath, fileCount: fc, ...provenance })];
+      return [
+        [],
+        runtimeStatus(runtime, {
+          status: "degraded",
+          reason: "store_locked",
+          storePath,
+          fileCount: fc,
+          ...provenance,
+        }),
+      ];
     }
-    return [[], runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, fileCount: fc, ...provenance })];
+    return [
+      [],
+      runtimeStatus(runtime, {
+        status: "degraded",
+        reason: "store_unreadable",
+        storePath,
+        fileCount: fc,
+        ...provenance,
+      }),
+    ];
   }
   const fc = (discovery.file_count ?? null) as number | null; // cast: discovery payload IO boundary
   const errorCount = errors.length - errorStart;
@@ -115,23 +133,45 @@ function extractRuntimeStore(
     ];
   }
   if (errorCount) {
-    return [records, runtimeStatus(runtime, { status: "degraded", reason: "schema_divergent", storePath, fileCount: fc, recordCount: records.length, errorCount, ...provenance })];
+    return [
+      records,
+      runtimeStatus(runtime, {
+        status: "degraded",
+        reason: "schema_divergent",
+        storePath,
+        fileCount: fc,
+        recordCount: records.length,
+        errorCount,
+        ...provenance,
+      }),
+    ];
   }
   if (records.length === 0) {
-    return [records, runtimeStatus(runtime, {
-      status: "sparse",
-      reason: "no_matching_records",
-      storePath,
-      fileCount: fc,
-      recordCount: 0,
-      remediationLabels: runtime === "copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
-      ...provenance,
-    })];
+    return [
+      records,
+      runtimeStatus(runtime, {
+        status: "sparse",
+        reason: "no_matching_records",
+        storePath,
+        fileCount: fc,
+        recordCount: 0,
+        remediationLabels: runtime === "copilot" ? [COPILOT_SPARSE_REMEDIATION] : null,
+        ...provenance,
+      }),
+    ];
   }
   return [
     records,
     applyTruncationToStatus(
-      runtimeStatus(runtime, { status: "ok", reason: "records_extracted", storePath, fileCount: fc, recordCount: records.length, errorCount: 0, ...provenance }),
+      runtimeStatus(runtime, {
+        status: "ok",
+        reason: "records_extracted",
+        storePath,
+        fileCount: fc,
+        recordCount: records.length,
+        errorCount: 0,
+        ...provenance,
+      }),
       ctx.truncation,
     ),
   ];
@@ -160,12 +200,7 @@ export function dedupeRecords(records: JsonObject[]): JsonObject[] {
   });
 }
 
-export function buildMetadata(
-  records: JsonObject[],
-  errors: string[],
-  runtimeStatuses: JsonObject[],
-  coverage?: CorpusEnvelopeCoverage,
-): CorpusMetadata {
+export function buildMetadata(records: JsonObject[], errors: string[], runtimeStatuses: JsonObject[], coverage?: CorpusEnvelopeCoverage): CorpusMetadata {
   const counts = new Map<string, number>();
   for (const item of records) {
     const sk = item.source_kind as string;
@@ -177,9 +212,7 @@ export function buildMetadata(
     families[family] = { count, status: count ? "ok" : "missing" };
     if (count === 0) families[family].error = "no records extracted for this family";
   }
-  const runtimes = Array.from(new Set(
-    records.filter((item) => item.active_runtime === true && item.runtime).map((item) => String(item.runtime)),
-  )).sort();
+  const runtimes = Array.from(new Set(records.filter((item) => item.active_runtime === true && item.runtime).map((item) => String(item.runtime)))).sort();
   const sourceClasses = Array.from(new Set(records.map((item) => String(item.source_class)))).sort();
   const sourceProducts = Array.from(new Set(records.map((item) => String(item.source_product)))).sort();
   const coverageFields = coverage ?? {
@@ -214,52 +247,29 @@ export function buildCorpus(opts: BuildCorpusOpts): CorpusEnvelope {
   records.push(...extractInstructionDocuments(normalizedRoots, errors));
   records.push(...extractProjectConfigSignals(normalizedRoots, errors));
   const runtimeStatuses: JsonObject[] = [];
-  const runtimes: Array<[
-    string | null,
-    string,
-    "active_runtime" | "historical_import",
-    boolean,
-    string | null,
-    Extractor,
-    string | undefined,
-  ]> = [
+  const runtimes: Array<[string | null, string, "active_runtime" | "historical_import", boolean, string | null, Extractor, string | undefined]> = [
     ["codex", "codex", "active_runtime", true, opts.codexSessionsDir, extractCodexSessions, undefined],
     ["cursor", "cursor", "active_runtime", true, opts.cursorProjectsDir ?? null, (sp, err) => extractCursorSessions(sp, err, normalizedRoots), undefined],
-    [
-      "cursor",
-      "cursor-agent",
-      "active_runtime",
-      true,
-      opts.cursorChatsDir ?? null,
-      (sp, err) => extractCursorAgentSessions(sp, err, normalizedRoots, opts.cursorProjectsDir ?? null),
-      "store.db",
-    ],
+    ["cursor", "cursor-agent", "active_runtime", true, opts.cursorChatsDir ?? null, (sp, err) => extractCursorAgentSessions(sp, err, normalizedRoots, opts.cursorProjectsDir ?? null), "store.db"],
     ["opencode", "opencode", "active_runtime", true, opts.opencodeConversationsDir ?? null, extractOpencodeSessions, undefined],
     ["copilot", "github-copilot", "active_runtime", true, opts.copilotConversationsDir ?? null, extractCopilotSessions, undefined],
   ];
   if (opts.claudeProjectsDir !== null) {
-    runtimes.push([
-      null,
-      "claude-code",
-      "historical_import",
-      false,
-      opts.claudeProjectsDir,
-      extractClaudeProjectSessions,
-      "*.jsonl",
-    ]);
+    runtimes.push([null, "claude-code", "historical_import", false, opts.claudeProjectsDir, extractClaudeProjectSessions, "*.jsonl"]);
   }
   for (const [runtime, sourceProduct, sourceClass, activeRuntime, storePath, extractor, pattern] of runtimes) {
-    const [runtimeRecords, status] = extractRuntimeStore(
-      runtime,
-      storePath,
-      errors,
-      extractor,
-      opts.sqliteCaps,
-      { sourceProduct, sourceClass, activeRuntime, pattern },
-    );
+    const [runtimeRecords, status] = extractRuntimeStore(runtime, storePath, errors, extractor, opts.sqliteCaps, {
+      sourceProduct,
+      sourceClass,
+      activeRuntime,
+      pattern,
+    });
     records.push(...runtimeRecords);
     runtimeStatuses.push(status);
   }
   const deduped = dedupeRecords(records);
-  return { metadata: buildMetadata(deduped, errors, runtimeStatuses, opts.coverage), records: deduped };
+  return {
+    metadata: buildMetadata(deduped, errors, runtimeStatuses, opts.coverage),
+    records: deduped,
+  };
 }

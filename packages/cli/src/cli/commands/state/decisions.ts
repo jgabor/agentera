@@ -10,36 +10,18 @@
  * a `caveats` array.
  */
 
-import {
-  extractEntries,
-} from "../../stateQuery.js";
+import { extractEntries } from "../../stateQuery.js";
 import type { SchemaInfo } from "../../appContext.js";
 import { out, type StateArgs, type Io } from "./shared.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
-import {
-  hydrateDecisionRecords,
-} from "../../../state/decisionOverlay.js";
+import { hydrateDecisionRecords } from "../../../state/decisionOverlay.js";
 import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { emitStructured } from "../../structured.js";
 import YAML from "yaml";
 
-const DECISION_CONTEXT_FIELDS = [
-  "number",
-  "date",
-  "question",
-  "context",
-  "alternatives",
-  "choice",
-  "reasoning",
-  "confidence",
-  "feeds_into",
-  "satisfaction",
-];
+const DECISION_CONTEXT_FIELDS = ["number", "date", "question", "context", "alternatives", "choice", "reasoning", "confidence", "feeds_into", "satisfaction"];
 
-const PRIORITY_FIELDS = [
-  "number", "name", "title", "date", "timestamp", "status",
-  "phase", "choice", "grade", "type", "label", "trajectory", "confidence",
-];
+const PRIORITY_FIELDS = ["number", "name", "title", "date", "timestamp", "status", "phase", "choice", "grade", "type", "label", "trajectory", "confidence"];
 
 const DECISION_ARCHIVE_RE = /Decision\s+(?<number>\d+)(?:\s+\((?<date>\d{4}-\d{2}-\d{2})\))?:\s*(?<summary>.*)/;
 
@@ -53,19 +35,12 @@ export function displayFields(fields: JsonObject, limit = 6): string[] {
 
 function isEmptyValue(v: unknown): boolean {
   // cast: v is a field value from a parsed decisions.yaml entry (IO boundary)
-  return (
-    v === null ||
-    v === undefined ||
-    v === "" ||
-    (Array.isArray(v) && v.length === 0) ||
-    (typeof v === "object" && !Array.isArray(v) && Object.keys(v as JsonObject).length === 0)
-  );
+  return v === null || v === undefined || v === "" || (Array.isArray(v) && v.length === 0) || (typeof v === "object" && !Array.isArray(v) && Object.keys(v as JsonObject).length === 0);
 }
 
 function decisionArchiveEntry(entry: unknown): JsonObject {
   // cast: entry comes from the parsed decisions archive array (YAML IO boundary)
-  const archiveEntry: JsonObject =
-    entry && typeof entry === "object" && !Array.isArray(entry) ? { ...(entry as JsonObject) } : { summary: String(entry) };
+  const archiveEntry: JsonObject = entry && typeof entry === "object" && !Array.isArray(entry) ? { ...(entry as JsonObject) } : { summary: String(entry) };
   archiveEntry.compacted = true;
   const summary = String(archiveEntry.summary ?? "");
   const match = DECISION_ARCHIVE_RE.exec(summary);
@@ -82,19 +57,14 @@ export function extractDecisionEntries(data: unknown): JsonObject[] {
   const d = data as JsonObject;
   const decisions = d.decisions ?? [];
   const archive = d.archive ?? [];
-  const entries: JsonObject[] = Array.isArray(decisions)
-    ? decisions.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e)))
-    : [];
+  const entries: JsonObject[] = Array.isArray(decisions) ? decisions.filter((e): e is JsonObject => Boolean(e && typeof e === "object" && !Array.isArray(e))) : [];
   if (Array.isArray(archive)) {
     for (const entry of archive) entries.push(decisionArchiveEntry(entry));
   }
   return entries;
 }
 
-export function hydrateDecisionEntries(
-  entries: JsonObject[],
-  projectRoot: string = process.cwd(),
-): JsonObject[] {
+export function hydrateDecisionEntries(entries: JsonObject[], projectRoot: string = process.cwd()): JsonObject[] {
   return hydrateDecisionRecords(entries, projectRoot);
 }
 
@@ -144,12 +114,8 @@ export function decisionSatisfactionContext(entry: JsonObject): JsonObject {
     caveats.push("Missing legacy satisfaction state is not treated as satisfied.");
   } else if (state === "user_confirmed_satisfied") {
     // cast: user_confirmation is read from a parsed decisions.yaml entry (IO boundary)
-    const confirmation =
-      userConfirmation && typeof userConfirmation === "object" && !Array.isArray(userConfirmation)
-        ? (userConfirmation as JsonObject)
-        : {};
-    reviewNeeded =
-      !isNonEmptyText(confirmation.confirmed_by) || !isNonEmptyText(confirmation.confirmed_at);
+    const confirmation = userConfirmation && typeof userConfirmation === "object" && !Array.isArray(userConfirmation) ? (userConfirmation as JsonObject) : {};
+    reviewNeeded = !isNonEmptyText(confirmation.confirmed_by) || !isNonEmptyText(confirmation.confirmed_at);
     if (reviewNeeded) caveats.push("User-confirmed satisfaction is missing explicit user confirmation metadata.");
   } else if (state === "provisionally_satisfied") {
     if (!isNonEmptyText(evidence)) caveats.push("Provisional satisfaction is missing concrete evidence.");
@@ -179,24 +145,15 @@ function isNonEmptyText(value: unknown): boolean {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export function decisionContextEntry(
-  entry: JsonObject,
-  options: { inferOutcome?: boolean } = {},
-): JsonObject {
+export function decisionContextEntry(entry: JsonObject, options: { inferOutcome?: boolean } = {}): JsonObject {
   const enriched: JsonObject = { ...entry };
   const inferOutcome = options.inferOutcome !== false;
-  if (inferOutcome &&
-      (enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") &&
-      enriched.choice !== null && enriched.choice !== undefined && enriched.choice !== "") {
+  if (inferOutcome && (enriched.outcome === null || enriched.outcome === undefined || enriched.outcome === "") && enriched.choice !== null && enriched.choice !== undefined && enriched.choice !== "") {
     enriched.outcome = enriched.choice;
   }
-  const compacted =
-    Boolean(enriched.compacted) ||
-    ("summary" in enriched &&
-      ["question", "reasoning", "confidence"].some((field) => decisionFieldMissing(enriched, field)));
+  const compacted = Boolean(enriched.compacted) || ("summary" in enriched && ["question", "reasoning", "confidence"].some((field) => decisionFieldMissing(enriched, field)));
   const missingFields = DECISION_CONTEXT_FIELDS.filter((field) => decisionFieldMissing(enriched, field));
-  if ((inferOutcome && decisionFieldMissing(enriched, "choice") && decisionFieldMissing(enriched, "outcome")) ||
-      (!inferOutcome && decisionFieldMissing(enriched, "outcome"))) {
+  if ((inferOutcome && decisionFieldMissing(enriched, "choice") && decisionFieldMissing(enriched, "outcome")) || (!inferOutcome && decisionFieldMissing(enriched, "outcome"))) {
     missingFields.push("outcome");
   }
   const downstreamReferences = decisionDownstreamReferences(enriched);
@@ -212,8 +169,7 @@ export function decisionContextEntry(
   }
   enriched.satisfaction = satisfaction;
   enriched.downstream_consequence_references = downstreamReferences;
-  enriched.context_complete =
-    !compacted && missingFields.length === 0 && downstreamReferences !== null && !satisfaction.review_needed;
+  enriched.context_complete = !compacted && missingFields.length === 0 && downstreamReferences !== null && !satisfaction.review_needed;
   enriched.missing_fields = missingFields;
   enriched.compacted = compacted;
   enriched.caveats = caveats;
@@ -227,23 +183,11 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
   const compactedEntries = entries.filter((e) => e.compacted).length;
   const entriesWithMissingFields = entries.filter((e) => Array.isArray(e.missing_fields) && e.missing_fields.length > 0).length;
   const entriesWithoutDownstream = entries.filter((e) => e.downstream_consequence_references === null).length;
-  const entriesRequiringSatisfactionReview = entries.filter(
-    (e) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed,
-  ).length;
-  const userConfirmedSatisfied = entries.filter(
-    (e) =>
-      e.satisfaction &&
-      typeof e.satisfaction === "object" &&
-      !Array.isArray(e.satisfaction) &&
-      e.satisfaction.state === "user_confirmed_satisfied" &&
-      !e.satisfaction.review_needed,
-  ).length;
+  const entriesRequiringSatisfactionReview = entries.filter((e) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.review_needed).length;
+  const userConfirmedSatisfied = entries.filter((e) => e.satisfaction && typeof e.satisfaction === "object" && !Array.isArray(e.satisfaction) && e.satisfaction.state === "user_confirmed_satisfied" && !e.satisfaction.review_needed).length;
   const completeForReturned = sourceExists && entries.every((e) => e.context_complete === true);
   const completeForNormalDeliberation = sourceExists;
-  const caveats = [
-    "Downstream consequence references are derived only from explicit structured feeds_into values; no references are inferred.",
-    "Compacted archive decisions are not expanded by this command and are not complete full-detail decision context.",
-  ];
+  const caveats = ["Downstream consequence references are derived only from explicit structured feeds_into values; no references are inferred.", "Compacted archive decisions are not expanded by this command and are not complete full-detail decision context."];
   if (!sourceExists) caveats.push("Decision artifact is missing or unavailable; no decision context is available from this command result.");
   if (filteredNoMatch) caveats.push("Filtered result is empty; no returned decisions match the filter, but the decision artifact was available.");
   if (entriesWithMissingFields) caveats.push("One or more returned decisions are missing full-detail context fields.");
@@ -270,33 +214,20 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
       entries_requiring_satisfaction_review: entriesRequiringSatisfactionReview,
       user_confirmed_satisfied_entries: userConfirmedSatisfied,
     },
-    included_fields: [
-      ...DECISION_CONTEXT_FIELDS,
-      "outcome",
-      "downstream_consequence_references",
-      "context_complete",
-      "missing_fields",
-      "compacted",
-      "caveats",
-    ],
+    included_fields: [...DECISION_CONTEXT_FIELDS, "outcome", "downstream_consequence_references", "context_complete", "missing_fields", "compacted", "caveats"],
     satisfaction_context: {
       owner: "decision entry",
       state_field: "satisfaction.state",
       evidence_field: "satisfaction.evidence",
       confirmation_field: "satisfaction.user_confirmation",
       review_needed_field: "satisfaction.review_needed",
-      confirmation_policy:
-        "Only satisfaction.state=user_confirmed_satisfied with explicit user_confirmation metadata is reported as user-confirmed satisfied.",
-      non_inference_policy:
-        "Do not infer satisfaction from feeds_into, commits, downstream files, generated references, or compacted history.",
+      confirmation_policy: "Only satisfaction.state=user_confirmed_satisfied with explicit user_confirmation metadata is reported as user-confirmed satisfied.",
+      non_inference_policy: "Do not infer satisfaction from feeds_into, commits, downstream files, generated references, or compacted history.",
     },
     normal_deliberation_context: {
       use_complete_for_normal_deliberation_context: true,
       legacy_full_detail_signal: "complete_for_decision_context",
-      guidance:
-        "For normal deliberation, use returned entries plus missing_fields, compacted, caveats, " +
-        "and satisfaction review state. Do not use the legacy full-detail completeness flag " +
-        "as a reason to reread the raw decision artifact.",
+      guidance: "For normal deliberation, use returned entries plus missing_fields, compacted, caveats, " + "and satisfaction review state. Do not use the legacy full-detail completeness flag " + "as a reason to reread the raw decision artifact.",
     },
     decision_context_truth_table: {
       full_detail_entries: {
@@ -332,8 +263,7 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
         full_detail_complete: false,
         normal_deliberation_context_complete: false,
         raw_artifact_read_required: false,
-        meaning:
-          "No decision state is available from the CLI result; use CLI fallback or diagnostics before raw artifact repair.",
+        meaning: "No decision state is available from the CLI result; use CLI fallback or diagnostics before raw artifact repair.",
       },
     },
     missing_full_detail_boundary: {
@@ -355,49 +285,36 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
     },
     satisfaction_review_boundary: {
       applies_when: "one or more entries have satisfaction.review_needed=true",
-      normal_behavior:
-        "Carry satisfaction review pressure forward; only user confirmation can make a decision user-confirmed satisfied.",
+      normal_behavior: "Carry satisfaction review pressure forward; only user confirmation can make a decision user-confirmed satisfied.",
       raw_artifact_read_required: false,
       do_not: "Do not infer satisfaction from downstream references, commits, generated files, or compacted history.",
     },
     compacted_history_boundary: {
       applies_when: "returned entries have compacted=true",
-      normal_behavior:
-        "Use the compact summary and retained fields; preserve compacted/missing_fields/caveats downstream.",
+      normal_behavior: "Use the compact summary and retained fields; preserve compacted/missing_fields/caveats downstream.",
       raw_artifact_read_required: false,
       do_not: "Do not expand archive decisions or reconstruct missing context from git history.",
     },
     raw_artifact_access_boundary: {
-      normal_deliberation:
-        "skip raw decision-state reads when complete_for_normal_deliberation_context=true",
-      allowed_raw_artifact_uses: [
-        "Discuss-owned decision writes or repairs",
-        "artifact corruption diagnostics",
-        "CLI defect investigation",
-      ],
+      normal_deliberation: "skip raw decision-state reads when complete_for_normal_deliberation_context=true",
+      allowed_raw_artifact_uses: ["Discuss-owned decision writes or repairs", "artifact corruption diagnostics", "CLI defect investigation"],
     },
     raw_artifact_reads_required: false,
     raw_artifact_read_policy:
-       "Use `agentera state decisions list --limit 20` for bounded normal deliberation discovery; " +
-       "use `agentera state decisions get --id ID` for exact detail, and key normal use off " +
+      "Use `agentera state decisions list --limit 20` for bounded normal deliberation discovery; " +
+      "use `agentera state decisions get --id ID` for exact detail, and key normal use off " +
       "complete_for_normal_deliberation_context. " +
       "Do not read raw decision state unless investigating entity corruption or CLI defects; " +
       "historical compacted gaps are exposed through missing_fields and caveats.",
     caveats,
     fallback_behavior: {
-      normal:
-        "Use this command's entries and source_contract; no raw decision artifact read is required for returned full-detail or compacted decision entries.",
-      filtered_result:
-        "The same per-decision guarantees apply after filters; an empty filtered result means no matching returned decisions.",
-      missing_or_incomplete:
-        "If a required field is missing, treat only the present structured fields as authoritative and do not infer absent context.",
-      satisfaction:
-        "Use only each entry's satisfaction object for satisfaction state. Missing, open, provisional, or unconfirmed satisfaction requires review and must not be reported as user-confirmed satisfied.",
-      compacted_history:
-        "Compacted archive decisions are included with explicit missing_fields and caveats; treat absent historical context as unavailable during normal deliberation.",
+      normal: "Use this command's entries and source_contract; no raw decision artifact read is required for returned full-detail or compacted decision entries.",
+      filtered_result: "The same per-decision guarantees apply after filters; an empty filtered result means no matching returned decisions.",
+      missing_or_incomplete: "If a required field is missing, treat only the present structured fields as authoritative and do not infer absent context.",
+      satisfaction: "Use only each entry's satisfaction object for satisfaction state. Missing, open, provisional, or unconfirmed satisfaction requires review and must not be reported as user-confirmed satisfied.",
+      compacted_history: "Compacted archive decisions are included with explicit missing_fields and caveats; treat absent historical context as unavailable during normal deliberation.",
     },
-    fallback_policy:
-      "If the decision artifact is missing or CLI state appears defective, use CLI fallback/diagnostic paths before raw artifact repair; do not raw-read merely because returned decisions are compacted or incomplete.",
+    fallback_policy: "If the decision artifact is missing or CLI state appears defective, use CLI fallback/diagnostic paths before raw artifact repair; do not raw-read merely because returned decisions are compacted or incomplete.",
     filters: activeFilters,
   };
 }
@@ -405,13 +322,7 @@ export function decisionSourceContract(source: JsonObject, entries: JsonObject[]
 export function queryDecisions(args: StateArgs, _schemas: Record<string, SchemaInfo>, io: Io): number {
   const output = out(io);
   const format = args.format ?? "text";
-  const response = listDecisionEntities(
-    process.cwd(),
-    args.limit ?? undefined,
-    args.topic ?? undefined,
-    args.cursor ?? undefined,
-    { format },
-  );
+  const response = listDecisionEntities(process.cwd(), args.limit ?? undefined, args.topic ?? undefined, args.cursor ?? undefined, { format });
   if (format === "text") output(YAML.stringify(response));
   else emitStructured(response, format as "json" | "yaml", output);
   return 0;

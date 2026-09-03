@@ -1,35 +1,18 @@
 import crypto from "node:crypto";
 
-import {
-  projectRuntimeOperationExamples,
-  projectRuntimeOperationRecovery,
-} from "../../core/developmentInvocation.js";
+import { projectRuntimeOperationExamples, projectRuntimeOperationRecovery } from "../../core/developmentInvocation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { loadStateStorageAuthority } from "../stateStorageAuthority.js";
 import { runtimeOperationSpec, runtimeOperationSpecs, type RuntimeOperationSpec } from "./runtimeOperations.js";
 
-export const MUTATION_CLASSES = [
-  "record_payload",
-  "simple_transition",
-  "batch_transaction",
-] as const;
+export const MUTATION_CLASSES = ["record_payload", "simple_transition", "batch_transaction"] as const;
 export type MutationClass = (typeof MUTATION_CLASSES)[number];
 
-export const MUTATION_INPUT_MODES = [
-  "none",
-  "structured",
-  "flags_until_conversion",
-] as const;
+export const MUTATION_INPUT_MODES = ["none", "structured", "flags_until_conversion"] as const;
 export type MutationInputMode = (typeof MUTATION_INPUT_MODES)[number];
 
-export type MutationFieldKind =
-  | "string"
-  | "boolean"
-  | "integer"
-  | "string_list"
-  | "date"
-  | "datetime";
+export type MutationFieldKind = "string" | "boolean" | "integer" | "string_list" | "date" | "datetime";
 
 export interface MutationFieldDeclaration {
   flag: string;
@@ -88,14 +71,12 @@ function mapping(value: unknown): value is Record<string, unknown> {
 }
 
 function requiredString(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.length === 0)
-    throw new Error(`invalid mutation grammar: ${path} must be a non-empty string`);
+  if (typeof value !== "string" || value.length === 0) throw new Error(`invalid mutation grammar: ${path} must be a non-empty string`);
   return value;
 }
 
 function strings(value: unknown, path: string): string[] {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string"))
-    throw new Error(`invalid mutation grammar: ${path} must be a string list`);
+  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) throw new Error(`invalid mutation grammar: ${path} must be a string list`);
   return [...value];
 }
 
@@ -115,16 +96,13 @@ function fields(value: unknown, path: string): MutationFieldDeclaration[] {
     const flag = requiredString(raw.flag, `${fieldPath}.flag`);
     const field = requiredString(raw.field, `${fieldPath}.field`);
     const kind = requiredString(raw.kind, `${fieldPath}.kind`) as MutationFieldKind;
-    if (!["string", "boolean", "integer", "string_list", "date", "datetime"].includes(kind))
-      throw new Error(`invalid mutation grammar: ${fieldPath}.kind '${kind}' is unsupported`);
-    if (seenFlags.has(flag) || seenFields.has(field))
-      throw new Error(`invalid mutation grammar: duplicate field ${flag}/${field} in ${path}`);
+    if (!["string", "boolean", "integer", "string_list", "date", "datetime"].includes(kind)) throw new Error(`invalid mutation grammar: ${fieldPath}.kind '${kind}' is unsupported`);
+    if (seenFlags.has(flag) || seenFields.has(field)) throw new Error(`invalid mutation grammar: duplicate field ${flag}/${field} in ${path}`);
     seenFlags.add(flag);
     seenFields.add(field);
     const validValues = raw.valid_values === undefined ? undefined : strings(raw.valid_values, `${fieldPath}.valid_values`);
     const validValuesSource = raw.valid_values_source === undefined ? undefined : requiredString(raw.valid_values_source, `${fieldPath}.valid_values_source`);
-    if (validValues && validValuesSource)
-      throw new Error(`invalid mutation grammar: ${fieldPath} cannot declare both valid_values and valid_values_source`);
+    if (validValues && validValuesSource) throw new Error(`invalid mutation grammar: ${fieldPath} cannot declare both valid_values and valid_values_source`);
     return {
       flag,
       field,
@@ -141,7 +119,10 @@ function fields(value: unknown, path: string): MutationFieldDeclaration[] {
 export function canonicalJson(value: unknown): string {
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
   if (mapping(value)) {
-    return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`).join(",")}}`;
+    return `{${Object.keys(value)
+      .sort()
+      .map((key) => `${JSON.stringify(key)}:${canonicalJson(value[key])}`)
+      .join(",")}}`;
   }
   return JSON.stringify(value);
 }
@@ -168,16 +149,17 @@ function parseOperation(raw: unknown, index: number): MutationOperationDeclarati
     ...(raw.input.optional === true ? { optional: true } : {}),
     sources: strings(raw.input.sources, `${p}.input.sources`),
     ...(raw.input.structured_sources === undefined
-      ? (inputMode === "structured" ? { structuredSources: strings(raw.input.sources, `${p}.input.sources`) } : {})
-      : { structuredSources: strings(raw.input.structured_sources, `${p}.input.structured_sources`) }),
+      ? inputMode === "structured"
+        ? { structuredSources: strings(raw.input.sources, `${p}.input.sources`) }
+        : {}
+      : {
+          structuredSources: strings(raw.input.structured_sources, `${p}.input.structured_sources`),
+        }),
     cliOwnedFields: strings(raw.input.cli_owned_fields, `${p}.input.cli_owned_fields`),
   };
-  if (raw.input.optional !== undefined && raw.input.optional !== true)
-    throw new Error(`invalid mutation grammar: ${p}.input.optional must be true when present`);
-  if (inputMode === "structured" && (!input.root || input.sources.length === 0))
-    throw new Error(`invalid mutation grammar: ${p} structured input needs a root and source`);
-  if (inputMode === "none" && (input.sources.length > 0 || input.root !== undefined))
-    throw new Error(`invalid mutation grammar: ${p} none input cannot declare sources or a root`);
+  if (raw.input.optional !== undefined && raw.input.optional !== true) throw new Error(`invalid mutation grammar: ${p}.input.optional must be true when present`);
+  if (inputMode === "structured" && (!input.root || input.sources.length === 0)) throw new Error(`invalid mutation grammar: ${p} structured input needs a root and source`);
+  if (inputMode === "none" && (input.sources.length > 0 || input.root !== undefined)) throw new Error(`invalid mutation grammar: ${p} none input cannot declare sources or a root`);
   const operation = {
     artifact,
     verb,
@@ -188,7 +170,11 @@ function parseOperation(raw: unknown, index: number): MutationOperationDeclarati
     input,
     recovery: projectRuntimeOperationRecovery(raw.recovery, artifact, verb),
     examples: projectRuntimeOperationExamples(raw.examples, artifact, verb),
-    bounds: mapping(raw.bounds) ? clonePlain(raw.bounds) as Record<string, unknown> : (() => { throw new Error(`invalid mutation grammar: ${p}.bounds must be a mapping`); })(),
+    bounds: mapping(raw.bounds)
+      ? (clonePlain(raw.bounds) as Record<string, unknown>)
+      : (() => {
+          throw new Error(`invalid mutation grammar: ${p}.bounds must be a mapping`);
+        })(),
     fields: fields(raw.fields, `${p}.fields`),
     allowForce: raw.allow_force === true,
     compacts: raw.compacts === true,
@@ -208,11 +194,7 @@ function runtimeFieldProjection(field: { flag: string; field: string; kind: stri
     kind: field.kind,
     required: field.required === true,
     repeatable: field.repeatable === true,
-    ...(field.validValuesSource
-      ? { valid_values_source: field.validValuesSource }
-      : field.validValues
-        ? { valid_values: field.validValues }
-        : {}),
+    ...(field.validValuesSource ? { valid_values_source: field.validValuesSource } : field.validValues ? { valid_values: field.validValues } : {}),
   };
 }
 
@@ -237,12 +219,12 @@ function operationParityProjection(operation: MutationOperationDeclaration): Rec
     fields: operation.fields.map(declaredFieldProjection),
     recovery: operation.recovery,
     examples: operation.examples,
-    projection: { format_values: runtimeOperationSpec(operation.artifact, operation.verb)?.projection.formatValues ?? [] },
+    projection: {
+      format_values: runtimeOperationSpec(operation.artifact, operation.verb)?.projection.formatValues ?? [],
+    },
     allow_force: operation.allowForce,
     compacts: operation.compacts,
-    bounds: operation.input.mode === "structured"
-      ? { max_input_utf8_bytes: operation.bounds.max_input_utf8_bytes }
-      : { max_input_utf8_bytes: 0 },
+    bounds: operation.input.mode === "structured" ? { max_input_utf8_bytes: operation.bounds.max_input_utf8_bytes } : { max_input_utf8_bytes: 0 },
   };
 }
 
@@ -270,10 +252,7 @@ function runtimeParityProjection(operation: RuntimeOperationSpec): Record<string
   };
 }
 
-export function validateMutationGrammarParity(
-  operations: MutationOperationDeclaration[],
-  authorityPath = "references/artifacts/state-storage-authority.yaml",
-): void {
+export function validateMutationGrammarParity(operations: MutationOperationDeclaration[], authorityPath = "references/artifacts/state-storage-authority.yaml"): void {
   const runtime = runtimeOperationSpecs();
   const runtimeByKey = new Map(runtime.map((operation) => [`${operation.artifact}.${operation.verb}`, operation]));
   const declaredByKey = new Map(operations.map((operation) => [`${operation.artifact}.${operation.verb}`, operation]));

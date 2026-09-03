@@ -19,9 +19,7 @@ export interface NpxPlatformStatusResult {
 }
 
 /** Shared npx platform app-home resolution for prime and projectIntegration. */
-export function resolveNpxPlatformStatus(
-  opts: ResolveNpxPlatformStatusOptions,
-): NpxPlatformStatusResult {
+export function resolveNpxPlatformStatus(opts: ResolveNpxPlatformStatusOptions): NpxPlatformStatusResult {
   const env = { ...process.env, ...(opts.env ?? {}), HOME: expanduser(opts.home) };
   const platformRoot = resolvePlatformAppHome(opts.home, env);
   const doctorOpts: BuildDoctorStatusOptions = {

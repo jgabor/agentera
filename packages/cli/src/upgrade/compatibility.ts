@@ -6,11 +6,7 @@ import { NPX_BUNDLE_SENTINEL, isNpxBundleRoot } from "../core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { resolveUpdateChannel, type ResolvedUpdateChannel, type ResolveUpdateChannelArgs } from "./channels.js";
-import {
-  classifyUpgradeOutcome,
-  shouldIncludeCrossMajorPlanItems,
-  type UpgradeOutcome,
-} from "./versionResolution.js";
+import { classifyUpgradeOutcome, shouldIncludeCrossMajorPlanItems, type UpgradeOutcome } from "./versionResolution.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 export { shouldIncludeCrossMajorPlanItems } from "./versionResolution.js";
@@ -28,11 +24,7 @@ export const STATUS_APPLIED = "applied";
 export const UPGRADE_PREVIEW_SCHEMA = "agentera.upgrade.v2";
 export const STATUS_CONCEPT_MAJOR_BOUNDARY = "major_boundary_crossing";
 
-export type InstallKind =
-  | "v2_managed_app_home"
-  | "v3_self_contained_npm"
-  | "source_checkout"
-  | "unknown_foreign";
+export type InstallKind = "v2_managed_app_home" | "v3_self_contained_npm" | "source_checkout" | "unknown_foreign";
 
 export type InstallTrack = "v2" | "v3" | "source" | "unknown";
 
@@ -85,10 +77,7 @@ export interface UpgradePreviewPhase {
 
 export interface UpgradePreviewV2 {
   schemaVersion: typeof UPGRADE_PREVIEW_SCHEMA;
-  lifecycleStatus:
-    | typeof STATUS_MANUAL_REVIEW_NEEDED
-    | typeof STATUS_NO_CHANGES_NEEDED
-    | typeof STATUS_READY_TO_APPLY;
+  lifecycleStatus: typeof STATUS_MANUAL_REVIEW_NEEDED | typeof STATUS_NO_CHANGES_NEEDED | typeof STATUS_READY_TO_APPLY;
   channel: ResolvedUpdateChannel;
   install: InstallClassification;
   upgradeOutcome: UpgradeOutcome;
@@ -114,12 +103,7 @@ const CROSS_MAJOR_ITEMS: ReadonlyArray<Omit<CrossMajorPlanItem, "statusConcept" 
 ];
 
 export function isSourceCheckoutRoot(sourceRoot: string): boolean {
-  return (
-    pathExists(path.join(sourceRoot, ".git")) &&
-    isFile(path.join(sourceRoot, "skills", "agentera", "SKILL.md")) &&
-    isFile(path.join(sourceRoot, "registry.json")) &&
-    !isNpxBundleRoot(sourceRoot)
-  );
+  return pathExists(path.join(sourceRoot, ".git")) && isFile(path.join(sourceRoot, "skills", "agentera", "SKILL.md")) && isFile(path.join(sourceRoot, "registry.json")) && !isNpxBundleRoot(sourceRoot);
 }
 
 function readSignals(appHome: string, sourceRoot: string, activeBundleRoot: string): InstallSignals {
@@ -136,11 +120,7 @@ function readSignals(appHome: string, sourceRoot: string, activeBundleRoot: stri
 }
 
 function hasV2ManagedEvidence(signals: InstallSignals, activeBundleRoot: string): boolean {
-  return (
-    (signals.bundleMarkerAtActiveRoot || signals.agenteraScriptAtActiveRoot) &&
-    hasBundleRootEvidence(activeBundleRoot) &&
-    !signals.npxBundleSentinelAtActiveRoot
-  );
+  return (signals.bundleMarkerAtActiveRoot || signals.agenteraScriptAtActiveRoot) && hasBundleRootEvidence(activeBundleRoot) && !signals.npxBundleSentinelAtActiveRoot;
 }
 
 let distributionMajorWarned = false;
@@ -191,9 +171,7 @@ export function cliDistributionMajor(sourceRoot: string): number {
   }
   if (!distributionMajorWarned) {
     distributionMajorWarned = true;
-    process.stderr.write(
-      `agentera: could not determine distribution major version from registry.json or package.json at ${sourceRoot}; defaulting to 2\n`,
-    );
+    process.stderr.write(`agentera: could not determine distribution major version from registry.json or package.json at ${sourceRoot}; defaulting to 2\n`);
   }
   return 2;
 }
@@ -298,14 +276,9 @@ export function previewCrossMajorGuard(args: PreviewCrossMajorGuardArgs): Upgrad
     catalog: args.catalog,
   });
 
-  const items = shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)
-    ? taggedCrossMajorItems()
-    : [];
+  const items = shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome) ? taggedCrossMajorItems() : [];
 
-  let lifecycleStatus:
-    | typeof STATUS_MANUAL_REVIEW_NEEDED
-    | typeof STATUS_NO_CHANGES_NEEDED
-    | typeof STATUS_READY_TO_APPLY;
+  let lifecycleStatus: typeof STATUS_MANUAL_REVIEW_NEEDED | typeof STATUS_NO_CHANGES_NEEDED | typeof STATUS_READY_TO_APPLY;
 
   if (!crossMajorBoundary) {
     lifecycleStatus = STATUS_NO_CHANGES_NEEDED;

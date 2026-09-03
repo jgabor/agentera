@@ -12,13 +12,7 @@ import { resolvePath } from "../../core/paths.js";
 export type Env = Record<string, string | undefined>;
 
 export const ADAPTER_VERSION = "agentera-v3-corpus-3";
-export const FAMILIES = [
-  "instruction_document",
-  "history_prompt",
-  "conversation_turn",
-  "tool_call",
-  "project_config_signal",
-] as const;
+export const FAMILIES = ["instruction_document", "history_prompt", "conversation_turn", "tool_call", "project_config_signal"] as const;
 
 export const RUNTIME_STORE_GLOBS: Record<string, string> = {
   codex: "*.jsonl",
@@ -39,20 +33,11 @@ const ORIGIN_ID_RE = /^[a-f0-9]{64}$/;
 const CONTENT_FINGERPRINT_RE = /^[a-f0-9]{64}$/;
 const CONVERSATION_SOURCE_KINDS = new Set(["conversation_turn", "history_prompt"]);
 const PROVENANCE_NESTED_KEYS = ["payload", "item", "metadata", "meta", "provenance", "source"] as const;
-const PROVENANCE_ORIGIN_KEYS = [
-  "origin_id",
-  "original_origin_id",
-  "original_origin",
-  "origin",
-  "source_origin",
-  "instruction_origin",
-] as const;
+const PROVENANCE_ORIGIN_KEYS = ["origin_id", "original_origin_id", "original_origin", "origin", "source_origin", "instruction_origin"] as const;
 const PROVENANCE_AUTHOR_KEYS = ["author_class", "authorClass", "author"] as const;
 
-const DECISION_RE =
-  /\b(decide|decision|prefer|preference|instead|avoid|don't|do not|should|trade[- ]?off|scope|plan|commit|review|fix|why|question|blocked|stuck|approve|reject|change|keep|remove)\b/i;
-const CORRECTION_RE =
-  /\b(no|not quite|actually|rather|instead|wrong|correction|that's not|that is not|don't|do not)\b/i;
+const DECISION_RE = /\b(decide|decision|prefer|preference|instead|avoid|don't|do not|should|trade[- ]?off|scope|plan|commit|review|fix|why|question|blocked|stuck|approve|reject|change|keep|remove)\b/i;
+const CORRECTION_RE = /\b(no|not quite|actually|rather|instead|wrong|correction|that's not|that is not|don't|do not)\b/i;
 const QUESTION_RE = /\?|^\s*(why|what|how|should|can|could|would)\b/i;
 
 export function isoNow(): string {
@@ -77,11 +62,7 @@ export function originIdentity(origin: string): string {
   if (typeof origin !== "string" || origin.length === 0) {
     throw new TypeError("origin must be a non-empty string");
   }
-  return crypto
-    .createHash("sha256")
-    .update("agentera.corpus.origin.v1\0", "utf-8")
-    .update(origin, "utf-8")
-    .digest("hex");
+  return crypto.createHash("sha256").update("agentera.corpus.origin.v1\0", "utf-8").update(origin, "utf-8").digest("hex");
 }
 
 /** A lowercase SHA-256 of the exact source text, without normalization or truncation. */
@@ -134,9 +115,7 @@ function inspectStringField<K extends string>(sources: JsonObject[], keys: reado
     for (const key of keys) {
       if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
       const value = source[key];
-      return nonEmptyString(value)
-        ? { state: "valid", key, value }
-        : { state: "invalid", key, value: null };
+      return nonEmptyString(value) ? { state: "valid", key, value } : { state: "invalid", key, value: null };
     }
   }
   return { state: "absent", key: null, value: null };
@@ -196,11 +175,7 @@ export function transportProvenance(...sources: unknown[]): TransportProvenance 
  * A claimed transported origin requires the original author to be explicit;
  * the envelope role is not evidence for the source that was transported.
  */
-export function authorClassForRole(
-  role: unknown,
-  explicitAuthorClass: string | null = null,
-  transportedOriginId: string | null = null,
-): string | null {
+export function authorClassForRole(role: unknown, explicitAuthorClass: string | null = null, transportedOriginId: string | null = null): string | null {
   const explicit = nonEmptyString(explicitAuthorClass);
   if (!explicit && nonEmptyString(transportedOriginId)) return null;
   const value = explicit ? explicitAuthorClass : nonEmptyString(role) ? role : null;
@@ -411,7 +386,12 @@ function rglob(root: string, pattern: string): string[] {
 export function discoverRuntimeStore(
   runtime: string | null,
   storePath: string | null,
-  opts: { sourceProduct?: string; sourceClass?: "active_runtime" | "historical_import"; activeRuntime?: boolean; pattern?: string } = {},
+  opts: {
+    sourceProduct?: string;
+    sourceClass?: "active_runtime" | "historical_import";
+    activeRuntime?: boolean;
+    pattern?: string;
+  } = {},
 ): JsonObject {
   const statusOpts = {
     sourceProduct: opts.sourceProduct,
@@ -419,7 +399,12 @@ export function discoverRuntimeStore(
     activeRuntime: opts.activeRuntime,
   };
   if (storePath === null) {
-    return runtimeStatus(runtime, { status: "skipped", reason: "disabled", storePath: null, ...statusOpts });
+    return runtimeStatus(runtime, {
+      status: "skipped",
+      reason: "disabled",
+      storePath: null,
+      ...statusOpts,
+    });
   }
   if (!fs.existsSync(storePath)) {
     return runtimeStatus(runtime, {
@@ -440,7 +425,12 @@ export function discoverRuntimeStore(
     });
   }
   if (!isDir(storePath)) {
-    return runtimeStatus(runtime, { status: "degraded", reason: "store_not_directory", storePath, ...statusOpts });
+    return runtimeStatus(runtime, {
+      status: "degraded",
+      reason: "store_not_directory",
+      storePath,
+      ...statusOpts,
+    });
   }
   let candidates: string[];
   try {
@@ -448,7 +438,12 @@ export function discoverRuntimeStore(
     if (!pattern) throw new Error("no declared store pattern");
     candidates = rglob(storePath, pattern);
   } catch {
-    return runtimeStatus(runtime, { status: "degraded", reason: "store_unreadable", storePath, ...statusOpts });
+    return runtimeStatus(runtime, {
+      status: "degraded",
+      reason: "store_unreadable",
+      storePath,
+      ...statusOpts,
+    });
   }
   if (candidates.length === 0) {
     return runtimeStatus(runtime, {
@@ -636,10 +631,7 @@ export function toolCallRecordFromItem(args: {
   const { item, event } = args;
   const kind = eventKind(event);
   const itemType = item.type;
-  if (
-    !["tool_call", "function_call"].includes(kind) &&
-    !["tool_call", "function_call", "tool_use"].includes(itemType as string)
-  ) {
+  if (!["tool_call", "function_call"].includes(kind) && !["tool_call", "function_call", "tool_use"].includes(itemType as string)) {
     return null;
   }
   const toolName = item.tool_name || item.name || item.tool;
@@ -669,18 +661,7 @@ export function toolCallRecordFromItem(args: {
   });
 }
 
-export function toolCallRecord(args: {
-  event: JsonObject;
-  fallbackTimestamp: string;
-  projectPath: string | null;
-  runtime: string | null;
-  sourceClass?: RecordOpts["sourceClass"];
-  sourceProduct?: string;
-  activeRuntime?: boolean;
-  sourcePath: string;
-  index: number;
-  sessionId: string;
-}): JsonObject | null {
+export function toolCallRecord(args: { event: JsonObject; fallbackTimestamp: string; projectPath: string | null; runtime: string | null; sourceClass?: RecordOpts["sourceClass"]; sourceProduct?: string; activeRuntime?: boolean; sourcePath: string; index: number; sessionId: string }): JsonObject | null {
   return toolCallRecordFromItem({ ...args, item: payloadItem(args.event) });
 }
 

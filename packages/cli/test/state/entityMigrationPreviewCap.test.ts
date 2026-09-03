@@ -18,10 +18,7 @@ describe("entity migration preview production cap", () => {
   it("preserves paged recovery within the 32768-byte response cap", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-cap-"));
     roots.push(root);
-    fs.writeFileSync(
-      path.join(root, "TODO.md"),
-      `# TODO\n\n## → Normal\n${Array.from({ length: 40 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(2000)}`).join("\n")}\n`,
-    );
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n${Array.from({ length: 40 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(2000)}`).join("\n")}\n`);
 
     const { identities, pages } = collectMigrationPreviewPages(root, REPO_ROOT);
 

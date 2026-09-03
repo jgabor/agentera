@@ -5,23 +5,9 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
-import {
-  dispositionPersonalGlossaryReviewRecord,
-  personalGlossaryTrustedLocalHostPath,
-  queuePersonalGlossaryReviewRecord,
-  type PersonalGlossaryReviewRecord,
-} from "../../src/analytics/personalGlossaryReviewRecords.js";
-import {
-  ADAPTER_VERSION,
-  contentFingerprint,
-  originIdentity,
-} from "../../src/analytics/extractCorpus/core.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { dispositionPersonalGlossaryReviewRecord, personalGlossaryTrustedLocalHostPath, queuePersonalGlossaryReviewRecord, type PersonalGlossaryReviewRecord } from "../../src/analytics/personalGlossaryReviewRecords.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
@@ -29,18 +15,8 @@ import { main } from "../../src/cli/dispatch.js";
 import { installSourceGlossaryEvaluationRunner } from "../helpers/sourceSubprocess.js";
 import { printReportHelp, printStateHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
-import {
-  createGlossaryAdmissionDecision,
-  createGlossaryEvidenceCapsule,
-  createGlossaryHostClassificationReceipt,
-  type GlossaryAdmissionDecision,
-  type GlossaryEvidenceCapsule,
-  type GlossaryHostClassificationReceipt,
-} from "../../src/registries/glossaryCandidateContracts.js";
-import {
-  canonicalGlossaryJson,
-  glossaryCanonicalSha256,
-} from "../../src/registries/glossaryTermIdentity.js";
+import { createGlossaryAdmissionDecision, createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryAdmissionDecision, type GlossaryEvidenceCapsule, type GlossaryHostClassificationReceipt } from "../../src/registries/glossaryCandidateContracts.js";
+import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
@@ -131,11 +107,7 @@ function persist(capsules: readonly GlossaryEvidenceCapsule[]): PersonalGlossary
   return projection;
 }
 
-function receiptFor(
-  capsule: GlossaryEvidenceCapsule,
-  projection: PersonalGlossaryCandidateProjection,
-  overrides: Record<string, unknown> = {},
-): GlossaryHostClassificationReceipt {
+function receiptFor(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, overrides: Record<string, unknown> = {}): GlossaryHostClassificationReceipt {
   return createGlossaryHostClassificationReceipt({
     capsule,
     candidate_projection_sha256: projection.projection_sha256,
@@ -156,28 +128,28 @@ function run(args: string[], stdin = ""): { rc: number; out: string; err: string
   let err = "";
   const rc = main(["node", "agentera", ...args], {
     stdin: () => stdin,
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
   });
   return { rc, out, err };
 }
 
 function cliDecision(receipt: GlossaryHostClassificationReceipt): GlossaryAdmissionDecision {
-  const result = run(
-    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-    JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }),
-  );
+  const result = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }));
   expect(result).toMatchObject({ rc: 0, err: "" });
   const output = JSON.parse(result.out);
-  expect(output).toMatchObject({ status: "automatic_admission", reason: "explicit_current_authorized" });
+  expect(output).toMatchObject({
+    status: "automatic_admission",
+    reason: "explicit_current_authorized",
+  });
   return output.decision as GlossaryAdmissionDecision;
 }
 
-function publicationRequest(
-  receipt: GlossaryHostClassificationReceipt,
-  decision: GlossaryAdmissionDecision,
-  asOf = AS_OF,
-): Record<string, unknown> {
+function publicationRequest(receipt: GlossaryHostClassificationReceipt, decision: GlossaryAdmissionDecision, asOf = AS_OF): Record<string, unknown> {
   return {
     schema_version: "agentera.personalGlossaryPublishRequest.v1",
     receipt,
@@ -191,19 +163,14 @@ function writeTrustedReviewHost(): void {
   fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
   const host = {
     owner: "current_user",
-    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey
-      .export({ format: "der", type: "spki" })
-      .toString("base64url"),
+    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey.export({ format: "der", type: "spki" }).toString("base64url"),
     schema_version: "agentera.personalGlossaryTrustedLocalHost.v1",
     subject: REVIEW_SUBJECT,
   };
   fs.writeFileSync(pathname, `${canonicalGlossaryJson(host)}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
-function reviewApproval(
-  record: PersonalGlossaryReviewRecord,
-  disposition: "accept" | "correct" | "reject" | "defer",
-): Record<string, unknown> {
+function reviewApproval(record: PersonalGlossaryReviewRecord, disposition: "accept" | "correct" | "reject" | "defer"): Record<string, unknown> {
   const unsigned = {
     schema_version: "agentera.personalGlossaryReviewApproval.v1",
     issuer: "agentera-local-host",
@@ -225,19 +192,12 @@ function reviewApproval(
   };
   return {
     ...unsigned,
-    signature: sign(
-      null,
-      Buffer.from(JSON.stringify(unsigned), "utf8"),
-      REVIEW_KEY_PAIR.privateKey,
-    ).toString("base64url"),
+    signature: sign(null, Buffer.from(JSON.stringify(unsigned), "utf8"), REVIEW_KEY_PAIR.privateKey).toString("base64url"),
   };
 }
 
 function reviewDecision(receipt: GlossaryHostClassificationReceipt): GlossaryAdmissionDecision {
-  const result = run(
-    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-    JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }),
-  );
+  const result = run(["report", "personal-glossary-decision", "--input", "-", "--format", "json"], JSON.stringify({ schema_version: "agentera.personalGlossaryAdmissionRequest.v1", receipt }));
   expect(result).toMatchObject({ rc: 0, err: "" });
   const output = JSON.parse(result.out);
   expect(output).toMatchObject({ status: "review_required" });
@@ -259,8 +219,16 @@ function reviewedFixture(disposition: "accept" | "correct"): {
     scope: "personal",
     provenance_kind: "personal_inferred_usage",
     evidence: [
-      { source_id: `reviewed-${disposition}-a`, evidence_anchor: `reviewed-${disposition}-a`, source_kind: "instruction_document" },
-      { source_id: `reviewed-${disposition}-b`, evidence_anchor: `reviewed-${disposition}-b`, source_kind: "project_config_signal" },
+      {
+        source_id: `reviewed-${disposition}-a`,
+        evidence_anchor: `reviewed-${disposition}-a`,
+        source_kind: "instruction_document",
+      },
+      {
+        source_id: `reviewed-${disposition}-b`,
+        evidence_anchor: `reviewed-${disposition}-b`,
+        source_kind: "project_config_signal",
+      },
     ],
     policy_version: "agentera.personalGlossaryMiningPolicy.v1",
     generation: currentGeneration,
@@ -306,8 +274,16 @@ function nonPublishableReviewedFixture(disposition: "reject" | "defer"): {
     scope: "personal",
     provenance_kind: "personal_inferred_usage",
     evidence: [
-      { source_id: `non-publishable-${disposition}-a`, evidence_anchor: `non-publishable-${disposition}-a`, source_kind: "instruction_document" },
-      { source_id: `non-publishable-${disposition}-b`, evidence_anchor: `non-publishable-${disposition}-b`, source_kind: "project_config_signal" },
+      {
+        source_id: `non-publishable-${disposition}-a`,
+        evidence_anchor: `non-publishable-${disposition}-a`,
+        source_kind: "instruction_document",
+      },
+      {
+        source_id: `non-publishable-${disposition}-b`,
+        evidence_anchor: `non-publishable-${disposition}-b`,
+        source_kind: "project_config_signal",
+      },
     ],
     policy_version: "agentera.personalGlossaryMiningPolicy.v1",
     generation: currentGeneration,
@@ -336,18 +312,7 @@ function nonPublishableReviewedFixture(disposition: "reject" | "defer"): {
 }
 
 function publishRequest(request: Record<string, unknown>, dryRun = false): { rc: number; out: string; err: string } {
-  return run(
-    [
-      "report",
-      "personal-glossary-publish",
-      "--input",
-      "-",
-      ...(dryRun ? ["--dry-run"] : []),
-      "--format",
-      "json",
-    ],
-    JSON.stringify(request),
-  );
+  return run(["report", "personal-glossary-publish", "--input", "-", ...(dryRun ? ["--dry-run"] : []), "--format", "json"], JSON.stringify(request));
 }
 
 function section(): Record<string, any> {
@@ -365,8 +330,16 @@ function mode(file: string): number | null {
   return fs.existsSync(file) ? fs.statSync(file).mode & 0o777 : null;
 }
 
-function noEffectSnapshot(): { profile: Buffer | null; profileMode: number | null; projection: Buffer | null } {
-  return { profile: bytes(profilePath()), profileMode: mode(profilePath()), projection: bytes(projectionPath()) };
+function noEffectSnapshot(): {
+  profile: Buffer | null;
+  profileMode: number | null;
+  projection: Buffer | null;
+} {
+  return {
+    profile: bytes(profilePath()),
+    profileMode: mode(profilePath()),
+    projection: bytes(projectionPath()),
+  };
 }
 
 function expectNoEffects(before: ReturnType<typeof noEffectSnapshot>): void {
@@ -375,9 +348,7 @@ function expectNoEffects(before: ReturnType<typeof noEffectSnapshot>): void {
   expect(bytes(projectionPath())).toEqual(before.projection);
 }
 
-function authorizedFixture(
-  text = "Actually, `ship shape` means the complete form of a deliverable.",
-): {
+function authorizedFixture(text = "Actually, `ship shape` means the complete form of a deliverable."): {
   capsule: GlossaryEvidenceCapsule;
   projection: PersonalGlossaryCandidateProjection;
   receipt: GlossaryHostClassificationReceipt;
@@ -404,10 +375,7 @@ function resealDecision(value: Record<string, unknown>): Record<string, unknown>
   return { ...body, decision_sha256: glossaryCanonicalSha256(body) };
 }
 
-function forcedAutomaticDecision(
-  capsule: GlossaryEvidenceCapsule,
-  receipt: GlossaryHostClassificationReceipt,
-): GlossaryAdmissionDecision {
+function forcedAutomaticDecision(capsule: GlossaryEvidenceCapsule, receipt: GlossaryHostClassificationReceipt): GlossaryAdmissionDecision {
   const body = {
     schema_version: "agentera.personalGlossaryAdmissionDecision.v1",
     owner: "deterministic_cli_admission_validation",
@@ -485,67 +453,73 @@ describe("agentera report personal-glossary-publish", () => {
     expect(fs.readFileSync(profilePath(), "utf8")).toBe(changed);
   });
 
-  it.each(["accept", "correct"] as const)(
-    "revalidates current evidence before %s review publication and leaves failures effect-free",
-    (disposition) => {
-      const reviewed = reviewedFixture(disposition);
-      const request = {
-        ...publicationRequest(reviewed.receipt, reviewed.decision),
-        review_authorization: reviewed.authorization,
-      };
+  it.each(["accept", "correct"] as const)("revalidates current evidence before %s review publication and leaves failures effect-free", (disposition) => {
+    const reviewed = reviewedFixture(disposition);
+    const request = {
+      ...publicationRequest(reviewed.receipt, reviewed.decision),
+      review_authorization: reviewed.authorization,
+    };
 
-      const first = publishRequest(request);
-      expect(first).toMatchObject({ rc: 0, err: "" });
-      expect(JSON.parse(first.out)).toMatchObject({
-        status: "changed",
-        review_record_sha256: reviewed.authorization.review_record_sha256,
-      });
-      expect(section()).toMatchObject({
-        entries: [{
+    const first = publishRequest(request);
+    expect(first).toMatchObject({ rc: 0, err: "" });
+    expect(JSON.parse(first.out)).toMatchObject({
+      status: "changed",
+      review_record_sha256: reviewed.authorization.review_record_sha256,
+    });
+    expect(section()).toMatchObject({
+      entries: [
+        {
           term: reviewed.capsule.term,
-          meaning: disposition === "correct"
-            ? "A corrected review publication meaning."
-            : reviewed.capsule.meaning,
-        }],
-      });
+          meaning: disposition === "correct" ? "A corrected review publication meaning." : reviewed.capsule.meaning,
+        },
+      ],
+    });
 
-      const corroborated = createGlossaryEvidenceCapsule({
-        term: reviewed.capsule.term,
-        meaning: reviewed.capsule.meaning,
-        scope: "personal",
-        provenance_kind: "personal_inferred_usage",
-        evidence: [
-          { source_id: `corroborated-${disposition}-a`, evidence_anchor: `corroborated-${disposition}-a`, source_kind: "instruction_document" },
-          { source_id: `corroborated-${disposition}-b`, evidence_anchor: `corroborated-${disposition}-b`, source_kind: "project_config_signal" },
-        ],
-        policy_version: reviewed.capsule.policy_version,
-        generation: `${reviewed.capsule.generation}-next`,
-      });
-      persist([corroborated]);
-      const before = noEffectSnapshot();
-      const stale = publishRequest(request);
-      expect(stale).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(stale.out)).toMatchObject({ error: { class: "publication_not_authorized" } });
-      expect(stale.out).not.toContain(reviewed.capsule.term);
-      expectNoEffects(before);
-    },
-  );
+    const corroborated = createGlossaryEvidenceCapsule({
+      term: reviewed.capsule.term,
+      meaning: reviewed.capsule.meaning,
+      scope: "personal",
+      provenance_kind: "personal_inferred_usage",
+      evidence: [
+        {
+          source_id: `corroborated-${disposition}-a`,
+          evidence_anchor: `corroborated-${disposition}-a`,
+          source_kind: "instruction_document",
+        },
+        {
+          source_id: `corroborated-${disposition}-b`,
+          evidence_anchor: `corroborated-${disposition}-b`,
+          source_kind: "project_config_signal",
+        },
+      ],
+      policy_version: reviewed.capsule.policy_version,
+      generation: `${reviewed.capsule.generation}-next`,
+    });
+    persist([corroborated]);
+    const before = noEffectSnapshot();
+    const stale = publishRequest(request);
+    expect(stale).toMatchObject({ rc: 1, err: "" });
+    expect(JSON.parse(stale.out)).toMatchObject({
+      error: { class: "publication_not_authorized" },
+    });
+    expect(stale.out).not.toContain(reviewed.capsule.term);
+    expectNoEffects(before);
+  });
 
-  it.each(["reject", "defer"] as const)(
-    "does not publish a %s disposition even with its real review record digest",
-    (disposition) => {
-      const reviewed = nonPublishableReviewedFixture(disposition);
-      const before = noEffectSnapshot();
-      const result = publishRequest({
-        ...publicationRequest(reviewed.receipt, reviewed.decision),
-        review_authorization: reviewed.authorization,
-      });
+  it.each(["reject", "defer"] as const)("does not publish a %s disposition even with its real review record digest", (disposition) => {
+    const reviewed = nonPublishableReviewedFixture(disposition);
+    const before = noEffectSnapshot();
+    const result = publishRequest({
+      ...publicationRequest(reviewed.receipt, reviewed.decision),
+      review_authorization: reviewed.authorization,
+    });
 
-      expect(result).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(result.out)).toMatchObject({ error: { class: "publication_not_authorized" } });
-      expectNoEffects(before);
-    },
-  );
+    expect(result).toMatchObject({ rc: 1, err: "" });
+    expect(JSON.parse(result.out)).toMatchObject({
+      error: { class: "publication_not_authorized" },
+    });
+    expectNoEffects(before);
+  });
 
   it("preserves an existing restrictive profile mode across publication", () => {
     const { receipt, decision } = authorizedFixture();
@@ -562,13 +536,19 @@ describe("agentera report personal-glossary-publish", () => {
     const before = noEffectSnapshot();
     const dryRun = publishRequest(request, true);
     expect(dryRun).toMatchObject({ rc: 0, err: "" });
-    expect(JSON.parse(dryRun.out)).toMatchObject({ status: "dry_run_candidate", published_at: null });
+    expect(JSON.parse(dryRun.out)).toMatchObject({
+      status: "dry_run_candidate",
+      published_at: null,
+    });
     expectNoEffects(before);
 
     expect(publishRequest(request)).toMatchObject({ rc: 0 });
     const later = publicationRequest(receipt, decision, "2026-08-11");
     expect(publishRequest(later)).toMatchObject({ rc: 0 });
-    expect(section()).toMatchObject({ as_of: "2026-08-11", entries: [{ temporal: { last_confirmed_at: "2026-08-11" } }] });
+    expect(section()).toMatchObject({
+      as_of: "2026-08-11",
+      entries: [{ temporal: { last_confirmed_at: "2026-08-11" } }],
+    });
     const bytesAfterLater = fs.readFileSync(profilePath(), "utf8");
     expect(JSON.parse(publishRequest(later).out)).toMatchObject({ status: "unchanged_replay" });
     expect(fs.readFileSync(profilePath(), "utf8")).toBe(bytesAfterLater);
@@ -576,12 +556,7 @@ describe("agentera report personal-glossary-publish", () => {
 
   it("adds and refreshes authorized entries in deterministic Unicode order", () => {
     writeProfile();
-    publishEvidence([
-      record("zeta", "Actually, `zeta term` means the final value."),
-      record("alpha", "Actually, `alpha term` means the initial value."),
-      record("accent-a", "Actually, `café` means the composed value."),
-      record("accent-b", "Actually, `café` means the decomposed value."),
-    ]);
+    publishEvidence([record("zeta", "Actually, `zeta term` means the final value."), record("alpha", "Actually, `alpha term` means the initial value."), record("accent-a", "Actually, `café` means the composed value."), record("accent-b", "Actually, `café` means the decomposed value.")]);
     const mined = mineExplicitGlossaryCandidates({ tiersDir: tiersDir() });
     expect(mined.candidates).toHaveLength(4);
     const projection = persist(mined.candidates.map((candidate) => candidate.capsule));
@@ -589,7 +564,10 @@ describe("agentera report personal-glossary-publish", () => {
       const receipt = receiptFor(capsule, projection);
       return { receipt, decision: forcedAutomaticDecision(capsule, receipt) };
     });
-    for (const item of authorized) expect(publishRequest(publicationRequest(item.receipt, item.decision))).toMatchObject({ rc: 0 });
+    for (const item of authorized)
+      expect(publishRequest(publicationRequest(item.receipt, item.decision))).toMatchObject({
+        rc: 0,
+      });
 
     const entries = section().entries as Array<Record<string, unknown>>;
     expect(entries.map((entry) => entry.term)).toEqual(["alpha term", "café", "café", "zeta term"]);
@@ -598,7 +576,9 @@ describe("agentera report personal-glossary-publish", () => {
 
   it("rejects a changed meaning that conflicts with an established profile entry before effects", () => {
     const first = authorizedFixture();
-    expect(publishRequest(publicationRequest(first.receipt, first.decision))).toMatchObject({ rc: 0 });
+    expect(publishRequest(publicationRequest(first.receipt, first.decision))).toMatchObject({
+      rc: 0,
+    });
     publishEvidence([record("changed", "Actually, `ship shape` means an incompatible form.")]);
     const mined = mineExplicitGlossaryCandidates({ tiersDir: tiersDir() });
     const capsule = mined.candidates[0]!.capsule;
@@ -614,22 +594,111 @@ describe("agentera report personal-glossary-publish", () => {
   });
 
   it.each([
-    ["receipt candidate_id", (request: any) => { request.receipt.candidate_id = "0".repeat(64); }],
-    ["receipt candidate_revision", (request: any) => { request.receipt.candidate_revision = "1".repeat(64); }],
-    ["receipt capsule", (request: any) => { request.receipt.candidate_capsule_sha256 = "2".repeat(64); }],
-    ["receipt projection", (request: any) => { request.receipt.candidate_projection_sha256 = "3".repeat(64); }],
-    ["receipt generation", (request: any) => { request.receipt.generation = "stale-generation"; }],
-    ["receipt policy", (request: any) => { request.receipt.policy_version = "stale-policy"; }],
-    ["receipt semantic fingerprint", (request: any) => { request.receipt.semantic_fingerprint = "4".repeat(64); }],
-    ["decision candidate_id", (request: any) => { request.decision.candidate_id = "5".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision candidate_revision", (request: any) => { request.decision.candidate_revision = "6".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision capsule", (request: any) => { request.decision.candidate_capsule_sha256 = "a".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision projection", (request: any) => { request.decision.candidate_projection_sha256 = "7".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision receipt", (request: any) => { request.decision.host_receipt_sha256 = "8".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision classification contract", (request: any) => { request.decision.classification_contract_version = "agentera.personalGlossaryHostClassificationReceipt.v9"; request.decision = resealDecision(request.decision); }],
-    ["decision semantic fingerprint", (request: any) => { request.decision.semantic_fingerprint = "9".repeat(64); request.decision = resealDecision(request.decision); }],
-    ["decision generation", (request: any) => { request.decision.generation = "stale-generation"; request.decision = resealDecision(request.decision); }],
-    ["decision policy", (request: any) => { request.decision.policy_version = "stale-policy"; request.decision = resealDecision(request.decision); }],
+    [
+      "receipt candidate_id",
+      (request: any) => {
+        request.receipt.candidate_id = "0".repeat(64);
+      },
+    ],
+    [
+      "receipt candidate_revision",
+      (request: any) => {
+        request.receipt.candidate_revision = "1".repeat(64);
+      },
+    ],
+    [
+      "receipt capsule",
+      (request: any) => {
+        request.receipt.candidate_capsule_sha256 = "2".repeat(64);
+      },
+    ],
+    [
+      "receipt projection",
+      (request: any) => {
+        request.receipt.candidate_projection_sha256 = "3".repeat(64);
+      },
+    ],
+    [
+      "receipt generation",
+      (request: any) => {
+        request.receipt.generation = "stale-generation";
+      },
+    ],
+    [
+      "receipt policy",
+      (request: any) => {
+        request.receipt.policy_version = "stale-policy";
+      },
+    ],
+    [
+      "receipt semantic fingerprint",
+      (request: any) => {
+        request.receipt.semantic_fingerprint = "4".repeat(64);
+      },
+    ],
+    [
+      "decision candidate_id",
+      (request: any) => {
+        request.decision.candidate_id = "5".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision candidate_revision",
+      (request: any) => {
+        request.decision.candidate_revision = "6".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision capsule",
+      (request: any) => {
+        request.decision.candidate_capsule_sha256 = "a".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision projection",
+      (request: any) => {
+        request.decision.candidate_projection_sha256 = "7".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision receipt",
+      (request: any) => {
+        request.decision.host_receipt_sha256 = "8".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision classification contract",
+      (request: any) => {
+        request.decision.classification_contract_version = "agentera.personalGlossaryHostClassificationReceipt.v9";
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision semantic fingerprint",
+      (request: any) => {
+        request.decision.semantic_fingerprint = "9".repeat(64);
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision generation",
+      (request: any) => {
+        request.decision.generation = "stale-generation";
+        request.decision = resealDecision(request.decision);
+      },
+    ],
+    [
+      "decision policy",
+      (request: any) => {
+        request.decision.policy_version = "stale-policy";
+        request.decision = resealDecision(request.decision);
+      },
+    ],
   ])("fails stale %s before effects", (_name, mutate) => {
     const { receipt, decision } = authorizedFixture();
     const request = structuredClone(publicationRequest(receipt, decision)) as any;
@@ -638,21 +707,39 @@ describe("agentera report personal-glossary-publish", () => {
 
     const result = publishRequest(request);
     expect(result).toMatchObject({ rc: 1, err: "" });
-    expect(JSON.parse(result.out)).toMatchObject({ error: { class: "publication_not_authorized" } });
+    expect(JSON.parse(result.out)).toMatchObject({
+      error: { class: "publication_not_authorized" },
+    });
     expectNoEffects(before);
   });
 
   it.each([
-    ["changed meaning", (request: any) => {
-      request.receipt.classification.meaning = "changed semantic meaning";
-      request.receipt = resealReceipt(request.receipt);
-    }],
-    ["invalid scope", (request: any) => {
-      request.receipt.classification.scope = "project";
-      request.receipt = resealReceipt(request.receipt);
-    }],
-    ["unknown receipt field", (request: any) => { request.receipt.unexpected = true; }],
-    ["unknown decision field", (request: any) => { request.decision.unexpected = true; }],
+    [
+      "changed meaning",
+      (request: any) => {
+        request.receipt.classification.meaning = "changed semantic meaning";
+        request.receipt = resealReceipt(request.receipt);
+      },
+    ],
+    [
+      "invalid scope",
+      (request: any) => {
+        request.receipt.classification.scope = "project";
+        request.receipt = resealReceipt(request.receipt);
+      },
+    ],
+    [
+      "unknown receipt field",
+      (request: any) => {
+        request.receipt.unexpected = true;
+      },
+    ],
+    [
+      "unknown decision field",
+      (request: any) => {
+        request.decision.unexpected = true;
+      },
+    ],
   ])("fails %s before effects", (_name, mutate) => {
     const { receipt, decision } = authorizedFixture();
     const request = structuredClone(publicationRequest(receipt, decision)) as any;
@@ -703,7 +790,13 @@ describe("agentera report personal-glossary-publish", () => {
       meaning: "an unresolved meaning",
       scope: "personal",
       provenance_kind: "personal_explicit_definition",
-      evidence: [{ source_id: "missing-source", evidence_anchor: "missing-anchor", signal_type: "correction" }],
+      evidence: [
+        {
+          source_id: "missing-source",
+          evidence_anchor: "missing-anchor",
+          signal_type: "correction",
+        },
+      ],
       policy_version: "agentera.personalGlossaryMiningPolicy.v1",
       generation: retractedMined.generation!,
     });
@@ -725,8 +818,16 @@ describe("agentera report personal-glossary-publish", () => {
       scope: "personal",
       provenance_kind: "personal_inferred_usage",
       evidence: [
-        { source_id: "inferred-a", evidence_anchor: "inferred-a", source_kind: "instruction_document" },
-        { source_id: "inferred-b", evidence_anchor: "inferred-b", source_kind: "project_config_signal" },
+        {
+          source_id: "inferred-a",
+          evidence_anchor: "inferred-a",
+          source_kind: "instruction_document",
+        },
+        {
+          source_id: "inferred-b",
+          evidence_anchor: "inferred-b",
+          source_kind: "project_config_signal",
+        },
       ],
       policy_version: "agentera.personalGlossaryMiningPolicy.v1",
       generation: retractedMined.generation!,
@@ -756,7 +857,16 @@ describe("agentera report personal-glossary-publish", () => {
   it.each([
     ["not a mapping", "[]"],
     ["invalid JSON", "{"],
-    ["unknown request field", JSON.stringify({ schema_version: "agentera.personalGlossaryPublishRequest.v1", receipt: {}, decision: {}, as_of: AS_OF, unexpected: true })],
+    [
+      "unknown request field",
+      JSON.stringify({
+        schema_version: "agentera.personalGlossaryPublishRequest.v1",
+        receipt: {},
+        decision: {},
+        as_of: AS_OF,
+        unexpected: true,
+      }),
+    ],
   ])("rejects malformed %s before effects", (_name, stdin) => {
     writeProfile();
     const before = noEffectSnapshot();
@@ -815,10 +925,7 @@ describe("agentera report personal-glossary-publish", () => {
   it("rejects oversized input without effects or reflecting input", () => {
     writeProfile();
     const before = noEffectSnapshot();
-    const overBound = run(
-      ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
-      "x".repeat(16_385),
-    );
+    const overBound = run(["report", "personal-glossary-publish", "--input", "-", "--format", "json"], "x".repeat(16_385));
     expect(overBound).toMatchObject({ rc: 2, err: "" });
     expect(JSON.parse(overBound.out)).toMatchObject({
       status: "fail",

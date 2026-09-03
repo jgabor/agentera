@@ -247,9 +247,7 @@ describe.each(artifacts)("read-only migration fixture retrieval: %s", (artifact)
     expect(retrieved).not.toHaveProperty("outcome");
     expect(retrieved.missing_fields).toContain("outcome");
     expect(retrieved.context_complete).toBe(false);
-    expect(retrieved.caveats).toEqual(expect.arrayContaining([
-      "Decision entry is missing one or more full-detail context fields.",
-    ]));
+    expect(retrieved.caveats).toEqual(expect.arrayContaining(["Decision entry is missing one or more full-detail context fields."]));
   });
 
   it("reports absent IDs as operational not_found diagnostics", () => {
@@ -280,7 +278,10 @@ describe.each(artifacts)("read-only migration fixture retrieval: %s", (artifact)
     const collection = artifact === "progress" ? "cycles" : artifact === "decisions" ? "decisions" : "audits";
     fs.writeFileSync(
       projectionPath(root, artifact),
-      YAML.stringify({ [collection]: [], archive: [`${artifact === "progress" ? "Cycle" : artifact === "decisions" ? "Decision" : "Audit"} 1 (2026-07-13): summary only`] }),
+      YAML.stringify({
+        [collection]: [],
+        archive: [`${artifact === "progress" ? "Cycle" : artifact === "decisions" ? "Decision" : "Audit"} 1 (2026-07-13): summary only`],
+      }),
     );
 
     const failure = (() => {

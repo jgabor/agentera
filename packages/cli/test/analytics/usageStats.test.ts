@@ -4,19 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  CorpusUnavailable,
-  analyzeCorpus,
-  buildJsonPayload,
-  classifyTrigger,
-  defaultCorpusPath,
-  defaultUsageDir,
-  findMarkers,
-  loadCorpusOrRaise,
-  usageMain,
-  pairInvocations,
-  renderMarkdown,
-} from "../../src/analytics/usageStats.js";
+import { CorpusUnavailable, analyzeCorpus, buildJsonPayload, classifyTrigger, defaultCorpusPath, defaultUsageDir, findMarkers, loadCorpusOrRaise, usageMain, pairInvocations, renderMarkdown } from "../../src/analytics/usageStats.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
@@ -47,7 +35,10 @@ function corpusFixture(): any {
         session_id: "c1",
         project_id: "agentera",
         timestamp: "2026-01-01T00:00:01Z",
-        data: { actor: "assistant", content: "─── ⧉ build · cycle ───\nwork\n─── ⧉ build · complete ───" },
+        data: {
+          actor: "assistant",
+          content: "─── ⧉ build · cycle ───\nwork\n─── ⧉ build · complete ───",
+        },
       },
       {
         source_kind: "conversation_turn",
@@ -90,7 +81,9 @@ describe("pairInvocations", () => {
     const turn = {
       source_id: "a",
       timestamp: "t",
-      data: { content: "─── ⧉ build · cycle ───\n─── ⧉ build · cycle 2 ───\n─── ⧉ build · flagged ───" },
+      data: {
+        content: "─── ⧉ build · cycle ───\n─── ⧉ build · cycle 2 ───\n─── ⧉ build · flagged ───",
+      },
     };
     const invs = pairInvocations([turn]);
     expect(invs.length).toBe(2);
@@ -123,11 +116,17 @@ describe("analyzeCorpus", () => {
 
   it("renders a markdown report and JSON payload", () => {
     const analysis = analyzeCorpus(corpusFixture(), null);
-    const md = renderMarkdown(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
+    const md = renderMarkdown(analysis, {
+      generatedAt: "GEN",
+      extractedAt: "2026-01-04T00:00:00Z",
+    });
     expect(md).toContain("# Suite Usage");
     expect(md).toContain("| build | 1 |");
     expect(md).toContain("## Per-project totals");
-    const payload = buildJsonPayload(analysis, { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
+    const payload = buildJsonPayload(analysis, {
+      generatedAt: "GEN",
+      extractedAt: "2026-01-04T00:00:00Z",
+    });
     expect(payload.generated_at).toBe("GEN");
     expect(payload.invocations.length).toBe(2);
   });
@@ -157,7 +156,10 @@ describe("analyzeCorpus", () => {
         source_product: "claude-code",
         active_runtime: false,
         runtime: null,
-        data: { actor: "assistant", content: "─── ⧉ build · cycle ───\n─── ⧉ build · complete ───" },
+        data: {
+          actor: "assistant",
+          content: "─── ⧉ build · cycle ───\n─── ⧉ build · complete ───",
+        },
       },
     );
 
@@ -203,22 +205,16 @@ describe("default paths", () => {
   it("honors AGENTERA_USAGE_DIR and AGENTERA_PROFILE_DIR overrides", () => {
     expect(defaultUsageDir({ AGENTERA_USAGE_DIR: "/x/usage" })).toBe("/x/usage");
     expect(defaultUsageDir({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe("/x/prof");
-    expect(defaultCorpusPath({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe(
-      path.join("/x/prof", "intermediate", "corpus.json"),
-    );
+    expect(defaultCorpusPath({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe(path.join("/x/prof", "intermediate", "corpus.json"));
   });
 
   it("falls back to PROFILERA_PROFILE_DIR when AGENTERA_PROFILE_DIR is unset", () => {
     expect(defaultUsageDir({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe("/legacy/prof");
-    expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe(
-      path.join("/legacy/prof", "intermediate", "corpus.json"),
-    );
+    expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe(path.join("/legacy/prof", "intermediate", "corpus.json"));
   });
 
   it("uses XDG default on linux", () => {
-    expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(
-      path.join("/home/u/.local/share", "agentera"),
-    );
+    expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(path.join("/home/u/.local/share", "agentera"));
   });
 });
 
@@ -322,7 +318,14 @@ describe("usageMain tier-aware path", () => {
       },
     ];
     const runtimeStatuses = [
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publishEvidenceTiers(records, {
       tiersDir: tiersDirForCorpusPath(corpusPath),

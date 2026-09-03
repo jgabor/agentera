@@ -8,8 +8,17 @@ describe("state output defaults", () => {
     expect(parseQueryArgs(["--list-artifacts"])).toMatchObject({ format: "json" });
 
     let out = "";
-    expect(runStateWrite("progress", ["explain"], { out: (text) => { out += text; } })).toBe(0);
-    expect(JSON.parse(out)).toMatchObject({ schemaVersion: "agentera.stateWriteExplain.v1", artifact: "progress" });
+    expect(
+      runStateWrite("progress", ["explain"], {
+        out: (text) => {
+          out += text;
+        },
+      }),
+    ).toBe(0);
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.stateWriteExplain.v1",
+      artifact: "progress",
+    });
   });
 
   it.each(["text", "yaml"])("rejects non-JSON query and writer selectors as JSON", (format) => {
@@ -18,7 +27,16 @@ describe("state output defaults", () => {
     });
 
     let out = "";
-    expect(runStateWrite("progress", ["explain", "--format", format], { out: (text) => { out += text; } })).toBe(2);
-    expect(JSON.parse(out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(
+      runStateWrite("progress", ["explain", "--format", format], {
+        out: (text) => {
+          out += text;
+        },
+      }),
+    ).toBe(2);
+    expect(JSON.parse(out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
   });
 });

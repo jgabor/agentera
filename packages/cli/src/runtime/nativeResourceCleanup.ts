@@ -21,15 +21,8 @@ import {
   type LifecycleOperationSpec,
   type LifecycleOwnershipLedger,
 } from "./lifecycleOperations.js";
-import {
-  LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA,
-  readLifecycleOwnershipJournal,
-} from "./lifecycleOwnershipJournal.js";
-import {
-  LIFECYCLE_AUTHORITY_RELATIVE_PATH,
-  NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH,
-  loadLifecycleAuthority,
-} from "./lifecycleAuthority.js";
+import { LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA, readLifecycleOwnershipJournal } from "./lifecycleOwnershipJournal.js";
+import { LIFECYCLE_AUTHORITY_RELATIVE_PATH, NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH, loadLifecycleAuthority } from "./lifecycleAuthority.js";
 import { loadRuntimeLifecycleAdapterContract } from "./lifecycleAdapterContract.js";
 import { loadLifecycleOperationContract } from "./lifecycleOperationContract.js";
 
@@ -89,13 +82,7 @@ export interface RetiredResourceDiagnosticDefinition {
   markerSyntax: string | null;
 }
 
-export type RetiredResourceOwnershipMode =
-  | "ledger_identity_fingerprint"
-  | "bounded_fingerprint_and_ledger"
-  | "managed_marker_regular_file"
-  | "managed_bundle_identity"
-  | "whole_resource_retired_hook"
-  | "manual_review";
+export type RetiredResourceOwnershipMode = "ledger_identity_fingerprint" | "bounded_fingerprint_and_ledger" | "managed_marker_regular_file" | "managed_bundle_identity" | "whole_resource_retired_hook" | "manual_review";
 
 export interface RetiredResourceDirectoryDefinition {
   id: string;
@@ -223,13 +210,13 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   const policy = isMapping(value.policy) ? value.policy : {};
   if (
-    policy.host_inventory_exposure !== "evidence_only"
-    || policy.selection !== "native_agentera_resource_only"
-    || policy.preview !== "strictly_read_only"
-    || policy.apply_requires !== "explicit_approval"
-    || policy.ownership !== "declared_per_leaf_mode"
-    || policy.shared_configuration !== "action_required_without_key_level_ownership"
-    || policy.unsupported_platform_result !== "action_required"
+    policy.host_inventory_exposure !== "evidence_only" ||
+    policy.selection !== "native_agentera_resource_only" ||
+    policy.preview !== "strictly_read_only" ||
+    policy.apply_requires !== "explicit_approval" ||
+    policy.ownership !== "declared_per_leaf_mode" ||
+    policy.shared_configuration !== "action_required_without_key_level_ownership" ||
+    policy.unsupported_platform_result !== "action_required"
   ) {
     errors.push("policy must expose resource-only selection, pure preview, explicit approval, and fail-closed ownership");
   }
@@ -237,23 +224,19 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   for (const evidence of ["value_equality", "resource_name", "file_equality"]) {
     if (!forbidden.includes(evidence)) errors.push(`policy must reject ${evidence} as ownership evidence`);
   }
-  const markerException = isMapping(policy.migration_only_managed_marker_exception)
-    ? policy.migration_only_managed_marker_exception
-    : {};
-  const markerForms = isMapping(markerException.expected_structural_marker_forms)
-    ? markerException.expected_structural_marker_forms
-    : {};
-  const frontmatterMarker = isMapping(markerForms.yaml_frontmatter_boolean)
-    ? markerForms.yaml_frontmatter_boolean
-    : {};
-  if (markerException.scope !== "exact_declared_pre_ledger_regular_files"
-    || markerException.authority !== "diagnostic_inventory resources whose ownership_mode is managed_marker_regular_file"
-    || markerForms.first_line_exact !== "# agentera_managed: true"
-    || markerForms.body_first_line_exact !== "<!-- agentera: managed -->"
-    || frontmatterMarker.key !== "agentera_managed"
-    || frontmatterMarker.value !== true
-    || !requiredString(markerException, "opt_out")
-    || !requiredString(markerException, "boundary")) {
+  const markerException = isMapping(policy.migration_only_managed_marker_exception) ? policy.migration_only_managed_marker_exception : {};
+  const markerForms = isMapping(markerException.expected_structural_marker_forms) ? markerException.expected_structural_marker_forms : {};
+  const frontmatterMarker = isMapping(markerForms.yaml_frontmatter_boolean) ? markerForms.yaml_frontmatter_boolean : {};
+  if (
+    markerException.scope !== "exact_declared_pre_ledger_regular_files" ||
+    markerException.authority !== "diagnostic_inventory resources whose ownership_mode is managed_marker_regular_file" ||
+    markerForms.first_line_exact !== "# agentera_managed: true" ||
+    markerForms.body_first_line_exact !== "<!-- agentera: managed -->" ||
+    frontmatterMarker.key !== "agentera_managed" ||
+    frontmatterMarker.value !== true ||
+    !requiredString(markerException, "opt_out") ||
+    !requiredString(markerException, "boundary")
+  ) {
     errors.push("policy must declare the closed migration-only managed-marker regular-file exception");
   }
 
@@ -261,31 +244,37 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   const enabledResourceIds = stringList(automatic.enabled_resource_ids);
   const ownershipEvidence = isMapping(automatic.ownership_evidence) ? automatic.ownership_evidence : {};
   const variants = Array.isArray(automatic.variants) ? automatic.variants : [];
-  if (enabledResourceIds.length !== 1 || enabledResourceIds[0] !== "opencode.plugin.agentera"
-    || automatic.qualification !== "bounded_sha256_and_matching_installer_ledger"
-    || automatic.result_without_match !== "manual_review") {
+  if (enabledResourceIds.length !== 1 || enabledResourceIds[0] !== "opencode.plugin.agentera" || automatic.qualification !== "bounded_sha256_and_matching_installer_ledger" || automatic.result_without_match !== "manual_review") {
     errors.push("automatic_retirement must enable only opencode.plugin.agentera and fail closed");
   }
-  if (ownershipEvidence.journal_schema !== LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA
-    || ownershipEvidence.ledger_schema !== LIFECYCLE_LEDGER_SCHEMA
-    || ownershipEvidence.ledger_resource_id !== "opencode.plugin"
-    || ownershipEvidence.status !== "managed"
-    || ownershipEvidence.scope !== "whole"
-    || ownershipEvidence.match !== "exact_destination_kind_identity_and_fingerprint") {
+  if (
+    ownershipEvidence.journal_schema !== LIFECYCLE_OWNERSHIP_JOURNAL_SCHEMA ||
+    ownershipEvidence.ledger_schema !== LIFECYCLE_LEDGER_SCHEMA ||
+    ownershipEvidence.ledger_resource_id !== "opencode.plugin" ||
+    ownershipEvidence.status !== "managed" ||
+    ownershipEvidence.scope !== "whole" ||
+    ownershipEvidence.match !== "exact_destination_kind_identity_and_fingerprint"
+  ) {
     errors.push("automatic_retirement must require the matching historical installer ownership journal");
   }
-  if (variants.length === 0 || variants.some((variant) => !isMapping(variant)
-    || !requiredString(variant, "id")
-    || variant.resource_id !== "opencode.plugin.agentera"
-    || variant.kind !== "file"
-    || !Number.isInteger(variant.size_bytes)
-    || typeof variant.sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(variant.sha256)
-    || !isMapping(variant.provenance)
-    || !requiredString(variant.provenance, "source_commit")
-    || !requiredString(variant.provenance, "source_path")
-    || !requiredString(variant.provenance, "transformation")
-    || !requiredString(variant.provenance, "verification"))) {
+  if (
+    variants.length === 0 ||
+    variants.some(
+      (variant) =>
+        !isMapping(variant) ||
+        !requiredString(variant, "id") ||
+        variant.resource_id !== "opencode.plugin.agentera" ||
+        variant.kind !== "file" ||
+        !Number.isInteger(variant.size_bytes) ||
+        typeof variant.sha256 !== "string" ||
+        !/^[a-f0-9]{64}$/.test(variant.sha256) ||
+        !isMapping(variant.provenance) ||
+        !requiredString(variant.provenance, "source_commit") ||
+        !requiredString(variant.provenance, "source_path") ||
+        !requiredString(variant.provenance, "transformation") ||
+        !requiredString(variant.provenance, "verification"),
+    )
+  ) {
     errors.push("automatic_retirement variants must have bounded positive provenance");
   }
 
@@ -329,11 +318,7 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   for (const [id, resourceClass] of Object.entries(REQUIRED_RESOURCE_VOCABULARY)) {
     const entry = vocabularyById.get(id);
-    if (!entry || entry.resource_class !== resourceClass
-      || !(entry.migration_scope === "explicit_cleanup" || entry.migration_scope === "v2_upgrade_only")
-      || stringList(entry.resource_ids).length === 0
-      || !Array.isArray(entry.historical_ids)
-    ) {
+    if (!entry || entry.resource_class !== resourceClass || !(entry.migration_scope === "explicit_cleanup" || entry.migration_scope === "v2_upgrade_only") || stringList(entry.resource_ids).length === 0 || !Array.isArray(entry.historical_ids)) {
       errors.push(`resource_vocabulary must retain ${id} as ${resourceClass}`);
     }
   }
@@ -359,50 +344,37 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   const diagnosticInventory = isMapping(value.diagnostic_inventory) ? value.diagnostic_inventory : null;
   const maximumResources = diagnosticInventory?.maximum_resources;
   const maximumFileBytes = diagnosticInventory?.maximum_file_bytes;
-  if (!Number.isInteger(maximumResources) || (maximumResources as number) < 1 || (maximumResources as number) > 256
-    || !Number.isInteger(maximumFileBytes) || (maximumFileBytes as number) < 1 || (maximumFileBytes as number) > 1024 * 1024) {
+  if (!Number.isInteger(maximumResources) || (maximumResources as number) < 1 || (maximumResources as number) > 256 || !Number.isInteger(maximumFileBytes) || (maximumFileBytes as number) < 1 || (maximumFileBytes as number) > 1024 * 1024) {
     errors.push("diagnostic_inventory must declare bounded maximum_resources and maximum_file_bytes");
   }
   const diagnosticResources = Array.isArray(diagnosticInventory?.resources) ? diagnosticInventory.resources : [];
   const diagnosticIds = new Map<string, string>();
   const diagnosticSelectors = new Set<string>();
-  const ownershipModes = new Set<RetiredResourceOwnershipMode>([
-    "ledger_identity_fingerprint",
-    "bounded_fingerprint_and_ledger",
-    "managed_marker_regular_file",
-    "managed_bundle_identity",
-    "whole_resource_retired_hook",
-    "manual_review",
-  ]);
+  const ownershipModes = new Set<RetiredResourceOwnershipMode>(["ledger_identity_fingerprint", "bounded_fingerprint_and_ledger", "managed_marker_regular_file", "managed_bundle_identity", "whole_resource_retired_hook", "manual_review"]);
   for (const resource of diagnosticResources) {
-    if (!isMapping(resource)
-      || !requiredString(resource, "id")
-      || !requiredString(resource, "vocabulary")
-      || !Array.isArray(resource.aliases)
-      || stringList(resource.roots).length === 0
-      || !(resource.kind === "file" || resource.kind === "directory" || resource.kind === "symlink")
-      || !ownershipModes.has(resource.ownership_mode as RetiredResourceOwnershipMode)
-      || !requiredString(resource, "ownership_evidence")
-      || !(resource.focused_preview === "remove_if_owned_else_manual_review" || resource.focused_preview === "manual_review_only")
-      || (resource.boundary !== undefined && resource.boundary !== "external_install_only")
-      || !Array.isArray(resource.destinations)
-      || !stringList(resource.destinations).length
-      || (resource.names !== undefined && !Array.isArray(resource.names))
-      || (resource.contains !== undefined && !requiredString(resource, "contains"))
-      || (resource.ownership_mode === "managed_marker_regular_file"
-        && (!(resource.marker_kind === "first_line_exact" || resource.marker_kind === "body_first_line_exact" || resource.marker_kind === "yaml_frontmatter_boolean")
-          || !requiredString(resource, "marker_syntax")))) {
+    if (
+      !isMapping(resource) ||
+      !requiredString(resource, "id") ||
+      !requiredString(resource, "vocabulary") ||
+      !Array.isArray(resource.aliases) ||
+      stringList(resource.roots).length === 0 ||
+      !(resource.kind === "file" || resource.kind === "directory" || resource.kind === "symlink") ||
+      !ownershipModes.has(resource.ownership_mode as RetiredResourceOwnershipMode) ||
+      !requiredString(resource, "ownership_evidence") ||
+      !(resource.focused_preview === "remove_if_owned_else_manual_review" || resource.focused_preview === "manual_review_only") ||
+      (resource.boundary !== undefined && resource.boundary !== "external_install_only") ||
+      !Array.isArray(resource.destinations) ||
+      !stringList(resource.destinations).length ||
+      (resource.names !== undefined && !Array.isArray(resource.names)) ||
+      (resource.contains !== undefined && !requiredString(resource, "contains")) ||
+      (resource.ownership_mode === "managed_marker_regular_file" && (!(resource.marker_kind === "first_line_exact" || resource.marker_kind === "body_first_line_exact" || resource.marker_kind === "yaml_frontmatter_boolean") || !requiredString(resource, "marker_syntax")))
+    ) {
       errors.push("diagnostic_inventory resources must declare bounded resource IDs and paths");
       continue;
     }
     if (resource.ownership_mode === "managed_marker_regular_file") {
-      const expectedSyntax = resource.marker_kind === "first_line_exact"
-        ? markerForms.first_line_exact
-        : resource.marker_kind === "body_first_line_exact"
-          ? "html_comment_agentera_managed"
-          : resource.marker_kind === "yaml_frontmatter_boolean"
-            ? `${String(frontmatterMarker.key)}: ${String(frontmatterMarker.value)}`
-            : null;
+      const expectedSyntax =
+        resource.marker_kind === "first_line_exact" ? markerForms.first_line_exact : resource.marker_kind === "body_first_line_exact" ? "html_comment_agentera_managed" : resource.marker_kind === "yaml_frontmatter_boolean" ? `${String(frontmatterMarker.key)}: ${String(frontmatterMarker.value)}` : null;
       if (resource.marker_syntax !== expectedSyntax) {
         errors.push(`diagnostic_inventory ${String(resource.id)} must use its canonical structural marker form`);
       }
@@ -431,9 +403,7 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
       diagnosticSelectors.add(id);
     }
     for (const aliasTemplate of stringList(resource.aliases)) {
-      const aliases = template.includes("{name}")
-        ? names.map((name) => aliasTemplate.replace("{name}", name))
-        : [aliasTemplate];
+      const aliases = template.includes("{name}") ? names.map((name) => aliasTemplate.replace("{name}", name)) : [aliasTemplate];
       if (aliases.some((alias) => alias.includes("{") || alias.length === 0)) {
         errors.push(`diagnostic_inventory ${template} has an invalid alias template`);
       }
@@ -454,11 +424,16 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
   }
   const directoryIds = new Set<string>();
   for (const resource of directoryResources) {
-    if (!isMapping(resource) || !requiredString(resource, "id") || !Array.isArray(resource.aliases)
-      || !requiredString(resource, "root") || !requiredString(resource, "destination")
-      || resource.kind !== "directory" || resource.ownership_mode !== "declared_empty_directory"
-      || !(resource.postcondition === "remove_if_empty_after_declared_leaf_cleanup_else_preserve"
-        || resource.postcondition === "remove_if_empty_else_preserve")) {
+    if (
+      !isMapping(resource) ||
+      !requiredString(resource, "id") ||
+      !Array.isArray(resource.aliases) ||
+      !requiredString(resource, "root") ||
+      !requiredString(resource, "destination") ||
+      resource.kind !== "directory" ||
+      resource.ownership_mode !== "declared_empty_directory" ||
+      !(resource.postcondition === "remove_if_empty_after_declared_leaf_cleanup_else_preserve" || resource.postcondition === "remove_if_empty_else_preserve")
+    ) {
       errors.push("directory_inventory resources must declare ID, root, destination, kind, ownership, and postcondition");
       continue;
     }
@@ -474,85 +449,60 @@ export function validateNativeResourceCleanupContractData(value: unknown): strin
     resourceById.set(resource.id as string, resource);
   }
   const claude = resourceById.get("claude.agentera-skill-link");
-  if (!claude || claude.host !== "claude" || claude.kind !== "symlink" || claude.intent !== "remove"
-    || claude.destination !== "{home}/.claude/skills/agentera" || claude.ledger_status !== "legacy"
-    || claude.vocabulary !== "claude.skill-link" || !requiredString(claude, "durable_proof")) {
+  if (!claude || claude.host !== "claude" || claude.kind !== "symlink" || claude.intent !== "remove" || claude.destination !== "{home}/.claude/skills/agentera" || claude.ledger_status !== "legacy" || claude.vocabulary !== "claude.skill-link" || !requiredString(claude, "durable_proof")) {
     errors.push("Claude cleanup must remain the legacy-ledger Agentera skill symlink removal");
   }
   const codex = resourceById.get("codex.agent-descriptor");
   const descriptors = codex ? stringList(codex.descriptors) : [];
-  const expectedDescriptors = [
-    "status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate",
-    "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera",
-  ];
-  if (!codex || codex.host !== "codex" || codex.kind !== "file" || codex.intent !== "remove"
-    || codex.destination !== "{home}/.codex/agents/{descriptor}.toml" || codex.ledger_status !== "managed"
-    || codex.vocabulary !== "codex.agent-descriptor" || !requiredString(codex, "durable_proof")
-    || stringList(codex.historical_ids).join(",") !== "codex.agents.{descriptor}"
-    || descriptors.join(",") !== expectedDescriptors.join(",")) {
+  const expectedDescriptors = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate", "dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera"];
+  if (
+    !codex ||
+    codex.host !== "codex" ||
+    codex.kind !== "file" ||
+    codex.intent !== "remove" ||
+    codex.destination !== "{home}/.codex/agents/{descriptor}.toml" ||
+    codex.ledger_status !== "managed" ||
+    codex.vocabulary !== "codex.agent-descriptor" ||
+    !requiredString(codex, "durable_proof") ||
+    stringList(codex.historical_ids).join(",") !== "codex.agents.{descriptor}" ||
+    descriptors.join(",") !== expectedDescriptors.join(",")
+  ) {
     errors.push("Codex descriptors must be independently ledger-owned native files");
   }
 
   const configuration = Array.isArray(value.configuration_inventory) ? value.configuration_inventory : [];
-  const expectedKeys = [
-    "shell_environment_policy.set.AGENTERA_HOME",
-    "agents.max_depth",
-    "features.multi_agent_v2",
-  ];
+  const expectedKeys = ["shell_environment_policy.set.AGENTERA_HOME", "agents.max_depth", "features.multi_agent_v2"];
   if (configuration.length !== expectedKeys.length) {
     errors.push("configuration_inventory must declare every Agentera-written Codex key");
   }
   for (const key of expectedKeys) {
     const unit = configuration.find((item) => isMapping(item) && item.key === key);
-    if (!isMapping(unit) || !requiredString(unit, "id") || unit.host !== "codex" || unit.destination !== "{home}/.codex/config.toml"
-      || unit.durable_proof !== "key-level ownership ledger identity and fingerprint"
-      || unit.ownership_available !== false || unit.result_without_proof !== "action_required") {
+    if (!isMapping(unit) || !requiredString(unit, "id") || unit.host !== "codex" || unit.destination !== "{home}/.codex/config.toml" || unit.durable_proof !== "key-level ownership ledger identity and fingerprint" || unit.ownership_available !== false || unit.result_without_proof !== "action_required") {
       errors.push(`configuration_inventory must preserve ${key} without key-level ownership`);
     }
   }
-  const deletionInventory = isMapping(value.cutover_deletion_inventory)
-    ? value.cutover_deletion_inventory
-    : null;
-  if (
-    deletionInventory?.schema_version !== "agentera.v2CutoverDeletionInventory.v1"
-    || deletionInventory.approval_gate !== "approved_stable_cutover"
-    || deletionInventory.policy !== "delete_only_after_approved_stable_cutover"
-  ) {
+  const deletionInventory = isMapping(value.cutover_deletion_inventory) ? value.cutover_deletion_inventory : null;
+  if (deletionInventory?.schema_version !== "agentera.v2CutoverDeletionInventory.v1" || deletionInventory.approval_gate !== "approved_stable_cutover" || deletionInventory.policy !== "delete_only_after_approved_stable_cutover") {
     errors.push("cutover_deletion_inventory must be approval-gated v2 deletion inventory");
   }
-  const deletionEntries = Array.isArray(deletionInventory?.entries)
-    ? deletionInventory.entries
-    : [];
-  const actualDeletionEntries = deletionEntries.flatMap((entry) =>
-    isMapping(entry) && typeof entry.path === "string" && typeof entry.responsibility === "string"
-      ? [[entry.path, entry.responsibility] as const]
-      : [],
-  );
+  const deletionEntries = Array.isArray(deletionInventory?.entries) ? deletionInventory.entries : [];
+  const actualDeletionEntries = deletionEntries.flatMap((entry) => (isMapping(entry) && typeof entry.path === "string" && typeof entry.responsibility === "string" ? [[entry.path, entry.responsibility] as const] : []));
   if (JSON.stringify(actualDeletionEntries) !== JSON.stringify(CUTOVER_DELETION_INVENTORY)) {
     errors.push("cutover_deletion_inventory must identify every quarantined v2 source, shim, and fixture path");
   }
   return errors;
 }
 
-function expandResource(
-  resource: Record<string, unknown>,
-  hostSupportStatus: HostSupportStatus,
-): NativeResourceCleanupDefinition[] {
+function expandResource(resource: Record<string, unknown>, hostSupportStatus: HostSupportStatus): NativeResourceCleanupDefinition[] {
   const descriptorNames = stringList(resource.descriptors);
-  const ids = descriptorNames.length > 0
-    ? descriptorNames.map((name) => `${resource.id as string}.${name}`)
-    : [resource.id as string];
+  const ids = descriptorNames.length > 0 ? descriptorNames.map((name) => `${resource.id as string}.${name}`) : [resource.id as string];
   return ids.map((id, index) => ({
     id,
-    historicalIds: stringList(resource.historical_ids).map((historicalId) => descriptorNames.length > 0
-      ? historicalId.replace("{descriptor}", descriptorNames[index]!)
-      : historicalId),
+    historicalIds: stringList(resource.historical_ids).map((historicalId) => (descriptorNames.length > 0 ? historicalId.replace("{descriptor}", descriptorNames[index]!) : historicalId)),
     host: resource.host as string,
     hostSupportStatus,
     kind: resource.kind as NativeResourceKind,
-    destination: descriptorNames.length > 0
-      ? (resource.destination as string).replace("{descriptor}", descriptorNames[index]!)
-      : resource.destination as string,
+    destination: descriptorNames.length > 0 ? (resource.destination as string).replace("{descriptor}", descriptorNames[index]!) : (resource.destination as string),
     ledgerStatus: resource.ledger_status as "legacy" | "managed",
     durableProof: resource.durable_proof as string,
     neverTouch: stringList(resource.never_touch),
@@ -560,9 +510,7 @@ function expandResource(
   }));
 }
 
-export function loadNativeResourceCleanupContract(
-  contractPath = path.join(resolveSourceRoot(), NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH),
-): NativeResourceCleanupContract {
+export function loadNativeResourceCleanupContract(contractPath = path.join(resolveSourceRoot(), NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH)): NativeResourceCleanupContract {
   const data = loadYamlMapping(fs.readFileSync(contractPath, "utf8"));
   const errors = validateNativeResourceCleanupContractData(data);
   if (errors.length > 0) throw new Error(`Native resource cleanup contract validation failed: ${errors.join("; ")}`);
@@ -572,10 +520,7 @@ export function loadNativeResourceCleanupContract(
   const authority = loadLifecycleAuthority();
   loadRuntimeLifecycleAdapterContract(undefined, authority);
   loadLifecycleOperationContract();
-  const statuses = new Map((data.hosts as Record<string, unknown>[]).map((host) => [
-    host.id as string,
-    host.support_status as HostSupportStatus,
-  ]));
+  const statuses = new Map((data.hosts as Record<string, unknown>[]).map((host) => [host.id as string, host.support_status as HostSupportStatus]));
   return {
     sourcePath: contractPath,
     resourceVocabulary: (data.resource_vocabulary as Record<string, unknown>[]).map((entry) => ({
@@ -612,9 +557,7 @@ export function loadNativeResourceCleanupContract(
       ownershipMode: "declared_empty_directory",
       postcondition: entry.postcondition as RetiredResourceDirectoryDefinition["postcondition"],
     })),
-    resources: (data.resources as Record<string, unknown>[]).flatMap((resource) =>
-      expandResource(resource, statuses.get(resource.host as string)!),
-    ),
+    resources: (data.resources as Record<string, unknown>[]).flatMap((resource) => expandResource(resource, statuses.get(resource.host as string)!)),
     configuration: (data.configuration_inventory as Record<string, unknown>[]).map((unit) => ({
       id: unit.id as string,
       host: unit.host as string,
@@ -632,12 +575,7 @@ export function loadNativeResourceCleanupContract(
   };
 }
 
-export function classifyAutomaticRetirement(
-  resourceId: string,
-  destination: string,
-  ownershipJournalPath: string | null = null,
-  contract = loadNativeResourceCleanupContract(),
-): AutomaticRetirementClassification {
+export function classifyAutomaticRetirement(resourceId: string, destination: string, ownershipJournalPath: string | null = null, contract = loadNativeResourceCleanupContract()): AutomaticRetirementClassification {
   const variants = contract.automaticRetirement.filter((variant) => variant.resourceId === resourceId);
   if (variants.length === 0) return { qualification: "manual_review", variantId: null, reason: "resource_not_enabled" };
   let stat: fs.BigIntStats;
@@ -665,31 +603,43 @@ export function classifyAutomaticRetirement(
   const variant = variants.find((item) => item.sizeBytes === content.length && item.sha256 === digest);
   if (!variant) return { qualification: "manual_review", variantId: null, reason: "unproven_content" };
   if (!ownershipJournalPath) {
-    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_missing" };
+    return {
+      qualification: "manual_review",
+      variantId: variant.id,
+      reason: "ownership_evidence_missing",
+    };
   }
   let journal;
   try {
     journal = readLifecycleOwnershipJournal(ownershipJournalPath);
   } catch {
-    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_mismatch" };
+    return {
+      qualification: "manual_review",
+      variantId: variant.id,
+      reason: "ownership_evidence_mismatch",
+    };
   }
   if (journal.state === "absent") {
-    return { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_missing" };
+    return {
+      qualification: "manual_review",
+      variantId: variant.id,
+      reason: "ownership_evidence_missing",
+    };
   }
   const destinationPath = path.resolve(destination);
-  const record = journal.state === "clean" && journal.ledger.records.find((item) =>
-    item.resourceId === variant.ownershipResourceId
-    && item.destination === destinationPath
-    && item.kind === "file"
-    && item.scope === "whole"
-    && item.status === "managed"
-    && item.fingerprint === `sha256:${digest}`
-    && item.identity?.device === stat.dev.toString()
-    && item.identity.inode === stat.ino.toString(),
-  );
+  const record =
+    journal.state === "clean" &&
+    journal.ledger.records.find(
+      (item) =>
+        item.resourceId === variant.ownershipResourceId && item.destination === destinationPath && item.kind === "file" && item.scope === "whole" && item.status === "managed" && item.fingerprint === `sha256:${digest}` && item.identity?.device === stat.dev.toString() && item.identity.inode === stat.ino.toString(),
+    );
   return record
     ? { qualification: "qualified", variantId: variant.id, reason: "proven_variant_and_ownership" }
-    : { qualification: "manual_review", variantId: variant.id, reason: "ownership_evidence_mismatch" };
+    : {
+        qualification: "manual_review",
+        variantId: variant.id,
+        reason: "ownership_evidence_mismatch",
+      };
 }
 
 export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupContract()): string[] {
@@ -697,11 +647,7 @@ export function nativeResourceCleanupIds(contract = loadNativeResourceCleanupCon
 }
 
 export function retiredResourceDiagnosticIds(contract = loadNativeResourceCleanupContract()): string[] {
-  return contract.diagnosticResources.flatMap((resource) =>
-    resource.id.includes("{name}")
-      ? resource.names.map((name) => resource.id.replace("{name}", name))
-      : [resource.id],
-  ).sort();
+  return contract.diagnosticResources.flatMap((resource) => (resource.id.includes("{name}") ? resource.names.map((name) => resource.id.replace("{name}", name)) : [resource.id])).sort();
 }
 
 export interface ResolvedRetiredResourceDiagnostic {
@@ -711,14 +657,12 @@ export interface ResolvedRetiredResourceDiagnostic {
   definition: RetiredResourceDiagnosticDefinition;
 }
 
-function expandedRetiredResourceDiagnostics(
-  contract: NativeResourceCleanupContract,
-): ResolvedRetiredResourceDiagnostic[] {
+function expandedRetiredResourceDiagnostics(contract: NativeResourceCleanupContract): ResolvedRetiredResourceDiagnostic[] {
   return contract.diagnosticResources.flatMap((definition) => {
     const names = definition.id.includes("{name}") ? definition.names : [null];
     return names.map((name) => ({
       id: name ? definition.id.replace("{name}", name) : definition.id,
-      aliases: definition.aliases.map((alias) => name ? alias.replace("{name}", name) : alias),
+      aliases: definition.aliases.map((alias) => (name ? alias.replace("{name}", name) : alias)),
       name,
       definition,
     }));
@@ -729,13 +673,8 @@ export function retiredResourceSelectorIds(contract = loadNativeResourceCleanupC
   return [...new Set(expandedRetiredResourceDiagnostics(contract).flatMap(({ id, aliases }) => [id, ...aliases]))].sort();
 }
 
-export function resolveRetiredResourceDiagnosticId(
-  selector: string,
-  contract = loadNativeResourceCleanupContract(),
-): ResolvedRetiredResourceDiagnostic | null {
-  const matches = expandedRetiredResourceDiagnostics(contract).filter(({ id, aliases }) =>
-    id === selector || aliases.includes(selector),
-  );
+export function resolveRetiredResourceDiagnosticId(selector: string, contract = loadNativeResourceCleanupContract()): ResolvedRetiredResourceDiagnostic | null {
+  const matches = expandedRetiredResourceDiagnostics(contract).filter(({ id, aliases }) => id === selector || aliases.includes(selector));
   return matches.length === 1 ? matches[0]! : null;
 }
 
@@ -743,13 +682,8 @@ export function nativeResourceCleanupHistoricalIds(contract = loadNativeResource
   return contract.resources.flatMap((resource) => resource.historicalIds);
 }
 
-export function resolveNativeResourceCleanupId(
-  resourceId: string,
-  contract = loadNativeResourceCleanupContract(),
-): NativeResourceCleanupDefinition | null {
-  const matches = contract.resources.filter((resource) =>
-    resource.id === resourceId || resource.historicalIds.includes(resourceId),
-  );
+export function resolveNativeResourceCleanupId(resourceId: string, contract = loadNativeResourceCleanupContract()): NativeResourceCleanupDefinition | null {
+  const matches = contract.resources.filter((resource) => resource.id === resourceId || resource.historicalIds.includes(resourceId));
   return matches.length === 1 ? matches[0]! : null;
 }
 
@@ -759,9 +693,7 @@ export function validateNativeResourceCleanupContractRoot(root = resolveSourceRo
     return [`${NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH}: missing native resource cleanup contract`];
   }
   try {
-    return validateNativeResourceCleanupContractData(
-      loadYamlMapping(fs.readFileSync(contractPath, "utf8")),
-    ).map((error) => `${NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH}: ${error}`);
+    return validateNativeResourceCleanupContractData(loadYamlMapping(fs.readFileSync(contractPath, "utf8"))).map((error) => `${NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH}: ${error}`);
   } catch (error) {
     return [`${NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH}: could not parse contract: ${(error as Error).message}`];
   }
@@ -781,40 +713,30 @@ function ledgerDiagnostics(plan: LifecycleOperationPlan, resource: NativeResourc
   const records = ledger.records.filter((record) => record.resourceId === resource.id);
   if (records.length !== 1) return [`${resource.id}: cleanup requires exactly one ownership ledger record`];
   const record = records[0]!;
-  if (
-    record.status !== resource.ledgerStatus
-    || record.scope !== "whole"
-    || path.resolve(record.destination) !== path.resolve(plan.request.operations[0]!.destination)
-    || record.kind !== resource.kind
-    || record.identity === null
-    || record.fingerprint === null
-  ) {
+  if (record.status !== resource.ledgerStatus || record.scope !== "whole" || path.resolve(record.destination) !== path.resolve(plan.request.operations[0]!.destination) || record.kind !== resource.kind || record.identity === null || record.fingerprint === null) {
     return [`${resource.id}: cleanup requires matching whole-resource ${resource.ledgerStatus} ledger identity and fingerprint`];
   }
   return [];
 }
 
-function blockedPlan(
-  plan: LifecycleOperationPlan,
-  diagnostics: string[],
-  invalidLedger = false,
-): LifecycleOperationPlan {
+function blockedPlan(plan: LifecycleOperationPlan, diagnostics: string[], invalidLedger = false): LifecycleOperationPlan {
   const reason = `${diagnostics.join("; ")} ${LIFECYCLE_MANUAL_REVIEW_GUIDANCE}`;
   return {
     ...plan,
-    operations: plan.operations.map((operation) => operation.action === "noop" ? operation : {
-      ...operation,
-      ...(invalidLedger ? { state: "ambiguous_ownership" as const, ownership: "ambiguous" as const } : {}),
-      action: "action_required",
-      reason,
-    }),
+    operations: plan.operations.map((operation) =>
+      operation.action === "noop"
+        ? operation
+        : {
+            ...operation,
+            ...(invalidLedger ? { state: "ambiguous_ownership" as const, ownership: "ambiguous" as const } : {}),
+            action: "action_required",
+            reason,
+          },
+    ),
   };
 }
 
-function configurationUnitsFor(
-  contract: NativeResourceCleanupContract,
-  host: string,
-): NativeResourceCleanupConfigurationUnit[] {
+function configurationUnitsFor(contract: NativeResourceCleanupContract, host: string): NativeResourceCleanupConfigurationUnit[] {
   return contract.configuration
     .filter((unit) => unit.host === host)
     .map((unit) => ({
@@ -823,68 +745,56 @@ function configurationUnitsFor(
       key: unit.key,
       status: "action_required",
       reason: "no durable key-level ownership ledger identity and fingerprint",
-  }));
+    }));
 }
 
-function canonicalizeHistoricalOwnershipIds(
-  ledger: LifecycleOwnershipLedger,
-  resource: NativeResourceCleanupDefinition,
-): LifecycleOwnershipLedger {
+function canonicalizeHistoricalOwnershipIds(ledger: LifecycleOwnershipLedger, resource: NativeResourceCleanupDefinition): LifecycleOwnershipLedger {
   if (resource.historicalIds.length === 0) return ledger;
   return {
     ...ledger,
-    records: ledger.records.map((record) => resource.historicalIds.includes(record.resourceId)
-      ? { ...record, resourceId: resource.id }
-      : record),
+    records: ledger.records.map((record) => (resource.historicalIds.includes(record.resourceId) ? { ...record, resourceId: resource.id } : record)),
   };
 }
 
-export function previewNativeResourceCleanup(opts: {
-  resourceId: string;
-  home: string;
-  destination?: string;
-  ledger?: LifecycleOwnershipLedger;
-  contract?: NativeResourceCleanupContract;
-  automaticRetirement?: boolean;
-}): NativeResourceCleanupPreview {
+export function previewNativeResourceCleanup(opts: { resourceId: string; home: string; destination?: string; ledger?: LifecycleOwnershipLedger; contract?: NativeResourceCleanupContract; automaticRetirement?: boolean }): NativeResourceCleanupPreview {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
-  const automatic = opts.automaticRetirement
-    && contract.automaticRetirement.some(({ resourceId }) => resourceId === opts.resourceId)
-    && contract.diagnosticResources.find(({ id }) => id === opts.resourceId);
-  const resource = resolveNativeResourceCleanupId(opts.resourceId, contract) ?? (automatic ? {
-    id: opts.resourceId,
-    historicalIds: [contract.automaticRetirement.find(({ resourceId }) => resourceId === opts.resourceId)!.ownershipResourceId],
-    host: "opencode",
-    hostSupportStatus: "supported" as const,
-    kind: "file" as const,
-    destination: automatic.destinations[0]!,
-    ledgerStatus: "managed" as const,
-    durableProof: "bounded automatic retirement",
-    neverTouch: [],
-    safetyNote: "automatic retirement requires bounded content and installer ownership proof",
-  } : undefined);
+  const automatic = opts.automaticRetirement && contract.automaticRetirement.some(({ resourceId }) => resourceId === opts.resourceId) && contract.diagnosticResources.find(({ id }) => id === opts.resourceId);
+  const resource =
+    resolveNativeResourceCleanupId(opts.resourceId, contract) ??
+    (automatic
+      ? {
+          id: opts.resourceId,
+          historicalIds: [contract.automaticRetirement.find(({ resourceId }) => resourceId === opts.resourceId)!.ownershipResourceId],
+          host: "opencode",
+          hostSupportStatus: "supported" as const,
+          kind: "file" as const,
+          destination: automatic.destinations[0]!,
+          ledgerStatus: "managed" as const,
+          durableProof: "bounded automatic retirement",
+          neverTouch: [],
+          safetyNote: "automatic retirement requires bounded content and installer ownership proof",
+        }
+      : undefined);
   if (!resource) throw new Error(`unknown native Agentera resource cleanup id: ${opts.resourceId}`);
-  const operations: LifecycleOperationSpec[] = [{
-    id: resource.id,
-    destination: opts.destination ? path.resolve(opts.destination) : expandHome(resource.destination, opts.home),
-    kind: resource.kind,
-    intent: "remove",
-    required: true,
-  }];
+  const operations: LifecycleOperationSpec[] = [
+    {
+      id: resource.id,
+      destination: opts.destination ? path.resolve(opts.destination) : expandHome(resource.destination, opts.home),
+      kind: resource.kind,
+      intent: "remove",
+      required: true,
+    },
+  ];
   const suppliedLedger = opts.ledger ?? emptyLifecycleOwnershipLedger();
   const errors = validateLifecycleOwnershipLedger(suppliedLedger);
-  const ledger = errors.length === 0
-    ? canonicalizeHistoricalOwnershipIds(suppliedLedger, resource)
-    : emptyLifecycleOwnershipLedger();
+  const ledger = errors.length === 0 ? canonicalizeHistoricalOwnershipIds(suppliedLedger, resource) : emptyLifecycleOwnershipLedger();
   const plan = planLifecycleOperations({
     allowedRoots: [path.resolve(opts.home)],
     operations,
     manifest: createLifecycleOwnershipManifest(operations),
     ledger,
   });
-  const diagnostics = errors.length > 0
-    ? errors.map((error) => `invalid ownership ledger: ${error}`)
-    : ledgerDiagnostics(plan, resource);
+  const diagnostics = errors.length > 0 ? errors.map((error) => `invalid ownership ledger: ${error}`) : ledgerDiagnostics(plan, resource);
   return {
     schemaVersion: "agentera.nativeResourceCleanupPreview.v1",
     mode: "preview",
@@ -909,9 +819,7 @@ function approvalRequiredResult(preview: NativeResourceCleanupPreview): Lifecycl
     action: operation.action === "noop" || operation.action === "blocked_unowned" ? operation.action : "action_required",
     status: operation.action === "noop" ? "noop" : operation.action === "blocked_unowned" ? "blocked_unowned" : "action_required",
     dependencyCauses: [],
-    reason: operation.action === "noop" || operation.action === "blocked_unowned"
-      ? operation.reason
-      : "explicit cleanup approval is required",
+    reason: operation.action === "noop" || operation.action === "blocked_unowned" ? operation.reason : "explicit cleanup approval is required",
   }));
   const summary: LifecycleApplySummary = {
     applied: 0,
@@ -931,10 +839,7 @@ function approvalRequiredResult(preview: NativeResourceCleanupPreview): Lifecycl
   };
 }
 
-export function applyNativeResourceCleanup(
-  preview: NativeResourceCleanupPreview,
-  options: LifecycleApplyOptions & { approved: boolean },
-): NativeResourceCleanupResult {
+export function applyNativeResourceCleanup(preview: NativeResourceCleanupPreview, options: LifecycleApplyOptions & { approved: boolean }): NativeResourceCleanupResult {
   const resource = preview.plan.request.operations[0]!;
   const definition: NativeResourceCleanupDefinition = {
     id: preview.resourceId,
@@ -950,9 +855,7 @@ export function applyNativeResourceCleanup(
   };
   const diagnostics = ledgerDiagnostics(preview.plan, definition);
   const authorized = preview.ledgerAuthorization === "match_or_absent_noop" && diagnostics.length === 0;
-  const result = options.approved && authorized
-    ? applyLifecycleOperations(preview.plan, options)
-    : approvalRequiredResult(preview);
+  const result = options.approved && authorized ? applyLifecycleOperations(preview.plan, options) : approvalRequiredResult(preview);
   return {
     ...result,
     resourceId: preview.resourceId,

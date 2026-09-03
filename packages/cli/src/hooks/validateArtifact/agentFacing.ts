@@ -9,6 +9,4 @@ import { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS } from "../../regist
 
 export { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS };
 
-export const AGENT_FACING_ARTIFACT_IDS = new Set(
-  Object.keys(ARTIFACT_PROTOCOL_PATHS).filter((id) => !HUMAN_FACING_ARTIFACT_IDS.has(id)),
-);
+export const AGENT_FACING_ARTIFACT_IDS = new Set(Object.keys(ARTIFACT_PROTOCOL_PATHS).filter((id) => !HUMAN_FACING_ARTIFACT_IDS.has(id)));

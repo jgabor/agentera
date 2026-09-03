@@ -1,11 +1,7 @@
 import fs from "node:fs";
 
 import { acquireGlossaryInputs } from "../../analytics/glossaryInputAcquisition.js";
-import {
-  GlossaryAdviceInputError,
-  resolveGlossaryAdvice,
-  type GlossaryAdviceHostReview,
-} from "../../analytics/glossaryAdviceResolution.js";
+import { GlossaryAdviceInputError, resolveGlossaryAdvice, type GlossaryAdviceHostReview } from "../../analytics/glossaryAdviceResolution.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { glossaryAdviceContract } from "../../registries/glossaryAdviceContract.js";
 import { discoverSchemasDir } from "../appContext.js";
@@ -24,9 +20,7 @@ const TERM_INPUT_RECOVERY = "agentera report glossary-advice --term-input <file|
 export const GLOSSARY_ADVICE_STRUCTURED_INPUT_OPTIONS = ["--input", "--term-input"] as const;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function invalid(io: Io, body: InvalidInputErrorBody, recovery = RECOVERY): number {
@@ -63,27 +57,29 @@ function parseArgs(argv: string[]): AdviceSource | InvalidInputErrorBody {
       };
     }
     if (name === "--input") {
-      if (input !== undefined)
-        return { class: "mutually_exclusive", message: "--input may only be supplied once" };
+      if (input !== undefined) return { class: "mutually_exclusive", message: "--input may only be supplied once" };
       input = value;
     } else if (name === "--term-input") {
-      if (termInput !== undefined)
-        return { class: "mutually_exclusive", message: "--term-input may only be supplied once" };
+      if (termInput !== undefined) return { class: "mutually_exclusive", message: "--term-input may only be supplied once" };
       termInput = value;
     }
   }
   if (input !== undefined && termInput !== undefined)
-    return { class: "mutually_exclusive", message: "--input and --term-input are mutually exclusive" };
+    return {
+      class: "mutually_exclusive",
+      message: "--input and --term-input are mutually exclusive",
+    };
   if (input !== undefined) return { input };
   if (termInput !== undefined) return { termInput };
-  return { class: "missing_argument", message: "--input or --term-input is required", syntax: COMMAND };
+  return {
+    class: "missing_argument",
+    message: "--input or --term-input is required",
+    syntax: COMMAND,
+  };
 }
 
 function readRequest(source: string, io: Io): Mapping {
-  const bytes =
-    source === "-"
-      ? Buffer.from(io.stdin ? io.stdin() : fs.readFileSync(0))
-      : fs.readFileSync(source);
+  const bytes = source === "-" ? Buffer.from(io.stdin ? io.stdin() : fs.readFileSync(0)) : fs.readFileSync(source);
   if (bytes.length > contract.maxRequestUtf8Bytes) throw new Error("over bound");
   const text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
   const request = mapping(loadYamlMapping(text));
@@ -91,38 +87,25 @@ function readRequest(source: string, io: Io): Mapping {
   return request;
 }
 
-function validatedRequest(
-  request: Mapping,
-): { requestedTerm: string; hostReview?: GlossaryAdviceHostReview } | InvalidInputErrorBody {
+function validatedRequest(request: Mapping): { requestedTerm: string; hostReview?: GlossaryAdviceHostReview } | InvalidInputErrorBody {
   const keys = Object.keys(request);
-  if (
-    keys.some((key) => !contract.requestFields.includes(key)) ||
-    contract.requestFields.slice(0, 2).some((key) => !(key in request))
-  ) {
+  if (keys.some((key) => !contract.requestFields.includes(key)) || contract.requestFields.slice(0, 2).some((key) => !(key in request))) {
     return {
       class: "schema_violation",
       message: "glossary advice request fields are invalid",
       valid_values: contract.requestFields,
     };
   }
-  if (
-    request.schema_version !== contract.requestSchemaVersion ||
-    typeof request.requested_term !== "string"
-  ) {
+  if (request.schema_version !== contract.requestSchemaVersion || typeof request.requested_term !== "string") {
     return {
       class: "schema_violation",
       message: `request must use ${contract.requestSchemaVersion} with one string requested_term`,
       valid_values: [contract.requestSchemaVersion],
     };
   }
-  if (request.host_review === undefined || request.host_review === null)
-    return { requestedTerm: request.requested_term };
+  if (request.host_review === undefined || request.host_review === null) return { requestedTerm: request.requested_term };
   const review = mapping(request.host_review);
-  if (
-    !review ||
-    JSON.stringify(Object.keys(review).sort()) !==
-      JSON.stringify([...contract.hostReviewFields].sort())
-  ) {
+  if (!review || JSON.stringify(Object.keys(review).sort()) !== JSON.stringify([...contract.hostReviewFields].sort())) {
     return {
       class: "schema_violation",
       message: "host_review fields are invalid",
@@ -149,10 +132,14 @@ export function runGlossaryAdviceCommand(argv: string[], io: Io): number {
       requestedTerm = loadSelectedTermInput(parsedArgs.termInput, io.stdin);
     } catch (error) {
       if (!(error instanceof SelectedTermInputError)) throw error;
-      return invalid(io, {
-        class: "invalid_selected_term",
-        message: "--term-input must be one readable bounded non-blank UTF-8 scalar",
-      }, TERM_INPUT_RECOVERY);
+      return invalid(
+        io,
+        {
+          class: "invalid_selected_term",
+          message: "--term-input must be one readable bounded non-blank UTF-8 scalar",
+        },
+        TERM_INPUT_RECOVERY,
+      );
     }
   } else {
     let request: Mapping;
@@ -171,11 +158,7 @@ export function runGlossaryAdviceCommand(argv: string[], io: Io): number {
   }
   try {
     const profilePath = registryArtifactPath("profile", discoverSchemasDir());
-    const advice = resolveGlossaryAdvice(
-      requestedTerm,
-      acquireGlossaryInputs(process.cwd(), profilePath),
-      hostReview,
-    );
+    const advice = resolveGlossaryAdvice(requestedTerm, acquireGlossaryInputs(process.cwd(), profilePath), hostReview);
     emitStructured(
       {
         schemaVersion: contract.schemaVersion,

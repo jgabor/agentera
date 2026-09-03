@@ -4,11 +4,7 @@ import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
 import { stateDurabilityContract } from "../../state/archiveDiscovery.js";
 import { StateRetrievalFailure } from "../../state/directRetrieval.js";
-import {
-  inspectDurability,
-  renderDurabilityText,
-  type DurabilityArgs,
-} from "../../state/durability.js";
+import { inspectDurability, renderDurabilityText, type DurabilityArgs } from "../../state/durability.js";
 import { entityArtifactValues } from "../../state/entityStorage.js";
 
 export function requestedDurabilityFormat(_argv: string[]): "text" | "json" | "yaml" {
@@ -30,51 +26,40 @@ export function validateDurabilityArgs(args: DurabilityArgs, sourceRoot: string)
 }
 
 export function entityDurabilityFailure(message: string, artifact?: string | null, id?: string, validValues?: string[]): StateRetrievalFailure {
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "invalid_request",
-      message,
-      syntax: "agentera check durability --artifact ARTIFACT --id ID",
-      example: "agentera check durability --artifact progress --id qjtrmnpvka",
-      recovery: "Use one bare entity ID returned by the artifact list; no state was changed.",
-      ...(artifact ? { artifact } : {}),
-      ...(id ? { id } : {}),
-      ...(validValues ? { valid_values: validValues } : {}),
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "invalid_request",
+        message,
+        syntax: "agentera check durability --artifact ARTIFACT --id ID",
+        example: "agentera check durability --artifact progress --id qjtrmnpvka",
+        recovery: "Use one bare entity ID returned by the artifact list; no state was changed.",
+        ...(artifact ? { artifact } : {}),
+        ...(id ? { id } : {}),
+        ...(validValues ? { valid_values: validValues } : {}),
+      },
     },
-  }, 2);
+    2,
+  );
 }
 
-export function emitDurabilityFailure(
-  failure: StateRetrievalFailure,
-  format: "text" | "json" | "yaml",
-  io: Io,
-): number {
+export function emitDurabilityFailure(failure: StateRetrievalFailure, format: "text" | "json" | "yaml", io: Io): number {
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   if (format === "json" || format === "yaml") emitStructured(failure.body, format, out);
   else {
     const details = failure.body.error;
-    out(
-      [
-        `Error: ${details.message}`,
-        `Class: ${details.class}`,
-        `Syntax: ${details.syntax}`,
-        `Example: ${details.example}`,
-        `Recovery: ${details.recovery}`,
-      ].join("\n") + "\n",
-    );
+    out([`Error: ${details.message}`, `Class: ${details.class}`, `Syntax: ${details.syntax}`, `Example: ${details.example}`, `Recovery: ${details.recovery}`].join("\n") + "\n");
   }
   return failure.exitCode;
 }
 
 export function cmdDurability(args: DurabilityArgs, io: Io = {}): number {
   const output = io.out ?? ((text: string) => process.stdout.write(text));
-  const response = inspectDurability(
-    resolvePath(args.project ?? process.cwd()),
-    args,
-    { sourceRoot: resolveSourceRoot() },
-  );
+  const response = inspectDurability(resolvePath(args.project ?? process.cwd()), args, {
+    sourceRoot: resolveSourceRoot(),
+  });
   if (args.format === "json" || args.format === "yaml") {
     emitStructured(response, args.format, output);
   } else {

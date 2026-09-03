@@ -1,11 +1,4 @@
-export type StateClassification =
-  | "canonical"
-  | "mirrored"
-  | "duplicate"
-  | "conflict"
-  | "ambiguous"
-  | "unaddressable"
-  | "corrupt";
+export type StateClassification = "canonical" | "mirrored" | "duplicate" | "conflict" | "ambiguous" | "unaddressable" | "corrupt";
 
 export interface StateClassificationRow {
   source: "current_projection" | "archive";

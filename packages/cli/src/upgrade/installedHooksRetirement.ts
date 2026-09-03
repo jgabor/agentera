@@ -4,33 +4,16 @@ import path from "node:path";
 import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import { doctorRoots } from "./appModel.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
-import {
-  bindMigrationResource,
-  removeBoundMigrationResource,
-  verifyBoundMigrationResource,
-} from "./migrationPublication.js";
+import { bindMigrationResource, removeBoundMigrationResource, verifyBoundMigrationResource } from "./migrationPublication.js";
 import type { MigrationContext, MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
 
 export const INSTALLED_HOOKS_SURFACE_LABEL = "hooks/";
 export const RETIRE_INSTALLED_HOOKS_ACTION = "retire-installed-hooks";
 
-const V2_HOOK_INVOCATION_PATTERNS = [
-  /\buv run\b[^"'\n]*hooks\/[^"'\n]*\.py/,
-  /\$\{AGENTERA_HOME\}\/hooks\/[^"'\n]*\.py/,
-  /\$\{AGENTERA_HOME\}\/app\/hooks\/[^"'\n]*\.py/,
-  /\$\{PLUGIN_ROOT\}\/hooks\/[^"'\n]*\.py/,
-] as const;
+const V2_HOOK_INVOCATION_PATTERNS = [/\buv run\b[^"'\n]*hooks\/[^"'\n]*\.py/, /\$\{AGENTERA_HOME\}\/hooks\/[^"'\n]*\.py/, /\$\{AGENTERA_HOME\}\/app\/hooks\/[^"'\n]*\.py/, /\$\{PLUGIN_ROOT\}\/hooks\/[^"'\n]*\.py/] as const;
 
 const SKIP_HOOK_SCAN_PARTS = new Set([".agentera", "sessions", "benchmarks", "intermediate", "backup"]);
-const V2_INSTALLED_HOOK_FILES = new Set([
-  "validate_artifact.py",
-  "cursor_session_start.py",
-  "cursor_pre_tool_use.py",
-  "cursor_session_stop.py",
-  "session_start.py",
-  "session_stop.py",
-  "codex-hooks.json",
-]);
+const V2_INSTALLED_HOOK_FILES = new Set(["validate_artifact.py", "cursor_session_start.py", "cursor_pre_tool_use.py", "cursor_session_stop.py", "session_start.py", "session_stop.py", "codex-hooks.json"]);
 
 function hooksDirHasPythonFiles(hooksDir: string): boolean {
   if (!pathExists(hooksDir) || !fs.statSync(hooksDir).isDirectory()) {
@@ -42,11 +25,7 @@ function hooksDirHasPythonFiles(hooksDir: string): boolean {
 function listInstalledHookDirs(appHome: string): string[] {
   const resolved = resolvePath(appHome);
   const roots = doctorRoots(resolved);
-  const candidates = [
-    path.join(resolved, "hooks"),
-    path.join(roots.managedAppRoot, "hooks"),
-    path.join(roots.activeBundleRoot, "hooks"),
-  ];
+  const candidates = [path.join(resolved, "hooks"), path.join(roots.managedAppRoot, "hooks"), path.join(roots.activeBundleRoot, "hooks")];
   const seen = new Set<string>();
   const out: string[] = [];
   for (const hooksDir of candidates) {
@@ -69,14 +48,7 @@ export function textReferencesV2InstalledHooks(text: string): boolean {
 }
 
 function shouldScanInstalledHookFile(name: string): boolean {
-  return (
-    name.endsWith(".json") ||
-    name.endsWith(".toml") ||
-    name.endsWith(".js") ||
-    name.endsWith(".md") ||
-    name.endsWith(".yaml") ||
-    name.endsWith(".yml")
-  );
+  return name.endsWith(".json") || name.endsWith(".toml") || name.endsWith(".js") || name.endsWith(".md") || name.endsWith(".yaml") || name.endsWith(".yml");
 }
 
 /** Scan installed hook manifests for shipped v2 hook command invocations. */
@@ -107,10 +79,7 @@ export function scanInstalledBundleForV2HookInvocations(appHome: string): string
 }
 
 export function detectStaleInstalledHooksSurface(appHome: string): boolean {
-  return (
-    installedBundleUsesV2PythonHooks(appHome) ||
-    scanInstalledBundleForV2HookInvocations(appHome).length > 0
-  );
+  return installedBundleUsesV2PythonHooks(appHome) || scanInstalledBundleForV2HookInvocations(appHome).length > 0;
 }
 
 export function planInstalledHooksRetirementItems(ctx: MigrationContext): MigrationPhaseItem[] {
@@ -118,13 +87,15 @@ export function planInstalledHooksRetirementItems(ctx: MigrationContext): Migrat
   if (ctx.sourceRoot && appHome === resolvePath(ctx.sourceRoot)) return [];
   const roots = doctorRoots(appHome);
   if (!hasBundleRootEvidence(roots.activeBundleRoot)) {
-    return [{
-      status: "noop",
-      action: RETIRE_INSTALLED_HOOKS_ACTION,
-      runtime: "installed-app",
-      source: appHome,
-      message: "installed hooks preserved because managed bundle ownership is unproven",
-    }];
+    return [
+      {
+        status: "noop",
+        action: RETIRE_INSTALLED_HOOKS_ACTION,
+        runtime: "installed-app",
+        source: appHome,
+        message: "installed hooks preserved because managed bundle ownership is unproven",
+      },
+    ];
   }
   const hookDirs = listInstalledHookDirs(appHome);
   const stale = hookDirs.length > 0 || scanInstalledBundleForV2HookInvocations(appHome).length > 0;
@@ -165,9 +136,7 @@ export function planInstalledHooksRetirementItems(ctx: MigrationContext): Migrat
 }
 
 export function applyInstalledHooksRetirementItems(items: MigrationPhaseItem[], ctx: MigrationContext): void {
-  const pending = items.filter(
-    (item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION && item.status === "pending",
-  );
+  const pending = items.filter((item) => item.action === RETIRE_INSTALLED_HOOKS_ACTION && item.status === "pending");
   if (pending.length === 0) {
     return;
   }

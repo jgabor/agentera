@@ -10,10 +10,7 @@ import { summarizeProjectIntegration } from "../../src/upgrade/projectIntegratio
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const FIXTURES = path.resolve(
-  path.dirname(fileURLToPath(import.meta.url)),
-  "fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json",
-);
+const FIXTURES = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "fixtures/v2-runtime-cursor-full/project/.cursor/hooks.json");
 
 let tmp: string;
 
@@ -31,10 +28,7 @@ function seedNpxBundle(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
   fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "3.0.0-next.1" }] }));
-  fs.writeFileSync(
-    path.join(root, NPX_BUNDLE_SENTINEL),
-    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }),
-  );
+  fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0-next.1" }));
   fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
 }
 
@@ -44,15 +38,9 @@ function managedPlatformAppHome(appHome: string, marker: string | null): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\nsub.add_parser('hej')\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
   if (marker !== null) {
-    fs.writeFileSync(
-      path.join(app, ".agentera-bundle.json"),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-    );
+    fs.writeFileSync(path.join(app, ".agentera-bundle.json"), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
   }
 }
 
@@ -189,10 +177,10 @@ describe("summarizeProjectIntegration wording", () => {
     fs.mkdirSync(path.join(authorityRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(authorityRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(authorityRoot, "registry.json"));
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), { recursive: true });
-    fs.writeFileSync(path.join(authorityRoot, "references/cli/update-channels.yaml"),
-      fs.readFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), "utf8").replace("announced: false", "announced: true"),
-    );
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), {
+      recursive: true,
+    });
+    fs.writeFileSync(path.join(authorityRoot, "references/cli/update-channels.yaml"), fs.readFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), "utf8").replace("announced: false", "announced: true"));
 
     const project = path.join(tmp, "cross-major");
     fs.mkdirSync(project, { recursive: true });
@@ -228,5 +216,4 @@ describe("summarizeProjectIntegration wording", () => {
     expect(summary.exit).toEqual({ code: 0, meaning: "no_changes_needed" });
     expect(summary.retry.guidance).toContain("No retry");
   });
-
 });

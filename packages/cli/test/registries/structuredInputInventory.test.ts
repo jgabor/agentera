@@ -4,22 +4,19 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
-import {
-  activeStructuredInputRouteIds,
-  activeStructuredInputSources,
-  computeSyntheticMetrics,
-  validateStructuredInputInventory,
-} from "../../src/registries/structuredInputInventory.js";
+import { activeStructuredInputRouteIds, activeStructuredInputSources, computeSyntheticMetrics, validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 
 const INVENTORY = path.resolve(__dirname, "../../../../references/analysis/structured-input-inventory.yaml");
 
 describe("structured input inventory", () => {
   it("covers every active route once and records the reproducible synthetic-only baseline", () => {
     expect(validateStructuredInputInventory(INVENTORY)).toEqual([]);
-    expect(computeSyntheticMetrics(1024, [
-      { wrapper: true, contentBearing: true },
-      { wrapper: false, contentBearing: true },
-    ])).toEqual({ child_process_count: 2, wrapper_count: 1, duplicate_content_bytes: 1024 });
+    expect(
+      computeSyntheticMetrics(1024, [
+        { wrapper: true, contentBearing: true },
+        { wrapper: false, contentBearing: true },
+      ]),
+    ).toEqual({ child_process_count: 2, wrapper_count: 1, duplicate_content_bytes: 1024 });
     const inventory = YAML.parse(fs.readFileSync(INVENTORY, "utf8"));
     expect(inventory.synthetic_baseline).toMatchObject({
       route_identity: "synthetic.fixed-content.transport",
@@ -33,16 +30,76 @@ describe("structured input inventory", () => {
   });
 
   it.each([
-    ["unsupported schema", (value: any) => { value.schema_version = "agentera.structuredInputInventory.v0"; }, "unsupported structured input inventory schema_version"],
-    ["wrong scope", (value: any) => { value.scope = "all_routes"; }, "structured input inventory has invalid scope"],
-    ["included historical policy", (value: any) => { value.historical_surfaces = "included"; }, "structured input inventory must exclude historical surfaces"],
-    ["anonymous route", (value: any) => { value.routes[0].id = ""; }, "route id must be a nonempty string: row 1"],
-    ["mismatched route owner", (value: any) => { value.routes[0].owner = "report"; }, "route owner does not match namespace: writer.progress.append.input"],
-    ["active route count", (value: any) => { value.closure_evidence.active_registry_routes = 28; }, "active registry route count does not match active routes"],
-    ["classified route count", (value: any) => { value.closure_evidence.classified_active_routes = 28; }, "classified active route count does not match inventory routes"],
-    ["historical closure policy", (value: any) => { value.closure_evidence.historical_only_routes = 1; }, "closure evidence must exclude historical routes"],
-    ["unresolved route count", (value: any) => { value.closure_evidence.unresolved_rows = 1; }, "unresolved row count does not match route dispositions"],
-    ["simplify/remove route count", (value: any) => { value.closure_evidence.simplify_remove_rows = 1; }, "simplify/remove row count does not match route dispositions"],
+    [
+      "unsupported schema",
+      (value: any) => {
+        value.schema_version = "agentera.structuredInputInventory.v0";
+      },
+      "unsupported structured input inventory schema_version",
+    ],
+    [
+      "wrong scope",
+      (value: any) => {
+        value.scope = "all_routes";
+      },
+      "structured input inventory has invalid scope",
+    ],
+    [
+      "included historical policy",
+      (value: any) => {
+        value.historical_surfaces = "included";
+      },
+      "structured input inventory must exclude historical surfaces",
+    ],
+    [
+      "anonymous route",
+      (value: any) => {
+        value.routes[0].id = "";
+      },
+      "route id must be a nonempty string: row 1",
+    ],
+    [
+      "mismatched route owner",
+      (value: any) => {
+        value.routes[0].owner = "report";
+      },
+      "route owner does not match namespace: writer.progress.append.input",
+    ],
+    [
+      "active route count",
+      (value: any) => {
+        value.closure_evidence.active_registry_routes = 28;
+      },
+      "active registry route count does not match active routes",
+    ],
+    [
+      "classified route count",
+      (value: any) => {
+        value.closure_evidence.classified_active_routes = 28;
+      },
+      "classified active route count does not match inventory routes",
+    ],
+    [
+      "historical closure policy",
+      (value: any) => {
+        value.closure_evidence.historical_only_routes = 1;
+      },
+      "closure evidence must exclude historical routes",
+    ],
+    [
+      "unresolved route count",
+      (value: any) => {
+        value.closure_evidence.unresolved_rows = 1;
+      },
+      "unresolved row count does not match route dispositions",
+    ],
+    [
+      "simplify/remove route count",
+      (value: any) => {
+        value.closure_evidence.simplify_remove_rows = 1;
+      },
+      "simplify/remove row count does not match route dispositions",
+    ],
   ])("rejects %s", (_name, mutate, expected) => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "structured-input-inventory-"));
     try {
@@ -74,8 +131,7 @@ describe("structured input inventory", () => {
   });
 
   it("returns a content-safe diagnostic for an unreadable file", () => {
-    expect(validateStructuredInputInventory("/not/a/real/inventory/caller-secret.yaml"))
-      .toEqual(["structured input inventory is unreadable"]);
+    expect(validateStructuredInputInventory("/not/a/real/inventory/caller-secret.yaml")).toEqual(["structured input inventory is unreadable"]);
   });
 
   it("records compact glossary closure without changing retained route dispositions", () => {
@@ -106,17 +162,8 @@ describe("structured input inventory", () => {
         effect_confirmation: "retain_evidence_bound_second_phase",
         removal_eligibility: "preserve_all_caller_fields_owned_field_exclusion_hash_binding_stale_input_rejection_and_idempotent_replay",
       },
-      approved_compact_routes: [
-        "report.glossary-advice.term-input",
-        "startup.build.term-input",
-        "startup.discuss.term-input",
-        "startup.plan.term-input",
-      ],
-      retained_structured_glossary_routes: [
-        "report.glossary-advice.input",
-        "report.personal-glossary-reviews.disposition.input",
-        "report.personal-glossary-reviews.queue.input",
-      ],
+      approved_compact_routes: ["report.glossary-advice.term-input", "startup.build.term-input", "startup.discuss.term-input", "startup.plan.term-input"],
+      retained_structured_glossary_routes: ["report.glossary-advice.input", "report.personal-glossary-reviews.disposition.input", "report.personal-glossary-reviews.queue.input"],
       compound_approval: {
         disposition: "retain_all",
         hidden_state: "forbidden",
@@ -138,10 +185,7 @@ describe("structured input inventory", () => {
       expect(inventory.routes.find(({ id }) => id === route.id)?.disposition).toBe("retain");
     }
     expect(inventory.routes).toHaveLength(inventory.closure_evidence.writer_preflight.active_payload_routes);
-    for (const id of [
-      ...inventory.closure_evidence.approved_compact_routes,
-      ...inventory.closure_evidence.retained_structured_glossary_routes,
-    ]) {
+    for (const id of [...inventory.closure_evidence.approved_compact_routes, ...inventory.closure_evidence.retained_structured_glossary_routes]) {
       expect(inventory.routes.find((route) => route.id === id)?.disposition).toBe("retain");
     }
   });
@@ -149,30 +193,17 @@ describe("structured input inventory", () => {
   it("fails when active report or startup command specifications drift", () => {
     const reportChanged = activeStructuredInputSources();
     reportChanged.reviewSpecs = [...reportChanged.reviewSpecs, { action: "new", option: "--input" }];
-    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(reportChanged)))
-      .toEqual([
-        "missing active route: report.personal-glossary-reviews.new.input",
-        "active registry route count does not match active routes",
-      ]);
+    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(reportChanged))).toEqual(["missing active route: report.personal-glossary-reviews.new.input", "active registry route count does not match active routes"]);
 
     const startupChanged = activeStructuredInputSources();
     startupChanged.startupSpecs = startupChanged.startupSpecs.slice(1);
-    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(startupChanged)))
-      .toEqual([
-        "extra route: startup.build.input",
-        "active registry route count does not match active routes",
-      ]);
+    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(startupChanged))).toEqual(["extra route: startup.build.input", "active registry route count does not match active routes"]);
   });
 
   it("fails on writer registry, duplicate identity, and unowned identity drift", () => {
     const writerChanged = activeStructuredInputSources();
-    writerChanged.writerOperations = writerChanged.writerOperations
-      .filter(({ artifact, verb }) => artifact !== "progress" || verb !== "append");
-    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(writerChanged)))
-      .toEqual([
-        "extra route: writer.progress.append.input",
-        "active registry route count does not match active routes",
-      ]);
+    writerChanged.writerOperations = writerChanged.writerOperations.filter(({ artifact, verb }) => artifact !== "progress" || verb !== "append");
+    expect(validateStructuredInputInventory(INVENTORY, activeStructuredInputRouteIds(writerChanged))).toEqual(["extra route: writer.progress.append.input", "active registry route count does not match active routes"]);
 
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "structured-input-inventory-"));
     const changedInventoryPath = path.join(directory, "inventory.yaml");
@@ -185,26 +216,18 @@ describe("structured input inventory", () => {
 
       inventory.routes.push({ ...writerRoute });
       fs.writeFileSync(changedInventoryPath, YAML.stringify(inventory));
-      expect(validateStructuredInputInventory(changedInventoryPath))
-        .toEqual([
-          "duplicate route: writer.progress.append.input",
-          "classified active route count does not match inventory routes",
-        ]);
+      expect(validateStructuredInputInventory(changedInventoryPath)).toEqual(["duplicate route: writer.progress.append.input", "classified active route count does not match inventory routes"]);
 
       inventory.routes.pop();
       delete writerRoute.owner;
       fs.writeFileSync(changedInventoryPath, YAML.stringify(inventory));
-      expect(validateStructuredInputInventory(changedInventoryPath))
-        .toEqual(["unowned route: writer.progress.append.input"]);
+      expect(validateStructuredInputInventory(changedInventoryPath)).toEqual(["unowned route: writer.progress.append.input"]);
 
       writerRoute.owner = "writer";
       delete writerRoute.disposition;
       inventory.exceptions = [{ route_id: "writer.progress.append.input" }];
       fs.writeFileSync(changedInventoryPath, YAML.stringify(inventory));
-      expect(validateStructuredInputInventory(changedInventoryPath)).toEqual([
-        "invalid disposition: writer.progress.append.input",
-        "unowned exception: writer.progress.append.input",
-      ]);
+      expect(validateStructuredInputInventory(changedInventoryPath)).toEqual(["invalid disposition: writer.progress.append.input", "unowned exception: writer.progress.append.input"]);
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }

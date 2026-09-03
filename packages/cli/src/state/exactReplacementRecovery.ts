@@ -1,5 +1,8 @@
 export class ExactReplacementConflictError extends Error {
-  constructor(message: string, readonly retainedPaths: string[] = []) {
+  constructor(
+    message: string,
+    readonly retainedPaths: string[] = [],
+  ) {
     super(message);
     this.name = "ExactReplacementConflictError";
   }

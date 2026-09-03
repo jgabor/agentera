@@ -4,16 +4,11 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { createRequire } from "node:module";
 import { fileURLToPath } from "node:url";
-const { DatabaseSync } = createRequire(import.meta.url)(
-  "node:sqlite",
-) as typeof import("node:sqlite");
+const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 
-import {
-  buildExtractCorpusParityManifest,
-  opencodeParitySnapshot,
-} from "../../src/analytics/extractCorpus/extractCorpusParity.js";
+import { buildExtractCorpusParityManifest, opencodeParitySnapshot } from "../../src/analytics/extractCorpus/extractCorpusParity.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -22,45 +17,13 @@ const PYTHON_WRAPPER = path.join(REPO_ROOT, "scripts/extract_corpus.py");
 function seedOpencodeParityFixture(dbp: string): void {
   const db = new DatabaseSync(dbp);
   db.exec("CREATE TABLE session(id TEXT, cwd TEXT, time_created INTEGER)");
-  db.exec(
-    "CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)",
-  );
-  db.exec(
-    "CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)",
-  );
+  db.exec("CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)");
+  db.exec("CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)");
   db.prepare("INSERT INTO session VALUES (?,?,?)").run("s1", "/proj/foo", 1_700_000_000);
-  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run(
-    "m1",
-    "s1",
-    "user",
-    1_700_000_001,
-    null,
-    null,
-  );
-  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run(
-    "m2",
-    "s1",
-    "assistant",
-    1_700_000_002,
-    null,
-    null,
-  );
-  db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run(
-    "p1",
-    "m1",
-    "text",
-    "why should we avoid this approach?",
-    null,
-    1_700_000_001,
-  );
-  db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run(
-    "p2",
-    "m2",
-    "text",
-    "Because of the tradeoff.",
-    null,
-    1_700_000_002,
-  );
+  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m1", "s1", "user", 1_700_000_001, null, null);
+  db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m2", "s1", "assistant", 1_700_000_002, null, null);
+  db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p1", "m1", "text", "why should we avoid this approach?", null, 1_700_000_001);
+  db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p2", "m2", "text", "Because of the tradeoff.", null, 1_700_000_002);
   db.close();
 }
 

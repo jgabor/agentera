@@ -3,39 +3,18 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  persistPersonalGlossaryCandidateProjection,
-  personalGlossaryCandidateProjectionPath,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
-import {
-  ADAPTER_VERSION,
-  contentFingerprint,
-  originIdentity,
-} from "../../src/analytics/extractCorpus/core.js";
+import { persistPersonalGlossaryCandidateProjection, personalGlossaryCandidateProjectionPath, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../../src/analytics/personalGlossaryExplicitMining.js";
 import { personalProfileGrounding } from "../../src/analytics/personalGlossaryProfile.js";
 import { main } from "../../src/cli/dispatch/index.js";
-import {
-  createGlossaryEvidenceCapsule,
-  createGlossaryHostClassificationReceipt,
-  type GlossaryEvidenceCapsule,
-  type GlossaryHostClassificationReceipt,
-} from "../../src/registries/glossaryCandidateContracts.js";
+import { createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryEvidenceCapsule, type GlossaryHostClassificationReceipt } from "../../src/registries/glossaryCandidateContracts.js";
 
 const START = "<!-- agentera:personal-glossary:start -->";
 const END = "<!-- agentera:personal-glossary:end -->";
 const ACTION_MARKER = /<!-- agentera:profile-full-action:([a-z-]+) -->/g;
-const ACTIONS = [
-  "capture-owned-glossary",
-  "write-base-profile",
-  "consume-existing-personal-glossary-generation",
-  "decide-personal-glossary-candidates",
-  "queue-personal-glossary-reviews",
-  "publish-authorized-explicit-candidates",
-] as const;
+const ACTIONS = ["capture-owned-glossary", "write-base-profile", "consume-existing-personal-glossary-generation", "decide-personal-glossary-candidates", "queue-personal-glossary-reviews", "publish-authorized-explicit-candidates"] as const;
 const RETAINED_AT = "2099-01-01T00:00:00.000Z";
 const AS_OF = "2099-01-01";
 const POLICY_VERSION = "agentera.personalGlossaryMiningPolicy.v1";
@@ -158,8 +137,12 @@ export function invokeInProcess(args: string[], root: string, input?: string) {
     for (const key of Object.keys(process.env)) delete process.env[key];
     Object.assign(process.env, isolated);
     const status = main(["node", "agentera", ...args], {
-      out: (text) => { stdout += text; },
-      err: (text) => { stderr += text; },
+      out: (text) => {
+        stdout += text;
+      },
+      err: (text) => {
+        stderr += text;
+      },
       stdin: input === undefined ? undefined : () => input,
     });
     return { status, stdout, stderr };
@@ -180,16 +163,10 @@ function json(result: CliResult): Mapping {
   return mapping(JSON.parse(result.stdout));
 }
 
-export function runProductionGlossaryWorkflow(
-  executable: string,
-  root: string,
-): ProductionGlossaryWorkflowObservation {
+export function runProductionGlossaryWorkflow(executable: string, root: string): ProductionGlossaryWorkflowObservation {
   fs.mkdirSync(root, { recursive: true });
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
-  fs.writeFileSync(
-    path.join(root, ".agentera", "state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   const instructionRoot = path.join(root, "instruction-project");
   const configurationRoot = path.join(root, "configuration-project");
   fs.mkdirSync(instructionRoot, { recursive: true });
@@ -197,13 +174,7 @@ export function runProductionGlossaryWorkflow(
   fs.writeFileSync(path.join(instructionRoot, "AGENTS.md"), "# Rules\nKeep signal-braid explicit.\n");
   fs.writeFileSync(path.join(configurationRoot, "AGENTS.md"), "# Rules\nVerify signal-braid before delivery.\n");
 
-  const refreshArgs = [
-    "report", "refresh", "--format", "json",
-    "--project-root", instructionRoot,
-    "--project-root", configurationRoot,
-    "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor",
-    "--accept-coverage-gap",
-  ];
+  const refreshArgs = ["report", "refresh", "--format", "json", "--project-root", instructionRoot, "--project-root", configurationRoot, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"];
   const withoutConsent = invoke(executable, refreshArgs, root);
   assert.equal(withoutConsent.status, 2, withoutConsent.stderr || withoutConsent.stdout);
   const recovery = mapping(JSON.parse(withoutConsent.stdout));
@@ -229,11 +200,7 @@ export function runProductionGlossaryWorkflow(
   });
   const generation = mapping(refresh.projection).generation;
 
-  const listResult = invoke(
-    executable,
-    ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
-    root,
-  );
+  const listResult = invoke(executable, ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"], root);
   const list = json(listResult);
   assert.equal(list.generation, generation);
   const recurring = (list.entries as Mapping[]).find((entry) => entry.source_family === "recurring");
@@ -242,46 +209,39 @@ export function runProductionGlossaryWorkflow(
     assert.equal(listResult.stdout.includes(privateValue), false);
   }
 
-  const exact = json(invoke(executable, [
-    "report", "personal-glossary-candidates", "get",
-    "--candidate-id", String(recurring.candidate_id),
-    "--candidate-revision", String(recurring.candidate_revision),
-    "--generation", String(list.generation),
-    "--policy-version", String(list.policy_version),
-    "--format", "json",
-  ], root));
+  const exact = json(invoke(executable, ["report", "personal-glossary-candidates", "get", "--candidate-id", String(recurring.candidate_id), "--candidate-revision", String(recurring.candidate_revision), "--generation", String(list.generation), "--policy-version", String(list.policy_version), "--format", "json"], root));
   const entry = mapping(exact.entry);
   assert.equal(exact.candidate_projection_sha256, list.candidate_projection_sha256);
 
-  const decision = json(invoke(
-    executable,
-    ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
-    root,
-    JSON.stringify({
-      schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
-      candidate_id: entry.candidate_id,
-      candidate_revision: entry.candidate_revision,
-      candidate_capsule_sha256: entry.capsule_sha256,
-      candidate_projection_sha256: exact.candidate_projection_sha256,
-      generation: exact.generation,
-      policy_version: exact.policy_version,
-      classification: {
-        term: entry.term,
-        meaning: entry.meaning,
-        scope: entry.scope,
-        permanence: "durable",
-        consistency: "consistent",
-        confidence: 100,
-      },
-    }),
-  ));
+  const decision = json(
+    invoke(
+      executable,
+      ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+      root,
+      JSON.stringify({
+        schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+        candidate_id: entry.candidate_id,
+        candidate_revision: entry.candidate_revision,
+        candidate_capsule_sha256: entry.capsule_sha256,
+        candidate_projection_sha256: exact.candidate_projection_sha256,
+        generation: exact.generation,
+        policy_version: exact.policy_version,
+        classification: {
+          term: entry.term,
+          meaning: entry.meaning,
+          scope: entry.scope,
+          permanence: "durable",
+          consistency: "consistent",
+          confidence: 100,
+        },
+      }),
+    ),
+  );
   assert.equal(decision.status, "review_required");
   assert.equal(mapping(decision.decision).outcome, "review_required");
 
   return {
-    generationBound:
-      exact.generation === list.generation &&
-      exact.candidate_projection_sha256 === list.candidate_projection_sha256,
+    generationBound: exact.generation === list.generation && exact.candidate_projection_sha256 === list.candidate_projection_sha256,
     outcome: String(decision.status),
     privacyBounded: true,
     recovery: String(recovery.recovery),
@@ -334,10 +294,7 @@ function writeBaseProfile(profilePath: string, base: string, existing: string | 
   if (base.includes(START) || base.includes(END) || /^## Glossary\s*$/m.test(base)) {
     throw new Error("generated base contains a Glossary section");
   }
-  fs.writeFileSync(
-    profilePath,
-    existing === null ? base : `${base}${base.endsWith("\n") ? "\n" : "\n\n"}${existing}\n`,
-  );
+  fs.writeFileSync(profilePath, existing === null ? base : `${base}${base.endsWith("\n") ? "\n" : "\n\n"}${existing}\n`);
 }
 
 function writeBaseThroughServedActions(actions: readonly Action[], profilePath: string, base: string): string | null {
@@ -357,19 +314,28 @@ function writeBaseThroughServedActions(actions: readonly Action[], profilePath: 
 }
 
 function ownedSection(): string {
-  return `${START}\n## Glossary\n\n\`\`\`json\n${JSON.stringify({
-    schema_version: "agentera.personalGlossarySection.v1",
-    as_of: "2098-12-31",
-    confidence_basis: { "ship shape": 80 },
-    entries: [{
-      term: "ship shape",
-      meaning: "the complete form of a deliverable",
-      confidence: 80,
-      permanence: "durable",
-      temporal: { observed_at: "2098-12-31", last_confirmed_at: "2098-12-31" },
-      provenance: { kind: "personal_explicit_definition", evidence: [{ source_id: "source", evidence_anchor: "anchor", signal_type: "correction" }] },
-    }],
-  }, null, 2)}\n\`\`\`\n${END}`;
+  return `${START}\n## Glossary\n\n\`\`\`json\n${JSON.stringify(
+    {
+      schema_version: "agentera.personalGlossarySection.v1",
+      as_of: "2098-12-31",
+      confidence_basis: { "ship shape": 80 },
+      entries: [
+        {
+          term: "ship shape",
+          meaning: "the complete form of a deliverable",
+          confidence: 80,
+          permanence: "durable",
+          temporal: { observed_at: "2098-12-31", last_confirmed_at: "2098-12-31" },
+          provenance: {
+            kind: "personal_explicit_definition",
+            evidence: [{ source_id: "source", evidence_anchor: "anchor", signal_type: "correction" }],
+          },
+        },
+      ],
+    },
+    null,
+    2,
+  )}\n\`\`\`\n${END}`;
 }
 
 function tiersDir(root: string): string {
@@ -423,8 +389,16 @@ function inferredCapsule(index: number, generation: string, scope: "personal" | 
     scope,
     provenance_kind: "personal_inferred_usage",
     evidence: [
-      { source_id: `inferred-${index}-a`, evidence_anchor: `inferred-${index}-a`, source_kind: "instruction_document" },
-      { source_id: `inferred-${index}-b`, evidence_anchor: `inferred-${index}-b`, source_kind: "project_config_signal" },
+      {
+        source_id: `inferred-${index}-a`,
+        evidence_anchor: `inferred-${index}-a`,
+        source_kind: "instruction_document",
+      },
+      {
+        source_id: `inferred-${index}-b`,
+        evidence_anchor: `inferred-${index}-b`,
+        source_kind: "project_config_signal",
+      },
     ],
     policy_version: POLICY_VERSION,
     generation,
@@ -437,11 +411,13 @@ function explicitProjectionCapsule(index: number, generation: string): GlossaryE
     meaning: `An explicit meaning ${index}.`,
     scope: "personal",
     provenance_kind: "personal_explicit_definition",
-    evidence: [{
-      source_id: `explicit-${index}`,
-      evidence_anchor: `explicit-${index}`,
-      signal_type: "decision",
-    }],
+    evidence: [
+      {
+        source_id: `explicit-${index}`,
+        evidence_anchor: `explicit-${index}`,
+        signal_type: "decision",
+      },
+    ],
     policy_version: POLICY_VERSION,
     generation,
   });
@@ -462,15 +438,7 @@ function persistProjection(root: string, capsules: readonly GlossaryEvidenceCaps
   return projection;
 }
 
-function runFullCycle(
-  root: string,
-  contract: ServedProfileFullContract,
-  base: string,
-  capsules: ReadonlyMap<string, GlossaryEvidenceCapsule>,
-  questionChannel: boolean,
-  fault: WorkflowFault = {},
-  persistReviews = true,
-): WorkflowResult {
+function runFullCycle(root: string, contract: ServedProfileFullContract, base: string, capsules: ReadonlyMap<string, GlossaryEvidenceCapsule>, questionChannel: boolean, fault: WorkflowFault = {}, persistReviews = true): WorkflowResult {
   const result: WorkflowResult = {
     candidateReadFailures: 0,
     candidateReadCount: 0,
@@ -493,9 +461,7 @@ function runFullCycle(
 
   for (const action of contract.actions) {
     if (action === "capture-owned-glossary") {
-      captured = fs.existsSync(contract.profilePath)
-        ? captureOwnedGlossary(fs.readFileSync(contract.profilePath, "utf8"))
-        : null;
+      captured = fs.existsSync(contract.profilePath) ? captureOwnedGlossary(fs.readFileSync(contract.profilePath, "utf8")) : null;
       continue;
     }
     if (action === "write-base-profile") {
@@ -507,9 +473,7 @@ function runFullCycle(
       assert(afterBase.startsWith(base), "Profile Full must write its base before reading personal candidates");
       assert.equal(captureOwnedGlossary(afterBase), captured, "candidate retrieval must not replace the owned section");
       result.candidateReadCount += 1;
-      const read = invokeInProcess([
-        "report", "personal-glossary-candidates", "list", "--limit", String(contract.candidateListLimit), "--format", "json",
-      ], root);
+      const read = invokeInProcess(["report", "personal-glossary-candidates", "list", "--limit", String(contract.candidateListLimit), "--format", "json"], root);
       if (read.status !== 0) {
         result.candidateReadFailures += 1;
         continue;
@@ -530,15 +494,25 @@ function runFullCycle(
         const capsule = capsules.get(candidateId);
         assert(capsule, `test fixture has no capsule for ${candidateId}`);
         result.exactReadCount += 1;
-        const exactRead = invokeInProcess([
-          "report", "personal-glossary-candidates", "get",
-          "--candidate-id", candidateId,
-          "--candidate-revision", String(summary.candidate_revision),
-          ...(fault.exactRead ? ["--candidate-revision", "f".repeat(64)] : []),
-          "--generation", String(list.generation),
-          "--policy-version", String(list.policy_version),
-          "--format", "json",
-        ], root);
+        const exactRead = invokeInProcess(
+          [
+            "report",
+            "personal-glossary-candidates",
+            "get",
+            "--candidate-id",
+            candidateId,
+            "--candidate-revision",
+            String(summary.candidate_revision),
+            ...(fault.exactRead ? ["--candidate-revision", "f".repeat(64)] : []),
+            "--generation",
+            String(list.generation),
+            "--policy-version",
+            String(list.policy_version),
+            "--format",
+            "json",
+          ],
+          root,
+        );
         if (exactRead.status !== 0) {
           result.candidateReadFailures += 1;
           continue;
@@ -564,12 +538,14 @@ function runFullCycle(
             confidence: 80,
           },
         });
-        const decisionRead = invokeInProcess([
-          "report", "personal-glossary-decision", "--input", "-", "--format", "json",
-        ], root, JSON.stringify({
-          schema_version: "agentera.personalGlossaryAdmissionRequest.v1",
-          receipt,
-        }));
+        const decisionRead = invokeInProcess(
+          ["report", "personal-glossary-decision", "--input", "-", "--format", "json"],
+          root,
+          JSON.stringify({
+            schema_version: "agentera.personalGlossaryAdmissionRequest.v1",
+            receipt,
+          }),
+        );
         if (decisionRead.status !== 0) {
           result.decisionFailures += 1;
           continue;
@@ -591,12 +567,16 @@ function runFullCycle(
         }
         if (status !== "review_required") continue;
         if (persistReviews) {
-          const queued = json(invokeInProcess([
-            "report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json",
-          ], root, JSON.stringify({
-            schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
-            receipt: outcome.receipt,
-          })));
+          const queued = json(
+            invokeInProcess(
+              ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
+              root,
+              JSON.stringify({
+                schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
+                receipt: outcome.receipt,
+              }),
+            ),
+          );
           assert(["queued", "unchanged_replay", "suppressed", "reopened"].includes(String(queued.status)));
         }
         result.queued += 1;
@@ -641,9 +621,7 @@ function setup(root: string, shared?: ServedProfileFullContract): ServedProfileF
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   fs.mkdirSync(path.join(root, "profile-data"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-  return shared === undefined
-    ? servedContract(root)
-    : { ...shared, profilePath: path.join(root, "profile-data", "PROFILE.md") };
+  return shared === undefined ? servedContract(root) : { ...shared, profilePath: path.join(root, "profile-data", "PROFILE.md") };
 }
 
 function writeExistingProfile(profilePath: string, base: string, section: string): void {
@@ -668,12 +646,7 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
 
   const establishedOwned = ownedSection();
   const regeneratedBase = "# Decision Profile: Served Workflow\n\n## Decision Patterns\n\n- High confidence: preserve semantic seams.\n\n## Process\n\nregenerated base\n";
-  const malformed = [
-    "# Existing\n\n## Glossary\nmanual\n",
-    `# Existing\n\n${START}\n## Glossary\n`,
-    `# Existing\n\n${START}\n## Glossary\n\n\`\`\`json\n{}\n\`\`\`\n${END}\n`,
-    `# Existing\n\n${START}\n## Glossary\n\n\`\`\`json\n{}\n\`\`\`\n${END}\n${START}\n`,
-  ];
+  const malformed = ["# Existing\n\n## Glossary\nmanual\n", `# Existing\n\n${START}\n## Glossary\n`, `# Existing\n\n${START}\n## Glossary\n\n\`\`\`json\n{}\n\`\`\`\n${END}\n`, `# Existing\n\n${START}\n## Glossary\n\n\`\`\`json\n{}\n\`\`\`\n${END}\n${START}\n`];
   let malformedCasesRejected = 0;
   for (const original of malformed) {
     fs.writeFileSync(initialContract.profilePath, original);
@@ -706,17 +679,9 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   const emptyContract = setupScenario(emptyRoot);
   writeExistingProfile(emptyContract.profilePath, initialBase, establishedOwned);
   fs.writeFileSync(path.join(emptyRoot, "AGENTS.md"), "# Rules\nUse ordinary words.\n");
-  const emptyRefresh = json(invokeInProcess([
-    "report", "refresh", "--consent", "local-history", "--format", "json",
-    "--project-root", emptyRoot,
-    "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor",
-    "--accept-coverage-gap",
-  ], emptyRoot));
+  const emptyRefresh = json(invokeInProcess(["report", "refresh", "--consent", "local-history", "--format", "json", "--project-root", emptyRoot, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"], emptyRoot));
   assert.equal(emptyRefresh.status, "pass");
-  const emptyList = json(invokeInProcess(
-    ["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"],
-    emptyRoot,
-  ));
+  const emptyList = json(invokeInProcess(["report", "personal-glossary-candidates", "list", "--limit", "20", "--format", "json"], emptyRoot));
   assert.deepEqual(emptyList.entries, []);
   const mining = mapping(mapping(emptyList.summary).mining);
   for (const family of ["explicit", "recurring"]) {
@@ -733,10 +698,7 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   const degradedContract = setupScenario(degradedRoot);
   writeExistingProfile(degradedContract.profilePath, initialBase, establishedOwned);
   const degradedGeneration = currentTierGeneration(degradedRoot, "degraded");
-  const degradedCapsules = [
-    explicitProjectionCapsule(99, degradedGeneration),
-    ...Array.from({ length: 51 }, (_, index) => inferredCapsule(index + 100, degradedGeneration)),
-  ];
+  const degradedCapsules = [explicitProjectionCapsule(99, degradedGeneration), ...Array.from({ length: 51 }, (_, index) => inferredCapsule(index + 100, degradedGeneration))];
   const degradedProjection = persistProjection(degradedRoot, degradedCapsules, degradedGeneration);
   assert(degradedProjection.candidates.some(({ capsule }) => capsule.provenance_kind === "personal_explicit_definition"));
   const degraded = runFullCycle(degradedRoot, degradedContract, regeneratedBase, new Map(), false);
@@ -754,14 +716,7 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   writeExistingProfile(getFailureContract.profilePath, initialBase, establishedOwned);
   const getFailureCapsule = explicitCapsule(getFailureRoot);
   persistProjection(getFailureRoot, [getFailureCapsule], getFailureCapsule.generation);
-  const getFailure = runFullCycle(
-    getFailureRoot,
-    getFailureContract,
-    regeneratedBase,
-    new Map([[getFailureCapsule.candidate_id, getFailureCapsule]]),
-    false,
-    { exactRead: true },
-  );
+  const getFailure = runFullCycle(getFailureRoot, getFailureContract, regeneratedBase, new Map([[getFailureCapsule.candidate_id, getFailureCapsule]]), false, { exactRead: true });
   assert.equal(getFailure.candidateReadFailures, 1);
   assert.equal(getFailure.decisionCount, 0);
   assert.equal(getFailure.publicationCount, 0);
@@ -772,14 +727,9 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   writeExistingProfile(decisionFailureContract.profilePath, initialBase, establishedOwned);
   const decisionFailureCapsule = explicitCapsule(decisionFailureRoot);
   persistProjection(decisionFailureRoot, [decisionFailureCapsule], decisionFailureCapsule.generation);
-  const decisionFailure = runFullCycle(
-    decisionFailureRoot,
-    decisionFailureContract,
-    regeneratedBase,
-    new Map([[decisionFailureCapsule.candidate_id, decisionFailureCapsule]]),
-    false,
-    { decision: true },
-  );
+  const decisionFailure = runFullCycle(decisionFailureRoot, decisionFailureContract, regeneratedBase, new Map([[decisionFailureCapsule.candidate_id, decisionFailureCapsule]]), false, {
+    decision: true,
+  });
   assert.equal(decisionFailure.decisionFailures, 1);
   assert.equal(decisionFailure.publicationCount, 0);
   assert.equal(fs.readFileSync(decisionFailureContract.profilePath, "utf8"), missingExpected);
@@ -789,14 +739,9 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   writeExistingProfile(publisherFailureContract.profilePath, initialBase, establishedOwned);
   const publisherFailureCapsule = explicitCapsule(publisherFailureRoot);
   persistProjection(publisherFailureRoot, [publisherFailureCapsule], publisherFailureCapsule.generation);
-  const publisherFailure = runFullCycle(
-    publisherFailureRoot,
-    publisherFailureContract,
-    regeneratedBase,
-    new Map([[publisherFailureCapsule.candidate_id, publisherFailureCapsule]]),
-    false,
-    { publication: true },
-  );
+  const publisherFailure = runFullCycle(publisherFailureRoot, publisherFailureContract, regeneratedBase, new Map([[publisherFailureCapsule.candidate_id, publisherFailureCapsule]]), false, {
+    publication: true,
+  });
   assert.equal(publisherFailure.publicationFailures, 1);
   assert.equal(publisherFailure.published, 0);
   assert.equal(fs.readFileSync(publisherFailureContract.profilePath, "utf8"), missingExpected);
@@ -806,13 +751,7 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   writeExistingProfile(fallbackContract.profilePath, initialBase, establishedOwned);
   const fallbackCapsule = inferredCapsule(1, currentTierGeneration(fallbackRoot, "fallback"));
   persistProjection(fallbackRoot, [fallbackCapsule], fallbackCapsule.generation);
-  const fallback = runFullCycle(
-    fallbackRoot,
-    fallbackContract,
-    regeneratedBase,
-    new Map([[fallbackCapsule.candidate_id, fallbackCapsule]]),
-    false,
-  );
+  const fallback = runFullCycle(fallbackRoot, fallbackContract, regeneratedBase, new Map([[fallbackCapsule.candidate_id, fallbackCapsule]]), false);
   assert.equal(fallback.queued, 1);
   assert.equal(fallback.questionPrompts, 0);
   assert.equal(fallback.published, 0);
@@ -845,14 +784,20 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
   assert(fs.statSync(glossaryTrap).isDirectory(), "project glossary trap must remain untouched");
   const beforeReplay = mixedProfile;
   const replayRequest = mixed.authorizedPublications[0]!;
-  const replay = json(invoke(executable, [
-    "report", "personal-glossary-publish", "--input", "-", "--format", "json",
-  ], mixedRoot, JSON.stringify({
-    schema_version: "agentera.personalGlossaryPublishRequest.v1",
-    receipt: replayRequest.receipt,
-    decision: replayRequest.decision,
-    as_of: AS_OF,
-  }), { AGENTERA_BOOTSTRAP_SOURCE_ROOT: CHECKOUT_ROOT }));
+  const replay = json(
+    invoke(
+      executable,
+      ["report", "personal-glossary-publish", "--input", "-", "--format", "json"],
+      mixedRoot,
+      JSON.stringify({
+        schema_version: "agentera.personalGlossaryPublishRequest.v1",
+        receipt: replayRequest.receipt,
+        decision: replayRequest.decision,
+        as_of: AS_OF,
+      }),
+      { AGENTERA_BOOTSTRAP_SOURCE_ROOT: CHECKOUT_ROOT },
+    ),
+  );
   assert.equal(replay.status, "unchanged_replay");
   assert.equal(fs.readFileSync(mixedContract.profilePath, "utf8"), beforeReplay);
 
@@ -886,12 +831,9 @@ export function runSourceProfileFullWorkflow(root: string, executable: string): 
     miningFailurePreserved: fs.readFileSync(failureContract.profilePath, "utf8") === missingExpected,
     noCandidatesPreserved: fs.readFileSync(emptyContract.profilePath, "utf8") === missingExpected,
     degradedGenerationPreserved: fs.readFileSync(degradedContract.profilePath, "utf8") === missingExpected,
-    perCandidateGetFailurePreserved:
-      fs.readFileSync(getFailureContract.profilePath, "utf8") === missingExpected,
-    perCandidateDecisionFailurePreserved:
-      fs.readFileSync(decisionFailureContract.profilePath, "utf8") === missingExpected,
-    publisherFailurePreserved:
-      fs.readFileSync(publisherFailureContract.profilePath, "utf8") === missingExpected,
+    perCandidateGetFailurePreserved: fs.readFileSync(getFailureContract.profilePath, "utf8") === missingExpected,
+    perCandidateDecisionFailurePreserved: fs.readFileSync(decisionFailureContract.profilePath, "utf8") === missingExpected,
+    publisherFailurePreserved: fs.readFileSync(publisherFailureContract.profilePath, "utf8") === missingExpected,
     mixedCandidateReads: mixed.candidateReadCount,
     mixedExplicitPublications: mixed.published,
     mixedReviewsQueued: mixed.queued,

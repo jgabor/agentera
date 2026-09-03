@@ -7,30 +7,15 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import {
-  MIGRATION_STATUSES,
-  type MigrationStatus,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import {
-  STATUS_APPLIED,
-  STATUS_MANUAL_REVIEW_NEEDED,
-  STATUS_NO_CHANGES_NEEDED,
-  STATUS_READY_TO_APPLY,
-  UPGRADE_PREVIEW_SCHEMA,
-} from "../../src/upgrade/compatibility.js";
+import { MIGRATION_STATUSES, type MigrationStatus } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { STATUS_APPLIED, STATUS_MANUAL_REVIEW_NEEDED, STATUS_NO_CHANGES_NEEDED, STATUS_READY_TO_APPLY, UPGRADE_PREVIEW_SCHEMA } from "../../src/upgrade/compatibility.js";
 import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
-import {
-  buildUpgradePlan,
-  upgradeExitCode,
-  type UpgradePlanV2,
-} from "../../src/upgrade/upgradeOrchestrator.js";
+import { buildUpgradePlan, upgradeExitCode, type UpgradePlanV2 } from "../../src/upgrade/upgradeOrchestrator.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
-const ORACLE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/python-main-contract.json"), "utf8"),
-) as {
+const ORACLE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/python-main-contract.json"), "utf8")) as {
   schemaVersions: { pythonMain: string; typescriptV3Migration: string };
   lifecycleStatusMapping: Record<MigrationStatus, string>;
   workflowStatuses: MigrationStatus[];
@@ -65,14 +50,8 @@ function managedV2(appHome: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 function planWithSummary(summary: UpgradePlanV2["summary"], mode: "plan" | "apply" = "plan"): UpgradePlanV2 {
@@ -137,24 +116,24 @@ describe("Python main oracle contract parity", () => {
     for (const workflow of ORACLE.workflowStatuses) {
       expect(LIFECYCLE_BY_WORKFLOW[workflow]).toBe(ORACLE.lifecycleStatusMapping[workflow]);
     }
-    expect(Object.values(LIFECYCLE_BY_WORKFLOW).every((status) => ORACLE.lifecycleStatuses.includes(status))).toBe(
-      true,
-    );
+    expect(Object.values(LIFECYCLE_BY_WORKFLOW).every((status) => ORACLE.lifecycleStatuses.includes(status))).toBe(true);
   });
 
   it("matches Python cmd_upgrade exit-code rules", () => {
-    expect(upgradeExitCode(planWithSummary({ pending: 1, applied: 0, noop: 0, blocked: 0, failed: 0 }))).toBe(
-      ORACLE.exitCodeRules.planWithPendingSummary,
-    );
-    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 0, blocked: 1, failed: 0 }))).toBe(
-      ORACLE.exitCodeRules.blockedOrFailedSummary,
-    );
-    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 1, blocked: 0, failed: 0 }))).toBe(
-      ORACLE.exitCodeRules.success,
-    );
+    expect(upgradeExitCode(planWithSummary({ pending: 1, applied: 0, noop: 0, blocked: 0, failed: 0 }))).toBe(ORACLE.exitCodeRules.planWithPendingSummary);
+    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 0, blocked: 1, failed: 0 }))).toBe(ORACLE.exitCodeRules.blockedOrFailedSummary);
+    expect(upgradeExitCode(planWithSummary({ pending: 0, applied: 0, noop: 1, blocked: 0, failed: 0 }))).toBe(ORACLE.exitCodeRules.success);
 
     let err = "";
-    const rc = cmdUpgrade({ yes: true, dryRun: true }, { out: () => {}, err: (t) => { err += t; } });
+    const rc = cmdUpgrade(
+      { yes: true, dryRun: true },
+      {
+        out: () => {},
+        err: (t) => {
+          err += t;
+        },
+      },
+    );
     expect(rc).toBe(ORACLE.exitCodeRules.mutuallyExclusiveYesDryRun);
     expect(err).toContain("mutually exclusive");
   });
@@ -213,7 +192,11 @@ describe("Python main oracle contract parity", () => {
         format: "json",
         channel: "stable",
       },
-      { out: (t) => { stdout += t; } },
+      {
+        out: (t) => {
+          stdout += t;
+        },
+      },
     );
     const payload = JSON.parse(stdout);
     const stableScenario = ORACLE.scenarios.find((entry) => entry.name === "stable_channel_no_cross_major_ops");

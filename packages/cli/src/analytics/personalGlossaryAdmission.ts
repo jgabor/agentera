@@ -1,11 +1,6 @@
 import type { JsonObject } from "../core/jsonValue.js";
 import { personalGlossaryAdmissionContract } from "../registries/glossaryEntryContract.js";
-import {
-  readSignalTier,
-  resolveEvidenceAnchor,
-  type EvidenceTierCompatibilityState,
-  type SignalRecord,
-} from "./extractCorpus/evidenceTiers.js";
+import { readSignalTier, resolveEvidenceAnchor, type EvidenceTierCompatibilityState, type SignalRecord } from "./extractCorpus/evidenceTiers.js";
 import { assessTiers, recoveryForState } from "./extractCorpus/tierReader.js";
 import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 
@@ -47,9 +42,7 @@ function semanticValues(record: JsonObject): string[] {
     return typeof object.content === "string" ? [object.content] : [];
   }
   if (record.source_kind === "project_config_signal") {
-    return Array.isArray(object.signals)
-      ? object.signals.filter((value): value is string => typeof value === "string")
-      : [];
+    return Array.isArray(object.signals) ? object.signals.filter((value): value is string => typeof value === "string") : [];
   }
   return [];
 }
@@ -62,15 +55,10 @@ function containsCompleteTerm(text: string, term: string): boolean {
 }
 
 function hasInferredProvenance(signal: SignalRecord): boolean {
-  return (
-    /^[a-f0-9]{64}$/.test(signal.origin_id ?? "") &&
-    /^[a-f0-9]{64}$/.test(signal.content_fingerprint ?? "")
-  );
+  return /^[a-f0-9]{64}$/.test(signal.origin_id ?? "") && /^[a-f0-9]{64}$/.test(signal.content_fingerprint ?? "");
 }
 
-function unavailable(
-  state: EvidenceTierCompatibilityState["state"],
-): PersonalGlossaryAdmissionResult {
+function unavailable(state: EvidenceTierCompatibilityState["state"]): PersonalGlossaryAdmissionResult {
   return { state, status: "unavailable", candidates: [], recovery: recoveryForState(state) };
 }
 
@@ -79,10 +67,7 @@ function unavailable(
  * resolution of selected anchors only. Profile rendering and persistence are
  * deliberately outside this partial producer boundary.
  */
-export function admitPersonalGlossaryEvidence(
-  input: PersonalGlossaryAdmissionInput,
-  resolveAnchor: AnchorResolver = resolveEvidenceAnchor,
-): PersonalGlossaryAdmissionResult {
+export function admitPersonalGlossaryEvidence(input: PersonalGlossaryAdmissionInput, resolveAnchor: AnchorResolver = resolveEvidenceAnchor): PersonalGlossaryAdmissionResult {
   const authority = personalGlossaryAdmissionContract();
   const assessment = assessTiers(input.tiersDir, input.corpusPath);
   if (!assessment.analyzable) return unavailable(assessment.state);
@@ -93,32 +78,19 @@ export function admitPersonalGlossaryEvidence(
   const explicitTypes = new Set(authority.explicitSignalTypes);
   const inferredTypes = new Set(authority.inferredSignalTypes);
   const inferredKinds = new Set(authority.inferredSourceKinds);
-  const selected = tier.records.filter(
-    (signal) =>
-      explicitTypes.has(signal.signal_type) ||
-      (input.requestedTerms.length > 0 &&
-        inferredTypes.has(signal.signal_type) &&
-        inferredKinds.has(signal.source_kind)),
-  );
+  const selected = tier.records.filter((signal) => explicitTypes.has(signal.signal_type) || (input.requestedTerms.length > 0 && inferredTypes.has(signal.signal_type) && inferredKinds.has(signal.source_kind)));
   const resolved = new Map<string, { signal: SignalRecord; record: JsonObject }>();
   for (const signal of selected) {
     if (explicitTypes.has(signal.signal_type)) continue;
     if (resolved.has(signal.evidence_anchor)) continue;
     const record = resolveAnchor(signal.evidence_anchor, input.tiersDir);
-    if (
-      record &&
-      record.source_id === signal.source_id &&
-      record.source_kind === signal.source_kind
-    ) {
+    if (record && record.source_id === signal.source_id && record.source_kind === signal.source_kind) {
       resolved.set(signal.evidence_anchor, { signal, record });
     }
   }
 
   const candidates: PersonalGlossaryCandidate[] = [];
-  const explicitMining = mineExplicitGlossaryCandidates(
-    { tiersDir: input.tiersDir },
-    resolveAnchor,
-  );
+  const explicitMining = mineExplicitGlossaryCandidates({ tiersDir: input.tiersDir }, resolveAnchor);
   for (const { capsule } of explicitMining.candidates) {
     candidates.push({
       kind: "personal_explicit_definition",
@@ -134,32 +106,15 @@ export function admitPersonalGlossaryEvidence(
 
   for (const term of new Set(input.requestedTerms.map((value) => value.trim()).filter(Boolean))) {
     const evidence = [...resolved.values()]
-      .filter(
-        ({ signal, record }) =>
-          inferredTypes.has(signal.signal_type) &&
-          inferredKinds.has(signal.source_kind) &&
-          hasInferredProvenance(signal) &&
-          semanticValues(record).some((value) => containsCompleteTerm(value, term)),
-      )
+      .filter(({ signal, record }) => inferredTypes.has(signal.signal_type) && inferredKinds.has(signal.source_kind) && hasInferredProvenance(signal) && semanticValues(record).some((value) => containsCompleteTerm(value, term)))
       .map(({ signal }) => ({
         source_id: signal.source_id,
         evidence_anchor: signal.evidence_anchor,
         source_kind: signal.source_kind,
       }))
-      .filter(
-        (item, index, all) =>
-          all.findIndex(
-            (candidate) =>
-              candidate.source_id === item.source_id ||
-              candidate.evidence_anchor === item.evidence_anchor,
-          ) === index,
-      )
+      .filter((item, index, all) => all.findIndex((candidate) => candidate.source_id === item.source_id || candidate.evidence_anchor === item.evidence_anchor) === index)
       .sort((left, right) => left.source_id.localeCompare(right.source_id));
-    if (
-      evidence.length === 2 &&
-      new Set(evidence.map((item) => item.source_id)).size === 2 &&
-      new Set(evidence.map((item) => item.evidence_anchor)).size === 2
-    ) {
+    if (evidence.length === 2 && new Set(evidence.map((item) => item.source_id)).size === 2 && new Set(evidence.map((item) => item.evidence_anchor)).size === 2) {
       candidates.push({ kind: "personal_inferred_usage", term, evidence });
     }
   }
@@ -222,12 +177,7 @@ export {
   type PersonalGlossarySafeExcerpt,
   type ProjectedPersonalGlossaryCandidate,
 } from "./personalGlossaryCandidateProjection.js";
-export {
-  decidePersonalGlossaryCandidate,
-  type PersonalGlossaryAdmissionResult as PersonalGlossaryDecisionResult,
-  type PersonalGlossaryAdmissionStatus,
-  type PersonalGlossaryDecisionOptions,
-} from "./personalGlossaryDecision.js";
+export { decidePersonalGlossaryCandidate, type PersonalGlossaryAdmissionResult as PersonalGlossaryDecisionResult, type PersonalGlossaryAdmissionStatus, type PersonalGlossaryDecisionOptions } from "./personalGlossaryDecision.js";
 export {
   currentPersonalGlossaryReviewRecords,
   maintainPersonalGlossaryReviewRecords,

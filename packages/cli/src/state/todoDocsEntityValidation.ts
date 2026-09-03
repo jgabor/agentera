@@ -8,9 +8,7 @@ export const TODO_STATUSES = ["open", "resolved"] as const;
 export const TODO_KIND_RE = /^[a-z][a-z0-9_-]{0,31}$/;
 export const DOC_STATUSES = ["current", "stale", "missing", "intent", "generated"] as const;
 
-const TODO_INPUT_FIELDS = new Set([
-  "kind", "target_version", "title", "requirements", "acceptance", "release_blocker", "severity", "readiness",
-]);
+const TODO_INPUT_FIELDS = new Set(["kind", "target_version", "title", "requirements", "acceptance", "release_blocker", "severity", "readiness"]);
 const TODO_CLEARABLE_FIELDS = new Set(["target_version", "requirements", "acceptance", "readiness"]);
 const TODO_LIFECYCLE_REASON_MAX_CODE_POINTS = 500;
 const TODO_RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
@@ -26,8 +24,7 @@ function stringList(value: unknown, field: string): string[] {
 
 function publicTodoViolations(record: JsonObject): string[] {
   const violations: string[] = [];
-  const typed = record.title !== undefined || record.kind !== undefined || record.target_version !== undefined
-    || record.requirements !== undefined || record.acceptance !== undefined || record.release_blocker !== undefined;
+  const typed = record.title !== undefined || record.kind !== undefined || record.target_version !== undefined || record.requirements !== undefined || record.acceptance !== undefined || record.release_blocker !== undefined;
   if (!typed && (typeof record.description !== "string" || !record.description.trim())) violations.push("title or legacy description is required");
   if (typed) {
     if (typeof record.kind !== "string" || !TODO_KIND_RE.test(record.kind)) violations.push("kind must be a lowercase identifier of at most 32 characters");
@@ -58,7 +55,7 @@ export function todoInputViolations(input: JsonObject, mode: "create" | "update"
   if (input.requirements !== undefined && input.requirements !== null) violations.push(...stringList(input.requirements, "requirements"));
   if (input.acceptance !== undefined && input.acceptance !== null) violations.push(...stringList(input.acceptance, "acceptance"));
   if (input.release_blocker !== undefined && typeof input.release_blocker !== "boolean") violations.push("release_blocker must be a boolean; false is the typed non-blocking value");
-  if (input.severity !== undefined && !TODO_SEVERITIES.includes(input.severity as typeof TODO_SEVERITIES[number])) violations.push(`severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
+  if (input.severity !== undefined && !TODO_SEVERITIES.includes(input.severity as (typeof TODO_SEVERITIES)[number])) violations.push(`severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
   if (input.description !== undefined) violations.push("description is a retired legacy field; use title and the typed TODO record");
   if (mode === "update") {
     for (const field of ["kind", "title", "severity", "release_blocker", "description"]) if (input[field] === null) violations.push(`${field} cannot be cleared; omit it or supply a typed value`);
@@ -69,9 +66,7 @@ export function todoInputViolations(input: JsonObject, mode: "create" | "update"
     if (!readiness) violations.push("readiness must be a complete mapping or null");
     else {
       const dependencies = readiness.dependencies;
-      const normalized = Array.isArray(dependencies)
-        ? dependencies.map((dependency) => typeof dependency === "string" ? { artifact: "todo", id: dependency } : dependency)
-        : dependencies;
+      const normalized = Array.isArray(dependencies) ? dependencies.map((dependency) => (typeof dependency === "string" ? { artifact: "todo", id: dependency } : dependency)) : dependencies;
       violations.push(...todoReadinessRecordViolations({ ...readiness, dependencies: normalized }));
     }
   }
@@ -81,8 +76,8 @@ export function todoInputViolations(input: JsonObject, mode: "create" | "update"
 export function todoDocsRecordViolations(boundary: string, record: JsonObject, sourceRoot?: string): string[] {
   const violations: string[] = [];
   if (boundary === "todo_item") {
-    if (!TODO_SEVERITIES.includes(record.severity as typeof TODO_SEVERITIES[number])) violations.push(`severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
-    if (!TODO_STATUSES.includes(record.status as typeof TODO_STATUSES[number])) violations.push(`status must be one of: ${TODO_STATUSES.join(", ")}`);
+    if (!TODO_SEVERITIES.includes(record.severity as (typeof TODO_SEVERITIES)[number])) violations.push(`severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
+    if (!TODO_STATUSES.includes(record.status as (typeof TODO_STATUSES)[number])) violations.push(`status must be one of: ${TODO_STATUSES.join(", ")}`);
     violations.push(...publicTodoViolations(record));
     if (record.lifecycle !== undefined) {
       if (!mapping(record.lifecycle)) violations.push("lifecycle must be a mapping");
@@ -96,13 +91,7 @@ export function todoDocsRecordViolations(boundary: string, record: JsonObject, s
       }
     }
     if (record.readiness !== undefined) {
-      const contract = sourceRoot
-        ? loadTodoReadinessContract(
-          path.join(sourceRoot, "skills/agentera/schemas/artifacts/todo.yaml"),
-          path.join(sourceRoot, "skills/agentera/protocol.yaml"),
-          path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml"),
-        )
-        : undefined;
+      const contract = sourceRoot ? loadTodoReadinessContract(path.join(sourceRoot, "skills/agentera/schemas/artifacts/todo.yaml"), path.join(sourceRoot, "skills/agentera/protocol.yaml"), path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml")) : undefined;
       violations.push(...todoReadinessRecordViolations(record.readiness, contract));
     }
     if (record.reconciliation !== undefined) {
@@ -112,8 +101,8 @@ export function todoDocsRecordViolations(boundary: string, record: JsonObject, s
         if (typeof baseline.present !== "boolean") violations.push("reconciliation.public.present must be a boolean");
         if (baseline.present) {
           if (typeof baseline.description !== "string" || !baseline.description.trim()) violations.push("reconciliation.public.description is required when present");
-          if (!TODO_SEVERITIES.includes(baseline.severity as typeof TODO_SEVERITIES[number])) violations.push(`reconciliation.public.severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
-          if (!TODO_STATUSES.includes(baseline.status as typeof TODO_STATUSES[number])) violations.push(`reconciliation.public.status must be one of: ${TODO_STATUSES.join(", ")}`);
+          if (!TODO_SEVERITIES.includes(baseline.severity as (typeof TODO_SEVERITIES)[number])) violations.push(`reconciliation.public.severity must be one of: ${TODO_SEVERITIES.join(", ")}`);
+          if (!TODO_STATUSES.includes(baseline.status as (typeof TODO_STATUSES)[number])) violations.push(`reconciliation.public.status must be one of: ${TODO_STATUSES.join(", ")}`);
           if (!Number.isSafeInteger(baseline.order) || Number(baseline.order) < 1) violations.push("reconciliation.public.order must be a positive integer");
         }
       }
@@ -123,7 +112,7 @@ export function todoDocsRecordViolations(boundary: string, record: JsonObject, s
     if (typeof record.document !== "string" || !record.document.trim()) violations.push("document is required");
     if (typeof record.path !== "string" || !record.path.trim()) violations.push("path is required record data");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(String(record.last_updated ?? ""))) violations.push("last_updated must be YYYY-MM-DD");
-    if (!DOC_STATUSES.includes(record.status as typeof DOC_STATUSES[number])) violations.push(`status must be one of: ${DOC_STATUSES.join(", ")}`);
+    if (!DOC_STATUSES.includes(record.status as (typeof DOC_STATUSES)[number])) violations.push(`status must be one of: ${DOC_STATUSES.join(", ")}`);
   }
   return violations;
 }

@@ -1,9 +1,6 @@
 import fs from "node:fs";
 
-import {
-  glossaryCaveatContractFromDocument,
-  type GlossaryCaveatContract,
-} from "../registries/glossaryCaveatContract.js";
+import { glossaryCaveatContractFromDocument, type GlossaryCaveatContract } from "../registries/glossaryCaveatContract.js";
 import { loadYamlMapping } from "../core/yaml.js";
 
 interface CacheEntry {

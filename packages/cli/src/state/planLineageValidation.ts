@@ -9,10 +9,7 @@ function planStatus(plan: DiscoveredEntity): unknown {
   return mapping(header) ? header.status : undefined;
 }
 
-export function planLineageIssues(
-  plans: DiscoveredEntity[],
-  recovery: (action: string) => string,
-): EntityDiagnostic[] {
+export function planLineageIssues(plans: DiscoveredEntity[], recovery: (action: string) => string): EntityDiagnostic[] {
   const plansById = new Map(plans.map((plan) => [plan.id!, plan]));
   const successorsByPredecessor = new Map<string, DiscoveredEntity[]>();
   const issues: EntityDiagnostic[] = [];
@@ -30,9 +27,7 @@ export function planLineageIssues(
         boundary: successor.boundary ?? undefined,
         relation: "previous_plan_archived",
         targetId: predecessorId,
-        message: predecessorId === successor.id
-          ? `plan '${successor.id}' cannot name itself as its archived predecessor`
-          : `plan '${successor.id}' predecessor '${predecessorId}' must be archived`,
+        message: predecessorId === successor.id ? `plan '${successor.id}' cannot name itself as its archived predecessor` : `plan '${successor.id}' predecessor '${predecessorId}' must be archived`,
         recovery: recovery(`set record.previous_plan_archived in '${successor.relativePath}' to one distinct archived plan ID, or remove the writer-owned field from invalid state`),
       });
     }
@@ -50,7 +45,10 @@ export function planLineageIssues(
         boundary: successor.boundary ?? undefined,
         relation: "previous_plan_archived",
         targetId: predecessorId,
-        message: `archived predecessor '${predecessorId}' has multiple successor plan records: ${successors.map((candidate) => candidate.id!).sort().join(", ")}`,
+        message: `archived predecessor '${predecessorId}' has multiple successor plan records: ${successors
+          .map((candidate) => candidate.id!)
+          .sort()
+          .join(", ")}`,
         recovery: recovery(`retain record.previous_plan_archived on only one canonical successor of archived plan '${predecessorId}'`),
       });
     }

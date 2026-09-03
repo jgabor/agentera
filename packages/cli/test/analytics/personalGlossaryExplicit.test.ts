@@ -4,24 +4,11 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  EXPLICIT_GLOSSARY_REASONS,
-  classifyExplicitGlossaryLanguage,
-  discoverExplicitGlossaryCues,
-  mineExplicitGlossaryCandidates,
-  rawCues,
-} from "../../src/analytics/personalGlossaryExplicit.js";
+import { EXPLICIT_GLOSSARY_REASONS, classifyExplicitGlossaryLanguage, discoverExplicitGlossaryCues, mineExplicitGlossaryCandidates, rawCues } from "../../src/analytics/personalGlossaryExplicit.js";
 import { admitPersonalGlossaryEvidence } from "../../src/analytics/personalGlossaryAdmission.js";
 import { validateGlossaryEvidenceCapsule } from "../../src/registries/glossaryCandidateContracts.js";
-import {
-  ADAPTER_VERSION,
-  contentFingerprint,
-  originIdentity,
-} from "../../src/analytics/extractCorpus/core.js";
-import {
-  publishEvidenceTiers,
-  resolveEvidenceAnchor,
-} from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
+import { publishEvidenceTiers, resolveEvidenceAnchor } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 
 let root: string;
 let tiersDir: string;
@@ -33,13 +20,7 @@ beforeEach(() => {
 
 afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-function record(
-  sourceId: string,
-  text: string,
-  signalType: "correction" | "decision" = "decision",
-  actor: "user" | "assistant" | undefined = "user",
-  extra: Record<string, unknown> = {},
-): Record<string, unknown> {
+function record(sourceId: string, text: string, signalType: "correction" | "decision" = "decision", actor: "user" | "assistant" | undefined = "user", extra: Record<string, unknown> = {}): Record<string, unknown> {
   const result: Record<string, unknown> = {
     source_id: sourceId,
     source_kind: "conversation_turn",
@@ -88,51 +69,15 @@ function exactSourceCue(text: string, term: string, meaning: string) {
 
 describe("deterministic explicit cue recognition", () => {
   it.each([
-    [
-      '"ship shape" means the complete form of a deliverable.',
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "Definition: ship shape: the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "API stands for application programming interface.",
-      "API",
-      "application programming interface",
-    ],
-    [
-      "By ship shape I mean the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "Use ship shape to mean the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "Use ship shape for the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "To clarify, ship shape refers to the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "To clarify, I prefer `ship shape` to mean the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "Correction: `ship shape` means the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
+    ['"ship shape" means the complete form of a deliverable.', "ship shape", "the complete form of a deliverable"],
+    ["Definition: ship shape: the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["API stands for application programming interface.", "API", "application programming interface"],
+    ["By ship shape I mean the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["Use ship shape to mean the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["Use ship shape for the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["To clarify, ship shape refers to the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["To clarify, I prefer `ship shape` to mean the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["Correction: `ship shape` means the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
     ["API (Application Programming Interface).", "API", "Application Programming Interface"],
   ])("recognizes %j", (text, term, meaning) => {
     expect(discoverExplicitGlossaryCues(text)).toContainEqual({
@@ -145,8 +90,7 @@ describe("deterministic explicit cue recognition", () => {
   });
 
   it("keeps punctuation, multiline meaning, combining marks, and multiple list entries exact", () => {
-    const text =
-      "`café`: first line: with detail\nsecond line\nAPI: Application Programming Interface.";
+    const text = "`café`: first line: with detail\nsecond line\nAPI: Application Programming Interface.";
     const cues = discoverExplicitGlossaryCues(text);
     expect(cues.map(({ term, meaning }) => [term, meaning])).toEqual([
       ["API", "Application Programming Interface"],
@@ -158,36 +102,14 @@ describe("deterministic explicit cue recognition", () => {
   });
 
   it.each([
-    [
-      "`ship shape`: the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      '"ship shape": the complete form of a deliverable.',
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
+    ["`ship shape`: the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ['"ship shape": the complete form of a deliverable.', "ship shape", "the complete form of a deliverable"],
     ["API: Application Programming Interface.", "API", "Application Programming Interface"],
-    [
-      "Definition: ship shape: the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "Term: ship shape: the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
-    [
-      "- Definition: ship shape: the complete form of a deliverable.",
-      "ship shape",
-      "the complete form of a deliverable",
-    ],
+    ["Definition: ship shape: the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["Term: ship shape: the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
+    ["- Definition: ship shape: the complete form of a deliverable.", "ship shape", "the complete form of a deliverable"],
   ])("accepts the bounded colon form %j", (text, term, meaning) => {
-    expect(discoverExplicitGlossaryCues(text)).toEqual([
-      expect.objectContaining({ term, meaning }),
-    ]);
+    expect(discoverExplicitGlossaryCues(text)).toEqual([expect.objectContaining({ term, meaning })]);
   });
 
   it.each([
@@ -217,46 +139,28 @@ describe("deterministic explicit cue recognition", () => {
         end: Buffer.byteLength("`café`: starts inline\ncontinues with detail", "utf8"),
       },
     });
-    expect(
-      Buffer.from(text, "utf8").subarray(cue!.meaning_span.start, cue!.meaning_span.end).toString(),
-    ).toBe("starts inline\ncontinues with detail");
+    expect(Buffer.from(text, "utf8").subarray(cue!.meaning_span.start, cue!.meaning_span.end).toString()).toBe("starts inline\ncontinues with detail");
   });
 
   it("applies the existing meaning bound to inline-plus-continuation colon forms", () => {
-    expect(discoverExplicitGlossaryCues(`\`bounded\`: starts inline\n${"m".repeat(4097)}`)).toEqual(
-      [],
-    );
+    expect(discoverExplicitGlossaryCues(`\`bounded\`: starts inline\n${"m".repeat(4097)}`)).toEqual([]);
   });
 
   it.each([
     ["For example, `ship shape` means a complete form.", EXPLICIT_GLOSSARY_REASONS.exampleContext],
     ["`ship shape` does not mean a complete form.", EXPLICIT_GLOSSARY_REASONS.negatedDefinition],
-    [
-      "If `ship shape` means a complete form, continue.",
-      EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
-    ],
+    ["If `ship shape` means a complete form, continue.", EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition],
     ["Sarcasm: `ship shape` means a complete form /s", EXPLICIT_GLOSSARY_REASONS.sarcasmMarker],
-    [
-      "According to Alice, `ship shape` means a complete form.",
-      EXPLICIT_GLOSSARY_REASONS.attributedQuotation,
-    ],
+    ["According to Alice, `ship shape` means a complete form.", EXPLICIT_GLOSSARY_REASONS.attributedQuotation],
     ["Alice: `ship shape` means a complete form.", EXPLICIT_GLOSSARY_REASONS.attributedQuotation],
-    [
-      "`ship shape` means an old form. I retract that definition.",
-      EXPLICIT_GLOSSARY_REASONS.retractedDefinition,
-    ],
-    [
-      "In this repository, `ship shape` means a repository-only form.",
-      EXPLICIT_GLOSSARY_REASONS.projectOnlyScope,
-    ],
+    ["`ship shape` means an old form. I retract that definition.", EXPLICIT_GLOSSARY_REASONS.retractedDefinition],
+    ["In this repository, `ship shape` means a repository-only form.", EXPLICIT_GLOSSARY_REASONS.projectOnlyScope],
   ])("rejects %j with %s", (text) => {
     expect(discoverExplicitGlossaryCues(text)).toEqual([]);
   });
 
   it("keeps an explicitly personal usage cue eligible", () => {
-    expect(
-      classifyExplicitGlossaryLanguage("I use `ship shape` to mean my complete form."),
-    ).toEqual({
+    expect(classifyExplicitGlossaryLanguage("I use `ship shape` to mean my complete form.")).toEqual({
       term: "ship shape",
       meaning: "my complete form",
     });
@@ -288,70 +192,27 @@ describe("deterministic explicit cue recognition", () => {
   });
 
   it.each([
-    [
-      "Is the following definition correct? `ship shape`: a complete form.",
-      EXPLICIT_GLOSSARY_REASONS.indirectQuestion,
-    ],
-    [
-      "For example, the following term is illustrative. `ship shape`: a complete form.",
-      EXPLICIT_GLOSSARY_REASONS.exampleContext,
-    ],
-    [
-      "The following meaning will apply later. `ship shape`: a complete form.",
-      EXPLICIT_GLOSSARY_REASONS.futureDefinition,
-    ],
-    [
-      "If the following definition applies, continue. `ship shape`: a complete form.",
-      EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
-    ],
-    [
-      "`ship shape`: a complete form. This definition is only an example.",
-      EXPLICIT_GLOSSARY_REASONS.exampleContext,
-    ],
+    ["Is the following definition correct? `ship shape`: a complete form.", EXPLICIT_GLOSSARY_REASONS.indirectQuestion],
+    ["For example, the following term is illustrative. `ship shape`: a complete form.", EXPLICIT_GLOSSARY_REASONS.exampleContext],
+    ["The following meaning will apply later. `ship shape`: a complete form.", EXPLICIT_GLOSSARY_REASONS.futureDefinition],
+    ["If the following definition applies, continue. `ship shape`: a complete form.", EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition],
+    ["`ship shape`: a complete form. This definition is only an example.", EXPLICIT_GLOSSARY_REASONS.exampleContext],
   ])("rejects an adjacent direct qualifier in %j", (text) => {
     expect(discoverExplicitGlossaryCues(text)).toEqual([]);
   });
 
   const directionalQualifiers = [
     ["question", "Is the following definition correct?", "Is this definition correct?"],
-    [
-      "example",
-      "For example, the following term is illustrative.",
-      "For example, this term is illustrative.",
-    ],
+    ["example", "For example, the following term is illustrative.", "For example, this term is illustrative."],
     ["future", "The following meaning will apply later.", "This meaning will apply later."],
-    [
-      "hypothetical",
-      "If the following definition applies, continue.",
-      "If this definition applies, continue.",
-    ],
+    ["hypothetical", "If the following definition applies, continue.", "If this definition applies, continue."],
   ] as const;
 
   const terminalBoundaryCases = [
-    [
-      "question",
-      "Is the following definition correct?",
-      "Is this definition correct?",
-      EXPLICIT_GLOSSARY_REASONS.indirectQuestion,
-    ],
-    [
-      "example",
-      "Is the following definition an example?",
-      "Is this definition an example?",
-      EXPLICIT_GLOSSARY_REASONS.exampleContext,
-    ],
-    [
-      "future",
-      "The following meaning will apply later.",
-      "This meaning will apply later.",
-      EXPLICIT_GLOSSARY_REASONS.futureDefinition,
-    ],
-    [
-      "hypothetical",
-      "If the following definition applies, continue.",
-      "If this definition applies, continue.",
-      EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
-    ],
+    ["question", "Is the following definition correct?", "Is this definition correct?", EXPLICIT_GLOSSARY_REASONS.indirectQuestion],
+    ["example", "Is the following definition an example?", "Is this definition an example?", EXPLICIT_GLOSSARY_REASONS.exampleContext],
+    ["future", "The following meaning will apply later.", "This meaning will apply later.", EXPLICIT_GLOSSARY_REASONS.futureDefinition],
+    ["hypothetical", "If the following definition applies, continue.", "If this definition applies, continue.", EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition],
   ] as const;
   const lineEndings = [
     ["LF", "\n"],
@@ -364,118 +225,62 @@ describe("deterministic explicit cue recognition", () => {
     ["hypothetical", "If alphabet applies, continue."],
   ] as const;
 
-  it.each(
-    lineEndings.flatMap(([ending, eol]) =>
-      terminalBoundaryCases.map(
-        ([qualifier, reference, _thisReference, reason]) =>
-          [ending, qualifier, eol, reference, reason] as const,
-      ),
-    ),
-  )(
-    "ends a same-line meaning before a direct %s %s reference",
-    (_ending, _qualifier, eol, reference, reason) => {
-      const text = [
-        `\`café\`: retained meaning. ${reference}`,
-        "`beta`: excluded meaning.",
-        "`gamma`: unrelated meaning.",
-      ].join(eol);
-      const expected = [
-        exactSourceCue(text, "café", "retained meaning"),
-        exactSourceCue(text, "gamma", "unrelated meaning"),
-      ];
+  it.each(lineEndings.flatMap(([ending, eol]) => terminalBoundaryCases.map(([qualifier, reference, _thisReference, reason]) => [ending, qualifier, eol, reference, reason] as const)))("ends a same-line meaning before a direct %s %s reference", (_ending, _qualifier, eol, reference, reason) => {
+    const text = [`\`café\`: retained meaning. ${reference}`, "`beta`: excluded meaning.", "`gamma`: unrelated meaning."].join(eol);
+    const expected = [exactSourceCue(text, "café", "retained meaning"), exactSourceCue(text, "gamma", "unrelated meaning")];
 
-      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
-      publish([record(`same-line-${_ending}-${_qualifier}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(
-        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
-          term: capsule.term,
-          meaning: capsule.meaning,
-          term_span,
-          meaning_span,
-        })),
-      ).toEqual(expected);
-      expect(
-        result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason]),
-      ).toEqual([["beta", reason]]);
-    },
-  );
+    expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+    publish([record(`same-line-${_ending}-${_qualifier}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(
+      result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+        term: capsule.term,
+        meaning: capsule.meaning,
+        term_span,
+        meaning_span,
+      })),
+    ).toEqual(expected);
+    expect(result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason])).toEqual([["beta", reason]]);
+  });
 
-  it.each(
-    lineEndings.flatMap(([ending, eol]) =>
-      nearMissTerminalCases.map(
-        ([qualifier, nearMiss]) => [ending, qualifier, eol, nearMiss] as const,
-      ),
-    ),
-  )(
-    "terminates before a same-line %s %s near-miss without binding",
-    (_ending, _qualifier, eol, nearMiss) => {
-      const text = [
-        "Préface.",
-        `\`alpha\`: first. ${nearMiss}`,
-        "`beta`: second.",
-        "`gamma`: third.",
-      ].join(eol);
-      const expected = [
-        exactSourceCue(text, "alpha", "first"),
-        exactSourceCue(text, "beta", "second"),
-        exactSourceCue(text, "gamma", "third"),
-      ];
+  it.each(lineEndings.flatMap(([ending, eol]) => nearMissTerminalCases.map(([qualifier, nearMiss]) => [ending, qualifier, eol, nearMiss] as const)))("terminates before a same-line %s %s near-miss without binding", (_ending, _qualifier, eol, nearMiss) => {
+    const text = ["Préface.", `\`alpha\`: first. ${nearMiss}`, "`beta`: second.", "`gamma`: third."].join(eol);
+    const expected = [exactSourceCue(text, "alpha", "first"), exactSourceCue(text, "beta", "second"), exactSourceCue(text, "gamma", "third")];
 
-      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
-      publish([record(`same-line-near-miss-${_ending}-${_qualifier}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(result.abstentions).toEqual([]);
-      expect(
-        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
-          term: capsule.term,
-          meaning: capsule.meaning,
-          term_span,
-          meaning_span,
-        })),
-      ).toEqual(expected);
-    },
-  );
+    expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+    publish([record(`same-line-near-miss-${_ending}-${_qualifier}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.abstentions).toEqual([]);
+    expect(
+      result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+        term: capsule.term,
+        meaning: capsule.meaning,
+        term_span,
+        meaning_span,
+      })),
+    ).toEqual(expected);
+  });
 
-  it.each(
-    lineEndings.flatMap(([ending, eol]) =>
-      terminalBoundaryCases.map(
-        ([qualifier, _followingReference, reference, reason]) =>
-          [ending, qualifier, eol, reference, reason] as const,
-      ),
-    ),
-  )(
-    "ends the target meaning before a reverse direct %s %s reference",
-    (_ending, _qualifier, eol, reference, reason) => {
-      const text = [
-        "`alpha`: unrelated first meaning.",
-        `\`café\`: excluded meaning. ${reference}`,
-        "`gamma`: unrelated last meaning.",
-      ].join(eol);
-      const expected = [
-        exactSourceCue(text, "alpha", "unrelated first meaning"),
-        exactSourceCue(text, "gamma", "unrelated last meaning"),
-      ];
-      const bound = rawCues(text).find((cue) => text.slice(cue.termStart, cue.termEnd) === "café");
+  it.each(lineEndings.flatMap(([ending, eol]) => terminalBoundaryCases.map(([qualifier, _followingReference, reference, reason]) => [ending, qualifier, eol, reference, reason] as const)))("ends the target meaning before a reverse direct %s %s reference", (_ending, _qualifier, eol, reference, reason) => {
+    const text = ["`alpha`: unrelated first meaning.", `\`café\`: excluded meaning. ${reference}`, "`gamma`: unrelated last meaning."].join(eol);
+    const expected = [exactSourceCue(text, "alpha", "unrelated first meaning"), exactSourceCue(text, "gamma", "unrelated last meaning")];
+    const bound = rawCues(text).find((cue) => text.slice(cue.termStart, cue.termEnd) === "café");
 
-      expect(bound?.rejectionReason).toBe(reason);
-      expect(text.slice(bound?.meaningStart, bound?.meaningEnd)).toBe("excluded meaning");
-      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
-      publish([record(`same-line-reverse-${_ending}-${_qualifier}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(
-        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
-          term: capsule.term,
-          meaning: capsule.meaning,
-          term_span,
-          meaning_span,
-        })),
-      ).toEqual(expected);
-      expect(
-        result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason]),
-      ).toEqual([["café", reason]]);
-    },
-  );
+    expect(bound?.rejectionReason).toBe(reason);
+    expect(text.slice(bound?.meaningStart, bound?.meaningEnd)).toBe("excluded meaning");
+    expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+    publish([record(`same-line-reverse-${_ending}-${_qualifier}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(
+      result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+        term: capsule.term,
+        meaning: capsule.meaning,
+        term_span,
+        meaning_span,
+      })),
+    ).toEqual(expected);
+    expect(result.abstentions.map(({ term, reason: actualReason }) => [term, actualReason])).toEqual([["café", reason]]);
+  });
 
   it.each(
     lineEndings.flatMap(([ending, eol]) =>
@@ -486,51 +291,34 @@ describe("deterministic explicit cue recognition", () => {
         ["hypothetical", "If tests pass, deploy."],
       ].map(([qualifier, unrelated]) => [ending, qualifier, eol, unrelated] as const),
     ),
-  )(
-    "does not truncate or bind unrelated same-line %s %s prose",
-    (_ending, _qualifier, eol, unrelated) => {
-      const retained = `retained meaning. ${unrelated.replace(/[.?!]$/u, "")}`;
-      const text = [
-        `\`café\`: retained meaning. ${unrelated}`,
-        "`beta`: adjacent meaning.",
-        "`gamma`: unrelated meaning.",
-      ].join(eol);
-      const expected = [
-        exactSourceCue(text, "beta", "adjacent meaning"),
-        exactSourceCue(text, "café", retained),
-        exactSourceCue(text, "gamma", "unrelated meaning"),
-      ];
+  )("does not truncate or bind unrelated same-line %s %s prose", (_ending, _qualifier, eol, unrelated) => {
+    const retained = `retained meaning. ${unrelated.replace(/[.?!]$/u, "")}`;
+    const text = [`\`café\`: retained meaning. ${unrelated}`, "`beta`: adjacent meaning.", "`gamma`: unrelated meaning."].join(eol);
+    const expected = [exactSourceCue(text, "beta", "adjacent meaning"), exactSourceCue(text, "café", retained), exactSourceCue(text, "gamma", "unrelated meaning")];
 
-      expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
-      publish([record(`same-line-unrelated-${_ending}-${_qualifier}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(result.abstentions).toEqual([]);
-      expect(
-        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
-          term: capsule.term,
-          meaning: capsule.meaning,
-          term_span,
-          meaning_span,
-        })),
-      ).toEqual(expected);
-    },
-  );
+    expect(discoverExplicitGlossaryCues(text)).toEqual(expected);
+    publish([record(`same-line-unrelated-${_ending}-${_qualifier}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.abstentions).toEqual([]);
+    expect(
+      result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+        term: capsule.term,
+        meaning: capsule.meaning,
+        term_span,
+        meaning_span,
+      })),
+    ).toEqual(expected);
+  });
 
-  it.each(directionalQualifiers)(
-    "binds a preceding %s following-reference only to the next cue",
-    (_label, followingReference) => {
-      const text = `\`alpha\`: first meaning.\n${followingReference}\n\`beta\`: second meaning.`;
-      expect(discoverExplicitGlossaryCues(text).map(({ term }) => term)).toEqual(["alpha"]);
-    },
-  );
+  it.each(directionalQualifiers)("binds a preceding %s following-reference only to the next cue", (_label, followingReference) => {
+    const text = `\`alpha\`: first meaning.\n${followingReference}\n\`beta\`: second meaning.`;
+    expect(discoverExplicitGlossaryCues(text).map(({ term }) => term)).toEqual(["alpha"]);
+  });
 
-  it.each(directionalQualifiers)(
-    "binds a following %s this-reference only to the previous cue",
-    (_label, _followingReference, thisReference) => {
-      const text = `\`alpha\`: first meaning.\n${thisReference}\n\`beta\`: second meaning.`;
-      expect(discoverExplicitGlossaryCues(text).map(({ term }) => term)).toEqual(["beta"]);
-    },
-  );
+  it.each(directionalQualifiers)("binds a following %s this-reference only to the previous cue", (_label, _followingReference, thisReference) => {
+    const text = `\`alpha\`: first meaning.\n${thisReference}\n\`beta\`: second meaning.`;
+    expect(discoverExplicitGlossaryCues(text).map(({ term }) => term)).toEqual(["beta"]);
+  });
 
   it.each([
     ["question", "Is the release ready?"],
@@ -550,52 +338,27 @@ describe("deterministic explicit cue recognition", () => {
     expect(discoverExplicitGlossaryCues(text).map(({ term }) => term)).toEqual(expectedTerms);
   });
 
-  it.each([
-    "Is the release ready? `ship shape`: a complete form.",
-    "For example, the release notes changed. `ship shape`: a complete form.",
-    "The deployment rule will change later. `ship shape`: a complete form.",
-    "If tests pass, deploy. `ship shape`: a complete form.",
-  ])("keeps a definition after unrelated adjacent prose %j", (text) => {
-    expect(discoverExplicitGlossaryCues(text)).toEqual([
-      expect.objectContaining({ term: "ship shape", meaning: "a complete form" }),
-    ]);
-  });
+  it.each(["Is the release ready? `ship shape`: a complete form.", "For example, the release notes changed. `ship shape`: a complete form.", "The deployment rule will change later. `ship shape`: a complete form.", "If tests pass, deploy. `ship shape`: a complete form."])(
+    "keeps a definition after unrelated adjacent prose %j",
+    (text) => {
+      expect(discoverExplicitGlossaryCues(text)).toEqual([expect.objectContaining({ term: "ship shape", meaning: "a complete form" })]);
+    },
+  );
 
   it("rejects adjacent project scope while retaining a directly personal definition", () => {
-    expect(
-      discoverExplicitGlossaryCues(
-        'In this repository, the following definition applies. "ship shape" means a project form.',
-      ),
-    ).toEqual([]);
-    expect(
-      discoverExplicitGlossaryCues(
-        '"ship shape" means a complete form. This definition is for the project.',
-      ),
-    ).toEqual([]);
-    expect(
-      classifyExplicitGlossaryLanguage(
-        'I use "ship shape" to mean my complete form. This project has other terms.',
-      ),
-    ).toEqual({ term: "ship shape", meaning: "my complete form" });
+    expect(discoverExplicitGlossaryCues('In this repository, the following definition applies. "ship shape" means a project form.')).toEqual([]);
+    expect(discoverExplicitGlossaryCues('"ship shape" means a complete form. This definition is for the project.')).toEqual([]);
+    expect(classifyExplicitGlossaryLanguage('I use "ship shape" to mean my complete form. This project has other terms.')).toEqual({ term: "ship shape", meaning: "my complete form" });
   });
 
   it("does not let an unrelated retraction suppress a valid definition", () => {
-    for (const text of [
-      '"ship shape" means a complete form. I retract the project plan.',
-      '"ship shape" means a complete form. I retract that unrelated note.',
-    ]) {
-      expect(discoverExplicitGlossaryCues(text)).toEqual([
-        expect.objectContaining({ term: "ship shape", meaning: "a complete form" }),
-      ]);
+    for (const text of ['"ship shape" means a complete form. I retract the project plan.', '"ship shape" means a complete form. I retract that unrelated note.']) {
+      expect(discoverExplicitGlossaryCues(text)).toEqual([expect.objectContaining({ term: "ship shape", meaning: "a complete form" })]);
     }
   });
 
   it("does not treat two meanings for one same-anchor term as one definition", () => {
-    expect(
-      classifyExplicitGlossaryLanguage(
-        '"ship shape" means one form. "ship shape" refers to another form.',
-      ),
-    ).toBeNull();
+    expect(classifyExplicitGlossaryLanguage('"ship shape" means one form. "ship shape" refers to another form.')).toBeNull();
   });
 
   it("mines every eligible same-line segment once in canonical lexical order", () => {
@@ -608,18 +371,10 @@ describe("deterministic explicit cue recognition", () => {
     ]);
     for (const cue of cues) {
       const source = Buffer.from(text, "utf8");
-      expect(source.subarray(cue.term_span.start, cue.term_span.end).toString("utf8")).toBe(
-        cue.term,
-      );
-      expect(source.subarray(cue.meaning_span.start, cue.meaning_span.end).toString("utf8")).toBe(
-        cue.meaning,
-      );
+      expect(source.subarray(cue.term_span.start, cue.term_span.end).toString("utf8")).toBe(cue.term);
+      expect(source.subarray(cue.meaning_span.start, cue.meaning_span.end).toString("utf8")).toBe(cue.meaning);
     }
-    expect(
-      discoverExplicitGlossaryCues("Definition: alpha: one; Definition: beta: two").map(
-        ({ term, meaning }) => [term, meaning],
-      ),
-    ).toEqual([
+    expect(discoverExplicitGlossaryCues("Definition: alpha: one; Definition: beta: two").map(({ term, meaning }) => [term, meaning])).toEqual([
       ["alpha", "one"],
       ["beta", "two"],
     ]);
@@ -627,8 +382,7 @@ describe("deterministic explicit cue recognition", () => {
   });
 
   it("keeps equal identities once, abstains on conflicts, and retains unrelated cues", () => {
-    const text =
-      "`alpha`: one meaning; `Alpha`: one meaning; `beta`: first; `BETA`: second; `gamma`: kept.";
+    const text = "`alpha`: one meaning; `Alpha`: one meaning; `beta`: first; `BETA`: second; `gamma`: kept.";
     expect(discoverExplicitGlossaryCues(text).map(({ term, meaning }) => [term, meaning])).toEqual([
       ["alpha", "one meaning"],
       ["gamma", "kept"],
@@ -636,58 +390,24 @@ describe("deterministic explicit cue recognition", () => {
     publish([record("duplicate-conflict", text)]);
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["alpha", "gamma"]);
-    expect(result.abstentions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.conflictingMeaning }),
-      ]),
-    );
+    expect(result.abstentions).toEqual(expect.arrayContaining([expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.conflictingMeaning })]));
   });
 
   it("binds directional and exact references to one cue without suppressing neighbors", () => {
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Is the following definition an example?\n`beta`: second.\n`gamma`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "gamma"]);
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Is beta correct?\n`beta`: second.\n`gamma`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "gamma"]);
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Is alphabet correct?\n`beta`: second.\n`gamma`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "beta", "gamma"]);
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first; `ALPHA`: second. Is alpha correct?\n`beta`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["beta"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Is the following definition an example?\n`beta`: second.\n`gamma`: third.").map(({ term }) => term)).toEqual(["alpha", "gamma"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Is beta correct?\n`beta`: second.\n`gamma`: third.").map(({ term }) => term)).toEqual(["alpha", "gamma"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Is alphabet correct?\n`beta`: second.\n`gamma`: third.").map(({ term }) => term)).toEqual(["alpha", "beta", "gamma"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first; `ALPHA`: second. Is alpha correct?\n`beta`: third.").map(({ term }) => term)).toEqual(["beta"]);
   });
 
   it("does not bind following, this, or exact references across an intervening sentence", () => {
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Is the following definition an example? Intervening prose. `beta`: second. `gamma`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "beta", "gamma"]);
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Intervening prose. This definition is an example. `beta`: second. `gamma`: third.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "beta", "gamma"]);
-    expect(
-      discoverExplicitGlossaryCues(
-        "`alpha`: first. Intervening prose. Is alpha correct? `beta`: second.",
-      ).map(({ term }) => term),
-    ).toEqual(["alpha", "beta"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Is the following definition an example? Intervening prose. `beta`: second. `gamma`: third.").map(({ term }) => term)).toEqual(["alpha", "beta", "gamma"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Intervening prose. This definition is an example. `beta`: second. `gamma`: third.").map(({ term }) => term)).toEqual(["alpha", "beta", "gamma"]);
+    expect(discoverExplicitGlossaryCues("`alpha`: first. Intervening prose. Is alpha correct? `beta`: second.").map(({ term }) => term)).toEqual(["alpha", "beta"]);
   });
 
   it("keeps an adjacent qualifier out of an approved multiline meaning", () => {
-    const cues = discoverExplicitGlossaryCues(
-      "`alpha`: first meaning.\nIs the following definition an example?\n`beta`: second meaning.",
-    );
+    const cues = discoverExplicitGlossaryCues("`alpha`: first meaning.\nIs the following definition an example?\n`beta`: second meaning.");
     expect(cues).toEqual([expect.objectContaining({ term: "alpha", meaning: "first meaning" })]);
     expect(cues.find(({ term }) => term === "alpha")?.meaning).not.toContain("following");
     expect(cues.find(({ term }) => term === "alpha")?.meaning).not.toContain("example");
@@ -708,91 +428,56 @@ describe("deterministic explicit cue recognition", () => {
   });
 
   it("keeps structural configuration fragments out until the finite prose exit", () => {
-    const text = [
-      "name: configured value",
-      "description: | # `scalar leak` means copied text",
-      "  `nested leak`: copied text",
-      "",
-      "- child:",
-      "  Definition: `marker leak`: copied text",
-      "top-level prose exits the configuration block.",
-      "`valid term`: valid meaning.",
-    ].join("\n");
+    const text = ["name: configured value", "description: | # `scalar leak` means copied text", "  `nested leak`: copied text", "", "- child:", "  Definition: `marker leak`: copied text", "top-level prose exits the configuration block.", "`valid term`: valid meaning."].join("\n");
     const cues = discoverExplicitGlossaryCues(text);
-    expect(cues.map(({ term, meaning }) => [term, meaning])).toEqual([
-      ["valid term", "valid meaning"],
-    ]);
+    expect(cues.map(({ term, meaning }) => [term, meaning])).toEqual([["valid term", "valid meaning"]]);
     expect(JSON.stringify(cues)).not.toContain("leak");
     publish([record("structural", text)]);
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["valid term"]);
-    expect(result.abstentions).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.structuralFragment }),
-      ]),
-    );
-    expect(result.abstentions.every(({ term }) => term === null || term === "valid term")).toBe(
-      true,
-    );
+    expect(result.abstentions).toEqual(expect.arrayContaining([expect.objectContaining({ reason: EXPLICIT_GLOSSARY_REASONS.structuralFragment })]));
+    expect(result.abstentions.every(({ term }) => term === null || term === "valid term")).toBe(true);
   });
 
-  it.each(lineEndings)(
-    "emits every structural phase before a valid post-exit UTF-8 cue with %s",
-    (_ending, eol) => {
-      const text = [
-        "naïve: configured value",
-        "  nested: retained configuration",
-        "top-level prose exits the configuration block.",
-        "`café`: valid meaning.",
-      ].join(eol);
-      const expected = exactSourceCue(text, "café", "valid meaning");
+  it.each(lineEndings)("emits every structural phase before a valid post-exit UTF-8 cue with %s", (_ending, eol) => {
+    const text = ["naïve: configured value", "  nested: retained configuration", "top-level prose exits the configuration block.", "`café`: valid meaning."].join(eol);
+    const expected = exactSourceCue(text, "café", "valid meaning");
 
-      expect(discoverExplicitGlossaryCues(text)).toEqual([expected]);
-      publish([record(`structural-exit-${_ending}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(
-        result.candidates.map(({ capsule, term_span, meaning_span }) => ({
-          term: capsule.term,
-          meaning: capsule.meaning,
-          term_span,
-          meaning_span,
-        })),
-      ).toEqual([expected]);
-      expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-      ]);
-    },
-  );
+    expect(discoverExplicitGlossaryCues(text)).toEqual([expected]);
+    publish([record(`structural-exit-${_ending}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(
+      result.candidates.map(({ capsule, term_span, meaning_span }) => ({
+        term: capsule.term,
+        meaning: capsule.meaning,
+        term_span,
+        meaning_span,
+      })),
+    ).toEqual([expected]);
+    expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+    ]);
+  });
 
-  it.each(lineEndings)(
-    "does not exit structural state through indented prose with %s",
-    (_ending, eol) => {
-      const text = [
-        "naïve: configured value",
-        "  nested: retained configuration",
-        "  indented prose is not an exit",
-        "`blocked`: must not leak.",
-      ].join(eol);
+  it.each(lineEndings)("does not exit structural state through indented prose with %s", (_ending, eol) => {
+    const text = ["naïve: configured value", "  nested: retained configuration", "  indented prose is not an exit", "`blocked`: must not leak."].join(eol);
 
-      expect(discoverExplicitGlossaryCues(text)).toEqual([]);
-      publish([record(`structural-no-exit-${_ending}`, text)]);
-      const result = mineExplicitGlossaryCandidates({ tiersDir });
-      expect(result.candidates).toEqual([]);
-      expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-        [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
-      ]);
-    },
-  );
+    expect(discoverExplicitGlossaryCues(text)).toEqual([]);
+    publish([record(`structural-no-exit-${_ending}`, text)]);
+    const result = mineExplicitGlossaryCandidates({ tiersDir });
+    expect(result.candidates).toEqual([]);
+    expect(result.abstentions.map(({ term, reason }) => [term, reason])).toEqual([
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+      [null, EXPLICIT_GLOSSARY_REASONS.structuralFragment],
+    ]);
+  });
 
   it("applies every inline continuation boundary and the inclusive UTF-8 bound", () => {
-    const positive = discoverExplicitGlossaryCues(
-      "`blank`: first line\nsecond line\n\n`next`: next meaning\nplain exit\n`structural`: structural meaning\nstatus: active\nplain exit\n`comment`: comment meaning\n# comment\nplain exit\n`list`: list meaning\n- other item",
-    );
+    const positive = discoverExplicitGlossaryCues("`blank`: first line\nsecond line\n\n`next`: next meaning\nplain exit\n`structural`: structural meaning\nstatus: active\nplain exit\n`comment`: comment meaning\n# comment\nplain exit\n`list`: list meaning\n- other item");
     expect(positive.map(({ term, meaning }) => [term, meaning])).toEqual([
       ["blank", "first line\nsecond line"],
       ["comment", "comment meaning"],
@@ -800,9 +485,7 @@ describe("deterministic explicit cue recognition", () => {
       ["next", "next meaning\nplain exit"],
       ["structural", "structural meaning"],
     ]);
-    expect(
-      discoverExplicitGlossaryCues(`\`exact\`: ${"m".repeat(4096)}`).map(({ meaning }) => meaning),
-    ).toEqual(["m".repeat(4096)]);
+    expect(discoverExplicitGlossaryCues(`\`exact\`: ${"m".repeat(4096)}`).map(({ meaning }) => meaning)).toEqual(["m".repeat(4096)]);
     expect(discoverExplicitGlossaryCues(`\`over\`: ${"m".repeat(4097)}`)).toEqual([]);
   });
 });
@@ -884,16 +567,11 @@ describe("bounded explicit evidence mining", () => {
     const resultWithGlossary = mineExplicitGlossaryCandidates({ tiersDir });
     expect(resultWithGlossary).toEqual(resultWithoutGlossary);
     expect(JSON.stringify(resultWithGlossary)).not.toContain("glossary.yaml");
-    expect(resultWithGlossary.abstentions[0]?.reason).toBe(
-      EXPLICIT_GLOSSARY_REASONS.projectOnlyScope,
-    );
+    expect(resultWithGlossary.abstentions[0]?.reason).toBe(EXPLICIT_GLOSSARY_REASONS.projectOnlyScope);
   });
 
   it("keeps the existing admission seam from admitting project or agent definitions", () => {
-    publish([
-      record("project-admission", "In this project, `ship shape` means a project form."),
-      record("agent-admission", "`agent term` means agent text.", "decision", "assistant"),
-    ]);
+    publish([record("project-admission", "In this project, `ship shape` means a project form."), record("agent-admission", "`agent term` means agent text.", "decision", "assistant")]);
     const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] });
     expect(result.status).toBe("insufficient");
     expect(result.candidates).toEqual([]);
@@ -918,127 +596,40 @@ describe("bounded explicit evidence mining", () => {
     publish(rejected.map(([id, text]) => record(id, text)));
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates).toEqual([]);
-    expect(new Map(result.abstentions.map(({ source_id, reason }) => [source_id, reason]))).toEqual(
-      new Map(
-        rejected.map(([id]) => [
-          id,
-          id === "bad-acronym"
-            ? EXPLICIT_GLOSSARY_REASONS.unsafeSyntax
-            : EXPLICIT_GLOSSARY_REASONS.structuralFragment,
-        ]),
-      ),
-    );
+    expect(new Map(result.abstentions.map(({ source_id, reason }) => [source_id, reason]))).toEqual(new Map(rejected.map(([id]) => [id, id === "bad-acronym" ? EXPLICIT_GLOSSARY_REASONS.unsafeSyntax : EXPLICIT_GLOSSARY_REASONS.structuralFragment])));
   });
 
   it("reports one stable exclusion reason for each explicit boundary", () => {
     const cases: Array<[string, string, string]> = [
-      [
-        "example",
-        "For example, `example term` means copied text.",
-        EXPLICIT_GLOSSARY_REASONS.exampleContext,
-      ],
-      [
-        "negation",
-        "`negated term` does not mean copied text.",
-        EXPLICIT_GLOSSARY_REASONS.negatedDefinition,
-      ],
-      [
-        "question",
-        "Does `question term` mean copied text?",
-        EXPLICIT_GLOSSARY_REASONS.questionDefinition,
-      ],
-      [
-        "indirect question",
-        "I wonder whether `indirect term` means copied text.",
-        EXPLICIT_GLOSSARY_REASONS.indirectQuestion,
-      ],
-      [
-        "future",
-        "I will use `future term` to mean copied text later.",
-        EXPLICIT_GLOSSARY_REASONS.futureDefinition,
-      ],
-      [
-        "hypothetical",
-        "If `hypothetical term` means copied text, continue.",
-        EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
-      ],
-      [
-        "sarcasm",
-        "Sarcasm: `sarcastic term` means copied text /s",
-        EXPLICIT_GLOSSARY_REASONS.sarcasmMarker,
-      ],
-      [
-        "attribution",
-        "According to Alice, `attributed term` means copied text.",
-        EXPLICIT_GLOSSARY_REASONS.attributedQuotation,
-      ],
-      [
-        "retraction",
-        "`retracted term` means old text. I retract that definition.",
-        EXPLICIT_GLOSSARY_REASONS.retractedDefinition,
-      ],
-      [
-        "project",
-        "In this repository, `project term` means project text.",
-        EXPLICIT_GLOSSARY_REASONS.projectOnlyScope,
-      ],
-      [
-        "adjacent project before",
-        "In this repository, the following definition applies. `before term` means project text.",
-        EXPLICIT_GLOSSARY_REASONS.projectOnlyScope,
-      ],
-      [
-        "adjacent project after",
-        "`after term` means project text. This definition is for the project.",
-        EXPLICIT_GLOSSARY_REASONS.projectOnlyScope,
-      ],
-      [
-        "adjacent question",
-        "Is the following definition correct? `adjacent question term`: copied text.",
-        EXPLICIT_GLOSSARY_REASONS.indirectQuestion,
-      ],
-      [
-        "adjacent example",
-        "For example, the following term is illustrative. `adjacent example term`: copied text.",
-        EXPLICIT_GLOSSARY_REASONS.exampleContext,
-      ],
-      [
-        "adjacent future",
-        "The following meaning will apply later. `adjacent future term`: copied text.",
-        EXPLICIT_GLOSSARY_REASONS.futureDefinition,
-      ],
-      [
-        "adjacent hypothetical",
-        "If the following definition applies, continue. `adjacent hypothetical term`: copied text.",
-        EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition,
-      ],
-      [
-        "uncertain scope",
-        "In this repository, I use `uncertain term` to mean mixed text.",
-        EXPLICIT_GLOSSARY_REASONS.uncertainScope,
-      ],
-      [
-        "malformed",
-        '"malformed term means malformed text.',
-        EXPLICIT_GLOSSARY_REASONS.malformedSpan,
-      ],
+      ["example", "For example, `example term` means copied text.", EXPLICIT_GLOSSARY_REASONS.exampleContext],
+      ["negation", "`negated term` does not mean copied text.", EXPLICIT_GLOSSARY_REASONS.negatedDefinition],
+      ["question", "Does `question term` mean copied text?", EXPLICIT_GLOSSARY_REASONS.questionDefinition],
+      ["indirect question", "I wonder whether `indirect term` means copied text.", EXPLICIT_GLOSSARY_REASONS.indirectQuestion],
+      ["future", "I will use `future term` to mean copied text later.", EXPLICIT_GLOSSARY_REASONS.futureDefinition],
+      ["hypothetical", "If `hypothetical term` means copied text, continue.", EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition],
+      ["sarcasm", "Sarcasm: `sarcastic term` means copied text /s", EXPLICIT_GLOSSARY_REASONS.sarcasmMarker],
+      ["attribution", "According to Alice, `attributed term` means copied text.", EXPLICIT_GLOSSARY_REASONS.attributedQuotation],
+      ["retraction", "`retracted term` means old text. I retract that definition.", EXPLICIT_GLOSSARY_REASONS.retractedDefinition],
+      ["project", "In this repository, `project term` means project text.", EXPLICIT_GLOSSARY_REASONS.projectOnlyScope],
+      ["adjacent project before", "In this repository, the following definition applies. `before term` means project text.", EXPLICIT_GLOSSARY_REASONS.projectOnlyScope],
+      ["adjacent project after", "`after term` means project text. This definition is for the project.", EXPLICIT_GLOSSARY_REASONS.projectOnlyScope],
+      ["adjacent question", "Is the following definition correct? `adjacent question term`: copied text.", EXPLICIT_GLOSSARY_REASONS.indirectQuestion],
+      ["adjacent example", "For example, the following term is illustrative. `adjacent example term`: copied text.", EXPLICIT_GLOSSARY_REASONS.exampleContext],
+      ["adjacent future", "The following meaning will apply later. `adjacent future term`: copied text.", EXPLICIT_GLOSSARY_REASONS.futureDefinition],
+      ["adjacent hypothetical", "If the following definition applies, continue. `adjacent hypothetical term`: copied text.", EXPLICIT_GLOSSARY_REASONS.hypotheticalDefinition],
+      ["uncertain scope", "In this repository, I use `uncertain term` to mean mixed text.", EXPLICIT_GLOSSARY_REASONS.uncertainScope],
+      ["malformed", '"malformed term means malformed text.', EXPLICIT_GLOSSARY_REASONS.malformedSpan],
       ["empty term", '"" means missing term.', EXPLICIT_GLOSSARY_REASONS.emptyTerm],
       ["empty meaning", '"missing meaning" means', EXPLICIT_GLOSSARY_REASONS.emptyMeaning],
     ];
     publish(cases.map(([id, text]) => record(id, text)));
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates).toEqual([]);
-    expect(new Map(result.abstentions.map(({ source_id, reason }) => [source_id, reason]))).toEqual(
-      new Map(cases.map(([id, _text, reason]) => [id, reason])),
-    );
+    expect(new Map(result.abstentions.map(({ source_id, reason }) => [source_id, reason]))).toEqual(new Map(cases.map(([id, _text, reason]) => [id, reason])));
   });
 
   it("handles duplicate cues, conflicts, and deterministic replay order", () => {
-    publish([
-      record("z-definition", '"z term" means z meaning.'),
-      record("a-duplicate", '"same term" means one. "same term" means one.'),
-      record("b-conflict", '"conflict" means one. "conflict" refers to two.'),
-    ]);
+    publish([record("z-definition", '"z term" means z meaning.'), record("a-duplicate", '"same term" means one. "same term" means one.'), record("b-conflict", '"conflict" means one. "conflict" refers to two.')]);
     const first = mineExplicitGlossaryCandidates({ tiersDir });
     const second = mineExplicitGlossaryCandidates({ tiersDir });
     expect(JSON.stringify(second)).toBe(JSON.stringify(first));
@@ -1052,33 +643,15 @@ describe("bounded explicit evidence mining", () => {
   });
 
   it("deduplicates same meanings across anchors and abstains on global conflicts", () => {
-    publish([
-      record("b-same", '"same term" means one form.'),
-      record("a-same", '"same term" means one form.'),
-      record("a-conflict", '"conflict term" means one form.'),
-      record("b-conflict", '"conflict term" means another form.'),
-    ]);
+    publish([record("b-same", '"same term" means one form.'), record("a-same", '"same term" means one form.'), record("a-conflict", '"conflict term" means one form.'), record("b-conflict", '"conflict term" means another form.')]);
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates.map(({ capsule }) => capsule.term)).toEqual(["same term"]);
-    expect(result.candidates[0]?.capsule.evidence).toEqual([
-      { source_id: "a-same", evidence_anchor: "a-same", signal_type: "decision" },
-    ]);
-    expect(
-      result.abstentions.filter(
-        ({ reason }) => reason === EXPLICIT_GLOSSARY_REASONS.conflictingMeaning,
-      ),
-    ).toEqual([
-      expect.objectContaining({ source_id: "a-conflict", term: "conflict term" }),
-      expect.objectContaining({ source_id: "b-conflict", term: "conflict term" }),
-    ]);
+    expect(result.candidates[0]?.capsule.evidence).toEqual([{ source_id: "a-same", evidence_anchor: "a-same", signal_type: "decision" }]);
+    expect(result.abstentions.filter(({ reason }) => reason === EXPLICIT_GLOSSARY_REASONS.conflictingMeaning)).toEqual([expect.objectContaining({ source_id: "a-conflict", term: "conflict term" }), expect.objectContaining({ source_id: "b-conflict", term: "conflict term" })]);
   });
 
   it.each([
-    [
-      "unresolved",
-      (_anchor: string, _directory: string) => null,
-      EXPLICIT_GLOSSARY_REASONS.unresolvedAnchor,
-    ],
+    ["unresolved", (_anchor: string, _directory: string) => null, EXPLICIT_GLOSSARY_REASONS.unresolvedAnchor],
     [
       "stale",
       (anchor: string) => ({
@@ -1104,11 +677,7 @@ describe("bounded explicit evidence mining", () => {
   });
 
   it("reports empty and over-bound spans instead of truncating them", () => {
-    publish([
-      record("empty", "`empty` means ."),
-      record("large-term", `\`${"t".repeat(257)}\` means a meaning.`),
-      record("large-meaning", `\`large meaning\` means ${"m".repeat(4097)}.`),
-    ]);
+    publish([record("empty", "`empty` means ."), record("large-term", `\`${"t".repeat(257)}\` means a meaning.`), record("large-meaning", `\`large meaning\` means ${"m".repeat(4097)}.`)]);
     const result = mineExplicitGlossaryCandidates({ tiersDir });
     expect(result.candidates).toEqual([]);
     expect(result.abstentions.map(({ source_id, reason }) => [source_id, reason])).toEqual([

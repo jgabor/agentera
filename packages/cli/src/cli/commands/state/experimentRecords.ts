@@ -15,24 +15,21 @@ function requestedFormat(argv: string[]): Format {
 function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
   const list = verb === "list";
   const family = entityListFamily("experiments");
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "invalid_request",
-      message,
-      syntax: list
-        ? family.syntax
-        : family.get,
-      example: list
-        ? family.example
-        : "agentera state experiments get --id qjtrmnpvka",
-      recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Use bare ten-letter entity IDs and retry; no state was changed.",
-      valid_values: list
-        ? entityListValidValues(family)
-        : ["get", "--id ID", "--format text|json|yaml"],
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "invalid_request",
+        message,
+        syntax: list ? family.syntax : family.get,
+        example: list ? family.example : "agentera state experiments get --id qjtrmnpvka",
+        recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Use bare ten-letter entity IDs and retry; no state was changed.",
+        valid_values: list ? entityListValidValues(family) : ["get", "--id ID", "--format text|json|yaml"],
+      },
     },
-  }, 2);
+    2,
+  );
 }
 
 function value(argv: string[], index: number, name: string): { value: string; next: number } {
@@ -43,7 +40,17 @@ function value(argv: string[], index: number, name: string): { value: string; ne
   return { value: next, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; objective?: string; id?: string; limit: number; cursor?: string; selector: EntityListSelectorInput } {
+function parse(
+  argv: string[],
+  verb: "list" | "get",
+): {
+  format: Format;
+  objective?: string;
+  id?: string;
+  limit: number;
+  cursor?: string;
+  selector: EntityListSelectorInput;
+} {
   const family = entityListFamily("experiments");
   let format: Format = "json";
   let objective: string | undefined;
@@ -56,7 +63,9 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
     const token = argv[index]!;
     if (verb === "list" && token === "--ids-only") {
       if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
-      selector.idsOnly = true; index += 1; continue;
+      selector.idsOnly = true;
+      index += 1;
+      continue;
     }
     const allowed = verb === "list" ? ["--format", "--objective", "--limit", "--cursor", "--fields"] : ["--format", "--id"];
     const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
@@ -64,8 +73,11 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; objectiv
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
     seen.add(name);
     let parsed: { value: string; next: number };
-    try { parsed = value(argv, index, name); }
-    catch (error) { throw failure((error as Error).message, verb); }
+    try {
+      parsed = value(argv, index, name);
+    } catch (error) {
+      throw failure((error as Error).message, verb);
+    }
     index = parsed.next;
     if (name === "--format") {
       if (parsed.value !== "json") throw failure(`invalid --format '${parsed.value}'`, verb);
@@ -95,24 +107,35 @@ export function runExperimentRecords(argv: string[], io: Io): number {
   if (verb !== "list" && verb !== "get") return emitFailure(failure(`expected 'list' or 'get', received '${verb ?? "nothing"}'`, "list"), format, io);
   try {
     const args = parse(argv.slice(1), verb);
-    const response = verb === "list"
-      ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, { format: args.format, selector: args.selector })
-      : getExperimentEntity(process.cwd(), args.id!);
+    const response =
+      verb === "list"
+        ? listExperimentEntities(process.cwd(), args.objective!, args.limit, args.cursor, {
+            format: args.format,
+            selector: args.selector,
+          })
+        : getExperimentEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     emitStructured(response, "json", output);
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
-    return emitFailure(new StateRetrievalFailure({
-      schemaVersion: "agentera.stateFailure.v1",
-      status: "fail",
-      error: {
-        class: "unsupported_state",
-        message: (error as Error).message,
-        syntax: "agentera state experiments list --objective ID [options] | agentera state experiments get --id ID [--format text|json|yaml]",
-        example: "agentera state experiments list --objective qjtrmnpvka",
-        recovery: "Use supported objective-scoped experiment state and retry; no state was changed.",
-      },
-    }, 1), format, io);
+    return emitFailure(
+      new StateRetrievalFailure(
+        {
+          schemaVersion: "agentera.stateFailure.v1",
+          status: "fail",
+          error: {
+            class: "unsupported_state",
+            message: (error as Error).message,
+            syntax: "agentera state experiments list --objective ID [options] | agentera state experiments get --id ID [--format text|json|yaml]",
+            example: "agentera state experiments list --objective qjtrmnpvka",
+            recovery: "Use supported objective-scoped experiment state and retry; no state was changed.",
+          },
+        },
+        1,
+      ),
+      format,
+      io,
+    );
   }
 }

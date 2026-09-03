@@ -47,10 +47,11 @@ function inProject<T>(project: string, action: () => T): T {
 /** Mandatory read-only checks for an activated v2-to-v3 project. */
 export function verifyOneWayUpgrade(ctx: VerifyContext): OneWayUpgradeVerification {
   const project = resolvePath(expanduser(ctx.project ?? process.cwd()));
-  const cutoverPassed = enforceCompletedEntityCutover(project, "json", {
-    out: () => {},
-    err: () => {},
-  }) === null;
+  const cutoverPassed =
+    enforceCompletedEntityCutover(project, "json", {
+      out: () => {},
+      err: () => {},
+    }) === null;
   let stateValidation: OneWayUpgradeVerification["state_validation"];
   try {
     const state = validateStatePayload(project);
@@ -66,13 +67,19 @@ export function verifyOneWayUpgrade(ctx: VerifyContext): OneWayUpgradeVerificati
   let startupPassed = false;
   if (cutoverPassed) {
     try {
-      startupPassed = inProject(project, () => cmdPrime({
-        context: "status",
-        format: "json",
-        home: resolvePath(expanduser(ctx.home ?? os.homedir())),
-        installRoot: ctx.installRoot ?? null,
-        expectedVersion: ctx.expectedVersion ?? null,
-      }, { out: () => {}, err: () => {} })) === 0;
+      startupPassed =
+        inProject(project, () =>
+          cmdPrime(
+            {
+              context: "status",
+              format: "json",
+              home: resolvePath(expanduser(ctx.home ?? os.homedir())),
+              installRoot: ctx.installRoot ?? null,
+              expectedVersion: ctx.expectedVersion ?? null,
+            },
+            { out: () => {}, err: () => {} },
+          ),
+        ) === 0;
     } catch {
       startupPassed = false;
     }
@@ -145,11 +152,7 @@ export function renderVerifySummary(result: VerifyResult, json: boolean): string
       ) + "\n"
     );
   }
-  const lines = [
-    "Agentera verify",
-    `status: ${result.passed ? "passed" : "failed"}`,
-    "checks:",
-  ];
+  const lines = ["Agentera verify", `status: ${result.passed ? "passed" : "failed"}`, "checks:"];
   for (const check of result.checks) {
     lines.push(`  - ${check.name}: ${check.passed ? "passed" : "failed"}  (${check.detail})`);
   }

@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  classifyStartupEvent,
-  classifyThresholdEvidence,
-  scanRetainedThresholdEvidence,
-  scanThresholdEvidence,
-} from "../../src/state/startupAnalysis.js";
+import { classifyStartupEvent, classifyThresholdEvidence, scanRetainedThresholdEvidence, scanThresholdEvidence } from "../../src/state/startupAnalysis.js";
 
 function corpusFixture(): any {
   return {
@@ -28,8 +23,7 @@ function corpusFixture(): any {
         timestamp: "2026-01-01T00:00:01Z",
         data: {
           actor: "assistant",
-          content:
-            "verbosity mismatch: 600 words exceeds 500 budget in `scripts/agentera` at src/foo.py:42 abstraction creep",
+          content: "verbosity mismatch: 600 words exceeds 500 budget in `scripts/agentera` at src/foo.py:42 abstraction creep",
         },
       },
       {
@@ -66,17 +60,26 @@ describe("classifyStartupEvent", () => {
 
   it("classifies raw artifact access and implementation boundary", () => {
     expect(
-      classifyStartupEvent({ source_kind: "tool_call", data: { tool: "read", arguments: { path: ".agentera/decisions.yaml" } } })[0],
+      classifyStartupEvent({
+        source_kind: "tool_call",
+        data: { tool: "read", arguments: { path: ".agentera/decisions.yaml" } },
+      })[0],
     ).toBe("raw_artifact_access");
     expect(
-      classifyStartupEvent({ source_kind: "tool_call", data: { tool: "apply_patch", arguments: { path: "x.py" } } })[0],
+      classifyStartupEvent({
+        source_kind: "tool_call",
+        data: { tool: "apply_patch", arguments: { path: "x.py" } },
+      })[0],
     ).toBe("implementation_boundary");
     expect(classifyStartupEvent({ source_kind: "conversation_turn" })[0]).toBe("non_state_context");
   });
 
   it("classifies capability prose reads", () => {
     expect(
-      classifyStartupEvent({ source_kind: "tool_call", data: { tool: "read", arguments: { path: "skills/agentera/SKILL.md" } } }),
+      classifyStartupEvent({
+        source_kind: "tool_call",
+        data: { tool: "read", arguments: { path: "skills/agentera/SKILL.md" } },
+      }),
     ).toEqual(["capability_prose_read", "SKILL.md", null, new Set()]);
   });
 });
@@ -129,10 +132,7 @@ describe("scanThresholdEvidence", () => {
 
 describe("scanRetainedThresholdEvidence", () => {
   it("flags a retained plan false-positive signal", () => {
-    const retained = scanRetainedThresholdEvidence(
-      { plan: "[post-audit-flagged] full plan exceeds budget; 600 words exceeds 500 budget" },
-      { salt: "SALT" },
-    );
+    const retained = scanRetainedThresholdEvidence({ plan: "[post-audit-flagged] full plan exceeds budget; 600 words exceeds 500 budget" }, { salt: "SALT" });
     expect(retained.counts.warning_events).toBe(1);
     const event = retained.warning_events[0];
     expect(event.artifact_label).toBe("plan");

@@ -4,12 +4,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryProjectionCandidateInput,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryProjectionCandidateInput } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -43,27 +38,32 @@ function tiersDir(): string {
 
 function publishCurrentTier(seed: string): string {
   const text = `tier generation ${seed}`;
-  return publishEvidenceTiers([{
-    source_id: `tier-source-${seed}`,
-    source_kind: "conversation_turn",
-    timestamp: RETAINED_AT,
-    project_id: "private-tier-project",
-    runtime: "opencode",
-    source_class: "active_runtime",
-    source_product: "opencode",
-    active_runtime: true,
-    adapter_version: ADAPTER_VERSION,
-    data: { actor: "user", signal_type: "decision", text },
-    origin_id: originIdentity(`tier-source-${seed}`),
-    content_fingerprint: contentFingerprint(text),
-    session_id: `tier-session-${seed}`,
-    conversation_key: `tier-session-${seed}`,
-    author_class: "user",
-  }], {
-    tiersDir: tiersDir(),
-    adapterVersion: ADAPTER_VERSION,
-    publishedAt: RETAINED_AT,
-  }).generation;
+  return publishEvidenceTiers(
+    [
+      {
+        source_id: `tier-source-${seed}`,
+        source_kind: "conversation_turn",
+        timestamp: RETAINED_AT,
+        project_id: "private-tier-project",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", signal_type: "decision", text },
+        origin_id: originIdentity(`tier-source-${seed}`),
+        content_fingerprint: contentFingerprint(text),
+        session_id: `tier-session-${seed}`,
+        conversation_key: `tier-session-${seed}`,
+        author_class: "user",
+      },
+    ],
+    {
+      tiersDir: tiersDir(),
+      adapterVersion: ADAPTER_VERSION,
+      publishedAt: RETAINED_AT,
+    },
+  ).generation;
 }
 
 afterEach(() => {
@@ -80,11 +80,13 @@ function explicit(index: number, candidateGeneration = generation, policy = POLI
     meaning: `candidate meaning ${index}`,
     scope: "personal",
     provenance_kind: "personal_explicit_definition",
-    evidence: [{
-      source_id: `source-private-${index}`,
-      evidence_anchor: `anchor-private-${index}`,
-      signal_type: "decision",
-    }],
+    evidence: [
+      {
+        source_id: `source-private-${index}`,
+        evidence_anchor: `anchor-private-${index}`,
+        signal_type: "decision",
+      },
+    ],
     generation: candidateGeneration,
     policy_version: policy,
   });
@@ -134,19 +136,11 @@ function conversation(count = 3, candidateGeneration = generation, policy = POLI
   });
 }
 
-function candidate(
-  capsule: ReturnType<typeof explicit>,
-  projectIds: string[] = ["project-private"],
-  excerpts: string[] = [],
-): PersonalGlossaryProjectionCandidateInput {
+function candidate(capsule: ReturnType<typeof explicit>, projectIds: string[] = ["project-private"], excerpts: string[] = []): PersonalGlossaryProjectionCandidateInput {
   return { capsule, project_ids: projectIds, excerpts };
 }
 
-function persist(
-  candidates: PersonalGlossaryProjectionCandidateInput[],
-  candidateGeneration = generation,
-  policy = POLICY,
-) {
+function persist(candidates: PersonalGlossaryProjectionCandidateInput[], candidateGeneration = generation, policy = POLICY) {
   const projection = projectPersonalGlossaryCandidates({
     generation: candidateGeneration,
     policy_version: policy,
@@ -175,23 +169,7 @@ function run(args: string[]): { rc: number; out: string; err: string } {
 }
 
 function listArgs(cursor?: string, extra: string[] = []): string[] {
-  return [
-    "report",
-    "personal-glossary-candidates",
-    "list",
-    "--source-family",
-    "explicit",
-    "--provenance-kind",
-    "personal_explicit_definition",
-    "--scope",
-    "personal",
-    "--limit",
-    "1",
-    ...extra,
-    ...(cursor ? ["--cursor", cursor] : []),
-    "--format",
-    "json",
-  ];
+  return ["report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_explicit_definition", "--scope", "personal", "--limit", "1", ...extra, ...(cursor ? ["--cursor", cursor] : []), "--format", "json"];
 }
 
 function exactArgs(
@@ -223,9 +201,7 @@ function exactArgs(
 
 describe("agentera report personal-glossary-candidates", () => {
   it("discovers the private read contract through help and schema without requiring project state", () => {
-    expect(printReportHelp()).toContain(
-      "agentera report personal-glossary-candidates list [--source-family explicit|recurring]",
-    );
+    expect(printReportHelp()).toContain("agentera report personal-glossary-candidates list [--source-family explicit|recurring]");
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-candidates", "list"])).toBe(false);
     expect(printReportHelp()).toContain("Safe context becomes unavailable at its 30-day expiry");
     expect((buildSchemaPayload().integration as any).personal_glossary.candidate_retrieval).toEqual({
@@ -238,25 +214,12 @@ describe("agentera report personal-glossary-candidates", () => {
         order: "candidate_id_then_candidate_revision_then_capsule_sha256",
         projection_binding_field: "candidate_projection_sha256",
         source_families: ["explicit", "recurring"],
-        provenance_kinds: [
-          "personal_explicit_definition",
-          "personal_inferred_conversation",
-          "personal_inferred_usage",
-        ],
+        provenance_kinds: ["personal_explicit_definition", "personal_inferred_conversation", "personal_inferred_usage"],
         scopes: ["personal", "ambiguous"],
         cursor: {
-          authority:
-            "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor",
+          authority: "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor",
           vocabulary: "opaque_snapshot_cursor",
-          binding: [
-            "collection",
-            "generation",
-            "policy_version",
-            "filters",
-            "limit",
-            "order",
-            "snapshot",
-          ],
+          binding: ["collection", "generation", "policy_version", "filters", "limit", "order", "snapshot"],
           invalid_behavior: "cursor_invalid",
           unavailable_behavior: "cursor_snapshot_unavailable",
         },
@@ -286,11 +249,7 @@ describe("agentera report personal-glossary-candidates", () => {
   });
 
   it("lists filtered bounded summaries, continuation, coverage, and projection-local abstentions without mutation", () => {
-    persist([
-      candidate(explicit(1), ["project-a"], ["candidate term 001 safe context."]),
-      candidate(explicit(2), ["project-b"]),
-      candidate(recurring(3), ["project-c"]),
-    ]);
+    persist([candidate(explicit(1), ["project-a"], ["candidate term 001 safe context."]), candidate(explicit(2), ["project-b"]), candidate(recurring(3), ["project-c"])]);
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
 
@@ -301,7 +260,7 @@ describe("agentera report personal-glossary-candidates", () => {
       schemaVersion: "agentera.personalGlossaryCandidateRetrieval.v1",
       command: "agentera report personal-glossary-candidates list",
       status: "degraded",
-       generation,
+      generation,
       policy_version: POLICY,
       candidate_projection_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
       counts: { total: 2, candidate: 2, returned: 1, remaining: 1, omitted: 1, continuation: 1 },
@@ -310,15 +269,15 @@ describe("agentera report personal-glossary-candidates", () => {
         provenance_kind: "personal_explicit_definition",
         scope: "personal",
       },
-       summary: {
-         coverage: { status: "complete" },
-         mining: {
-           total_candidate_count: 3,
-           total_abstention_count: 0,
-           explicit: { candidate_count: 2, abstention_count: 0 },
-           recurring: { candidate_count: 1, abstention_count: 0 },
-         },
-         abstentions: {
+      summary: {
+        coverage: { status: "complete" },
+        mining: {
+          total_candidate_count: 3,
+          total_abstention_count: 0,
+          explicit: { candidate_count: 2, abstention_count: 0 },
+          recurring: { candidate_count: 1, abstention_count: 0 },
+        },
+        abstentions: {
           candidate_selection: { count: 0 },
           safe_context: { count: expect.any(Number) },
         },
@@ -329,11 +288,13 @@ describe("agentera report personal-glossary-candidates", () => {
       next_cursor: expect.any(String),
     });
     expect(firstBody.entries).toHaveLength(1);
-    expect(firstBody.entries[0]).toEqual(expect.objectContaining({
-      candidate_id: expect.stringMatching(/^[a-f0-9]{64}$/),
-      candidate_revision: expect.stringMatching(/^[a-f0-9]{64}$/),
-      occurrence_count: 1,
-    }));
+    expect(firstBody.entries[0]).toEqual(
+      expect.objectContaining({
+        candidate_id: expect.stringMatching(/^[a-f0-9]{64}$/),
+        candidate_revision: expect.stringMatching(/^[a-f0-9]{64}$/),
+        occurrence_count: 1,
+      }),
+    );
     expect(first.out).not.toContain("candidate meaning");
     expect(first.out).not.toContain("project-a");
     expect(first.out).not.toContain("source-private");
@@ -350,10 +311,7 @@ describe("agentera report personal-glossary-candidates", () => {
   });
 
   it("derives expiry-aware list and exact safe-context views without mutating the projection", () => {
-    const projection = persist([
-      candidate(explicit(1), ["project-a"], ["candidate term 001 expiry-only safe context"]),
-      candidate(explicit(2), ["project-b"], ["candidate term 002 second safe context"]),
-    ]);
+    const projection = persist([candidate(explicit(1), ["project-a"], ["candidate term 001 expiry-only safe context"]), candidate(explicit(2), ["project-b"], ["candidate term 002 second safe context"])]);
     const pathname = personalGlossaryCandidateProjectionPath();
     const beforeBytes = fs.readFileSync(pathname, "utf8");
     const firstCandidate = projection.candidates[0]!;
@@ -382,18 +340,13 @@ describe("agentera report personal-glossary-candidates", () => {
       const afterListResult = run(listArgs());
       expect(afterListResult).toMatchObject({ rc: 0, err: "" });
       const afterList = JSON.parse(afterListResult.out);
-      expect(afterList.entries[0]).toEqual(
-        expect.objectContaining({ safe_context_available: false }),
-      );
+      expect(afterList.entries[0]).toEqual(expect.objectContaining({ safe_context_available: false }));
       expect(afterList.summary.abstentions.safe_context).toMatchObject({
         available: 0,
         count: 2,
         expired: 2,
       });
-      expect(
-        afterList.summary.abstentions.safe_context.available +
-          afterList.summary.abstentions.safe_context.count,
-      ).toBe(afterList.summary.retained_count);
+      expect(afterList.summary.abstentions.safe_context.available + afterList.summary.abstentions.safe_context.count).toBe(afterList.summary.retained_count);
       expect(afterListResult.out).not.toContain(safeContext.text);
 
       const afterExactResult = run(exactArgs(projection));
@@ -417,15 +370,7 @@ describe("agentera report personal-glossary-candidates", () => {
   it("reports bounded projection-local selection abstentions and coverage instead of reconstructing upstream abstentions", () => {
     persist(Array.from({ length: 51 }, (_, index) => candidate(explicit(index))));
 
-    const result = run([
-      "report",
-      "personal-glossary-candidates",
-      "list",
-      "--limit",
-      "50",
-      "--format",
-      "json",
-    ]);
+    const result = run(["report", "personal-glossary-candidates", "list", "--limit", "50", "--format", "json"]);
 
     expect(result).toMatchObject({ rc: 0, err: "" });
     const body = JSON.parse(result.out);
@@ -452,17 +397,13 @@ describe("agentera report personal-glossary-candidates", () => {
     persist([candidate(explicit(1)), candidate(explicit(2))]);
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
-    const result = run([
-      "report",
-      "personal-glossary-candidates",
-      "list",
-      ...extra,
-      "--format",
-      "json",
-    ]);
+    const result = run(["report", "personal-glossary-candidates", "list", ...extra, "--format", "json"]);
 
     expect(result).toMatchObject({ rc: 2, err: "" });
-    expect(JSON.parse(result.out)).toMatchObject({ status: "fail", error: { class: errorClass } });
+    expect(JSON.parse(result.out)).toMatchObject({
+      status: "fail",
+      error: { class: errorClass },
+    });
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
@@ -471,53 +412,24 @@ describe("agentera report personal-glossary-candidates", () => {
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
     const first = JSON.parse(run(listArgs()).out);
-    const decoded = decodeListCursor(
-      first.next_cursor,
-      personalGlossaryCandidateProjectionPath(),
-      glossaryEntryAuthorityPath(),
-    );
-    const changedOrder = encodeListCursor(
-      { ...decoded, order: "term_asc" },
-      personalGlossaryCandidateProjectionPath(),
-      glossaryEntryAuthorityPath(),
-    );
+    const decoded = decodeListCursor(first.next_cursor, personalGlossaryCandidateProjectionPath(), glossaryEntryAuthorityPath());
+    const changedOrder = encodeListCursor({ ...decoded, order: "term_asc" }, personalGlossaryCandidateProjectionPath(), glossaryEntryAuthorityPath());
     const cases = [
       ["malformed", listArgs("not-a-cursor"), "cursor_invalid"],
-      [
-        "source-family mismatch",
-        [
-          "report", "personal-glossary-candidates", "list", "--source-family", "recurring", "--limit", "1", "--cursor", first.next_cursor, "--format", "json",
-        ],
-        "cursor_invalid",
-      ],
-      [
-        "provenance-kind mismatch",
-        [
-          "report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_inferred_usage", "--scope", "personal", "--limit", "1", "--cursor", first.next_cursor, "--format", "json",
-        ],
-        "cursor_invalid",
-      ],
-      [
-        "scope mismatch",
-        [
-          "report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_explicit_definition", "--scope", "ambiguous", "--limit", "1", "--cursor", first.next_cursor, "--format", "json",
-        ],
-        "cursor_invalid",
-      ],
-      [
-        "limit mismatch",
-        [
-          "report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_explicit_definition", "--scope", "personal", "--limit", "2", "--cursor", first.next_cursor, "--format", "json",
-        ],
-        "cursor_invalid",
-      ],
+      ["source-family mismatch", ["report", "personal-glossary-candidates", "list", "--source-family", "recurring", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"], "cursor_invalid"],
+      ["provenance-kind mismatch", ["report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_inferred_usage", "--scope", "personal", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"], "cursor_invalid"],
+      ["scope mismatch", ["report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_explicit_definition", "--scope", "ambiguous", "--limit", "1", "--cursor", first.next_cursor, "--format", "json"], "cursor_invalid"],
+      ["limit mismatch", ["report", "personal-glossary-candidates", "list", "--source-family", "explicit", "--provenance-kind", "personal_explicit_definition", "--scope", "personal", "--limit", "2", "--cursor", first.next_cursor, "--format", "json"], "cursor_invalid"],
       ["order mismatch", listArgs(changedOrder), "cursor_snapshot_unavailable"],
     ] as const;
 
     for (const [_name, args, errorClass] of cases) {
       const result = run(args);
       expect(result).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(result.out)).toMatchObject({ status: "fail", error: { class: errorClass } });
+      expect(JSON.parse(result.out)).toMatchObject({
+        status: "fail",
+        error: { class: errorClass },
+      });
       expect(result.out).not.toContain("candidate term");
     }
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
@@ -527,10 +439,7 @@ describe("agentera report personal-glossary-candidates", () => {
     persist([candidate(explicit(1)), candidate(explicit(2))]);
     const first = JSON.parse(run(listArgs()).out);
     const nextGeneration = publishCurrentTier("next");
-    const next = persist([
-      candidate(explicit(1, nextGeneration)),
-      candidate(explicit(2, nextGeneration)),
-    ], nextGeneration);
+    const next = persist([candidate(explicit(1, nextGeneration)), candidate(explicit(2, nextGeneration))], nextGeneration);
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
 
@@ -547,10 +456,7 @@ describe("agentera report personal-glossary-candidates", () => {
   it("fails closed when a continuation crosses policy", () => {
     persist([candidate(explicit(1)), candidate(explicit(2))]);
     const first = JSON.parse(run(listArgs()).out);
-    const next = persist([
-      candidate(explicit(1, generation, "agentera.personalGlossaryMiningPolicy.v2")),
-      candidate(explicit(2, generation, "agentera.personalGlossaryMiningPolicy.v2")),
-    ], generation, "agentera.personalGlossaryMiningPolicy.v2");
+    const next = persist([candidate(explicit(1, generation, "agentera.personalGlossaryMiningPolicy.v2")), candidate(explicit(2, generation, "agentera.personalGlossaryMiningPolicy.v2"))], generation, "agentera.personalGlossaryMiningPolicy.v2");
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
 
@@ -565,13 +471,7 @@ describe("agentera report personal-glossary-candidates", () => {
   });
 
   it("returns only opaque validated occurrences and safe context for one current exact binding without mutation", () => {
-    const projection = persist([
-      candidate(
-        conversation(),
-        ["project-private-one", "project-private-two"],
-        ["private conversation term has safe review context."],
-      ),
-    ]);
+    const projection = persist([candidate(conversation(), ["project-private-one", "project-private-two"], ["private conversation term has safe review context."])]);
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
 
@@ -580,7 +480,7 @@ describe("agentera report personal-glossary-candidates", () => {
     const body = JSON.parse(result.out);
     expect(body).toMatchObject({
       status: "ok",
-       generation,
+      generation,
       policy_version: POLICY,
       candidate_projection_sha256: projection.projection_sha256,
       entry: {
@@ -598,27 +498,14 @@ describe("agentera report personal-glossary-candidates", () => {
       signal_type: "correction",
       author_class: "user",
     });
-    for (const leaked of [
-      "source-private",
-      "anchor-private",
-      "session-private",
-      "project-private",
-      "content_fingerprint",
-      "project_keys",
-    ]) {
+    for (const leaked of ["source-private", "anchor-private", "session-private", "project-private", "content_fingerprint", "project_keys"]) {
       expect(result.out).not.toContain(leaked);
     }
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
   it("keeps the exact occurrence and context bounds whole", () => {
-    const projection = persist([
-      candidate(
-        conversation(100),
-        ["project-one", "project-two"],
-        [`private conversation term ${"x".repeat(470)}`],
-      ),
-    ]);
+    const projection = persist([candidate(conversation(100), ["project-one", "project-two"], [`private conversation term ${"x".repeat(470)}`])]);
 
     const result = run(exactArgs(projection));
     expect(result).toMatchObject({ rc: 0, err: "" });
@@ -641,22 +528,23 @@ describe("agentera report personal-glossary-candidates", () => {
     const result = run(exactArgs(projection, overrides));
 
     expect(result).toMatchObject({ rc: code, err: "" });
-    expect(JSON.parse(result.out)).toMatchObject({ status: "fail", error: { class: errorClass } });
+    expect(JSON.parse(result.out)).toMatchObject({
+      status: "fail",
+      error: { class: errorClass },
+    });
     expect(result.out).not.toContain("private conversation term");
     expect(result.out).not.toContain("project-private");
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
   it.each([
-    [
-      "has no readable current tier generation",
-      "current_generation_unavailable",
-      () => fs.rmSync(path.join(tiersDir(), "current.json")),
-    ],
+    ["has no readable current tier generation", "current_generation_unavailable", () => fs.rmSync(path.join(tiersDir(), "current.json"))],
     [
       "has a projection from an older tier generation",
       "projection_stale",
-      () => { publishCurrentTier("stale"); },
+      () => {
+        publishCurrentTier("stale");
+      },
     ],
   ])("rejects list and get before candidate output when it %s", (_name, errorClass, makeUnavailable) => {
     const projection = persist([candidate(conversation())]);
@@ -667,33 +555,24 @@ describe("agentera report personal-glossary-candidates", () => {
     for (const args of [listArgs(), exactArgs(projection)]) {
       const result = run(args);
       expect(result).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(result.out)).toMatchObject({ status: "fail", error: { class: errorClass } });
+      expect(JSON.parse(result.out)).toMatchObject({
+        status: "fail",
+        error: { class: errorClass },
+      });
       expect(result.out).not.toContain("private conversation term");
     }
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
   it("uses JSON stdout and documented exit codes without reading stdin", () => {
-    const missing = run([
-      "report",
-      "personal-glossary-candidates",
-      "list",
-      "--format",
-      "json",
-    ]);
+    const missing = run(["report", "personal-glossary-candidates", "list", "--format", "json"]);
     expect(missing).toMatchObject({ rc: 1, err: "" });
     expect(JSON.parse(missing.out)).toMatchObject({
       status: "fail",
       error: { class: "projection_unavailable" },
     });
 
-    const invalid = run([
-      "report",
-      "personal-glossary-candidates",
-      "list",
-      "--format",
-      "yaml",
-    ]);
+    const invalid = run(["report", "personal-glossary-candidates", "list", "--format", "yaml"]);
     expect(invalid).toMatchObject({ rc: 2, err: "" });
     expect(JSON.parse(invalid.out)).toMatchObject({
       schemaVersion: "agentera.invalidInputEnvelope.v2",

@@ -4,21 +4,11 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  contentFingerprint,
-  originIdentity,
-  ADAPTER_VERSION,
-} from "../../src/analytics/extractCorpus/core.js";
+import { contentFingerprint, originIdentity, ADAPTER_VERSION } from "../../src/analytics/extractCorpus/core.js";
 import { glossaryEvidenceSetDigest } from "../../src/registries/glossaryMiningAuthority.js";
 import { stableGlossaryTermIdentity } from "../../src/registries/glossaryTermIdentity.js";
-import {
-  mineRecurringGlossaryCandidates,
-  RECURRING_REASONS,
-} from "../../src/analytics/personalGlossaryRecurrence.js";
-import {
-  publishEvidenceTiers,
-  resolveEvidenceAnchor,
-} from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { mineRecurringGlossaryCandidates, RECURRING_REASONS } from "../../src/analytics/personalGlossaryRecurrence.js";
+import { publishEvidenceTiers, resolveEvidenceAnchor } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 
 let root: string;
 let tiersDir: string;
@@ -42,20 +32,8 @@ interface RecordOptions {
   authorClass?: "user" | "agent";
 }
 
-function evidenceRecord(
-  sourceId: string,
-  sourceKind: "instruction_document" | "project_config_signal" | "conversation_turn",
-  signalType: "instruction" | "configuration" | "correction" | "decision" | "question",
-  data: Record<string, unknown>,
-  options: RecordOptions = {},
-): Record<string, unknown> {
-  const content = String(
-    data.text ??
-      data.prompt ??
-      data.content ??
-      (data.signals as string[] | undefined)?.join("\n") ??
-      sourceId,
-  );
+function evidenceRecord(sourceId: string, sourceKind: "instruction_document" | "project_config_signal" | "conversation_turn", signalType: "instruction" | "configuration" | "correction" | "decision" | "question", data: Record<string, unknown>, options: RecordOptions = {}): Record<string, unknown> {
+  const content = String(data.text ?? data.prompt ?? data.content ?? (data.signals as string[] | undefined)?.join("\n") ?? sourceId);
   const record: Record<string, unknown> = {
     source_id: sourceId,
     source_kind: sourceKind,
@@ -72,8 +50,7 @@ function evidenceRecord(
     record.origin_id = options.originId ?? originIdentity(options.origin ?? `origin:${sourceId}`);
   }
   if (!options.omitFingerprint) {
-    record.content_fingerprint =
-      options.contentFingerprint ?? options.fingerprint ?? contentFingerprint(content);
+    record.content_fingerprint = options.contentFingerprint ?? options.fingerprint ?? contentFingerprint(content);
   }
   if (sourceKind === "conversation_turn") {
     record.session_id = options.sessionId ?? `session-${sourceId}`;
@@ -115,18 +92,12 @@ function abstentionFor(result: ReturnType<typeof mineRecurringGlossaryCandidates
   return result.abstentions.find((abstention) => abstention.term === term);
 }
 
-function candidateForIdentity(
-  result: ReturnType<typeof mineRecurringGlossaryCandidates>,
-  term: string,
-) {
+function candidateForIdentity(result: ReturnType<typeof mineRecurringGlossaryCandidates>, term: string) {
   const identity = stableGlossaryTermIdentity(term);
   return result.candidates.find((candidate) => candidate.capsule.candidate_id === identity);
 }
 
-function abstentionForIdentity(
-  result: ReturnType<typeof mineRecurringGlossaryCandidates>,
-  term: string,
-) {
+function abstentionForIdentity(result: ReturnType<typeof mineRecurringGlossaryCandidates>, term: string) {
   const identity = stableGlossaryTermIdentity(term);
   return result.abstentions.find((abstention) => abstention.candidate_id === identity);
 }
@@ -145,22 +116,7 @@ function mineLexicalTerms(terms: readonly string[]) {
 
 describe("recurring personal glossary mining", () => {
   it("emits one review candidate with both approved instruction/configuration origins", () => {
-    publish([
-      evidenceRecord(
-        "instruction",
-        "instruction_document",
-        "instruction",
-        { content: "Keep the signal-braid explicit." },
-        { projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "configuration",
-        "project_config_signal",
-        "configuration",
-        { signals: ["signal-braid"] },
-        { projectId: "project-b" },
-      ),
-    ]);
+    publish([evidenceRecord("instruction", "instruction_document", "instruction", { content: "Keep the signal-braid explicit." }, { projectId: "project-a" }), evidenceRecord("configuration", "project_config_signal", "configuration", { signals: ["signal-braid"] }, { projectId: "project-b" })]);
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["signal-braid"] });
     const candidate = requested(result, "signal-braid");
@@ -189,22 +145,7 @@ describe("recurring personal glossary mining", () => {
 
   it("abstains when the instruction/configuration route has copied content", () => {
     const fingerprint = "a".repeat(64);
-    publish([
-      evidenceRecord(
-        "instruction",
-        "instruction_document",
-        "instruction",
-        { content: "Keep signal-braid." },
-        { fingerprint, projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "configuration",
-        "project_config_signal",
-        "configuration",
-        { signals: ["signal-braid"] },
-        { fingerprint, projectId: "project-b" },
-      ),
-    ]);
+    publish([evidenceRecord("instruction", "instruction_document", "instruction", { content: "Keep signal-braid." }, { fingerprint, projectId: "project-a" }), evidenceRecord("configuration", "project_config_signal", "configuration", { signals: ["signal-braid"] }, { fingerprint, projectId: "project-b" })]);
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["signal-braid"] });
     expect(requested(result, "signal-braid")).toBeUndefined();
@@ -217,20 +158,8 @@ describe("recurring personal glossary mining", () => {
 
   it("abstains when distinct records repeat one transported origin", () => {
     publish([
-      evidenceRecord(
-        "instruction-a",
-        "instruction_document",
-        "instruction",
-        { content: "Keep signal-braid." },
-        { origin: "shared-origin", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "instruction-b",
-        "instruction_document",
-        "instruction",
-        { content: "Verify signal-braid." },
-        { origin: "shared-origin", projectId: "project-b" },
-      ),
+      evidenceRecord("instruction-a", "instruction_document", "instruction", { content: "Keep signal-braid." }, { origin: "shared-origin", projectId: "project-a" }),
+      evidenceRecord("instruction-b", "instruction_document", "instruction", { content: "Verify signal-braid." }, { origin: "shared-origin", projectId: "project-b" }),
     ]);
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["signal-braid"] });
@@ -240,27 +169,9 @@ describe("recurring personal glossary mining", () => {
 
   it("abstains from a conversation recurrence confined to one session", () => {
     const records = [
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-one", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-one", projectId: "project-b" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
     publish(records);
 
@@ -275,27 +186,9 @@ describe("recurring personal glossary mining", () => {
 
   it("abstains when conversation evidence does not span two projects", () => {
     const records = [
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-two", projectId: "project-a" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-a" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-two", projectId: "project-a" }),
     ];
     publish(records);
 
@@ -309,27 +202,9 @@ describe("recurring personal glossary mining", () => {
 
   it("does not let agent-only conversation text establish a term", () => {
     publish([
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a", authorClass: "agent" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-b", authorClass: "agent" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-two", projectId: "project-a", authorClass: "agent" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a", authorClass: "agent" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-b", authorClass: "agent" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-two", projectId: "project-a", authorClass: "agent" }),
     ]);
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["orbit"] });
@@ -338,27 +213,9 @@ describe("recurring personal glossary mining", () => {
 
   it("requires enough user-authored support when user and agent records are mixed", () => {
     publish([
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-two", projectId: "project-a", authorClass: "agent" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-two", projectId: "project-a", authorClass: "agent" }),
     ]);
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["orbit"] });
@@ -366,31 +223,14 @@ describe("recurring personal glossary mining", () => {
   });
 
   it("abstains from project-only configuration context without reading project glossary state", () => {
-    publish([
-      evidenceRecord(
-        "config-a",
-        "project_config_signal",
-        "configuration",
-        { signals: ["project-token"] },
-        { projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "config-b",
-        "project_config_signal",
-        "configuration",
-        { signals: ["project-token"] },
-        { projectId: "project-a" },
-      ),
-    ]);
+    publish([evidenceRecord("config-a", "project_config_signal", "configuration", { signals: ["project-token"] }, { projectId: "project-a" }), evidenceRecord("config-b", "project_config_signal", "configuration", { signals: ["project-token"] }, { projectId: "project-a" })]);
     const trap = path.join(root, "project", ".agentera", "glossary.yaml");
     fs.mkdirSync(path.dirname(trap), { recursive: true });
     fs.writeFileSync(trap, "term: must-not-be-read\n", "utf8");
 
     const readFile = vi.spyOn(fs, "readFileSync");
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["project-token"] });
-    const trapReads = readFile.mock.calls.filter(([pathname]) =>
-      String(pathname).endsWith("glossary.yaml"),
-    );
+    const trapReads = readFile.mock.calls.filter(([pathname]) => String(pathname).endsWith("glossary.yaml"));
     readFile.mockRestore();
     expect(result.candidates).toEqual([]);
     expect(abstentionFor(result, "project-token")?.reason).toBe(RECURRING_REASONS.projectOnlyScope);
@@ -401,36 +241,16 @@ describe("recurring personal glossary mining", () => {
 
   it("classifies project-only conversation groups before constructing a candidate", () => {
     const records = [
-      evidenceRecord(
-        "project-turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit project decision", scope: "project" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "project-turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit project question", scope: "project" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "project-turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit project correction", scope: "project" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("project-turn-a", "conversation_turn", "decision", { text: "orbit project decision", scope: "project" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("project-turn-b", "conversation_turn", "question", { text: "orbit project question", scope: "project" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("project-turn-c", "conversation_turn", "correction", { text: "orbit project correction", scope: "project" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
     publish(records);
 
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
       requestedTerms: ["orbit"],
-      conversationEvidence: conversationExpectation(
-        records.map((record) => String(record.source_id)),
-      ),
+      conversationEvidence: conversationExpectation(records.map((record) => String(record.source_id))),
     });
     expect(requested(result, "orbit")).toBeUndefined();
     expect(abstentionFor(result, "orbit")?.reason).toBe(RECURRING_REASONS.projectOnlyScope);
@@ -441,13 +261,7 @@ describe("recurring personal glossary mining", () => {
     ["invalid fingerprint", { contentFingerprint: "not-a-sha256" } as RecordOptions],
   ])("abstains when %s provenance cannot establish independence", (_name, invalidOptions) => {
     publish([
-      evidenceRecord(
-        "instruction",
-        "instruction_document",
-        "instruction",
-        { content: "Keep signal-braid." },
-        invalidOptions,
-      ),
+      evidenceRecord("instruction", "instruction_document", "instruction", { content: "Keep signal-braid." }, invalidOptions),
       evidenceRecord("configuration", "project_config_signal", "configuration", {
         signals: ["signal-braid"],
       }),
@@ -463,36 +277,16 @@ describe("recurring personal glossary mining", () => {
     ["invalid conversation fingerprint", { contentFingerprint: "not-a-sha256" } as RecordOptions],
   ])("abstains from %s before conversation independence counts", (_name, invalidOptions) => {
     const records = [
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        invalidOptions,
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, invalidOptions),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
     publish(records);
 
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
       requestedTerms: ["orbit"],
-      conversationEvidence: conversationExpectation(
-        records.map((record) => String(record.source_id)),
-      ),
+      conversationEvidence: conversationExpectation(records.map((record) => String(record.source_id))),
     });
     expect(requested(result, "orbit")).toBeUndefined();
     expect(abstentionFor(result, "orbit")?.reason).toBe(RECURRING_REASONS.provenanceMissing);
@@ -518,27 +312,9 @@ describe("recurring personal glossary mining", () => {
 
   it("retains the complete generation-bound conversation anchor set", () => {
     const records = [
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
     publish(records);
     const expected = conversationExpectation(["turn-a", "turn-b", "turn-c"]);
@@ -551,11 +327,7 @@ describe("recurring personal glossary mining", () => {
     const candidate = requested(result, "orbit");
     expect(candidate?.capsule.provenance_kind).toBe("personal_inferred_conversation");
     expect(candidate?.capsule.evidence).toHaveLength(3);
-    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual([
-      "turn-a",
-      "turn-b",
-      "turn-c",
-    ]);
+    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual(["turn-a", "turn-b", "turn-c"]);
   });
 
   it("retains valid surplus conversation evidence up to the contract bound", () => {
@@ -576,92 +348,37 @@ describe("recurring personal glossary mining", () => {
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
       requestedTerms: ["orbit"],
-      conversationEvidence: conversationExpectation(
-        records.map((record) => String(record.source_id)),
-      ),
+      conversationEvidence: conversationExpectation(records.map((record) => String(record.source_id))),
     });
     const candidate = requested(result, "orbit");
     expect(candidate?.capsule.evidence).toHaveLength(100);
-    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual(
-      records.map((record) => String(record.source_id)).sort(),
-    );
+    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual(records.map((record) => String(record.source_id)).sort());
   });
 
   it("keeps sufficient user evidence when an agent corroborates it", () => {
     const userRecords = [
-      evidenceRecord(
-        "user-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit user decision" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "user-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit user question" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "user-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit user correction" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("user-a", "conversation_turn", "decision", { text: "orbit user decision" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("user-b", "conversation_turn", "question", { text: "orbit user question" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("user-c", "conversation_turn", "correction", { text: "orbit user correction" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
-    publish([
-      ...userRecords,
-      evidenceRecord(
-        "agent-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit agent corroboration" },
-        { sessionId: "session-two", projectId: "project-b", authorClass: "agent" },
-      ),
-    ]);
+    publish([...userRecords, evidenceRecord("agent-a", "conversation_turn", "decision", { text: "orbit agent corroboration" }, { sessionId: "session-two", projectId: "project-b", authorClass: "agent" })]);
 
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
       requestedTerms: ["orbit"],
-      conversationEvidence: conversationExpectation(
-        userRecords.map((record) => String(record.source_id)),
-      ),
+      conversationEvidence: conversationExpectation(userRecords.map((record) => String(record.source_id))),
     });
     const candidate = requested(result, "orbit");
     expect(candidate?.outcome).toBe("review_required");
-    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual([
-      "user-a",
-      "user-b",
-      "user-c",
-    ]);
+    expect(candidate?.capsule.evidence.map((item) => item.evidence_anchor).sort()).toEqual(["user-a", "user-b", "user-c"]);
     expect(JSON.stringify(candidate)).not.toContain("agent-a");
   });
 
   it("abstains on an invalid generation-bound conversation anchor set", () => {
     const records = [
-      evidenceRecord(
-        "turn-a",
-        "conversation_turn",
-        "decision",
-        { text: "orbit decision one" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
-      evidenceRecord(
-        "turn-b",
-        "conversation_turn",
-        "question",
-        { text: "orbit question two" },
-        { sessionId: "session-two", projectId: "project-b" },
-      ),
-      evidenceRecord(
-        "turn-c",
-        "conversation_turn",
-        "correction",
-        { text: "orbit correction three" },
-        { sessionId: "session-one", projectId: "project-a" },
-      ),
+      evidenceRecord("turn-a", "conversation_turn", "decision", { text: "orbit decision one" }, { sessionId: "session-one", projectId: "project-a" }),
+      evidenceRecord("turn-b", "conversation_turn", "question", { text: "orbit question two" }, { sessionId: "session-two", projectId: "project-b" }),
+      evidenceRecord("turn-c", "conversation_turn", "correction", { text: "orbit correction three" }, { sessionId: "session-one", projectId: "project-a" }),
     ];
     publish(records);
     const expected = conversationExpectation(["turn-a", "turn-b", "turn-c"]);
@@ -674,9 +391,7 @@ describe("recurring personal glossary mining", () => {
       conversationEvidence: expected,
     });
     expect(requested(result, "orbit")).toBeUndefined();
-    expect(abstentionFor(result, "orbit")?.reason).toBe(
-      RECURRING_REASONS.conversationEvidenceIncomplete,
-    );
+    expect(abstentionFor(result, "orbit")?.reason).toBe(RECURRING_REASONS.conversationEvidenceIncomplete);
   });
 
   it("returns a stable bound abstention instead of truncating over-bound conversation evidence", () => {
@@ -697,14 +412,10 @@ describe("recurring personal glossary mining", () => {
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
       requestedTerms: ["orbit"],
-      conversationEvidence: conversationExpectation(
-        records.map((record) => String(record.source_id)),
-      ),
+      conversationEvidence: conversationExpectation(records.map((record) => String(record.source_id))),
     });
     expect(requested(result, "orbit")).toBeUndefined();
-    expect(abstentionFor(result, "orbit")?.reason).toBe(
-      RECURRING_REASONS.conversationEvidenceBoundExceeded,
-    );
+    expect(abstentionFor(result, "orbit")?.reason).toBe(RECURRING_REASONS.conversationEvidenceBoundExceeded);
   });
 
   it("reviews rather than inventing a meaning when scope cues conflict", () => {
@@ -739,57 +450,14 @@ describe("recurring personal glossary mining", () => {
 
     const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["signal-braid"] });
     expect(requested(result, "signal-braid")).toBeUndefined();
-    expect(abstentionFor(result, "signal-braid")?.reason).toBe(
-      RECURRING_REASONS.tooManyQualifyingOrigins,
-    );
+    expect(abstentionFor(result, "signal-braid")?.reason).toBe(RECURRING_REASONS.tooManyQualifyingOrigins);
   });
 
   it.each([
-    [
-      "common grammar and workflow terms",
-      ["the", "when", "configuration", "repository"],
-      ["theory", "whenever", "configuraptor", "repositorycraft"],
-    ],
-    [
-      "routine frequency terms",
-      ["always", "often", "routinely", "usually"],
-      ["alwayson", "oftenware", "routinecraft", "usualist"],
-    ],
-    [
-      "exact known command spellings",
-      [
-        "gitstatus",
-        "git-status",
-        "git_status",
-        "git.status",
-        "git/status",
-        "git\\status",
-        "git status",
-        "GIT-STATUS",
-        "npmtest",
-        "npm-test",
-        "npm_test",
-        "npm.test",
-        "npm/test",
-        "npm\\test",
-        "npm test",
-        "NPM-TEST",
-      ],
-      ["gitstatusline", "npmtester", "legit-status"],
-    ],
-    [
-      "direct and approved derived path spellings",
-      [
-        "/tmp/path",
-        "src/path.ts",
-        "src\\path.ts",
-        "SRC/PATH.TS",
-        "tmp-path",
-        "src_path",
-        "node_modules",
-      ],
-      ["homebrew", "pathfinder", "signal-path"],
-    ],
+    ["common grammar and workflow terms", ["the", "when", "configuration", "repository"], ["theory", "whenever", "configuraptor", "repositorycraft"]],
+    ["routine frequency terms", ["always", "often", "routinely", "usually"], ["alwayson", "oftenware", "routinecraft", "usualist"]],
+    ["exact known command spellings", ["gitstatus", "git-status", "git_status", "git.status", "git/status", "git\\status", "git status", "GIT-STATUS", "npmtest", "npm-test", "npm_test", "npm.test", "npm/test", "npm\\test", "npm test", "NPM-TEST"], ["gitstatusline", "npmtester", "legit-status"]],
+    ["direct and approved derived path spellings", ["/tmp/path", "src/path.ts", "src\\path.ts", "SRC/PATH.TS", "tmp-path", "src_path", "node_modules"], ["homebrew", "pathfinder", "signal-path"]],
   ])("pairs rejected and eligible boundaries for %s", (_className, noiseTerms, eligibleTerms) => {
     const result = mineLexicalTerms([...noiseTerms, ...eligibleTerms]);
 
@@ -798,9 +466,7 @@ describe("recurring personal glossary mining", () => {
       expect(abstentionForIdentity(result, term)?.reason, term).toBe(RECURRING_REASONS.noiseTerm);
     }
     for (const term of eligibleTerms) {
-      expect(candidateForIdentity(result, term)?.reason, term).toBe(
-        RECURRING_REASONS.inferredUsageRequiresReview,
-      );
+      expect(candidateForIdentity(result, term)?.reason, term).toBe(RECURRING_REASONS.inferredUsageRequiresReview);
       expect(abstentionForIdentity(result, term), term).toBeUndefined();
     }
   });
@@ -827,15 +493,11 @@ describe("recurring personal glossary mining", () => {
       expect(abstentionForIdentity(result, term)?.reason, term).toBe(RECURRING_REASONS.noiseTerm);
     }
     for (const term of nearMisses) {
-      expect(candidateForIdentity(result, term)?.reason, term).toBe(
-        RECURRING_REASONS.inferredUsageRequiresReview,
-      );
+      expect(candidateForIdentity(result, term)?.reason, term).toBe(RECURRING_REASONS.inferredUsageRequiresReview);
     }
 
     const unfiltered = mineRecurringGlossaryCandidates({ tiersDir });
-    expect(unfiltered.candidates.map((candidate) => candidate.capsule.term)).not.toContain(
-      "config",
-    );
+    expect(unfiltered.candidates.map((candidate) => candidate.capsule.term)).not.toContain("config");
   });
 
   it("preserves exact precomposed and decomposed terms but rejects a leading combining mark", () => {
@@ -849,25 +511,13 @@ describe("recurring personal glossary mining", () => {
         content: `Keep \`${precomposed}\`, \`${decomposed}\`, \`${leadingMark}\`, \`${decomposedAfterSeparator}\`, and \`${markImmediatelyAfterSeparator}\` personal.`,
       }),
       evidenceRecord("configuration", "project_config_signal", "configuration", {
-        signals: [
-          precomposed,
-          decomposed,
-          leadingMark,
-          decomposedAfterSeparator,
-          markImmediatelyAfterSeparator,
-        ],
+        signals: [precomposed, decomposed, leadingMark, decomposedAfterSeparator, markImmediatelyAfterSeparator],
       }),
     ]);
 
     const result = mineRecurringGlossaryCandidates({
       tiersDir,
-      requestedTerms: [
-        precomposed,
-        decomposed,
-        leadingMark,
-        decomposedAfterSeparator,
-        markImmediatelyAfterSeparator,
-      ],
+      requestedTerms: [precomposed, decomposed, leadingMark, decomposedAfterSeparator, markImmediatelyAfterSeparator],
     });
     const precomposedCandidate = requested(result, precomposed);
     const decomposedCandidate = requested(result, decomposed);
@@ -875,22 +525,14 @@ describe("recurring personal glossary mining", () => {
     expect(decomposedCandidate?.capsule.term).toBe(decomposed);
     expect(precomposedCandidate?.reason).toBe(RECURRING_REASONS.inferredUsageRequiresReview);
     expect(decomposedCandidate?.reason).toBe(RECURRING_REASONS.inferredUsageRequiresReview);
-    expect(precomposedCandidate?.capsule.candidate_id).toBe(
-      stableGlossaryTermIdentity(precomposed),
-    );
+    expect(precomposedCandidate?.capsule.candidate_id).toBe(stableGlossaryTermIdentity(precomposed));
     expect(decomposedCandidate?.capsule.candidate_id).toBe(stableGlossaryTermIdentity(decomposed));
-    expect(precomposedCandidate?.capsule.candidate_id).not.toBe(
-      decomposedCandidate?.capsule.candidate_id,
-    );
+    expect(precomposedCandidate?.capsule.candidate_id).not.toBe(decomposedCandidate?.capsule.candidate_id);
     expect(candidateForIdentity(result, leadingMark)).toBeUndefined();
     expect(abstentionForIdentity(result, leadingMark)?.reason).toBe(RECURRING_REASONS.noiseTerm);
-    expect(requested(result, decomposedAfterSeparator)?.capsule.term).toBe(
-      decomposedAfterSeparator,
-    );
+    expect(requested(result, decomposedAfterSeparator)?.capsule.term).toBe(decomposedAfterSeparator);
     expect(candidateForIdentity(result, markImmediatelyAfterSeparator)).toBeUndefined();
-    expect(abstentionForIdentity(result, markImmediatelyAfterSeparator)?.reason).toBe(
-      RECURRING_REASONS.noiseTerm,
-    );
+    expect(abstentionForIdentity(result, markImmediatelyAfterSeparator)?.reason).toBe(RECURRING_REASONS.noiseTerm);
     expect(result.candidates.map((candidate) => candidate.capsule.term)).not.toContain("argon-λ");
     expect(result.candidates.map((candidate) => candidate.capsule.term)).not.toContain("glyph");
   });
@@ -934,13 +576,10 @@ describe("recurring personal glossary mining", () => {
       }),
     ]);
     const anchors: string[] = [];
-    const result = mineRecurringGlossaryCandidates(
-      { tiersDir, requestedTerms: ["signal-braid"] },
-      (anchor, directory) => {
-        anchors.push(anchor);
-        return resolveEvidenceAnchor(anchor, directory);
-      },
-    );
+    const result = mineRecurringGlossaryCandidates({ tiersDir, requestedTerms: ["signal-braid"] }, (anchor, directory) => {
+      anchors.push(anchor);
+      return resolveEvidenceAnchor(anchor, directory);
+    });
     expect(requested(result, "signal-braid")).toBeDefined();
     expect(anchors.sort()).toEqual(["configuration", "instruction"]);
   });

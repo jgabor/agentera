@@ -7,17 +7,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import {
-  MAJOR_BOUNDARY_ITEM_TAG,
-  STATUS_MANUAL_REVIEW_NEEDED,
-  STATUS_NO_CHANGES_NEEDED,
-  STATUS_READY_TO_APPLY,
-  __resetDistributionMajorWarnedForTests,
-  classifyInstall,
-  cliDistributionMajor,
-  previewCrossMajorGuard,
-  projectInstallTrack,
-} from "../../src/upgrade/compatibility.js";
+import { MAJOR_BOUNDARY_ITEM_TAG, STATUS_MANUAL_REVIEW_NEEDED, STATUS_NO_CHANGES_NEEDED, STATUS_READY_TO_APPLY, __resetDistributionMajorWarnedForTests, classifyInstall, cliDistributionMajor, previewCrossMajorGuard, projectInstallTrack } from "../../src/upgrade/compatibility.js";
 import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
@@ -42,14 +32,8 @@ function managedV2(appHome: string, marker = "2.7.0"): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: marker }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: marker }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 function npxBundleRoot(root: string): void {
@@ -142,10 +126,7 @@ describe("cliDistributionMajor", () => {
   it("returns 3 from package.json when registry.json version is missing", () => {
     const root = path.join(tmp, "v3-pkg-json");
     fs.mkdirSync(root, { recursive: true });
-    fs.writeFileSync(
-      path.join(root, "package.json"),
-      JSON.stringify({ name: "agentera", version: "3.0.0-dev.13" }),
-    );
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "agentera", version: "3.0.0-dev.13" }));
     expect(cliDistributionMajor(root)).toBe(3);
     expect(stderrSpy).not.toHaveBeenCalled();
   });
@@ -154,10 +135,7 @@ describe("cliDistributionMajor", () => {
     const root = path.join(tmp, "corrupted-registry");
     fs.mkdirSync(root, { recursive: true });
     fs.writeFileSync(path.join(root, "registry.json"), "{ corrupted json");
-    fs.writeFileSync(
-      path.join(root, "package.json"),
-      JSON.stringify({ version: "3.1.0" }),
-    );
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ version: "3.1.0" }));
     expect(cliDistributionMajor(root)).toBe(3);
     expect(stderrSpy).not.toHaveBeenCalled();
   });
@@ -174,10 +152,7 @@ describe("cliDistributionMajor", () => {
   it("returns 2 and warns when package.json has no version field", () => {
     const root = path.join(tmp, "pkg-no-version");
     fs.mkdirSync(root, { recursive: true });
-    fs.writeFileSync(
-      path.join(root, "package.json"),
-      JSON.stringify({ name: "some-package" }),
-    );
+    fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "some-package" }));
     expect(cliDistributionMajor(root)).toBe(2);
     expect(stderrSpy).toHaveBeenCalledTimes(1);
   });
@@ -193,10 +168,7 @@ describe("cliDistributionMajor", () => {
   it("returns 2 without warning when registry.json has valid v2 version", () => {
     const root = path.join(tmp, "v2-valid-registry");
     fs.mkdirSync(root, { recursive: true });
-    fs.writeFileSync(
-      path.join(root, "registry.json"),
-      JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }),
-    );
+    fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
     expect(cliDistributionMajor(root)).toBe(2);
     expect(stderrSpy).not.toHaveBeenCalled();
   });

@@ -1,20 +1,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  ARTIFACT_PROTOCOL_PATHS,
-  normalizeArtifactMappingKeys,
-  normalizeArtifactProtocolId,
-} from "../registries/artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_PATHS, normalizeArtifactMappingKeys, normalizeArtifactProtocolId } from "../registries/artifactProtocolIds.js";
 
 /**
  * Shared utilities for compaction retention caps and artifact path resolution.
  */
 
-export {
-  loadYamlMapping,
-  loadYamlMappingFile,
-} from "../core/yaml.js";
+export { loadYamlMapping, loadYamlMappingFile } from "../core/yaml.js";
 
 type Entry = Record<string, unknown>;
 
@@ -22,11 +15,7 @@ export const MAX_FULL_ENTRIES = 10;
 export const MAX_ONELINE_ENTRIES = 40;
 export const MAX_TOTAL_ENTRIES = 50;
 
-export function applyRetentionCaps<T extends Entry>(
-  fullEntries: T[],
-  archiveEntries: T[],
-  opts: { maxFull?: number; maxOneline?: number; maxTotal?: number } = {},
-): T[] {
+export function applyRetentionCaps<T extends Entry>(fullEntries: T[], archiveEntries: T[], opts: { maxFull?: number; maxOneline?: number; maxTotal?: number } = {}): T[] {
   const maxFull = opts.maxFull ?? MAX_FULL_ENTRIES;
   const maxOneline = opts.maxOneline ?? MAX_ONELINE_ENTRIES;
   const maxTotal = opts.maxTotal ?? MAX_TOTAL_ENTRIES;
@@ -93,11 +82,7 @@ export function parseArtifactMapping(docsText: string): Record<string, string> {
   return normalizeArtifactMappingKeys(mapping);
 }
 
-export function resolveArtifactPath(
-  projectRoot: string,
-  artifact: string,
-  overrides: Record<string, string> | null = null,
-): string {
+export function resolveArtifactPath(projectRoot: string, artifact: string, overrides: Record<string, string> | null = null): string {
   const artifactId = normalizeArtifactProtocolId(artifact) ?? artifact;
   if (overrides && artifactId in overrides) {
     return path.join(projectRoot, overrides[artifactId]);

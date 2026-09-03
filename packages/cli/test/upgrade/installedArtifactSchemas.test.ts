@@ -15,35 +15,9 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 
-const SWEDISH_CAPABILITY_VERBS = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
-] as const;
+const SWEDISH_CAPABILITY_VERBS = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera", "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"] as const;
 
-const ENGLISH_CAPABILITY_NAMES = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-] as const;
+const ENGLISH_CAPABILITY_NAMES = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"] as const;
 
 /** v3 BUDGET pins that differ from common v2 bleed-through (defect #12). */
 const V3_BUDGET_LIMITS: Record<string, number | null> = {
@@ -63,23 +37,7 @@ function copyFixture(name: string, dest: string): string {
 function seedV2SkillMd(appBundleRoot: string): void {
   const skillPath = path.join(appBundleRoot, "skills", "agentera", "SKILL.md");
   fs.mkdirSync(path.dirname(skillPath), { recursive: true });
-  fs.writeFileSync(
-    skillPath,
-    [
-      "---",
-      "name: agentera",
-      "capabilities:",
-      "  - planera",
-      "  - inspektera",
-      "---",
-      "",
-      "# hej",
-      "",
-      "Route /agentera planera to the planera capability.",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+  fs.writeFileSync(skillPath, ["---", "name: agentera", "capabilities:", "  - planera", "  - inspektera", "---", "", "# hej", "", "Route /agentera planera to the planera capability.", ""].join("\n"), "utf8");
 }
 
 function walkYamlFiles(dir: string): string[] {
@@ -119,11 +77,7 @@ function swedishProducerConsumerHits(values: string[]): string[] {
   return values.filter((value) => swedish.has(value));
 }
 
-function collectProducerConsumerFieldViolations(
-  value: unknown,
-  relPath: string,
-  keyPath: string,
-): string[] {
+function collectProducerConsumerFieldViolations(value: unknown, relPath: string, keyPath: string): string[] {
   const errors: string[] = [];
   if (value === null || typeof value !== "object") {
     return errors;
@@ -156,13 +110,8 @@ function assertCapabilitySchemaDirsEnglish(skillsRoot: string): void {
     if (!fs.statSync(full).isDirectory()) {
       continue;
     }
-    expect(swedish.has(name), `${name} capability directory must not use a Swedish-era verb`).toBe(
-      false,
-    );
-    expect(
-      english.has(name),
-      `${name} capability directory must use an English canonical name`,
-    ).toBe(true);
+    expect(swedish.has(name), `${name} capability directory must not use a Swedish-era verb`).toBe(false);
+    expect(english.has(name), `${name} capability directory must use an English canonical name`).toBe(true);
   }
 }
 
@@ -195,14 +144,10 @@ function assertArtifactSchemasEnglishAndV3Limits(skillsRoot: string): string[] {
       continue;
     }
     const budget = data.BUDGET as Record<string, Record<string, unknown>> | undefined;
-    const perEntry = budget
-      ? Object.values(budget).find((entry) => entry?.scope === "per_decision_entry")
-      : undefined;
+    const perEntry = budget ? Object.values(budget).find((entry) => entry?.scope === "per_decision_entry") : undefined;
     const maxWords = perEntry?.max_words;
     if (maxWords !== expectedLimit) {
-      errors.push(
-        `${rel}: BUDGET per_decision_entry max_words expected v3 value ${expectedLimit}, got ${String(maxWords)}`,
-      );
+      errors.push(`${rel}: BUDGET per_decision_entry max_words expected v3 value ${expectedLimit}, got ${String(maxWords)}`);
     }
   }
   return errors;
@@ -214,24 +159,17 @@ function assertInstalledArtifactSchemas(root: string): void {
   expect(assertCapabilitySchemasFreeOfSwedishProducerConsumer(skillsRoot)).toEqual([]);
   expect(assertArtifactSchemasEnglishAndV3Limits(skillsRoot)).toEqual([]);
 
-  const records = loadArtifactRegistry(
-    path.join(skillsRoot, "agentera", "schemas", "artifacts"),
-    path.join(root, "references", "artifacts", "artifact-registry-interface-model.yaml"),
-  );
+  const records = loadArtifactRegistry(path.join(skillsRoot, "agentera", "schemas", "artifacts"), path.join(root, "references", "artifacts", "artifact-registry-interface-model.yaml"));
   const swedish = new Set<string>(SWEDISH_CAPABILITY_VERBS);
   for (const record of records.values()) {
     for (const producer of record.producers) {
-      expect(swedish.has(producer), `ArtifactRecord producer '${producer}' must be English`).toBe(
-        false,
-      );
+      expect(swedish.has(producer), `ArtifactRecord producer '${producer}' must be English`).toBe(false);
     }
     for (const consumer of record.consumers) {
       if (consumer === "all_skills") {
         continue;
       }
-      expect(swedish.has(consumer), `ArtifactRecord consumer '${consumer}' must be English`).toBe(
-        false,
-      );
+      expect(swedish.has(consumer), `ArtifactRecord consumer '${consumer}' must be English`).toBe(false);
     }
   }
 }

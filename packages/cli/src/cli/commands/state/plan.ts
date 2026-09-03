@@ -6,13 +6,7 @@ import { out, type Io, type StateArgs } from "./shared.js";
 
 export function queryPlan(args: StateArgs, _schemas: Record<string, SchemaInfo>, io: Io): number {
   const format = args.format ?? "text";
-  const response = currentPlanEntityView(
-    process.cwd(),
-    args.limit ?? undefined,
-    args.cursor ?? undefined,
-    args.status ?? undefined,
-    { format },
-  );
+  const response = currentPlanEntityView(process.cwd(), args.limit ?? undefined, args.cursor ?? undefined, args.status ?? undefined, { format });
   const output = out(io);
   if (format === "text") output(YAML.stringify(response));
   else emitStructured(response, format as "json" | "yaml", output);

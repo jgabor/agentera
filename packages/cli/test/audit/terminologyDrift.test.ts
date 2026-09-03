@@ -5,11 +5,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  assessTerminologyDrift,
-  terminologyProposalDigest,
-  validateTerminologyProposal,
-} from "../../src/audit/terminologyDrift.js";
+import { assessTerminologyDrift, terminologyProposalDigest, validateTerminologyProposal } from "../../src/audit/terminologyDrift.js";
 
 const roots: string[] = [];
 
@@ -27,15 +23,10 @@ function fixture(files: Record<string, string>): string {
 function snapshot(root: string): string {
   const records: string[] = [];
   const visit = (directory: string): void => {
-    for (const entry of fs
-      .readdirSync(directory, { withFileTypes: true })
-      .sort((a, b) => a.name.localeCompare(b.name))) {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const pathname = path.join(directory, entry.name);
       if (entry.isDirectory()) visit(pathname);
-      else
-        records.push(
-          `${path.relative(root, pathname)}:${crypto.createHash("sha256").update(fs.readFileSync(pathname)).digest("hex")}`,
-        );
+      else records.push(`${path.relative(root, pathname)}:${crypto.createHash("sha256").update(fs.readFileSync(pathname)).digest("hex")}`);
     }
   };
   visit(root);
@@ -90,20 +81,8 @@ describe("read-only terminology-drift findings", () => {
       proposal_digest: expect.stringMatching(/^[a-f0-9]{64}$/),
       personal_divergence: { personal_term: "Mapping", project_term: "JsonValue" },
     });
-    expect(findings[0].variants.map((variant) => variant.term)).toEqual([
-      "Dict",
-      "Record<string, any>",
-    ]);
-    expect(
-      findings[0].variants.every((variant) =>
-        variant.evidence.every(
-          (item) =>
-            item.source_path.length > 0 &&
-            item.line === 1 &&
-            /^[a-f0-9]{64}$/.test(item.source_record_sha256),
-        ),
-      ),
-    ).toBe(true);
+    expect(findings[0].variants.map((variant) => variant.term)).toEqual(["Dict", "Record<string, any>"]);
+    expect(findings[0].variants.every((variant) => variant.evidence.every((item) => item.source_path.length > 0 && item.line === 1 && /^[a-f0-9]{64}$/.test(item.source_record_sha256)))).toBe(true);
     expect(snapshot(root)).toBe(before);
     expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
   });
@@ -118,8 +97,14 @@ describe("read-only terminology-drift findings", () => {
         { source_path: "a.ts", line: 1, source_record_sha256: "a".repeat(64) },
       ],
       variants: [
-        { term: "Record", evidence: [{ source_path: "r.ts", line: 3, source_record_sha256: "c".repeat(64) }] },
-        { term: "Dict", evidence: [{ source_path: "d.ts", line: 4, source_record_sha256: "d".repeat(64) }] },
+        {
+          term: "Record",
+          evidence: [{ source_path: "r.ts", line: 3, source_record_sha256: "c".repeat(64) }],
+        },
+        {
+          term: "Dict",
+          evidence: [{ source_path: "d.ts", line: 4, source_record_sha256: "d".repeat(64) }],
+        },
       ],
       severity: "warning",
       confidence: 82,
@@ -131,24 +116,24 @@ describe("read-only terminology-drift findings", () => {
     };
 
     expect(terminologyProposalDigest(base)).toBe(terminologyProposalDigest(reordered));
-    expect(terminologyProposalDigest({ ...base, confidence: 83 })).not.toBe(
-      terminologyProposalDigest(base),
-    );
+    expect(terminologyProposalDigest({ ...base, confidence: 83 })).not.toBe(terminologyProposalDigest(base));
   });
 
   it("shares canonical ranking, evidence identity, and severity validation with publication", () => {
     const root = fixture({ "terms.ts": "export type JsonValue = Dict;\n" });
     const emitted = assessTerminologyDrift({
       projectRoot: root,
-      concepts: [{
-        concept: "structured-value",
-        confidence: 60,
-        severity: "warning",
-        terms: [
-          { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
-          { term: "Dict", evidence: [{ source_path: "terms.ts", line: 1 }] },
-        ],
-      }],
+      concepts: [
+        {
+          concept: "structured-value",
+          confidence: 60,
+          severity: "warning",
+          terms: [
+            { term: "JsonValue", evidence: [{ source_path: "terms.ts", line: 1 }] },
+            { term: "Dict", evidence: [{ source_path: "terms.ts", line: 1 }] },
+          ],
+        },
+      ],
       deliberateDecisionConcepts: new Set(),
       trackedIssueConcepts: new Set(),
     })[0]!;
@@ -157,34 +142,23 @@ describe("read-only terminology-drift findings", () => {
 
     const impossibleSeverity = { ...emitted, severity: "warning" };
     impossibleSeverity.proposal_digest = terminologyProposalDigest(impossibleSeverity);
-    expect(validateTerminologyProposal(impossibleSeverity).violations).toContain(
-      "confidence below 70 requires info severity",
-    );
+    expect(validateTerminologyProposal(impossibleSeverity).violations).toContain("confidence below 70 requires info severity");
 
     const duplicateEvidence = structuredClone(emitted);
     duplicateEvidence.canonical_evidence.push(duplicateEvidence.canonical_evidence[0]!);
     duplicateEvidence.proposal_digest = terminologyProposalDigest(duplicateEvidence);
-    expect(validateTerminologyProposal(duplicateEvidence).violations).toContain(
-      "canonical_evidence identities must be distinct",
-    );
+    expect(validateTerminologyProposal(duplicateEvidence).violations).toContain("canonical_evidence identities must be distinct");
 
     const greekDuplicate = structuredClone(emitted);
     greekDuplicate.proposed_canonical_term = "ΟΣ";
     greekDuplicate.variants[0]!.term = "οσ";
     greekDuplicate.proposal_digest = terminologyProposalDigest(greekDuplicate);
-    expect(validateTerminologyProposal(greekDuplicate).violations).toContain(
-      "proposal term identities must be Unicode caseless-exact unique",
-    );
+    expect(validateTerminologyProposal(greekDuplicate).violations).toContain("proposal term identities must be Unicode caseless-exact unique");
   });
 
   it("filters no-drift, weak, deliberate, tracked, and unsupported evidence without fabricating profile usage or writes", () => {
     const root = fixture({
-      "src/terms.ts": [
-        "export type StableName = string;",
-        "export type WeakAlias = StableName;",
-        "export type DecidedAlias = StableName;",
-        "export type TrackedAlias = StableName;",
-      ].join("\n"),
+      "src/terms.ts": ["export type StableName = string;", "export type WeakAlias = StableName;", "export type DecidedAlias = StableName;", "export type TrackedAlias = StableName;"].join("\n"),
     });
     const before = snapshot(root);
     const terms = (term: string, line: number) => [

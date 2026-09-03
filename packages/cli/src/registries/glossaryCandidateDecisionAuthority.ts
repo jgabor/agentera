@@ -1,9 +1,7 @@
 type Mapping = Record<string, unknown>;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function strings(value: unknown): string[] {
@@ -18,40 +16,23 @@ function nonEmpty(value: unknown): value is string {
   return typeof value === "string" && value.trim().length > 0;
 }
 
-export const GLOSSARY_ADMISSION_OUTCOMES = [
-  "automatic_admission", "review_required", "abstain",
-] as const;
+export const GLOSSARY_ADMISSION_OUTCOMES = ["automatic_admission", "review_required", "abstain"] as const;
 
 export type GlossaryAdmissionOutcome = (typeof GLOSSARY_ADMISSION_OUTCOMES)[number];
 
 export const GLOSSARY_ADMISSION_REASONS_BY_OUTCOME = {
   automatic_admission: ["explicit_current_authorized"],
-  review_required: [
-    "inferred_requires_review",
-    "scope_ambiguous",
-    "classification_inconsistent",
-    "classification_changed",
-    "entry_conflict",
-    "evidence_retracted_or_conflicted",
-    "quality_gate_not_authorizing",
-  ],
+  review_required: ["inferred_requires_review", "scope_ambiguous", "classification_inconsistent", "classification_changed", "entry_conflict", "evidence_retracted_or_conflicted", "quality_gate_not_authorizing"],
   abstain: ["scope_project", "evidence_unavailable", "evidence_changed"],
 } as const;
 
-export const GLOSSARY_ADMISSION_REASONS = [
-  ...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.automatic_admission,
-  ...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.review_required,
-  ...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.abstain,
-] as const;
+export const GLOSSARY_ADMISSION_REASONS = [...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.automatic_admission, ...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.review_required, ...GLOSSARY_ADMISSION_REASONS_BY_OUTCOME.abstain] as const;
 
 export type GlossaryAdmissionReason = (typeof GLOSSARY_ADMISSION_REASONS)[number];
 
 export function hasGlossaryAdmissionReasonCodesByOutcome(value: unknown): boolean {
   const reasonCodes = mapping(value);
-  return reasonCodes !== null
-    && exactStrings(Object.keys(reasonCodes), GLOSSARY_ADMISSION_OUTCOMES)
-    && GLOSSARY_ADMISSION_OUTCOMES.every((outcome) =>
-      exactStrings(reasonCodes[outcome], GLOSSARY_ADMISSION_REASONS_BY_OUTCOME[outcome]));
+  return reasonCodes !== null && exactStrings(Object.keys(reasonCodes), GLOSSARY_ADMISSION_OUTCOMES) && GLOSSARY_ADMISSION_OUTCOMES.every((outcome) => exactStrings(reasonCodes[outcome], GLOSSARY_ADMISSION_REASONS_BY_OUTCOME[outcome]));
 }
 
 /** Validates the CLI admission layer's authority-owned vocabulary and command contract. */
@@ -105,28 +86,11 @@ export function validateGlossaryCandidateDecisionAuthority(authority: Mapping): 
     result?.max_utf8_bytes !== 4096 ||
     !exactStrings(result?.effects, []) ||
     receiptConstruction?.schema_version !== "agentera.personalGlossaryAdmissionRequest.v2" ||
-    !exactStrings(receiptConstruction?.required_fields, [
-      "schema_version",
-      "candidate_id",
-      "candidate_revision",
-      "candidate_capsule_sha256",
-      "candidate_projection_sha256",
-      "generation",
-      "policy_version",
-      "classification",
-    ]) ||
+    !exactStrings(receiptConstruction?.required_fields, ["schema_version", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "generation", "policy_version", "classification"]) ||
     receiptConstruction?.additional_fields !== "forbidden" ||
     receiptConstruction?.max_utf8_bytes !== 16384 ||
     receiptConstructionResult?.schema_version !== "agentera.personalGlossaryAdmissionResult.v2" ||
-    !exactStrings(receiptConstructionResult?.fields, [
-      "schemaVersion",
-      "command",
-      "status",
-      "receipt",
-      "decision",
-      "reason",
-      "effects",
-    ]) ||
+    !exactStrings(receiptConstructionResult?.fields, ["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"]) ||
     !exactStrings(receiptConstructionResult?.statuses, GLOSSARY_ADMISSION_OUTCOMES) ||
     receiptConstructionResult?.max_utf8_bytes !== 16384 ||
     !exactStrings(receiptConstructionResult?.effects, []) ||

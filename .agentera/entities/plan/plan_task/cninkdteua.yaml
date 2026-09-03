@@ -1,0 +1,13 @@
+id: cninkdteua
+artifact: plan
+record:
+  plan: seltbrpsin
+  name: Decompose blocked monoliths and complete formatter normalization
+  status: in_progress
+  depends_on:
+    - gwedzsstko
+  acceptance:
+    - GIVEN the selected formatter output WHEN maintained source is checked THEN all three offending modules remain below the governed line limit without behavior loss.
+    - GIVEN the complete declared surface WHEN formatting validation runs THEN every included file is clean and protected fixtures and generated outputs remain unchanged.
+    - GIVEN behavioral and package verification WHEN the replacement settles THEN no new failure remains beyond independently proven baseline issues.
+    - GIVEN the staged delivery WHEN committed THEN required hooks pass through supported parity ownership and clean/drift regression remains covered.

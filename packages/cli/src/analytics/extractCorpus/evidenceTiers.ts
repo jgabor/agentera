@@ -4,12 +4,7 @@ import path from "node:path";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
 import { writeFileAtomic } from "../../core/atomicWriter.js";
-import {
-  assessProvenance,
-  stableId,
-  defaultProfileDir,
-  type Env,
-} from "./core.js";
+import { assessProvenance, stableId, defaultProfileDir, type Env } from "./core.js";
 import { evidenceTierBounds, loadEvidenceTierContract } from "../../registries/evidenceTierContract.js";
 import type { CorpusEnvelopeCoverage } from "./coverageAudit.js";
 
@@ -32,13 +27,7 @@ export const TIER_SCHEMA_VERSION = "agentera.evidenceTiers.v1";
 export const CURRENT_POINTER_VERSION = "agentera.evidenceTiers.current.v1";
 export const FILESYSTEM_FAMILY = "filesystem";
 
-const SIGNAL_SOURCE_KINDS = new Set([
-  "instruction_document",
-  "project_config_signal",
-  "conversation_turn",
-  "tool_call",
-  "history_prompt",
-]);
+const SIGNAL_SOURCE_KINDS = new Set(["instruction_document", "project_config_signal", "conversation_turn", "tool_call", "history_prompt"]);
 
 const CLASSIFIED_SIGNAL_TYPES = new Set(["decision", "question", "correction"]);
 
@@ -250,7 +239,13 @@ export function shardFullEvidence(
   records: JsonObject[],
   shardByteCap: number,
   productFamily: Map<string, string>,
-): Array<{ family: string; index: number; records: JsonObject[]; sourceIds: string[]; bytes: number }> {
+): Array<{
+  family: string;
+  index: number;
+  records: JsonObject[];
+  sourceIds: string[];
+  bytes: number;
+}> {
   const byFamily = new Map<string, JsonObject[]>();
   for (const r of records) {
     const family = familyOf(r, productFamily);
@@ -258,7 +253,13 @@ export function shardFullEvidence(
     list.push(r);
     byFamily.set(family, list);
   }
-  const shards: Array<{ family: string; index: number; records: JsonObject[]; sourceIds: string[]; bytes: number }> = [];
+  const shards: Array<{
+    family: string;
+    index: number;
+    records: JsonObject[];
+    sourceIds: string[];
+    bytes: number;
+  }> = [];
   for (const family of [...byFamily.keys()].sort()) {
     const familyRecords = byFamily.get(family)!.slice().sort(tierSortKey);
     let current: JsonObject[] = [];
@@ -268,7 +269,13 @@ export function shardFullEvidence(
     const flush = (): void => {
       if (current.length === 0) return;
       const encoded = encodeSorted({ records: current });
-      shards.push({ family, index, records: current, sourceIds: currentIds, bytes: byteSize(encoded) });
+      shards.push({
+        family,
+        index,
+        records: current,
+        sourceIds: currentIds,
+        bytes: byteSize(encoded),
+      });
       current = [];
       currentIds = [];
       currentBytes = 0;
@@ -298,7 +305,10 @@ export function shardFullEvidence(
  * each family's share of the total (minimum one per family), keeps the most
  * recent within each family, and reassembles in the stable tier order.
  */
-export function selectSignalsForBound(signals: SignalRecord[], signalByteCap: number): {
+export function selectSignalsForBound(
+  signals: SignalRecord[],
+  signalByteCap: number,
+): {
   records: SignalRecord[];
   selection: SignalSelectionReport;
 } {
@@ -313,7 +323,11 @@ export function selectSignalsForBound(signals: SignalRecord[], signalByteCap: nu
   }
   const familyReport: SignalSelectionReport["per_family"] = [];
   for (const family of [...perFamily.keys()].sort()) {
-    familyReport.push({ family, total: perFamily.get(family)!.length, retained: perFamily.get(family)!.length });
+    familyReport.push({
+      family,
+      total: perFamily.get(family)!.length,
+      retained: perFamily.get(family)!.length,
+    });
   }
   if (totalBytes <= signalByteCap) {
     const selection: SignalSelectionReport = {
@@ -336,7 +350,11 @@ export function selectSignalsForBound(signals: SignalRecord[], signalByteCap: nu
   for (const family of families) {
     const list = perFamily.get(family)!;
     const quota = Math.max(1, Math.floor((recordBudget * list.length) / Math.max(totalFamilyRecords, 1)));
-    updatedFamilyReport.push({ family, total: list.length, retained: Math.min(quota, list.length) });
+    updatedFamilyReport.push({
+      family,
+      total: list.length,
+      retained: Math.min(quota, list.length),
+    });
     // Most recent first: timestamp desc, then source_id asc.
     const kept = list
       .slice()
@@ -349,9 +367,7 @@ export function selectSignalsForBound(signals: SignalRecord[], signalByteCap: nu
   // across families until the budget is reached without exceeding the cap.
   if (allocated < recordBudget) {
     const have = new Set(retained.map((s) => s.source_id));
-    const pool = sorted
-      .filter((s) => !have.has(s.source_id))
-      .sort((a, b) => (a.timestamp !== b.timestamp ? (a.timestamp < b.timestamp ? 1 : -1) : a.source_id < b.source_id ? -1 : 1));
+    const pool = sorted.filter((s) => !have.has(s.source_id)).sort((a, b) => (a.timestamp !== b.timestamp ? (a.timestamp < b.timestamp ? 1 : -1) : a.source_id < b.source_id ? -1 : 1));
     for (const s of pool) {
       const candidate = encodeSorted({ records: [...retained, s] });
       if (byteSize(candidate) > signalByteCap) break;
@@ -375,12 +391,7 @@ export function selectSignalsForBound(signals: SignalRecord[], signalByteCap: nu
 }
 
 /** Deterministic, content-addressable generation identity. */
-export function generationId(
-  fullRecords: JsonObject[],
-  adapterVersion: string,
-  shardByteCap: number,
-  signalByteCap: number,
-): string {
+export function generationId(fullRecords: JsonObject[], adapterVersion: string, shardByteCap: number, signalByteCap: number): string {
   const ids = fullRecords
     .map((r) => asStringField(r, "source_id"))
     .filter((id) => id)
@@ -412,7 +423,10 @@ function coverageFromStatuses(runtimeStatuses: JsonObject[] | undefined): Eviden
       if (isActiveRuntime) selected.push(product);
     }
     if (GAP.has(status)) {
-      const entry: { runtime: string | null; reason: string; store_path?: string } = { runtime, reason: reason || status };
+      const entry: { runtime: string | null; reason: string; store_path?: string } = {
+        runtime,
+        reason: reason || status,
+      };
       if (Array.isArray(s.provenance_missing_fields) && s.provenance_missing_fields.length > 0) {
         entry.reason += ` (missing provenance: ${s.provenance_missing_fields.join(",")})`;
       }
@@ -420,7 +434,12 @@ function coverageFromStatuses(runtimeStatuses: JsonObject[] | undefined): Eviden
       skipped.push(entry);
     }
   }
-  return { families: [...families].sort(), available: [...available].sort(), selected: [...selected].sort(), skipped };
+  return {
+    families: [...families].sort(),
+    available: [...available].sort(),
+    selected: [...selected].sort(),
+    skipped,
+  };
 }
 
 /**
@@ -429,11 +448,7 @@ function coverageFromStatuses(runtimeStatuses: JsonObject[] | undefined): Eviden
  * swap of the `current` pointer, so no consumer can observe a partially
  * published generation. Returns the publication result.
  */
-export function publishEvidenceTiers(
-  records: JsonObject[],
-  opts: PublishEvidenceTiersOpts,
-  contractPath?: string,
-): PublicationResult {
+export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenceTiersOpts, contractPath?: string): PublicationResult {
   const bounds = evidenceTierBounds(contractPath);
   const productFamily = productFamilyIndex(contractPath);
   const sortedRecords = records.slice().sort(tierSortKey);
@@ -509,7 +524,12 @@ export function publishEvidenceTiers(
     total_records: sortedRecords.length,
     families: familiesAgg,
     shards: shardDescriptors,
-    signal: { path: signalRel, record_count: selectedSignals.length, bytes: signalBytes, selection },
+    signal: {
+      path: signalRel,
+      record_count: selectedSignals.length,
+      bytes: signalBytes,
+      selection,
+    },
     coverage: coverageFromStatuses(runtimeStatuses),
     corpus_metadata: opts.corpusMetadata,
   };
@@ -613,14 +633,7 @@ function isEvidenceTierManifest(value: unknown): value is EvidenceTierManifest {
   ) {
     return false;
   }
-  return value.shards.every(
-    (shard) =>
-      isMapping(shard) &&
-      typeof shard.path === "string" &&
-      typeof shard.bytes === "number" &&
-      Array.isArray(shard.source_ids) &&
-      shard.source_ids.every((sourceId) => typeof sourceId === "string"),
-  );
+  return value.shards.every((shard) => isMapping(shard) && typeof shard.path === "string" && typeof shard.bytes === "number" && Array.isArray(shard.source_ids) && shard.source_ids.every((sourceId) => typeof sourceId === "string"));
 }
 
 function lowerSha256(value: unknown): boolean {
@@ -665,9 +678,7 @@ function signalProvenanceGaps(records: SignalRecord[]): string[] {
   return [...gaps].sort();
 }
 
-function readSignalPayload(
-  gen: GenerationDir,
-): { records: SignalRecord[]; bytes: number } | null {
+function readSignalPayload(gen: GenerationDir): { records: SignalRecord[]; bytes: number } | null {
   const signalPath = path.join(gen.dir, gen.manifest.signal.path);
   if (!fs.existsSync(signalPath)) return null;
   try {
@@ -698,10 +709,7 @@ export function readCurrentGeneration(tiersDir: string): GenerationDir | null {
 }
 
 /** Read the bounded signal tier records for the current generation. */
-export function readSignalTier(
-  tiersDir: string,
-  options: { allowProvenanceGaps?: boolean } = {},
-): { records: SignalRecord[]; bytes: number; manifest: EvidenceTierManifest } | null {
+export function readSignalTier(tiersDir: string, options: { allowProvenanceGaps?: boolean } = {}): { records: SignalRecord[]; bytes: number; manifest: EvidenceTierManifest } | null {
   const gen = readCurrentGeneration(tiersDir);
   if (!gen) return null;
   const payload = readSignalPayload(gen);
@@ -778,10 +786,7 @@ export function evidenceTierCompatibility(tiersDir: string, corpusPath?: string)
       return { state: "oversized", reason: "oversized", artifact: shard.path };
     }
   }
-  if (
-    gen.manifest.signal.bytes > gen.manifest.bounds.signal_byte_cap ||
-    gen.manifest.signal.bytes > evidenceTierBounds().signalByteCap
-  ) {
+  if (gen.manifest.signal.bytes > gen.manifest.bounds.signal_byte_cap || gen.manifest.signal.bytes > evidenceTierBounds().signalByteCap) {
     return { state: "oversized", reason: "oversized", artifact: gen.manifest.signal.path };
   }
   let signalPayload: { records: SignalRecord[]; bytes: number } | null;

@@ -4,10 +4,7 @@ import { spawnSync } from "node:child_process";
 
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import {
-  stateDurabilityContract,
-  type StateDurabilityContract,
-} from "./archiveDiscovery.js";
+import { stateDurabilityContract, type StateDurabilityContract } from "./archiveDiscovery.js";
 import { canonicalEntityEnvelope, discoverEntities, entityBoundariesForArtifact } from "./entityStorage.js";
 import { validateRealProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
@@ -148,9 +145,7 @@ function defaultGitRunner(args: string[], cwd: string): GitCommandResult {
     status: result.status,
     stdout: typeof result.stdout === "string" ? result.stdout : "",
     timedOut: (result.error as NodeJS.ErrnoException | undefined)?.code === "ETIMEDOUT" || result.signal === "SIGTERM",
-    ...((result.error as NodeJS.ErrnoException | undefined)?.code
-      ? { error: (result.error as NodeJS.ErrnoException).code }
-      : {}),
+    ...((result.error as NodeJS.ErrnoException | undefined)?.code ? { error: (result.error as NodeJS.ErrnoException).code } : {}),
   };
 }
 
@@ -164,11 +159,7 @@ function probeFailure(result: GitCommandResult, fallback: string): string {
   return fallback;
 }
 
-function commandOutput(
-  run: GitCommandRunner,
-  args: string[],
-  cwd: string,
-): { value?: string; reason: string } {
+function commandOutput(run: GitCommandRunner, args: string[], cwd: string): { value?: string; reason: string } {
   const result = run(args, cwd);
   if (successful(result) && result.stdout.trim()) return { value: result.stdout.trim(), reason: "available" };
   return { reason: probeFailure(result, "git_probe_error") };
@@ -244,10 +235,7 @@ function gitRelativePath(target: string, root: string): string | undefined {
 
 function statusForPath(context: GitContext, relative: string): string | undefined {
   if (!context.root) return undefined;
-  const result = context.run(
-    ["status", "--porcelain=v1", "--untracked-files=all", "--", relative],
-    context.root,
-  );
+  const result = context.run(["status", "--porcelain=v1", "--untracked-files=all", "--", relative], context.root);
   return successful(result) ? result.stdout.trim() : undefined;
 }
 
@@ -257,17 +245,9 @@ function blobAtHead(context: GitContext, relative: string, head: string): string
   return successful(result) ? result.stdout : undefined;
 }
 
-function historyWasRewritten(
-  context: GitContext,
-  relative: string,
-  bytes: string,
-  head: string,
-): boolean {
+function historyWasRewritten(context: GitContext, relative: string, bytes: string, head: string): boolean {
   if (!context.root) return false;
-  const reflog = context.run(
-    ["reflog", "show", `--format=%H%x09%gs`, "--max-count", REFLOG_LIMIT, "HEAD"],
-    context.root,
-  );
+  const reflog = context.run(["reflog", "show", `--format=%H%x09%gs`, "--max-count", REFLOG_LIMIT, "HEAD"], context.root);
   if (!successful(reflog)) return false;
   for (const line of reflog.stdout.split(/\r?\n/)) {
     const match = /^([0-9a-f]{40})\t/.exec(line);
@@ -287,12 +267,7 @@ function entryStatus(local: LocalDurabilityStatus, git: GitEvidence): Durability
   return "degraded";
 }
 
-function buildGitEvidence(
-  candidate: Candidate,
-  context: GitContext,
-  afterHead: string | undefined,
-  headChanged: boolean,
-): GitEvidence {
+function buildGitEvidence(candidate: Candidate, context: GitContext, afterHead: string | undefined, headChanged: boolean): GitEvidence {
   if (!context.available) {
     return { status: "unavailable", reason: context.reason, reachableRecovery: false };
   }
@@ -322,27 +297,25 @@ function buildGitEvidence(
     return { status: "verified", reason: "reachable_head", reachableRecovery: true };
   }
   if (candidate.local === "corrupt") {
-    return { status: "unavailable", reason: reachable ? "committed_content_mismatch" : "not_committed", reachableRecovery: reachable };
+    return {
+      status: "unavailable",
+      reason: reachable ? "committed_content_mismatch" : "not_committed",
+      reachableRecovery: reachable,
+    };
   }
-  if (
-    candidate.bytes !== undefined &&
-    historyWasRewritten(context, relative, candidate.bytes, context.before)
-  ) {
+  if (candidate.bytes !== undefined && historyWasRewritten(context, relative, candidate.bytes, context.before)) {
     return { status: "degraded", reason: "history_rewritten", reachableRecovery: false };
   }
   if (context.shallow) return { status: "degraded", reason: "shallow_history", reachableRecovery: reachable };
   if (workingTreeStatus !== "") return { status: "degraded", reason: "dirty_archive", reachableRecovery: reachable };
-  return { status: "unavailable", reason: reachable ? "committed_content_mismatch" : "not_committed", reachableRecovery: reachable };
+  return {
+    status: "unavailable",
+    reason: reachable ? "committed_content_mismatch" : "not_committed",
+    reachableRecovery: reachable,
+  };
 }
 
-function inspectEntityDurability(
-  projectRoot: string,
-  artifact: string,
-  id: string,
-  contract: StateDurabilityContract,
-  run: GitCommandRunner,
-  sourceRoot: string,
-): DurabilityResponse {
+function inspectEntityDurability(projectRoot: string, artifact: string, id: string, contract: StateDurabilityContract, run: GitCommandRunner, sourceRoot: string): DurabilityResponse {
   const entityCommand = "agentera check durability --project PATH --artifact ARTIFACT --id ID";
   const git = gitContext(projectRoot, run);
   const discovery = discoverEntities(projectRoot, sourceRoot);
@@ -354,19 +327,17 @@ function inspectEntityDurability(
   let local: LocalDurabilityStatus = canonical ? "verified" : matches.length ? "corrupt" : "unavailable";
   let bytes: string | undefined;
   let localMessage: string | undefined;
-  const sourceBoundMalformed = matches.length === 1
-    && matches[0].classification === "malformed"
-    && (matches[0].migrationProvenance !== null || matches[0].record?.migration_provenance !== undefined)
-    ? matches[0]
-    : undefined;
+  const sourceBoundMalformed = matches.length === 1 && matches[0].classification === "malformed" && (matches[0].migrationProvenance !== null || matches[0].record?.migration_provenance !== undefined) ? matches[0] : undefined;
   const readableMatch = canonical ?? sourceBoundMalformed;
   if (readableMatch) {
     try {
       const snapshot = readProjectFileSnapshot(validateRealProjectRoot(projectRoot), readableMatch.relativePath);
       if (snapshot.kind === "file") bytes = snapshot.bytes.toString("utf8");
       else throw new Error(snapshot.kind === "missing" ? "entity disappeared" : `unsafe entity path (${snapshot.reason})`);
+    } catch (error) {
+      local = "corrupt";
+      localMessage = `cannot read canonical entity: ${(error as Error).message}`;
     }
-    catch (error) { local = "corrupt"; localMessage = `cannot read canonical entity: ${(error as Error).message}`; }
   }
   if (matches.length > 1) localMessage = `entity ID '${id}' has conflicting ownership for artifact '${artifact}'`;
   else if (!canonical && matches.length === 1 && !localMessage) localMessage = `entity '${matches[0].relativePath}' is not canonical`;
@@ -387,18 +358,25 @@ function inspectEntityDurability(
           readSource: (sourcePath) => blobAtHead(git, `${projectPrefix ? `${projectPrefix}/` : ""}${sourcePath}`, git.before!),
         });
         valid.push(relative);
+      } catch {
+        invalid += 1;
       }
-      catch { invalid += 1; }
     }
     if (valid.length === 1 && invalid === 0) committedPath = path.join(git.root, ...valid[0].split("/"));
     else if (valid.length > 1) committedFailure = "committed_entity_conflict";
     else if (invalid > 0) committedFailure = "committed_entity_invalid";
   }
   const target = canonical?.path ?? matches[0]?.path ?? committedPath ?? [...targetPaths][0] ?? path.join(projectRoot, ".agentera", "entities", artifact, `${id}.yaml`);
-  const candidate: Candidate = { path: target, stableId: id, artifactId: artifact, entryNumber: 0, local, ...(bytes !== undefined ? { bytes } : {}), ...(localMessage ? { localMessage } : {}) };
-  let evidence = committedFailure
-    ? { status: "unavailable" as const, reason: committedFailure, reachableRecovery: false }
-    : buildGitEvidence(candidate, git, git.before, false);
+  const candidate: Candidate = {
+    path: target,
+    stableId: id,
+    artifactId: artifact,
+    entryNumber: 0,
+    local,
+    ...(bytes !== undefined ? { bytes } : {}),
+    ...(localMessage ? { localMessage } : {}),
+  };
+  let evidence = committedFailure ? { status: "unavailable" as const, reason: committedFailure, reachableRecovery: false } : buildGitEvidence(candidate, git, git.before, false);
   const ending = git.available && git.root ? readHead(run, git.root) : undefined;
   const after = ending?.value;
   const changed = Boolean(git.before && after && git.before !== after);
@@ -407,27 +385,68 @@ function inspectEntityDurability(
   const status = entryStatus(local, evidence);
   const get = artifact === "plan" ? `agentera state plan get --id ${id}` : `agentera state ${artifact} get --id ${id}`;
   const diagnostics: DurabilityResponse["diagnostics"] = [];
-  if (local !== "verified") diagnostics.push({ class: local === "corrupt" ? "canonical_entity_corrupt" : "canonical_entity_missing", message: localMessage ?? `canonical ${artifact} entity '${id}' was not found`, recovery: `Run agentera check validate state, then recover exact detail with '${get}'; no state was changed.` });
-  if (evidence.status !== "verified") diagnostics.push({ class: evidence.reason, message: `${artifact} entity '${id}' has no verified committed recovery (${evidence.reason})`, recovery: `Use '${get}' for local recovery and do not require Git for state writes.` });
+  if (local !== "verified")
+    diagnostics.push({
+      class: local === "corrupt" ? "canonical_entity_corrupt" : "canonical_entity_missing",
+      message: localMessage ?? `canonical ${artifact} entity '${id}' was not found`,
+      recovery: `Run agentera check validate state, then recover exact detail with '${get}'; no state was changed.`,
+    });
+  if (evidence.status !== "verified")
+    diagnostics.push({
+      class: evidence.reason,
+      message: `${artifact} entity '${id}' has no verified committed recovery (${evidence.reason})`,
+      recovery: `Use '${get}' for local recovery and do not require Git for state writes.`,
+    });
   return {
     command: entityCommand,
     status,
     project: projectRoot,
     read_only: true,
     remote_contact: false,
-    head: { status: !git.available || !git.before || !after ? "unavailable" : changed ? "changed" : "stable" },
-    counts: { discovered: matches.length, returned: 1, local_verified: local === "verified" ? 1 : 0, local_unavailable: local === "unavailable" ? 1 : 0, local_corrupt: local === "corrupt" ? 1 : 0, reachable_recovery: evidence.reachableRecovery ? 1 : 0 },
-    entries: [{ id, artifact, status, local: { status: local, detail_availability: local === "verified" ? "full" : "unavailable", path: path.relative(projectRoot, target).split(path.sep).join("/"), ...(localMessage ? { message: localMessage } : {}) }, git: { status: evidence.status, reason: evidence.reason, reachable_recovery: evidence.reachableRecovery }, retrieval: { get } }],
+    head: {
+      status: !git.available || !git.before || !after ? "unavailable" : changed ? "changed" : "stable",
+    },
+    counts: {
+      discovered: matches.length,
+      returned: 1,
+      local_verified: local === "verified" ? 1 : 0,
+      local_unavailable: local === "unavailable" ? 1 : 0,
+      local_corrupt: local === "corrupt" ? 1 : 0,
+      reachable_recovery: evidence.reachableRecovery ? 1 : 0,
+    },
+    entries: [
+      {
+        id,
+        artifact,
+        status,
+        local: {
+          status: local,
+          detail_availability: local === "verified" ? "full" : "unavailable",
+          path: path.relative(projectRoot, target).split(path.sep).join("/"),
+          ...(localMessage ? { message: localMessage } : {}),
+        },
+        git: {
+          status: evidence.status,
+          reason: evidence.reason,
+          reachable_recovery: evidence.reachableRecovery,
+        },
+        retrieval: { get },
+      },
+    ],
     diagnostics: diagnostics.sort((a, b) => a.class.localeCompare(b.class)),
-    source_contract: { syntax: entityCommand, status_values: contract.statusValues, local_values: contract.localValues, git_values: contract.gitValues, read_only: true, remote_contact: false, writes_independent: true },
+    source_contract: {
+      syntax: entityCommand,
+      status_values: contract.statusValues,
+      local_values: contract.localValues,
+      git_values: contract.gitValues,
+      read_only: true,
+      remote_contact: false,
+      writes_independent: true,
+    },
   };
 }
 
-export function inspectDurability(
-  project: string,
-  args: Omit<DurabilityArgs, "project" | "format"> = {},
-  options: DurabilityOptions = {},
-): DurabilityResponse {
+export function inspectDurability(project: string, args: Omit<DurabilityArgs, "project" | "format"> = {}, options: DurabilityOptions = {}): DurabilityResponse {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const contract = stateDurabilityContract(sourceRoot);
   const projectRoot = resolvePath(project);
@@ -438,18 +457,10 @@ export function inspectDurability(
 
 export function renderDurabilityText(response: DurabilityResponse, out: (text: string) => void): void {
   out(`status=${response.status} | project=${response.project} | head=${response.head.status}\n`);
-  out(
-    `counts=discovered:${response.counts.discovered} returned:${response.counts.returned} ` +
-      `local_verified:${response.counts.local_verified} local_unavailable:${response.counts.local_unavailable} ` +
-      `local_corrupt:${response.counts.local_corrupt} reachable_recovery:${response.counts.reachable_recovery}\n`,
-  );
+  out(`counts=discovered:${response.counts.discovered} returned:${response.counts.returned} ` + `local_verified:${response.counts.local_verified} local_unavailable:${response.counts.local_unavailable} ` + `local_corrupt:${response.counts.local_corrupt} reachable_recovery:${response.counts.reachable_recovery}\n`);
   for (const entry of response.entries) {
     const identity = "id" in entry ? `${entry.artifact}:${entry.id}` : entry.stable_id;
-    out(
-      `- ${identity} | status=${entry.status} | local=${entry.local.status} ` +
-        `| git=${entry.git.status} | reason=${entry.git.reason} | ` +
-        `reachable_recovery=${entry.git.reachable_recovery}\n`,
-    );
+    out(`- ${identity} | status=${entry.status} | local=${entry.local.status} ` + `| git=${entry.git.status} | reason=${entry.git.reason} | ` + `reachable_recovery=${entry.git.reachable_recovery}\n`);
   }
   for (const diagnostic of response.diagnostics) {
     out(`diagnostic=${diagnostic.class} | ${diagnostic.message}\n`);

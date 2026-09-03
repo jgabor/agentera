@@ -12,17 +12,9 @@ import { loadTomlFile } from "../core/toml.js";
 
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
-export const SETUP_EVIDENCE = [
-  "skills",
-  "skills/agentera/SKILL.md",
-  "registry.json",
-] as const;
+export const SETUP_EVIDENCE = ["skills", "skills/agentera/SKILL.md", "registry.json"] as const;
 
-export const BUNDLE_EVIDENCE = [
-  "skills/agentera/SKILL.md",
-  "registry.json",
-  BUNDLE_MARKER,
-] as const;
+export const BUNDLE_EVIDENCE = ["skills/agentera/SKILL.md", "registry.json", BUNDLE_MARKER] as const;
 
 // Python: tuple(dict.fromkeys((*SETUP_EVIDENCE, *BUNDLE_EVIDENCE))) — order-preserving dedupe.
 export const MANAGED_EVIDENCE: readonly string[] = ((): string[] => {
@@ -95,10 +87,7 @@ function sourceLabel(source: string): string {
   return SOURCE_LABELS[source] ?? source;
 }
 
-export function resolveCandidate(
-  explicitRoot: string | null,
-  opts: { env: Record<string, string | undefined>; home: string } & PlatformEnv,
-): [string, string] {
+export function resolveCandidate(explicitRoot: string | null, opts: { env: Record<string, string | undefined>; home: string } & PlatformEnv): [string, string] {
   const { env, home } = opts;
   if (explicitRoot !== null && explicitRoot !== undefined) {
     return [resolvePath(explicitRoot), "explicit"];
@@ -114,11 +103,7 @@ export function resolveCandidate(
   return [resolvePath(defaultAppHome(env, home, opts.platform)), "default"];
 }
 
-export function defaultAppHome(
-  env: Record<string, string | undefined>,
-  home: string,
-  platform: NodeJS.Platform = process.platform,
-): string {
+export function defaultAppHome(env: Record<string, string | undefined>, home: string, platform: NodeJS.Platform = process.platform): string {
   if (platform === "darwin") {
     return macosDefaultAppHome(home);
   }
@@ -140,27 +125,15 @@ function macosDefaultAppHome(home: string): string {
 
 function windowsDefaultAppHome(env: Record<string, string | undefined>, home: string): string {
   const appdata = env.APPDATA;
-  const base = appdata
-    ? expanduser(appdata)
-    : path.join(expanduser(home), "AppData", "Roaming");
+  const base = appdata ? expanduser(appdata) : path.join(expanduser(home), "AppData", "Roaming");
   return path.join(base, "agentera");
 }
 
-export function knownPlatformDefaultAppHomes(
-  env: Record<string, string | undefined>,
-  home: string,
-): Set<string> {
-  return new Set<string>([
-    resolvePath(linuxDefaultAppHome(env, home)),
-    resolvePath(macosDefaultAppHome(home)),
-    resolvePath(windowsDefaultAppHome(env, home)),
-  ]);
+export function knownPlatformDefaultAppHomes(env: Record<string, string | undefined>, home: string): Set<string> {
+  return new Set<string>([resolvePath(linuxDefaultAppHome(env, home)), resolvePath(macosDefaultAppHome(home)), resolvePath(windowsDefaultAppHome(env, home))]);
 }
 
-export function isForeignPlatformDefaultAppHome(
-  candidate: string,
-  opts: { env: Record<string, string | undefined>; home: string } & PlatformEnv,
-): boolean {
+export function isForeignPlatformDefaultAppHome(candidate: string, opts: { env: Record<string, string | undefined>; home: string } & PlatformEnv): boolean {
   const resolved = resolvePath(candidate);
   const platformDefault = resolvePath(defaultAppHome(opts.env, opts.home, opts.platform));
   if (resolved === platformDefault) {
@@ -169,17 +142,7 @@ export function isForeignPlatformDefaultAppHome(
   return knownPlatformDefaultAppHomes(opts.env, opts.home).has(resolved);
 }
 
-function classification(
-  root: string,
-  source: string,
-  kind: string,
-  safeAction: string,
-  managedStatus: string,
-  staleStatus: string,
-  missingEvidence: string[],
-  diagnostic: Diagnostic,
-  opts: { expectedVersion?: string | null; currentVersion?: string | null } = {},
-): Classification {
+function classification(root: string, source: string, kind: string, safeAction: string, managedStatus: string, staleStatus: string, missingEvidence: string[], diagnostic: Diagnostic, opts: { expectedVersion?: string | null; currentVersion?: string | null } = {}): Classification {
   return {
     source,
     source_label: sourceLabel(source),
@@ -195,14 +158,7 @@ function classification(
   };
 }
 
-function managedFresh(
-  root: string,
-  source: string,
-  setupMissing: string[],
-  bundleMissing: string[],
-  expected: string | null,
-  current: string | null,
-): Classification {
+function managedFresh(root: string, source: string, setupMissing: string[], bundleMissing: string[], expected: string | null, current: string | null): Classification {
   return classification(
     root,
     source,
@@ -235,15 +191,7 @@ function managedStaleDiagnosticMessage(reason: string): string {
   return "Agentera app files need repair";
 }
 
-function managedStale(
-  root: string,
-  source: string,
-  expected: string | null,
-  current: string | null,
-  missingEvidence: string[],
-  reason: string,
-  evidence: Record<string, unknown>,
-): Classification {
+function managedStale(root: string, source: string, expected: string | null, current: string | null, missingEvidence: string[], reason: string, evidence: Record<string, unknown>): Classification {
   return classification(
     root,
     source,
@@ -266,10 +214,7 @@ function missingEntries(root: string, entries: readonly string[]): string[] {
   return entries.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
-type BundleMarkerRead =
-  | { kind: "absent" }
-  | { kind: "corrupt" }
-  | { kind: "valid"; data: Record<string, unknown> };
+type BundleMarkerRead = { kind: "absent" } | { kind: "corrupt" } | { kind: "valid"; data: Record<string, unknown> };
 
 function readBundleMarker(root: string): BundleMarkerRead {
   const marker = path.join(root, BUNDLE_MARKER);
@@ -307,10 +252,7 @@ function readPyprojectVersion(root: string): string | null {
   return null;
 }
 
-export function classifyResolvedRoot(
-  rootInput: string,
-  opts: { source: string; expectedVersion?: string | null },
-): Classification {
+export function classifyResolvedRoot(rootInput: string, opts: { source: string; expectedVersion?: string | null }): Classification {
   const root = resolvePath(rootInput);
   const source = opts.source;
   const label = sourceLabel(source);
@@ -329,8 +271,7 @@ export function classifyResolvedRoot(
         {
           code: "install_root.missing_default_root",
           severity: "warning",
-          message:
-            "Agentera is not installed in the normal directory yet; a preview can show the repair before anything changes",
+          message: "Agentera is not installed in the normal directory yet; a preview can show the repair before anything changes",
           evidence: { path: root, source: label },
         },
         { expectedVersion: expected },
@@ -396,58 +337,31 @@ export function classifyResolvedRoot(
 
   if (hasBundleEvidence) {
     if (markerRead.kind === "corrupt") {
-      return managedStale(
-        root,
-        source,
-        expected,
-        current,
-        ["a valid bundle marker file"],
-        "corrupt_marker",
-        {
-          expectedVersion: expected,
-          currentVersion: current,
-          markerPath: path.join(root, BUNDLE_MARKER),
-        },
-      );
+      return managedStale(root, source, expected, current, ["a valid bundle marker file"], "corrupt_marker", {
+        expectedVersion: expected,
+        currentVersion: current,
+        markerPath: path.join(root, BUNDLE_MARKER),
+      });
     }
     if (expected !== null && current !== expected) {
-      return managedStale(
-        root,
-        source,
-        expected,
-        current,
-        ["current bundle marker/version or required CLI command evidence"],
-        "version_mismatch",
-        {
-          expectedVersion: expected,
-          currentVersion: current,
-          markerPath: path.join(root, BUNDLE_MARKER),
-        },
-      );
+      return managedStale(root, source, expected, current, ["current bundle marker/version or required CLI command evidence"], "version_mismatch", {
+        expectedVersion: expected,
+        currentVersion: current,
+        markerPath: path.join(root, BUNDLE_MARKER),
+      });
     }
     // Node self-contained model: a marked bundle with current data is fresh; the
     // Python CLI command-probe (scripts/agentera) no longer applies.
     return managedFresh(root, source, setupMissing, bundleMissing, expected, current);
   }
 
-  const managedWithoutMarker =
-    pathExists(path.join(root, "scripts", "agentera")) &&
-    pathExists(path.join(root, "skills", "agentera", "SKILL.md")) &&
-    pathExists(path.join(root, "registry.json"));
+  const managedWithoutMarker = pathExists(path.join(root, "scripts", "agentera")) && pathExists(path.join(root, "skills", "agentera", "SKILL.md")) && pathExists(path.join(root, "registry.json"));
   if (managedWithoutMarker) {
-    return managedStale(
-      root,
-      source,
-      expected,
-      current,
-      ["current bundle marker/version or required CLI command evidence"],
-      "missing_marker",
-      {
-        expectedVersion: expected,
-        currentVersion: current,
-        markerPath: path.join(root, BUNDLE_MARKER),
-      },
-    );
+    return managedStale(root, source, expected, current, ["current bundle marker/version or required CLI command evidence"], "missing_marker", {
+      expectedVersion: expected,
+      currentVersion: current,
+      markerPath: path.join(root, BUNDLE_MARKER),
+    });
   }
 
   if (presentEvidence.length > 0) {
@@ -533,4 +447,3 @@ export function formatResolvedAppHome(
   }
   return resolvedPath;
 }
-

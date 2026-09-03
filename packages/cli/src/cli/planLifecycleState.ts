@@ -7,9 +7,7 @@ import { preCutoverCommand } from "./preCutoverCommand.js";
 const PLAN_LIST_COMMAND = preCutoverCommand(`state ${entityListFamily("plans").commandTokens.join(" ")} list`);
 
 function diagnosticEntries(value: unknown): JsonObject[] {
-  return asList(value).filter(
-    (entry): entry is JsonObject => Boolean(entry && typeof entry === "object" && !Array.isArray(entry)),
-  );
+  return asList(value).filter((entry): entry is JsonObject => Boolean(entry && typeof entry === "object" && !Array.isArray(entry)));
 }
 
 /** Shared lifecycle health projection for status and plan-consuming capabilities. */
@@ -19,12 +17,9 @@ export function planLifecycleState(plan: JsonObject): JsonObject {
   const exists = Boolean(plan.exists);
   const active = plan.active === true;
   const activePath = typeof plan.active_path === "string" ? plan.active_path : null;
-  const currentDiagnostics = activePath
-    ? degradedDiagnostics.filter((diagnostic) => diagnostic.path === activePath)
-    : degradedDiagnostics;
+  const currentDiagnostics = activePath ? degradedDiagnostics.filter((diagnostic) => diagnostic.path === activePath) : degradedDiagnostics;
   const currentPlanDegraded = currentDiagnostics.length > 0;
-  const status =
-    degradedDiagnostics.length > 0 ? "degraded" : !exists ? "unavailable" : active ? "available" : "history_only";
+  const status = degradedDiagnostics.length > 0 ? "degraded" : !exists ? "unavailable" : active ? "available" : "history_only";
   return {
     status,
     diagnostic_count: degradedDiagnostics.length,
@@ -32,13 +27,6 @@ export function planLifecycleState(plan: JsonObject): JsonObject {
     current_plan_degraded: currentPlanDegraded,
     execution_eligible: active && !currentPlanDegraded,
     source_provenance: sourceProvenance("plan", PLAN_LIST_COMMAND, "source.diagnostics"),
-    caveats:
-      status === "degraded"
-        ? [
-            currentPlanDegraded
-              ? "Current plan lifecycle data is degraded; executable plan work is withheld until it is repaired."
-              : "Historical plan lifecycle data is degraded; archived plans remain non-executable.",
-          ]
-        : [],
+    caveats: status === "degraded" ? [currentPlanDegraded ? "Current plan lifecycle data is degraded; executable plan work is withheld until it is repaired." : "Historical plan lifecycle data is degraded; archived plans remain non-executable."] : [],
   };
 }

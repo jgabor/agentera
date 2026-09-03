@@ -3,11 +3,7 @@ import path from "node:path";
 
 import { loadYamlMapping } from "../core/yaml.js";
 
-const AUTHORITY_RELATIVE_PATH = path.join(
-  "references",
-  "artifacts",
-  "state-storage-authority.yaml",
-);
+const AUTHORITY_RELATIVE_PATH = path.join("references", "artifacts", "state-storage-authority.yaml");
 
 interface CacheEntry {
   authorityPath: string;
@@ -28,15 +24,23 @@ function immutableGraph<T extends object>(root: T): T {
       get: (target, property, receiver) => immutable(Reflect.get(target, property, receiver)),
       getOwnPropertyDescriptor: (target, property) => {
         const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
-        return descriptor && "value" in descriptor
-          ? { ...descriptor, value: immutable(descriptor.value) }
-          : descriptor;
+        return descriptor && "value" in descriptor ? { ...descriptor, value: immutable(descriptor.value) } : descriptor;
       },
-      set: () => { throw new TypeError("state storage authority is immutable"); },
-      defineProperty: () => { throw new TypeError("state storage authority is immutable"); },
-      deleteProperty: () => { throw new TypeError("state storage authority is immutable"); },
-      preventExtensions: () => { throw new TypeError("state storage authority is immutable"); },
-      setPrototypeOf: () => { throw new TypeError("state storage authority is immutable"); },
+      set: () => {
+        throw new TypeError("state storage authority is immutable");
+      },
+      defineProperty: () => {
+        throw new TypeError("state storage authority is immutable");
+      },
+      deleteProperty: () => {
+        throw new TypeError("state storage authority is immutable");
+      },
+      preventExtensions: () => {
+        throw new TypeError("state storage authority is immutable");
+      },
+      setPrototypeOf: () => {
+        throw new TypeError("state storage authority is immutable");
+      },
     });
     proxies.set(value, proxy);
     return proxy;

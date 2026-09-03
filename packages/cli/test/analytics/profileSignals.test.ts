@@ -6,12 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
-import {
-  readProfileSignals,
-  resolveProfileEvidence,
-  profileSignalsStatus,
-  assessProfileSufficiency,
-} from "../../src/analytics/profileSignals.js";
+import { readProfileSignals, resolveProfileEvidence, profileSignalsStatus, assessProfileSufficiency } from "../../src/analytics/profileSignals.js";
 import { profileSufficiency } from "../../src/registries/evidenceTierContract.js";
 import type { SignalRecord } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 
@@ -27,14 +22,7 @@ afterEach(() => {
 });
 
 /** Build a full evidence record shaped like the extraction adapters emit. */
-function fullRecord(opts: {
-  sourceId: string;
-  sourceKind?: string;
-  timestamp?: string;
-  sourceProduct?: string;
-  runtime?: string | null;
-  data?: JsonObjectLocal;
-}): JsonObjectLocal {
+function fullRecord(opts: { sourceId: string; sourceKind?: string; timestamp?: string; sourceProduct?: string; runtime?: string | null; data?: JsonObjectLocal }): JsonObjectLocal {
   const data = opts.data ?? { actor: "user", text: "hello" };
   const record: JsonObjectLocal = {
     source_id: opts.sourceId,
@@ -61,13 +49,60 @@ function fullRecord(opts: {
 /** A representative corpus with profile-relevant signal types across families. */
 function representativeRecords(): JsonObjectLocal[] {
   return [
-    fullRecord({ sourceId: "a1", sourceKind: "instruction_document", sourceProduct: "filesystem", runtime: "filesystem", data: { doc_type: "agents_md" } }),
-    fullRecord({ sourceId: "a2", sourceKind: "project_config_signal", sourceProduct: "filesystem", runtime: "filesystem", data: { config_type: "package_json" } }),
-    fullRecord({ sourceId: "c1", sourceKind: "conversation_turn", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:00:00.000Z", data: { actor: "user", signal_type: "decision", text: "decide to keep it" } }),
-    fullRecord({ sourceId: "c2", sourceKind: "conversation_turn", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:01:00.000Z", data: { actor: "assistant", text: "because" } }),
-    fullRecord({ sourceId: "c3", sourceKind: "conversation_turn", sourceProduct: "codex", runtime: "codex", timestamp: "2026-01-03T09:00:00.000Z", data: { actor: "user", signal_type: "question", text: "why?" } }),
-    fullRecord({ sourceId: "c4", sourceKind: "conversation_turn", sourceProduct: "codex", runtime: "codex", timestamp: "2026-01-03T09:01:00.000Z", data: { actor: "user", signal_type: "correction", text: "no, instead" } }),
-    fullRecord({ sourceId: "h1", sourceKind: "history_prompt", sourceProduct: "claude-code", runtime: null, timestamp: "2026-01-05T08:00:00.000Z", data: { prompt: "old" } }),
+    fullRecord({
+      sourceId: "a1",
+      sourceKind: "instruction_document",
+      sourceProduct: "filesystem",
+      runtime: "filesystem",
+      data: { doc_type: "agents_md" },
+    }),
+    fullRecord({
+      sourceId: "a2",
+      sourceKind: "project_config_signal",
+      sourceProduct: "filesystem",
+      runtime: "filesystem",
+      data: { config_type: "package_json" },
+    }),
+    fullRecord({
+      sourceId: "c1",
+      sourceKind: "conversation_turn",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:00:00.000Z",
+      data: { actor: "user", signal_type: "decision", text: "decide to keep it" },
+    }),
+    fullRecord({
+      sourceId: "c2",
+      sourceKind: "conversation_turn",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:01:00.000Z",
+      data: { actor: "assistant", text: "because" },
+    }),
+    fullRecord({
+      sourceId: "c3",
+      sourceKind: "conversation_turn",
+      sourceProduct: "codex",
+      runtime: "codex",
+      timestamp: "2026-01-03T09:00:00.000Z",
+      data: { actor: "user", signal_type: "question", text: "why?" },
+    }),
+    fullRecord({
+      sourceId: "c4",
+      sourceKind: "conversation_turn",
+      sourceProduct: "codex",
+      runtime: "codex",
+      timestamp: "2026-01-03T09:01:00.000Z",
+      data: { actor: "user", signal_type: "correction", text: "no, instead" },
+    }),
+    fullRecord({
+      sourceId: "h1",
+      sourceKind: "history_prompt",
+      sourceProduct: "claude-code",
+      runtime: null,
+      timestamp: "2026-01-05T08:00:00.000Z",
+      data: { prompt: "old" },
+    }),
   ];
 }
 
@@ -76,9 +111,27 @@ function publish(records: JsonObjectLocal[], tiersDir = tmp): { generation: stri
     tiersDir,
     adapterVersion: ADAPTER_VERSION,
     runtimeStatuses: [
-      { runtime: "opencode", source_product: "opencode", status: "ok", source_class: "active_runtime", active_runtime: true },
-      { runtime: "codex", source_product: "codex", status: "ok", source_class: "active_runtime", active_runtime: true },
-      { runtime: "claude-code", source_product: "claude-code", status: "ok", source_class: "historical_import", active_runtime: false },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        status: "ok",
+        source_class: "active_runtime",
+        active_runtime: true,
+      },
+      {
+        runtime: "codex",
+        source_product: "codex",
+        status: "ok",
+        source_class: "active_runtime",
+        active_runtime: true,
+      },
+      {
+        runtime: "claude-code",
+        source_product: "claude-code",
+        status: "ok",
+        source_class: "historical_import",
+        active_runtime: false,
+      },
     ],
   });
   return { generation: result.generation };
@@ -119,21 +172,14 @@ describe("resolveProfileEvidence — evidence resolution", () => {
     const signals = readProfileSignals(tmp);
     const decision = signals.signals.find((s) => s.signal_type === "decision");
     expect(decision).toBeDefined();
-    const manifest = JSON.parse(fs.readFileSync(
-      path.join(tmp, "generations", publication.generation, "manifest.json"),
-      "utf8",
-    )) as { shards: Array<{ path: string; source_ids: string[] }> };
+    const manifest = JSON.parse(fs.readFileSync(path.join(tmp, "generations", publication.generation, "manifest.json"), "utf8")) as { shards: Array<{ path: string; source_ids: string[] }> };
     expect(manifest.shards.length).toBeGreaterThan(1);
     const owner = manifest.shards.find((shard) => shard.source_ids.includes(decision!.evidence_anchor));
     expect(owner).toBeDefined();
     const readFile = vi.spyOn(fs, "readFileSync");
     const full = resolveProfileEvidence(decision!.evidence_anchor, tmp);
-    const shardReads = readFile.mock.calls
-      .map(([file]) => path.resolve(String(file)))
-      .filter((file) => file.includes(`${path.sep}full-evidence${path.sep}`));
-    expect(shardReads).toEqual([
-      path.join(tmp, "generations", publication.generation, owner!.path),
-    ]);
+    const shardReads = readFile.mock.calls.map(([file]) => path.resolve(String(file))).filter((file) => file.includes(`${path.sep}full-evidence${path.sep}`));
+    expect(shardReads).toEqual([path.join(tmp, "generations", publication.generation, owner!.path)]);
     expect(full).not.toBeNull();
     expect((full as JsonObjectLocal).source_id).toBe(decision!.evidence_anchor);
     expect((full as JsonObjectLocal).source_kind).toBe("conversation_turn");
@@ -178,9 +224,36 @@ describe("assessProfileSufficiency — insufficiency reporting", () => {
     };
     // Retained profile-relevant signals: only opencode's 3, no codex.
     const signals: SignalRecord[] = [
-      { source_id: "s1", source_kind: "conversation_turn", signal_type: "decision", timestamp: "t1", project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: "s1" },
-      { source_id: "s2", source_kind: "conversation_turn", signal_type: "question", timestamp: "t2", project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: "s2" },
-      { source_id: "s3", source_kind: "instruction_document", signal_type: "instruction", timestamp: "t3", project_id: "p", runtime: "filesystem", source_product: "opencode", evidence_anchor: "s3" },
+      {
+        source_id: "s1",
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: "t1",
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: "s1",
+      },
+      {
+        source_id: "s2",
+        source_kind: "conversation_turn",
+        signal_type: "question",
+        timestamp: "t2",
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: "s2",
+      },
+      {
+        source_id: "s3",
+        source_kind: "instruction_document",
+        signal_type: "instruction",
+        timestamp: "t3",
+        project_id: "p",
+        runtime: "filesystem",
+        source_product: "opencode",
+        evidence_anchor: "s3",
+      },
     ];
     const assessment = assessProfileSufficiency(selection, signals);
     expect(assessment.sufficient).toBe(false);
@@ -191,7 +264,12 @@ describe("assessProfileSufficiency — insufficiency reporting", () => {
   });
 
   it("shows insufficiency without fabricated confidence in the reason", () => {
-    const selection = { total: 5, retained: 0, capped: true, per_family: [{ family: "opencode", total: 5, retained: 0 }] };
+    const selection = {
+      total: 5,
+      retained: 0,
+      capped: true,
+      per_family: [{ family: "opencode", total: 5, retained: 0 }],
+    };
     const signals: SignalRecord[] = [];
     const assessment = assessProfileSufficiency(selection, signals);
     expect(assessment.sufficient).toBe(false);
@@ -203,7 +281,16 @@ describe("assessProfileSufficiency — insufficiency reporting", () => {
   it("a family with zero intended signals is not a violation", () => {
     const selection = { total: 5, retained: 3, capped: false, per_family: [] };
     const signals: SignalRecord[] = [
-      { source_id: "s1", source_kind: "conversation_turn", signal_type: "decision", timestamp: "t1", project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: "s1" },
+      {
+        source_id: "s1",
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: "t1",
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: "s1",
+      },
     ];
     const assessment = assessProfileSufficiency(selection, signals);
     // Uncapped: always sufficient regardless of family presence.
@@ -245,12 +332,57 @@ describe("assessProfileSufficiency — distribution threshold (Unknown 2)", () =
     };
     const signals: SignalRecord[] = [
       // opencode retained 4 profile-relevant signals
-      { source_id: "s1", source_kind: "conversation_turn", signal_type: "decision", timestamp: "t1", project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: "s1" },
-      { source_id: "s2", source_kind: "conversation_turn", signal_type: "question", timestamp: "t2", project_id: "p", runtime: "opencode", source_product: "opencode", evidence_anchor: "s2" },
-      { source_id: "s3", source_kind: "instruction_document", signal_type: "instruction", timestamp: "t3", project_id: "p", runtime: "filesystem", source_product: "opencode", evidence_anchor: "s3" },
-      { source_id: "s4", source_kind: "project_config_signal", signal_type: "configuration", timestamp: "t4", project_id: "p", runtime: "filesystem", source_product: "opencode", evidence_anchor: "s4" },
+      {
+        source_id: "s1",
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: "t1",
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: "s1",
+      },
+      {
+        source_id: "s2",
+        source_kind: "conversation_turn",
+        signal_type: "question",
+        timestamp: "t2",
+        project_id: "p",
+        runtime: "opencode",
+        source_product: "opencode",
+        evidence_anchor: "s2",
+      },
+      {
+        source_id: "s3",
+        source_kind: "instruction_document",
+        signal_type: "instruction",
+        timestamp: "t3",
+        project_id: "p",
+        runtime: "filesystem",
+        source_product: "opencode",
+        evidence_anchor: "s3",
+      },
+      {
+        source_id: "s4",
+        source_kind: "project_config_signal",
+        signal_type: "configuration",
+        timestamp: "t4",
+        project_id: "p",
+        runtime: "filesystem",
+        source_product: "opencode",
+        evidence_anchor: "s4",
+      },
       // codex retained 1 of its intended 10 — below 50% threshold
-      { source_id: "s5", source_kind: "conversation_turn", signal_type: "decision", timestamp: "t5", project_id: "p", runtime: "codex", source_product: "codex", evidence_anchor: "s5" },
+      {
+        source_id: "s5",
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: "t5",
+        project_id: "p",
+        runtime: "codex",
+        source_product: "codex",
+        evidence_anchor: "s5",
+      },
     ];
     const assessment = assessProfileSufficiency(selection, signals);
     expect(assessment.sufficient).toBe(false);
@@ -266,10 +398,7 @@ describe("profileSignalsStatus — context status surfacing", () => {
     const records = representativeRecords();
     const tiersDir = path.join(tmp, "intermediate", "tiers");
     publish(records, tiersDir);
-    const status = profileSignalsStatus(
-      { AGENTERA_PROFILE_DIR: tmp, HOME: tmp },
-      "linux",
-    );
+    const status = profileSignalsStatus({ AGENTERA_PROFILE_DIR: tmp, HOME: tmp }, "linux");
     expect(status.state).toBe("current");
     expect(status.tiers_dir).toBe(tiersDir);
     expect(status.signal_count).toBeGreaterThan(0);
@@ -278,10 +407,7 @@ describe("profileSignalsStatus — context status surfacing", () => {
   });
 
   it("surfaces missing state when no tiers are published", () => {
-    const status = profileSignalsStatus(
-      { AGENTERA_PROFILE_DIR: tmp, HOME: tmp },
-      "linux",
-    );
+    const status = profileSignalsStatus({ AGENTERA_PROFILE_DIR: tmp, HOME: tmp }, "linux");
     expect(status.state).toBe("missing");
     expect(status.signal_count).toBe(0);
     expect(status.sufficiency).toBeNull();
@@ -292,14 +418,8 @@ describe("profileSignalsStatus — context status surfacing", () => {
     // Create a small legacy corpus.json without tiers.
     const intermediateDir = path.join(tmp, "intermediate");
     fs.mkdirSync(intermediateDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(intermediateDir, "corpus.json"),
-      JSON.stringify({ metadata: {}, records: [] }),
-    );
-    const status = profileSignalsStatus(
-      { AGENTERA_PROFILE_DIR: tmp, HOME: tmp },
-      "linux",
-    );
+    fs.writeFileSync(path.join(intermediateDir, "corpus.json"), JSON.stringify({ metadata: {}, records: [] }));
+    const status = profileSignalsStatus({ AGENTERA_PROFILE_DIR: tmp, HOME: tmp }, "linux");
     expect(status.state).toBe("legacy");
     expect(status.sufficiency).toBeNull();
     expect(status.recovery).toContain("refresh");

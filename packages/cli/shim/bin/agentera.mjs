@@ -8,17 +8,13 @@ import { dispatch, printInstallHelp } from "../lib/exec.mjs";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const packageRoot = path.resolve(__dirname, "..");
-const pkg = JSON.parse(
-  fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"),
-);
+const pkg = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"));
 const meta = pkg.agentera ?? {};
 
 function printVersion() {
   const suite = meta.suiteVersion ?? "unknown";
   const gitRef = meta.gitRef ?? "unknown";
-  console.log(
-    `agentera npm shim ${pkg.version} (suite ${suite}, git ${gitRef})`,
-  );
+  console.log(`agentera npm shim ${pkg.version} (suite ${suite}, git ${gitRef})`);
 }
 
 const userArgs = process.argv.slice(2);

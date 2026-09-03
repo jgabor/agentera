@@ -9,8 +9,13 @@ describe("retired agentera hook command", () => {
     let reads = 0;
 
     const rc = main(["node", "agentera", "hook", "validate-artifact"], {
-      err: (text) => { err += text; },
-      stdin: () => { reads += 1; return "{}"; },
+      err: (text) => {
+        err += text;
+      },
+      stdin: () => {
+        reads += 1;
+        return "{}";
+      },
     });
 
     expect(rc).toBe(2);

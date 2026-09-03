@@ -25,15 +25,11 @@ export function commandText(parts: string[]): string {
 }
 
 export function fullEntityUpgradeCommand(project: string): string {
-  return commandText([
-    "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--yes",
-  ]);
+  return commandText(["npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--yes"]);
 }
 
 export function fullEntityUpgradePreviewCommand(project: string): string {
-  return commandText([
-    "npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--dry-run",
-  ]);
+  return commandText(["npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", project, "--dry-run"]);
 }
 
 /** Channel-aware upgrade preview/apply commands (doctor, prime, orchestrator). */

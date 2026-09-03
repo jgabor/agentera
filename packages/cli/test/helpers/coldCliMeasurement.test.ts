@@ -6,18 +6,8 @@ import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
-import {
-  effectiveChildFlagsAreComplete,
-  EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as EVIDENCE_NODE_OPTIONS_LIMIT,
-  performanceRunnerAuthority,
-} from "../../scripts/performance-evidence.mjs";
-import {
-  collectGarbageThenReadBaseline,
-  coldCliFailureEvidence,
-  EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as MEASUREMENT_NODE_OPTIONS_LIMIT,
-  measureColdCli,
-  measureColdCliWithRetainedAllocation,
-} from "./coldCliMeasurement.js";
+import { effectiveChildFlagsAreComplete, EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as EVIDENCE_NODE_OPTIONS_LIMIT, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
+import { collectGarbageThenReadBaseline, coldCliFailureEvidence, EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as MEASUREMENT_NODE_OPTIONS_LIMIT, measureColdCli, measureColdCliWithRetainedAllocation } from "./coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "./entityAuthorityFixture.js";
 
 const temporaryDirectories: string[] = [];
@@ -108,12 +98,7 @@ describe("cold CLI heap measurement", () => {
     expect(evidence).toMatchObject({
       operation: "state progress list --limit 100",
       exitCode: 1,
-      childArgs: [
-        "--inspect-brk=127.0.0.1:0",
-        "--input-type=module",
-        "--eval",
-        "<inline-runner>",
-      ],
+      childArgs: ["--inspect-brk=127.0.0.1:0", "--input-type=module", "--eval", "<inline-runner>"],
       presentDebugEnvNames: ["NODE_INSPECT_RESUME_ON_START", "NODE_OPTIONS"],
     });
     expect(JSON.parse(evidence.stdout).error.message).toContain("marker-absent unknown");
@@ -150,8 +135,7 @@ describe("cold CLI heap measurement", () => {
       actions: true,
       workers: 1,
     });
-    expect(performanceRunnerAuthority({ ...environment, [contract.runner_class_environment]: "ubuntu-latest" }, definition, runtime))
-      .toMatchObject({ authoritative: false, provider: "unmanaged" });
+    expect(performanceRunnerAuthority({ ...environment, [contract.runner_class_environment]: "ubuntu-latest" }, definition, runtime)).toMatchObject({ authoritative: false, provider: "unmanaged" });
   });
 
   it("awaits inspector garbage collection before reading the baseline", async () => {

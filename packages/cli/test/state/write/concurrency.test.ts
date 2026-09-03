@@ -12,22 +12,30 @@ import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../../helpers/source
 const REPO_ROOT = path.resolve(__dirname, "../../../../..");
 const CLI = path.join(sourceBuildOutputRoot(), "bin/agentera.js");
 
-function runProcess(
-  project: string,
-  suffix: string,
-  caveat = false,
-): Promise<{ code: number | null; stdout: string; stderr: string }> {
-  return runCli(project, ["state", "progress", "append", "--project", project, "--input", "-", "--format", "json"], JSON.stringify({
-    timestamp: "2026-07-17 12:00", type: "test", phase: "build", what: `process ${suffix}`, context: { intent: "prove serialization" },
-    ...(caveat ? { glossary_caveat: { event: "current", reason: "inferred_equivalence", ownership_state: "review_required" } } : {}),
-  }));
+function runProcess(project: string, suffix: string, caveat = false): Promise<{ code: number | null; stdout: string; stderr: string }> {
+  return runCli(
+    project,
+    ["state", "progress", "append", "--project", project, "--input", "-", "--format", "json"],
+    JSON.stringify({
+      timestamp: "2026-07-17 12:00",
+      type: "test",
+      phase: "build",
+      what: `process ${suffix}`,
+      context: { intent: "prove serialization" },
+      ...(caveat
+        ? {
+            glossary_caveat: {
+              event: "current",
+              reason: "inferred_equivalence",
+              ownership_state: "review_required",
+            },
+          }
+        : {}),
+    }),
+  );
 }
 
-function runCli(
-  project: string,
-  args: string[],
-  stdin = "",
-): Promise<{ code: number | null; stdout: string; stderr: string }> {
+function runCli(project: string, args: string[], stdin = ""): Promise<{ code: number | null; stdout: string; stderr: string }> {
   return new Promise((resolve) => {
     const child = spawn(process.execPath, [CLI, ...args], {
       cwd: REPO_ROOT,
@@ -74,11 +82,11 @@ describe("real-process writer concurrency", () => {
   it("serializes concurrent current caveat replay to one progress entity", async () => {
     const project = entityProject("agentera-writer-caveat-");
     try {
-      const results = await Promise.all([
-        runProcess(project, "one", true),
-        runProcess(project, "two", true),
-      ]);
-      expect(results.map((result) => result.code), JSON.stringify(results)).toEqual([0, 0]);
+      const results = await Promise.all([runProcess(project, "one", true), runProcess(project, "two", true)]);
+      expect(
+        results.map((result) => result.code),
+        JSON.stringify(results),
+      ).toEqual([0, 0]);
       const directory = path.join(project, ".agentera/entities/progress/progress_cycle");
       expect(fs.readdirSync(directory)).toHaveLength(1);
       const payloads = results.map((result) => JSON.parse(result.stdout));
@@ -92,10 +100,7 @@ describe("real-process writer concurrency", () => {
   it("publishes concurrent same-artifact entities without lost entries or duplicate IDs", async () => {
     const project = entityProject("agentera-writer-same-");
     try {
-      const results = await Promise.all([
-        runProcess(project, "one"),
-        runProcess(project, "two"),
-      ]);
+      const results = await Promise.all([runProcess(project, "one"), runProcess(project, "two")]);
       expect(
         results.map((result) => result.code),
         JSON.stringify(results),
@@ -115,10 +120,19 @@ describe("real-process writer concurrency", () => {
   it("converges concurrent identical public progress appends", async () => {
     const project = entityProject("agentera-writer-progress-identical-");
     const args = ["state", "progress", "append", "--project", project, "--input", "-", "--format", "json"];
-    const input = JSON.stringify({ timestamp: "2026-07-31 08:10", type: "fix", phase: "build", what: "identical public progress", context: { intent: "prove concurrent logical replay" } });
+    const input = JSON.stringify({
+      timestamp: "2026-07-31 08:10",
+      type: "fix",
+      phase: "build",
+      what: "identical public progress",
+      context: { intent: "prove concurrent logical replay" },
+    });
     try {
       const results = await Promise.all(Array.from({ length: 2 }, () => runCli(project, args, input)));
-      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(2).fill(0));
+      expect(
+        results.map(({ code }) => code),
+        JSON.stringify(results),
+      ).toEqual(Array(2).fill(0));
       const payloads = results.map(({ stdout }) => JSON.parse(stdout));
       expect(new Set(payloads.map(({ id }) => id)).size).toBe(1);
       expect(payloads.filter(({ operation }) => operation.idempotent_replay)).toHaveLength(1);
@@ -135,10 +149,21 @@ describe("real-process writer concurrency", () => {
   it("converges concurrent identical public decision appends", async () => {
     const project = entityProject("agentera-writer-decision-identical-");
     const args = ["state", "decisions", "append", "--project", project, "--input", "-", "--format", "json"];
-    const input = JSON.stringify({ date: "2026-07-31", question: "Can decision append replay?", context: "Identical public requests share logical content.", alternatives: { chosen: "Yes", rejected: ["No"] }, choice: "Yes", reasoning: "The record is its logical identity.", confidence: "firm" });
+    const input = JSON.stringify({
+      date: "2026-07-31",
+      question: "Can decision append replay?",
+      context: "Identical public requests share logical content.",
+      alternatives: { chosen: "Yes", rejected: ["No"] },
+      choice: "Yes",
+      reasoning: "The record is its logical identity.",
+      confidence: "firm",
+    });
     try {
       const results = await Promise.all(Array.from({ length: 2 }, () => runCli(project, args, input)));
-      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(2).fill(0));
+      expect(
+        results.map(({ code }) => code),
+        JSON.stringify(results),
+      ).toEqual(Array(2).fill(0));
       const payloads = results.map(({ stdout }) => JSON.parse(stdout));
       expect(new Set(payloads.map(({ id }) => id)).size).toBe(1);
       expect(payloads.filter(({ operation }) => operation.idempotent_replay)).toHaveLength(1);
@@ -154,7 +179,10 @@ describe("real-process writer concurrency", () => {
     try {
       const args = ["state", "decisions", "update", "--project", project, "--id", id, "--satisfaction-state", "provisionally_satisfied", "--satisfaction-evidence", "verified", "--format", "json"];
       const results = await Promise.all(Array.from({ length: 2 }, () => runCli(project, args)));
-      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(2).fill(0));
+      expect(
+        results.map(({ code }) => code),
+        JSON.stringify(results),
+      ).toEqual(Array(2).fill(0));
       const directory = path.join(project, ".agentera/entities/decisions/decision_satisfaction");
       expect(fs.readdirSync(directory)).toHaveLength(1);
       const payloads = results.map(({ stdout }) => JSON.parse(stdout));
@@ -171,7 +199,10 @@ describe("real-process writer concurrency", () => {
     try {
       const args = ["state", "decisions", "amend", "--project", project, "--id", id, "--base-sha256", sha256, "--input", "-", "--format", "json"];
       const results = await Promise.all(Array.from({ length: 2 }, () => runCli(project, args, JSON.stringify({ choice: "Entity revisions" }))));
-      expect(results.map(({ code }) => code), JSON.stringify(results)).toEqual(Array(2).fill(0));
+      expect(
+        results.map(({ code }) => code),
+        JSON.stringify(results),
+      ).toEqual(Array(2).fill(0));
       const directory = path.join(project, ".agentera/entities/decisions/decision_revision");
       expect(fs.readdirSync(directory)).toHaveLength(1);
       const payloads = results.map(({ stdout }) => JSON.parse(stdout));
@@ -181,5 +212,4 @@ describe("real-process writer concurrency", () => {
       fs.rmSync(project, { recursive: true, force: true });
     }
   });
-
 });

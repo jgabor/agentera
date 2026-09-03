@@ -45,6 +45,7 @@
 - [ ] [id:oeadkhtqub] [test:3.0.0] Measure all-test Vite+ type-check viability
 - [ ] [id:qefxkkmyyw] [refactor:3.0.0] Establish workspace-root Vite+ authority
 - [ ] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
+- [ ] [id:bhwgdxohmy] [refactor:3.0.0] Decompose formatter-expanded CLI monoliths
 
 ## ⇢ Annoying
 

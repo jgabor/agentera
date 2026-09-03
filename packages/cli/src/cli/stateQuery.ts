@@ -14,17 +14,7 @@ import { preCutoverCommand } from "./preCutoverCommand.js";
 /** Shared state-query infrastructure ported from scripts/agentera. */
 
 export const REQUIRED_SPARSE_CONTEXT_FIELDS = ["command", "outcome"];
-export const ROUTINE_STRUCTURED_FIELDS = [
-  "command",
-  "status",
-  "entries",
-  "counts",
-  "source",
-  "filters",
-  "summary",
-  "plans",
-  "source_contract",
-];
+export const ROUTINE_STRUCTURED_FIELDS = ["command", "status", "entries", "counts", "source", "filters", "summary", "plans", "source_contract"];
 
 /** Canonical structured field set for the bare prime orientation briefing.
  *  `agentera schema` discovery, the emitted prime JSON `source_contract.fields`,
@@ -34,11 +24,32 @@ export const ROUTINE_STRUCTURED_FIELDS = [
  *  `state_presence` (missing-vs-empty) and named recovery commands, not by
  *  trimming this set. */
 export const PRIME_STRUCTURED_FIELDS = [
-  "command", "outcome", "app_home", "app", "mode", "health",
-  "todo", "plan", "docs", "progress", "objective", "state_presence", "shared_skill", "project_integration", "attention",
+  "command",
+  "outcome",
+  "app_home",
+  "app",
+  "mode",
+  "health",
+  "todo",
+  "plan",
+  "docs",
+  "progress",
+  "objective",
+  "state_presence",
+  "shared_skill",
+  "project_integration",
+  "attention",
   "history",
-  "decision_attention", "next_action", "orchestration_context", "closeout_context",
-  "evidence_context", "benchmark_context", "execution_context", "startup", "source", "source_contract",
+  "decision_attention",
+  "next_action",
+  "orchestration_context",
+  "closeout_context",
+  "evidence_context",
+  "benchmark_context",
+  "execution_context",
+  "startup",
+  "source",
+  "source_contract",
 ];
 
 /** Retired prime fields that receive one structured correction instead of
@@ -57,9 +68,7 @@ export const PRIME_CONTEXT_ONLY_FIELDS = ["capability_context"] as const;
  *  canonical structured set and the context-only `capability_context` pointer
  *  from one authority, so schema discovery and the prime selector cannot drift. */
 export function availablePrimeFields(command: string): string[] {
-  return command === "prime"
-    ? [...PRIME_STRUCTURED_FIELDS, ...PRIME_CONTEXT_ONLY_FIELDS]
-    : [...PRIME_STRUCTURED_FIELDS];
+  return command === "prime" ? [...PRIME_STRUCTURED_FIELDS, ...PRIME_CONTEXT_ONLY_FIELDS] : [...PRIME_STRUCTURED_FIELDS];
 }
 
 export const COMMAND_FILTERS: Record<string, string[]> = {
@@ -141,7 +150,13 @@ function pyStr(val: unknown): string {
   if (Array.isArray(val)) return "[" + val.map((v) => pyReprInner(v)).join(", ") + "]";
   if (typeof val === "object") {
     // cast: val is an artifact-scalar object being rendered for display (IO boundary)
-    return "{" + Object.entries(val as JsonObject).map(([k, v]) => `${pyReprInner(k)}: ${pyReprInner(v)}`).join(", ") + "}";
+    return (
+      "{" +
+      Object.entries(val as JsonObject)
+        .map(([k, v]) => `${pyReprInner(k)}: ${pyReprInner(v)}`)
+        .join(", ") +
+      "}"
+    );
   }
   return String(val);
 }
@@ -188,16 +203,24 @@ export function printStatusCounts(prefix: string, counts: Record<string, number>
 }
 
 export function stringFieldNames(fields: JsonObject): string[] {
-  return Object.entries(fields)
-    // cast: field descriptor read from a parsed artifact schema (YAML IO boundary)
-    .filter(([, d]) => (d as JsonObject)?.type === "string")
-    .map(([n]) => n);
+  return (
+    Object.entries(fields)
+      // cast: field descriptor read from a parsed artifact schema (YAML IO boundary)
+      .filter(([, d]) => (d as JsonObject)?.type === "string")
+      .map(([n]) => n)
+  );
 }
 
 export function filterByTopic(entries: JsonObject[], topic: string, fields: JsonObject): JsonObject[] {
   const t = topic.toLowerCase();
   const fnames = stringFieldNames(fields);
-  return entries.filter((e) => fnames.some((fn) => String(e[fn] ?? "").toLowerCase().includes(t)));
+  return entries.filter((e) =>
+    fnames.some((fn) =>
+      String(e[fn] ?? "")
+        .toLowerCase()
+        .includes(t),
+    ),
+  );
 }
 
 export function filterByFieldValue(entries: JsonObject[], fieldName: string, value: string, substring = false): JsonObject[] {
@@ -280,12 +303,7 @@ export function sourceMetadata(command: string, p: string | null, schema: string
   };
 }
 
-export function structuredState(
-  command: string,
-  entries: JsonObject[],
-  source: JsonObject,
-  opts: { filters?: JsonObject; summary?: JsonObject; sourceContract?: JsonObject } = {},
-): JsonObject {
+export function structuredState(command: string, entries: JsonObject[], source: JsonObject, opts: { filters?: JsonObject; summary?: JsonObject; sourceContract?: JsonObject } = {}): JsonObject {
   const payload: JsonObject = {
     command,
     status: entries.length > 0 || source.exists ? "ok" : "empty",
@@ -318,12 +336,7 @@ function availableStructuredFields(command: string): string[] {
   return ROUTINE_STRUCTURED_FIELDS;
 }
 
-export function selectStructuredFields(
-  command: string,
-  value: JsonObject,
-  fieldsArg: string | null | undefined,
-  err: (t: string) => void,
-): JsonObject | null {
+export function selectStructuredFields(command: string, value: JsonObject, fieldsArg: string | null | undefined, err: (t: string) => void): JsonObject | null {
   const requested = requestedFields(fieldsArg);
   const working = value;
   if (requested.length === 0) return working;
@@ -340,14 +353,7 @@ export function selectStructuredFields(
   return selected;
 }
 
-export function emitStateStructured(
-  command: string,
-  value: JsonObject,
-  format: string,
-  fieldsArg: string | null | undefined,
-  out: (t: string) => void,
-  err: (t: string) => void,
-): number {
+export function emitStateStructured(command: string, value: JsonObject, format: string, fieldsArg: string | null | undefined, out: (t: string) => void, err: (t: string) => void): number {
   const selected = selectStructuredFields(command, value, fieldsArg, err);
   if (selected === null) return 1;
   emitStructured(boundStructuredProjection(selected, command, format), format, out);

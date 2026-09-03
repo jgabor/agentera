@@ -4,25 +4,13 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  cmdValidate,
-  cmdValidateCapability,
-  cmdValidateCapabilityContract,
-  isDelegatedValidateFamily,
-} from "../../src/cli/commands/validate.js";
+import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, isDelegatedValidateFamily } from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";
-import {
-  classifyDrift,
-  expectedShapeLiteralPins,
-  expectedShapeRequiredKeys,
-  normalizeEnvelope,
-} from "./parityOracle.js";
+import { classifyDrift, expectedShapeLiteralPins, expectedShapeRequiredKeys, normalizeEnvelope } from "./parityOracle.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
-const PARITY_ORACLE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8"),
-) as {
+const PARITY_ORACLE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8")) as {
   normalizeEnvelope: { rules: unknown };
   families: {
     artifact_validation: {
@@ -33,9 +21,7 @@ const PARITY_ORACLE = JSON.parse(
     };
   };
 };
-const VALIDATE_FAMILY_ORACLE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/validate-family.json"), "utf8"),
-) as {
+const VALIDATE_FAMILY_ORACLE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/validate-family.json"), "utf8")) as {
   commandValue: "validate";
   statusUnion: ["pass", "fail"];
   families: Record<
@@ -49,14 +35,7 @@ const VALIDATE_FAMILY_ORACLE = JSON.parse(
   >;
 };
 
-const D56_SUBCOMMANDS = [
-  "capability",
-  "capability-contract",
-  "cross-capability",
-  "app-home-contract",
-  "vocabularyAuthority",
-  "selfAudit",
-] as const;
+const D56_SUBCOMMANDS = ["capability", "capability-contract", "cross-capability", "app-home-contract", "vocabularyAuthority", "selfAudit"] as const;
 
 const DELEGATED_ENGINE_COMMANDS: Record<string, string> = {
   "cross-capability": "validate_cross_capability.py",
@@ -99,98 +78,71 @@ function passEnvelope(subcommand: (typeof D56_SUBCOMMANDS)[number]): {
 
 describe("validateParity (D56 artifact-validation surface)", () => {
   it("hosts the remaining validate subcommands in delegated routing", () => {
-    for (const family of [
-      "cross-capability",
-      "app-home-contract",
-      "vocabularyAuthority",
-      "selfAudit",
-    ]) {
+    for (const family of ["cross-capability", "app-home-contract", "vocabularyAuthority", "selfAudit"]) {
       expect(isDelegatedValidateFamily(family)).toBe(true);
     }
     expect(D56_SUBCOMMANDS).toHaveLength(6);
   });
 
-  it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))(
-    "pass: check validate %s matches the validate oracle envelope",
-    (subcommand) => {
-      const { rc, payload } = passEnvelope(subcommand);
-      expect(rc).toBe(0);
-      expect(payload.command).toBe("validate");
-      expect(VALIDATE_FAMILY_ORACLE.statusUnion).toContain(payload.status);
+  it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))("pass: check validate %s matches the validate oracle envelope", (subcommand) => {
+    const { rc, payload } = passEnvelope(subcommand);
+    expect(rc).toBe(0);
+    expect(payload.command).toBe("validate");
+    expect(VALIDATE_FAMILY_ORACLE.statusUnion).toContain(payload.status);
 
-      if (subcommand === "capability") {
-        const spec = VALIDATE_FAMILY_ORACLE.families.capability;
-        expect(payload.target_family).toBe(spec.targetFamilyValue);
-        for (const key of spec.requiredTopLevelKeys) {
-          expect(payload).toHaveProperty(key);
-        }
-        return;
+    if (subcommand === "capability") {
+      const spec = VALIDATE_FAMILY_ORACLE.families.capability;
+      expect(payload.target_family).toBe(spec.targetFamilyValue);
+      for (const key of spec.requiredTopLevelKeys) {
+        expect(payload).toHaveProperty(key);
       }
+      return;
+    }
 
-      if (subcommand === "capability-contract") {
-        const spec = VALIDATE_FAMILY_ORACLE.families["capability-contract"];
-        expect(payload.target_family).toBe(spec.targetFamilyValue);
-        expect(Array.isArray(payload.checks)).toBe(true);
-        expect((payload.checks as unknown[]).length).toBe(3);
-        for (const key of spec.requiredTopLevelKeys) {
-          expect(payload).toHaveProperty(key);
-        }
-        return;
+    if (subcommand === "capability-contract") {
+      const spec = VALIDATE_FAMILY_ORACLE.families["capability-contract"];
+      expect(payload.target_family).toBe(spec.targetFamilyValue);
+      expect(Array.isArray(payload.checks)).toBe(true);
+      expect((payload.checks as unknown[]).length).toBe(3);
+      for (const key of spec.requiredTopLevelKeys) {
+        expect(payload).toHaveProperty(key);
       }
+      return;
+    }
 
-      const engineCommand = DELEGATED_ENGINE_COMMANDS[subcommand];
-      expect(payload.target_family).toBe(subcommand);
-      expect(payload.target).toBe(subcommand);
-      expect(payload.violations).toEqual([]);
-      const engine = payload.engine as Record<string, unknown>;
-      expect(engine.command).toBe(engineCommand);
-      expect(engine.exit_code).toBe(0);
-      expect(Array.isArray(engine.stdout)).toBe(true);
-      expect(Array.isArray(engine.stderr)).toBe(true);
-    },
-  );
+    const engineCommand = DELEGATED_ENGINE_COMMANDS[subcommand];
+    expect(payload.target_family).toBe(subcommand);
+    expect(payload.target).toBe(subcommand);
+    expect(payload.violations).toEqual([]);
+    const engine = payload.engine as Record<string, unknown>;
+    expect(engine.command).toBe(engineCommand);
+    expect(engine.exit_code).toBe(0);
+    expect(Array.isArray(engine.stdout)).toBe(true);
+    expect(Array.isArray(engine.stderr)).toBe(true);
+  });
 
-  it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))(
-    "fail: check validate %s rejects invalid input with the canonical envelope (rc 2)",
-    (subcommand) => {
-      if (subcommand === "capability") {
-        const { rc, payload } = runDispatch(["check", "validate", "capability", "--format", "json"]);
-        expect(rc).toBe(2);
-        expect(payload.status).toBe("fail");
-        expect((payload.error as Record<string, unknown>).class).toBe("missing_argument");
-        return;
-      }
-
-      const { rc, payload } = runDispatch([
-        "check",
-        "validate",
-        subcommand,
-        "--format",
-        "json",
-        "--bogus",
-      ]);
+  it.each(D56_SUBCOMMANDS.map((name) => [name, name] as const))("fail: check validate %s rejects invalid input with the canonical envelope (rc 2)", (subcommand) => {
+    if (subcommand === "capability") {
+      const { rc, payload } = runDispatch(["check", "validate", "capability", "--format", "json"]);
       expect(rc).toBe(2);
       expect(payload.status).toBe("fail");
-      expect((payload.error as Record<string, unknown>).class).toBe("unrecognized_argument");
-    },
-  );
+      expect((payload.error as Record<string, unknown>).class).toBe("missing_argument");
+      return;
+    }
+
+    const { rc, payload } = runDispatch(["check", "validate", subcommand, "--format", "json", "--bogus"]);
+    expect(rc).toBe(2);
+    expect(payload.status).toBe("fail");
+    expect((payload.error as Record<string, unknown>).class).toBe("unrecognized_argument");
+  });
 
   it("artifact_validation family row is equal against the parity-remaining-families oracle", () => {
     const spec = PARITY_ORACLE.families.artifact_validation;
     const { rc, payload } = runDispatch(spec.argv);
     expect(rc).toBe(spec.exitCode);
 
-    const normalized = normalizeEnvelope(
-      payload,
-      null,
-      PARITY_ORACLE.normalizeEnvelope.rules as Parameters<typeof normalizeEnvelope>[2],
-    ) as Record<string, unknown>;
-    const classification = classifyDrift(
-      normalized,
-      expectedShapeRequiredKeys(spec.expectedShape),
-      expectedShapeLiteralPins(spec.expectedShape),
-      spec.forbiddenSubstrings,
-    );
+    const normalized = normalizeEnvelope(payload, null, PARITY_ORACLE.normalizeEnvelope.rules as Parameters<typeof normalizeEnvelope>[2]) as Record<string, unknown>;
+    const classification = classifyDrift(normalized, expectedShapeRequiredKeys(spec.expectedShape), expectedShapeLiteralPins(spec.expectedShape), spec.forbiddenSubstrings);
     expect(classification.direction).toBe("equal");
   });
 

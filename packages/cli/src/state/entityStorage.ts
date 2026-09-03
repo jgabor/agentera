@@ -29,13 +29,7 @@ interface EntityDefinition {
   boundary: string;
   artifact: string;
   independentlyMutable: boolean;
-  record?: {
-    requiredFields: string[];
-    requiredPaths: string[];
-    forbiddenFields: string[];
-    timestampFormat?: string;
-    fieldShapes: Record<string, FieldShape>;
-  };
+  record?: { requiredFields: string[]; requiredPaths: string[]; forbiddenFields: string[]; timestampFormat?: string; fieldShapes: Record<string, FieldShape> };
   ownership?: { fields: string[]; cardinality: string };
   baseline?: { field: string; value: string; cardinality: string };
   migrationProvenance?: MigrationProvenanceDeclaration;
@@ -54,7 +48,8 @@ interface RelationshipDefinition {
   cardinality: string;
 }
 interface EntityAuthority {
-  entityRoot: string; maxEntityBytes: number;
+  entityRoot: string;
+  maxEntityBytes: number;
   alphabet: string;
   length: number;
   pattern: RegExp;
@@ -82,17 +77,18 @@ export interface DiscoveredEntity {
   artifact: string | null;
   boundary: string | null;
   record: JsonObject | null;
-  migrationProvenance: JsonObject | null; discoveredBytes: Buffer | null;
+  migrationProvenance: JsonObject | null;
+  discoveredBytes: Buffer | null;
   path: string;
   relativePath: string;
   classification: EntityClassification;
 }
-export function exactDiscoveredEntityBytes(entity: DiscoveredEntity): Buffer { if (entity.discoveredBytes === null) throw new Error(`entity '${entity.relativePath}' has no exact discovery-byte baseline`); return entity.discoveredBytes; }
+export function exactDiscoveredEntityBytes(entity: DiscoveredEntity): Buffer {
+  if (entity.discoveredBytes === null) throw new Error(`entity '${entity.relativePath}' has no exact discovery-byte baseline`);
+  return entity.discoveredBytes;
+}
 export interface EntityDiscoveryResult {
-  origin: {
-    projectRoot: string;
-    sourceRoot: string;
-  };
+  origin: { projectRoot: string; sourceRoot: string };
   entities: DiscoveredEntity[];
   issues: EntityDiagnostic[];
   validArtifactValues: string[];
@@ -124,31 +120,26 @@ export function entityArtifactValues(sourceRoot?: string): string[] {
 }
 
 export function entityBoundariesForArtifact(artifact: string, sourceRoot?: string): string[] {
-  return authority(sourceRoot).entities
-    .filter((definition) => definition.artifact === artifact)
+  return authority(sourceRoot)
+    .entities.filter((definition) => definition.artifact === artifact)
     .map((definition) => definition.boundary)
     .sort();
 }
 
-export function entityForbiddenCanonicalAliases(sourceRoot?: string): string[] { return [...authority(sourceRoot).forbiddenAliases]; }
-export function entityPreservedAggregateCollections(sourceRoot?: string): Record<string, string[]> { const sources = authority(sourceRoot).entities.flatMap((definition) => definition.summaryMigrationProvenance?.sources ?? []); return Object.fromEntries(sources.map((source) => [source.path, [...source.collections].sort()])); }
+export function entityForbiddenCanonicalAliases(sourceRoot?: string): string[] {
+  return [...authority(sourceRoot).forbiddenAliases];
+}
+export function entityPreservedAggregateCollections(sourceRoot?: string): Record<string, string[]> {
+  const sources = authority(sourceRoot).entities.flatMap((definition) => definition.summaryMigrationProvenance?.sources ?? []);
+  return Object.fromEntries(sources.map((source) => [source.path, [...source.collections].sort()]));
+}
 /** Validate bytes independently of a working-tree path, for committed recovery evidence. */
-export function canonicalEntityEnvelope(
-  bytes: string,
-  expected: { artifact: string; boundary: string; id: string },
-  sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext,
-): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
+export function canonicalEntityEnvelope(bytes: string, expected: { artifact: string; boundary: string; id: string }, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
   const model = authority(sourceRoot);
   return canonicalEntityEnvelopeAgainstModel(bytes, expected, model, sourceRoot, sourceBinding);
 }
 
-function canonicalEntityEnvelopeAgainstModel(
-  bytes: string,
-  expected: { artifact: string; boundary: string; id: string },
-  model: EntityAuthority,
-  sourceRoot?: string,
-  sourceBinding?: MigrationSourceBindingContext,
-): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
+function canonicalEntityEnvelopeAgainstModel(bytes: string, expected: { artifact: string; boundary: string; id: string }, model: EntityAuthority, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): { id: string; artifact: string; record: JsonObject; migrationProvenance: JsonObject | null } {
   const owner = model.byBoundary.get(expected.boundary);
   if (!owner || owner.artifact !== expected.artifact || !model.pattern.test(expected.id)) {
     throw new Error("the requested artifact, boundary, or ID is not authority-declared");
@@ -162,7 +153,7 @@ function canonicalEntityEnvelopeAgainstModel(
   }
   const record = document.record as JsonObject;
   const migrationProvenanceValue = document.migration_provenance;
-  const migrationProvenance = mapping(migrationProvenanceValue) ? migrationProvenanceValue as JsonObject : null;
+  const migrationProvenance = mapping(migrationProvenanceValue) ? (migrationProvenanceValue as JsonObject) : null;
   const violations = canonicalEntityRecordViolationsAgainstModel(expected.boundary, record, model, sourceBinding);
   violations.push(...migrationProvenanceViolations(expected.boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding));
   if (owner.record?.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""))) violations.push("timestamp must use YYYY-MM-DD HH:MM");
@@ -170,7 +161,8 @@ function canonicalEntityEnvelopeAgainstModel(
   if (expected.boundary === "health_audit") violations.push(...healthEntityViolations(record));
   if (expected.boundary === "plan") {
     const header = mapping(record.header) ? record.header : {};
-    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status)) || (record.replacement_input_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(String(record.replacement_input_sha256)))) violations.push("invalid plan lifecycle or replacement identity fields");
+    if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status)) || (record.replacement_input_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(String(record.replacement_input_sha256))))
+      violations.push("invalid plan lifecycle or replacement identity fields");
   }
   if (expected.boundary === "plan_task") violations.push(...planTaskRecordViolations(record));
   if (expected.boundary === "experiment" && (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.date ?? "")) || !["baseline", "kept", "discarded"].includes(String(record.status)))) violations.push("invalid experiment date or status");
@@ -183,32 +175,35 @@ export function canonicalEntityEnvelopeBytes(target: Pick<CanonicalEntityTarget,
   return dumpYamlMapping({ id: target.id, artifact: target.artifact, ...(target.migrationProvenance ? { migration_provenance: target.migrationProvenance } : {}), record: target.record });
 }
 
-function mapping(value: unknown): value is Record<string, unknown> { return value !== null && typeof value === "object" && !Array.isArray(value); }
-function strings(value: unknown): string[] { return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : []; }
+function mapping(value: unknown): value is Record<string, unknown> {
+  return value !== null && typeof value === "object" && !Array.isArray(value);
+}
+function strings(value: unknown): string[] {
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
+}
 let entityAuthorityCache: { revision: symbol; model: Omit<EntityAuthority, "glossaryCaveat"> } | undefined;
 function fieldShapes(value: unknown, authorityPath: string): Record<string, FieldShape> {
   if (value === undefined) return {};
   if (!mapping(value)) throw new Error(`invalid entity field_shapes declaration in '${authorityPath}'`);
-  return Object.fromEntries(Object.entries(value).map(([field, raw]) => {
-    if (!mapping(raw) || raw.type !== "mapping" || !mapping(raw.required_fields) || !["allowed", "forbidden"].includes(String(raw.additional_fields))) {
-      throw new Error(`invalid entity field_shapes.${field} declaration in '${authorityPath}'`);
-    }
-    const declaredFields = (group: "required_fields" | "optional_fields"): Record<string, "string_list"> => {
-      const declaration = raw[group];
-      if (declaration === undefined && group === "optional_fields") return {};
-      if (!mapping(declaration)) throw new Error(`invalid entity field_shapes.${field}.${group} declaration in '${authorityPath}'`);
-      return Object.fromEntries(Object.entries(declaration).map(([name, type]) => {
-        if (type !== "string_list") throw new Error(`invalid entity field_shapes.${field}.${group}.${name} declaration in '${authorityPath}'`);
-        return [name, type];
-      })) as Record<string, "string_list">;
-    };
-    return [field, {
-      type: "mapping",
-      requiredFields: declaredFields("required_fields"),
-      optionalFields: declaredFields("optional_fields"),
-      additionalFields: raw.additional_fields as "allowed" | "forbidden",
-    }];
-  }));
+  return Object.fromEntries(
+    Object.entries(value).map(([field, raw]) => {
+      if (!mapping(raw) || raw.type !== "mapping" || !mapping(raw.required_fields) || !["allowed", "forbidden"].includes(String(raw.additional_fields))) {
+        throw new Error(`invalid entity field_shapes.${field} declaration in '${authorityPath}'`);
+      }
+      const declaredFields = (group: "required_fields" | "optional_fields"): Record<string, "string_list"> => {
+        const declaration = raw[group];
+        if (declaration === undefined && group === "optional_fields") return {};
+        if (!mapping(declaration)) throw new Error(`invalid entity field_shapes.${field}.${group} declaration in '${authorityPath}'`);
+        return Object.fromEntries(
+          Object.entries(declaration).map(([name, type]) => {
+            if (type !== "string_list") throw new Error(`invalid entity field_shapes.${field}.${group}.${name} declaration in '${authorityPath}'`);
+            return [name, type];
+          }),
+        ) as Record<string, "string_list">;
+      };
+      return [field, { type: "mapping", requiredFields: declaredFields("required_fields"), optionalFields: declaredFields("optional_fields"), additionalFields: raw.additional_fields as "allowed" | "forbidden" }];
+    }),
+  );
 }
 
 function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
@@ -228,33 +223,25 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     const baseline = mapping(value.baseline) ? value.baseline : null;
     const canonicalMetadata = mapping(value.canonical_metadata) ? value.canonical_metadata : null;
     const migrationProvenance = canonicalMetadata && mapping(canonicalMetadata.migration_provenance) ? canonicalMetadata.migration_provenance : null;
-    const summaryMigrationProvenance = mapping(canonicalMetadata?.summary_migration_provenance) ? canonicalMetadata.summary_migration_provenance as JsonObject : null;
+    const summaryMigrationProvenance = mapping(canonicalMetadata?.summary_migration_provenance) ? (canonicalMetadata.summary_migration_provenance as JsonObject) : null;
     return {
       boundary: value.boundary,
       artifact: value.artifact,
       independentlyMutable: value.independently_mutable !== false,
-      ...(record ? { record: {
-        requiredFields: strings(record.required_fields),
-        requiredPaths: strings(record.required_paths),
-        forbiddenFields: strings(record.forbidden_fields),
-        fieldShapes: fieldShapes(record.field_shapes, authorityPath),
-        ...(typeof record.timestamp_format === "string" ? { timestampFormat: record.timestamp_format } : {}),
-      } } : {}),
-      ...(ownership ? { ownership: {
-        fields: strings(ownership.fields),
-        cardinality: String(ownership.cardinality ?? ""),
-      } } : {}),
-      ...(baseline && typeof baseline.field === "string" && typeof baseline.value === "string" ? { baseline: {
-        field: baseline.field,
-        value: baseline.value,
-        cardinality: String(baseline.cardinality ?? ""),
-      } } : {}),
-      ...(migrationProvenance ? { migrationProvenance: {
-        requiredFields: strings(migrationProvenance.required_fields),
-        kind: String(migrationProvenance.kind ?? ""),
-        sources: strings(migrationProvenance.sources),
-        additionalFields: migrationProvenance.additional_fields as "forbidden",
-      } } : {}),
+      ...(record
+        ? {
+            record: {
+              requiredFields: strings(record.required_fields),
+              requiredPaths: strings(record.required_paths),
+              forbiddenFields: strings(record.forbidden_fields),
+              fieldShapes: fieldShapes(record.field_shapes, authorityPath),
+              ...(typeof record.timestamp_format === "string" ? { timestampFormat: record.timestamp_format } : {}),
+            },
+          }
+        : {}),
+      ...(ownership ? { ownership: { fields: strings(ownership.fields), cardinality: String(ownership.cardinality ?? "") } } : {}),
+      ...(baseline && typeof baseline.field === "string" && typeof baseline.value === "string" ? { baseline: { field: baseline.field, value: baseline.value, cardinality: String(baseline.cardinality ?? "") } } : {}),
+      ...(migrationProvenance ? { migrationProvenance: { requiredFields: strings(migrationProvenance.required_fields), kind: String(migrationProvenance.kind ?? ""), sources: strings(migrationProvenance.sources), additionalFields: migrationProvenance.additional_fields as "forbidden" } } : {}),
       ...(summaryMigrationProvenance ? { summaryMigrationProvenance: summaryMigrationProvenanceDeclaration(summaryMigrationProvenance, authorityPath) } : {}),
     };
   });
@@ -278,8 +265,16 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
     throw new Error(`unsafe shared entity storage root '${entityRoot}' in '${authorityPath}'`);
   }
   const exactGet = mapping(target.measurement_contract) && mapping(target.measurement_contract.targets) && mapping(target.measurement_contract.targets.exact_get) ? target.measurement_contract.targets.exact_get : null;
-  const maxEntityBytes = Number(exactGet?.max_utf8_bytes); if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1) throw new Error(`invalid exact entity byte limit in '${authorityPath}'`);
-  const model = { entityRoot, maxEntityBytes, alphabet, length, pattern: new RegExp(acceptedPattern), entities, relationships,
+  const maxEntityBytes = Number(exactGet?.max_utf8_bytes);
+  if (!Number.isSafeInteger(maxEntityBytes) || maxEntityBytes < 1) throw new Error(`invalid exact entity byte limit in '${authorityPath}'`);
+  const model = {
+    entityRoot,
+    maxEntityBytes,
+    alphabet,
+    length,
+    pattern: new RegExp(acceptedPattern),
+    entities,
+    relationships,
     artifacts: [...new Set(entities.map(({ artifact }) => artifact))].sort(),
     byBoundary: new Map(entities.map((entity) => [entity.boundary, entity])),
     forbiddenAliases: strings(target.public_schema.forbidden_canonical_aliases),
@@ -288,7 +283,9 @@ function authority(sourceRoot = resolveSourceRoot()): EntityAuthority {
   return { ...model, glossaryCaveat: loadEntityGlossaryAuthority(path.join(sourceRoot, "references", "artifacts", "glossary-entry-contract.yaml")) };
 }
 
-export function entityExactGetMaxBytes(sourceRoot?: string): number { return authority(sourceRoot).maxEntityBytes; }
+export function entityExactGetMaxBytes(sourceRoot?: string): number {
+  return authority(sourceRoot).maxEntityBytes;
+}
 
 export function canonicalEntityRecordViolations(boundary: string, record: JsonObject, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): string[] {
   return canonicalEntityRecordViolationsAgainstModel(boundary, record, authority(sourceRoot), sourceBinding);
@@ -303,8 +300,7 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
     for (const part of field.split(".")) current = mapping(current) ? current[part] : undefined;
     return typeof current !== "string" || current.length === 0;
   });
-  const forbidden = [...new Set([...definition.record.forbiddenFields, ...model.forbiddenAliases])]
-    .filter((field) => record[field] !== undefined);
+  const forbidden = [...new Set([...definition.record.forbiddenFields, ...model.forbiddenAliases])].filter((field) => record[field] !== undefined);
   const shapeViolations = Object.entries(definition.record.fieldShapes).flatMap(([field, shape]) => {
     const value = record[field];
     if (!mapping(value)) return [`${field} must be a mapping`];
@@ -333,14 +329,7 @@ function canonicalEntityRecordViolationsAgainstModel(boundary: string, record: J
   ];
 }
 
-function migrationProvenanceViolations(
-  boundary: string,
-  record: JsonObject,
-  provenance: unknown,
-  model: EntityAuthority,
-  sourceRoot?: string,
-  sourceBinding?: MigrationSourceBindingContext,
-): string[] {
+function migrationProvenanceViolations(boundary: string, record: JsonObject, provenance: unknown, model: EntityAuthority, sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): string[] {
   const definition = model.byBoundary.get(boundary);
   const declared = definition?.migrationProvenance;
   if (!declared) return provenance === null || provenance === undefined ? [] : ["migration_provenance is not allowed on this entity boundary"];
@@ -380,68 +369,36 @@ function noSymlinkPrefix(projectRoot: string, candidate: string): string | null 
 
 function unsafeIssue(projectRoot: string, candidate: string): EntityDiagnostic {
   const entityPath = relative(projectRoot, candidate);
-  return {
-    code: "unsafe_path",
-    path: entityPath,
-    message: `entity path '${entityPath}' is a symbolic link and was not traversed`,
-    recovery: recovery(projectRoot, `remove the symbolic link '${entityPath}' and restore a project-local directory or file`),
-  };
+  return { code: "unsafe_path", path: entityPath, message: `entity path '${entityPath}' is a symbolic link and was not traversed`, recovery: recovery(projectRoot, `remove the symbolic link '${entityPath}' and restore a project-local directory or file`) };
 }
 
 function unsafeEntity(projectRoot: string, candidate: string): DiscoveredEntity {
-  return {
-    id: null,
-    artifact: null,
-    boundary: null,
-    record: null,
-    migrationProvenance: null, discoveredBytes: null,
-    path: candidate,
-    relativePath: relative(projectRoot, candidate),
-    classification: "unsafe",
-  };
+  return { id: null, artifact: null, boundary: null, record: null, migrationProvenance: null, discoveredBytes: null, path: candidate, relativePath: relative(projectRoot, candidate), classification: "unsafe" };
 }
 
 function listDirectories(directory: string): fs.Dirent[] {
   return fs.readdirSync(directory, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name));
 }
 
-function discoverFile(
-  projectRoot: string,
-  file: string,
-  pathArtifact: string,
-  boundary: string,
-  model: EntityAuthority,
-  issues: EntityDiagnostic[],
-  sourceRoot?: string,
-  sourceBinding?: MigrationSourceBindingContext,
-): DiscoveredEntity {
+function discoverFile(projectRoot: string, file: string, pathArtifact: string, boundary: string, model: EntityAuthority, issues: EntityDiagnostic[], sourceRoot?: string, sourceBinding?: MigrationSourceBindingContext): DiscoveredEntity {
   const relativePath = relative(projectRoot, file);
   const filenameId = path.basename(file, path.extname(file));
-  let document: Record<string, unknown> | null = null; let discoveredBytes: Buffer | null = null;
-  try { discoveredBytes = fs.readFileSync(file); if (!isUtf8(discoveredBytes)) throw new Error("entity file is not valid UTF-8"); document = loadYamlMapping(discoveredBytes.toString("utf8"));
+  let document: Record<string, unknown> | null = null;
+  let discoveredBytes: Buffer | null = null;
+  try {
+    discoveredBytes = fs.readFileSync(file);
+    if (!isUtf8(discoveredBytes)) throw new Error("entity file is not valid UTF-8");
+    document = loadYamlMapping(discoveredBytes.toString("utf8"));
   } catch (error) {
-    issues.push({
-      code: "malformed_entity",
-      path: relativePath,
-      message: `entity '${relativePath}' is not a YAML mapping: ${(error as Error).message}`,
-      recovery: recovery(projectRoot, `replace '${relativePath}' with a valid UTF-8 YAML id/artifact/record entity envelope or remove it`),
-    });
+    issues.push({ code: "malformed_entity", path: relativePath, message: `entity '${relativePath}' is not a YAML mapping: ${(error as Error).message}`, recovery: recovery(projectRoot, `replace '${relativePath}' with a valid UTF-8 YAML id/artifact/record entity envelope or remove it`) });
   }
   const id = typeof document?.id === "string" ? document.id : filenameId;
   const artifact = typeof document?.artifact === "string" ? document.artifact : pathArtifact;
-  const record = mapping(document?.record) ? document.record as JsonObject : null;
+  const record = mapping(document?.record) ? (document.record as JsonObject) : null;
   const migrationProvenanceValue = document?.migration_provenance;
-  const migrationProvenance = mapping(migrationProvenanceValue) ? migrationProvenanceValue as JsonObject : null;
+  const migrationProvenance = mapping(migrationProvenanceValue) ? (migrationProvenanceValue as JsonObject) : null;
   let malformed = document === null;
-  if (
-    !model.pattern.test(filenameId)
-    || id !== filenameId
-    || typeof document?.id !== "string"
-    || typeof document?.artifact !== "string"
-    || record === null
-    || document === null
-    || Object.keys(document).some((key) => !["id", "artifact", "record", "migration_provenance"].includes(key))
-  ) {
+  if (!model.pattern.test(filenameId) || id !== filenameId || typeof document?.id !== "string" || typeof document?.artifact !== "string" || record === null || document === null || Object.keys(document).some((key) => !["id", "artifact", "record", "migration_provenance"].includes(key))) {
     malformed = true;
     if (document !== null) {
       issues.push({
@@ -458,15 +415,7 @@ function discoverFile(
   const owner = model.byBoundary.get(boundary);
   if (!model.artifacts.includes(pathArtifact) || !model.artifacts.includes(artifact)) {
     malformed = true;
-    issues.push({
-      code: "invalid_artifact",
-      path: relativePath,
-      id,
-      artifact,
-      boundary,
-      message: `entity '${relativePath}' declares unsupported artifact '${artifact}' under '${pathArtifact}'`,
-      recovery: recovery(projectRoot, `move or rewrite '${relativePath}'; valid artifact values: ${model.artifacts.join(", ")}`),
-    });
+    issues.push({ code: "invalid_artifact", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' declares unsupported artifact '${artifact}' under '${pathArtifact}'`, recovery: recovery(projectRoot, `move or rewrite '${relativePath}'; valid artifact values: ${model.artifacts.join(", ")}`) });
   } else {
     if (!owner || owner.artifact !== pathArtifact || artifact !== pathArtifact) {
       malformed = true;
@@ -477,17 +426,12 @@ function discoverFile(
         artifact,
         boundary,
         message: `entity '${relativePath}' has conflicting ownership: path artifact '${pathArtifact}', boundary '${boundary}', envelope artifact '${artifact}'`,
-        recovery: recovery(projectRoot, owner
-          ? `move '${relativePath}' under .agentera/entities/${owner.artifact}/${boundary}/ and set artifact to '${owner.artifact}'`
-          : `move or rewrite '${relativePath}' using a boundary declared by the state storage authority`),
+        recovery: recovery(projectRoot, owner ? `move '${relativePath}' under .agentera/entities/${owner.artifact}/${boundary}/ and set artifact to '${owner.artifact}'` : `move or rewrite '${relativePath}' using a boundary declared by the state storage authority`),
       });
     }
   }
   if (!malformed && owner?.record && record) {
-    const violations = [
-      ...canonicalEntityRecordViolationsAgainstModel(boundary, record, model, sourceBinding),
-      ...migrationProvenanceViolations(boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding),
-    ];
+    const violations = [...canonicalEntityRecordViolationsAgainstModel(boundary, record, model, sourceBinding), ...migrationProvenanceViolations(boundary, record, migrationProvenanceValue, model, sourceRoot, sourceBinding)];
     const timestampInvalid = owner.record.timestampFormat === "YYYY-MM-DD HH:MM" && !/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(String(record.timestamp ?? ""));
     if (violations.length || timestampInvalid) {
       malformed = true;
@@ -506,37 +450,29 @@ function discoverFile(
     const violations = decisionRevisionEntityViolations(record, decisionRevisionContract(sourceRoot), migrationProvenance?.kind === "inherited_decision_revision_confidence");
     if (violations.length) {
       malformed = true;
-      issues.push({
-        code: "malformed_entity",
-        path: relativePath,
-        id,
-        artifact,
-        boundary,
-        message: `entity '${relativePath}' has an invalid decision revision: ${violations.join("; ")}`,
-        recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared decision revision contract`),
-      });
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid decision revision: ${violations.join("; ")}`, recovery: recovery(projectRoot, `repair '${relativePath}' using the authority-declared decision revision contract`) });
     }
   }
   if (!malformed && boundary === "health_audit" && record) {
     const violations = healthEntityViolations(record);
     if (violations.length) {
       malformed = true;
-      issues.push({
-        code: "malformed_entity",
-        path: relativePath,
-        id,
-        artifact,
-        boundary,
-        message: `entity '${relativePath}' has an invalid canonical health audit`,
-        recovery: recovery(projectRoot, `preserve the declared audit evidence and repair '${relativePath}' using the health schema`),
-      });
+      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has an invalid canonical health audit`, recovery: recovery(projectRoot, `preserve the declared audit evidence and repair '${relativePath}' using the health schema`) });
     }
   }
   if (!malformed && boundary === "plan" && record) {
     const header = mapping(record.header) ? record.header : {};
     if (!mapping(record.header) || typeof header.title !== "string" || typeof header.created !== "string" || !["open", "complete", "archived"].includes(String(header.status)) || (record.replacement_input_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(String(record.replacement_input_sha256)))) {
       malformed = true;
-      issues.push({ code: "malformed_entity", path: relativePath, id, artifact, boundary, message: `entity '${relativePath}' has invalid plan lifecycle or replacement identity fields`, recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan header schema, open|complete|archived lifecycle, and lowercase SHA-256 replacement identity`) });
+      issues.push({
+        code: "malformed_entity",
+        path: relativePath,
+        id,
+        artifact,
+        boundary,
+        message: `entity '${relativePath}' has invalid plan lifecycle or replacement identity fields`,
+        recovery: recovery(projectRoot, `repair '${relativePath}' using the current plan header schema, open|complete|archived lifecycle, and lowercase SHA-256 replacement identity`),
+      });
     }
   }
   if (!malformed && boundary === "plan_task" && record) {
@@ -579,21 +515,33 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string, sourc
 
   for (const artifactEntry of listDirectories(storageRoot)) {
     const artifactPath = path.join(storageRoot, artifactEntry.name);
-    if (artifactEntry.isSymbolicLink()) { entities.push(unsafeEntity(root, artifactPath)); issues.push(unsafeIssue(root, artifactPath)); continue; }
+    if (artifactEntry.isSymbolicLink()) {
+      entities.push(unsafeEntity(root, artifactPath));
+      issues.push(unsafeIssue(root, artifactPath));
+      continue;
+    }
     if (!artifactEntry.isDirectory()) {
       issues.push({ code: "malformed_entity", path: relative(root, artifactPath), message: `unexpected file '${relative(root, artifactPath)}' in entity root`, recovery: recovery(root, `remove '${relative(root, artifactPath)}' or place it under an artifact/boundary directory`) });
       continue;
     }
     for (const boundaryEntry of listDirectories(artifactPath)) {
       const boundaryPath = path.join(artifactPath, boundaryEntry.name);
-      if (boundaryEntry.isSymbolicLink()) { entities.push(unsafeEntity(root, boundaryPath)); issues.push(unsafeIssue(root, boundaryPath)); continue; }
+      if (boundaryEntry.isSymbolicLink()) {
+        entities.push(unsafeEntity(root, boundaryPath));
+        issues.push(unsafeIssue(root, boundaryPath));
+        continue;
+      }
       if (!boundaryEntry.isDirectory()) {
         issues.push({ code: "malformed_entity", path: relative(root, boundaryPath), message: `unexpected file '${relative(root, boundaryPath)}' in artifact entity root`, recovery: recovery(root, `remove '${relative(root, boundaryPath)}' or place it under a declared boundary directory`) });
         continue;
       }
       for (const fileEntry of listDirectories(boundaryPath)) {
         const file = path.join(boundaryPath, fileEntry.name);
-        if (fileEntry.isSymbolicLink()) { entities.push(unsafeEntity(root, file)); issues.push(unsafeIssue(root, file)); continue; }
+        if (fileEntry.isSymbolicLink()) {
+          entities.push(unsafeEntity(root, file));
+          issues.push(unsafeIssue(root, file));
+          continue;
+        }
         if (!fileEntry.isFile() || path.extname(fileEntry.name) !== ".yaml") {
           issues.push({ code: "malformed_entity", path: relative(root, file), message: `entity path '${relative(root, file)}' is not a canonical YAML file`, recovery: recovery(root, `remove '${relative(root, file)}' or replace it with <ten-lowercase-letter-id>.yaml`) });
           continue;
@@ -630,10 +578,7 @@ export function discoverEntities(projectRoot: string, sourceRoot?: string, sourc
 }
 
 export function assertEntityDiscoveryOrigin(projectRoot: string, sourceRoot: string | undefined, discovery: EntityDiscoveryResult): void {
-  const expected = {
-    projectRoot: path.resolve(projectRoot),
-    sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()),
-  };
+  const expected = { projectRoot: path.resolve(projectRoot), sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()) };
   const actualProjectRoot = discovery.origin?.projectRoot ?? "<missing>";
   const actualSourceRoot = discovery.origin?.sourceRoot ?? "<missing>";
   if (actualProjectRoot === expected.projectRoot && actualSourceRoot === expected.sourceRoot) return;
@@ -659,12 +604,15 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
     if (!entity.boundary || !entity.record) continue;
     for (const relation of model.relationships.filter(({ source }) => source === entity.boundary)) {
       const targets = relationTargets(entity, relation);
-      const invalidTargets = targets === null ? [String(entity.record[relation.field] ?? "<missing>")] : targets.filter((targetId) => {
-        const matches = byId.get(targetId) ?? [];
-        if (matches.length !== 1 || matches[0].boundary !== relation.target) return true;
-        if (relation.cardinality === "zero_or_many_same_plan") return matches[0].record?.plan !== entity.record?.plan;
-        return false;
-      });
+      const invalidTargets =
+        targets === null
+          ? [String(entity.record[relation.field] ?? "<missing>")]
+          : targets.filter((targetId) => {
+              const matches = byId.get(targetId) ?? [];
+              if (matches.length !== 1 || matches[0].boundary !== relation.target) return true;
+              if (relation.cardinality === "zero_or_many_same_plan") return matches[0].record?.plan !== entity.record?.plan;
+              return false;
+            });
       for (const targetId of invalidTargets) {
         issues.push({
           code: "unresolved_relation",
@@ -694,41 +642,59 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
       if (visiting.has(task.id!)) return true;
       if (visited.has(task.id!)) return false;
       visiting.add(task.id!);
-      const cyclic = (Array.isArray(task.record?.depends_on) ? task.record.depends_on : [])
-        .some((id) => typeof id === "string" && byTaskId.has(id) && visit(byTaskId.get(id)!));
-      visiting.delete(task.id!); visited.add(task.id!); return cyclic;
+      const cyclic = (Array.isArray(task.record?.depends_on) ? task.record.depends_on : []).some((id) => typeof id === "string" && byTaskId.has(id) && visit(byTaskId.get(id)!));
+      visiting.delete(task.id!);
+      visited.add(task.id!);
+      return cyclic;
     };
-    for (const task of tasks) if (visit(task)) issues.push({
-      code: "unresolved_relation", path: task.relativePath, id: task.id!, artifact: task.artifact ?? undefined, boundary: task.boundary ?? undefined,
-      relation: "depends_on", message: `plan '${planId}' task dependency graph contains a cycle involving '${task.id}'`,
-      recovery: recovery(projectRoot, `remove one record.depends_on edge in plan '${planId}' so the task graph is acyclic`),
-    });
+    for (const task of tasks)
+      if (visit(task))
+        issues.push({
+          code: "unresolved_relation",
+          path: task.relativePath,
+          id: task.id!,
+          artifact: task.artifact ?? undefined,
+          boundary: task.boundary ?? undefined,
+          relation: "depends_on",
+          message: `plan '${planId}' task dependency graph contains a cycle involving '${task.id}'`,
+          recovery: recovery(projectRoot, `remove one record.depends_on edge in plan '${planId}' so the task graph is acyclic`),
+        });
     for (const task of tasks.filter((candidate) => candidate.record?.status === "superseded")) {
       for (const replacementId of task.record?.superseded_by as string[]) {
         const replacement = byTaskId.get(replacementId);
-        if (replacementId === task.id || replacement?.record?.status !== "complete") issues.push({
-          code: "unresolved_relation", path: task.relativePath, id: task.id!, artifact: task.artifact ?? undefined, boundary: task.boundary ?? undefined,
-          relation: "superseded_by", targetId: replacementId,
-          message: replacementId === task.id
-            ? `superseded task '${task.id}' cannot name itself as a replacement`
-            : `superseded task '${task.id}' replacement '${replacementId}' must be complete in plan '${planId}'`,
-          recovery: recovery(projectRoot, `set record.superseded_by in '${task.relativePath}' to completed task IDs from plan '${planId}'`),
-        });
+        if (replacementId === task.id || replacement?.record?.status !== "complete")
+          issues.push({
+            code: "unresolved_relation",
+            path: task.relativePath,
+            id: task.id!,
+            artifact: task.artifact ?? undefined,
+            boundary: task.boundary ?? undefined,
+            relation: "superseded_by",
+            targetId: replacementId,
+            message: replacementId === task.id ? `superseded task '${task.id}' cannot name itself as a replacement` : `superseded task '${task.id}' replacement '${replacementId}' must be complete in plan '${planId}'`,
+            recovery: recovery(projectRoot, `set record.superseded_by in '${task.relativePath}' to completed task IDs from plan '${planId}'`),
+          });
       }
     }
   }
   for (const plan of discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record)) {
-    const header = mapping(plan.record!.header) ? plan.record!.header as JsonObject : {};
+    const header = mapping(plan.record!.header) ? (plan.record!.header as JsonObject) : {};
     if (header.status === "complete") {
       const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => !["complete", "superseded"].includes(String(task.record?.status)));
-      if (incomplete.length) issues.push({
-        code: "conflicting_ownership", path: plan.relativePath, id: plan.id!, artifact: plan.artifact ?? undefined, boundary: plan.boundary ?? undefined,
-        message: `complete plan '${plan.id}' owns ${incomplete.length} incomplete task entities`,
-        recovery: recovery(projectRoot, `complete every task related to plan '${plan.id}' or restore the plan lifecycle to open`),
-      });
+      if (incomplete.length)
+        issues.push({
+          code: "conflicting_ownership",
+          path: plan.relativePath,
+          id: plan.id!,
+          artifact: plan.artifact ?? undefined,
+          boundary: plan.boundary ?? undefined,
+          message: `complete plan '${plan.id}' owns ${incomplete.length} incomplete task entities`,
+          recovery: recovery(projectRoot, `complete every task related to plan '${plan.id}' or restore the plan lifecycle to open`),
+        });
     }
   }
-  const canonicalPlans = discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record); issues.push(...planLineageIssues(canonicalPlans, (action) => recovery(projectRoot, action)));
+  const canonicalPlans = discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record);
+  issues.push(...planLineageIssues(canonicalPlans, (action) => recovery(projectRoot, action)));
   for (const definition of model.entities) {
     if (!definition.ownership || definition.ownership.cardinality !== "zero_or_one") continue;
     const claims = new Map<string, DiscoveredEntity[]>();
@@ -740,15 +706,16 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
     }
     for (const claimants of claims.values()) {
       if (claimants.length < 2) continue;
-      for (const entity of claimants) issues.push({
-        code: "conflicting_ownership",
-        path: entity.relativePath,
-        id: entity.id ?? undefined,
-        artifact: entity.artifact ?? undefined,
-        boundary: entity.boundary ?? undefined,
-        message: `entity '${entity.relativePath}' shares the authority-owned ${definition.ownership.fields.join("+")} claim with ${claimants.length - 1} other '${definition.boundary}' entity`,
-        recovery: recovery(projectRoot, `preserve every claimant and resolve the divergent '${definition.boundary}' ownership explicitly`),
-      });
+      for (const entity of claimants)
+        issues.push({
+          code: "conflicting_ownership",
+          path: entity.relativePath,
+          id: entity.id ?? undefined,
+          artifact: entity.artifact ?? undefined,
+          boundary: entity.boundary ?? undefined,
+          message: `entity '${entity.relativePath}' shares the authority-owned ${definition.ownership.fields.join("+")} claim with ${claimants.length - 1} other '${definition.boundary}' entity`,
+          recovery: recovery(projectRoot, `preserve every claimant and resolve the divergent '${definition.boundary}' ownership explicitly`),
+        });
     }
   }
   for (const definition of model.entities) {
@@ -761,11 +728,16 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
     for (const [owner, entities] of byOwner) {
       const baselines = entities.filter((entity) => entity.record?.[definition.baseline!.field] === definition.baseline!.value);
       if (baselines.length === 1) continue;
-      for (const entity of entities) issues.push({
-        code: "conflicting_ownership", path: entity.relativePath, id: entity.id ?? undefined, artifact: entity.artifact ?? undefined, boundary: entity.boundary ?? undefined,
-        message: `objective '${owner}' owns ${baselines.length} '${definition.baseline.value}' experiments; exactly one is required`,
-        recovery: recovery(projectRoot, baselines.length ? `preserve one immutable baseline for objective '${owner}' and resolve competing ownership` : `restore the missing immutable baseline for objective '${owner}'`),
-      });
+      for (const entity of entities)
+        issues.push({
+          code: "conflicting_ownership",
+          path: entity.relativePath,
+          id: entity.id ?? undefined,
+          artifact: entity.artifact ?? undefined,
+          boundary: entity.boundary ?? undefined,
+          message: `objective '${owner}' owns ${baselines.length} '${definition.baseline.value}' experiments; exactly one is required`,
+          recovery: recovery(projectRoot, baselines.length ? `preserve one immutable baseline for objective '${owner}' and resolve competing ownership` : `restore the missing immutable baseline for objective '${owner}'`),
+        });
     }
   }
   issues.sort(diagnosticSort);
@@ -788,25 +760,35 @@ export function validateCanonicalEntityTargets(projectRoot: string, targets: Can
   for (const target of targets) targetsById.set(target.id, [...(targetsById.get(target.id) ?? []), target]);
   for (const target of targets) {
     const expectedPath = path.posix.join(model.entityRoot, target.artifact, target.boundary, `${target.id}.yaml`);
-    let record: JsonObject | null = null; let discoveredBytes: Buffer | null = null;
+    let record: JsonObject | null = null;
+    let discoveredBytes: Buffer | null = null;
     let message: string | null = target.path === expectedPath ? null : `canonical target path '${target.path}' must be '${expectedPath}'`;
     if (!message) {
-      try { const bytes = canonicalEntityEnvelopeBytes(target); discoveredBytes = Buffer.from(bytes); record = canonicalEntityEnvelopeAgainstModel(bytes, target, model, sourceRoot, { kind: "migration_preview", projectRoot }).record; }
-      catch (error) { message = (error as Error).message; }
+      try {
+        const bytes = canonicalEntityEnvelopeBytes(target);
+        discoveredBytes = Buffer.from(bytes);
+        record = canonicalEntityEnvelopeAgainstModel(bytes, target, model, sourceRoot, { kind: "migration_preview", projectRoot }).record;
+      } catch (error) {
+        message = (error as Error).message;
+      }
     }
     if (message) issues.push({ code: "malformed_entity", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message, recovery: recovery(projectRoot, `repair legacy source '${target.sourceIdentity}' so its canonical target satisfies the authority-backed boundary validator`) });
     entities.push({ id: target.id, artifact: target.artifact, boundary: target.boundary, record, migrationProvenance: target.migrationProvenance ?? null, discoveredBytes, path: path.join(projectRoot, target.path), relativePath: target.path, classification: message ? "malformed" : "valid" });
   }
   for (const duplicates of targetsById.values()) {
     if (duplicates.length < 2) continue;
-    for (const target of duplicates) issues.push({ code: "duplicate_id", path: target.path, id: target.id, artifact: target.artifact, boundary: target.boundary, message: `entity ID '${target.id}' appears ${duplicates.length} times across proposed canonical targets`, recovery: recovery(projectRoot, `repair migration identity allocation for '${target.sourceIdentity}'`) });
+    for (const target of duplicates)
+      issues.push({
+        code: "duplicate_id",
+        path: target.path,
+        id: target.id,
+        artifact: target.artifact,
+        boundary: target.boundary,
+        message: `entity ID '${target.id}' appears ${duplicates.length} times across proposed canonical targets`,
+        recovery: recovery(projectRoot, `repair migration identity allocation for '${target.sourceIdentity}'`),
+      });
   }
-  const validation = validateEntityDiscovery(projectRoot, sourceRoot, {
-    origin: { projectRoot: path.resolve(projectRoot), sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()) },
-    entities,
-    issues,
-    validArtifactValues: model.artifacts,
-  }, false);
+  const validation = validateEntityDiscovery(projectRoot, sourceRoot, { origin: { projectRoot: path.resolve(projectRoot), sourceRoot: path.resolve(sourceRoot ?? resolveSourceRoot()) }, entities, issues, validArtifactValues: model.artifacts }, false);
   return validation.issues.map((issue) => ({ sourceIdentity: sourceByPath.get(issue.path) ?? issue.id ?? issue.path, path: issue.path, message: issue.message }));
 }
 
@@ -818,7 +800,11 @@ function generatedId(model: EntityAuthority): string {
 
 export function allocateEntityId(projectRoot: string, candidate?: () => string, sourceRoot?: string): string {
   const model = authority(sourceRoot);
-  const existing = new Set(discoverEntities(projectRoot, sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
+  const existing = new Set(
+    discoverEntities(projectRoot, sourceRoot)
+      .entities.map(({ id }) => id)
+      .filter((id): id is string => id !== null),
+  );
   for (let attempt = 0; attempt < 1024; attempt += 1) {
     const id = candidate ? candidate() : generatedId(model);
     if (!model.pattern.test(id)) throw new Error(`entity ID candidate '${id}' must match ${model.pattern.source}`);
@@ -843,18 +829,17 @@ export interface PublishEntityResult {
   boundary: string;
   path: string;
   replay: boolean;
-  publishedIdentity?: PublishedTargetIdentity; previousBytes?: string;
+  publishedIdentity?: PublishedTargetIdentity;
+  previousBytes?: string;
 }
 
 export interface ReplaceEntityRequest extends PublishEntityRequest {
-  expectedRecord: JsonObject; expectedBytes: Buffer; migrationProvenance?: JsonObject | null;
+  expectedRecord: JsonObject;
+  expectedBytes: Buffer;
+  migrationProvenance?: JsonObject | null;
 }
 
-function publishEntityLocked(
-  request: PublishEntityRequest,
-  model: EntityAuthority,
-  context: EntityPublicationContext,
-): PublishEntityResult {
+function publishEntityLocked(request: PublishEntityRequest, model: EntityAuthority, context: EntityPublicationContext): PublishEntityResult {
   context.assertValid();
   if (!model.pattern.test(request.id)) throw new Error(`entity ID '${request.id}' must match ${model.pattern.source}`);
   const owner = model.byBoundary.get(request.boundary);
@@ -863,12 +848,7 @@ function publishEntityLocked(
   if (!owner.independentlyMutable) throw new Error(`boundary '${request.boundary}' is immutable migration-only state and cannot be published by an ordinary entity writer`);
   if (!mapping(request.record)) throw new Error("entity record must be a mapping");
   const root = context.pinnedPath();
-  const relativeTarget = path.join(
-    model.entityRoot,
-    request.artifact,
-    request.boundary,
-    `${request.id}.yaml`,
-  );
+  const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
   const target = path.join(root, relativeTarget);
   const publicTarget = path.join(path.resolve(request.projectRoot), relativeTarget);
   const symlink = noSymlinkPrefix(root, target);
@@ -912,21 +892,12 @@ export function replaceEntityUnderLock(request: ReplaceEntityRequest): PublishEn
   if (!owner || owner.artifact !== request.artifact) throw new Error(`unknown '${request.artifact}' entity boundary '${request.boundary}'`);
   if (!owner.independentlyMutable) throw new Error(`boundary '${request.boundary}' is immutable migration-only state and cannot be replaced by an ordinary entity writer`);
   const relativeTarget = path.join(model.entityRoot, request.artifact, request.boundary, `${request.id}.yaml`);
-  if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record))
-    return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
-  const replacement = context.replaceExisting(
-    relativeTarget,
-    request.expectedBytes,
-    canonicalEntityEnvelopeBytes({ id: request.id, artifact: request.artifact, record: request.record, migrationProvenance: request.migrationProvenance ?? undefined }),
-    model.maxEntityBytes,
-  );
+  if (canonicalRecordJson(request.expectedRecord) === canonicalRecordJson(request.record)) return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: true };
+  const replacement = context.replaceExisting(relativeTarget, request.expectedBytes, canonicalEntityEnvelopeBytes({ id: request.id, artifact: request.artifact, record: request.record, migrationProvenance: request.migrationProvenance ?? undefined }), model.maxEntityBytes);
   return { id: request.id, artifact: request.artifact, boundary: request.boundary, path: path.join(path.resolve(request.projectRoot), relativeTarget), replay: false, publishedIdentity: replacement.publishedIdentity, previousBytes: replacement.previousBytes };
 }
 
-function withPublicationContext<T>(
-  request: Pick<PublishEntityRequest, "projectRoot" | "sourceRoot" | "publicationContext">,
-  run: (context: EntityPublicationContext) => T,
-): T {
+function withPublicationContext<T>(request: Pick<PublishEntityRequest, "projectRoot" | "sourceRoot" | "publicationContext">, run: (context: EntityPublicationContext) => T): T {
   if (request.publicationContext) {
     if (request.publicationContext.projectRoot !== path.resolve(request.projectRoot)) {
       throw new Error("entity publication context belongs to a different project root");
@@ -944,18 +915,12 @@ function withPublicationContext<T>(
   }
 }
 
-function publishWithContext(
-  request: PublishEntityRequest,
-  model: EntityAuthority,
-  context: EntityPublicationContext,
-): PublishEntityResult {
+function publishWithContext(request: PublishEntityRequest, model: EntityAuthority, context: EntityPublicationContext): PublishEntityResult {
   try {
     return withEntityWriterLock(context, () => publishEntityLocked(request, model, context));
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("writer lock timeout at ")) {
-      const duplicate = discoverEntities(context.pinnedPath(), request.sourceRoot).entities.find(
-        ({ id, artifact, boundary }) => id === request.id && (artifact !== request.artifact || boundary !== request.boundary),
-      );
+      const duplicate = discoverEntities(context.pinnedPath(), request.sourceRoot).entities.find(({ id, artifact, boundary }) => id === request.id && (artifact !== request.artifact || boundary !== request.boundary));
       if (duplicate) {
         throw new Error(`entity ID '${request.id}' already exists at '${duplicate.relativePath}' owned by boundary '${duplicate.boundary}'; allocate a new project-wide ID`);
       }
@@ -975,15 +940,16 @@ export function replaceEntity(request: ReplaceEntityRequest): PublishEntityResul
   });
 }
 
-export function allocateAndPublishEntity(
-  request: Omit<PublishEntityRequest, "id">,
-  candidate?: () => string,
-): PublishEntityResult {
+export function allocateAndPublishEntity(request: Omit<PublishEntityRequest, "id">, candidate?: () => string): PublishEntityResult {
   const model = authority(request.sourceRoot);
   return withPublicationContext(request, (context) => {
     return withEntityWriterLock(context, () => {
       context.assertValid();
-      const existing = new Set(discoverEntities(context.pinnedPath(), request.sourceRoot).entities.map(({ id }) => id).filter((id): id is string => id !== null));
+      const existing = new Set(
+        discoverEntities(context.pinnedPath(), request.sourceRoot)
+          .entities.map(({ id }) => id)
+          .filter((id): id is string => id !== null),
+      );
       for (let attempt = 0; attempt < 1024; attempt += 1) {
         const id = candidate ? candidate() : generatedId(model);
         if (!model.pattern.test(id)) throw new Error(`entity ID candidate '${id}' must match ${model.pattern.source}`);

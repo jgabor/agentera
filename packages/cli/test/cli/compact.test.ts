@@ -42,14 +42,8 @@ describe("cli compact", () => {
   });
 
   it("reports pending TODO summary formatting without calling it over-limit", () => {
-    const rows = Array.from(
-      { length: 50 },
-      (_, i) => `- [x] [fix:3.0.0] resolved item ${i + 1} carries enough inline detail to require summary formatting before the bounded queue can report a clean state`,
-    );
-    fs.writeFileSync(
-      path.join(tmp, "TODO.md"),
-      ["# TODO", "", "## → Normal", "", "## ✓ Resolved", "", ...rows, ""].join("\n"),
-    );
+    const rows = Array.from({ length: 50 }, (_, i) => `- [x] [fix:3.0.0] resolved item ${i + 1} carries enough inline detail to require summary formatting before the bounded queue can report a clean state`);
+    fs.writeFileSync(path.join(tmp, "TODO.md"), ["# TODO", "", "## → Normal", "", "## ✓ Resolved", "", ...rows, ""].join("\n"));
 
     const { rc, out } = capture((io) => cmdGate({ project: tmp, format: "json" }, io));
     const payload = JSON.parse(out);
@@ -78,7 +72,6 @@ describe("cli compact", () => {
   });
 });
 
-
 describe("cli check compact", () => {
   it("routes check compact (check mode) to the gate and check compact --mode fix to compact", () => {
     activate();
@@ -91,9 +84,7 @@ describe("cli check compact", () => {
 
   it("routes check compact --apply to the fix path", () => {
     activate();
-    const fix = capture((io) =>
-      main(["node", "agentera", "check", "compact", "--apply", "--project", tmp, "--format", "json"], io),
-    );
+    const fix = capture((io) => main(["node", "agentera", "check", "compact", "--apply", "--project", tmp, "--format", "json"], io));
     expect(fix.rc).toBe(0);
     const payload = JSON.parse(fix.out);
     expect(payload.command).toBe("check compact");

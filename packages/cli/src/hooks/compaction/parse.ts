@@ -31,8 +31,7 @@ const TODO_RESOLVED_HEADING_GLOBAL_RE = /^##\s*(?:✓\s+)?Resolved\s*$/gim;
 // dropped resolved entries are recoverable only via project history (Git),
 // and only if previously committed. Surfaced in compaction diagnostics
 // alongside the `dropped` count.
-export const TODO_DROPPED_RECOVERY_GUIDANCE =
-  "dropped resolved entries are not retained in a lossless archive; recover previously committed content via Git: `git log -p -- :/TODO.md` (non-Git projects have no historical recovery)";
+export const TODO_DROPPED_RECOVERY_GUIDANCE = "dropped resolved entries are not retained in a lossless archive; recover previously committed content via Git: `git log -p -- :/TODO.md` (non-Git projects have no historical recovery)";
 
 export function splitArchive(text: string, archiveHeading: string): [string, string] {
   if (!archiveHeading) return [text, ""];
@@ -127,7 +126,11 @@ export function parseTodoResolved(text: string, spec: ArtifactSpec): JsonObject[
         }
       }
       const bodyText = detailLines.join("\n").trim();
-      entries.push({ header: line.replace(/\s+$/, ""), body: bodyText, kind: bodyText ? "full" : "oneline" });
+      entries.push({
+        header: line.replace(/\s+$/, ""),
+        body: bodyText,
+        kind: bodyText ? "full" : "oneline",
+      });
       i = j;
     } else {
       i += 1;
@@ -230,8 +233,14 @@ export function countTodoPendingSummarization(content: string): number {
   const summaryTier = entries.slice(MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES);
   let count = 0;
   for (const entry of summaryTier) {
-    if (entry.body as string) { count++; continue; }
-    if (entry.kind === "full") { count++; continue; }
+    if (entry.body as string) {
+      count++;
+      continue;
+    }
+    if (entry.kind === "full") {
+      count++;
+      continue;
+    }
     // kind=oneline, no body: check if header matches the summary format
     // by forcing kind="full" through formatTodoOneline (truncation path).
     const expected = formatTodoOneline({ ...entry, kind: "full" });

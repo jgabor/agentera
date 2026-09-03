@@ -1,0 +1,24 @@
+id: bhwgdxohmy
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Decompose formatter-expanded CLI monoliths
+  requirements:
+    - Reduce entityMigrationPreview.ts, planEntities.ts, and todoDocsEntities.ts below the governed 1000-line limit after Oxfmt normalization.
+    - Preserve public behavior, test coverage, and formatter cleanliness without excluding maintained source.
+    - Keep the decomposition separate from unrelated lint-warning cleanup.
+  acceptance:
+    - All maintained source remains in the formatter-owned surface and the monolith gate passes.
+    - The formatter normalization task can be replaced by a complete independently audited task.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Decompose formatter-expanded CLI monoliths"
+      severity: normal
+      status: open
+      order: 31

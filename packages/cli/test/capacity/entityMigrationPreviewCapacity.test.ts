@@ -18,10 +18,7 @@ describe("entity migration preview capacity", () => {
   it("recovers all 400 production-scale rows within the response cap", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-capacity-"));
     roots.push(root);
-    fs.writeFileSync(
-      path.join(root, "TODO.md"),
-      `# TODO\n\n## → Normal\n${Array.from({ length: 400 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(200)}`).join("\n")}\n`,
-    );
+    fs.writeFileSync(path.join(root, "TODO.md"), `# TODO\n\n## → Normal\n${Array.from({ length: 400 }, (_, index) => `- [ ] Item ${index} ${"x".repeat(200)}`).join("\n")}\n`);
 
     const { identities, pages } = collectMigrationPreviewPages(root, REPO_ROOT);
 

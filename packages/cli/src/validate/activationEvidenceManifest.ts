@@ -2,14 +2,8 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  ACTIVATION_CENSUS_AUTHORITY,
-  ACTIVATION_CHECK_IDS,
-} from "../registries/packagePublication.js";
-import {
-  ACTIVATION_CANONICAL_TUPLES,
-  ACTIVATION_TUPLE_AUTHORITY,
-} from "../registries/activationTuples.js";
+import { ACTIVATION_CENSUS_AUTHORITY, ACTIVATION_CHECK_IDS } from "../registries/packagePublication.js";
+import { ACTIVATION_CANONICAL_TUPLES, ACTIVATION_TUPLE_AUTHORITY } from "../registries/activationTuples.js";
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../core/developmentInvocation.js";
 import {
   GENERATED_OWNER_EVIDENCE_SCHEMA,
@@ -45,7 +39,12 @@ export interface ActivationEvidenceManifest {
   readonly schemaVersion: typeof ACTIVATION_EVIDENCE_SCHEMA;
   readonly generation: string;
   readonly currentSourceDigest: string;
-  readonly packageArtifact: { readonly filename: string; readonly integrity: string; readonly shasum: string; readonly tarballSha256: string };
+  readonly packageArtifact: {
+    readonly filename: string;
+    readonly integrity: string;
+    readonly shasum: string;
+    readonly tarballSha256: string;
+  };
   readonly tupleDigest: string;
   readonly producers: {
     readonly source: ActivationOwnerEvidence;
@@ -192,36 +191,30 @@ for (const classId of ["runtime", "reference", "state"]) {
   PACKAGE_PROVENANCE[`generic.${classId}.package_projection`] = [`${classId}-package-projection`, `package/${classId}/projection`];
 }
 
-const PROVENANCE: Readonly<Record<string, ProvenanceAuthority>> = Object.freeze(Object.fromEntries([
-  ...Object.entries(SOURCE_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "source-owner", artifactClass, artifactIdentity }]),
-  ...Object.entries(GENERATED_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "generated-owner", artifactClass, artifactIdentity }]),
-  ...Object.entries(PACKAGE_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "package-owner", artifactClass, artifactIdentity }]),
-]));
+const PROVENANCE: Readonly<Record<string, ProvenanceAuthority>> = Object.freeze(
+  Object.fromEntries([
+    ...Object.entries(SOURCE_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "source-owner", artifactClass, artifactIdentity }]),
+    ...Object.entries(GENERATED_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "generated-owner", artifactClass, artifactIdentity }]),
+    ...Object.entries(PACKAGE_PROVENANCE).map(([ref, [artifactClass, artifactIdentity]]) => [ref, { producerKind: "package-owner", artifactClass, artifactIdentity }]),
+  ]),
+);
 
-function hash(value: string | Buffer): string { return createHash("sha256").update(value).digest("hex"); }
-function digestIdentities(values: readonly string[]): string { return hash([...values].sort().join("\n")); }
+function hash(value: string | Buffer): string {
+  return createHash("sha256").update(value).digest("hex");
+}
+function digestIdentities(values: readonly string[]): string {
+  return hash([...values].sort().join("\n"));
+}
 
 function allRecords(producers: ActivationEvidenceManifest["producers"]): Map<string, ActivationArtifactRecord> {
-  const entries = [
-    ...Object.entries(producers.source.records),
-    ...Object.entries(producers.generated.records),
-    ...Object.entries(producers.package.records),
-  ];
+  const entries = [...Object.entries(producers.source.records), ...Object.entries(producers.generated.records), ...Object.entries(producers.package.records)];
   return new Map(entries);
 }
 
 function capabilityParity(producers: ActivationEvidenceManifest["producers"]): unknown {
   const records = allRecords(producers);
-  const bodyRefs = [
-    "capability.source-modules", "capability.source-runtime-registry",
-    "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
-    "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
-  ];
-  const identityRefs = [
-    "capability.source-registry", "capability.source-routes", "capability.source-schemas",
-    "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
-    "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
-  ];
+  const bodyRefs = ["capability.source-modules", "capability.source-runtime-registry", "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served", "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served"];
+  const identityRefs = ["capability.source-registry", "capability.source-routes", "capability.source-schemas", "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas", "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas"];
   return {
     bodies: bodyRefs.map((ref) => ({ ref, content: records.get(ref)?.content ?? null })),
     identities: identityRefs.map((ref) => ({ ref, content: records.get(ref)?.content ?? null })),
@@ -230,11 +223,10 @@ function capabilityParity(producers: ActivationEvidenceManifest["producers"]): u
 
 function packageSemanticParity(producers: ActivationEvidenceManifest["producers"]): unknown {
   const records = allRecords(producers);
-  return ["package.source-registry", "package.source-selectors", "package.generated-registry", "package.generated-selectors", "package.extracted-registry"]
-    .map((ref) => {
-      const content = records.get(ref)?.content as any;
-      return { ref, content: content?.semanticSelectors ?? content ?? null };
-    });
+  return ["package.source-registry", "package.source-selectors", "package.generated-registry", "package.generated-selectors", "package.extracted-registry"].map((ref) => {
+    const content = records.get(ref)?.content as any;
+    return { ref, content: content?.semanticSelectors ?? content ?? null };
+  });
 }
 
 function packageArtifact(producers: ActivationEvidenceManifest["producers"]): ActivationEvidenceManifest["packageArtifact"] {
@@ -247,15 +239,12 @@ function packageArtifact(producers: ActivationEvidenceManifest["producers"]): Ac
   };
 }
 
-export function createActivationEvidenceManifest(options: {
-  root: string;
-  generation: string;
-  productionEvidence: ProductionEvidence;
-  sourceEvidence: ActivationOwnerEvidence;
-  generatedEvidence: ActivationOwnerEvidence;
-  packageEvidence: ActivationOwnerEvidence;
-}): ActivationEvidenceManifest {
-  const producers = { source: options.sourceEvidence, generated: options.generatedEvidence, package: options.packageEvidence };
+export function createActivationEvidenceManifest(options: { root: string; generation: string; productionEvidence: ProductionEvidence; sourceEvidence: ActivationOwnerEvidence; generatedEvidence: ActivationOwnerEvidence; packageEvidence: ActivationOwnerEvidence }): ActivationEvidenceManifest {
+  const producers = {
+    source: options.sourceEvidence,
+    generated: options.generatedEvidence,
+    package: options.packageEvidence,
+  };
   const records = allRecords(producers);
   const checks = ACTIVATION_CHECK_IDS.map((id): ActivationEvidenceCheck => {
     const [classId, dimension] = id.split(".");
@@ -291,9 +280,10 @@ function deepFreeze<T>(value: T, seen = new WeakSet<object>()): T {
 }
 
 /** Observe, snapshot, assemble, and validate immediate release evidence inside one trust boundary. */
-export function assembleAndValidateActivationEvidence(
-  context: ActivationEvidenceAssemblyContext,
-): { manifest: ActivationEvidenceManifest; observerCalls: { source: number; generated: number } } {
+export function assembleAndValidateActivationEvidence(context: ActivationEvidenceAssemblyContext): {
+  manifest: ActivationEvidenceManifest;
+  observerCalls: { source: number; generated: number };
+} {
   let sourceObserverCalls = 0;
   let generatedObserverCalls = 0;
   sourceObserverCalls += 1;
@@ -309,14 +299,16 @@ export function assembleAndValidateActivationEvidence(
   const productionEvidence = deepFreeze(structuredClone(context.productionEvidence));
   const packageEvidence = deepFreeze(structuredClone(context.packageEvidence));
   const expectedPackageIdentity = deepFreeze(structuredClone(context.expectedPackageIdentity));
-  const manifest = deepFreeze(createActivationEvidenceManifest({
-    root: context.root,
-    generation: context.generation,
-    productionEvidence,
-    sourceEvidence,
-    generatedEvidence,
-    packageEvidence,
-  }));
+  const manifest = deepFreeze(
+    createActivationEvidenceManifest({
+      root: context.root,
+      generation: context.generation,
+      productionEvidence,
+      sourceEvidence,
+      generatedEvidence,
+      packageEvidence,
+    }),
+  );
   const violations = activationEvidenceViolationsInternal(manifest, {
     root: context.root,
     generationRoot: context.generationRoot,
@@ -335,15 +327,7 @@ export function assembleAndValidateActivationEvidence(
   };
 }
 
-function validateOwnerEvidence(
-  owner: ActivationOwnerEvidence | undefined,
-  producerKind: ActivationProducerKind,
-  schemaVersion: string,
-  sourceDigest: string,
-  generation: string,
-  packageIntegrity: string | null,
-  violations: string[],
-): void {
+function validateOwnerEvidence(owner: ActivationOwnerEvidence | undefined, producerKind: ActivationProducerKind, schemaVersion: string, sourceDigest: string, generation: string, packageIntegrity: string | null, violations: string[]): void {
   if (!owner || owner.schemaVersion !== schemaVersion || owner.producerKind !== producerKind) {
     violations.push(`${producerKind} evidence schema or producer is wrong`);
     return;
@@ -355,7 +339,10 @@ function validateOwnerEvidence(
   if (producerKind !== "generated-owner" && owner.generation !== null) violations.push(`${producerKind} evidence must not claim a generation`);
   if (producerKind === "package-owner" && owner.packageIntegrity !== packageIntegrity) violations.push("package-owner evidence integrity is wrong");
   if (producerKind !== "package-owner" && owner.packageIntegrity !== null) violations.push(`${producerKind} evidence must not claim package integrity`);
-  const expectedRefs = Object.entries(PROVENANCE).filter(([, authority]) => authority.producerKind === producerKind).map(([ref]) => ref).sort();
+  const expectedRefs = Object.entries(PROVENANCE)
+    .filter(([, authority]) => authority.producerKind === producerKind)
+    .map(([ref]) => ref)
+    .sort();
   const actualRefs = Object.keys(owner.records ?? {}).sort();
   if (canonicalObservationJson(actualRefs) !== canonicalObservationJson(expectedRefs)) violations.push(`${producerKind} evidence records are missing, duplicated, or unknown`);
   for (const [ref, record] of Object.entries(owner.records ?? {})) {
@@ -373,17 +360,11 @@ function validateOwnerEvidence(
   }
 }
 
-function validateAuthoritativeOwner(
-  actual: ActivationOwnerEvidence | undefined,
-  authoritative: ActivationOwnerEvidence,
-  violations: string[],
-): void {
+function validateAuthoritativeOwner(actual: ActivationOwnerEvidence | undefined, authoritative: ActivationOwnerEvidence, violations: string[]): void {
   if (!actual) return;
   for (const [ref, expected] of Object.entries(authoritative.records)) {
     const observed = actual.records?.[ref];
-    if (!observed || observed.artifactContentDigest !== expected.artifactContentDigest
-      || observed.observationDigest !== expected.observationDigest
-      || canonicalObservationJson(observed.content) !== canonicalObservationJson(expected.content)) {
+    if (!observed || observed.artifactContentDigest !== expected.artifactContentDigest || observed.observationDigest !== expected.observationDigest || canonicalObservationJson(observed.content) !== canonicalObservationJson(expected.content)) {
       violations.push(`activation evidence record '${ref}' does not match its authoritative artifact observation`);
     }
   }
@@ -391,26 +372,18 @@ function validateAuthoritativeOwner(
 
 function validateCapabilityParity(manifest: ActivationEvidenceManifest, violations: string[]): void {
   const records = allRecords(manifest.producers);
-  const canonicalIds = ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability").map((tuple) => tuple.surface_id).sort();
-  const bodyRefs = [
-    "capability.source-modules", "capability.source-runtime-registry",
-    "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
-    "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
-  ];
+  const canonicalIds = ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability")
+    .map((tuple) => tuple.surface_id)
+    .sort();
+  const bodyRefs = ["capability.source-modules", "capability.source-runtime-registry", "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served", "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served"];
   const baseline = records.get(bodyRefs[0])?.content as any;
   for (const ref of bodyRefs) {
     const content = records.get(ref)?.content as any;
-    if (canonicalObservationJson(content?.identities) !== canonicalObservationJson(canonicalIds)
-      || canonicalObservationJson(content) !== canonicalObservationJson(baseline)
-      || !canonicalIds.every((id) => content?.bodies?.[id]?.bytes > 0 && /^[a-f0-9]{64}$/.test(content?.bodies?.[id]?.sha256 ?? ""))) {
+    if (canonicalObservationJson(content?.identities) !== canonicalObservationJson(canonicalIds) || canonicalObservationJson(content) !== canonicalObservationJson(baseline) || !canonicalIds.every((id) => content?.bodies?.[id]?.bytes > 0 && /^[a-f0-9]{64}$/.test(content?.bodies?.[id]?.sha256 ?? ""))) {
       violations.push(`capability body projection '${ref}' does not exactly match all canonical source bodies`);
     }
   }
-  for (const ref of [
-    "capability.source-registry", "capability.source-routes", "capability.source-schemas",
-    "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
-    "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
-  ]) {
+  for (const ref of ["capability.source-registry", "capability.source-routes", "capability.source-schemas", "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas", "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas"]) {
     if (canonicalObservationJson(records.get(ref)?.content) !== canonicalObservationJson(canonicalIds)) {
       violations.push(`capability identity projection '${ref}' does not exactly match the canonical capability set`);
     }
@@ -419,7 +392,10 @@ function validateCapabilityParity(manifest: ActivationEvidenceManifest, violatio
 }
 
 function validatePackageSemantics(manifest: ActivationEvidenceManifest, violations: string[]): void {
-  const parity = packageSemanticParity(manifest.producers) as Array<{ ref: string; content: unknown }>;
+  const parity = packageSemanticParity(manifest.producers) as Array<{
+    ref: string;
+    content: unknown;
+  }>;
   const canonical = ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "package")
     .map((tuple) => `${tuple.surface_id}\0${tuple.semantic_selector_if_any}`)
     .sort();
@@ -434,124 +410,145 @@ function validatePackageSemantics(manifest: ActivationEvidenceManifest, violatio
 function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest, violations: string[]): void {
   const records = allRecords(manifest.producers);
   const smoke = records.get("package.extracted-smoke")?.content as any;
-  if (canonicalObservationJson(smoke?.identities) !== canonicalObservationJson(["status"])
-    || smoke?.bodies?.status?.bytes <= 0
-    || !/^[a-f0-9]{64}$/.test(smoke?.bodies?.status?.sha256 ?? "")) {
+  if (canonicalObservationJson(smoke?.identities) !== canonicalObservationJson(["status"]) || smoke?.bodies?.status?.bytes <= 0 || !/^[a-f0-9]{64}$/.test(smoke?.bodies?.status?.sha256 ?? "")) {
     violations.push("extracted package smoke is missing or did not serve status");
   }
   const artifact = records.get("package.extracted-artifact")?.content as any;
-  if (!artifact || canonicalObservationJson({
-    filename: artifact.filename,
-    integrity: artifact.integrity,
-    shasum: artifact.shasum,
-    tarballSha256: artifact.tarballSha256,
-  }) !== canonicalObservationJson(manifest.packageArtifact)) violations.push("extracted package artifact identity does not bind the manifest package identity");
-  if (artifact?.manifest?.path !== "package.json" || artifact?.manifest?.type !== "file"
-    || !Number.isInteger(artifact?.manifest?.mode) || !/^[a-f0-9]{64}$/.test(artifact?.manifest?.contentDigest ?? "")) {
+  if (
+    !artifact ||
+    canonicalObservationJson({
+      filename: artifact.filename,
+      integrity: artifact.integrity,
+      shasum: artifact.shasum,
+      tarballSha256: artifact.tarballSha256,
+    }) !== canonicalObservationJson(manifest.packageArtifact)
+  )
+    violations.push("extracted package artifact identity does not bind the manifest package identity");
+  if (artifact?.manifest?.path !== "package.json" || artifact?.manifest?.type !== "file" || !Number.isInteger(artifact?.manifest?.mode) || !/^[a-f0-9]{64}$/.test(artifact?.manifest?.contentDigest ?? "")) {
     violations.push("extracted package manifest path, type, mode, or content digest is invalid");
   }
   const required = artifact?.requiredSurfaces;
-  if (!Array.isArray(required)
-    || canonicalObservationJson(required.map((entry: any) => entry.path)) !== canonicalObservationJson(DEVELOPMENT_RUNTIME_REQUIRED_FILES)
-    || required.some((entry: any) => !["file", "directory"].includes(entry.type) || !Number.isInteger(entry.mode) || (entry.type === "file" && !/^[a-f0-9]{64}$/.test(entry.contentDigest ?? "")))) {
+  if (
+    !Array.isArray(required) ||
+    canonicalObservationJson(required.map((entry: any) => entry.path)) !== canonicalObservationJson(DEVELOPMENT_RUNTIME_REQUIRED_FILES) ||
+    required.some((entry: any) => !["file", "directory"].includes(entry.type) || !Number.isInteger(entry.mode) || (entry.type === "file" && !/^[a-f0-9]{64}$/.test(entry.contentDigest ?? "")))
+  ) {
     violations.push("extracted package required-surface evidence is incomplete or malformed");
   }
-  if (!Array.isArray(artifact?.extractedTree?.entries)
-    || artifact.extractedTree.entries.some((entry: any) => String(entry.path).endsWith(".js.map"))) {
+  if (!Array.isArray(artifact?.extractedTree?.entries) || artifact.extractedTree.entries.some((entry: any) => String(entry.path).endsWith(".js.map"))) {
     violations.push("extracted package file manifest contains an unclassified source map or is missing");
   }
   const extractedEntries = artifact?.extractedTree?.entries;
   const supportPaths = artifact?.runtimeSupportPaths;
-  const extractedPayload = Array.isArray(extractedEntries) && Array.isArray(supportPaths)
-    ? extractedEntries.filter((entry: any) => !supportPaths.includes(entry.path))
-    : null;
-  if (!Array.isArray(extractedEntries) || extractedEntries.length < 1
-    || new Set(extractedEntries.map((entry: any) => entry.path)).size !== extractedEntries.length
-    || extractedEntries.some((entry: any) => typeof entry.path !== "string" || !["directory", "file", "symlink"].includes(entry.type) || !Number.isInteger(entry.mode)
-      || (entry.type === "file" && (!Number.isInteger(entry.size) || !/^[a-f0-9]{64}$/.test(entry.sha256 ?? "")))
-    || (entry.type === "symlink" && !/^[a-f0-9]{64}$/.test(entry.targetSha256 ?? "")))
-    || artifact.extractedTree.digest !== observationDigest(extractedEntries)
-    || !Number.isInteger(artifact?.tarballTree?.count) || artifact.tarballTree.count < 1
-    || !/^[a-f0-9]{64}$/.test(artifact?.tarballTree?.digest ?? "")
-    || !Array.isArray(supportPaths)
-    || new Set(supportPaths).size !== supportPaths.length
-    || supportPaths.some((entry: any) => entry !== "node_modules")
-    || extractedPayload?.length !== artifact.tarballTree.count
-    || observationDigest(extractedPayload) !== artifact.tarballTree.digest) {
+  const extractedPayload = Array.isArray(extractedEntries) && Array.isArray(supportPaths) ? extractedEntries.filter((entry: any) => !supportPaths.includes(entry.path)) : null;
+  if (
+    !Array.isArray(extractedEntries) ||
+    extractedEntries.length < 1 ||
+    new Set(extractedEntries.map((entry: any) => entry.path)).size !== extractedEntries.length ||
+    extractedEntries.some(
+      (entry: any) =>
+        typeof entry.path !== "string" || !["directory", "file", "symlink"].includes(entry.type) || !Number.isInteger(entry.mode) || (entry.type === "file" && (!Number.isInteger(entry.size) || !/^[a-f0-9]{64}$/.test(entry.sha256 ?? ""))) || (entry.type === "symlink" && !/^[a-f0-9]{64}$/.test(entry.targetSha256 ?? "")),
+    ) ||
+    artifact.extractedTree.digest !== observationDigest(extractedEntries) ||
+    !Number.isInteger(artifact?.tarballTree?.count) ||
+    artifact.tarballTree.count < 1 ||
+    !/^[a-f0-9]{64}$/.test(artifact?.tarballTree?.digest ?? "") ||
+    !Array.isArray(supportPaths) ||
+    new Set(supportPaths).size !== supportPaths.length ||
+    supportPaths.some((entry: any) => entry !== "node_modules") ||
+    extractedPayload?.length !== artifact.tarballTree.count ||
+    observationDigest(extractedPayload) !== artifact.tarballTree.digest
+  ) {
     violations.push("complete extracted package tree is not bound to the current tarball payload");
   }
   const portability = records.get("package.portability")?.content as any;
   const extractedManifestFiles = Array.isArray(extractedEntries)
     ? extractedEntries
-      .filter((entry: any) => entry.type === "file")
-      .map((entry: any) => ({ path: entry.path, size: entry.size, mode: entry.mode }))
-      .sort((left: any, right: any) => left.path.localeCompare(right.path))
+        .filter((entry: any) => entry.type === "file")
+        .map((entry: any) => ({ path: entry.path, size: entry.size, mode: entry.mode }))
+        .sort((left: any, right: any) => left.path.localeCompare(right.path))
     : null;
   const secondManifest = portability?.secondManifest;
-  if (portability?.deterministicPackRuns !== 2
-    || !/^[a-f0-9]{64}$/.test(portability?.deterministicTarballSha256 ?? "")
-    || portability?.secondTarballSha256 !== portability?.deterministicTarballSha256
-    || portability?.constructionRootCount !== 2 || portability?.constructionRootsDistinct !== true
-    || portability?.extractedRootCount !== 1 || portability?.extractedRootsDistinct !== true
-    || portability?.forbiddenPathMatches?.length !== 0 || !/^[a-f0-9]{64}$/.test(portability?.contentSha256 ?? "")
-    || secondManifest?.filename !== manifest.packageArtifact.filename
-    || secondManifest?.integrity !== manifest.packageArtifact.integrity
-    || secondManifest?.shasum !== manifest.packageArtifact.shasum
-    || !Array.isArray(extractedManifestFiles)
-    || secondManifest?.files?.count !== extractedManifestFiles.length
-    || secondManifest?.files?.digest !== observationDigest(extractedManifestFiles)) {
+  if (
+    portability?.deterministicPackRuns !== 2 ||
+    !/^[a-f0-9]{64}$/.test(portability?.deterministicTarballSha256 ?? "") ||
+    portability?.secondTarballSha256 !== portability?.deterministicTarballSha256 ||
+    portability?.constructionRootCount !== 2 ||
+    portability?.constructionRootsDistinct !== true ||
+    portability?.extractedRootCount !== 1 ||
+    portability?.extractedRootsDistinct !== true ||
+    portability?.forbiddenPathMatches?.length !== 0 ||
+    !/^[a-f0-9]{64}$/.test(portability?.contentSha256 ?? "") ||
+    secondManifest?.filename !== manifest.packageArtifact.filename ||
+    secondManifest?.integrity !== manifest.packageArtifact.integrity ||
+    secondManifest?.shasum !== manifest.packageArtifact.shasum ||
+    !Array.isArray(extractedManifestFiles) ||
+    secondManifest?.files?.count !== extractedManifestFiles.length ||
+    secondManifest?.files?.digest !== observationDigest(extractedManifestFiles)
+  ) {
     violations.push("extracted package portability evidence is incomplete or failed");
   }
 
   const sourceAuthority = records.get("bootstrap.source-authority")?.content as any;
-  const expectedSpecs = [
-    ...(sourceAuthority?.accepted ?? []).map((entry: any) => ({ ...entry, accepted: true })),
-    ...(sourceAuthority?.rejections ?? []).map((entry: any) => ({ ...entry, accepted: false })),
-  ];
+  const expectedSpecs = [...(sourceAuthority?.accepted ?? []).map((entry: any) => ({ ...entry, accepted: true })), ...(sourceAuthority?.rejections ?? []).map((entry: any) => ({ ...entry, accepted: false }))];
   const expectedById = new Map(expectedSpecs.map((entry: any) => [entry.id, entry]));
   const generated = records.get("bootstrap.generated-binder")?.content as any;
   const generatedRows = generated?.rows;
-  if (!Array.isArray(generatedRows) || generatedRows.length !== expectedSpecs.length || new Set(generatedRows.map((row: any) => row.id)).size !== expectedSpecs.length
-    || generatedRows.some((row: any) => {
+  if (
+    !Array.isArray(generatedRows) ||
+    generatedRows.length !== expectedSpecs.length ||
+    new Set(generatedRows.map((row: any) => row.id)).size !== expectedSpecs.length ||
+    generatedRows.some((row: any) => {
       const expected = expectedById.get(row.id) as any;
       return !expected || row.classification !== expected.classification || canonicalObservationJson(row.states) !== canonicalObservationJson(expected.states);
-    })) violations.push("generated binder classifications do not match the source bootstrap authority");
+    })
+  )
+    violations.push("generated binder classifications do not match the source bootstrap authority");
 
   const extractedRows = records.get("bootstrap.extracted-classifications")?.content as any;
   const expectedComposite = expectedSpecs.flatMap((entry: any) => entry.states.map((state: string) => `package/${state}/${entry.id}`)).sort();
-  if (!Array.isArray(extractedRows)
-    || canonicalObservationJson(extractedRows.map((row: any) => `package/${row.projectState}/${row.id}`).sort()) !== canonicalObservationJson(expectedComposite)
-    || extractedRows.some((row: any) => {
+  if (
+    !Array.isArray(extractedRows) ||
+    canonicalObservationJson(extractedRows.map((row: any) => `package/${row.projectState}/${row.id}`).sort()) !== canonicalObservationJson(expectedComposite) ||
+    extractedRows.some((row: any) => {
       const expected = expectedById.get(row.id) as any;
       return !expected || row.accepted !== expected.accepted || row.classification !== expected.classification || row.preservationRoots !== 9 || row.childStarted !== expected.accepted;
-    })) violations.push("extracted package runtime classifications or sentinel results do not match bootstrap authority");
-  const expectedCommandPolicy = Array.isArray(extractedRows) ? {
-    rowCount: extractedRows.length,
-    accepted: extractedRows.filter((row: any) => row.accepted).length,
-    rejected: extractedRows.filter((row: any) => !row.accepted).length,
-    classifications: Object.fromEntries([...new Set(extractedRows.map((row: any) => row.classification))].sort().map((classification) => [classification, extractedRows.filter((row: any) => row.classification === classification).length])),
-    compositeIdentityDigest: observationDigest(extractedRows.map((row: any) => `${row.runtime}/${row.projectState}/${row.id}`).sort()),
-  } : null;
+    })
+  )
+    violations.push("extracted package runtime classifications or sentinel results do not match bootstrap authority");
+  const expectedCommandPolicy = Array.isArray(extractedRows)
+    ? {
+        rowCount: extractedRows.length,
+        accepted: extractedRows.filter((row: any) => row.accepted).length,
+        rejected: extractedRows.filter((row: any) => !row.accepted).length,
+        classifications: Object.fromEntries([...new Set(extractedRows.map((row: any) => row.classification))].sort().map((classification) => [classification, extractedRows.filter((row: any) => row.classification === classification).length])),
+        compositeIdentityDigest: observationDigest(extractedRows.map((row: any) => `${row.runtime}/${row.projectState}/${row.id}`).sort()),
+      }
+    : null;
   if (canonicalObservationJson(records.get("package.command-policy")?.content) !== canonicalObservationJson(expectedCommandPolicy)) {
     violations.push("extracted package command-policy classification does not bind the executed runtime matrix");
   }
 
   const diagnostics = records.get("bootstrap.extracted-diagnostics")?.content as any;
-  if (!Array.isArray(diagnostics) || diagnostics.length !== expectedComposite.length - expectedSpecs.filter((entry: any) => entry.accepted).flatMap((entry: any) => entry.states).length
-    || diagnostics.some((row: any) => row.accepted !== false || !["wrong_channel", "not_exact", "malformed"].includes(row.classification))) {
+  if (
+    !Array.isArray(diagnostics) ||
+    diagnostics.length !== expectedComposite.length - expectedSpecs.filter((entry: any) => entry.accepted).flatMap((entry: any) => entry.states).length ||
+    diagnostics.some((row: any) => row.accepted !== false || !["wrong_channel", "not_exact", "malformed"].includes(row.classification))
+  ) {
     violations.push("extracted package rejection diagnostics are incomplete or misclassified");
   }
-  const expectedAdversarial = Array.isArray(diagnostics) ? {
-    rowCount: diagnostics.length,
-    allBlockedBeforeChildStart: diagnostics.every((row: any) => row.childStarted === false),
-    classifications: Object.fromEntries([...new Set(diagnostics.map((row: any) => row.classification))].sort().map((classification) => [classification, diagnostics.filter((row: any) => row.classification === classification).length])),
-  } : null;
+  const expectedAdversarial = Array.isArray(diagnostics)
+    ? {
+        rowCount: diagnostics.length,
+        allBlockedBeforeChildStart: diagnostics.every((row: any) => row.childStarted === false),
+        classifications: Object.fromEntries([...new Set(diagnostics.map((row: any) => row.classification))].sort().map((classification) => [classification, diagnostics.filter((row: any) => row.classification === classification).length])),
+      }
+    : null;
   if (canonicalObservationJson(records.get("package.adversarial")?.content) !== canonicalObservationJson(expectedAdversarial)) {
     violations.push("package adversarial classifications do not bind extracted rejection diagnostics");
   }
   const generatedDiagnostics = records.get("bootstrap.generated-diagnostics")?.content as any;
-  if (!Array.isArray(generatedDiagnostics) || generatedDiagnostics.length !== sourceAuthority?.rejections?.length
-    || generatedDiagnostics.some((row: any) => !["wrong_channel", "not_exact", "malformed"].includes(row.classification))) {
+  if (!Array.isArray(generatedDiagnostics) || generatedDiagnostics.length !== sourceAuthority?.rejections?.length || generatedDiagnostics.some((row: any) => !["wrong_channel", "not_exact", "malformed"].includes(row.classification))) {
     violations.push("generated binder rejection diagnostics are incomplete or misclassified");
   }
   for (const ref of ["bootstrap.generated-startup", "bootstrap.extracted-startup"]) {
@@ -560,25 +557,23 @@ function validateExecutedArtifactSemantics(manifest: ActivationEvidenceManifest,
       violations.push(`bootstrap startup producer evidence '${ref}' is incomplete`);
     }
   }
-  if (canonicalObservationJson(records.get("bootstrap.generated-declarations")?.content)
-    !== canonicalObservationJson(records.get("bootstrap.extracted-declarations")?.content)) {
+  if (canonicalObservationJson(records.get("bootstrap.generated-declarations")?.content) !== canonicalObservationJson(records.get("bootstrap.extracted-declarations")?.content)) {
     violations.push("generated and extracted bootstrap command declarations drifted");
   }
   const parity = records.get("bootstrap.source-package-parity")?.content as any;
-  if (!parity?.source || !parity?.package || canonicalObservationJson(parity.source) !== canonicalObservationJson(parity.package)
-    || canonicalObservationJson(Object.keys(parity.source).sort()) !== canonicalObservationJson(["clean", "partial", "v2", "v3"])) {
+  if (!parity?.source || !parity?.package || canonicalObservationJson(parity.source) !== canonicalObservationJson(parity.package) || canonicalObservationJson(Object.keys(parity.source).sort()) !== canonicalObservationJson(["clean", "partial", "v2", "v3"])) {
     violations.push("source and extracted package runtime classification parity failed");
   }
-  if (parity?.packageArtifact?.filename !== manifest.packageArtifact?.filename
-    || parity?.packageArtifact?.integrity !== manifest.packageArtifact?.integrity
-    || parity?.packageArtifact?.shasum !== manifest.packageArtifact?.shasum
-    || parity?.packageArtifact?.tarballSha256 !== manifest.packageArtifact?.tarballSha256) {
+  if (parity?.packageArtifact?.filename !== manifest.packageArtifact?.filename || parity?.packageArtifact?.integrity !== manifest.packageArtifact?.integrity || parity?.packageArtifact?.shasum !== manifest.packageArtifact?.shasum || parity?.packageArtifact?.tarballSha256 !== manifest.packageArtifact?.tarballSha256) {
     violations.push("source integration package artifact differs from the package owner artifact");
   }
   const missing = records.get("bootstrap.missing-surface")?.content as any;
-  if (!Array.isArray(missing) || missing.length !== DEVELOPMENT_RUNTIME_REQUIRED_FILES.length * 2
-    || new Set(missing.map((entry: any) => `${entry.runtime}/${entry.relative}`)).size !== missing.length
-    || missing.some((entry: any) => !["source", "package"].includes(entry.runtime) || entry.status !== 64 || entry.classification !== "invalid_authority" || entry.childStarted !== false)) {
+  if (
+    !Array.isArray(missing) ||
+    missing.length !== DEVELOPMENT_RUNTIME_REQUIRED_FILES.length * 2 ||
+    new Set(missing.map((entry: any) => `${entry.runtime}/${entry.relative}`)).size !== missing.length ||
+    missing.some((entry: any) => !["source", "package"].includes(entry.runtime) || entry.status !== 64 || entry.classification !== "invalid_authority" || entry.childStarted !== false)
+  ) {
     violations.push("bootstrap missing-surface failure evidence is incomplete or misclassified");
   }
 }
@@ -627,26 +622,25 @@ interface ImmediateValidationContext {
   expectedPackageIdentity: ActivationPackageIdentity | unknown;
 }
 
-function activationEvidenceViolationsInternal(
-  actual: unknown,
-  context: ImmediateValidationContext | null,
-): string[] {
+function activationEvidenceViolationsInternal(actual: unknown, context: ImmediateValidationContext | null): string[] {
   const manifest = actual as ActivationEvidenceManifest | null;
   if (!manifest || typeof manifest !== "object") return ["activation evidence manifest is missing"];
   const violations: string[] = [];
   const generation = context?.generation ?? manifest.generation;
   const sourceDigest = context ? activationSourceDigest(context.root) : manifest.currentSourceDigest;
-  const packageIntegrity = context
-    ? (context.expectedPackageIdentity as ActivationPackageIdentity | undefined)?.packageArtifact?.integrity ?? null
-    : manifest.packageArtifact?.integrity ?? null;
+  const packageIntegrity = context ? ((context.expectedPackageIdentity as ActivationPackageIdentity | undefined)?.packageArtifact?.integrity ?? null) : (manifest.packageArtifact?.integrity ?? null);
   if (manifest.schemaVersion !== ACTIVATION_EVIDENCE_SCHEMA) violations.push("activation evidence schema is wrong");
   if (manifest.generation !== generation) violations.push("activation evidence generation is stale or wrong");
   if (manifest.currentSourceDigest !== sourceDigest) violations.push("activation evidence current-source provenance drifted");
   if (manifest.tupleDigest !== ACTIVATION_TUPLE_AUTHORITY.total.sha256) violations.push("activation evidence tuple digest mismatched");
-  if (!manifest.packageArtifact || !/^agentera-\d+\.\d+\.\d+(?:-dev\.\d+)?\.tgz$/.test(manifest.packageArtifact.filename)
-    || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(manifest.packageArtifact.integrity)
-    || !/^[a-f0-9]{40}$/.test(manifest.packageArtifact.shasum)
-    || !/^[a-f0-9]{64}$/.test(manifest.packageArtifact.tarballSha256)) violations.push("activation evidence package artifact identity is malformed");
+  if (
+    !manifest.packageArtifact ||
+    !/^agentera-\d+\.\d+\.\d+(?:-dev\.\d+)?\.tgz$/.test(manifest.packageArtifact.filename) ||
+    !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(manifest.packageArtifact.integrity) ||
+    !/^[a-f0-9]{40}$/.test(manifest.packageArtifact.shasum) ||
+    !/^[a-f0-9]{64}$/.test(manifest.packageArtifact.tarballSha256)
+  )
+    violations.push("activation evidence package artifact identity is malformed");
   validateOwnerEvidence(manifest.producers?.source, "source-owner", SOURCE_OWNER_EVIDENCE_SCHEMA, sourceDigest, generation, null, violations);
   validateOwnerEvidence(manifest.producers?.generated, "generated-owner", GENERATED_OWNER_EVIDENCE_SCHEMA, sourceDigest, generation, null, violations);
   validateOwnerEvidence(manifest.producers?.package, "package-owner", PACKAGE_OWNER_EVIDENCE_SCHEMA, sourceDigest, generation, packageIntegrity, violations);
@@ -664,16 +658,15 @@ function activationEvidenceViolationsInternal(
     for (const relative of ["dist/.agentera-build-source.json", "bundle/.agentera-build-source.json"]) {
       try {
         if (JSON.parse(fs.readFileSync(path.join(context.generationRoot, relative), "utf8")).identitySha256 !== generation) violations.push("activation evidence build marker provenance drifted");
-      } catch { violations.push("activation evidence build marker is missing or malformed"); }
+      } catch {
+        violations.push("activation evidence build marker is missing or malformed");
+      }
     }
   }
   return [...new Set(violations)];
 }
 
-export function activationEvidenceManifestViolations(
-  actual: unknown,
-  expected: ActivationEvidenceManifest,
-): string[] {
+export function activationEvidenceManifestViolations(actual: unknown, expected: ActivationEvidenceManifest): string[] {
   const violations = activationEvidenceViolationsInternal(actual, null);
   if (canonicalObservationJson(actual) !== canonicalObservationJson(expected)) {
     violations.push("activation evidence differs from the expected independently observed manifest");
@@ -681,10 +674,7 @@ export function activationEvidenceManifestViolations(
   return [...new Set(violations)];
 }
 
-export function activationEvidenceViolations(
-  actual: unknown,
-  context: ActivationEvidenceValidationContext,
-): string[] {
+export function activationEvidenceViolations(actual: unknown, context: ActivationEvidenceValidationContext): string[] {
   const sourceEvidence = createSourceOwnerEvidence(context.root, context.productionInputs);
   const generatedEvidence = createGeneratedOwnerEvidence({
     root: context.root,
@@ -710,6 +700,9 @@ export function activationEvidenceViolations(
 }
 
 export function readActivationEvidenceManifest(generationRoot: string): unknown {
-  try { return JSON.parse(fs.readFileSync(path.join(generationRoot, ACTIVATION_EVIDENCE_FILE), "utf8")); }
-  catch { return null; }
+  try {
+    return JSON.parse(fs.readFileSync(path.join(generationRoot, ACTIVATION_EVIDENCE_FILE), "utf8"));
+  } catch {
+    return null;
+  }
 }

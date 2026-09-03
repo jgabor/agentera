@@ -7,18 +7,8 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { sourceModuleUrl, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
-import {
-  acquireLifecycleOwnershipJournalLock,
-  appendLifecycleOwnershipJournal,
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-  releaseLifecycleOwnershipJournalLock,
-} from "../../src/runtime/lifecycleOwnershipJournal.js";
-import {
-  LIFECYCLE_LEDGER_SCHEMA,
-  emptyLifecycleOwnershipLedger,
-  type LifecycleOwnershipLedger,
-} from "../../src/runtime/lifecycleOperations.js";
+import { acquireLifecycleOwnershipJournalLock, appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath, readLifecycleOwnershipJournal, releaseLifecycleOwnershipJournalLock } from "../../src/runtime/lifecycleOwnershipJournal.js";
+import { LIFECYCLE_LEDGER_SCHEMA, emptyLifecycleOwnershipLedger, type LifecycleOwnershipLedger } from "../../src/runtime/lifecycleOperations.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const SOURCE_JOURNAL_MODULE = sourceModuleUrl("runtime/lifecycleOwnershipJournal.js");
@@ -41,20 +31,23 @@ function ledger(resourceId: string): LifecycleOwnershipLedger {
   return {
     schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
     owner: "agentera",
-    records: [{
-      resourceId,
-      destination: path.join(root, resourceId),
-      kind: "file",
-      scope: "whole",
-      status: "pending_create",
-      fingerprint: `sha256:${"0".repeat(64)}`,
-      identity: null,
-    }],
+    records: [
+      {
+        resourceId,
+        destination: path.join(root, resourceId),
+        kind: "file",
+        scope: "whole",
+        status: "pending_create",
+        fingerprint: `sha256:${"0".repeat(64)}`,
+        identity: null,
+      },
+    ],
   };
 }
 
 function eventFiles(): string[] {
-  return fs.readdirSync(journalPath)
+  return fs
+    .readdirSync(journalPath)
     .filter((name) => /^\d{20}-.+\.json$/.test(name))
     .sort();
 }
@@ -70,10 +63,7 @@ function eventValue(index: number): Record<string, unknown> {
 }
 
 function writeEvent(index: number, value: Record<string, unknown> | string): void {
-  fs.writeFileSync(
-    path.join(journalPath, eventFiles()[index]!),
-    typeof value === "string" ? value : `${JSON.stringify(value, null, 2)}\n`,
-  );
+  fs.writeFileSync(path.join(journalPath, eventFiles()[index]!), typeof value === "string" ? value : `${JSON.stringify(value, null, 2)}\n`);
 }
 
 function lockRecordPath(directory: string): string {
@@ -133,10 +123,7 @@ describe("lifecycle ownership journal", () => {
 
   it("marks one syntactically incomplete final event recoverable but never appends past it", () => {
     appendEvents(2);
-    const partial = path.join(
-      journalPath,
-      "00000000000000000003-00000000-0000-4000-8000-000000000003.json",
-    );
+    const partial = path.join(journalPath, "00000000000000000003-00000000-0000-4000-8000-000000000003.json");
     fs.writeFileSync(partial, '{"schemaVersion":"agentera.lifecycleOwnershipJournalEvent.v1"');
     const before = fs.readdirSync(journalPath).sort();
 
@@ -148,21 +135,14 @@ describe("lifecycle ownership journal", () => {
       ignoredEvents: 1,
     });
     expect(restarted.ledger.records[0]?.resourceId).toBe("resource-2");
-    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("blocked")))
-      .toThrow("ownership journal is not appendable (recoverable_terminal_tail)");
+    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("blocked"))).toThrow("ownership journal is not appendable (recoverable_terminal_tail)");
     expect(fs.readdirSync(journalPath).sort()).toEqual(before);
   });
 
   it("ignores multiple non-authoritative publication temporaries across restart and append", () => {
     appendEvents(2);
-    fs.writeFileSync(
-      path.join(journalPath, ".event-00000000000000000003-00000000-0000-4000-8000-000000000003.tmp"),
-      "partial",
-    );
-    fs.writeFileSync(
-      path.join(journalPath, ".event-00000000000000000003-00000000-0000-4000-8000-000000000004.tmp"),
-      "another partial",
-    );
+    fs.writeFileSync(path.join(journalPath, ".event-00000000000000000003-00000000-0000-4000-8000-000000000003.tmp"), "partial");
+    fs.writeFileSync(path.join(journalPath, ".event-00000000000000000003-00000000-0000-4000-8000-000000000004.tmp"), "another partial");
 
     expect(readLifecycleOwnershipJournal(journalPath)).toMatchObject({
       state: "clean",
@@ -183,40 +163,56 @@ describe("lifecycle ownership journal", () => {
 
     expect(observed).toMatchObject({ state: "corrupt", validEvents: 1, ignoredEvents: 8 });
     expect(observed.diagnostics.join(" ")).toContain("before a successor event");
-    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("forked")))
-      .toThrow("ownership journal is not appendable (corrupt)");
+    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("forked"))).toThrow("ownership journal is not appendable (corrupt)");
     expect(eventFiles()).toEqual(before);
   });
 
   it.each([
     ["gap", () => fs.unlinkSync(path.join(journalPath, eventFiles()[1]!)), "sequence gap"],
-    ["fork", () => {
-      const source = eventFiles()[1]!;
-      fs.copyFileSync(
-        path.join(journalPath, source),
-        path.join(journalPath, source.replace(/[0-9a-f-]{36}\.json$/, "ffffffff-ffff-4fff-8fff-ffffffffffff.json")),
-      );
-    }, "duplicate sequence or fork"],
-    ["body sequence mismatch", () => {
-      const value = eventValue(1);
-      value.sequence = 7;
-      writeEvent(1, value);
-    }, "filename and body sequence differ"],
-    ["body event ID mismatch", () => {
-      const value = eventValue(1);
-      value.eventId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
-      writeEvent(1, value);
-    }, "filename and body event ID differ"],
-    ["digest mismatch", () => {
-      const value = eventValue(1);
-      value.digest = "sha256:bad";
-      writeEvent(1, value);
-    }, "event digest mismatch"],
-    ["disconnection", () => {
-      const value = eventValue(1);
-      value.previousDigest = "sha256:disconnected";
-      writeEvent(1, value);
-    }, "previous digest disconnects"],
+    [
+      "fork",
+      () => {
+        const source = eventFiles()[1]!;
+        fs.copyFileSync(path.join(journalPath, source), path.join(journalPath, source.replace(/[0-9a-f-]{36}\.json$/, "ffffffff-ffff-4fff-8fff-ffffffffffff.json")));
+      },
+      "duplicate sequence or fork",
+    ],
+    [
+      "body sequence mismatch",
+      () => {
+        const value = eventValue(1);
+        value.sequence = 7;
+        writeEvent(1, value);
+      },
+      "filename and body sequence differ",
+    ],
+    [
+      "body event ID mismatch",
+      () => {
+        const value = eventValue(1);
+        value.eventId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+        writeEvent(1, value);
+      },
+      "filename and body event ID differ",
+    ],
+    [
+      "digest mismatch",
+      () => {
+        const value = eventValue(1);
+        value.digest = "sha256:bad";
+        writeEvent(1, value);
+      },
+      "event digest mismatch",
+    ],
+    [
+      "disconnection",
+      () => {
+        const value = eventValue(1);
+        value.previousDigest = "sha256:disconnected";
+        writeEvent(1, value);
+      },
+      "previous digest disconnects",
+    ],
     ["malformed complete event", () => writeEvent(1, { schemaVersion: "wrong" }), "does not satisfy"],
   ])("classifies %s as corruption and blocks append", (_name, corrupt, diagnostic) => {
     appendEvents(3);
@@ -226,8 +222,7 @@ describe("lifecycle ownership journal", () => {
 
     expect(observed.state).toBe("corrupt");
     expect(observed.diagnostics.join(" ")).toContain(diagnostic);
-    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("blocked")))
-      .toThrow("ownership journal is not appendable (corrupt)");
+    expect(() => appendLifecycleOwnershipJournal(journalPath, ledger("blocked"))).toThrow("ownership journal is not appendable (corrupt)");
   });
 });
 
@@ -263,7 +258,9 @@ describe("lifecycle ownership journal lock", () => {
         process.exit(0);
       });
     `;
-    const owner = spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() });
+    const owner = spawn(process.execPath, ["--input-type=module", "-e", script], {
+      env: sourceSubprocessEnv(),
+    });
     try {
       const published = JSON.parse(await waitForLine(owner));
       expect(published.token).toBeTruthy();
@@ -272,8 +269,7 @@ describe("lifecycle ownership journal lock", () => {
       const finalPath = path.join(published.directory, "apply.lock");
       const preparedPath = path.join(published.directory, `.apply-lock-${published.token}.tmp`);
       fs.renameSync(finalPath, preparedPath);
-      expect(() => acquireLifecycleOwnershipJournalLock(journalPath))
-        .toThrow("lock publication already in progress");
+      expect(() => acquireLifecycleOwnershipJournalLock(journalPath)).toThrow("lock publication already in progress");
       expect(fs.existsSync(preparedPath)).toBe(true);
       expect(fs.existsSync(finalPath)).toBe(false);
       fs.renameSync(preparedPath, finalPath);
@@ -309,8 +305,12 @@ describe("lifecycle ownership journal lock", () => {
       });
     `;
     const contenders = [
-      spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() }),
-      spawn(process.execPath, ["--input-type=module", "-e", script], { env: sourceSubprocessEnv() }),
+      spawn(process.execPath, ["--input-type=module", "-e", script], {
+        env: sourceSubprocessEnv(),
+      }),
+      spawn(process.execPath, ["--input-type=module", "-e", script], {
+        env: sourceSubprocessEnv(),
+      }),
     ];
     try {
       const lines = contenders.map((child) => waitForLine(child));
@@ -322,8 +322,9 @@ describe("lifecycle ownership journal lock", () => {
       expect(winner).toBeGreaterThanOrEqual(0);
       expect(loser).toBeGreaterThanOrEqual(0);
       expect(results[loser].message).toContain("already in progress");
-      expect(JSON.parse(fs.readFileSync(lockRecordPath(path.dirname(journalPath)), "utf8")))
-        .toMatchObject({ token: results[winner].lock.token });
+      expect(JSON.parse(fs.readFileSync(lockRecordPath(path.dirname(journalPath)), "utf8"))).toMatchObject({
+        token: results[winner].lock.token,
+      });
 
       contenders[winner]!.stdin.write("release\n");
       expect(await waitForExit(contenders[winner]!)).toBe(0);
@@ -337,16 +338,25 @@ describe("lifecycle ownership journal lock", () => {
   });
 
   it.each([
-    ["dead owner", (record: Record<string, unknown>) => {
-      record.pid = 2_147_483_647;
-      record.processStartTicks = "1";
-    }],
-    ["PID reuse", (record: Record<string, unknown>) => {
-      record.processStartTicks = `${BigInt(record.processStartTicks as string) + 1n}`;
-    }],
-    ["prior boot", (record: Record<string, unknown>) => {
-      record.bootId = "00000000-0000-4000-8000-000000000000";
-    }],
+    [
+      "dead owner",
+      (record: Record<string, unknown>) => {
+        record.pid = 2_147_483_647;
+        record.processStartTicks = "1";
+      },
+    ],
+    [
+      "PID reuse",
+      (record: Record<string, unknown>) => {
+        record.processStartTicks = `${BigInt(record.processStartTicks as string) + 1n}`;
+      },
+    ],
+    [
+      "prior boot",
+      (record: Record<string, unknown>) => {
+        record.bootId = "00000000-0000-4000-8000-000000000000";
+      },
+    ],
   ])("recovers a stale %s identity", (_name, makeStale) => {
     const stale = acquireLifecycleOwnershipJournalLock(journalPath);
     const recordPath = lockRecordPath(stale.directory);
@@ -377,17 +387,14 @@ describe("lifecycle ownership journal lock", () => {
     releaseLifecycleOwnershipJournalLock(restarted);
   });
 
-  it.each(["empty", "partial record"])(
-    "fails closed on a malformed %s final lock instead of stealing it",
-    (malformation) => {
+  it.each(["empty", "partial record"])("fails closed on a malformed %s final lock instead of stealing it", (malformation) => {
     const lock = acquireLifecycleOwnershipJournalLock(journalPath);
     releaseLifecycleOwnershipJournalLock(lock);
     const finalPath = path.join(lock.directory, "apply.lock");
     fs.mkdirSync(finalPath);
     if (malformation === "partial record") fs.writeFileSync(path.join(finalPath, "owner.json"), "{");
 
-    expect(() => acquireLifecycleOwnershipJournalLock(journalPath))
-      .toThrow("lock is malformed; refusing recovery");
+    expect(() => acquireLifecycleOwnershipJournalLock(journalPath)).toThrow("lock is malformed; refusing recovery");
     expect(fs.readdirSync(finalPath)).toEqual(malformation === "empty" ? [] : ["owner.json"]);
     if (malformation === "partial record") {
       expect(fs.readFileSync(path.join(finalPath, "owner.json"), "utf8")).toBe("{");

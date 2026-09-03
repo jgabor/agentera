@@ -38,17 +38,8 @@ import {
   writeContentAddressedOwnerEvidence,
   writeContentAddressedPackageIdentity,
 } from "../../src/validate/activationArtifactEvidence.js";
-import {
-  activationEvidenceManifestViolations,
-  activationEvidenceViolations,
-  assembleAndValidateActivationEvidence,
-  createActivationEvidenceManifest,
-} from "../../src/validate/activationEvidenceManifest.js";
-import {
-  collectActivationProductionEvidence,
-  loadActivationProductionInputs,
-  validateActivationConjunction,
-} from "../../src/validate/activationConjunction.js";
+import { activationEvidenceManifestViolations, activationEvidenceViolations, assembleAndValidateActivationEvidence, createActivationEvidenceManifest } from "../../src/validate/activationEvidenceManifest.js";
+import { collectActivationProductionEvidence, loadActivationProductionInputs, validateActivationConjunction } from "../../src/validate/activationConjunction.js";
 import { createPackageFixture, type PackageFixture } from "../packaging/packageSetup.js";
 
 let fixture: PackageFixture;
@@ -79,9 +70,7 @@ function rootEntries(paths: ProtectedRootPaths): Array<readonly [string, string]
 
 describe("source-owned runtime bootstrap integration", () => {
   it("rejects protected-root and execution-registry origin mutations against fixed authorities", () => {
-    expect(PROTECTED_ROOT_IDENTIFIERS).toEqual([
-      "project", "home", "shared_skill", "install", "package", "package_artifact", "cache", "temporary", "absence",
-    ]);
+    expect(PROTECTED_ROOT_IDENTIFIERS).toEqual(["project", "home", "shared_skill", "install", "package", "package_artifact", "cache", "temporary", "absence"]);
     expect(PROTECTED_ROOT_AUTHORITY_COUNT).toBe(9);
     expect(PROTECTED_ROOT_AUTHORITY_SHA256).toBe("031fd076c396b44b31fb1d923245976a0d3b2fe1e0037de3ee4b711a08c8fd6e");
     expect(EXPECTED_COMPOSITE_ROW_COUNT).toBe(190);
@@ -100,16 +89,14 @@ describe("source-owned runtime bootstrap integration", () => {
       temporary: path.join(proofRoot, "temporary"),
       priorAbsence: path.join(proofRoot, "prior-absence"),
     };
-    for (const directory of [
-      paths.project, paths.home, paths.sharedSkill, paths.install, paths.package, paths.cache, paths.temporary,
-    ]) fs.mkdirSync(directory, { recursive: true });
+    for (const directory of [paths.project, paths.home, paths.sharedSkill, paths.install, paths.package, paths.cache, paths.temporary]) fs.mkdirSync(directory, { recursive: true });
     fs.writeFileSync(paths.tarball, "tarball");
     const roots = rootEntries(paths);
     expect(() => assertProtectedRootAuthority(roots, paths)).not.toThrow();
 
     const substitute = path.join(proofRoot, "substitute");
     fs.mkdirSync(substitute);
-    const substituted = roots.map((entry) => entry[0] === "package" ? [entry[0], substitute] as const : entry);
+    const substituted = roots.map((entry) => (entry[0] === "package" ? ([entry[0], substitute] as const) : entry));
     expect(() => assertProtectedRootAuthority(substituted, paths)).toThrow(/substituted its fixed physical authority/);
 
     const realParent = path.join(proofRoot, "real-parent");
@@ -161,7 +148,7 @@ describe("source-owned runtime bootstrap integration", () => {
 
     expect(() => assertCompleteCompositeRows(summary.rows, summary.expectedCompositeRowIds)).not.toThrow();
     expect(() => assertCompleteCompositeRows(summary.rows.slice(1), summary.expectedCompositeRowIds)).toThrow(/incomplete/);
-    const duplicateRow = summary.rows.map((row, index) => index === summary.rows.length - 1 ? summary.rows[0] : row);
+    const duplicateRow = summary.rows.map((row, index) => (index === summary.rows.length - 1 ? summary.rows[0] : row));
     expect(() => assertCompleteCompositeRows(duplicateRow, summary.expectedCompositeRowIds)).toThrow(/unique/);
     const coordinatedOmission = [...summary.expectedCompositeRowIds];
     coordinatedOmission[0] = "source/clean/coordinated-replacement";
@@ -180,18 +167,20 @@ describe("source-owned runtime bootstrap integration", () => {
     const project = path.join(fixture.root, "missing surface project");
     fs.mkdirSync(project);
     expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
-    const requiredFiles = RELEASE_EVIDENCE_RUN
-      ? DEVELOPMENT_RUNTIME_REQUIRED_FILES
-      : DEVELOPMENT_RUNTIME_REQUIRED_FILES.slice(0, 1);
+    const requiredFiles = RELEASE_EVIDENCE_RUN ? DEVELOPMENT_RUNTIME_REQUIRED_FILES : DEVELOPMENT_RUNTIME_REQUIRED_FILES.slice(0, 1);
     let batches = 0;
     const missingSurfaceResults: unknown[] = [];
-    for (const [runtime, root] of Object.entries({ source: fixture.constructionRoot, package: fixture.packageRoot })) {
+    for (const [runtime, root] of Object.entries({
+      source: fixture.constructionRoot,
+      package: fixture.packageRoot,
+    })) {
       batches += 1;
-      const result = spawnSync(process.execPath, [
-        dispatcher,
-        root,
-         JSON.stringify(requiredFiles),
-      ], { cwd: project, env: process.env, encoding: "utf8", shell: false });
+      const result = spawnSync(process.execPath, [dispatcher, root, JSON.stringify(requiredFiles)], {
+        cwd: project,
+        env: process.env,
+        encoding: "utf8",
+        shell: false,
+      });
       expect(result.status, runtime).toBe(0);
       const observations = JSON.parse(result.stdout);
       expect(observations, runtime).toHaveLength(requiredFiles.length);
@@ -223,9 +212,7 @@ describe("source-owned runtime bootstrap integration", () => {
       requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
     });
     const { evidence, packageIdentity } = finalized;
-    const expectedSecondManifestFiles = [...fixture.pathIndependence.secondManifest.files]
-      .map(({ path: file, size, mode }) => ({ path: file, size, mode }))
-      .sort((left, right) => left.path.localeCompare(right.path));
+    const expectedSecondManifestFiles = [...fixture.pathIndependence.secondManifest.files].map(({ path: file, size, mode }) => ({ path: file, size, mode })).sort((left, right) => left.path.localeCompare(right.path));
     const portabilityFiles = (evidence.records["package.portability"].content as any).secondManifest.files;
     expect(portabilityFiles).toEqual({
       count: expectedSecondManifestFiles.length,
@@ -243,9 +230,15 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(packageIdentity).toMatchObject({
       packageEvidenceDigest: evidence.evidenceDigest,
       packageArtifact: {
-        integrity: `sha512-${createHash("sha512").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("base64")}`,
-        shasum: createHash("sha1").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("hex"),
-        tarballSha256: createHash("sha256").update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename))).digest("hex"),
+        integrity: `sha512-${createHash("sha512")
+          .update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename)))
+          .digest("base64")}`,
+        shasum: createHash("sha1")
+          .update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename)))
+          .digest("hex"),
+        tarballSha256: createHash("sha256")
+          .update(fs.readFileSync(path.join(fixture.root, fixture.manifest.filename)))
+          .digest("hex"),
       },
     });
     const retainedProbe = path.join(fixture.root, "retained-package-identity-probe");
@@ -279,22 +272,25 @@ describe("source-owned runtime bootstrap integration", () => {
     let generatedObservations = 0;
     const mutablePackageEvidence = structuredClone(evidence);
     const assembledResult = assembleAndValidateActivationEvidence({
-        root: CHECKOUT_ROOT,
-        generationRoot: fixture.constructionRoot,
-        generation,
-        productionInputs,
-        productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
-        sourceEvidence,
-        packageEvidence: mutablePackageEvidence,
-        expectedPackageIdentity: packageIdentity,
-      });
+      root: CHECKOUT_ROOT,
+      generationRoot: fixture.constructionRoot,
+      generation,
+      productionInputs,
+      productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
+      sourceEvidence,
+      packageEvidence: mutablePackageEvidence,
+      expectedPackageIdentity: packageIdentity,
+    });
     sourceObservations += assembledResult.observerCalls.source;
     generatedObservations += assembledResult.observerCalls.generated;
     const assembled = assembledResult.manifest;
     const packageRecord = mutablePackageEvidence.records["capability.extracted-modules"];
     packageRecord.content = { attacker: true };
     packageRecord.observationDigest = observationDigest(packageRecord.content);
-    expect({ sourceObservations, generatedObservations }).toEqual({ sourceObservations: 1, generatedObservations: 1 });
+    expect({ sourceObservations, generatedObservations }).toEqual({
+      sourceObservations: 1,
+      generatedObservations: 1,
+    });
     expect(activationEvidenceManifestViolations(assembled, assembled)).toEqual([]);
     expect(assembled.producers.package.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
 
@@ -305,78 +301,193 @@ describe("source-owned runtime bootstrap integration", () => {
     forgedRecord.artifactContentDigest = observationDigest({ forged: forgedRecord.content });
     const { evidenceDigest: _forgedOwnerDigest, ...unsignedForgedOwner } = forged.producers.generated;
     forged.producers.generated.evidenceDigest = observationDigest(unsignedForgedOwner);
-    const forgedRecords = new Map<string, any>([
-      ...Object.entries(forged.producers.source.records),
-      ...Object.entries(forged.producers.generated.records),
-      ...Object.entries(forged.producers.package.records),
-    ]);
+    const forgedRecords = new Map<string, any>([...Object.entries(forged.producers.source.records), ...Object.entries(forged.producers.generated.records), ...Object.entries(forged.producers.package.records)]);
     for (const check of forged.checks) {
       check.observationDigest = observationDigest(check.observationRefs.map((ref: string) => forgedRecords.get(ref)?.content ?? null));
     }
-    const forgedBodyRefs = [
-      "capability.source-modules", "capability.source-runtime-registry",
-      "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
-      "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
-    ];
-    const forgedIdentityRefs = [
-      "capability.source-registry", "capability.source-routes", "capability.source-schemas",
-      "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
-      "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
-    ];
+    const forgedBodyRefs = ["capability.source-modules", "capability.source-runtime-registry", "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served", "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served"];
+    const forgedIdentityRefs = ["capability.source-registry", "capability.source-routes", "capability.source-schemas", "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas", "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas"];
     forged.capabilityParityDigest = observationDigest({
-      bodies: forgedBodyRefs.map((ref) => ({ ref, content: forgedRecords.get(ref)?.content ?? null })),
-      identities: forgedIdentityRefs.map((ref) => ({ ref, content: forgedRecords.get(ref)?.content ?? null })),
+      bodies: forgedBodyRefs.map((ref) => ({
+        ref,
+        content: forgedRecords.get(ref)?.content ?? null,
+      })),
+      identities: forgedIdentityRefs.map((ref) => ({
+        ref,
+        content: forgedRecords.get(ref)?.content ?? null,
+      })),
     });
     const { manifestDigest: _forgedManifestDigest, ...unsignedForgedManifest } = forged;
     forged.manifestDigest = observationDigest(unsignedForgedManifest);
-    expect(activationEvidenceViolations(forged, {
-      root: CHECKOUT_ROOT,
-      generationRoot: fixture.constructionRoot,
-      generation,
-      productionInputs,
-      expectedManifestDigest: forged.manifestDigest,
-      expectedPackageIdentity: packageIdentity,
-    }).join("\n")).toMatch(/capability\.generated-modules.*authoritative artifact observation/);
+    expect(
+      activationEvidenceViolations(forged, {
+        root: CHECKOUT_ROOT,
+        generationRoot: fixture.constructionRoot,
+        generation,
+        productionInputs,
+        expectedManifestDigest: forged.manifestDigest,
+        expectedPackageIdentity: packageIdentity,
+      }).join("\n"),
+    ).toMatch(/capability\.generated-modules.*authoritative artifact observation/);
     expect(manifest.checks).toHaveLength(42);
-    expect(new Set(manifest.checks.flatMap((check) => check.observationRefs)).size)
-      .toBe(manifest.checks.flatMap((check) => check.observationRefs).length);
-    const records = new Map([
-      ...Object.entries(manifest.producers.source.records),
-      ...Object.entries(manifest.producers.generated.records),
-      ...Object.entries(manifest.producers.package.records),
-    ]);
+    expect(new Set(manifest.checks.flatMap((check) => check.observationRefs)).size).toBe(manifest.checks.flatMap((check) => check.observationRefs).length);
+    const records = new Map([...Object.entries(manifest.producers.source.records), ...Object.entries(manifest.producers.generated.records), ...Object.entries(manifest.producers.package.records)]);
     for (const check of manifest.checks) {
       expect(check.observationDigest).toBe(observationDigest(check.observationRefs.map((ref) => records.get(ref)?.content ?? null)));
     }
 
     const mutations: Array<[string, (copy: any) => void, RegExp]> = [
-      ["source body", (copy) => { copy.producers.source.records["capability.source-modules"].content.bodies.design.bytes = 0; }, /capability body projection/],
-      ["generated module body", (copy) => { copy.producers.generated.records["capability.generated-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
-      ["generated served body", (copy) => { copy.producers.generated.records["capability.generated-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
-      ["extracted module body", (copy) => { copy.producers.package.records["capability.extracted-modules"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
-      ["extracted served body", (copy) => { copy.producers.source.records["capability.extracted-served"].content.bodies.design.sha256 = "0".repeat(64); }, /capability body projection/],
-      ["registry name", (copy) => { copy.producers.package.records["capability.extracted-registry"].content[0] = "wrong"; }, /capability identity projection/],
-      ["route set", (copy) => { copy.producers.generated.records["capability.generated-routes"].content.pop(); }, /capability identity projection/],
-      ["schema set", (copy) => { copy.producers.package.records["capability.extracted-schemas"].content.pop(); }, /capability identity projection/],
-      ["package integrity", (copy) => { copy.packageArtifact.integrity = "sha512-wrong"; }, /package artifact identity|package-owner evidence integrity/],
-      ["package manifest", (copy) => { copy.producers.package.records["package.extracted-artifact"].content.manifest.type = "directory"; }, /content digest|expected independently observed/],
-      ["construction-root portability", (copy) => { copy.producers.package.records["package.portability"].content.constructionRootCount = 1; }, /extracted package portability evidence is incomplete or failed/],
-      ["package semantic reason", (copy) => { copy.producers.package.records["package.extracted-registry"].content[0] += "changed"; }, /package semantic projection/],
-      ["portability manifest digest", (copy) => { copy.producers.package.records["package.portability"].content.secondManifest.files.digest = "0".repeat(64); }, /content digest|portability evidence|expected independently observed/],
-      ["generated binder", (copy) => { copy.producers.generated.records["bootstrap.generated-binder"].content.rows[0].classification = "not_exact"; }, /content digest|expected independently observed/],
-      ["extracted classification", (copy) => { copy.producers.source.records["bootstrap.extracted-classifications"].content[0].classification = "malformed"; }, /content digest|expected independently observed/],
-      ["diagnostic", (copy) => { copy.producers.generated.records["bootstrap.generated-diagnostics"].content.pop(); }, /content digest|expected independently observed/],
-      ["startup producer", (copy) => { copy.producers.package.records["bootstrap.extracted-startup"].content.pop(); }, /content digest|expected independently observed/],
-      ["missing surface", (copy) => { copy.producers.source.records["bootstrap.missing-surface"].content.pop(); }, /content digest|expected independently observed/],
-      ["artifact provenance", (copy) => { copy.producers.package.records["package.extracted-artifact"].artifactIdentity = "wrong"; }, /wrong producer or artifact provenance/],
-      ["aliased record", (copy) => { copy.checks[1].observationRefs = [...copy.checks[0].observationRefs]; }, /aliased across checks|producer requirements drifted/],
-      ["aliased producer content", (copy) => {
-        const source = copy.producers.source.records["generic.cli.discovery"];
-        const target = copy.producers.source.records["generic.cli.adversarial"];
-        target.artifactContentDigest = source.artifactContentDigest;
-        target.content = structuredClone(source.content);
-        target.observationDigest = source.observationDigest;
-      }, /alias one producer artifact observation/],
+      [
+        "source body",
+        (copy) => {
+          copy.producers.source.records["capability.source-modules"].content.bodies.design.bytes = 0;
+        },
+        /capability body projection/,
+      ],
+      [
+        "generated module body",
+        (copy) => {
+          copy.producers.generated.records["capability.generated-modules"].content.bodies.design.sha256 = "0".repeat(64);
+        },
+        /capability body projection/,
+      ],
+      [
+        "generated served body",
+        (copy) => {
+          copy.producers.generated.records["capability.generated-served"].content.bodies.design.sha256 = "0".repeat(64);
+        },
+        /capability body projection/,
+      ],
+      [
+        "extracted module body",
+        (copy) => {
+          copy.producers.package.records["capability.extracted-modules"].content.bodies.design.sha256 = "0".repeat(64);
+        },
+        /capability body projection/,
+      ],
+      [
+        "extracted served body",
+        (copy) => {
+          copy.producers.source.records["capability.extracted-served"].content.bodies.design.sha256 = "0".repeat(64);
+        },
+        /capability body projection/,
+      ],
+      [
+        "registry name",
+        (copy) => {
+          copy.producers.package.records["capability.extracted-registry"].content[0] = "wrong";
+        },
+        /capability identity projection/,
+      ],
+      [
+        "route set",
+        (copy) => {
+          copy.producers.generated.records["capability.generated-routes"].content.pop();
+        },
+        /capability identity projection/,
+      ],
+      [
+        "schema set",
+        (copy) => {
+          copy.producers.package.records["capability.extracted-schemas"].content.pop();
+        },
+        /capability identity projection/,
+      ],
+      [
+        "package integrity",
+        (copy) => {
+          copy.packageArtifact.integrity = "sha512-wrong";
+        },
+        /package artifact identity|package-owner evidence integrity/,
+      ],
+      [
+        "package manifest",
+        (copy) => {
+          copy.producers.package.records["package.extracted-artifact"].content.manifest.type = "directory";
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "construction-root portability",
+        (copy) => {
+          copy.producers.package.records["package.portability"].content.constructionRootCount = 1;
+        },
+        /extracted package portability evidence is incomplete or failed/,
+      ],
+      [
+        "package semantic reason",
+        (copy) => {
+          copy.producers.package.records["package.extracted-registry"].content[0] += "changed";
+        },
+        /package semantic projection/,
+      ],
+      [
+        "portability manifest digest",
+        (copy) => {
+          copy.producers.package.records["package.portability"].content.secondManifest.files.digest = "0".repeat(64);
+        },
+        /content digest|portability evidence|expected independently observed/,
+      ],
+      [
+        "generated binder",
+        (copy) => {
+          copy.producers.generated.records["bootstrap.generated-binder"].content.rows[0].classification = "not_exact";
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "extracted classification",
+        (copy) => {
+          copy.producers.source.records["bootstrap.extracted-classifications"].content[0].classification = "malformed";
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "diagnostic",
+        (copy) => {
+          copy.producers.generated.records["bootstrap.generated-diagnostics"].content.pop();
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "startup producer",
+        (copy) => {
+          copy.producers.package.records["bootstrap.extracted-startup"].content.pop();
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "missing surface",
+        (copy) => {
+          copy.producers.source.records["bootstrap.missing-surface"].content.pop();
+        },
+        /content digest|expected independently observed/,
+      ],
+      [
+        "artifact provenance",
+        (copy) => {
+          copy.producers.package.records["package.extracted-artifact"].artifactIdentity = "wrong";
+        },
+        /wrong producer or artifact provenance/,
+      ],
+      [
+        "aliased record",
+        (copy) => {
+          copy.checks[1].observationRefs = [...copy.checks[0].observationRefs];
+        },
+        /aliased across checks|producer requirements drifted/,
+      ],
+      [
+        "aliased producer content",
+        (copy) => {
+          const source = copy.producers.source.records["generic.cli.discovery"];
+          const target = copy.producers.source.records["generic.cli.adversarial"];
+          target.artifactContentDigest = source.artifactContentDigest;
+          target.content = structuredClone(source.content);
+          target.observationDigest = source.observationDigest;
+        },
+        /alias one producer artifact observation/,
+      ],
     ];
     for (const [label, mutate, expected] of mutations) {
       const copy = structuredClone(manifest);
@@ -388,41 +499,46 @@ describe("source-owned runtime bootstrap integration", () => {
     for (const producer of Object.values(coordinatedBlank.producers) as any[]) {
       for (const record of Object.values(producer.records) as any[]) {
         if (record.artifactClass.includes("capability") && record.content?.bodies?.design) {
-          record.content.bodies.design = { sha256: createHash("sha256").update("").digest("hex"), bytes: 0 };
+          record.content.bodies.design = {
+            sha256: createHash("sha256").update("").digest("hex"),
+            bytes: 0,
+          };
         }
       }
     }
     expect(activationEvidenceManifestViolations(coordinatedBlank, manifest).join("\n")).toMatch(/capability body projection/);
 
     const resigned = structuredClone(manifest) as any;
-    const resignedRecords = new Map<string, any>([
-      ...Object.entries(resigned.producers.source.records),
-      ...Object.entries(resigned.producers.generated.records),
-      ...Object.entries(resigned.producers.package.records),
-    ]);
+    const resignedRecords = new Map<string, any>([...Object.entries(resigned.producers.source.records), ...Object.entries(resigned.producers.generated.records), ...Object.entries(resigned.producers.package.records)]);
     for (const [ref, record] of resignedRecords) {
-      if (record.content?.bodies?.design) record.content.bodies.design = { sha256: createHash("sha256").update("").digest("hex"), bytes: 0 };
+      if (record.content?.bodies?.design)
+        record.content.bodies.design = {
+          sha256: createHash("sha256").update("").digest("hex"),
+          bytes: 0,
+        };
       if (ref === "package.extracted-artifact") record.content.manifest.contentDigest = "0".repeat(64);
-      record.artifactContentDigest = observationDigest({ ref, content: record.content, resigned: true });
+      record.artifactContentDigest = observationDigest({
+        ref,
+        content: record.content,
+        resigned: true,
+      });
       record.observationDigest = observationDigest(record.content);
     }
     for (const producer of Object.values(resigned.producers) as any[]) {
       const { evidenceDigest: _oldDigest, ...unsigned } = producer;
       producer.evidenceDigest = observationDigest(unsigned);
     }
-    const bodyRefs = [
-      "capability.source-modules", "capability.source-runtime-registry",
-      "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served",
-      "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served",
-    ];
-    const identityRefs = [
-      "capability.source-registry", "capability.source-routes", "capability.source-schemas",
-      "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas",
-      "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas",
-    ];
+    const bodyRefs = ["capability.source-modules", "capability.source-runtime-registry", "capability.generated-modules", "capability.generated-runtime-registry", "capability.generated-served", "capability.extracted-modules", "capability.extracted-runtime-registry", "capability.extracted-served"];
+    const identityRefs = ["capability.source-registry", "capability.source-routes", "capability.source-schemas", "capability.generated-registry", "capability.generated-routes", "capability.generated-schemas", "capability.extracted-registry", "capability.extracted-routes", "capability.extracted-schemas"];
     resigned.capabilityParityDigest = observationDigest({
-      bodies: bodyRefs.map((ref) => ({ ref, content: resignedRecords.get(ref)?.content ?? null })),
-      identities: identityRefs.map((ref) => ({ ref, content: resignedRecords.get(ref)?.content ?? null })),
+      bodies: bodyRefs.map((ref) => ({
+        ref,
+        content: resignedRecords.get(ref)?.content ?? null,
+      })),
+      identities: identityRefs.map((ref) => ({
+        ref,
+        content: resignedRecords.get(ref)?.content ?? null,
+      })),
     });
     for (const check of resigned.checks) {
       check.observationDigest = observationDigest(check.observationRefs.map((ref: string) => resignedRecords.get(ref)?.content ?? null));
@@ -446,7 +562,10 @@ describe("source-owned runtime bootstrap integration", () => {
     const copyIntoAttackRoot = (relative: string): void => {
       const target = path.join(attackRoot, relative);
       fs.mkdirSync(path.dirname(target), { recursive: true });
-      fs.cpSync(path.join(CHECKOUT_ROOT, relative), target, { recursive: true, verbatimSymlinks: true });
+      fs.cpSync(path.join(CHECKOUT_ROOT, relative), target, {
+        recursive: true,
+        verbatimSymlinks: true,
+      });
     };
     for (const relative of ["references", "skills", "docs", "packages/cli/src", "packages/cli/scripts"]) copyIntoAttackRoot(relative);
     for (const relative of ["registry.json", "package.json", "packages/cli/package.json", "packages/cli/tsconfig.json"]) copyIntoAttackRoot(relative);
@@ -454,20 +573,21 @@ describe("source-owned runtime bootstrap integration", () => {
     const attackGeneration = fixture.sourceIdentity.identitySha256;
     const attackGenerationRoot = path.join(attackRoot, "private-build", attackGeneration);
     fs.mkdirSync(attackGenerationRoot, { recursive: true });
-    fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "dist")), path.join(attackGenerationRoot, "dist"), { recursive: true });
+    fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "dist")), path.join(attackGenerationRoot, "dist"), {
+      recursive: true,
+    });
     fs.cpSync(fs.realpathSync(path.join(fixture.constructionRoot, "bundle")), path.join(attackGenerationRoot, "bundle"), { recursive: true });
     fs.symlinkSync(path.join(CHECKOUT_ROOT, "packages/cli/node_modules"), path.join(attackGenerationRoot, "node_modules"), "dir");
     const attackPackageRoot = path.join(fixture.root, "coordinated-attack-package");
-    fs.cpSync(fixture.packageRoot, attackPackageRoot, { recursive: true, verbatimSymlinks: true });
+    fs.cpSync(fixture.packageRoot, attackPackageRoot, {
+      recursive: true,
+      verbatimSymlinks: true,
+    });
     const attackTarball = path.join(fixture.root, "coordinated-attack-agentera-3.0.0-dev.42.tgz");
     fs.copyFileSync(path.join(fixture.root, fixture.manifest.filename), attackTarball);
     try {
       const attackSourceSnapshot = path.join(fixture.root, "coordinated-attack-snapshot-source");
-      observeCurrentPackageArtifact(
-        path.join(fixture.root, fixture.manifest.filename),
-        fixture.packageRoot,
-        attackSourceSnapshot,
-      );
+      observeCurrentPackageArtifact(path.join(fixture.root, fixture.manifest.filename), fixture.packageRoot, attackSourceSnapshot);
       installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
       expect(activationSourceDigest(attackRoot)).toBe(activationSourceDigest(CHECKOUT_ROOT));
       const baselineInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
@@ -518,7 +638,9 @@ describe("source-owned runtime bootstrap integration", () => {
         type: "file",
         mode: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).mode & 0o777,
         size: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).size,
-        sha256: createHash("sha256").update(fs.readFileSync(path.join(attackPackageRoot, "coordinated-addition.txt"))).digest("hex"),
+        sha256: createHash("sha256")
+          .update(fs.readFileSync(path.join(attackPackageRoot, "coordinated-addition.txt")))
+          .digest("hex"),
       });
       attackedArtifact.extractedTree.entries.sort((left: any, right: any) => left.path.localeCompare(right.path));
       attackedArtifact.extractedTree.digest = observationDigest(attackedArtifact.extractedTree.entries);
@@ -560,11 +682,15 @@ describe("source-owned runtime bootstrap integration", () => {
         expectedPackageIdentity: packageIdentity,
       }) as any;
       expect(conjunction.status).toBe("fail");
-      expect(conjunction.violations).toEqual(expect.arrayContaining([{
-        owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
-        violation: "retained package snapshot differs from the independently retained package identity",
-        correction: "pnpm -C packages/cli run verify:package",
-      }]));
+      expect(conjunction.violations).toEqual(
+        expect.arrayContaining([
+          {
+            owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+            violation: "retained package snapshot differs from the independently retained package identity",
+            correction: "pnpm -C packages/cli run verify:package",
+          },
+        ]),
+      );
 
       fs.rmSync(retainedSnapshot, { recursive: true, force: true });
       installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
@@ -592,11 +718,13 @@ describe("source-owned runtime bootstrap integration", () => {
         expect(result, label).toMatchObject({
           status: "fail",
           violation_count: 1,
-          violations: [{
-            owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
-            violation: expectedViolation,
-            correction: "pnpm -C packages/cli run verify:package",
-          }],
+          violations: [
+            {
+              owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+              violation: expectedViolation,
+              correction: "pnpm -C packages/cli run verify:package",
+            },
+          ],
         });
         expect(JSON.stringify(result), label).not.toContain("unsupported_target");
       }

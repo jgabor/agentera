@@ -29,9 +29,7 @@ describe("cli dispatch: --version / version command", () => {
   });
 
   it("prints version as JSON with", () => {
-    const { rc, out } = capture((io) =>
-      main(["node", "agentera", "version", "--format", "json"], io),
-    );
+    const { rc, out } = capture((io) => main(["node", "agentera", "version", "--format", "json"], io));
     expect(rc).toBe(0);
     const parsed = JSON.parse(out.trim());
     expect(parsed).toHaveProperty("version");
@@ -39,36 +37,31 @@ describe("cli dispatch: --version / version command", () => {
   });
 
   it("rejects unknown arguments after --version", () => {
-    const { rc, out, err } = capture((io) =>
-      main(["node", "agentera", "--version", "--bogus"], io),
-    );
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "--version", "--bogus"], io));
     expect(rc).toBe(2);
     expect(err).toBe("");
     expect(JSON.parse(out).error).toMatchObject({ class: "unrecognized_argument" });
   });
 
   it.each(["json", "text", "yaml"])("rejects --format %s after --version as JSON", (format) => {
-    const { rc, out, err } = capture((io) =>
-      main(["node", "agentera", "--version", "--format", format], io),
-    );
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "--version", "--format", format], io));
     expect(rc).toBe(2);
     expect(err).toBe("");
     expect(JSON.parse(out).error).toMatchObject({ class: "unrecognized_argument" });
   });
 
   it("rejects invalid --format value as JSON", () => {
-    const { rc, out, err } = capture((io) =>
-      main(["node", "agentera", "version", "--format", "yaml"], io),
-    );
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "version", "--format", "yaml"], io));
     expect(rc).toBe(2);
     expect(err).toBe("");
-    expect(JSON.parse(out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(JSON.parse(out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
   });
 
   it("shows help for version --help", () => {
-    const { rc, out } = capture((io) =>
-      main(["node", "agentera", "version", "--help"], io),
-    );
+    const { rc, out } = capture((io) => main(["node", "agentera", "version", "--help"], io));
     expect(rc).toBe(0);
     expect(out).toContain("Print the installed Agentera CLI version");
   });

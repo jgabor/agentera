@@ -21,16 +21,10 @@ export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, 
   const singletonPath = artifactPath(info, "docs");
   const data = loadArtifact(singletonPath);
   try {
-    const singleton = data !== null && typeof data === "object" && !Array.isArray(data)
-      ? data as Record<string, unknown>
-      : {};
+    const singleton = data !== null && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
     const mapping = asList(singleton.mapping);
-    const coverage = singleton.coverage && typeof singleton.coverage === "object" && !Array.isArray(singleton.coverage)
-      ? singleton.coverage
-      : {};
-    const conventions = singleton.conventions && typeof singleton.conventions === "object" && !Array.isArray(singleton.conventions)
-      ? singleton.conventions
-      : {};
+    const coverage = singleton.coverage && typeof singleton.coverage === "object" && !Array.isArray(singleton.coverage) ? singleton.coverage : {};
+    const conventions = singleton.conventions && typeof singleton.conventions === "object" && !Array.isArray(singleton.conventions) ? singleton.conventions : {};
     const summary = {
       last_audit: singleton.last_audit,
       conventions,
@@ -44,19 +38,26 @@ export function queryDocs(args: StateArgs, schemas: Record<string, SchemaInfo>, 
         singleton_authority: singletonPath,
       },
     };
-    const reservedUtf8Bytes = Math.max(
-      Buffer.byteLength(JSON.stringify({ summary }, null, 2)),
-      Buffer.byteLength(YAML.stringify({ summary })),
-    ) + 256;
-    const response = listTodoDocsEntities(process.cwd(), "docs", args.limit ?? undefined, undefined, {
-      ...(args.topic ? { topic: args.topic } : {}),
-      ...(args.status ? { status: args.status } : {}),
-    }, { format, reservedUtf8Bytes });
+    const reservedUtf8Bytes = Math.max(Buffer.byteLength(JSON.stringify({ summary }, null, 2)), Buffer.byteLength(YAML.stringify({ summary }))) + 256;
+    const response = listTodoDocsEntities(
+      process.cwd(),
+      "docs",
+      args.limit ?? undefined,
+      undefined,
+      {
+        ...(args.topic ? { topic: args.topic } : {}),
+        ...(args.status ? { status: args.status } : {}),
+      },
+      { format, reservedUtf8Bytes },
+    );
     const projected = { ...response, summary };
     if (format === "json" || format === "yaml") emitStructured(projected, format, output);
     else {
       output(`Docs: last_audit=${singleton.last_audit ?? "-"}\nMapping: entries=${mapping.length}\n`);
-      for (const entry of response.entries as Array<{ id: string; record: Record<string, unknown> }>) {
+      for (const entry of response.entries as Array<{
+        id: string;
+        record: Record<string, unknown>;
+      }>) {
         output(`${entry.id} document=${entry.record.document} | path=${entry.record.path} | last_updated=${entry.record.last_updated} | status=${entry.record.status}\n`);
       }
     }

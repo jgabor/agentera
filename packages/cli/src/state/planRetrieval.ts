@@ -63,33 +63,24 @@ function hash(value: unknown): string {
   return createHash("sha256").update(canonicalRecordJson(value), "utf8").digest("hex");
 }
 
-function fail(
-  exitCode: 1 | 2,
-  className: StateFailureBody["error"]["class"],
-  message: string,
-  verb: "list" | "get",
-  details: Partial<StateFailureBody["error"]> = {},
-): StateRetrievalFailure {
+function fail(exitCode: 1 | 2, className: StateFailureBody["error"]["class"], message: string, verb: "list" | "get", details: Partial<StateFailureBody["error"]> = {}): StateRetrievalFailure {
   const list = verb === "list";
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: className,
-      message,
-      syntax: list
-        ? "agentera state plan list [--limit N] [--cursor TOKEN]"
-        : "agentera state plan get --plan PLAN_ID",
-      example: list
-        ? "agentera state plan list --limit 20"
-        : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000",
-      recovery: details.recovery ?? "Correct the command using one of the valid forms and retry; no state was changed.",
-      valid_values: list
-        ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-        : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
-      ...details,
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: className,
+        message,
+        syntax: list ? "agentera state plan list [--limit N] [--cursor TOKEN]" : "agentera state plan get --plan PLAN_ID",
+        example: list ? "agentera state plan list --limit 20" : "agentera state plan get --plan plan:123e4567-e89b-42d3-a456-426614174000",
+        recovery: details.recovery ?? "Correct the command using one of the valid forms and retry; no state was changed.",
+        valid_values: list ? ["list", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"] : ["get", "--plan PLAN_ID", "--format text|json|yaml"],
+        ...details,
+      },
     },
-  }, exitCode);
+    exitCode,
+  );
 }
 
 function logicalPlans(discovery: PlanArtifactDiscovery): LogicalPlan[] {
@@ -99,25 +90,27 @@ function logicalPlans(discovery: PlanArtifactDiscovery): LogicalPlan[] {
     values.push(identity);
     byId.set(identity.stableId, values);
   }
-  return [...byId.entries()].map(([stableId, identities]) => {
-    const ordered = [...identities].sort((left, right) => {
-      const leftActive = left.artifact.path === discovery.activePath ? 0 : 1;
-      const rightActive = right.artifact.path === discovery.activePath ? 0 : 1;
-      return leftActive - rightActive || left.artifact.path.localeCompare(right.artifact.path);
+  return [...byId.entries()]
+    .map(([stableId, identities]) => {
+      const ordered = [...identities].sort((left, right) => {
+        const leftActive = left.artifact.path === discovery.activePath ? 0 : 1;
+        const rightActive = right.artifact.path === discovery.activePath ? 0 : 1;
+        return leftActive - rightActive || left.artifact.path.localeCompare(right.artifact.path);
+      });
+      const paths = [...new Set(ordered.map((value) => value.artifact.path))].sort();
+      return {
+        stableId,
+        artifact: ordered[0]!.artifact,
+        identity: ordered[0]!,
+        paths,
+        active: paths.includes(discovery.activePath),
+        archived: paths.some((candidate) => candidate !== discovery.activePath),
+      };
+    })
+    .sort((left, right) => {
+      const created = planDocumentParts(right.artifact.data).created.localeCompare(planDocumentParts(left.artifact.data).created);
+      return created || left.stableId.localeCompare(right.stableId);
     });
-    const paths = [...new Set(ordered.map((value) => value.artifact.path))].sort();
-    return {
-      stableId,
-      artifact: ordered[0]!.artifact,
-      identity: ordered[0]!,
-      paths,
-      active: paths.includes(discovery.activePath),
-      archived: paths.some((candidate) => candidate !== discovery.activePath),
-    };
-  }).sort((left, right) => {
-    const created = planDocumentParts(right.artifact.data).created.localeCompare(planDocumentParts(left.artifact.data).created);
-    return created || left.stableId.localeCompare(right.stableId);
-  });
 }
 
 function catalogEntry(plan: LogicalPlan): JsonObject {
@@ -136,7 +129,11 @@ function catalogEntry(plan: LogicalPlan): JsonObject {
 }
 
 function refs(plans: LogicalPlan[]): SnapshotRef[] {
-  return plans.map((plan) => ({ stable_id: plan.stableId, paths: plan.paths, canonical_hash: hash(plan.identity.canonicalJson) }));
+  return plans.map((plan) => ({
+    stable_id: plan.stableId,
+    paths: plan.paths,
+    canonical_hash: hash(plan.identity.canonicalJson),
+  }));
 }
 
 function snapshotId(candidateRefs: SnapshotRef[]): string {
@@ -144,7 +141,9 @@ function snapshotId(candidateRefs: SnapshotRef[]): string {
 }
 
 function cursorKey(projectRoot: string): Buffer {
-  return createHash("sha256").update(`agentera-plan-cursor\0${path.resolve(projectRoot)}`, "utf8").digest();
+  return createHash("sha256")
+    .update(`agentera-plan-cursor\0${path.resolve(projectRoot)}`, "utf8")
+    .digest();
 }
 
 function sign(payload: CursorPayload, projectRoot: string): string {
@@ -219,11 +218,24 @@ function baseList(plans: LogicalPlan[], selected: LogicalPlan[], diagnostics: Pl
     command: "state plan list",
     status: degraded ? "degraded" : "ok",
     entries: selected.map(catalogEntry),
-    counts: { total: plans.length, returned: selected.length, remaining: plans.length - selected.length, omitted: plans.length - selected.length },
+    counts: {
+      total: plans.length,
+      returned: selected.length,
+      remaining: plans.length - selected.length,
+      omitted: plans.length - selected.length,
+    },
     order: ORDER,
     filters: {},
-    snapshot: { id: snapshotId(snapshotRefs), candidate_count: plans.length, has_more: plans.length > selected.length },
-    source: { artifact: "plan", storage: "active_plan_file_and_immutable_plan_archive_files", compatibility_diagnostics: diagnostics },
+    snapshot: {
+      id: snapshotId(snapshotRefs),
+      candidate_count: plans.length,
+      has_more: plans.length > selected.length,
+    },
+    source: {
+      artifact: "plan",
+      storage: "active_plan_file_and_immutable_plan_archive_files",
+      compatibility_diagnostics: diagnostics,
+    },
     source_contract: {
       authority: "references/artifacts/state-storage-authority.yaml",
       complete_for_plan_list_retrieval: true,
@@ -241,19 +253,27 @@ function withPage(plans: LogicalPlan[], diagnostics: PlanArtifactDiagnostic[], s
   const selected = plans.slice(start, start + retained);
   const remaining = Math.max(0, plans.length - start - selected.length);
   const response = baseList(plans, selected, diagnostics, snapshotRefs);
-  response.counts = { total: plans.length, returned: selected.length, remaining, omitted: remaining };
+  response.counts = {
+    total: plans.length,
+    returned: selected.length,
+    remaining,
+    omitted: remaining,
+  };
   response.snapshot = { ...response.snapshot, has_more: remaining > 0 };
   if (remaining > 0 && selected.length > 0) {
-    const token = encodeCursor({
-      version: CURSOR_VERSION,
-      collection: "plan.plans",
-      order: ORDER,
-      snapshot_id: snapshotId(snapshotRefs),
-      candidate_ids: plans.map((plan) => plan.stableId),
-      diagnostics,
-      diagnostic_hash: hash(diagnostics),
-      after: start + selected.length,
-    }, projectRoot);
+    const token = encodeCursor(
+      {
+        version: CURSOR_VERSION,
+        collection: "plan.plans",
+        order: ORDER,
+        snapshot_id: snapshotId(snapshotRefs),
+        candidate_ids: plans.map((plan) => plan.stableId),
+        diagnostics,
+        diagnostic_hash: hash(diagnostics),
+        after: start + selected.length,
+      },
+      projectRoot,
+    );
     response.next_cursor = token;
     response.omitted = true;
     response.omitted_count = remaining;
@@ -267,19 +287,15 @@ function withPage(plans: LogicalPlan[], diagnostics: PlanArtifactDiagnostic[], s
 }
 
 function serializedListBytes(response: PlanListResponse, format: "json" | "yaml"): number {
-  const text = format === "json"
-    ? JSON.stringify(response, null, 2) + "\n"
-    : YAML.stringify(response, { sortMapEntries: false });
+  const text = format === "json" ? JSON.stringify(response, null, 2) + "\n" : YAML.stringify(response, { sortMapEntries: false });
   return Buffer.byteLength(text, "utf8");
 }
 
-export function listPlans(
-  projectRoot: string,
-  activePath: string,
-  options: { limit: number; cursor?: string; format: "text" | "json" | "yaml" },
-): PlanListResponse {
+export function listPlans(projectRoot: string, activePath: string, options: { limit: number; cursor?: string; format: "text" | "json" | "yaml" }): PlanListResponse {
   if (!Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 100) {
-    throw fail(2, "invalid_request", "plan list limit must be an integer from 1 through 100", "list", { valid_values: ["1..100"] });
+    throw fail(2, "invalid_request", "plan list limit must be an integer from 1 through 100", "list", {
+      valid_values: ["1..100"],
+    });
   }
   const discovery = discoverPlanArtifacts(activePath);
   const parsed = options.cursor ? parseCursor(options.cursor, projectRoot) : undefined;
@@ -305,16 +321,18 @@ export function listPlans(
 function invalidCandidates(discovery: PlanArtifactDiscovery, selectedPlan: string): string[] {
   const paths = [...discovery.invalidArchivePaths];
   if (!discovery.active) paths.push(discovery.activePath);
-  return paths.filter((candidatePath) => {
-    if (!fs.existsSync(candidatePath)) return false;
-    try {
-      const value = loadYamlMapping(fs.readFileSync(candidatePath, "utf8"));
-      const header = value.header;
-      return header !== null && typeof header === "object" && !Array.isArray(header) && (header as JsonObject).id === selectedPlan;
-    } catch {
-      return false;
-    }
-  }).sort();
+  return paths
+    .filter((candidatePath) => {
+      if (!fs.existsSync(candidatePath)) return false;
+      try {
+        const value = loadYamlMapping(fs.readFileSync(candidatePath, "utf8"));
+        const header = value.header;
+        return header !== null && typeof header === "object" && !Array.isArray(header) && (header as JsonObject).id === selectedPlan;
+      } catch {
+        return false;
+      }
+    })
+    .sort();
 }
 
 export function getPlan(activePath: string, selectedPlan: string): JsonObject {

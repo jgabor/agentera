@@ -23,19 +23,13 @@ export function assertValidatedProjectRoot(root: ValidatedProjectRoot): void {
   const stable = root.identities.every((identity) => {
     try {
       const current = fs.lstatSync(identity.absolute, { bigint: true });
-      return identity.type === "directory"
-        && current.isDirectory()
-        && !current.isSymbolicLink()
-        && current.dev === identity.dev
-        && current.ino === identity.ino;
+      return identity.type === "directory" && current.isDirectory() && !current.isSymbolicLink() && current.dev === identity.dev && current.ino === identity.ino;
     } catch {
       return false;
     }
   });
   if (!stable) {
-    throw new Error(
-      `project root '${root.path}' changed after validation; restore the exact real directory and retry`,
-    );
+    throw new Error(`project root '${root.path}' changed after validation; restore the exact real directory and retry`);
   }
 }
 
@@ -68,9 +62,7 @@ export function validateRealProjectRoot(projectRoot: string): ValidatedProjectRo
   const validated = { path: root, identities };
   const rootIdentity = identities.at(-1)!;
   if (rootIdentity.dev !== stat.dev || rootIdentity.ino !== stat.ino) {
-    throw new Error(
-      `project root '${root}' changed during validation; restore the exact real directory and retry`,
-    );
+    throw new Error(`project root '${root}' changed during validation; restore the exact real directory and retry`);
   }
   assertValidatedProjectRoot(validated);
   return validated;

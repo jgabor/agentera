@@ -5,17 +5,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  personalGlossaryReviewRecordsPath,
-  personalGlossaryTrustedLocalHostPath,
-  type PersonalGlossaryReviewRecord,
-} from "../../src/analytics/personalGlossaryReviewRecords.js";
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { personalGlossaryReviewRecordsPath, personalGlossaryTrustedLocalHostPath, type PersonalGlossaryReviewRecord } from "../../src/analytics/personalGlossaryReviewRecords.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { main } from "../../src/cli/dispatch.js";
@@ -23,11 +14,7 @@ import { printReportHelp } from "../../src/cli/help.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";
 import { PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS } from "../../src/cli/commands/personalGlossaryReviewRecords.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
-import {
-  createGlossaryEvidenceCapsule,
-  createGlossaryHostClassificationReceipt,
-  type GlossaryEvidenceCapsule,
-} from "../../src/registries/glossaryCandidateContracts.js";
+import { createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryEvidenceCapsule } from "../../src/registries/glossaryCandidateContracts.js";
 import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 
 const POLICY = "agentera.personalGlossaryMiningPolicy.v1";
@@ -51,27 +38,32 @@ beforeEach(() => {
 
 function publishCurrentTier(seed = "initial"): string {
   const text = `review tier generation ${seed}`;
-  return publishEvidenceTiers([{
-    source_id: `review-tier-source-${seed}`,
-    source_kind: "conversation_turn",
-    timestamp: RETAINED_AT,
-    project_id: "private-review-tier",
-    runtime: "opencode",
-    source_class: "active_runtime",
-    source_product: "opencode",
-    active_runtime: true,
-    adapter_version: ADAPTER_VERSION,
-    data: { actor: "user", signal_type: "decision", text },
-    origin_id: originIdentity(`review-tier-source-${seed}`),
-    content_fingerprint: contentFingerprint(text),
-    session_id: `review-tier-session-${seed}`,
-    conversation_key: `review-tier-session-${seed}`,
-    author_class: "user",
-  }], {
-    tiersDir: path.join(profileDir, "intermediate", "tiers"),
-    adapterVersion: ADAPTER_VERSION,
-    publishedAt: RETAINED_AT,
-  }).generation;
+  return publishEvidenceTiers(
+    [
+      {
+        source_id: `review-tier-source-${seed}`,
+        source_kind: "conversation_turn",
+        timestamp: RETAINED_AT,
+        project_id: "private-review-tier",
+        runtime: "opencode",
+        source_class: "active_runtime",
+        source_product: "opencode",
+        active_runtime: true,
+        adapter_version: ADAPTER_VERSION,
+        data: { actor: "user", signal_type: "decision", text },
+        origin_id: originIdentity(`review-tier-source-${seed}`),
+        content_fingerprint: contentFingerprint(text),
+        session_id: `review-tier-session-${seed}`,
+        conversation_key: `review-tier-session-${seed}`,
+        author_class: "user",
+      },
+    ],
+    {
+      tiersDir: path.join(profileDir, "intermediate", "tiers"),
+      adapterVersion: ADAPTER_VERSION,
+      publishedAt: RETAINED_AT,
+    },
+  ).generation;
 }
 
 afterEach(() => {
@@ -82,11 +74,7 @@ afterEach(() => {
   fs.rmSync(profileDir, { recursive: true, force: true });
 });
 
-function candidate(
-  index: number,
-  candidateGeneration = generation,
-  policyVersion = POLICY,
-): GlossaryEvidenceCapsule {
+function candidate(index: number, candidateGeneration = generation, policyVersion = POLICY): GlossaryEvidenceCapsule {
   return createGlossaryEvidenceCapsule({
     term: `private CLI review term ${index}`,
     meaning: `private CLI review meaning ${index}`,
@@ -150,18 +138,19 @@ function run(argv: string[], stdin?: string): { rc: number; out: string; err: st
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", ...argv], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
     stdin: () => stdin ?? "",
   });
   return { rc, out, err };
 }
 
 function queue(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection) {
-  const result = run(
-    ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
-    request(receipt(capsule, projection)),
-  );
+  const result = run(["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"], request(receipt(capsule, projection)));
   expect(result, result.out).toMatchObject({ rc: 0, err: "" });
   expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(4_096);
   return JSON.parse(result.out) as { record: PersonalGlossaryReviewRecord; status: string };
@@ -172,20 +161,14 @@ function writeTrustedHost(): void {
   fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
   const host = {
     owner: "current_user",
-    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey
-      .export({ format: "der", type: "spki" })
-      .toString("base64url"),
+    public_key_spki_base64url: REVIEW_KEY_PAIR.publicKey.export({ format: "der", type: "spki" }).toString("base64url"),
     schema_version: "agentera.personalGlossaryTrustedLocalHost.v1",
     subject: REVIEW_SUBJECT,
   };
   fs.writeFileSync(pathname, `${canonicalGlossaryJson(host)}\n`, { encoding: "utf8", mode: 0o600 });
 }
 
-function approval(
-  record: PersonalGlossaryReviewRecord,
-  disposition: "accept" | "correct" | "reject" | "defer",
-  overrides: Record<string, unknown> = {},
-): Record<string, unknown> {
+function approval(record: PersonalGlossaryReviewRecord, disposition: "accept" | "correct" | "reject" | "defer", overrides: Record<string, unknown> = {}): Record<string, unknown> {
   const { signature: signatureOverride, ...fields } = overrides;
   const disposedAt = new Date(Math.max(Date.parse(record.queued_at), Date.now() - 100)).toISOString();
   const unsigned = {
@@ -210,19 +193,11 @@ function approval(
   };
   return {
     ...unsigned,
-    signature: signatureOverride ?? sign(
-      null,
-      Buffer.from(JSON.stringify(unsigned), "utf8"),
-      REVIEW_KEY_PAIR.privateKey,
-    ).toString("base64url"),
+    signature: signatureOverride ?? sign(null, Buffer.from(JSON.stringify(unsigned), "utf8"), REVIEW_KEY_PAIR.privateKey).toString("base64url"),
   };
 }
 
-function dispositionRequest(
-  review: PersonalGlossaryReviewRecord,
-  hostReceipt: unknown,
-  signedApproval: unknown,
-): string {
+function dispositionRequest(review: PersonalGlossaryReviewRecord, hostReceipt: unknown, signedApproval: unknown): string {
   return JSON.stringify({
     schema_version: "agentera.personalGlossaryReviewDispositionRequest.v1",
     review_id: review.review_id,
@@ -240,23 +215,7 @@ function exactArgs(record: PersonalGlossaryReviewRecord, overrides: Partial<Reco
     policyVersion: record.policy_version,
     ...overrides,
   };
-  return [
-    "report",
-    "personal-glossary-reviews",
-    "get",
-    "--review-id",
-    values.reviewId,
-    "--candidate-id",
-    values.candidateId,
-    "--candidate-revision",
-    values.candidateRevision,
-    "--generation",
-    values.generation,
-    "--policy-version",
-    values.policyVersion,
-    "--format",
-    "json",
-  ];
+  return ["report", "personal-glossary-reviews", "get", "--review-id", values.reviewId, "--candidate-id", values.candidateId, "--candidate-revision", values.candidateRevision, "--generation", values.generation, "--policy-version", values.policyVersion, "--format", "json"];
 }
 
 function writeLegacyStore(record: PersonalGlossaryReviewRecord): string {
@@ -342,23 +301,16 @@ describe("agentera report personal-glossary-reviews", () => {
         mutableSpec.action = `${original.action}-from-spec`;
         mutableSpec.option = "--request-from-spec";
 
-        const accepted = run(
-          ["report", "personal-glossary-reviews", mutableSpec.action, mutableSpec.option, "-", "--format", "json"],
-          "[",
-        );
+        const accepted = run(["report", "personal-glossary-reviews", mutableSpec.action, mutableSpec.option, "-", "--format", "json"], "[");
         expect(JSON.parse(accepted.out)).toMatchObject({ error: { class: "invalid_format" } });
 
-        const oldAction = run(
-          ["report", "personal-glossary-reviews", original.action, mutableSpec.option, "-", "--format", "json"],
-          "[",
-        );
+        const oldAction = run(["report", "personal-glossary-reviews", original.action, mutableSpec.option, "-", "--format", "json"], "[");
         expect(JSON.parse(oldAction.out)).toMatchObject({ error: { class: "unsupported_target" } });
 
-        const oldOption = run(
-          ["report", "personal-glossary-reviews", mutableSpec.action, original.option, "-", "--format", "json"],
-          "[",
-        );
-        expect(JSON.parse(oldOption.out)).toMatchObject({ error: { class: "unrecognized_argument" } });
+        const oldOption = run(["report", "personal-glossary-reviews", mutableSpec.action, original.option, "-", "--format", "json"], "[");
+        expect(JSON.parse(oldOption.out)).toMatchObject({
+          error: { class: "unrecognized_argument" },
+        });
       } finally {
         Object.assign(mutableSpec, original);
       }
@@ -379,7 +331,9 @@ describe("agentera report personal-glossary-reviews", () => {
     });
     const exact = run(exactArgs(queued.record));
     expect(exact).toMatchObject({ rc: 0, err: "" });
-    expect(JSON.parse(exact.out)).toMatchObject({ record: { review_id: queued.record.review_id, scope: null } });
+    expect(JSON.parse(exact.out)).toMatchObject({
+      record: { review_id: queued.record.review_id, scope: null },
+    });
     expect(fs.readFileSync(personalGlossaryReviewRecordsPath(), "utf8")).toBe(bytes);
   });
 
@@ -392,10 +346,7 @@ describe("agentera report personal-glossary-reviews", () => {
     const projectionBefore = fs.readFileSync(projectionPath, "utf8");
     const profileBefore = fs.readFileSync(profilePath, "utf8");
 
-    const result = run(
-      ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
-      request(receipt(capsule, projection)),
-    );
+    const result = run(["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"], request(receipt(capsule, projection)));
     expect(result).toMatchObject({ rc: 0, err: "" });
     const output = JSON.parse(result.out);
     expect(output).toMatchObject({
@@ -431,10 +382,7 @@ describe("agentera report personal-glossary-reviews", () => {
     const input = dispositionRequest(queued.record, hostReceipt, signed);
     const pathname = personalGlossaryReviewRecordsPath();
 
-    const first = run(
-      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
-      input,
-    );
+    const first = run(["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"], input);
     expect(first).toMatchObject({ rc: 0, err: "" });
     expect(JSON.parse(first.out)).toMatchObject({
       schemaVersion: "agentera.personalGlossaryReviewDispositionResult.v1",
@@ -456,22 +404,12 @@ describe("agentera report personal-glossary-reviews", () => {
     expect(first.out).not.toContain(capsule.meaning);
     const afterFirst = fs.readFileSync(pathname, "utf8");
 
-    const replay = run(
-      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
-      input,
-    );
+    const replay = run(["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"], input);
     expect(replay).toMatchObject({ rc: 0, err: "" });
     expect(JSON.parse(replay.out)).toMatchObject({ status: "unchanged_replay" });
     expect(fs.readFileSync(pathname, "utf8")).toBe(afterFirst);
 
-    const changed = run(
-      ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
-      dispositionRequest(
-        queued.record,
-        hostReceipt,
-        approval(queued.record, "reject", { nonce: "single-use-cli-review-nonce" }),
-      ),
-    );
+    const changed = run(["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"], dispositionRequest(queued.record, hostReceipt, approval(queued.record, "reject", { nonce: "single-use-cli-review-nonce" })));
     expect(changed).toMatchObject({ rc: 1, err: "" });
     expect(JSON.parse(changed.out)).toMatchObject({ error: { class: "review_approval_replayed" } });
     expect(changed.out).not.toContain("single-use-cli-review-nonce");
@@ -486,20 +424,12 @@ describe("agentera report personal-glossary-reviews", () => {
     writeTrustedHost();
     const pathname = personalGlossaryReviewRecordsPath();
     const before = fs.readFileSync(pathname, "utf8");
-    for (const correctedMeaning of [
-      "x".repeat(4_097),
-      "Authorization: Bearer secret-review-token",
-    ]) {
-      const invalid = run(
-        ["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"],
-        dispositionRequest(
-          queued.record,
-          hostReceipt,
-          approval(queued.record, "correct", { corrected_meaning: correctedMeaning }),
-        ),
-      );
+    for (const correctedMeaning of ["x".repeat(4_097), "Authorization: Bearer secret-review-token"]) {
+      const invalid = run(["report", "personal-glossary-reviews", "disposition", "--input", "-", "--format", "json"], dispositionRequest(queued.record, hostReceipt, approval(queued.record, "correct", { corrected_meaning: correctedMeaning })));
       expect(invalid).toMatchObject({ rc: 1, err: "" });
-      expect(JSON.parse(invalid.out)).toMatchObject({ error: { class: "review_approval_invalid" } });
+      expect(JSON.parse(invalid.out)).toMatchObject({
+        error: { class: "review_approval_invalid" },
+      });
       expect(invalid.out).not.toContain(correctedMeaning.slice(0, 64));
     }
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
@@ -516,10 +446,7 @@ describe("agentera report personal-glossary-reviews", () => {
       const projection = persist([capsule]);
       const projectionPath = personalGlossaryCandidateProjectionPath();
       const projectionBefore = fs.readFileSync(projectionPath, "utf8");
-      const result = run(
-        ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
-        request(receipt(capsule, projection)),
-      );
+      const result = run(["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"], request(receipt(capsule, projection)));
 
       expect(result).toMatchObject({ rc: 1, err: "" });
       expect(JSON.parse(result.out)).toMatchObject({ error: { class: errorClass } });
@@ -542,23 +469,7 @@ describe("agentera report personal-glossary-reviews", () => {
     });
     expect(Buffer.byteLength(list.out, "utf8")).toBeLessThanOrEqual(32_768);
 
-    const get = run([
-      "report",
-      "personal-glossary-reviews",
-      "get",
-      "--review-id",
-      "a".repeat(64),
-      "--candidate-id",
-      "b".repeat(64),
-      "--candidate-revision",
-      "c".repeat(64),
-      "--generation",
-      generation,
-      "--policy-version",
-      POLICY,
-      "--format",
-      "json",
-    ]);
+    const get = run(["report", "personal-glossary-reviews", "get", "--review-id", "a".repeat(64), "--candidate-id", "b".repeat(64), "--candidate-revision", "c".repeat(64), "--generation", generation, "--policy-version", POLICY, "--format", "json"]);
     expect(get).toMatchObject({ rc: 1, err: "" });
     expect(JSON.parse(get.out)).toMatchObject({ error: { class: "not_found" } });
     expect(Buffer.byteLength(get.out, "utf8")).toBeLessThanOrEqual(8_192);
@@ -574,17 +485,7 @@ describe("agentera report personal-glossary-reviews", () => {
     expect(first.status).toBe("queued");
     expect(second.status).toBe("queued");
 
-    const page = run([
-      "report",
-      "personal-glossary-reviews",
-      "list",
-      "--status",
-      "pending",
-      "--limit",
-      "1",
-      "--format",
-      "json",
-    ]);
+    const page = run(["report", "personal-glossary-reviews", "list", "--status", "pending", "--limit", "1", "--format", "json"]);
     expect(page).toMatchObject({ rc: 0, err: "" });
     const firstPage = JSON.parse(page.out);
     expect(firstPage).toMatchObject({
@@ -599,19 +500,7 @@ describe("agentera report personal-glossary-reviews", () => {
     expect(page.out).not.toMatch(/private CLI review (term|meaning)|source-cli-private|anchor-cli-private|project-cli-private/i);
     expect(Buffer.byteLength(page.out, "utf8")).toBeLessThanOrEqual(32_768);
 
-    const continued = run([
-      "report",
-      "personal-glossary-reviews",
-      "list",
-      "--status",
-      "pending",
-      "--limit",
-      "1",
-      "--cursor",
-      firstPage.next_cursor,
-      "--format",
-      "json",
-    ]);
+    const continued = run(["report", "personal-glossary-reviews", "list", "--status", "pending", "--limit", "1", "--cursor", firstPage.next_cursor, "--format", "json"]);
     expect(continued).toMatchObject({ rc: 0, err: "" });
     expect(JSON.parse(continued.out)).toMatchObject({ counts: { returned: 1, remaining: 0 } });
 
@@ -666,15 +555,7 @@ describe("agentera report personal-glossary-reviews", () => {
     const pathname = personalGlossaryReviewRecordsPath();
     const bytes = fs.readFileSync(pathname, "utf8");
 
-    const malformed = run([
-      "report",
-      "personal-glossary-reviews",
-      "list",
-      "--limit",
-      "0",
-      "--format",
-      "json",
-    ]);
+    const malformed = run(["report", "personal-glossary-reviews", "list", "--limit", "0", "--format", "json"]);
     expect(malformed).toMatchObject({ rc: 2, err: "" });
     expect(JSON.parse(malformed.out)).toMatchObject({ error: { class: "invalid_int" } });
     expect(fs.readFileSync(pathname, "utf8")).toBe(bytes);
@@ -709,10 +590,7 @@ describe("agentera report personal-glossary-reviews", () => {
     }
     expect(fs.readFileSync(pathname, "utf8")).toBe(bytes);
 
-    const oversized = run(
-      ["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"],
-      "x".repeat(16_385),
-    );
+    const oversized = run(["report", "personal-glossary-reviews", "queue", "--input", "-", "--format", "json"], "x".repeat(16_385));
     expect(oversized).toMatchObject({ rc: 2, err: "" });
     expect(JSON.parse(oversized.out)).toMatchObject({ error: { class: "invalid_format" } });
     expect(fs.readFileSync(pathname, "utf8")).toBe(bytes);
@@ -725,7 +603,9 @@ describe("agentera report personal-glossary-reviews", () => {
     fs.writeFileSync(pathname, mismatchBytes, "utf8");
     const privateRead = run(["report", "personal-glossary-reviews", "list", "--format", "json"]);
     expect(privateRead).toMatchObject({ rc: 1, err: "" });
-    expect(JSON.parse(privateRead.out)).toMatchObject({ error: { class: "review_records_unavailable" } });
+    expect(JSON.parse(privateRead.out)).toMatchObject({
+      error: { class: "review_records_unavailable" },
+    });
     expect(privateRead.out).not.toContain(capsule.term);
     expect(fs.readFileSync(pathname, "utf8")).toBe(mismatchBytes);
   });
@@ -738,29 +618,9 @@ describe("agentera report personal-glossary-reviews", () => {
     queue(secondCandidate, projection);
     const pathname = personalGlossaryReviewRecordsPath();
     const before = fs.readFileSync(pathname, "utf8");
-    const page = run([
-      "report",
-      "personal-glossary-reviews",
-      "list",
-      "--limit",
-      "1",
-      "--format",
-      "json",
-    ]);
+    const page = run(["report", "personal-glossary-reviews", "list", "--limit", "1", "--format", "json"]);
     const nextCursor = JSON.parse(page.out).next_cursor;
-    const changedCursor = run([
-      "report",
-      "personal-glossary-reviews",
-      "list",
-      "--status",
-      "pending",
-      "--limit",
-      "1",
-      "--cursor",
-      nextCursor,
-      "--format",
-      "json",
-    ]);
+    const changedCursor = run(["report", "personal-glossary-reviews", "list", "--status", "pending", "--limit", "1", "--cursor", nextCursor, "--format", "json"]);
     expect(changedCursor).toMatchObject({ rc: 1, err: "" });
     expect(JSON.parse(changedCursor.out)).toMatchObject({ error: { class: "cursor_invalid" } });
 
@@ -775,7 +635,9 @@ describe("agentera report personal-glossary-reviews", () => {
     });
     const staleExact = run(exactArgs(record));
     expect(staleExact).toMatchObject({ rc: 1, err: "" });
-    expect(JSON.parse(staleExact.out)).toMatchObject({ error: { class: "current_binding_mismatch" } });
+    expect(JSON.parse(staleExact.out)).toMatchObject({
+      error: { class: "current_binding_mismatch" },
+    });
     expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
@@ -794,9 +656,7 @@ describe("agentera report personal-glossary-reviews", () => {
       return nativeOpen(target, flags, mode);
     }) as typeof fs.openSync);
     try {
-      const result = run([
-        "report", "personal-glossary-reviews", "queue", "--input", input, "--format", "json",
-      ]);
+      const result = run(["report", "personal-glossary-reviews", "queue", "--input", input, "--format", "json"]);
       expect(result).toMatchObject({ rc: 2, err: "" });
       expect(JSON.parse(result.out)).toMatchObject({ error: { class: "invalid_format" } });
       expect(fs.existsSync(personalGlossaryReviewRecordsPath())).toBe(false);

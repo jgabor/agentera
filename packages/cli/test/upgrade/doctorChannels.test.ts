@@ -30,18 +30,12 @@ function v3SourceRoot(announced: boolean): string {
     const stableStart = channels.indexOf("  stable:");
     const devStart = channels.indexOf("  development:");
     const stableBlock = channels.slice(stableStart, devStart);
-    channels =
-      channels.slice(0, stableStart) +
-      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: true") +
-      channels.slice(devStart);
+    channels = channels.slice(0, stableStart) + stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: true") + channels.slice(devStart);
   } else {
     const stableStart = channels.indexOf("  stable:");
     const devStart = channels.indexOf("  development:");
     const stableBlock = channels.slice(stableStart, devStart);
-    channels =
-      channels.slice(0, stableStart) +
-      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
-      channels.slice(devStart);
+    channels = channels.slice(0, stableStart) + stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") + channels.slice(devStart);
   }
   fs.writeFileSync(path.join(root, "references/cli/update-channels.yaml"), channels);
   return root;
@@ -53,14 +47,8 @@ function managed(appHome: string, marker: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 function unannouncedV3SourceRoot(): string {

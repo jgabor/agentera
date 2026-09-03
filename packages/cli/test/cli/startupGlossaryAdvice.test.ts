@@ -39,7 +39,13 @@ describe("startup glossary advice composition", () => {
       gap_proving: false,
       diagnostic: null,
     },
-    personal: { owner: "personal", availability: "absent", entries: [], gap_proving: false, diagnostic: null },
+    personal: {
+      owner: "personal",
+      availability: "absent",
+      entries: [],
+      gap_proving: false,
+      diagnostic: null,
+    },
   };
 
   it("returns the shared no-review resolver outcome", () => {
@@ -51,8 +57,6 @@ describe("startup glossary advice composition", () => {
   });
 
   it("rejects capabilities outside Discuss, Plan, and Build", () => {
-    expect(() => resolveStartupGlossaryAdvice("audit", "bounded term", acquired)).toThrow(
-      "unsupported startup advice capability",
-    );
+    expect(() => resolveStartupGlossaryAdvice("audit", "bounded term", acquired)).toThrow("unsupported startup advice capability");
   });
 });

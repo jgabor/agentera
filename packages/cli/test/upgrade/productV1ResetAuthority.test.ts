@@ -6,13 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH,
-  isProductV1PackageVersion,
-  loadProductV1ResetAuthority,
-  productV1ArtifactPairs,
-  productV1ProjectTriggerPaths,
-} from "../../src/upgrade/productV1ResetAuthority.js";
+import { PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH, isProductV1PackageVersion, loadProductV1ResetAuthority, productV1ArtifactPairs, productV1ProjectTriggerPaths } from "../../src/upgrade/productV1ResetAuthority.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH);
@@ -36,14 +30,7 @@ describe("product v1 reset authority", () => {
     const authority = loadProductV1ResetAuthority();
 
     expect(productV1ArtifactPairs()).toEqual(authority.projectArtifacts.map(({ path, currentPath }) => [path, currentPath]));
-    expect(productV1ProjectTriggerPaths()).toEqual([
-      ".agentera/PROGRESS.md",
-      ".agentera/PLAN.md",
-      ".agentera/DECISIONS.md",
-      ".agentera/HEALTH.md",
-      ".agentera/DOCS.md",
-      ".agentera/DESIGN.md",
-    ]);
+    expect(productV1ProjectTriggerPaths()).toEqual([".agentera/PROGRESS.md", ".agentera/PLAN.md", ".agentera/DECISIONS.md", ".agentera/HEALTH.md", ".agentera/DOCS.md", ".agentera/DESIGN.md"]);
     expect(new Set(authority.scope.map(({ owner }) => owner)).size).toBe(authority.scope.length);
     expect(authority.scope.map(({ id, action, boundedRoot }) => ({ id, action, boundedRoot }))).toEqual([
       { id: "project.state", action: "delete", boundedRoot: "project" },

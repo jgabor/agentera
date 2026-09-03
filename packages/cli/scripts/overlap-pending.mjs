@@ -13,17 +13,7 @@ const MAX_ARRAY_ITEMS = 10_000;
 const MAX_ISSUES = 100;
 const MAX_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_SERIALIZED_BYTES = 2 * 1024 * 1024;
-const REPORT_AGGREGATES = [
-  "numTotalTestSuites",
-  "numPassedTestSuites",
-  "numFailedTestSuites",
-  "numPendingTestSuites",
-  "numTotalTests",
-  "numPassedTests",
-  "numFailedTests",
-  "numPendingTests",
-  "numTodoTests",
-];
+const REPORT_AGGREGATES = ["numTotalTestSuites", "numPassedTestSuites", "numFailedTestSuites", "numPendingTestSuites", "numTotalTests", "numPassedTests", "numFailedTests", "numPendingTests", "numTodoTests"];
 const FIXED_PENDING = Object.freeze({
   owner: "source",
   path: "packages/cli/test/build/generatedOutputPublication.test.ts",
@@ -98,9 +88,7 @@ function render(value, maxBytes = MAX_RENDER_BYTES, seen = new WeakSet()) {
         shown.push(`${render(key, 60, seen)}=[unreadable]`);
         continue;
       }
-      const rendered = descriptor && "value" in descriptor
-        ? render(descriptor.value, Math.floor(maxBytes / 2), seen)
-        : "[accessor]";
+      const rendered = descriptor && "value" in descriptor ? render(descriptor.value, Math.floor(maxBytes / 2), seen) : "[accessor]";
       shown.push(`${render(key, 60, seen)}=${rendered}`);
     }
     if (keys.length > shown.length) shown.push(`+${keys.length - shown.length} more`);
@@ -111,9 +99,7 @@ function render(value, maxBytes = MAX_RENDER_BYTES, seen = new WeakSet()) {
 }
 
 function diagnostic(heading, issues, correction, maxBytes = MAX_DIAGNOSTIC_BYTES) {
-  const safeLimit = Number.isSafeInteger(maxBytes)
-    ? Math.min(MAX_DIAGNOSTIC_BYTES, Math.max(MIN_DIAGNOSTIC_BYTES, maxBytes))
-    : MAX_DIAGNOSTIC_BYTES;
+  const safeLimit = Number.isSafeInteger(maxBytes) ? Math.min(MAX_DIAGNOSTIC_BYTES, Math.max(MIN_DIAGNOSTIC_BYTES, maxBytes)) : MAX_DIAGNOSTIC_BYTES;
   const shown = issues.slice(0, MAX_RENDER_ITEMS).map((issue) => render(issue, 600));
   const omitted = issues.length > shown.length ? ` (+${issues.length - shown.length} more)` : "";
   const suffix = `; correction: ${render(correction, 1600)}`;
@@ -144,25 +130,13 @@ function isArray(value) {
 
 function serializedText(value, label) {
   if (!Buffer.isBuffer(value)) {
-    throw contractError(
-      `${label} boundary is invalid`,
-      [`${label} must be process-owned UTF-8 bytes, not ${render(value)}`],
-      `supply ${label} through its governed serialized file channel`,
-    );
+    throw contractError(`${label} boundary is invalid`, [`${label} must be process-owned UTF-8 bytes, not ${render(value)}`], `supply ${label} through its governed serialized file channel`);
   }
   if (value.length > MAX_SERIALIZED_BYTES) {
-    throw contractError(
-      `${label} boundary is invalid`,
-      [`${label} is ${value.length} bytes; maximum ${MAX_SERIALIZED_BYTES}`],
-      `reduce ${label} to the governed serialized size limit`,
-    );
+    throw contractError(`${label} boundary is invalid`, [`${label} is ${value.length} bytes; maximum ${MAX_SERIALIZED_BYTES}`], `reduce ${label} to the governed serialized size limit`);
   }
   if (!isUtf8(value)) {
-    throw contractError(
-      `${label} boundary is invalid`,
-      [`${label} is not valid UTF-8`],
-      `write ${label} as UTF-8 through its governed serialized file channel`,
-    );
+    throw contractError(`${label} boundary is invalid`, [`${label} is not valid UTF-8`], `write ${label} as UTF-8 through its governed serialized file channel`);
   }
   return value.toString("utf8");
 }
@@ -172,11 +146,7 @@ function parseJsonBytes(value, label) {
   try {
     return JSON.parse(source);
   } catch (error) {
-    throw contractError(
-      `${label} boundary is invalid`,
-      [`${label} is not valid JSON: ${render(error)}`],
-      `write one JSON value to the ${label} file channel`,
-    );
+    throw contractError(`${label} boundary is invalid`, [`${label} is not valid JSON: ${render(error)}`], `write one JSON value to the ${label} file channel`);
   }
 }
 
@@ -253,20 +223,12 @@ function validateParsedPolicy(value, label = "verification") {
     if (!isObject(value) || isArray(value)) addIssue(issues, `${label} must be one policy map`);
     else clone = inspectPolicyContainer(value, issues, label, new WeakSet());
     if (issues.length > 0) {
-      throw contractError(
-        "verification policy object boundary is invalid",
-        issues,
-        "provide plain own-data policy maps with Object.prototype or null, ordinary arrays, no inherited/custom/proxy prototypes, and no __proto__ keys",
-      );
+      throw contractError("verification policy object boundary is invalid", issues, "provide plain own-data policy maps with Object.prototype or null, ordinary arrays, no inherited/custom/proxy prototypes, and no __proto__ keys");
     }
     return clone;
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
-    throw contractError(
-      "verification policy object boundary is invalid",
-      [`policy prototype boundary could not be inspected: ${render(error)}`],
-      "provide plain own-data policy maps with Object.prototype or null and ordinary arrays",
-    );
+    throw contractError("verification policy object boundary is invalid", [`policy prototype boundary could not be inspected: ${render(error)}`], "provide plain own-data policy maps with Object.prototype or null and ordinary arrays");
   }
 }
 
@@ -307,7 +269,9 @@ function validateConsumedPolicy(policy) {
   for (const field of ["root", "suffix"]) {
     policyString(dataProperty(inventory, field, issues, "verification.inventory"), issues, `verification.inventory.${field}`);
   }
-  const defaultOwner = dataProperty(inventory, "default_owner", issues, "verification.inventory", { optional: true });
+  const defaultOwner = dataProperty(inventory, "default_owner", issues, "verification.inventory", {
+    optional: true,
+  });
   if (defaultOwner !== undefined && defaultOwner !== null) policyString(defaultOwner, issues, "verification.inventory.default_owner");
   for (const [index, rule] of policyArray(dataProperty(inventory, "rules", issues, "verification.inventory"), issues, "verification.inventory.rules").entries()) {
     const label = `verification.inventory.rules[${index}]`;
@@ -315,7 +279,9 @@ function validateConsumedPolicy(policy) {
     policyString(dataProperty(entry, "owner", issues, label), issues, `${label}.owner`);
     optionalPolicyString(dataProperty(entry, "path", issues, label, { optional: true }), issues, `${label}.path`);
     optionalPolicyString(dataProperty(entry, "prefix", issues, label, { optional: true }), issues, `${label}.prefix`);
-    const evidenceProducer = dataProperty(entry, "evidence_producer", issues, label, { optional: true });
+    const evidenceProducer = dataProperty(entry, "evidence_producer", issues, label, {
+      optional: true,
+    });
     if (evidenceProducer !== undefined && typeof evidenceProducer !== "boolean") addIssue(issues, `${label}.evidence_producer must be a boolean`);
   }
 
@@ -329,8 +295,20 @@ function validateConsumedPolicy(policy) {
     const forwarding = dataProperty(entry, "forwarding", issues, label, { optional: true });
     if (forwarding !== undefined) {
       const forwardingEntry = policyObject(forwarding, issues, `${label}.forwarding`);
-      stringEntries(dataProperty(forwardingEntry, "safe_options", issues, `${label}.forwarding`, { optional: true }) ?? {}, issues, `${label}.forwarding.safe_options`);
-      stringEntries(dataProperty(forwardingEntry, "forbidden_options", issues, `${label}.forwarding`, { optional: true }) ?? {}, issues, `${label}.forwarding.forbidden_options`);
+      stringEntries(
+        dataProperty(forwardingEntry, "safe_options", issues, `${label}.forwarding`, {
+          optional: true,
+        }) ?? {},
+        issues,
+        `${label}.forwarding.safe_options`,
+      );
+      stringEntries(
+        dataProperty(forwardingEntry, "forbidden_options", issues, `${label}.forwarding`, {
+          optional: true,
+        }) ?? {},
+        issues,
+        `${label}.forwarding.forbidden_options`,
+      );
     }
     const integration = dataProperty(entry, "integration", issues, label, { optional: true });
     if (integration !== undefined) {
@@ -344,7 +322,9 @@ function validateConsumedPolicy(policy) {
     if (execution !== undefined) {
       const executionEntry = policyObject(execution, issues, `${label}.execution`);
       for (const field of ["workers", "wall_time_budget_ms"]) {
-        const value = dataProperty(executionEntry, field, issues, `${label}.execution`, { optional: true });
+        const value = dataProperty(executionEntry, field, issues, `${label}.execution`, {
+          optional: true,
+        });
         if (value !== undefined && (!Number.isSafeInteger(value) || value < 1)) {
           addIssue(issues, `${label}.execution.${field} must be a positive safe integer`);
         }
@@ -376,29 +356,37 @@ function validateConsumedPolicy(policy) {
     }
   }
 
-  const routing = dataProperty(policy, "conservative_routing", issues, "verification", { optional: true });
+  const routing = dataProperty(policy, "conservative_routing", issues, "verification", {
+    optional: true,
+  });
   if (routing !== undefined) {
     const routingEntry = policyObject(routing, issues, "verification.conservative_routing");
     for (const field of ["exact", "prefixes"]) {
-      for (const [index, entry] of policyArray(dataProperty(routingEntry, field, issues, "verification.conservative_routing", { optional: true }) ?? [], issues, `verification.conservative_routing.${field}`).entries()) {
+      for (const [index, entry] of policyArray(
+        dataProperty(routingEntry, field, issues, "verification.conservative_routing", {
+          optional: true,
+        }) ?? [],
+        issues,
+        `verification.conservative_routing.${field}`,
+      ).entries()) {
         policyString(entry, issues, `verification.conservative_routing.${field}[${index}]`);
       }
     }
   }
 
   if (issues.length > 0) {
-    throw contractError(
-      "verification policy consumed schema is invalid",
-      issues,
-      "restore every verification-policy.yaml collection and field consumed by verify-lane to its documented YAML shape",
-    );
+    throw contractError("verification policy consumed schema is invalid", issues, "restore every verification-policy.yaml collection and field consumed by verify-lane to its documented YAML shape");
   }
 }
 
 export function loadVerificationPolicy(policyYaml) {
   const source = serializedText(policyYaml, "verification policy");
   try {
-    const document = YAML.parseDocument(source, { prettyErrors: false, strict: true, uniqueKeys: true });
+    const document = YAML.parseDocument(source, {
+      prettyErrors: false,
+      strict: true,
+      uniqueKeys: true,
+    });
     if (document.errors.length > 0) {
       throw contractError(
         "verification policy boundary is invalid",
@@ -412,11 +400,7 @@ export function loadVerificationPolicy(policyYaml) {
     return policy;
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
-    throw contractError(
-      "verification policy boundary is invalid",
-      [`YAML boundary could not be parsed: ${render(error)}`],
-      "restore one valid governed YAML document in references/analysis/verification-policy.yaml",
-    );
+    throw contractError("verification policy boundary is invalid", [`YAML boundary could not be parsed: ${render(error)}`], "restore one valid governed YAML document in references/analysis/verification-policy.yaml");
   }
 }
 
@@ -502,7 +486,9 @@ function parseReporter(result, issues) {
     testResults: [],
   };
   for (const field of REPORT_AGGREGATES) parsed[field] = dataProperty(result, field, issues, "report");
-  parsed.numRuntimeErrorTestSuites = dataProperty(result, "numRuntimeErrorTestSuites", issues, "report", { optional: true });
+  parsed.numRuntimeErrorTestSuites = dataProperty(result, "numRuntimeErrorTestSuites", issues, "report", {
+    optional: true,
+  });
   const suites = dataArray(dataProperty(result, "testResults", issues, "report"), issues, "report.testResults");
   parsed.testResults = suites.map((suite, suiteIndex) => {
     const label = `report.testResults[${suiteIndex}]`;
@@ -555,24 +541,17 @@ function parsePendingAuthority(overlapAuthority) {
     status: dataProperty(declaration, "status", issues, "overlap.allowed_pending_assertion"),
     executesOn: dataProperty(execution, "platform", issues, "overlap.allowed_pending_assertion.executes_when"),
   };
-  if (!Number.isSafeInteger(maxDiagnosticBytes)
-    || maxDiagnosticBytes < MIN_DIAGNOSTIC_BYTES
-    || maxDiagnosticBytes > MAX_DIAGNOSTIC_BYTES) {
+  if (!Number.isSafeInteger(maxDiagnosticBytes) || maxDiagnosticBytes < MIN_DIAGNOSTIC_BYTES || maxDiagnosticBytes > MAX_DIAGNOSTIC_BYTES) {
     addIssue(issues, `overlap.max_diagnostic_utf8_bytes=${render(maxDiagnosticBytes)} must be a safe integer from ${MIN_DIAGNOSTIC_BYTES} through ${MAX_DIAGNOSTIC_BYTES}`);
   }
   for (const [field, expected] of Object.entries(FIXED_PENDING)) {
     if (fields[field] !== expected) addIssue(issues, `${field}=${render(fields[field])}; expected ${render(expected)}`);
   }
-  if (fields.path === FIXED_PENDING.path
-    && (path.isAbsolute(fields.path) || path.posix.normalize(fields.path) !== fields.path || fields.path.includes(".."))) {
+  if (fields.path === FIXED_PENDING.path && (path.isAbsolute(fields.path) || path.posix.normalize(fields.path) !== fields.path || fields.path.includes(".."))) {
     addIssue(issues, `path=${render(fields.path)} must be the canonical repository-relative source path`);
   }
   if (issues.length > 0) {
-    throw contractError(
-      "overlap authority is invalid",
-      issues,
-      "restore the closed overlap schema with the one canonical source/Darwin/skipped declaration and max_diagnostic_utf8_bytes no greater than 8192 in references/analysis/verification-policy.yaml",
-    );
+    throw contractError("overlap authority is invalid", issues, "restore the closed overlap schema with the one canonical source/Darwin/skipped declaration and max_diagnostic_utf8_bytes no greater than 8192 in references/analysis/verification-policy.yaml");
   }
   return Object.freeze({
     ...fields,
@@ -586,11 +565,7 @@ function pendingAuthority(policyYaml) {
     return parsePendingAuthority(loadVerificationPolicy(policyYaml).overlap);
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
-    throw contractError(
-      "overlap authority is invalid",
-      [`policy boundary could not be inspected: ${render(error)}`],
-      "restore the closed overlap schema in references/analysis/verification-policy.yaml",
-    );
+    throw contractError("overlap authority is invalid", [`policy boundary could not be inspected: ${render(error)}`], "restore the closed overlap schema in references/analysis/verification-policy.yaml");
   }
 }
 
@@ -606,17 +581,11 @@ function unwrapParentheses(node) {
 }
 
 function isDirectCall(node) {
-  return node !== undefined
-    && ts.isCallExpression(node)
-    && node.questionDotToken === undefined
-    && (node.flags & ts.NodeFlags.OptionalChain) === 0;
+  return node !== undefined && ts.isCallExpression(node) && node.questionDotToken === undefined && (node.flags & ts.NodeFlags.OptionalChain) === 0;
 }
 
 function isDirectProperty(node) {
-  return node !== undefined
-    && ts.isPropertyAccessExpression(node)
-    && node.questionDotToken === undefined
-    && (node.flags & ts.NodeFlags.OptionalChain) === 0;
+  return node !== undefined && ts.isPropertyAccessExpression(node) && node.questionDotToken === undefined && (node.flags & ts.NodeFlags.OptionalChain) === 0;
 }
 
 function isCallback(node) {
@@ -625,40 +594,23 @@ function isCallback(node) {
 }
 
 function isRunIfDeclaration(node, authority) {
-  if (!isDirectCall(node)
-    || node.arguments.length !== 2
-    || !isString(node.arguments[0], authority.title)
-    || !isCallback(node.arguments[1])) return false;
+  if (!isDirectCall(node) || node.arguments.length !== 2 || !isString(node.arguments[0], authority.title) || !isCallback(node.arguments[1])) return false;
   const configured = unwrapParentheses(node.expression);
   if (!isDirectCall(configured) || configured.arguments.length !== 1) return false;
   const runIf = unwrapParentheses(configured.expression);
   const runner = isDirectProperty(runIf) ? unwrapParentheses(runIf.expression) : undefined;
-  if (!isDirectProperty(runIf)
-    || !ts.isIdentifier(runner)
-    || runner.text !== "it"
-    || runIf.name.text !== "runIf") return false;
+  if (!isDirectProperty(runIf) || !ts.isIdentifier(runner) || runner.text !== "it" || runIf.name.text !== "runIf") return false;
   const condition = unwrapParentheses(configured.arguments[0]);
   const platform = ts.isBinaryExpression(condition) ? unwrapParentheses(condition.left) : undefined;
   const processIdentifier = isDirectProperty(platform) ? unwrapParentheses(platform.expression) : undefined;
-  return ts.isBinaryExpression(condition)
-    && condition.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken
-    && isDirectProperty(platform)
-    && ts.isIdentifier(processIdentifier)
-    && processIdentifier.text === "process"
-    && platform.name.text === "platform"
-    && isString(condition.right, authority.executesOn);
+  return ts.isBinaryExpression(condition) && condition.operatorToken.kind === ts.SyntaxKind.EqualsEqualsEqualsToken && isDirectProperty(platform) && ts.isIdentifier(processIdentifier) && processIdentifier.text === "process" && platform.name.text === "platform" && isString(condition.right, authority.executesOn);
 }
 
 function exactSuiteCallbacks(sourceFile, authority) {
   const callbacks = [];
   function visit(node) {
     const callee = isDirectCall(node) ? unwrapParentheses(node.expression) : undefined;
-    if (isDirectCall(node)
-      && ts.isIdentifier(callee)
-      && callee.text === "describe"
-      && node.arguments.length === 2
-      && isString(node.arguments[0], authority.suite)
-      && isCallback(node.arguments[1])) {
+    if (isDirectCall(node) && ts.isIdentifier(callee) && callee.text === "describe" && node.arguments.length === 2 && isString(node.arguments[0], authority.suite) && isCallback(node.arguments[1])) {
       callbacks.push(unwrapParentheses(node.arguments[1]));
     }
     ts.forEachChild(node, visit);
@@ -681,11 +633,7 @@ function parsedOwnerFiles(ownerFilesJson) {
   const issues = [];
   const files = stringArray(parseJsonBytes(ownerFilesJson, "owner inventory"), issues, "owner inventory");
   if (issues.length > 0) {
-    throw contractError(
-      "owner inventory boundary is invalid",
-      issues,
-      "write one JSON array of canonical owner inventory paths",
-    );
+    throw contractError("owner inventory boundary is invalid", issues, "write one JSON array of canonical owner inventory paths");
   }
   return files;
 }
@@ -739,12 +687,7 @@ export function validatePendingAuthority(policyYaml, ownerFilesJson, repoRoot) {
   }
   if (totalConditionalCount !== 1) addIssue(issues, `executable conditional inventory uniqueness: expected exactly one, observed ${totalConditionalCount}`);
   if (issues.length > 0) {
-    throw contractError(
-      "overlap pending authority proof failed",
-      issues,
-      "restore exactly one executable it.runIf(process.platform === \"darwin\") declaration with the canonical title inside the canonical describe suite at the declared source path",
-      authority.maxDiagnosticBytes,
-    );
+    throw contractError("overlap pending authority proof failed", issues, 'restore exactly one executable it.runIf(process.platform === "darwin") declaration with the canonical title inside the canonical describe suite at the declared source path', authority.maxDiagnosticBytes);
   }
   return pendingIdentity(authority);
 }
@@ -806,33 +749,27 @@ export function normalizeReporterSuiteAggregates(reporterJson) {
     aggregateMismatch(issues, parsed, "numPendingTests", count(assertions, "skipped"));
     aggregateMismatch(issues, parsed, "numTodoTests", count(assertions, "todo"));
     if (issues.length > 0) {
-      throw contractError(
-        "reporter suite normalization rejected adverse or malformed raw evidence",
-        issues,
-        "rerun the owner and fix its raw success, suite statuses, suite failure/pending aggregates, and exact assertion aggregates before file-suite projection",
-      );
+      throw contractError("reporter suite normalization rejected adverse or malformed raw evidence", issues, "rerun the owner and fix its raw success, suite statuses, suite failure/pending aggregates, and exact assertion aggregates before file-suite projection");
     }
-    return Buffer.from(JSON.stringify({
-      success: parsed.success,
-      numTotalTestSuites: parsed.testResults.length,
-      numPassedTestSuites: count(parsed.testResults, "passed"),
-      numFailedTestSuites: count(parsed.testResults, "failed"),
-      numPendingTestSuites: count(parsed.testResults, "pending"),
-      numTotalTests: parsed.numTotalTests,
-      numPassedTests: parsed.numPassedTests,
-      numFailedTests: parsed.numFailedTests,
-      numPendingTests: parsed.numPendingTests,
-      numTodoTests: parsed.numTodoTests,
-      ...(parsed.numRuntimeErrorTestSuites === undefined ? {} : { numRuntimeErrorTestSuites: parsed.numRuntimeErrorTestSuites }),
-      testResults: parsed.testResults,
-    }));
+    return Buffer.from(
+      JSON.stringify({
+        success: parsed.success,
+        numTotalTestSuites: parsed.testResults.length,
+        numPassedTestSuites: count(parsed.testResults, "passed"),
+        numFailedTestSuites: count(parsed.testResults, "failed"),
+        numPendingTestSuites: count(parsed.testResults, "pending"),
+        numTotalTests: parsed.numTotalTests,
+        numPassedTests: parsed.numPassedTests,
+        numFailedTests: parsed.numFailedTests,
+        numPendingTests: parsed.numPendingTests,
+        numTodoTests: parsed.numTodoTests,
+        ...(parsed.numRuntimeErrorTestSuites === undefined ? {} : { numRuntimeErrorTestSuites: parsed.numRuntimeErrorTestSuites }),
+        testResults: parsed.testResults,
+      }),
+    );
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
-    throw contractError(
-      "reporter suite normalization failed safely",
-      [`report boundary could not be inspected: ${render(error)}`],
-      "provide one plain JSON reporter object with own data properties and exact non-adverse aggregates",
-    );
+    throw contractError("reporter suite normalization failed safely", [`report boundary could not be inspected: ${render(error)}`], "provide one plain JSON reporter object with own data properties and exact non-adverse aggregates");
   }
 }
 
@@ -846,27 +783,30 @@ function bounded(values) {
 }
 
 function observedPendingTests(testResults, repoRoot) {
-  return testResults.flatMap((testResult) => testResult.assertionResults
-    .filter(({ status }) => status !== "passed")
-    .map(({ fullName, status }) => ({
-      path: identityPath(testResult.name, repoRoot),
-      name: fullName,
-      status,
-    })))
+  return testResults
+    .flatMap((testResult) =>
+      testResult.assertionResults
+        .filter(({ status }) => status !== "passed")
+        .map(({ fullName, status }) => ({
+          path: identityPath(testResult.name, repoRoot),
+          name: fullName,
+          status,
+        })),
+    )
     .sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
 }
 
 function display(identities) {
-  return `[${identities.slice(0, MAX_RENDER_ITEMS).map((identity) => ["path", "name", "status"]
-    .map((field) => `${field}=${render(identity[field])}`).join(" ")).join(", ")}]`
-    + `${identities.length > MAX_RENDER_ITEMS ? ` (+${identities.length - MAX_RENDER_ITEMS} more)` : ""}`;
+  return (
+    `[${identities
+      .slice(0, MAX_RENDER_ITEMS)
+      .map((identity) => ["path", "name", "status"].map((field) => `${field}=${render(identity[field])}`).join(" "))
+      .join(", ")}]` + `${identities.length > MAX_RENDER_ITEMS ? ` (+${identities.length - MAX_RENDER_ITEMS} more)` : ""}`
+  );
 }
 
 function identitiesMatch(left, right) {
-  return left.length === right.length && left.every((identity, index) =>
-    identity.path === right[index].path
-    && identity.name === right[index].name
-    && identity.status === right[index].status);
+  return left.length === right.length && left.every((identity, index) => identity.path === right[index].path && identity.name === right[index].name && identity.status === right[index].status);
 }
 
 export function validatePendingTests(owner, reporterJson, ownerFilesJson, policyYaml, repoRoot, platform) {
@@ -900,26 +840,18 @@ export function validatePendingTests(owner, reporterJson, ownerFilesJson, policy
     if (unexpected.length > 0) addIssue(issues, `inventory unexpected result files: ${bounded(unexpected)}`);
     if (duplicate.length > 0) addIssue(issues, `inventory duplicate result files: ${bounded(duplicate)}`);
 
-    const invalidSuiteStatuses = testResults
-      .filter(({ status }) => !new Set(["passed", "failed", "pending"]).has(status))
-      .map((testResult) => `${identityPath(testResult.name, repoRoot)} (${render(testResult.status, 80)})`);
+    const invalidSuiteStatuses = testResults.filter(({ status }) => !new Set(["passed", "failed", "pending"]).has(status)).map((testResult) => `${identityPath(testResult.name, repoRoot)} (${render(testResult.status, 80)})`);
     if (invalidSuiteStatuses.length > 0) addIssue(issues, `invalid suite statuses: ${bounded(invalidSuiteStatuses)}`);
-    const nonPassing = testResults
-      .filter(({ status }) => status !== "passed")
-      .map((testResult) => `${identityPath(testResult.name, repoRoot)} (${render(testResult.status, 80)})`);
+    const nonPassing = testResults.filter(({ status }) => status !== "passed").map((testResult) => `${identityPath(testResult.name, repoRoot)} (${render(testResult.status, 80)})`);
     if (nonPassing.length > 0) addIssue(issues, `nonexecuted suite results: ${bounded(nonPassing)}`);
 
-    const empty = testResults.filter(({ assertionResults }) => assertionResults.length === 0)
-      .map((testResult) => identityPath(testResult.name, repoRoot));
+    const empty = testResults.filter(({ assertionResults }) => assertionResults.length === 0).map((testResult) => identityPath(testResult.name, repoRoot));
     if (empty.length > 0) addIssue(issues, `empty assertionResults files: ${bounded(empty)}`);
-    const withoutExecutedAssertions = testResults
-      .filter(({ assertionResults }) => assertionResults.length > 0 && !assertionResults.some(({ status }) => status === "passed"))
-      .map((testResult) => identityPath(testResult.name, repoRoot));
+    const withoutExecutedAssertions = testResults.filter(({ assertionResults }) => assertionResults.length > 0 && !assertionResults.some(({ status }) => status === "passed")).map((testResult) => identityPath(testResult.name, repoRoot));
     if (withoutExecutedAssertions.length > 0) addIssue(issues, `no executed assertions in files: ${bounded(withoutExecutedAssertions)}`);
 
     const assertions = assertionsFor(testResults);
-    const invalidAssertionStatuses = assertions.filter(({ status }) => !new Set(["passed", "failed", "skipped", "todo"]).has(status))
-      .map(({ status }) => status);
+    const invalidAssertionStatuses = assertions.filter(({ status }) => !new Set(["passed", "failed", "skipped", "todo"]).has(status)).map(({ status }) => status);
     if (invalidAssertionStatuses.length > 0) addIssue(issues, `invalid assertion statuses: ${bounded(invalidAssertionStatuses)}`);
 
     aggregateMismatch(issues, parsed, "numTotalTestSuites", testResults.length);
@@ -941,19 +873,12 @@ export function validatePendingTests(owner, reporterJson, ownerFilesJson, policy
     }
 
     if (issues.length > 0) {
-      const rule = owner === authority.owner
-        ? `on ${authority.executesOn} every ${authority.owner} assertion must execute; elsewhere only ${authority.path} :: ${authority.name} may be ${authority.status} inside an otherwise executed file`
-        : `${owner} permits no pending suites or assertions`;
+      const rule = owner === authority.owner ? `on ${authority.executesOn} every ${authority.owner} assertion must execute; elsewhere only ${authority.path} :: ${authority.name} may be ${authority.status} inside an otherwise executed file` : `${owner} permits no pending suites or assertions`;
       throw contractError(`${owner} overlap execution contract failed on ${render(platform, 80)}`, issues, rule, authority.maxDiagnosticBytes);
     }
     return observed;
   } catch (error) {
     if (error instanceof OverlapContractError) throw error;
-    throw contractError(
-      `${render(owner, 80)} overlap execution contract failed safely`,
-      [`report boundary could not be inspected: ${render(error)}`],
-      "provide plain JSON reporter data with own data properties, exact aggregates, and the fixed pending identity",
-      authority.maxDiagnosticBytes,
-    );
+    throw contractError(`${render(owner, 80)} overlap execution contract failed safely`, [`report boundary could not be inspected: ${render(error)}`], "provide plain JSON reporter data with own data properties, exact aggregates, and the fixed pending identity", authority.maxDiagnosticBytes);
   }
 }

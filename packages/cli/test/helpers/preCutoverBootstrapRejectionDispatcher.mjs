@@ -14,9 +14,7 @@ try {
     } catch (error) {
       return {
         id,
-        classification: error && typeof error === "object" && "classification" in error
-          ? error.classification
-          : "invalid_authority",
+        classification: error && typeof error === "object" && "classification" in error ? error.classification : "invalid_authority",
       };
     }
   });

@@ -6,24 +6,13 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, inject, it } from "vitest";
 
-import {
-  EXPECTED_PRODUCER_READINESS,
-  runProducerReadinessWorkflow,
-} from "../helpers/producerReadinessWorkflow.js";
+import { EXPECTED_PRODUCER_READINESS, runProducerReadinessWorkflow } from "../helpers/producerReadinessWorkflow.js";
 import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
 import { validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const EMPTY_PERSONAL_GLOSSARY = [
-  "<!-- agentera:personal-glossary:start -->",
-  "## Glossary",
-  "",
-  "```json",
-  '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}',
-  "```",
-  "<!-- agentera:personal-glossary:end -->",
-].join("\n");
+const EMPTY_PERSONAL_GLOSSARY = ["<!-- agentera:personal-glossary:start -->", "## Glossary", "", "```json", '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}', "```", "<!-- agentera:personal-glossary:end -->"].join("\n");
 
 type BundleSurfaces = {
   directories: Array<{ path: string }>;
@@ -35,18 +24,12 @@ const NPM_METADATA_FILES = new Set(["package.json", "README.md", "LICENSE", "LIC
 
 function isContained(root: string, candidate: string): boolean {
   const relative = path.relative(root, candidate);
-  return relative === "" || (
-    relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)
-  );
+  return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
 }
 
 function unclassifiedManifestPaths(files: Iterable<string>, surfaces: BundleSurfaces): string[] {
-  const allowedBundleFiles = new Set([
-    ...surfaces.files.map(({ path: ownedPath }) => `bundle/${ownedPath}`),
-    ...surfaces.generated_files.map(({ path: ownedPath }) => `bundle/${ownedPath}`),
-  ]);
-  const allowedBundleDirectories = surfaces.directories
-    .map(({ path: ownedPath }) => `bundle/${ownedPath}/`);
+  const allowedBundleFiles = new Set([...surfaces.files.map(({ path: ownedPath }) => `bundle/${ownedPath}`), ...surfaces.generated_files.map(({ path: ownedPath }) => `bundle/${ownedPath}`)]);
+  const allowedBundleDirectories = surfaces.directories.map(({ path: ownedPath }) => `bundle/${ownedPath}/`);
   return [...files].filter((file) => {
     if (NPM_METADATA_FILES.has(file) || file.startsWith("dist/")) return false;
     if (allowedBundleFiles.has(file)) return false;
@@ -55,13 +38,7 @@ function unclassifiedManifestPaths(files: Iterable<string>, surfaces: BundleSurf
 }
 
 function validateDistributionInventory(files: Set<string>, surfaces: BundleSurfaces): void {
-  const required = [
-    "dist/bin/agentera.js",
-    "bundle/.agentera-npx-bundle.json",
-    "bundle/registry.json",
-    "bundle/skills/agentera/SKILL.md",
-    "bundle/references/artifacts/state-storage-authority.yaml",
-  ];
+  const required = ["dist/bin/agentera.js", "bundle/.agentera-npx-bundle.json", "bundle/registry.json", "bundle/skills/agentera/SKILL.md", "bundle/references/artifacts/state-storage-authority.yaml"];
   const missing = required.filter((file) => !files.has(file));
   const unclassified = unclassifiedManifestPaths(files, surfaces);
   if (missing.length > 0 || unclassified.length > 0) {
@@ -69,11 +46,7 @@ function validateDistributionInventory(files: Set<string>, surfaces: BundleSurfa
   }
 }
 
-function packageEnvironment(
-  home = path.join(fixture.root, "isolated-home"),
-  profile?: string,
-  source: NodeJS.ProcessEnv = process.env,
-): NodeJS.ProcessEnv {
+function packageEnvironment(home = path.join(fixture.root, "isolated-home"), profile?: string, source: NodeJS.ProcessEnv = process.env): NodeJS.ProcessEnv {
   const env = { ...source };
   for (const key of Object.keys(env)) {
     if (/^AGENTERA_.*SOURCE.*ROOT$/.test(key)) delete env[key];
@@ -114,31 +87,23 @@ function cleanupPreviewObservation(bin: string, root: string) {
   fs.writeFileSync(copilotHook, JSON.stringify({ hooks: [{ command: "npx -y agentera@next hook session-start" }] }));
   fs.writeFileSync(markerlessDescriptor, "name = 'build'\n");
   fs.writeFileSync(misplacedDescriptor, "name = 'audit'\n# agentera_managed: true\n");
-  fs.writeFileSync(malformedCommand, "---\nagentera_managed: \"true\"\n---\nlegacy\n");
+  fs.writeFileSync(malformedCommand, '---\nagentera_managed: "true"\n---\nlegacy\n');
   fs.writeFileSync(symlinkTarget, "<!-- agentera: managed -->\nlegacy\n");
   fs.symlinkSync(symlinkTarget, symlinkAgent);
   fs.mkdirSync(wrongTypeAgent);
   fs.writeFileSync(undeclaredDescriptor, "# agentera_managed: true\nname = 'custom'\n");
   const resources = [command, agent, descriptor, copilotHook];
   const before = resources.map((file) => fs.readFileSync(file, "utf8"));
-  const result = spawnSync(process.execPath, [
-    bin, "upgrade", "--home", home, "--project", project, "--install-root", installRoot,
-    "--channel", "development", "--dry-run", "--format", "json",
-  ], { cwd: project, env: packageEnvironment(home), encoding: "utf8" });
-  const payload = JSON.parse(result.stdout) as { phases: Array<{ name: string; items: Array<Record<string, unknown>> }> };
-  const wanted = new Set([
-    "opencode.command.agentera",
-    "opencode.agent.agentera",
-    "codex.agent-descriptor.hej",
-    "copilot.hook.sessionStart",
-  ]);
-  const negative = new Set([
-    "codex.agent-descriptor.audit",
-    "codex.agent-descriptor.build",
-    "opencode.agent.plan",
-    "opencode.agent.status",
-    "opencode.command.hej",
-  ]);
+  const result = spawnSync(process.execPath, [bin, "upgrade", "--home", home, "--project", project, "--install-root", installRoot, "--channel", "development", "--dry-run", "--format", "json"], {
+    cwd: project,
+    env: packageEnvironment(home),
+    encoding: "utf8",
+  });
+  const payload = JSON.parse(result.stdout) as {
+    phases: Array<{ name: string; items: Array<Record<string, unknown>> }>;
+  };
+  const wanted = new Set(["opencode.command.agentera", "opencode.agent.agentera", "codex.agent-descriptor.hej", "copilot.hook.sessionStart"]);
+  const negative = new Set(["codex.agent-descriptor.audit", "codex.agent-descriptor.build", "opencode.agent.plan", "opencode.agent.status", "opencode.command.hej"]);
   const cleanupItems = payload.phases.find((phase) => phase.name === "cleanup")!.items;
   return {
     status: result.status,
@@ -163,12 +128,7 @@ function cleanupPreviewObservation(bin: string, root: string) {
   };
 }
 
-function selectedTermObservation(
-  bin: string,
-  root: string,
-  termBytes: Buffer | string,
-  sourceEnvironment: NodeJS.ProcessEnv = process.env,
-) {
+function selectedTermObservation(bin: string, root: string, termBytes: Buffer | string, sourceEnvironment: NodeJS.ProcessEnv = process.env) {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   const profile = path.join(root, "profile");
@@ -176,11 +136,11 @@ function selectedTermObservation(
   fs.writeFileSync(path.join(profile, "PROFILE.md"), `# Profile\n\n${EMPTY_PERSONAL_GLOSSARY}\n`);
   const term = path.join(root, "term");
   fs.writeFileSync(term, termBytes);
-  const result = spawnSync(
-    process.execPath,
-    [bin, "prime", "--context", "plan", "--term-input", term, "--format", "json"],
-    { cwd: root, env: packageEnvironment(path.join(root, "home"), profile, sourceEnvironment), encoding: "utf8" },
-  );
+  const result = spawnSync(process.execPath, [bin, "prime", "--context", "plan", "--term-input", term, "--format", "json"], {
+    cwd: root,
+    env: packageEnvironment(path.join(root, "home"), profile, sourceEnvironment),
+    encoding: "utf8",
+  });
   const output = result.stdout + result.stderr;
   const payload = JSON.parse(result.stdout || result.stderr) as Record<string, any>;
   return {
@@ -221,11 +181,11 @@ function runResetWorkflow(bin: string, root: string) {
   });
   expect(previewResult.status, `reset preview failed:\n${previewResult.stdout}\n${previewResult.stderr}`).toBe(0);
   const preview = JSON.parse(previewResult.stdout);
-  const applyResult = spawnSync(
-    process.execPath,
-    [bin, ...common, "--yes", "--authorization", preview.authorization, "--format", "json"],
-    { cwd: project, env: packageEnvironment(home, profile), encoding: "utf8" },
-  );
+  const applyResult = spawnSync(process.execPath, [bin, ...common, "--yes", "--authorization", preview.authorization, "--format", "json"], {
+    cwd: project,
+    env: packageEnvironment(home, profile),
+    encoding: "utf8",
+  });
   expect(applyResult.status, `reset apply failed:\n${applyResult.stdout}\n${applyResult.stderr}`).toBe(0);
   const applied = JSON.parse(applyResult.stdout);
 
@@ -245,8 +205,7 @@ function runResetWorkflow(bin: string, root: string) {
       unrelatedPreserved: fs.readFileSync(path.join(project, "keep.txt"), "utf8"),
       profileRemoved: !fs.existsSync(profile),
       canonicalSkillInstalled: fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md")),
-      canonicalSkillLinked: fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))
-        === fs.realpathSync(path.join(install, "skills", "agentera")),
+      canonicalSkillLinked: fs.realpathSync(path.join(home, ".agents", "skills", "agentera")) === fs.realpathSync(path.join(install, "skills", "agentera")),
     },
   };
 }
@@ -284,28 +243,21 @@ describe("npm distribution boundary", () => {
     expect(fs.realpathSync(constructedBin)).toBe(constructedBin);
     expect(fs.realpathSync(extractedBin)).toBe(extractedBin);
     for (const surface of ["dist", "bundle"]) {
-      expect(JSON.parse(fs.readFileSync(
-        path.join(fixture.packageRoot, surface, ".agentera-build-source.json"),
-        "utf8",
-      ))).toEqual(fixture.sourceIdentity);
+      expect(JSON.parse(fs.readFileSync(path.join(fixture.packageRoot, surface, ".agentera-build-source.json"), "utf8"))).toEqual(fixture.sourceIdentity);
     }
   });
 
   it("keeps development version and source identity aligned through extraction", () => {
-    const roots = [
-      path.join(CHECKOUT_ROOT, "packages/cli"),
-      fixture.constructionRoot,
-      fixture.packageRoot,
-    ];
+    const roots = [path.join(CHECKOUT_ROOT, "packages/cli"), fixture.constructionRoot, fixture.packageRoot];
     const manifests = roots.map((root) => JSON.parse(fs.readFileSync(path.join(root, "package.json"), "utf8")));
     expect(manifests.map(({ version }) => version)).toEqual(Array(3).fill("3.0.0-dev.84"));
     expect(manifests.map(({ agentera }) => agentera.gitRef)).toEqual(Array(3).fill(manifests[0].agentera.gitRef));
 
-    const versions = roots.map((root) => spawnSync(
-      process.execPath,
-      [path.join(root, "dist/bin/agentera.js"), "--version"],
-      { encoding: "utf8" },
-    ));
+    const versions = roots.map((root) =>
+      spawnSync(process.execPath, [path.join(root, "dist/bin/agentera.js"), "--version"], {
+        encoding: "utf8",
+      }),
+    );
     expect(versions.every(({ status }) => status === 0)).toBe(true);
     expect(versions.map(({ stdout }) => stdout.trim())).toEqual(Array(3).fill("3.0.0-dev.84"));
   });
@@ -340,11 +292,7 @@ describe("npm distribution boundary", () => {
 
   it("keeps the structured-input disposition and metric contract identical across package surfaces", () => {
     const relative = "references/analysis/structured-input-inventory.yaml";
-    const paths = [
-      path.join(CHECKOUT_ROOT, relative),
-      path.join(CHECKOUT_ROOT, "packages/cli/bundle", relative),
-      path.join(fixture.packageRoot, "bundle", relative),
-    ];
+    const paths = [path.join(CHECKOUT_ROOT, relative), path.join(CHECKOUT_ROOT, "packages/cli/bundle", relative), path.join(fixture.packageRoot, "bundle", relative)];
     const contents = paths.map((inventoryPath) => fs.readFileSync(inventoryPath, "utf8"));
     expect(contents).toEqual(Array(3).fill(contents[0]));
     expect(paths.map((inventoryPath) => validateStructuredInputInventory(inventoryPath))).toEqual([[], [], []]);
@@ -365,47 +313,35 @@ describe("npm distribution boundary", () => {
     const original = fs.readFileSync(source, "utf8");
     const malformed = path.join(fixture.root, "malformed-structured-input-inventory.yaml");
     fs.writeFileSync(malformed, "routes: [caller-secret");
-    expect(validateStructuredInputInventory(malformed))
-      .toEqual(["structured input inventory contains malformed YAML"]);
+    expect(validateStructuredInputInventory(malformed)).toEqual(["structured input inventory contains malformed YAML"]);
     expect(fs.readFileSync(source, "utf8")).toBe(original);
   });
 
   it("rejects incomplete or unclassified inventory before accepting the extracted inventory", () => {
-    const authority = YAML.parse(fs.readFileSync(
-      path.join(fixture.packageRoot, "bundle/references/adapters/package-registry.yaml"),
-      "utf8",
-    )) as any;
-    const surfaces = authority.records.find((record: any) => record.identity.id === "agentera")
-      .bundle_surfaces as BundleSurfaces;
+    const authority = YAML.parse(fs.readFileSync(path.join(fixture.packageRoot, "bundle/references/adapters/package-registry.yaml"), "utf8")) as any;
+    const surfaces = authority.records.find((record: any) => record.identity.id === "agentera").bundle_surfaces as BundleSurfaces;
     const files = new Set(fixture.manifest.files.map((entry) => entry.path));
     const incomplete = new Set(files);
     incomplete.delete("dist/bin/agentera.js");
     incomplete.add("plugin.json");
 
-    expect(() => validateDistributionInventory(incomplete, surfaces))
-      .toThrow("invalid distribution inventory: missing=dist/bin/agentera.js unclassified=plugin.json");
+    expect(() => validateDistributionInventory(incomplete, surfaces)).toThrow("invalid distribution inventory: missing=dist/bin/agentera.js unclassified=plugin.json");
     expect(() => validateDistributionInventory(files, surfaces)).not.toThrow();
     expect([...files].some((file) => file.startsWith("src/") || file.startsWith("test/"))).toBe(false);
     expect([...files].some((file) => file.endsWith(".map"))).toBe(false);
     expect([...files].some((file) => file.startsWith("bundle/skills/agentera/agents/"))).toBe(false);
-    for (const retired of [
-      "dist/cli/commands/prime/v1Migration.js",
-      "dist/registries/runtimeAdapterRegistry.js",
-      "bundle/references/adapters/runtime-adapter-registry.yaml",
-      "bundle/references/adapters/opencode.md",
-      "bundle/references/adapters/cursor.md",
-    ]) {
+    for (const retired of ["dist/cli/commands/prime/v1Migration.js", "dist/registries/runtimeAdapterRegistry.js", "bundle/references/adapters/runtime-adapter-registry.yaml", "bundle/references/adapters/opencode.md", "bundle/references/adapters/cursor.md"]) {
       expect(files.has(retired), retired).toBe(false);
     }
   });
 
   it("runs one status smoke from the extracted package", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    const result = spawnSync(
-      process.execPath,
-      [bin, "prime", "--context", "status", "--format", "json"],
-      { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" },
-    );
+    const result = spawnSync(process.execPath, [bin, "prime", "--context", "status", "--format", "json"], {
+      cwd: fixture.root,
+      env: packageEnvironment(),
+      encoding: "utf8",
+    });
     expect(result.status, `extracted status smoke failed:\n${result.stdout}\n${result.stderr}`).toBe(0);
     const payload = JSON.parse(result.stdout) as {
       capability_context: { capability: string };
@@ -414,11 +350,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches no-selector, explicit JSON, and rejected-selector behavior across package boundaries", () => {
-    const bins = [
-      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
-      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
-      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
-    ];
+    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observe = (bin: string, args: string[]) => {
       const result = spawnSync(process.execPath, [bin, ...args], {
         cwd: fixture.root,
@@ -457,16 +389,8 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches selected-term startup across source, bundled, and extracted runtimes", () => {
-    const bins = [
-      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
-      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
-      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
-    ];
-    const observations = bins.map((bin, index) => selectedTermObservation(
-      bin,
-      path.join(fixture.root, `term-parity-${index}`),
-      "package-private-selected-term",
-    ));
+    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+    const observations = bins.map((bin, index) => selectedTermObservation(bin, path.join(fixture.root, `term-parity-${index}`), "package-private-selected-term"));
 
     const withoutBytes = observations.map(({ bytes: _bytes, ...observation }) => observation);
     expect(withoutBytes[1]).toEqual(withoutBytes[0]);
@@ -484,47 +408,65 @@ describe("npm distribution boundary", () => {
     expect(helps[2]).toBe(helps[0]);
     expect(helps[0]).toContain("--term-input FILE|-");
 
-    for (const relative of [
-      "skills/agentera/capabilities/plan/schemas/validation.yaml",
-      "skills/agentera/protocol.yaml",
-    ]) {
-      const contents = [
-        fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8"),
-        fs.readFileSync(path.join(fixture.constructionRoot, "bundle", relative), "utf8"),
-        fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative), "utf8"),
-      ];
+    for (const relative of ["skills/agentera/capabilities/plan/schemas/validation.yaml", "skills/agentera/protocol.yaml"]) {
+      const contents = [fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8"), fs.readFileSync(path.join(fixture.constructionRoot, "bundle", relative), "utf8"), fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative), "utf8")];
       expect(contents[1], relative).toBe(contents[0]);
       expect(contents[2], relative).toBe(contents[0]);
     }
   });
 
   it("retains cleanup preview parity across local build, constructed, and extracted package surfaces", () => {
-    const bins = [
-      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
-      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
-      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
-    ];
-    const observations = bins.map((bin, index) => cleanupPreviewObservation(
-      bin,
-      path.join(fixture.root, `cleanup-parity-${index}`),
-    ));
+    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+    const observations = bins.map((bin, index) => cleanupPreviewObservation(bin, path.join(fixture.root, `cleanup-parity-${index}`)));
 
     expect(observations[1]).toEqual(observations[0]);
     expect(observations[2]).toEqual(observations[0]);
     expect(observations[0]).toEqual({
       status: 1,
       items: [
-        { resourceId: "codex.agent-descriptor.hej", status: "pending", action: "retire-declared-resource" },
+        {
+          resourceId: "codex.agent-descriptor.hej",
+          status: "pending",
+          action: "retire-declared-resource",
+        },
         { resourceId: "copilot.hook.sessionStart", status: "pending", action: "retire-hooks" },
-        { resourceId: "opencode.agent.agentera", status: "pending", action: "retire-declared-resource" },
-        { resourceId: "opencode.command.agentera", status: "pending", action: "retire-declared-resource" },
+        {
+          resourceId: "opencode.agent.agentera",
+          status: "pending",
+          action: "retire-declared-resource",
+        },
+        {
+          resourceId: "opencode.command.agentera",
+          status: "pending",
+          action: "retire-declared-resource",
+        },
       ],
       negativeItems: [
-        { resourceId: "codex.agent-descriptor.audit", status: "blocked", action: "review-declared-resource" },
-        { resourceId: "codex.agent-descriptor.build", status: "blocked", action: "review-declared-resource" },
-        { resourceId: "opencode.agent.plan", status: "blocked", action: "review-declared-resource" },
-        { resourceId: "opencode.agent.status", status: "blocked", action: "review-declared-resource" },
-        { resourceId: "opencode.command.hej", status: "blocked", action: "review-declared-resource" },
+        {
+          resourceId: "codex.agent-descriptor.audit",
+          status: "blocked",
+          action: "review-declared-resource",
+        },
+        {
+          resourceId: "codex.agent-descriptor.build",
+          status: "blocked",
+          action: "review-declared-resource",
+        },
+        {
+          resourceId: "opencode.agent.plan",
+          status: "blocked",
+          action: "review-declared-resource",
+        },
+        {
+          resourceId: "opencode.agent.status",
+          status: "blocked",
+          action: "review-declared-resource",
+        },
+        {
+          resourceId: "opencode.command.hej",
+          status: "blocked",
+          action: "review-declared-resource",
+        },
       ],
       unchanged: [true, true, true, true],
       preserved: [true, true, true, true, true, true],
@@ -535,12 +477,10 @@ describe("npm distribution boundary", () => {
   it("isolates selected-term startup from an empty inherited XDG profile root", () => {
     const inheritedData = path.join(fixture.root, "empty-inherited-xdg");
     fs.mkdirSync(inheritedData);
-    const observation = selectedTermObservation(
-      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
-      path.join(fixture.root, "term-empty-xdg"),
-      "package-private-selected-term",
-      { ...process.env, XDG_DATA_HOME: inheritedData },
-    );
+    const observation = selectedTermObservation(path.join(fixture.packageRoot, "dist/bin/agentera.js"), path.join(fixture.root, "term-empty-xdg"), "package-private-selected-term", {
+      ...process.env,
+      XDG_DATA_HOME: inheritedData,
+    });
 
     expect(observation).toMatchObject({
       status: 0,
@@ -552,16 +492,8 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches structured, mutation-free scalar failures across all runtimes", () => {
-    const bins = [
-      path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"),
-      path.join(fixture.constructionRoot, "dist/bin/agentera.js"),
-      path.join(fixture.packageRoot, "dist/bin/agentera.js"),
-    ];
-    const observations = bins.map((bin, index) => selectedTermObservation(
-      bin,
-      path.join(fixture.root, `term-failure-parity-${index}`),
-      Buffer.from([0xc3, 0x28]),
-    ));
+    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+    const observations = bins.map((bin, index) => selectedTermObservation(bin, path.join(fixture.root, `term-failure-parity-${index}`), Buffer.from([0xc3, 0x28])));
 
     expect(observations[1]).toEqual(observations[0]);
     expect(observations[2]).toEqual(observations[0]);
@@ -575,22 +507,17 @@ describe("npm distribution boundary", () => {
 
   it("serves and isolates the bundled Profile contract", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    const authorityPath = path.join(
-      fixture.packageRoot,
-      "bundle/references/artifacts/glossary-entry-contract.yaml",
-    );
+    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml");
     const projectRoot = path.join(fixture.root, "profile-contract");
     fs.mkdirSync(path.join(projectRoot, ".agentera"), { recursive: true });
-    fs.writeFileSync(
-      path.join(projectRoot, ".agentera", "state-mode.yaml"),
-      "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-    );
+    fs.writeFileSync(path.join(projectRoot, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const originalAuthority = fs.readFileSync(authorityPath);
-    const runPrime = (capability: string) => spawnSync(
-      process.execPath,
-      [bin, "prime", "--context", capability, "--format", "json"],
-      { cwd: projectRoot, env: packageEnvironment(), encoding: "utf8" },
-    );
+    const runPrime = (capability: string) =>
+      spawnSync(process.execPath, [bin, "prime", "--context", capability, "--format", "json"], {
+        cwd: projectRoot,
+        env: packageEnvironment(),
+        encoding: "utf8",
+      });
 
     const profile = runPrime("profile");
     expect(profile.status, profile.stderr || profile.stdout).toBe(0);
@@ -605,9 +532,7 @@ describe("npm distribution boundary", () => {
 
       const malformed = runPrime("profile");
       expect(malformed.status).not.toBe(0);
-      expect(malformed.stderr + malformed.stdout).toContain(
-        "personal glossary Profile Full contract is unavailable",
-      );
+      expect(malformed.stderr + malformed.stdout).toContain("personal glossary Profile Full contract is unavailable");
 
       const build = runPrime("build");
       expect(build.status, build.stderr || build.stdout).toBe(0);
@@ -632,8 +557,7 @@ describe("npm distribution boundary", () => {
 
   it("runs producer readiness publication and replay from the extracted package", { timeout: 120_000 }, async () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    await expect(runProducerReadinessWorkflow(bin, path.join(fixture.root, "producer-readiness")))
-      .resolves.toEqual(EXPECTED_PRODUCER_READINESS);
+    await expect(runProducerReadinessWorkflow(bin, path.join(fixture.root, "producer-readiness"))).resolves.toEqual(EXPECTED_PRODUCER_READINESS);
   });
 
   it("matches source preview and destructive fresh reset behavior", () => {

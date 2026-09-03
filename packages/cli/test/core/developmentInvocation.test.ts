@@ -20,10 +20,7 @@ import {
   type EntityProjectionField,
   type GlossaryProjectionOwner,
 } from "../../src/core/developmentInvocation.js";
-import {
-  ENTITY_LIST_RUNTIME_FAMILIES,
-  type EntityListRuntimeFamilyKey,
-} from "../../src/state/entityListRuntimeRegistry.js";
+import { ENTITY_LIST_RUNTIME_FAMILIES, type EntityListRuntimeFamilyKey } from "../../src/state/entityListRuntimeRegistry.js";
 import { runtimeOperationSpec, runtimeOperationSpecs } from "../../src/state/write/runtimeOperations.js";
 import { commandText } from "../../src/upgrade/upgradeCommands.js";
 
@@ -35,26 +32,20 @@ describe("exact code-owned development invocation projection", () => {
   it("binds shell-quoted path characters to one local argv element", () => {
     const source = String.raw`npx -y agentera@next doctor --project '/tmp/a ; $() & '"'"'quote'"'"' [雪]'`;
     const bound = bindDevelopmentInvocation({ owner: "doctor.runtime-proof", source }, source);
-    expect(bound.argv).toEqual([
-      "doctor",
-      "--project",
-      "/tmp/a ; $() & 'quote' [雪]",
-    ]);
+    expect(bound.argv).toEqual(["doctor", "--project", "/tmp/a ; $() & 'quote' [雪]"]);
     expect(Object.isFrozen(bound)).toBe(true);
     expect(Object.isFrozen(bound.argv)).toBe(true);
   });
 
-  it.each([["LF", "\n"], ["CR", "\r"]])(
-    "binds a quoted %s path to one exact argv element",
-    (_label, separator) => {
-      const project = `/tmp/project${separator}one ; $() & 'quote'`;
-      const source = commandText([
-        "npx", "-y", "agentera@next", "doctor", "--project", project, "--format", "json",
-      ]);
-      const bound = bindDevelopmentInvocation({ owner: "doctor.quoted-path", source }, source);
-      expect(bound.argv).toEqual(["doctor", "--project", project, "--format", "json"]);
-    },
-  );
+  it.each([
+    ["LF", "\n"],
+    ["CR", "\r"],
+  ])("binds a quoted %s path to one exact argv element", (_label, separator) => {
+    const project = `/tmp/project${separator}one ; $() & 'quote'`;
+    const source = commandText(["npx", "-y", "agentera@next", "doctor", "--project", project, "--format", "json"]);
+    const bound = bindDevelopmentInvocation({ owner: "doctor.quoted-path", source }, source);
+    expect(bound.argv).toEqual(["doctor", "--project", project, "--format", "json"]);
+  });
 
   it.each([
     ["bare", "agentera prime --context status", "wrong_channel"],
@@ -95,7 +86,11 @@ describe("exact code-owned development invocation projection", () => {
       HOME: "/isolated/home",
       AGENTERA_HOME: "/isolated/agentera",
     });
-    expect(env).toEqual({ HOME: "/isolated/home", PATH: DEVELOPMENT_CHILD_PATH, AGENTERA_HOME: "/isolated/agentera" });
+    expect(env).toEqual({
+      HOME: "/isolated/home",
+      PATH: DEVELOPMENT_CHILD_PATH,
+      AGENTERA_HOME: "/isolated/agentera",
+    });
     expect(DEVELOPMENT_CHILD_ENV_ALLOWLIST).not.toContain("NODE_OPTIONS");
   });
 
@@ -105,9 +100,15 @@ describe("exact code-owned development invocation projection", () => {
       for (const relative of DEVELOPMENT_RUNTIME_REQUIRED_FILES) {
         const target = path.join(root, relative);
         fs.mkdirSync(path.dirname(target), { recursive: true });
-        fs.writeFileSync(target, relative === "package.json"
-          ? JSON.stringify({ bin: { agentera: "dist/bin/agentera.js" }, files: ["dist", "bundle"] })
-          : "fixture\n");
+        fs.writeFileSync(
+          target,
+          relative === "package.json"
+            ? JSON.stringify({
+                bin: { agentera: "dist/bin/agentera.js" },
+                files: ["dist", "bundle"],
+              })
+            : "fixture\n",
+        );
       }
       fs.chmodSync(path.join(root, "dist/bin/agentera.js"), 0o755);
       expect(assertDevelopmentRuntimeSurface(root)).toBe(path.join(root, "dist/bin/agentera.js"));
@@ -128,22 +129,20 @@ describe("exact code-owned development invocation projection", () => {
 
   it("preserves approved arguments, quoting, prose, and inline delimiters while changing only the prefix", () => {
     const decisions = runtimeOperationSpec("decisions", "update")!;
-    expect(projectRuntimeOperationExamples(
-      decisions.projection.examples.map(({ source }) => source),
-      "decisions",
-      "update",
-    )).toEqual([
-      'agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."',
-    ]);
+    expect(
+      projectRuntimeOperationExamples(
+        decisions.projection.examples.map(({ source }) => source),
+        "decisions",
+        "update",
+      ),
+    ).toEqual(['agentera state decisions update --id qjtrmnpvka --satisfaction-state provisionally_satisfied --satisfaction-evidence "..."']);
 
     const progress = runtimeOperationSpec("progress", "append")!;
-    expect(projectRuntimeOperationRecovery(progress.projection.recovery.source, "progress", "append"))
-      .toBe("Run `agentera state progress explain --verb append` and correct the rejected field; no state was changed.");
+    expect(projectRuntimeOperationRecovery(progress.projection.recovery.source, "progress", "append")).toBe("Run `agentera state progress explain --verb append` and correct the rejected field; no state was changed.");
 
-    expect(projectGlossaryDevelopmentValue(
-      "Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding`; no profile bytes were changed.",
-      "profile_grounding.repair",
-    )).toBe("Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding`; no profile bytes were changed.");
+    expect(projectGlossaryDevelopmentValue("Use the Profile capability to repair or regenerate PROFILE.md, then retry `npx -y agentera@next report profile-grounding`; no profile bytes were changed.", "profile_grounding.repair")).toBe(
+      "Use the Profile capability to repair or regenerate PROFILE.md, then retry `agentera report profile-grounding`; no profile bytes were changed.",
+    );
   });
 
   it.each([
@@ -171,28 +170,19 @@ describe("exact code-owned development invocation projection", () => {
 
   it("rejects audit-2 recovery boundary mutations and invalid code-owned value domains", () => {
     const progress = runtimeOperationSpec("progress", "append")!.projection.recovery.source;
-    for (const value of [
-      progress.replace("`", " --force`"),
-      progress.replace("`", " garbage`"),
-      progress.replace("`", ' "&&"`'),
-      progress.replace("state progress", 'state progress "status'),
-      progress.replace("npx -y", "xnpx -y"),
-      progress.replace("`", "oops`"),
-      progress.replace("`", " " + "\\" + "\n--force`"),
-    ]) rejects(() => projectRuntimeOperationRecovery(value, "progress", "append"));
+    for (const value of [progress.replace("`", " --force`"), progress.replace("`", " garbage`"), progress.replace("`", ' "&&"`'), progress.replace("state progress", 'state progress "status'), progress.replace("npx -y", "xnpx -y"), progress.replace("`", "oops`"), progress.replace("`", " " + "\\" + "\n--force`")])
+      rejects(() => projectRuntimeOperationRecovery(value, "progress", "append"));
 
     const status = runtimeOperationSpec("plan", "set-status")!.projection.examples[0].source;
     rejects(() => projectRuntimeOperationExamples([status.replace("--status complete", "--status retired")], "plan", "set-status"));
     rejects(() => projectRuntimeOperationExamples([`${status} --format invalid`], "plan", "set-status"));
-    expect(projectRuntimeOperationExamples([status], "plan", "set-status"))
-      .toEqual(["agentera state plan set-status --id qjtrmnpvka --status complete"]);
+    expect(projectRuntimeOperationExamples([status], "plan", "set-status")).toEqual(["agentera state plan set-status --id qjtrmnpvka --status complete"]);
   });
 
   it("does not expose mutable authority objects that callers can turn into allowlists", () => {
     const returned = runtimeOperationSpec("progress", "append")!;
     returned.projection.examples[0].source += " --force";
-    expect(runtimeOperationSpec("progress", "append")!.projection.examples[0].source)
-      .toBe("npx -y agentera@next state progress append --input progress.yaml");
+    expect(runtimeOperationSpec("progress", "append")!.projection.examples[0].source).toBe("npx -y agentera@next state progress append --input progress.yaml");
     expect(() => {
       (ENTITY_LIST_RUNTIME_FAMILIES[0].projection as { example: string }).example += " garbage";
     }).toThrow(TypeError);
@@ -210,24 +200,29 @@ describe("exact code-owned development invocation projection", () => {
     expect(owners.filter(({ source }) => source.split("npx -y agentera@next").length - 1 > 1)).toEqual([]);
 
     for (const spec of runtimeOperationSpecs()) {
-      expect(projectRuntimeOperationRecovery(spec.projection.recovery.source, spec.artifact, spec.verb))
-        .toBe(spec.projection.recovery.runtime);
-      expect(projectRuntimeOperationExamples(spec.projection.examples.map(({ source }) => source), spec.artifact, spec.verb))
-        .toEqual(spec.projection.examples.map(({ runtime }) => runtime));
+      expect(projectRuntimeOperationRecovery(spec.projection.recovery.source, spec.artifact, spec.verb)).toBe(spec.projection.recovery.runtime);
+      expect(
+        projectRuntimeOperationExamples(
+          spec.projection.examples.map(({ source }) => source),
+          spec.artifact,
+          spec.verb,
+        ),
+      ).toEqual(spec.projection.examples.map(({ runtime }) => runtime));
       rejects(() => projectRuntimeOperationRecovery(`${spec.projection.recovery.source} oops`, spec.artifact, spec.verb));
-      rejects(() => projectRuntimeOperationExamples(
-        spec.projection.examples.map(({ source }, index) => index === 0 ? `${source} oops` : source),
-        spec.artifact,
-        spec.verb,
-      ));
+      rejects(() =>
+        projectRuntimeOperationExamples(
+          spec.projection.examples.map(({ source }, index) => (index === 0 ? `${source} oops` : source)),
+          spec.artifact,
+          spec.verb,
+        ),
+      );
     }
 
     for (const family of ENTITY_LIST_RUNTIME_FAMILIES) {
       for (const field of ["list", "get", "example", "bareRecovery"] as EntityProjectionField[]) {
         const source = family.projection[field];
         if (typeof source !== "string") continue;
-        expect(projectEntityDevelopmentValue(source, family.key as EntityListRuntimeFamilyKey, field))
-          .toBe(source.replace("npx -y agentera@next", "agentera"));
+        expect(projectEntityDevelopmentValue(source, family.key as EntityListRuntimeFamilyKey, field)).toBe(source.replace("npx -y agentera@next", "agentera"));
         rejects(() => projectEntityDevelopmentValue(`${source} oops`, family.key as EntityListRuntimeFamilyKey, field));
       }
     }

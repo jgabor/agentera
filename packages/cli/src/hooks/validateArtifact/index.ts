@@ -11,10 +11,7 @@ import { resolvePath } from "../../core/paths.js";
 import { normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { validateMd } from "./markdown.js";
-import {
-  defaultArtifactPath,
-  readIfNeeded,
-} from "./traversal.js";
+import { defaultArtifactPath, readIfNeeded } from "./traversal.js";
 import { schemasDirDefault, validateYamlContent } from "./violations.js";
 import { AGENT_FACING_ARTIFACT_IDS, HUMAN_FACING_ARTIFACT_IDS } from "./agentFacing.js";
 
@@ -69,9 +66,7 @@ export class ArtifactSchemaValidator {
       const schema = this.loadSchema(protocolId);
       return this.validateMarkdown(content, artifact, schema);
     }
-    return [
-      `${artifact}: unsupported artifact; expected one of: ${Object.keys(DEFAULT_ARTIFACT_PATHS).sort().join(", ")}`,
-    ];
+    return [`${artifact}: unsupported artifact; expected one of: ${Object.keys(DEFAULT_ARTIFACT_PATHS).sort().join(", ")}`];
   }
 }
 

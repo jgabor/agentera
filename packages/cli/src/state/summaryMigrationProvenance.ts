@@ -17,22 +17,18 @@ function mapping(value: unknown): value is JsonObject {
 
 export function summaryMigrationProvenanceDeclaration(value: JsonObject, authorityPath: string): SummaryMigrationProvenanceDeclaration {
   if (!Array.isArray(value.sources)) throw new Error(`invalid summary migration provenance sources declaration in '${authorityPath}'`);
-  return { sources: value.sources.map((source) => {
-    if (!mapping(source) || typeof source.path !== "string" || !Array.isArray(source.collections) || !source.collections.every((collection) => typeof collection === "string")) {
-      throw new Error(`invalid summary migration provenance source declaration in '${authorityPath}'`);
-    }
-    return { path: source.path, collections: source.collections };
-  }) };
+  return {
+    sources: value.sources.map((source) => {
+      if (!mapping(source) || typeof source.path !== "string" || !Array.isArray(source.collections) || !source.collections.every((collection) => typeof collection === "string")) {
+        throw new Error(`invalid summary migration provenance source declaration in '${authorityPath}'`);
+      }
+      return { path: source.path, collections: source.collections };
+    }),
+  };
 }
 
 /** Bind a degraded summary to one declared legacy source record, without reopening arbitrary project paths. */
-export function summaryMigrationProvenanceViolations(
-  boundary: string,
-  record: JsonObject,
-  declaration: SummaryMigrationProvenanceDeclaration,
-  forbiddenAliases: readonly string[],
-  binding?: MigrationSourceBindingContext,
-): string[] {
+export function summaryMigrationProvenanceViolations(boundary: string, record: JsonObject, declaration: SummaryMigrationProvenanceDeclaration, forbiddenAliases: readonly string[], binding?: MigrationSourceBindingContext): string[] {
   const provenance = record.migration_provenance;
   if (!mapping(provenance)) return ["migration_provenance must be a mapping"];
   if (canonicalRecordJson(Object.keys(provenance).sort()) !== canonicalRecordJson(["source_path", "source_record_sha256"])) {
@@ -49,22 +45,28 @@ export function summaryMigrationProvenanceViolations(
   const source = readBoundMigrationSource(binding, declaredSource.path);
   if (source.kind !== "file") return [`migration_provenance source '${declaredSource.path}' is ${source.kind === "missing" ? "missing" : `unsafe (${source.reason})`}`];
   let document: JsonObject;
-  try { document = loadYamlMapping(source.bytes) as JsonObject; }
-  catch (error) { return [`migration_provenance source '${declaredSource.path}' is invalid YAML: ${(error as Error).message}`]; }
+  try {
+    document = loadYamlMapping(source.bytes) as JsonObject;
+  } catch (error) {
+    return [`migration_provenance source '${declaredSource.path}' is invalid YAML: ${(error as Error).message}`];
+  }
   const retained = structuredClone(record);
   delete retained.migration_provenance;
-  const candidates = declaredSource.collections.flatMap((collection) => {
-    const rows = document[collection];
-    return Array.isArray(rows) ? rows.flatMap((physical) => {
-      const candidate = legacySummaryRecord(physical);
-      return candidate ? [{ physical, candidate }] : [];
-    }) : [];
-  }).filter(({ physical, candidate }) => (typeof candidate.summary === "string" || candidate.detail_availability === "summary_only")
-    && createHash("sha256").update(canonicalRecordJson(physical)).digest("hex") === sourceDigest
-    && canonicalRecordJson(canonicalMigrationRecord(boundary, candidate, forbiddenAliases)) === canonicalRecordJson(retained));
+  const candidates = declaredSource.collections
+    .flatMap((collection) => {
+      const rows = document[collection];
+      return Array.isArray(rows)
+        ? rows.flatMap((physical) => {
+            const candidate = legacySummaryRecord(physical);
+            return candidate ? [{ physical, candidate }] : [];
+          })
+        : [];
+    })
+    .filter(
+      ({ physical, candidate }) =>
+        (typeof candidate.summary === "string" || candidate.detail_availability === "summary_only") && createHash("sha256").update(canonicalRecordJson(physical)).digest("hex") === sourceDigest && canonicalRecordJson(canonicalMigrationRecord(boundary, candidate, forbiddenAliases)) === canonicalRecordJson(retained),
+    );
   const canonicalCandidates = new Set(candidates.map(({ candidate }) => canonicalRecordJson(canonicalMigrationRecord(boundary, candidate, forbiddenAliases))));
-  if (canonicalCandidates.size !== 1) return [canonicalCandidates.size === 0
-    ? "migration_provenance does not bind a retained canonical summary to a declared source record"
-    : "migration_provenance ambiguously binds divergent declared source summary records"];
+  if (canonicalCandidates.size !== 1) return [canonicalCandidates.size === 0 ? "migration_provenance does not bind a retained canonical summary to a declared source record" : "migration_provenance ambiguously binds divergent declared source summary records"];
   return [];
 }

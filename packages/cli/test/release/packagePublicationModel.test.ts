@@ -43,7 +43,11 @@ describe("strict package publication model", () => {
       stable: { authority: "explicit target-version" },
       suite: { requiredVersion: "3.0.0" },
     });
-    expect(mutate((copy) => { copy.benchmark.timeouts.sourceQualificationMs = 2_400_001; })).toThrow(/source qualification timeout/);
+    expect(
+      mutate((copy) => {
+        copy.benchmark.timeouts.sourceQualificationMs = 2_400_001;
+      }),
+    ).toThrow(/source qualification timeout/);
   });
 
   it("accepts an arbitrary canonical non-main development ref without other changes", () => {
@@ -53,60 +57,207 @@ describe("strict package publication model", () => {
   });
 
   it("requires one canonical development ref at the governed pointer", () => {
-    expect(mutate((copy) => { delete copy.ci.developmentPush.ref; })).toThrow(/development push ref authority/);
-    expect(mutate((copy) => { copy.ci.developmentPush.ref = "development/topic"; })).toThrow(/development push ref authority/);
-    expect(mutate((copy) => { copy.ci.developmentPush.ref = "refs/heads/topic..invalid"; })).toThrow(/development push ref authority/);
-    expect(mutate((copy) => { copy.ci.developmentPush.ref = "refs/heads/main"; })).toThrow(/development push ref authority/);
-    expect(mutate((copy) => { copy.ci.developmentPublicationWorkflow.refAuthority = "other.ref"; })).toThrow(/development push ref authority/);
-    expect(mutate((copy) => { copy.trust.duplicateDevelopmentRef = copy.ci.developmentPush.ref; })).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        delete copy.ci.developmentPush.ref;
+      }),
+    ).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPush.ref = "development/topic";
+      }),
+    ).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPush.ref = "refs/heads/topic..invalid";
+      }),
+    ).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPush.ref = "refs/heads/main";
+      }),
+    ).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPublicationWorkflow.refAuthority = "other.ref";
+      }),
+    ).toThrow(/development push ref authority/);
+    expect(
+      mutate((copy) => {
+        copy.trust.duplicateDevelopmentRef = copy.ci.developmentPush.ref;
+      }),
+    ).toThrow(/development push ref authority/);
   });
 
   it("rejects reassigned development, stable, or suite version authority", () => {
-    expect(mutate((copy) => { copy.ci.developmentPush.versionAuthority = "packages/cli/package.json#version"; })).toThrow(/development push version authority/);
-    expect(mutate((copy) => { copy.ci.developmentPush.runNumberOffset = 88; })).toThrow(/development push version authority/);
-    expect(mutate((copy) => { copy.versionCallerInventory.development.currentExplicitTargetCallers.push("obsolete caller"); })).toThrow(/development version callers/);
-    expect(mutate((copy) => { copy.versionCallerInventory.stable.authority = "checked-in manifest"; })).toThrow(/version authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPush.versionAuthority = "packages/cli/package.json#version";
+      }),
+    ).toThrow(/development push version authority/);
+    expect(
+      mutate((copy) => {
+        copy.ci.developmentPush.runNumberOffset = 88;
+      }),
+    ).toThrow(/development push version authority/);
+    expect(
+      mutate((copy) => {
+        copy.versionCallerInventory.development.currentExplicitTargetCallers.push("obsolete caller");
+      }),
+    ).toThrow(/development version callers/);
+    expect(
+      mutate((copy) => {
+        copy.versionCallerInventory.stable.authority = "checked-in manifest";
+      }),
+    ).toThrow(/version authority/);
   });
 
   it.each([
-    ["unknown gate", (copy: any) => { copy.qualification.source.gates[0].name = "unknown"; }],
-    ["omitted gate", (copy: any) => { copy.qualification.source.gates.pop(); }],
-    ["duplicate gate", (copy: any) => { copy.qualification.source.gates[1] = structuredClone(copy.qualification.source.gates[0]); }],
-    ["empty command", (copy: any) => { copy.qualification.source.gates[0].command = []; }],
-    ["gate order", (copy: any) => { copy.qualification.source.gates.reverse(); }],
-    ["duplicate phase entry", (copy: any) => { copy.qualification.source.dag.batchA[1] = copy.qualification.source.dag.batchA[0]; }],
-    ["wrong phase membership", (copy: any) => { copy.qualification.source.dag.barrierB[0] = "stress"; }],
-    ["capacity before performance", (copy: any) => {
-      copy.qualification.source.dag.performanceBarrier = ["capacity"];
-      copy.qualification.source.dag.capacityBarrier = ["performance"];
-    }],
-    ["omitted capacity barrier", (copy: any) => { delete copy.qualification.source.dag.capacityBarrier; }],
-    ["unknown class", (copy: any) => { copy.qualification.source.activationConjunction.classes[0] = "unknown"; }],
-    ["omitted dimension", (copy: any) => { copy.qualification.source.activationConjunction.dimensions.pop(); }],
-    ["duplicate check", (copy: any) => { copy.qualification.source.activationConjunction.checkIds[1] = copy.qualification.source.activationConjunction.checkIds[0]; }],
-    ["empty correction", (copy: any) => { copy.qualification.source.gates[0].correction = ""; }],
-    ["missing readiness reuse", (copy: any) => { delete copy.qualification.readiness.reuse; }],
-    ["changed metadata review rule", (copy: any) => { copy.qualification.readiness.metadataReview = ""; }],
-    ["wrong readiness receipt", (copy: any) => { copy.qualification.readiness.receipts.candidate = "other.json"; }],
-    ["wrong readiness exit", (copy: any) => { copy.qualification.readiness.exitCodes.rejected = 0; }],
-    ["development readiness target version", (copy: any) => { copy.qualification.readiness.command = copy.qualification.readiness.command.replace("--source-commit", "--target-version VERSION --source-commit"); }],
-    ["candidate target version", (copy: any) => { copy.qualification.candidate.inputs.splice(2, 0, "target_version"); }],
+    [
+      "unknown gate",
+      (copy: any) => {
+        copy.qualification.source.gates[0].name = "unknown";
+      },
+    ],
+    [
+      "omitted gate",
+      (copy: any) => {
+        copy.qualification.source.gates.pop();
+      },
+    ],
+    [
+      "duplicate gate",
+      (copy: any) => {
+        copy.qualification.source.gates[1] = structuredClone(copy.qualification.source.gates[0]);
+      },
+    ],
+    [
+      "empty command",
+      (copy: any) => {
+        copy.qualification.source.gates[0].command = [];
+      },
+    ],
+    [
+      "gate order",
+      (copy: any) => {
+        copy.qualification.source.gates.reverse();
+      },
+    ],
+    [
+      "duplicate phase entry",
+      (copy: any) => {
+        copy.qualification.source.dag.batchA[1] = copy.qualification.source.dag.batchA[0];
+      },
+    ],
+    [
+      "wrong phase membership",
+      (copy: any) => {
+        copy.qualification.source.dag.barrierB[0] = "stress";
+      },
+    ],
+    [
+      "capacity before performance",
+      (copy: any) => {
+        copy.qualification.source.dag.performanceBarrier = ["capacity"];
+        copy.qualification.source.dag.capacityBarrier = ["performance"];
+      },
+    ],
+    [
+      "omitted capacity barrier",
+      (copy: any) => {
+        delete copy.qualification.source.dag.capacityBarrier;
+      },
+    ],
+    [
+      "unknown class",
+      (copy: any) => {
+        copy.qualification.source.activationConjunction.classes[0] = "unknown";
+      },
+    ],
+    [
+      "omitted dimension",
+      (copy: any) => {
+        copy.qualification.source.activationConjunction.dimensions.pop();
+      },
+    ],
+    [
+      "duplicate check",
+      (copy: any) => {
+        copy.qualification.source.activationConjunction.checkIds[1] = copy.qualification.source.activationConjunction.checkIds[0];
+      },
+    ],
+    [
+      "empty correction",
+      (copy: any) => {
+        copy.qualification.source.gates[0].correction = "";
+      },
+    ],
+    [
+      "missing readiness reuse",
+      (copy: any) => {
+        delete copy.qualification.readiness.reuse;
+      },
+    ],
+    [
+      "changed metadata review rule",
+      (copy: any) => {
+        copy.qualification.readiness.metadataReview = "";
+      },
+    ],
+    [
+      "wrong readiness receipt",
+      (copy: any) => {
+        copy.qualification.readiness.receipts.candidate = "other.json";
+      },
+    ],
+    [
+      "wrong readiness exit",
+      (copy: any) => {
+        copy.qualification.readiness.exitCodes.rejected = 0;
+      },
+    ],
+    [
+      "development readiness target version",
+      (copy: any) => {
+        copy.qualification.readiness.command = copy.qualification.readiness.command.replace("--source-commit", "--target-version VERSION --source-commit");
+      },
+    ],
+    [
+      "candidate target version",
+      (copy: any) => {
+        copy.qualification.candidate.inputs.splice(2, 0, "target_version");
+      },
+    ],
   ])("rejects %s", (_label, change) => expect(mutate(change)).toThrow(/package publication contract/));
 
   it.each(ACTIVATION_CLASSES)("rejects a well-formed wrong %s class owner and reports canonical identity", (classId) => {
     const canonical = ACTIVATION_CLASS_AUTHORITIES[classId];
-    expect(mutate((copy) => {
-      copy.qualification.source.activationConjunction.owners[classId] = {
-        path: "packages/cli/src/cli/help.ts",
-        symbol: "printTopLevelHelp",
-        correction: "node packages/cli/dist/bin/agentera.js check compact",
-      };
-    })).toThrow(new RegExp(`${canonical.path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}#${canonical.symbol}.*${canonical.correction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.activationConjunction.owners[classId] = {
+          path: "packages/cli/src/cli/help.ts",
+          symbol: "printTopLevelHelp",
+          correction: "node packages/cli/dist/bin/agentera.js check compact",
+        };
+      }),
+    ).toThrow(new RegExp(`${canonical.path.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}#${canonical.symbol}.*${canonical.correction.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}`));
   });
 
   it("rejects contract-defined census count, digest, and total reassignment", () => {
-    expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.classes.cli.count = 26; })).toThrow(/count 27/);
-    expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.classes.capability.sha256 = "f".repeat(64); })).toThrow(/007e1157/);
-    expect(mutate((copy) => { copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64); })).toThrow(/472adb93/);
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.activationConjunction.census.classes.cli.count = 26;
+      }),
+    ).toThrow(/count 27/);
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.activationConjunction.census.classes.capability.sha256 = "f".repeat(64);
+      }),
+    ).toThrow(/007e1157/);
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64);
+      }),
+    ).toThrow(/472adb93/);
   });
 });

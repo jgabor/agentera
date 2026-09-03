@@ -17,30 +17,21 @@ export interface PrimeEvidenceFixture {
 function alphaId(index: number): string {
   let value = index;
   return Array.from({ length: 10 }, () => {
-    const character = String.fromCharCode(97 + value % 26);
+    const character = String.fromCharCode(97 + (value % 26));
     value = Math.floor(value / 26);
     return character;
-  }).reverse().join("");
+  })
+    .reverse()
+    .join("");
 }
 
-function writeEntity(
-  root: string,
-  artifact: string,
-  boundary: string,
-  id: string,
-  record: Record<string, unknown>,
-): void {
+function writeEntity(root: string, artifact: string, boundary: string, id: string, record: Record<string, unknown>): void {
   const directory = path.join(root, ".agentera/entities", artifact, boundary);
   fs.mkdirSync(directory, { recursive: true });
   fs.writeFileSync(path.join(directory, `${id}.yaml`), dumpYamlMapping({ id, artifact, record }));
 }
 
-function writeSummary(
-  root: string,
-  artifact: "progress" | "decisions" | "health",
-  id: string,
-  physical: Record<string, unknown>,
-): void {
+function writeSummary(root: string, artifact: "progress" | "decisions" | "health", id: string, physical: Record<string, unknown>): void {
   const sourcePath = `.agentera/${artifact}.yaml`;
   const collection = artifact === "progress" ? "cycles" : artifact === "decisions" ? "decisions" : "audits";
   fs.writeFileSync(path.join(root, sourcePath), dumpYamlMapping({ [collection]: [physical] }));
@@ -67,7 +58,12 @@ export function seedPrimeEvidenceProject(root: string): PrimeEvidenceFixture {
   const selectedTaskId = taskIds.at(-1)!;
   const selectedDependencyId = taskIds[0];
   writeEntity(root, "plan", "plan", planId, {
-    header: { level: "full", created: "2026-08-02", status: "open", title: "Host-real bounded prime evidence" },
+    header: {
+      level: "full",
+      created: "2026-08-02",
+      status: "open",
+      title: "Host-real bounded prime evidence",
+    },
     what: "Preserve executable routing while startup evidence is compacted.",
     why: "Agents must retain one dependency-ready task under the public byte gate.",
     scope: { included: ["prime routing", "history evidence"], excluded: ["lifecycle closeout"] },
@@ -76,17 +72,10 @@ export function seedPrimeEvidenceProject(root: string): PrimeEvidenceFixture {
     const selected = id === selectedTaskId;
     writeEntity(root, "plan", "plan_task", id, {
       plan: planId,
-      name: selected
-        ? "Execute the selected host-real routing task"
-        : `Completed host-real task ${index + 1}: ${"optional startup detail ".repeat(20).trim()}`,
+      name: selected ? "Execute the selected host-real routing task" : `Completed host-real task ${index + 1}: ${"optional startup detail ".repeat(20).trim()}`,
       status: selected ? "pending" : "complete",
       depends_on: selected ? [selectedDependencyId] : [],
-      acceptance: selected
-        ? [
-            "The bounded plan names this task and its completed dependency.",
-            "The executable next action points to exact task retrieval.",
-          ]
-        : ["Historical task detail is optional at startup."],
+      acceptance: selected ? ["The bounded plan names this task and its completed dependency.", "The executable next action points to exact task retrieval."] : ["Historical task detail is optional at startup."],
     });
   }
 
@@ -123,13 +112,19 @@ export function seedPrimeEvidenceProject(root: string): PrimeEvidenceFixture {
   });
 
   const summaryIds = { progress: "uuuuuuuuuu", decisions: "ssssssssss", health: "rrrrrrrrrr" };
-  writeSummary(root, "progress", summaryIds.progress, { number: 1, summary: "Compacted progress evidence" });
+  writeSummary(root, "progress", summaryIds.progress, {
+    number: 1,
+    summary: "Compacted progress evidence",
+  });
   writeSummary(root, "decisions", summaryIds.decisions, {
     number: 1,
     summary: "Compacted decision evidence",
     satisfaction: { state: "open", review_needed: true, evidence: "Requires exact review" },
   });
-  writeSummary(root, "health", summaryIds.health, { number: 1, summary: "Compacted health evidence" });
+  writeSummary(root, "health", summaryIds.health, {
+    number: 1,
+    summary: "Compacted health evidence",
+  });
 
   return { planId, selectedTaskId, selectedDependencyId, fullDecisionId, summaryIds };
 }

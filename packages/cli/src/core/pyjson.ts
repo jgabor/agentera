@@ -87,9 +87,7 @@ export function pyJsonIndent(value: unknown, indent = 2, level = 0): string {
   if (typeof value === "object") {
     const entries = Object.entries(value as Record<string, unknown>);
     if (entries.length === 0) return "{}";
-    const items = entries.map(
-      ([k, v]) => pad + pyJsonString(k) + ": " + pyJsonIndent(v, indent, level + 1),
-    );
+    const items = entries.map(([k, v]) => pad + pyJsonString(k) + ": " + pyJsonIndent(v, indent, level + 1));
     return "{\n" + items.join(",\n") + "\n" + closePad + "}";
   }
   return "null";
@@ -105,13 +103,7 @@ export function pyJsonDumps(value: unknown, hook?: PyJsonScalarHook): string {
   if (Array.isArray(value)) return "[" + value.map((v) => pyJsonDumps(v, hook)).join(", ") + "]";
   if (typeof value === "object") {
     const keys = Object.keys(value as Record<string, unknown>).sort();
-    return (
-      "{" +
-      keys
-        .map((k) => `${pyJsonString(k)}: ${pyJsonDumps((value as Record<string, unknown>)[k], hook)}`)
-        .join(", ") +
-      "}"
-    );
+    return "{" + keys.map((k) => `${pyJsonString(k)}: ${pyJsonDumps((value as Record<string, unknown>)[k], hook)}`).join(", ") + "}";
   }
   return "null";
 }
@@ -120,12 +112,7 @@ export function pyJsonDumps(value: unknown, hook?: PyJsonScalarHook): string {
  * Mirror Python `json.dumps(value, indent=2, sort_keys=True)` with default
  * options: sorted object keys, ensure_ascii=True, 2-space indentation.
  */
-export function pyJsonIndentSorted(
-  value: unknown,
-  indent = 2,
-  level = 0,
-  hook?: PyJsonScalarHook,
-): string {
+export function pyJsonIndentSorted(value: unknown, indent = 2, level = 0, hook?: PyJsonScalarHook): string {
   const pad = " ".repeat(indent * (level + 1));
   const closePad = " ".repeat(indent * level);
   const scalar = formatScalar(value, hook);
@@ -138,13 +125,7 @@ export function pyJsonIndentSorted(
   if (typeof value === "object") {
     const keys = Object.keys(value as Record<string, unknown>).sort();
     if (keys.length === 0) return "{}";
-    const items = keys.map(
-      (k) =>
-        pad +
-        pyJsonString(k) +
-        ": " +
-        pyJsonIndentSorted((value as Record<string, unknown>)[k], indent, level + 1, hook),
-    );
+    const items = keys.map((k) => pad + pyJsonString(k) + ": " + pyJsonIndentSorted((value as Record<string, unknown>)[k], indent, level + 1, hook));
     return "{\n" + items.join(",\n") + "\n" + closePad + "}";
   }
   return "null";

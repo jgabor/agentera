@@ -11,11 +11,7 @@ import { resolveRouteRequest } from "../../src/registries/hybridRoute.js";
 import { loadTodoReadinessContract } from "../../src/registries/todoReadinessContract.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const READINESS = loadTodoReadinessContract(
-  path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/todo.yaml"),
-  path.join(REPO_ROOT, "skills/agentera/protocol.yaml"),
-  path.join(REPO_ROOT, "skills/agentera/capability_schema_contract.yaml"),
-);
+const READINESS = loadTodoReadinessContract(path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/todo.yaml"), path.join(REPO_ROOT, "skills/agentera/protocol.yaml"), path.join(REPO_ROOT, "skills/agentera/capability_schema_contract.yaml"));
 
 let tempRoot: string;
 let project: string;
@@ -77,12 +73,7 @@ function readiness(capability: string, queueRank = 1, overrides: Record<string, 
   };
 }
 
-function todo(
-  id: string,
-  description: string,
-  itemReadiness?: Record<string, unknown>,
-  options: { severity?: string; status?: string } = {},
-): TodoReadinessEntity {
+function todo(id: string, description: string, itemReadiness?: Record<string, unknown>, options: { severity?: string; status?: string } = {}): TodoReadinessEntity {
   return {
     id,
     artifact: "todo",
@@ -99,10 +90,7 @@ function publish(items: TodoReadinessEntity[]): void {
   const entityRoot = path.join(project, ".agentera/entities/todo/todo_item");
   fs.rmSync(entityRoot, { recursive: true, force: true });
   fs.mkdirSync(entityRoot, { recursive: true });
-  fs.writeFileSync(
-    path.join(project, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   for (const item of items) {
     fs.writeFileSync(path.join(entityRoot, `${item.id}.yaml`), YAML.stringify(item));
   }
@@ -111,11 +99,13 @@ function publish(items: TodoReadinessEntity[]): void {
 function runPrime(format: "json" | "text", context?: "status"): { rc: number; out: string; err: string; payload?: Record<string, any> } {
   let out = "";
   let err = "";
-  const rc = cmdPrime(
-    { command: "prime", format, context, home, installRoot: appHome },
-    { out: (text) => (out += text), err: (text) => (err += text) },
-  );
-  return { rc, out, err, ...(format === "json" ? { payload: JSON.parse(out) as Record<string, any> } : {}) };
+  const rc = cmdPrime({ command: "prime", format, context, home, installRoot: appHome }, { out: (text) => (out += text), err: (text) => (err += text) });
+  return {
+    rc,
+    out,
+    err,
+    ...(format === "json" ? { payload: JSON.parse(out) as Record<string, any> } : {}),
+  };
 }
 
 function statusContext(): Record<string, any> {
@@ -126,18 +116,7 @@ function statusContext(): Record<string, any> {
 
 describe("status TODO readiness integration", () => {
   it("uses the exact Task 1 destination allowlist without admitting status or orchestrate", () => {
-    expect([...READINESS.allowedDestinations].sort()).toEqual([
-      "audit",
-      "build",
-      "design",
-      "discuss",
-      "document",
-      "optimize",
-      "plan",
-      "profile",
-      "research",
-      "vision",
-    ]);
+    expect([...READINESS.allowedDestinations].sort()).toEqual(["audit", "build", "design", "discuss", "document", "optimize", "plan", "profile", "research", "vision"]);
     expect(READINESS.allowedDestinations).not.toContain("status");
     expect(READINESS.allowedDestinations).not.toContain("orchestrate");
   });
@@ -168,11 +147,7 @@ describe("status TODO readiness integration", () => {
   });
 
   it("keeps bare and host JSON projections byte-exact on TODO recommendation fields", () => {
-    publish([todo(
-      "aaaaaaaaaa",
-      "Resolve the glossary boundary",
-      readiness("discuss", 1, { reason: "Resolve the declared glossary boundary." }),
-    )]);
+    publish([todo("aaaaaaaaaa", "Resolve the glossary boundary", readiness("discuss", 1, { reason: "Resolve the declared glossary boundary." }))]);
 
     const json = runPrime("json");
     const host = runPrime("json", "status");
@@ -195,40 +170,93 @@ describe("status TODO readiness integration", () => {
   });
 
   it("projects blocked recovery without selecting an implementation destination", () => {
-    const items = [todo("aaaaaaaaaa", "Blocked fixture", readiness("build", 1, {
-      blocked: { reason: "Synthetic blocker.", recovery: "Remove the synthetic blocker." },
-    }))];
+    const items = [
+      todo(
+        "aaaaaaaaaa",
+        "Blocked fixture",
+        readiness("build", 1, {
+          blocked: { reason: "Synthetic blocker.", recovery: "Remove the synthetic blocker." },
+        }),
+      ),
+    ];
     publish(items);
 
     const evaluated = evaluateTodoReadinessQueue(items, REPO_ROOT);
-    expect(evaluated).toMatchObject({ selected: null, triage: { count: 1 }, abstainRecovery: "Remove the synthetic blocker." });
-    expect(evaluated.evaluations[0]).toMatchObject({ result: "blocked", eligible: false, attention: "item" });
+    expect(evaluated).toMatchObject({
+      selected: null,
+      triage: { count: 1 },
+      abstainRecovery: "Remove the synthetic blocker.",
+    });
+    expect(evaluated.evaluations[0]).toMatchObject({
+      result: "blocked",
+      eligible: false,
+      attention: "item",
+    });
     expect(statusContext()).toMatchObject({
       attention: expect.arrayContaining(["normal: TODO: Blocked fixture"]),
-      next_action: { capability: "status", eligible: false, reason: "Remove the synthetic blocker." },
+      next_action: {
+        capability: "status",
+        eligible: false,
+        reason: "Remove the synthetic blocker.",
+      },
     });
   });
 
   it("projects gated recovery without turning the gate into a destination", () => {
-    const items = [todo("aaaaaaaaaa", "Gated fixture", readiness("build", 1, {
-      gate: { state: "pending", reason: "Synthetic approval.", recovery: "Obtain synthetic approval." },
-    }))];
+    const items = [
+      todo(
+        "aaaaaaaaaa",
+        "Gated fixture",
+        readiness("build", 1, {
+          gate: {
+            state: "pending",
+            reason: "Synthetic approval.",
+            recovery: "Obtain synthetic approval.",
+          },
+        }),
+      ),
+    ];
     publish(items);
 
     const evaluated = evaluateTodoReadinessQueue(items, REPO_ROOT);
-    expect(evaluated).toMatchObject({ selected: null, triage: { count: 0 }, abstainRecovery: "Obtain synthetic approval." });
-    expect(evaluated.evaluations[0]).toMatchObject({ result: "gated", eligible: false, attention: "none" });
-    expect(statusContext().next_action).toMatchObject({ capability: "status", eligible: false, reason: "Obtain synthetic approval." });
+    expect(evaluated).toMatchObject({
+      selected: null,
+      triage: { count: 0 },
+      abstainRecovery: "Obtain synthetic approval.",
+    });
+    expect(evaluated.evaluations[0]).toMatchObject({
+      result: "gated",
+      eligible: false,
+      attention: "none",
+    });
+    expect(statusContext().next_action).toMatchObject({
+      capability: "status",
+      eligible: false,
+      reason: "Obtain synthetic approval.",
+    });
   });
 
   it("projects unresolved dependencies as waiting with their canonical recovery", () => {
     const items = [
-      todo("aaaaaaaaaa", "Waiting fixture", readiness("build", 1, {
-        dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }],
-      }), { severity: "critical" }),
-      todo("bbbbbbbbbb", "Gated prerequisite", readiness("discuss", 1, {
-        gate: { state: "pending", reason: "Prerequisite review.", recovery: "Review the prerequisite." },
-      })),
+      todo(
+        "aaaaaaaaaa",
+        "Waiting fixture",
+        readiness("build", 1, {
+          dependencies: [{ artifact: "todo", id: "bbbbbbbbbb" }],
+        }),
+        { severity: "critical" },
+      ),
+      todo(
+        "bbbbbbbbbb",
+        "Gated prerequisite",
+        readiness("discuss", 1, {
+          gate: {
+            state: "pending",
+            reason: "Prerequisite review.",
+            recovery: "Review the prerequisite.",
+          },
+        }),
+      ),
     ];
     publish(items);
 
@@ -256,7 +284,11 @@ describe("status TODO readiness integration", () => {
       triage: { count: 1 },
       abstainRecovery: "Review the item and declare readiness through the typed TODO writer.",
     });
-    expect(evaluated.evaluations[0]).toMatchObject({ result: "needs-triage", eligible: false, attention: "item" });
+    expect(evaluated.evaluations[0]).toMatchObject({
+      result: "needs-triage",
+      eligible: false,
+      attention: "item",
+    });
     expect(statusContext().next_action).toMatchObject({
       capability: "status",
       eligible: false,
@@ -265,10 +297,7 @@ describe("status TODO readiness integration", () => {
   });
 
   it("keeps mixed triage visible without displacing actionable work", () => {
-    const items = [
-      todo("aaaaaaaaaa", "Needs triage fixture"),
-      todo("bbbbbbbbbb", "Actionable fixture", readiness("design")),
-    ];
+    const items = [todo("aaaaaaaaaa", "Needs triage fixture"), todo("bbbbbbbbbb", "Actionable fixture", readiness("design"))];
     publish(items);
 
     const evaluated = evaluateTodoReadinessQueue(items, REPO_ROOT);
@@ -281,30 +310,48 @@ describe("status TODO readiness integration", () => {
     });
     const nextAction = statusContext().next_action;
     expect(nextAction).toMatchObject({ id: "bbbbbbbbbb", capability: "design", eligible: true });
-    expect(nextAction.alternatives).toContainEqual(expect.objectContaining({
-      capability: "status",
-      outcome: "needs-triage",
-      eligible: false,
-      reason: "Review unannotated or invalid items separately; do not displace actionable work.",
-    }));
+    expect(nextAction.alternatives).toContainEqual(
+      expect.objectContaining({
+        capability: "status",
+        outcome: "needs-triage",
+        eligible: false,
+        reason: "Review unannotated or invalid items separately; do not displace actionable work.",
+      }),
+    );
   });
 
   it("uses severity and contract-owned recovery for an all-non-actionable queue", () => {
     const items = [
-      todo("aaaaaaaaaa", "Critical blocked fixture", readiness("build", 7, {
-        blocked: { reason: "Critical blocker.", recovery: "Resolve the critical blocker." },
-      }), { severity: "critical" }),
-      todo("bbbbbbbbbb", "Normal gated fixture", readiness("plan", 1, {
-        gate: { state: "pending", reason: "Normal gate.", recovery: "Resolve the normal gate." },
-      })),
+      todo(
+        "aaaaaaaaaa",
+        "Critical blocked fixture",
+        readiness("build", 7, {
+          blocked: { reason: "Critical blocker.", recovery: "Resolve the critical blocker." },
+        }),
+        { severity: "critical" },
+      ),
+      todo(
+        "bbbbbbbbbb",
+        "Normal gated fixture",
+        readiness("plan", 1, {
+          gate: { state: "pending", reason: "Normal gate.", recovery: "Resolve the normal gate." },
+        }),
+      ),
     ];
     publish(items);
 
     const evaluated = evaluateTodoReadinessQueue(items, REPO_ROOT);
-    expect(evaluated).toMatchObject({ selected: null, abstainRecovery: "Resolve the critical blocker." });
+    expect(evaluated).toMatchObject({
+      selected: null,
+      abstainRecovery: "Resolve the critical blocker.",
+    });
     expect(statusContext()).toMatchObject({
       attention: expect.arrayContaining(["critical: TODO: Critical blocked fixture"]),
-      next_action: { capability: "status", eligible: false, reason: "Resolve the critical blocker." },
+      next_action: {
+        capability: "status",
+        eligible: false,
+        reason: "Resolve the critical blocker.",
+      },
     });
   });
 
@@ -313,20 +360,41 @@ describe("status TODO readiness integration", () => {
     // copies no persisted readiness or private data; its discuss assignment is test-only.
     const glossaryDescription = "Add glossary synthesis from bounded correction signals with project-glossary suppression.";
     const lateSignal = `${"Neutral synthetic control. ".repeat(500)}help me decide whether this should be audited.`;
-    const glossary = todo("azytlqzxoa", glossaryDescription, readiness("discuss", 1, {
-      reason: "Resolve the glossary product boundary before implementation.",
-    }));
-    const control = todo("zzzzzzzzzz", lateSignal, readiness("build", 2, {
-      reason: "The synthetic control is implementation-ready.",
-    }));
+    const glossary = todo(
+      "azytlqzxoa",
+      glossaryDescription,
+      readiness("discuss", 1, {
+        reason: "Resolve the glossary product boundary before implementation.",
+      }),
+    );
+    const control = todo(
+      "zzzzzzzzzz",
+      lateSignal,
+      readiness("build", 2, {
+        reason: "The synthetic control is implementation-ready.",
+      }),
+    );
     publish([glossary, control]);
 
-    expect(statusContext().next_action).toMatchObject({ id: "azytlqzxoa", capability: "discuss", phase: "deliberate", eligible: true });
-    expect(evaluateTodoReadinessQueue([control, glossary], REPO_ROOT).selected).toMatchObject({ id: "azytlqzxoa", capability: "discuss" });
+    expect(statusContext().next_action).toMatchObject({
+      id: "azytlqzxoa",
+      capability: "discuss",
+      phase: "deliberate",
+      eligible: true,
+    });
+    expect(evaluateTodoReadinessQueue([control, glossary], REPO_ROOT).selected).toMatchObject({
+      id: "azytlqzxoa",
+      capability: "discuss",
+    });
     expect(resolveRouteRequest(glossaryDescription, REPO_ROOT).outcome).toBe("semantic_required");
 
     control.record.description = `help me decide whether this should be audited. ${"Neutral synthetic control. ".repeat(500)}`;
     publish([control]);
-    expect(statusContext().next_action).toMatchObject({ id: "zzzzzzzzzz", capability: "build", phase: "build", eligible: true });
+    expect(statusContext().next_action).toMatchObject({
+      id: "zzzzzzzzzz",
+      capability: "build",
+      phase: "build",
+      eligible: true,
+    });
   });
 });

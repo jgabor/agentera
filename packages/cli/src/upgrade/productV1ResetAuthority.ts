@@ -7,8 +7,7 @@ import { loadYamlMapping } from "../core/yaml.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
 import { NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH } from "../runtime/lifecycleAuthority.js";
 
-export const PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH =
-  "references/adapters/product-v1-reset.yaml";
+export const PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH = "references/adapters/product-v1-reset.yaml";
 
 const PACKAGE_REGISTRY_RELATIVE_PATH = "references/adapters/package-registry.yaml";
 const RUNTIME_LIFECYCLE_RELATIVE_PATH = "references/adapters/runtime-lifecycle-authority.yaml";
@@ -66,31 +65,19 @@ function relativePath(value: unknown, field: string): string {
   return result;
 }
 
-export function loadProductV1ResetAuthority(
-  authorityPath = path.join(resolveSourceRoot(), PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH),
-  sourceRoot = resolveSourceRoot(),
-): ProductV1ResetAuthority {
+export function loadProductV1ResetAuthority(authorityPath = path.join(resolveSourceRoot(), PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH), sourceRoot = resolveSourceRoot()): ProductV1ResetAuthority {
   const data = loadYamlMapping(fs.readFileSync(authorityPath, "utf8"));
   if (data.schema_version !== "agentera.productV1ResetInventory.v1") {
     throw new Error("product v1 reset authority has unsupported schema_version");
   }
 
   const policy = mapping(data.policy, "policy");
-  if (
-    policy.trigger !== "any_declared_product_v1_generation_evidence"
-    || policy.schema_identifier_suffix_is_evidence !== false
-    || policy.discovery !== "declared_roots_only"
-    || policy.preserve_unlisted_state !== true
-  ) {
+  if (policy.trigger !== "any_declared_product_v1_generation_evidence" || policy.schema_identifier_suffix_is_evidence !== false || policy.discovery !== "declared_roots_only" || policy.preserve_unlisted_state !== true) {
     throw new Error("product v1 reset authority policy must require bounded product-generation evidence");
   }
 
   const sources = mapping(data.source_authorities, "source_authorities");
-  if (
-    sources.retired_resources !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH
-    || sources.package_inventory !== PACKAGE_REGISTRY_RELATIVE_PATH
-    || sources.runtime_lifecycle !== RUNTIME_LIFECYCLE_RELATIVE_PATH
-  ) {
+  if (sources.retired_resources !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH || sources.package_inventory !== PACKAGE_REGISTRY_RELATIVE_PATH || sources.runtime_lifecycle !== RUNTIME_LIFECYCLE_RELATIVE_PATH) {
     throw new Error("product v1 reset authority must reference the existing runtime and package authorities");
   }
   for (const authority of Object.values(sources)) {
@@ -123,21 +110,18 @@ export function loadProductV1ResetAuthority(
   const packageTrigger = mapping(triggers.installation_package, "trigger_evidence.installation_package");
   const packageRecord = loadRegistry(path.join(sourceRoot, PACKAGE_REGISTRY_RELATIVE_PATH), sourceRoot).get("agentera");
   if (
-    packageTrigger.generation !== "product_v1"
-    || packageTrigger.triggers_reset !== true
-    || packageTrigger.authority !== PACKAGE_REGISTRY_RELATIVE_PATH
-    || packageTrigger.manifest !== packageRecord.version_authority.persisted_authority
-    || packageTrigger.selector !== packageRecord.version_authority.selector
-    || packageTrigger.predicate !== "semver_major_equals_1"
+    packageTrigger.generation !== "product_v1" ||
+    packageTrigger.triggers_reset !== true ||
+    packageTrigger.authority !== PACKAGE_REGISTRY_RELATIVE_PATH ||
+    packageTrigger.manifest !== packageRecord.version_authority.persisted_authority ||
+    packageTrigger.selector !== packageRecord.version_authority.selector ||
+    packageTrigger.predicate !== "semver_major_equals_1"
   ) {
     throw new Error("installation package trigger must use the package inventory's version authority and product-v1 major");
   }
 
   const runtimeTrigger = mapping(triggers.runtime_resources, "trigger_evidence.runtime_resources");
-  if (
-    runtimeTrigger.authority !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH
-    || runtimeTrigger.role !== "reset_scope_only"
-  ) {
+  if (runtimeTrigger.authority !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH || runtimeTrigger.role !== "reset_scope_only") {
     throw new Error("retired runtime identities must remain reset scope, not product-v1 trigger evidence");
   }
 
@@ -162,8 +146,7 @@ export function loadProductV1ResetAuthority(
       action: action as ProductV1ResetScopeEntry["action"],
       owner,
       boundedRoot: boundedRoot as ProductV1ResetScopeEntry["boundedRoot"],
-      targets: textList(item.targets, `scope_inventory[${index}].targets`).map((target, targetIndex) =>
-        relativePath(target, `scope_inventory[${index}].targets[${targetIndex}]`)),
+      targets: textList(item.targets, `scope_inventory[${index}].targets`).map((target, targetIndex) => relativePath(target, `scope_inventory[${index}].targets[${targetIndex}]`)),
     };
   });
 
@@ -180,13 +163,12 @@ export function loadProductV1ResetAuthority(
 }
 
 export function productV1ArtifactPairs(): ReadonlyArray<readonly [string, string]> {
-  return loadProductV1ResetAuthority().projectArtifacts.map(({ path: legacyPath, currentPath }) =>
-    [legacyPath, currentPath] as const);
+  return loadProductV1ResetAuthority().projectArtifacts.map(({ path: legacyPath, currentPath }) => [legacyPath, currentPath] as const);
 }
 
 export function productV1ProjectTriggerPaths(): readonly string[] {
-  return loadProductV1ResetAuthority().projectArtifacts
-    .filter(({ triggersReset }) => triggersReset)
+  return loadProductV1ResetAuthority()
+    .projectArtifacts.filter(({ triggersReset }) => triggersReset)
     .map(({ path: legacyPath }) => legacyPath);
 }
 

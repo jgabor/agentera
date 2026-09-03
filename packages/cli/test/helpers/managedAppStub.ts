@@ -50,15 +50,9 @@ export function writeManagedAppStub(appHome: string, opts: ManagedAppStubOptions
   fs.writeFileSync(path.join(app, "scripts", "agentera"), scriptContent);
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
   const marker = opts.marker === undefined ? null : opts.marker;
   if (marker !== null) {
-    fs.writeFileSync(
-      path.join(app, BUNDLE_MARKER),
-      JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-    );
+    fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
   }
 }

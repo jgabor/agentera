@@ -10,10 +10,7 @@ import { MAX_CORPUS_READ_BYTES, usageMain } from "../../src/analytics/usageStats
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers, readCurrentGeneration, readSignalTier } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
-import {
-  personalGlossaryCandidateProjectionPath,
-  readPersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { personalGlossaryCandidateProjectionPath, readPersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 
 function run(args: ReportArgs): { rc: number; out: string; err: string } {
   let out = "";
@@ -91,7 +88,14 @@ describe("statsExistingCorpusStatus", () => {
       },
     ];
     const runtimeStatuses = [
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publishEvidenceTiers(records, {
       tiersDir: tiersDirForCorpusPath(corpusPath),
@@ -221,10 +225,7 @@ describe("cmdReport", () => {
       required_consent: "local-history",
       provided_consent: null,
     });
-    expect(payload.diagnostics).toEqual([
-      "dry-run does not read runtime history or write tier files",
-      "published tiers are internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/tiers",
-    ]);
+    expect(payload.diagnostics).toEqual(["dry-run does not read runtime history or write tier files", "published tiers are internal state for stats at $AGENTERA_PROFILE_DIR/intermediate/tiers"]);
     expect(fs.existsSync(outp)).toBe(false); // dry-run writes nothing
   });
 
@@ -381,11 +382,9 @@ describe("cmdReport", () => {
     fs.writeFileSync(source, "# rules\nprefer the recovered shape.\n");
     const lockPath = path.join(path.dirname(personalGlossaryCandidateProjectionPath()), ".refresh.lock");
     fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-    const script = [
-      "const fs=require('node:fs')",
-      "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000002',created_at:'2026-08-15T12:00:00.000Z'}",
-      "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})",
-    ].join(";");
+    const script = ["const fs=require('node:fs')", "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000002',created_at:'2026-08-15T12:00:00.000Z'}", "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})"].join(
+      ";",
+    );
     const interrupted = spawnSync(process.execPath, ["-e", script, lockPath]);
     expect(interrupted.status).toBe(0);
     expect(() => process.kill(interrupted.pid!, 0)).toThrow(expect.objectContaining({ code: "ESRCH" }));
@@ -439,7 +438,11 @@ describe("cmdReport", () => {
     });
     const payload = JSON.parse(result.out);
     expect(result.rc).toBe(1);
-    expect(payload.privacy).toMatchObject({ local_history_read: false, tier_write: false, projection_write: false });
+    expect(payload.privacy).toMatchObject({
+      local_history_read: false,
+      tier_write: false,
+      projection_write: false,
+    });
     expect(payload.projection.recovery).toContain("remove it only after verifying no refresh owns it");
     expect(readCurrentGeneration(path.join(tmp, "intermediate", "tiers"))).toBeNull();
     expect(fs.existsSync(personalGlossaryCandidateProjectionPath())).toBe(false);
@@ -474,7 +477,15 @@ describe("cmdReport", () => {
       path.join(tmp, "intermediate", "corpus.json"),
       JSON.stringify({
         metadata: { extracted_at: "2026-01-02T03:04:05Z" },
-        records: [{ source_kind: "conversation_turn", project_id: "agentera", role: "assistant", timestamp: "t", text: "x" }],
+        records: [
+          {
+            source_kind: "conversation_turn",
+            project_id: "agentera",
+            role: "assistant",
+            timestamp: "t",
+            text: "x",
+          },
+        ],
       }),
     );
     const { rc, out } = run({ format: "json" });

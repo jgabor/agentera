@@ -56,8 +56,7 @@ describe("v2-to-v3 one-command guidance", () => {
     const source = fs.readFileSync(path.join(ROOT, "UPGRADE.md"), "utf8");
 
     expect(source).not.toContain("upgrade --restore");
-    expect(section("UPGRADE.md", "## Upgrading v2 to v3 development channel"))
-      .toMatch(/no rollback, restore, non-Git, or partial\s+workflow/);
+    expect(section("UPGRADE.md", "## Upgrading v2 to v3 development channel")).toMatch(/no rollback, restore, non-Git, or partial\s+workflow/);
   });
 
   it("keeps current cleanup narratives native while preserving Claude-specific examples and history", () => {
@@ -65,12 +64,7 @@ describe("v2-to-v3 one-command guidance", () => {
     expect(activeIntegration).toContain("no\ncurrent-runtime selector or installation behavior");
     expect(activeIntegration).toContain("only automatic\nnative-resource operation is bounded retirement of the proven historical\nOpenCode plugin");
     expect(activeIntegration).not.toContain("no\ncurrent-runtime selector or native-resource operation set");
-    const currentUpgradeNarratives = [
-      activeIntegration,
-      section("UPGRADE.md", "## Verification and recovery"),
-      section("UPGRADE.md", "## Mutation ownership"),
-      section("CHANGELOG.md", "## [Unreleased]"),
-    ];
+    const currentUpgradeNarratives = [activeIntegration, section("UPGRADE.md", "## Verification and recovery"), section("UPGRADE.md", "## Mutation ownership"), section("CHANGELOG.md", "## [Unreleased]")];
 
     for (const narrative of currentUpgradeNarratives) {
       expect(narrative).toContain("native Agentera resource cleanup");
@@ -80,18 +74,12 @@ describe("v2-to-v3 one-command guidance", () => {
     for (const phrase of ["Claude cleanup", "Claude-only cleanup", "Claude resource cleanup"]) {
       expect(phrase).toMatch(STALE_CURRENT_CLEANUP_PHRASE);
     }
-    for (const allowed of [
-      "claude.agentera-skill-link",
-      "--import-source claude",
-      "optional Claude live-smoke",
-      "Claude Code historical transcript import",
-    ]) {
+    for (const allowed of ["claude.agentera-skill-link", "--import-source claude", "optional Claude live-smoke", "Claude Code historical transcript import"]) {
       expect(allowed).not.toMatch(STALE_CURRENT_CLEANUP_PHRASE);
     }
     const cleanupGuide = section("UPGRADE.md", "## Native Agentera resource cleanup");
     expect(cleanupGuide).toContain("claude.agentera-skill-link");
     expect(cleanupGuide).toContain("--import-source claude");
-    expect(section("CHANGELOG.md", "## [2.2.0] · 2026-05-07"))
-      .toContain("optional Claude live-smoke");
+    expect(section("CHANGELOG.md", "## [2.2.0] · 2026-05-07")).toContain("optional Claude live-smoke");
   });
 });

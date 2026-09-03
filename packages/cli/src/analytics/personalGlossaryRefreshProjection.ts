@@ -16,8 +16,7 @@ import {
   type PersonalGlossaryMiningSummary,
 } from "./personalGlossaryCandidateProjection.js";
 
-export interface PersonalGlossaryRefreshProjectionOptions
-  extends PersonalGlossaryCandidateProjectionStorageOptions {
+export interface PersonalGlossaryRefreshProjectionOptions extends PersonalGlossaryCandidateProjectionStorageOptions {
   tiersDir: string;
 }
 
@@ -55,7 +54,10 @@ const FILE_FLAGS = fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0);
 const TOKEN_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/u;
 
 export class PersonalGlossaryRefreshCommitLockError extends Error {
-  constructor(message: string, readonly recovery: string) {
+  constructor(
+    message: string,
+    readonly recovery: string,
+  ) {
     super(message);
     this.name = "PersonalGlossaryRefreshCommitLockError";
   }
@@ -69,10 +71,7 @@ export class PersonalGlossaryRefreshCommitBusyError extends PersonalGlossaryRefr
 }
 
 function unsafeLock(lockPath: string, detail: string): never {
-  throw new PersonalGlossaryRefreshCommitLockError(
-    `personal glossary refresh lock is unsafe: ${detail}`,
-    `Inspect ${lockPath}; remove it only after verifying no refresh owns it, then rerun npx -y agentera@next report refresh --consent local-history`,
-  );
+  throw new PersonalGlossaryRefreshCommitLockError(`personal glossary refresh lock is unsafe: ${detail}`, `Inspect ${lockPath}; remove it only after verifying no refresh owns it, then rerun npx -y agentera@next report refresh --consent local-history`);
 }
 
 function identity(fd: number): FileIdentity {
@@ -85,24 +84,22 @@ function sameIdentity(left: FileIdentity, right: FileIdentity): boolean {
 }
 
 function sameRecord(left: PersonalGlossaryRefreshCommitLockRecord, right: PersonalGlossaryRefreshCommitLockRecord): boolean {
-  return left.schema_version === right.schema_version
-    && left.pid === right.pid
-    && left.token === right.token
-    && left.created_at === right.created_at;
+  return left.schema_version === right.schema_version && left.pid === right.pid && left.token === right.token && left.created_at === right.created_at;
 }
 
 function parseRecord(value: unknown): PersonalGlossaryRefreshCommitLockRecord | null {
   if (
-    value === null
-    || typeof value !== "object"
-    || (value as { schema_version?: unknown }).schema_version !== LOCK_SCHEMA_VERSION
-    || !Number.isSafeInteger((value as { pid?: unknown }).pid)
-    || (value as { pid: number }).pid <= 0
-    || typeof (value as { token?: unknown }).token !== "string"
-    || !TOKEN_PATTERN.test((value as { token: string }).token)
-    || typeof (value as { created_at?: unknown }).created_at !== "string"
-    || !Number.isFinite(Date.parse((value as { created_at: string }).created_at))
-  ) return null;
+    value === null ||
+    typeof value !== "object" ||
+    (value as { schema_version?: unknown }).schema_version !== LOCK_SCHEMA_VERSION ||
+    !Number.isSafeInteger((value as { pid?: unknown }).pid) ||
+    (value as { pid: number }).pid <= 0 ||
+    typeof (value as { token?: unknown }).token !== "string" ||
+    !TOKEN_PATTERN.test((value as { token: string }).token) ||
+    typeof (value as { created_at?: unknown }).created_at !== "string" ||
+    !Number.isFinite(Date.parse((value as { created_at: string }).created_at))
+  )
+    return null;
   return value as PersonalGlossaryRefreshCommitLockRecord;
 }
 
@@ -189,11 +186,7 @@ function unlinkOwned(pathname: string, descriptor: number): boolean {
 
 function prepareRecord(directory: string, basename: string, record: PersonalGlossaryRefreshCommitLockRecord): { path: string; descriptor: number } {
   const preparedPath = path.join(directory, `.${basename}.${record.token}.tmp`);
-  const descriptor = fs.openSync(
-    preparedPath,
-    fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
-    0o600,
-  );
+  const descriptor = fs.openSync(preparedPath, fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), 0o600);
   try {
     fs.writeFileSync(descriptor, `${JSON.stringify(record)}\n`);
     fs.fsyncSync(descriptor);
@@ -234,12 +227,7 @@ function removeDeadClaim(claimPath: string): void {
   }
 }
 
-function reclaimDeadOwner(
-  lockPath: string,
-  current: { descriptor: number; record: PersonalGlossaryRefreshCommitLockRecord },
-  prepared: { path: string; descriptor: number },
-  record: PersonalGlossaryRefreshCommitLockRecord,
-): PersonalGlossaryRefreshCommitLock {
+function reclaimDeadOwner(lockPath: string, current: { descriptor: number; record: PersonalGlossaryRefreshCommitLockRecord }, prepared: { path: string; descriptor: number }, record: PersonalGlossaryRefreshCommitLockRecord): PersonalGlossaryRefreshCommitLock {
   const claimPath = `${lockPath}.reclaim`;
   const claim = prepareRecord(path.dirname(lockPath), path.basename(claimPath), record);
   if (!publishPrepared(claim, claimPath)) {
@@ -271,9 +259,7 @@ function reclaimDeadOwner(
 }
 
 /** Exclude another consented refresh until evidence and its projection are committed together. */
-export function acquirePersonalGlossaryRefreshCommitLock(
-  options: PersonalGlossaryCandidateProjectionStorageOptions = {},
-): PersonalGlossaryRefreshCommitLock {
+export function acquirePersonalGlossaryRefreshCommitLock(options: PersonalGlossaryCandidateProjectionStorageOptions = {}): PersonalGlossaryRefreshCommitLock {
   const directory = path.dirname(personalGlossaryCandidateProjectionPath(options));
   fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   fs.chmodSync(directory, 0o700);
@@ -305,9 +291,7 @@ export function acquirePersonalGlossaryRefreshCommitLock(
   }
 }
 
-export function releasePersonalGlossaryRefreshCommitLock(
-  lock: PersonalGlossaryRefreshCommitLock,
-): void {
+export function releasePersonalGlossaryRefreshCommitLock(lock: PersonalGlossaryRefreshCommitLock): void {
   try {
     if (pathMatches(lock.path, lock.descriptor)) {
       const observed = readRecord(lock.descriptor);
@@ -318,11 +302,7 @@ export function releasePersonalGlossaryRefreshCommitLock(
   }
 }
 
-function familySummary(
-  keys: readonly string[],
-  candidateCount: number,
-  abstentions: ReadonlyArray<{ reason: string }>,
-): PersonalGlossaryMiningFamilySummary {
+function familySummary(keys: readonly string[], candidateCount: number, abstentions: ReadonlyArray<{ reason: string }>): PersonalGlossaryMiningFamilySummary {
   const counts = Object.fromEntries(keys.map((key) => [key, 0]));
   for (const abstention of abstentions) {
     if (!(abstention.reason in counts)) throw new TypeError("mining produced an unknown abstention reason");
@@ -336,32 +316,20 @@ function familySummary(
 }
 
 /** Mine and publish the projection bound to the current successfully published evidence generation. */
-export function produceCurrentPersonalGlossaryProjection(
-  options: PersonalGlossaryRefreshProjectionOptions,
-): PersonalGlossaryRefreshProjectionResult {
+export function produceCurrentPersonalGlossaryProjection(options: PersonalGlossaryRefreshProjectionOptions): PersonalGlossaryRefreshProjectionResult {
   const before = readCurrentGeneration(options.tiersDir);
   if (!before) throw new TypeError("current evidence generation is unavailable");
 
   const explicit = mineExplicitGlossaryCandidates({ tiersDir: options.tiersDir });
   const recurring = mineRecurringGlossaryCandidates({ tiersDir: options.tiersDir });
   const after = readCurrentGeneration(options.tiersDir);
-  if (!after || explicit.generation !== before.manifest.generation ||
-    recurring.generation !== before.manifest.generation ||
-    after.manifest.generation !== before.manifest.generation) {
+  if (!after || explicit.generation !== before.manifest.generation || recurring.generation !== before.manifest.generation || after.manifest.generation !== before.manifest.generation) {
     throw new TypeError("current evidence generation changed during projection production");
   }
 
   const contract = personalGlossaryCandidateProjectionContract();
-  const explicitSummary = familySummary(
-    contract.explicitAbstentionKeys,
-    explicit.candidates.length,
-    explicit.abstentions,
-  );
-  const recurringSummary = familySummary(
-    contract.recurringAbstentionKeys,
-    recurring.candidates.length,
-    recurring.abstentions,
-  );
+  const explicitSummary = familySummary(contract.explicitAbstentionKeys, explicit.candidates.length, explicit.abstentions);
+  const recurringSummary = familySummary(contract.recurringAbstentionKeys, recurring.candidates.length, recurring.abstentions);
   const miningSummary: PersonalGlossaryMiningSummary = {
     schema_version: "agentera.personalGlossaryMiningSummary.v1",
     explicit: explicitSummary,

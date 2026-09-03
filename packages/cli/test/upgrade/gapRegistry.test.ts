@@ -5,15 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  D56_PARITY_FAMILY_GAPS,
-  GAP_IDS,
-  DEFAULT_RUNTIME_MATRIX,
-  TRACKED_GAPS,
-  gapSkipReason,
-  isGapClosed,
-  isParityFamilyClosed,
-} from "./gapRegistry.js";
+import { D56_PARITY_FAMILY_GAPS, GAP_IDS, DEFAULT_RUNTIME_MATRIX, TRACKED_GAPS, gapSkipReason, isGapClosed, isParityFamilyClosed } from "./gapRegistry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FIXTURES = path.join(__dirname, "fixtures");
@@ -78,15 +70,7 @@ describe("gapRegistry", () => {
   });
 
   it("maps current D56 parity families to gap ids", () => {
-    expect(Object.keys(D56_PARITY_FAMILY_GAPS).sort()).toEqual(
-      [
-        "artifact_validation",
-        "compaction",
-        "doctor_upgrade_safety",
-        "usage_stats_consent",
-        "verify_eval",
-      ].sort(),
-    );
+    expect(Object.keys(D56_PARITY_FAMILY_GAPS).sort()).toEqual(["artifact_validation", "compaction", "doctor_upgrade_safety", "usage_stats_consent", "verify_eval"].sort());
   });
 
   it("skips opencode gap test until gap closes", () => {

@@ -14,13 +14,7 @@ export function sandboxMigrationEnv(home: string, sourceRoot: string): Record<st
   };
 }
 
-export function migrationCtx(
-  appHome: string,
-  project: string,
-  home: string,
-  sourceRoot: string,
-  env?: Record<string, string>,
-) {
+export function migrationCtx(appHome: string, project: string, home: string, sourceRoot: string, env?: Record<string, string>) {
   const base = sandboxMigrationEnv(home, sourceRoot);
   return {
     appHome,

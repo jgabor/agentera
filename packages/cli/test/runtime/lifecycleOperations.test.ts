@@ -32,19 +32,11 @@ afterEach(() => {
   fs.rmSync(root, { recursive: true, force: true });
 });
 
-function fileSpec(
-  id: string,
-  destination: string,
-  content = "desired\n",
-  overrides: Partial<LifecycleOperationSpec> = {},
-): LifecycleOperationSpec {
+function fileSpec(id: string, destination: string, content = "desired\n", overrides: Partial<LifecycleOperationSpec> = {}): LifecycleOperationSpec {
   return { id, destination, kind: "file", intent: "ensure", content, ...overrides };
 }
 
-function recordFor(
-  spec: LifecycleOperationSpec,
-  overrides: Partial<LifecycleOwnershipRecord> = {},
-): LifecycleOwnershipRecord {
+function recordFor(spec: LifecycleOperationSpec, overrides: Partial<LifecycleOwnershipRecord> = {}): LifecycleOwnershipRecord {
   return {
     resourceId: spec.id,
     destination: path.resolve(spec.destination),
@@ -177,34 +169,31 @@ const resourceCases: ResourceCase[] = [
 ];
 
 describe("lifecycle resource planning", () => {
-  it.each(resourceCases)(
-    "classifies $name resources deterministically",
-    ({ arrange, expectedAction, expectedOwnership, expectedState }) => {
-      const destination = path.join(root, "resource");
-      const arranged = arrange(destination);
-      const manifest = createLifecycleOwnershipManifest([arranged.spec]);
+  it.each(resourceCases)("classifies $name resources deterministically", ({ arrange, expectedAction, expectedOwnership, expectedState }) => {
+    const destination = path.join(root, "resource");
+    const arranged = arrange(destination);
+    const manifest = createLifecycleOwnershipManifest([arranged.spec]);
 
-      const first = planLifecycleOperations({
-        allowedRoots: [root],
-        operations: [arranged.spec],
-        manifest,
-        ledger: arranged.ledger,
-      });
-      const second = planLifecycleOperations({
-        allowedRoots: [root],
-        operations: [arranged.spec],
-        manifest,
-        ledger: arranged.ledger,
-      });
+    const first = planLifecycleOperations({
+      allowedRoots: [root],
+      operations: [arranged.spec],
+      manifest,
+      ledger: arranged.ledger,
+    });
+    const second = planLifecycleOperations({
+      allowedRoots: [root],
+      operations: [arranged.spec],
+      manifest,
+      ledger: arranged.ledger,
+    });
 
-      expect(first).toEqual(second);
-      expect(first.operations[0]).toMatchObject({
-        state: expectedState,
-        action: expectedAction,
-        ownership: expectedOwnership,
-      });
-    },
-  );
+    expect(first).toEqual(second);
+    expect(first.operations[0]).toMatchObject({
+      state: expectedState,
+      action: expectedAction,
+      ownership: expectedOwnership,
+    });
+  });
 
   it("rejects ambiguous ledger ownership instead of selecting a record", () => {
     const destination = path.join(root, "resource");
@@ -231,12 +220,14 @@ describe("lifecycle resource planning", () => {
     const spec = fileSpec("resource", destination);
     fs.writeFileSync(destination, spec.content as string);
 
-    expect(() => planLifecycleOperations({
-      allowedRoots: [root],
-      operations: [spec],
-      manifest: createLifecycleOwnershipManifest([spec]),
-      ledger: ledger([recordFor(spec, { identity: null })]),
-    })).toThrow("identity is required for managed ownership");
+    expect(() =>
+      planLifecycleOperations({
+        allowedRoots: [root],
+        operations: [spec],
+        manifest: createLifecycleOwnershipManifest([spec]),
+        ledger: ledger([recordFor(spec, { identity: null })]),
+      }),
+    ).toThrow("identity is required for managed ownership");
   });
 });
 
@@ -280,14 +271,7 @@ describe("preview purity and path safety", () => {
     const ownership = readLifecycleOwnershipLedger(ledgerPath);
     const beforeTree = snapshotTree(root);
     const beforeState = JSON.stringify({ manifest, ownership });
-    const mutationSpies = [
-      vi.spyOn(fs, "mkdirSync"),
-      vi.spyOn(fs, "writeFileSync"),
-      vi.spyOn(fs, "renameSync"),
-      vi.spyOn(fs, "unlinkSync"),
-      vi.spyOn(fs, "rmSync"),
-      vi.spyOn(fs, "symlinkSync"),
-    ];
+    const mutationSpies = [vi.spyOn(fs, "mkdirSync"), vi.spyOn(fs, "writeFileSync"), vi.spyOn(fs, "renameSync"), vi.spyOn(fs, "unlinkSync"), vi.spyOn(fs, "rmSync"), vi.spyOn(fs, "symlinkSync")];
     const execSpy = vi.spyOn(childProcess, "execFileSync");
     const spawnSpy = vi.spyOn(childProcess, "spawnSync");
 
@@ -298,11 +282,7 @@ describe("preview purity and path safety", () => {
       ledger: ownership,
     });
 
-    expect(preview.operations.map((operation) => operation.action)).toEqual([
-      "create",
-      "create",
-      "create",
-    ]);
+    expect(preview.operations.map((operation) => operation.action)).toEqual(["create", "create", "create"]);
     expect(snapshotTree(root)).toEqual(beforeTree);
     expect(JSON.stringify({ manifest, ownership })).toBe(beforeState);
     expect(fs.existsSync(ledgerPath)).toBe(false);
@@ -515,12 +495,7 @@ describe("apply convergence", () => {
     const b = path.join(managedDir, "b.txt");
     const c = path.join(managedDir, "c.txt");
     const ledgerPath = path.join(root, "ownership.json");
-    const operations: LifecycleOperationSpec[] = [
-      { id: "directory", destination: managedDir, kind: "directory", intent: "ensure" },
-      fileSpec("a", a, "A\n", { dependsOn: ["directory"] }),
-      fileSpec("b", b, "B\n", { dependsOn: ["directory"] }),
-      fileSpec("c", c, "C\n", { dependsOn: ["a"] }),
-    ];
+    const operations: LifecycleOperationSpec[] = [{ id: "directory", destination: managedDir, kind: "directory", intent: "ensure" }, fileSpec("a", a, "A\n", { dependsOn: ["directory"] }), fileSpec("b", b, "B\n", { dependsOn: ["directory"] }), fileSpec("c", c, "C\n", { dependsOn: ["a"] })];
     const manifest = createLifecycleOwnershipManifest(operations);
     const initialLedger = emptyLifecycleOwnershipLedger();
     const originalOpen = fs.openSync.bind(fs);
@@ -529,12 +504,7 @@ describe("apply convergence", () => {
     let failA = true;
     vi.spyOn(fs, "openSync").mockImplementation((target, flags, mode) => {
       const fd = originalOpen(target, flags, mode);
-      if (
-        typeof target === "string"
-        && target.endsWith("/a.txt")
-        && typeof flags === "number"
-        && (flags & fs.constants.O_EXCL) !== 0
-      ) {
+      if (typeof target === "string" && target.endsWith("/a.txt") && typeof flags === "number" && (flags & fs.constants.O_EXCL) !== 0) {
         aDescriptor = fd;
       }
       return fd;
@@ -578,15 +548,13 @@ describe("apply convergence", () => {
     expect(fs.existsSync(a)).toBe(true);
     expect(fs.readFileSync(a, "utf8")).toBe("");
     expect(fs.readFileSync(b, "utf8")).toBe("B\n");
-    expect(readLifecycleOwnershipLedger(ledgerPath).records.find((item) => item.resourceId === "a")?.status)
-      .toBe("pending_create");
+    expect(readLifecycleOwnershipLedger(ledgerPath).records.find((item) => item.resourceId === "a")?.status).toBe("pending_create");
 
     vi.restoreAllMocks();
     const retryLedger = readLifecycleOwnershipLedger(ledgerPath);
-    const retry = applyLifecycleOperations(
-      planLifecycleOperations({ allowedRoots: [root], operations, manifest, ledger: retryLedger }),
-      { persistLedger: (next) => writeLifecycleOwnershipLedgerAtomic(ledgerPath, next) },
-    );
+    const retry = applyLifecycleOperations(planLifecycleOperations({ allowedRoots: [root], operations, manifest, ledger: retryLedger }), {
+      persistLedger: (next) => writeLifecycleOwnershipLedgerAtomic(ledgerPath, next),
+    });
 
     expect(retry.status).toBe("success");
     expect(retry.operations.map(({ id, status }) => [id, status])).toEqual([
@@ -597,8 +565,7 @@ describe("apply convergence", () => {
     ]);
     expect(fs.readFileSync(a, "utf8")).toBe("A\n");
     expect(fs.readFileSync(c, "utf8")).toBe("C\n");
-    expect(readLifecycleOwnershipLedger(ledgerPath).records.every((item) => item.status === "managed"))
-      .toBe(true);
+    expect(readLifecycleOwnershipLedger(ledgerPath).records.every((item) => item.status === "managed")).toBe(true);
 
     const final = applyLifecycleOperations(
       planLifecycleOperations({
@@ -635,16 +602,13 @@ describe("apply convergence", () => {
     const spec = fileSpec("created", destination, "created\n");
     const manifest = createLifecycleOwnershipManifest([spec]);
     let persistCalls = 0;
-    const first = applyLifecycleOperations(
-      planLifecycleOperations({ allowedRoots: [root], operations: [spec], manifest }),
-      {
-        persistLedger(next) {
-          persistCalls += 1;
-          if (persistCalls === 3) throw new Error("simulated final ledger failure");
-          if (persistCalls < 3) expect(next.records[0].status).toBe("pending_create");
-        },
+    const first = applyLifecycleOperations(planLifecycleOperations({ allowedRoots: [root], operations: [spec], manifest }), {
+      persistLedger(next) {
+        persistCalls += 1;
+        if (persistCalls === 3) throw new Error("simulated final ledger failure");
+        if (persistCalls < 3) expect(next.records[0].status).toBe("pending_create");
       },
-    );
+    });
 
     expect(first.operations[0].status).toBe("failed");
     expect(first.ownershipLedger.records[0].status).toBe("pending_create");
@@ -688,7 +652,10 @@ describe("apply convergence", () => {
       ownership: "managed",
     });
     const restarted = applyLifecycleOperations(preview);
-    expect(restarted.operations[0]).toMatchObject({ status: "applied", action: "finalize_ownership" });
+    expect(restarted.operations[0]).toMatchObject({
+      status: "applied",
+      action: "finalize_ownership",
+    });
     expect(restarted.ownershipLedger.records[0]).toMatchObject({ status: "managed" });
     expect(restarted.ownershipLedger.records[0].identity).not.toBeNull();
   });
@@ -727,9 +694,7 @@ describe("ownership ledger persistence", () => {
   it("writes atomically only when the parent is already a safe directory", () => {
     const ledgerPath = path.join(root, "state", "ownership.json");
     const ownership = emptyLifecycleOwnershipLedger();
-    expect(() => writeLifecycleOwnershipLedgerAtomic(ledgerPath, ownership)).toThrow(
-      "ownership ledger parent does not exist",
-    );
+    expect(() => writeLifecycleOwnershipLedgerAtomic(ledgerPath, ownership)).toThrow("ownership ledger parent does not exist");
     expect(fs.existsSync(path.dirname(ledgerPath))).toBe(false);
 
     fs.mkdirSync(path.dirname(ledgerPath));
@@ -740,22 +705,23 @@ describe("ownership ledger persistence", () => {
 
   it("preserves the previous complete snapshot when replacement is interrupted before publication", () => {
     const ledgerPath = path.join(root, "ownership.json");
-    const previous = ledger([{
-      resourceId: "durable",
-      destination: path.join(root, "durable"),
-      kind: "file",
-      scope: "whole",
-      status: "pending_create",
-      fingerprint: "sha256:durable",
-      identity: null,
-    }]);
+    const previous = ledger([
+      {
+        resourceId: "durable",
+        destination: path.join(root, "durable"),
+        kind: "file",
+        scope: "whole",
+        status: "pending_create",
+        fingerprint: "sha256:durable",
+        identity: null,
+      },
+    ]);
     writeLifecycleOwnershipLedgerAtomic(ledgerPath, previous);
     vi.spyOn(fs, "renameSync").mockImplementation(() => {
       throw new Error("simulated interruption before ledger publication");
     });
 
-    expect(() => writeLifecycleOwnershipLedgerAtomic(ledgerPath, emptyLifecycleOwnershipLedger()))
-      .toThrow("simulated interruption");
+    expect(() => writeLifecycleOwnershipLedgerAtomic(ledgerPath, emptyLifecycleOwnershipLedger())).toThrow("simulated interruption");
     expect(readLifecycleOwnershipLedger(ledgerPath)).toEqual(previous);
     expect(fs.readdirSync(root).filter((name) => name.includes(".next-"))).toEqual([]);
   });

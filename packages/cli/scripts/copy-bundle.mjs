@@ -19,12 +19,8 @@ const argument = (name, fallback) => {
 };
 const distRoot = argument("--dist-root", path.join(pkgRoot, "dist"));
 const bundleRoot = argument("--bundle-root", path.join(pkgRoot, "bundle"));
-const { buildExtractCorpusParityManifest } = await import(
-  pathToFileURL(path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js")).href
-);
-const { loadRegistry } = await import(
-  pathToFileURL(path.join(distRoot, "registries/packageRegistry.js")).href
-);
+const { buildExtractCorpusParityManifest } = await import(pathToFileURL(path.join(distRoot, "analytics/extractCorpus/extractCorpusParity.js")).href);
+const { loadRegistry } = await import(pathToFileURL(path.join(distRoot, "registries/packageRegistry.js")).href);
 const registryPath = path.join(repoRoot, "references/adapters/package-registry.yaml");
 const SKIP_PARTS = new Set(["__pycache__", ".pytest_cache", "node_modules"]);
 const SKIP_SUFFIXES = new Set([".pyc", ".pyo"]);
@@ -36,11 +32,7 @@ function abort(message) {
 
 function inside(root, candidate) {
   const relative = path.relative(root, candidate);
-  return relative === "" || (
-    relative !== ".." &&
-    !relative.startsWith(`..${path.sep}`) &&
-    !path.isAbsolute(relative)
-  );
+  return relative === "" || (relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative));
 }
 
 function shouldSkip(name) {
@@ -54,7 +46,9 @@ function shouldSkip(name) {
 function runExtractCorpusParityCheck() {
   const generator = path.join(here, "generate-extract-corpus-parity.mjs");
   if (!fs.existsSync(generator)) return;
-  const result = spawnSync(process.execPath, [generator, "--dist-root", distRoot], { stdio: "inherit" });
+  const result = spawnSync(process.execPath, [generator, "--dist-root", distRoot], {
+    stdio: "inherit",
+  });
   if (result.status !== 0) process.exit(result.status ?? 1);
 }
 
@@ -99,8 +93,7 @@ function preflight(entries) {
   const files = [];
   const destinations = new Map();
 
-  const sourceLabel = (entry, declaredPath = entry.path) =>
-    `id ${JSON.stringify(entry.id)} path ${JSON.stringify(declaredPath)}`;
+  const sourceLabel = (entry, declaredPath = entry.path) => `id ${JSON.stringify(entry.id)} path ${JSON.stringify(declaredPath)}`;
 
   const resolveSource = (entry, declaredPath, expectedKind) => {
     const source = path.resolve(repoRoot, declaredPath);
@@ -136,10 +129,7 @@ function preflight(entries) {
     }
     const previous = destinations.get(destination);
     if (previous !== undefined) {
-      abort(
-        `destination ${sourceLabel(entry, declaredPath)} duplicates ${previous}; ` +
-        "correction: give every copied source a unique bundle destination",
-      );
+      abort(`destination ${sourceLabel(entry, declaredPath)} duplicates ${previous}; ` + "correction: give every copied source a unique bundle destination");
     }
     destinations.set(destination, sourceLabel(entry, declaredPath));
     if (kind === "directory") directories.add(destination);
@@ -147,8 +137,7 @@ function preflight(entries) {
 
   const inspectDirectory = (entry, source, destination, declaredPath) => {
     reserveDestination(entry, declaredPath, destination, "directory");
-    const children = fs.readdirSync(source, { withFileTypes: true })
-      .sort((left, right) => left.name.localeCompare(right.name));
+    const children = fs.readdirSync(source, { withFileTypes: true }).sort((left, right) => left.name.localeCompare(right.name));
     for (const child of children) {
       if (shouldSkip(child.name)) continue;
       const childSource = path.join(source, child.name);
@@ -217,10 +206,7 @@ for (const operation of plan.files) {
   fs.mkdirSync(path.dirname(operation.destination), { recursive: true });
   fs.copyFileSync(operation.source, operation.destination);
 }
-fs.writeFileSync(
-  plan.generated.marker,
-  JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: plan.suiteVersion }, null, 2) + "\n",
-);
+fs.writeFileSync(plan.generated.marker, JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: plan.suiteVersion }, null, 2) + "\n");
 fs.writeFileSync(plan.generated.parity, JSON.stringify(plan.parityManifest, null, 2) + "\n");
 
 const copied = entries.directories.length + entries.files.length;

@@ -28,8 +28,7 @@ export const EXPLICIT_GLOSSARY_REASONS = {
   userAuthorshipRequired: "user_authorship_required",
 } as const;
 
-export type ExplicitGlossaryReason =
-  (typeof EXPLICIT_GLOSSARY_REASONS)[keyof typeof EXPLICIT_GLOSSARY_REASONS];
+export type ExplicitGlossaryReason = (typeof EXPLICIT_GLOSSARY_REASONS)[keyof typeof EXPLICIT_GLOSSARY_REASONS];
 
 export interface ExplicitGlossarySpan {
   start: number;

@@ -5,11 +5,7 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  classifyDevelopmentTarball,
-  mutateDevelopmentTarball,
-  writeDevelopmentClassification,
-} from "../../scripts/publish-development.mjs";
+import { classifyDevelopmentTarball, mutateDevelopmentTarball, writeDevelopmentClassification } from "../../scripts/publish-development.mjs";
 
 const source = "a".repeat(40);
 const secret = "test-auth-material-that-must-not-leak";
@@ -111,10 +107,12 @@ describe("development publication", () => {
   it("fails closed when forward-retag would require npm dist-tag", () => {
     const { classification } = classify("3.0.0-dev.9", { integrity, source });
     const mutation = registry("3.0.0-dev.9", { integrity, source });
-    expect(() => mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: coordinatorEnvironment,
-    })).toThrow("OIDC does not authorize npm dist-tag");
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: coordinatorEnvironment,
+      }),
+    ).toThrow("OIDC does not authorize npm dist-tag");
     expect(mutation.run).not.toHaveBeenCalled();
   });
 
@@ -124,11 +122,12 @@ describe("development publication", () => {
   ])("never authorizes a mutation process for %s", (_outcome, currentNext) => {
     const { classification } = classify(currentNext, { integrity, source });
     const mutation = registry(currentNext, { integrity, source });
-    expect(() => mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: coordinatorEnvironment,
-    }))
-      .toThrow("classification does not authorize npm mutation");
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: coordinatorEnvironment,
+      }),
+    ).toThrow("classification does not authorize npm mutation");
     expect(mutation.view).not.toHaveBeenCalled();
     expect(mutation.run).not.toHaveBeenCalled();
   });
@@ -140,11 +139,12 @@ describe("development publication", () => {
     const { classification } = classify("3.0.0-dev.9", {});
     const mutation = registry(currentNext, { integrity, source });
     const log = vi.spyOn(console, "log").mockImplementation(() => {});
-    expect(mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: coordinatorEnvironment,
-    }))
-      .toContain("replay");
+    expect(
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: coordinatorEnvironment,
+      }),
+    ).toContain("replay");
     expect(mutation.run).not.toHaveBeenCalled();
     expect(log.mock.calls.flat().join(" ")).not.toContain(secret);
     log.mockRestore();
@@ -170,10 +170,12 @@ describe("development publication", () => {
     options.packageVersion = "3.0.0-dev.10";
     const stale = classify("3.0.0-dev.11", { integrity, source });
     expect(stale.classification.outcome).toBe("superseded-replay");
-    expect(() => mutateDevelopmentTarball(options, stale.classification, {
-      ...registry("3.0.0-dev.11", { integrity, source }),
-      environment: coordinatorEnvironment,
-    })).toThrow("classification does not authorize npm mutation");
+    expect(() =>
+      mutateDevelopmentTarball(options, stale.classification, {
+        ...registry("3.0.0-dev.11", { integrity, source }),
+        environment: coordinatorEnvironment,
+      }),
+    ).toThrow("classification does not authorize npm mutation");
   });
 
   it("retries a failed prior forward run without allocating a new version", () => {
@@ -187,11 +189,12 @@ describe("development publication", () => {
     const { classification } = classify("3.0.0-dev.9", {});
     fs.appendFileSync(options.tarball, "changed");
     const mutation = registry("3.0.0-dev.9", {});
-    expect(() => mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: coordinatorEnvironment,
-    }))
-      .toThrow("classification does not match the exact tarball, version, and git ref");
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: coordinatorEnvironment,
+      }),
+    ).toThrow("classification does not match the exact tarball, version, and git ref");
     expect(mutation.view).not.toHaveBeenCalled();
     expect(mutation.run).not.toHaveBeenCalled();
   });
@@ -204,27 +207,28 @@ describe("development publication", () => {
   ])("rejects missing or malformed OIDC before npm mutation", (environment, message) => {
     const { classification } = classify("3.0.0-dev.9", {});
     const mutation = registry("3.0.0-dev.9", {});
-    expect(() => mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: { ...coordinatorEnvironment, ...environment },
-    })).toThrow(message);
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: { ...coordinatorEnvironment, ...environment },
+      }),
+    ).toThrow(message);
     expect(mutation.view).toHaveBeenCalledTimes(3);
     expect(mutation.run).not.toHaveBeenCalled();
   });
 
-  it.each(["NPM_TOKEN", "NODE_AUTH_TOKEN", "NPM_CONFIG_USERCONFIG"])(
-    "rejects a coordinator parent carrying %s before race inspection",
-    (key) => {
-      const { classification } = classify("3.0.0-dev.9", {});
-      const mutation = registry("3.0.0-dev.9", {});
-      expect(() => mutateDevelopmentTarball(options, classification, {
+  it.each(["NPM_TOKEN", "NODE_AUTH_TOKEN", "NPM_CONFIG_USERCONFIG"])("rejects a coordinator parent carrying %s before race inspection", (key) => {
+    const { classification } = classify("3.0.0-dev.9", {});
+    const mutation = registry("3.0.0-dev.9", {});
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
         ...mutation,
         environment: { ...coordinatorEnvironment, [key]: secret },
-      })).toThrow("coordinator environment contains npm credentials or auth configuration");
-      expect(mutation.view).not.toHaveBeenCalled();
-      expect(mutation.run).not.toHaveBeenCalled();
-    },
-  );
+      }),
+    ).toThrow("coordinator environment contains npm credentials or auth configuration");
+    expect(mutation.view).not.toHaveBeenCalled();
+    expect(mutation.run).not.toHaveBeenCalled();
+  });
 
   it("does not expose traditional credentials when the OIDC npm child fails", () => {
     const { classification } = classify("3.0.0-dev.9", {});
@@ -232,10 +236,12 @@ describe("development publication", () => {
     mutation.run.mockImplementation(() => {
       throw new Error("npm child failed");
     });
-    expect(() => mutateDevelopmentTarball(options, classification, {
-      ...mutation,
-      environment: oidcEnvironment,
-    })).toThrow("npm child failed");
+    expect(() =>
+      mutateDevelopmentTarball(options, classification, {
+        ...mutation,
+        environment: oidcEnvironment,
+      }),
+    ).toThrow("npm child failed");
     expect(JSON.stringify(mutation.run.mock.calls)).not.toContain(secret);
   });
 

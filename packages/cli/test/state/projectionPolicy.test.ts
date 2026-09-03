@@ -5,11 +5,7 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  boundStructuredProjection,
-  loadProjectionPolicy,
-  serializedProjectionBytes,
-} from "../../src/state/projectionPolicy.js";
+import { boundStructuredProjection, loadProjectionPolicy, serializedProjectionBytes } from "../../src/state/projectionPolicy.js";
 import { checkCompaction, compactYamlFile } from "../../src/hooks/compaction/index.js";
 import { discoverNumberedArchives } from "../../src/state/archiveDiscovery.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
@@ -165,15 +161,11 @@ describe("lossless projection policy", () => {
     expect(bounded.omitted).toBe(true);
     expect(bounded.omitted_count).toBeGreaterThan(0);
     expect(bounded.omission_reason).toBe("projection_byte_budget");
-    expect((bounded.retrieval as Record<string, unknown>).command).toBe(
-      "agentera state progress list",
-    );
+    expect((bounded.retrieval as Record<string, unknown>).command).toBe("agentera state progress list");
     expect((bounded.retrieval as Record<string, unknown>).get).toBe("agentera state progress get --id ID");
     const returned = bounded.entries as Array<Record<string, unknown>>;
     expect(returned.every((entry) => typeof entry.detail === "string" && !String(entry.detail).endsWith("..."))).toBe(true);
-    expect(returned.map((entry) => entry.number)).toEqual(
-      [...returned.map((entry) => entry.number)].sort((left, right) => Number(left) - Number(right)),
-    );
+    expect(returned.map((entry) => entry.number)).toEqual([...returned.map((entry) => entry.number)].sort((left, right) => Number(left) - Number(right)));
   });
 
   it.each(["json", "yaml"] as const)("replaces oversized required fields with a measured fallback (%s)", (format) => {
@@ -227,11 +219,20 @@ describe("lossless projection policy", () => {
     fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (let index = 0; index < 12; index += 1) {
       const id = `${"a".repeat(9)}${String.fromCharCode(97 + index)}`;
-      fs.writeFileSync(path.join(directory, `${id}.yaml`), YAML.stringify({
-        id,
-        artifact: "progress",
-        record: { timestamp: `2026-07-${String(index + 1).padStart(2, "0")} 10:00`, type: "test", phase: "build", what: unicodeSample.repeat(500), context: { intent: "budget" } },
-      }));
+      fs.writeFileSync(
+        path.join(directory, `${id}.yaml`),
+        YAML.stringify({
+          id,
+          artifact: "progress",
+          record: {
+            timestamp: `2026-07-${String(index + 1).padStart(2, "0")} 10:00`,
+            type: "test",
+            phase: "build",
+            what: unicodeSample.repeat(500),
+            context: { intent: "budget" },
+          },
+        }),
+      );
     }
     let output = "";
     const previous = process.cwd();

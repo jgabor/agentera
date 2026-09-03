@@ -14,10 +14,7 @@ function mappingPath(entry: Record<string, unknown>, field: string): unknown {
   return value;
 }
 
-export function isExactArchiveReplay(
-  entry: Record<string, unknown> | undefined,
-  payload: Record<string, unknown>,
-): boolean {
+export function isExactArchiveReplay(entry: Record<string, unknown> | undefined, payload: Record<string, unknown>): boolean {
   if (!entry) return false;
   const projected: Record<string, unknown> = {};
   for (const [key, expected] of Object.entries(payload)) {
@@ -33,24 +30,14 @@ export function isExactArchiveReplay(
   return isDeepStrictEqual(projected, payload);
 }
 
-export function findArchivedReplay(
-  projectRoot: string,
-  artifact: WritableArtifact,
-  payload: Record<string, unknown>,
-): JsonObject | undefined {
+export function findArchivedReplay(projectRoot: string, artifact: WritableArtifact, payload: Record<string, unknown>): JsonObject | undefined {
   if (Object.keys(payload).length === 0) return undefined;
-  return discoverNumberedArchives(projectRoot).entries
-    .filter((entry) => entry.artifactId === artifact)
+  return discoverNumberedArchives(projectRoot)
+    .entries.filter((entry) => entry.artifactId === artifact)
     .find((entry) => isExactArchiveReplay(entry.record, payload))?.record;
 }
 
-export function recoverArchivedEntry(
-  candidate: Record<string, unknown>,
-  collection: string,
-  entries: Record<string, unknown>[],
-  recovered: Record<string, unknown>,
-  descending: boolean,
-): void {
+export function recoverArchivedEntry(candidate: Record<string, unknown>, collection: string, entries: Record<string, unknown>[], recovered: Record<string, unknown>, descending: boolean): void {
   const number = Number(recovered.number);
   const sameNumber = entries.find((entry) => Number(entry.number) === number);
   if (sameNumber && !isDeepStrictEqual(sameNumber, recovered)) {

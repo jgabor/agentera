@@ -4,13 +4,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  dumpYamlMapping,
-  loadYamlMapping,
-  loadYamlMappingFile,
-  withReadOnlyYamlMappingCache,
-  withYamlMappingCache,
-} from "../../src/core/yaml.js";
+import { dumpYamlMapping, loadYamlMapping, loadYamlMappingFile, withReadOnlyYamlMappingCache, withYamlMappingCache } from "../../src/core/yaml.js";
 
 describe("loadYamlMapping", () => {
   it("returns an empty object for empty and whitespace documents", () => {
@@ -58,7 +52,9 @@ describe("loadYamlMapping", () => {
         }).toThrow();
       });
       fs.writeFileSync(pathname, "value: second\n", "utf8");
-      expect(withReadOnlyYamlMappingCache(() => loadYamlMappingFile(pathname))).toEqual({ value: "second" });
+      expect(withReadOnlyYamlMappingCache(() => loadYamlMappingFile(pathname))).toEqual({
+        value: "second",
+      });
     } finally {
       fs.rmSync(directory, { recursive: true, force: true });
     }

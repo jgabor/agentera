@@ -6,11 +6,7 @@
  */
 
 import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
-import {
-  classifyTodoSectionHeading,
-  countTodoResolvedSectionHeadings,
-  isLegacyStrikethroughTodoLine,
-} from "../compaction/parse.js";
+import { classifyTodoSectionHeading, countTodoResolvedSectionHeadings, isLegacyStrikethroughTodoLine } from "../compaction/parse.js";
 import { isMapping, isEmptyRequired } from "./schema.js";
 
 function validateTodoResolvedPlacement(content: string, name: string): string[] {
@@ -38,17 +34,13 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
     const parsed = parseTodoMarkdownListItem(trimmed);
     if (parsed?.status === "resolved") {
       if (section === "severity") {
-        violations.push(
-          `${name}: resolved checkbox item must live under '## ✓ Resolved', not in severity bands`,
-        );
+        violations.push(`${name}: resolved checkbox item must live under '## ✓ Resolved', not in severity bands`);
         break;
       }
     }
 
     if (isLegacyStrikethroughTodoLine(trimmed)) {
-      violations.push(
-        `${name}: legacy strikethrough resolved items are not allowed; use '- [x]' under '## ✓ Resolved'`,
-      );
+      violations.push(`${name}: legacy strikethrough resolved items are not allowed; use '- [x]' under '## ✓ Resolved'`);
       break;
     }
   }
@@ -59,9 +51,7 @@ function validateTodoResolvedPlacement(content: string, name: string): string[] 
   if (resolvedHeadingCount === 0) {
     violations.push(`${name}: missing required '## ✓ Resolved' section`);
   } else if (resolvedHeadingCount > 1) {
-    violations.push(
-      `${name}: ${resolvedHeadingCount} '## ✓ Resolved' sections found; merge into exactly one (duplicate sections hide entries from the compaction gate and parsing processes only the first).`,
-    );
+    violations.push(`${name}: ${resolvedHeadingCount} '## ✓ Resolved' sections found; merge into exactly one (duplicate sections hide entries from the compaction gate and parsing processes only the first).`);
   }
 
   return violations;
@@ -120,14 +110,10 @@ export function validateMdItems(content: string, name: string, violations: strin
         const headingText = glyphNameMatch ? glyphNameMatch[1] : glyph;
         const gluedNextSection = nextMatch?.index === 0;
         if (gluedNextSection || /^\s*##\s/m.test(sectionBody)) {
-          violations.push(
-            `${name}: severity section '${headingText}' body contains a nested heading; add a blank line before the next '##' section`,
-          );
+          violations.push(`${name}: severity section '${headingText}' body contains a nested heading; add a blank line before the next '##' section`);
         }
         if (glyph === "⇶" && /^\s*-\s+\[x\]/im.test(sectionBody)) {
-          violations.push(
-            `${name}: severity section '⇶ Critical' must not contain resolved '- [x]' items; move them to '## ✓ Resolved'`,
-          );
+          violations.push(`${name}: severity section '⇶ Critical' must not contain resolved '- [x]' items; move them to '## ✓ Resolved'`);
         }
       }
     }
@@ -136,9 +122,7 @@ export function validateMdItems(content: string, name: string, violations: strin
     violations.push(...validateTodoResolvedPlacement(content, name));
   }
   if (!found) {
-    violations.push(
-      `${name}: missing severity glyph in section headings (expected '## ⇶ Critical', '## ⇉ Degraded', '## → Normal', '## ⇢ Annoying')`,
-    );
+    violations.push(`${name}: missing severity glyph in section headings (expected '## ⇶ Critical', '## ⇉ Degraded', '## → Normal', '## ⇢ Annoying')`);
   }
 }
 
@@ -149,9 +133,7 @@ export function validateMdReleases(content: string, name: string, violations: st
   const changeSections = new Set(["### Added", "### Changed", "### Fixed", "### Removed"]);
   const lines = new Set(content.split("\n"));
   if (![...changeSections].some((s) => lines.has(s))) {
-    violations.push(
-      `${name}: missing change sections (expected '### Added', '### Changed', '### Fixed', or '### Removed')`,
-    );
+    violations.push(`${name}: missing change sections (expected '### Added', '### Changed', '### Fixed', or '### Removed')`);
   }
 }
 

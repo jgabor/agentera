@@ -1,21 +1,11 @@
 import { asList } from "../stateQuery.js";
 import { loadNamedArtifact } from "../orientation.js";
-import {
-  entryStatus,
-  sourceProvenance,
-  taskRef,
-  hasRecordedValue,
-  uniqueList,
-} from "./shared.js";
+import { entryStatus, sourceProvenance, taskRef, hasRecordedValue, uniqueList } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
 import { planTaskIndex } from "../planTaskIndex.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
-import {
-  boundedChangelogUnavailable,
-  CHANGELOG_MAX_OUTPUT_BYTES,
-  readChangelog,
-} from "../../state/changelog.js";
+import { boundedChangelogUnavailable, CHANGELOG_MAX_OUTPUT_BYTES, readChangelog } from "../../state/changelog.js";
 
 export function orchestrationTaskSummary(task: JsonObject): JsonObject {
   const evidence = task.evidence;
@@ -101,9 +91,7 @@ export function dependencyReadyTasks(tasks: JsonObject[]): JsonObject[] {
 }
 
 export function firstActionablePlanTask(tasks: JsonObject[]): JsonObject | null {
-  return tasks.find((task) => entryStatus(task, "pending") === "in_progress")
-    ?? dependencyReadyTasks(tasks)[0]
-    ?? null;
+  return tasks.find((task) => entryStatus(task, "pending") === "in_progress") ?? dependencyReadyTasks(tasks)[0] ?? null;
 }
 
 export function selectEvidenceTarget(plan: JsonObject): JsonObject {
@@ -124,20 +112,12 @@ export function selectEvidenceTarget(plan: JsonObject): JsonObject {
       status: "selected",
       target_type: "plan_task",
       task: taskRef(actionable),
-      selection_reason: inProgress
-        ? "in_progress_task"
-        : "first_dependency_ready_pending_task",
-      source_provenance: sourceProvenance(
-        "plan",
-        STATE_FAMILY_FALLBACK_COMMANDS.plan,
-        inProgress ? "entries.status" : "entries.depends_on",
-      ),
+      selection_reason: inProgress ? "in_progress_task" : "first_dependency_ready_pending_task",
+      source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, inProgress ? "entries.status" : "entries.depends_on"),
       caveats: [],
     };
   }
-  const completedWithEvidence = [...tasks].reverse().find(
-    (task) => DONE_STATUSES_ORCH.has(entryStatus(task, "pending")) && hasRecordedValue(task.evidence),
-  );
+  const completedWithEvidence = [...tasks].reverse().find((task) => DONE_STATUSES_ORCH.has(entryStatus(task, "pending")) && hasRecordedValue(task.evidence));
   if (completedWithEvidence) {
     return {
       status: "selected",
@@ -191,17 +171,13 @@ export function buildArtifactUpdateRequirements(plan: JsonObject, docs: JsonObje
   const archiveOnly = Boolean(plan.exists) && plan.active === false;
   const completionSweep = plan.active === true && Boolean(plan.complete_plan);
   return {
-    required_families: archiveOnly
-      ? []
-      : ["plan", "todo", "changelog", ...(completionSweep ? ["progress"] : [])],
+    required_families: archiveOnly ? [] : ["plan", "todo", "changelog", ...(completionSweep ? ["progress"] : [])],
     conditional_families: archiveOnly || completionSweep ? [] : ["progress"],
     protected_families: ["vision", "objective", "profile", "installed_app"],
     docs_mapping_available: Boolean(docs.exists && mapping.length > 0),
     mapped_artifacts: mapped,
     plan_status_update_required: plan.active === true,
-    policy: archiveOnly
-      ? "Archived plan history is non-executable and requires no execution artifact updates."
-      : "Update required execution artifacts during the cycle; evaluate conditional progress through its typed writer guidance and do not mutate protected state without explicit approval.",
+    policy: archiveOnly ? "Archived plan history is non-executable and requires no execution artifact updates." : "Update required execution artifacts during the cycle; evaluate conditional progress through its typed writer guidance and do not mutate protected state without explicit approval.",
     source_provenance: sourceProvenance("docs", STATE_FAMILY_FALLBACK_COMMANDS.docs, "summary.mapping"),
   };
 }
@@ -213,16 +189,15 @@ export function buildPlanCompletionSweep(plan: JsonObject): JsonObject {
     mutation_allowed: false,
     required_updates: complete ? ["progress aggregate cycle", "changelog plan-level entries", "TODO milestone advance", "health cross-reference"] : [],
     archive_candidate: complete ? "active plan archive path is generated only during Build sweep execution" : null,
-    caveats: complete
-      ? []
-      : plan.active === false && plan.exists
-        ? ["Archived plan history is non-executable and cannot trigger a completion sweep."]
-        : ["Plan completion sweep is not eligible until every plan task is complete."],
+    caveats: complete ? [] : plan.active === false && plan.exists ? ["Archived plan history is non-executable and cannot trigger a completion sweep."] : ["Plan completion sweep is not eligible until every plan task is complete."],
     source_provenance: sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.status"),
   };
 }
 
-function selectedTargetVersionState(plan: JsonObject): { value: string | null; boundExceeded: boolean } {
+function selectedTargetVersionState(plan: JsonObject): {
+  value: string | null;
+  boundExceeded: boolean;
+} {
   const textParts = [String(plan.title ?? "")];
   const firstPending = plan.first_pending;
   if (firstPending && typeof firstPending === "object" && !Array.isArray(firstPending)) {
@@ -253,9 +228,7 @@ export function closeoutChangelogBoundary(projectRoot: string, plan: JsonObject)
   const shared = readChangelog(projectRoot);
   const target = selectedTargetVersionState(plan);
   const targetVersion = target.value;
-  const selectedRecorded = shared.projection.status === "available"
-    && targetVersion !== null
-    && shared.recognizedReleaseVersions.includes(targetVersion);
+  const selectedRecorded = shared.projection.status === "available" && targetVersion !== null && shared.recognizedReleaseVersions.includes(targetVersion);
   const caveats = [...((shared.projection.caveats ?? []) as string[])];
   if (shared.projection.status === "available" && targetVersion && !selectedRecorded) {
     caveats.push(`CHANGELOG state has no ${targetVersion} closeout entry yet.`);
@@ -273,9 +246,7 @@ export function closeoutChangelogBoundary(projectRoot: string, plan: JsonObject)
   };
   if (serializedProjectionBytes(boundary) <= CHANGELOG_MAX_OUTPUT_BYTES) return boundary;
 
-  const bounded = boundedChangelogUnavailable(
-    "CHANGELOG closeout state is unavailable because its bounded target overlay exceeds the supported output limit.",
-  ).projection;
+  const bounded = boundedChangelogUnavailable("CHANGELOG closeout state is unavailable because its bounded target overlay exceeds the supported output limit.").projection;
   const fallback: JsonObject = {
     ...bounded,
     selected_target_version: null,

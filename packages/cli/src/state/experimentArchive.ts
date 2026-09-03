@@ -19,22 +19,10 @@ export interface ExperimentArchivePublication {
   provenance: JsonObject;
 }
 
-export function prepareExperimentArchive(
-  projectRoot: string,
-  objectivePath: string,
-  objectiveId: string,
-  experimentNumber: number,
-  record: JsonObject,
-): ExperimentArchivePublication {
-  if (record.number !== experimentNumber)
-    throw new Error(`experiment archive record number must equal ${experimentNumber}`);
+export function prepareExperimentArchive(projectRoot: string, objectivePath: string, objectiveId: string, experimentNumber: number, record: JsonObject): ExperimentArchivePublication {
+  if (record.number !== experimentNumber) throw new Error(`experiment archive record number must equal ${experimentNumber}`);
   const stableId = `${objectiveId}/experiment:${experimentNumber}`;
-  const target = path.join(
-    path.dirname(objectivePath),
-    "archive",
-    "experiments",
-    `${experimentNumber}.yaml`,
-  );
+  const target = path.join(path.dirname(objectivePath), "archive", "experiments", `${experimentNumber}.yaml`);
   assertRealpathBoundary(projectRoot, target, "experiment archive");
   const canonical = canonicalRecordJson(record);
   const recordSha256 = createHash("sha256").update(canonical, "utf8").digest("hex");

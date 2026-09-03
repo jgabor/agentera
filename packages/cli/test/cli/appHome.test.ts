@@ -26,12 +26,7 @@ describe("agentera app-home", () => {
     let out = "";
     const rc = main(["node", "agentera", "app-home", "--home", home], { out: (t) => (out += t) });
     expect(rc).toBe(0);
-    const expected =
-      process.platform === "darwin"
-        ? path.join(home, "Library", "Application Support", "agentera")
-        : process.platform === "win32"
-          ? path.join(home, "AppData", "Roaming", "agentera")
-          : path.join(home, ".local", "share", "agentera");
+    const expected = process.platform === "darwin" ? path.join(home, "Library", "Application Support", "agentera") : process.platform === "win32" ? path.join(home, "AppData", "Roaming", "agentera") : path.join(home, ".local", "share", "agentera");
     expect(JSON.parse(out).path).toBe(resolvePath(expected));
   });
 
@@ -51,15 +46,22 @@ describe("agentera app-home", () => {
     const home = path.join(tmp, "home");
     let implicit = "";
     let explicit = "";
-    const implicitRc = main(["node", "agentera", "app-home", "--home", home], { out: (t) => (implicit += t) });
-    const explicitRc = main(["node", "agentera", "app-home", "--home", home, "--format", "json"], { out: (t) => (explicit += t) });
+    const implicitRc = main(["node", "agentera", "app-home", "--home", home], {
+      out: (t) => (implicit += t),
+    });
+    const explicitRc = main(["node", "agentera", "app-home", "--home", home, "--format", "json"], {
+      out: (t) => (explicit += t),
+    });
     expect({ rc: implicitRc, out: implicit }).toEqual({ rc: explicitRc, out: explicit });
   });
 
   it("rejects unknown flags with bounded JSON", () => {
     let out = "";
     let err = "";
-    const rc = main(["node", "agentera", "app-home", "--bogus"], { out: (t) => (out += t), err: (t) => (err += t) });
+    const rc = main(["node", "agentera", "app-home", "--bogus"], {
+      out: (t) => (out += t),
+      err: (t) => (err += t),
+    });
     expect(rc).toBe(2);
     expect(err).toBe("");
     expect(JSON.parse(out).error.class).toBe("unrecognized_argument");

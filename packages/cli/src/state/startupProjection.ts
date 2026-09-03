@@ -9,14 +9,7 @@ import type { JsonObject, JsonValue } from "../core/jsonValue.js";
 import { truncateCodePoints } from "../core/text.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
-import {
-  canonicalRecordJson,
-  discoverNumberedArchives,
-  numberedArchiveContract,
-  stateCurrentProjectionPath,
-  type ArchiveRejection,
-  type NumberedArchiveEntry,
-} from "./archiveDiscovery.js";
+import { canonicalRecordJson, discoverNumberedArchives, numberedArchiveContract, stateCurrentProjectionPath, type ArchiveRejection, type NumberedArchiveEntry } from "./archiveDiscovery.js";
 import { legacyIdentity, type LegacyIdentity } from "./legacyIdentity.js";
 import { classifyStateRows, type StateClassification, type StateClassificationRow } from "./listClassification.js";
 
@@ -27,27 +20,7 @@ export const STARTUP_ARRAY_LIMIT = 20;
 const ROOT_ITEM = /^  -(?:\s+(.*))?$/;
 const ROOT_FIELD = /^    ([A-Za-z0-9_-]+):(?:\s*(.*))?$/;
 const NESTED_FIELD = /^\s{6,}([A-Za-z0-9_-]+):(?:\s*(.*))?$/;
-const CAPTURED_FIELDS = new Set([
-  "number",
-  "date",
-  "timestamp",
-  "status",
-  "type",
-  "phase",
-  "summary",
-  "what",
-  "question",
-  "choice",
-  "trajectory",
-  "name",
-  "title",
-  "review_needed",
-  "state",
-  "source",
-  "review_date",
-  "review_by",
-  "review_due",
-]);
+const CAPTURED_FIELDS = new Set(["number", "date", "timestamp", "status", "type", "phase", "summary", "what", "question", "choice", "trajectory", "name", "title", "review_needed", "state", "source", "review_date", "review_by", "review_due"]);
 const BLOCK_SECTIONS = new Set(["grades", "satisfaction"]);
 
 export interface StartupSourceEntry {
@@ -95,21 +68,7 @@ export interface StartupHistorySummary extends JsonObject {
   omission: JsonObject;
 }
 
-const PRESERVED_STARTUP_KEYS = new Set([
-  "number",
-  "entry_number",
-  "stable_id",
-  "artifact_id",
-  "status",
-  "mode",
-  "capability",
-  "command",
-  "get",
-  "list",
-  "fallback_command",
-  "next_cursor",
-  "field",
-]);
+const PRESERVED_STARTUP_KEYS = new Set(["number", "entry_number", "stable_id", "artifact_id", "status", "mode", "capability", "command", "get", "list", "fallback_command", "next_cursor", "field"]);
 
 /** Bound optional capability startup detail without touching identity or routes. */
 export function boundStartupValue(value: JsonValue, key = "", depth = 0): JsonValue {
@@ -183,14 +142,7 @@ function setNested(fields: JsonObject, section: string, key: string, value: stri
   fields.satisfaction = satisfaction;
 }
 
-function finalizeEntry(
-  entries: StartupSourceEntry[],
-  fields: JsonObject,
-  artifactId: string,
-  entryNumberField: string,
-  filePath: string,
-  origin: StartupSourceEntry["origin"],
-): void {
+function finalizeEntry(entries: StartupSourceEntry[], fields: JsonObject, artifactId: string, entryNumberField: string, filePath: string, origin: StartupSourceEntry["origin"]): void {
   entries.push({
     index: entries.length,
     path: filePath,
@@ -206,18 +158,25 @@ function finalizeEntry(
  * never constructs a full YAML record, so a large verification or transcript
  * field cannot become a retained prime payload or heap-sized object graph.
  */
-export function scanYamlCollection(
-  filePath: string,
-  collection: string,
-  artifactId: string,
-  entryNumberField: string,
-  origin: StartupSourceEntry["origin"] = collection === "archive" ? "summary" : "active",
-): StartupSourceScan {
-  if (!fs.existsSync(filePath)) return { path: filePath, exists: false, collection_found: false, bytes_scanned: 0, entries: [] };
+export function scanYamlCollection(filePath: string, collection: string, artifactId: string, entryNumberField: string, origin: StartupSourceEntry["origin"] = collection === "archive" ? "summary" : "active"): StartupSourceScan {
+  if (!fs.existsSync(filePath))
+    return {
+      path: filePath,
+      exists: false,
+      collection_found: false,
+      bytes_scanned: 0,
+      entries: [],
+    };
   try {
     const stat = fs.lstatSync(filePath);
     if (stat.isSymbolicLink() || !stat.isFile()) {
-      return { path: filePath, exists: true, collection_found: false, bytes_scanned: 0, entries: [] };
+      return {
+        path: filePath,
+        exists: true,
+        collection_found: false,
+        bytes_scanned: 0,
+        entries: [],
+      };
     }
   } catch {
     return { path: filePath, exists: true, collection_found: false, bytes_scanned: 0, entries: [] };
@@ -342,14 +301,16 @@ export function scanYamlCollection(
   } finally {
     fs.closeSync(fd);
   }
-  return { path: filePath, exists: true, collection_found: collectionFound, bytes_scanned: bytesScanned, entries };
+  return {
+    path: filePath,
+    exists: true,
+    collection_found: collectionFound,
+    bytes_scanned: bytesScanned,
+    entries,
+  };
 }
 
-function scanLegacyStartupArtifact(
-  projectRoot: string,
-  artifactId: "progress" | "decisions" | "health",
-  sourceRoot: string = resolveSourceRoot(),
-): StartupArtifactScans {
+function scanLegacyStartupArtifact(projectRoot: string, artifactId: "progress" | "decisions" | "health", sourceRoot: string = resolveSourceRoot()): StartupArtifactScans {
   const contract = numberedArchiveContract(artifactId, sourceRoot);
   const currentPath = stateCurrentProjectionPath(projectRoot, artifactId, sourceRoot);
   return {
@@ -367,10 +328,7 @@ function archiveNumber(rejection: ArchiveRejection, artifactId: string): number 
   return match ? Number(match[1]) : null;
 }
 
-function classificationRow(
-  entry: StartupSourceEntry | NumberedArchiveEntry | ArchiveRejection,
-  artifactId: string,
-): StateClassificationRow {
+function classificationRow(entry: StartupSourceEntry | NumberedArchiveEntry | ArchiveRejection, artifactId: string): StateClassificationRow {
   if ("path" in entry && "reason" in entry) {
     const number = archiveNumber(entry, artifactId);
     return {
@@ -405,13 +363,7 @@ function classificationRow(
   };
 }
 
-function classifyNumber(
-  artifactId: string,
-  number: number,
-  current: StartupSourceEntry[],
-  archives: NumberedArchiveEntry[],
-  rejected: ArchiveRejection[],
-): StateClassification {
+function classifyNumber(artifactId: string, number: number, current: StartupSourceEntry[], archives: NumberedArchiveEntry[], rejected: ArchiveRejection[]): StateClassification {
   const rows = [
     ...current.filter((entry) => entry.identity.number === number).map((entry) => classificationRow(entry, artifactId)),
     ...archives.filter((entry) => entry.entryNumber === number).map((entry) => classificationRow(entry, artifactId)),
@@ -451,13 +403,7 @@ function entrySummary(artifactId: string, entry: StartupSourceEntry | NumberedAr
   };
 }
 
-function countsFor(
-  artifactId: string,
-  current: StartupSourceEntry[],
-  archives: NumberedArchiveEntry[],
-  rejected: ArchiveRejection[],
-  returned: number,
-): StartupHistoryCounts {
+function countsFor(artifactId: string, current: StartupSourceEntry[], archives: NumberedArchiveEntry[], rejected: ArchiveRejection[], returned: number): StartupHistoryCounts {
   const currentByNumber = new Map<number, number>();
   const archiveByNumber = new Map<number, number>();
   let unaddressable = 0;
@@ -502,9 +448,7 @@ function sourceRows(current: StartupSourceEntry[], archives: NumberedArchiveEntr
   const rows: JsonObject[] = [];
   for (const entry of current) {
     const number = entry.identity.number;
-    const classification = number === null
-      ? classifyUnaddressable(entry, artifactId)
-      : classifyNumber(artifactId, number, current, archives, rejected);
+    const classification = number === null ? classifyUnaddressable(entry, artifactId) : classifyNumber(artifactId, number, current, archives, rejected);
     rows.push(entrySummary(artifactId, entry, classification));
   }
   for (const entry of archives) {
@@ -512,9 +456,7 @@ function sourceRows(current: StartupSourceEntry[], archives: NumberedArchiveEntr
   }
   for (const item of rejected.filter((candidate) => candidate.path.includes(path.join(`${path.sep}${artifactId}`, "")))) {
     const number = archiveNumber(item, artifactId);
-    const classification = number === null
-      ? classifyUnaddressable(item, artifactId)
-      : classifyNumber(artifactId, number, current, archives, rejected);
+    const classification = number === null ? classifyUnaddressable(item, artifactId) : classifyNumber(artifactId, number, current, archives, rejected);
     rows.push({
       stable_id: number === null ? null : `${artifactId}:${number}`,
       artifact_id: artifactId,
@@ -531,11 +473,7 @@ function sourceRows(current: StartupSourceEntry[], archives: NumberedArchiveEntr
   return rows.sort((left, right) => Number(right.entry_number ?? 0) - Number(left.entry_number ?? 0)).slice(0, 2);
 }
 
-export function startupHistorySummary(
-  projectRoot: string,
-  artifactId: "progress" | "decisions" | "health",
-  sourceRoot: string = resolveSourceRoot(),
-): StartupHistorySummary {
+export function startupHistorySummary(projectRoot: string, artifactId: "progress" | "decisions" | "health", sourceRoot: string = resolveSourceRoot()): StartupHistorySummary {
   const scans = scanLegacyStartupArtifact(projectRoot, artifactId, sourceRoot);
   const currentPath = scans.active.path;
   const scan = {
@@ -543,18 +481,18 @@ export function startupHistorySummary(
     bytes_scanned: scans.active.bytes_scanned + scans.archive.bytes_scanned,
     entries: [...scans.active.entries, ...scans.archive.entries],
   };
-  const discovery = discoverNumberedArchives(projectRoot, { sourceRoot, artifactId, retainRecords: false });
+  const discovery = discoverNumberedArchives(projectRoot, {
+    sourceRoot,
+    artifactId,
+    retainRecords: false,
+  });
   const rejected = discovery.rejected;
   const entries = sourceRows(scan.entries, discovery.entries, rejected, artifactId);
   const counts = countsFor(artifactId, scan.entries, discovery.entries, rejected, entries.length);
   const retrieval: JsonObject = {
     upgrade_preview: fullEntityUpgradePreviewCommand(path.resolve(projectRoot)),
   };
-  const status = !scan.exists && discovery.entries.length === 0 && rejected.length === 0
-    ? "absent"
-    : rejected.length > 0 || (scan.exists && !scans.active.collection_found)
-      ? "degraded"
-      : "available";
+  const status = !scan.exists && discovery.entries.length === 0 && rejected.length === 0 ? "absent" : rejected.length > 0 || (scan.exists && !scans.active.collection_found) ? "degraded" : "available";
   return {
     artifact: artifactId,
     status,
@@ -562,7 +500,11 @@ export function startupHistorySummary(
     entries,
     source: {
       current_projection: { path: currentPath, present: scan.exists, entries: scan.entries.length },
-      archive: { root: discovery.archiveRoot, validated_entries: discovery.entries.length, rejected_count: rejected.length },
+      archive: {
+        root: discovery.archiveRoot,
+        validated_entries: discovery.entries.length,
+        rejected_count: rejected.length,
+      },
       input_scan: {
         current_entries: scan.entries.length,
         current_bytes: scan.bytes_scanned,

@@ -2,19 +2,8 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { glossaryEntryAuthorityPath } from "../registries/glossaryEntryContract.js";
 import { loadExplicitSegmentGrammarContract } from "../registries/explicitSegmentGrammarContract.js";
-import {
-  compareGlossaryUnicodeStrings,
-  stableGlossaryTermIdentity,
-} from "../registries/glossaryTermIdentity.js";
-import {
-  EXPLICIT_GLOSSARY_REASONS,
-  type CandidateBounds,
-  type ExplicitGlossaryCue,
-  type ExplicitGlossaryReason,
-  type ExplicitGlossarySpan,
-  type RawCue,
-  type ValidCue,
-} from "./personalGlossaryExplicitTypes.js";
+import { compareGlossaryUnicodeStrings, stableGlossaryTermIdentity } from "../registries/glossaryTermIdentity.js";
+import { EXPLICIT_GLOSSARY_REASONS, type CandidateBounds, type ExplicitGlossaryCue, type ExplicitGlossaryReason, type ExplicitGlossarySpan, type RawCue, type ValidCue } from "./personalGlossaryExplicitTypes.js";
 import { segmentAndBindExplicitCues } from "./personalGlossaryExplicitSegments.js";
 import { adjacentScopeTexts, contextText } from "./personalGlossaryExplicitScope.js";
 
@@ -30,9 +19,7 @@ const OPEN_TO_CLOSE = new Map<string, string>([
   ["「", "」"],
   ["『", "』"],
 ]);
-const CLOSE_TO_OPEN = new Map<string, string>(
-  [...OPEN_TO_CLOSE.entries()].map(([open, close]) => [close, open]),
-);
+const CLOSE_TO_OPEN = new Map<string, string>([...OPEN_TO_CLOSE.entries()].map(([open, close]) => [close, open]));
 const SENTENCE_TERMINATORS = new Set([".", "!", "?"]);
 const TERM_EDGE_RE = /[\s,;:()[\]{}]/u;
 const LETTER_OR_NUMBER_RE = /[\p{L}\p{N}]/u;
@@ -40,33 +27,22 @@ const ACRONYM_RE = /^[\p{Lu}\p{N}][\p{Lu}\p{N}._-]{1,31}$/u;
 const DEFINITION_LIST_MARKER_RE = /^(?:definition|term)$/iu;
 const DEFINITION_LIST_PREFIX_RE = /^\s*(?:[-*+]\s+)?/u;
 const EXAMPLE_RE = /\b(?:for\s+example|e\.g\.?|example|such\s+as)\b/iu;
-const HYPOTHETICAL_RE =
-  /\b(?:if|when|unless|whenever|suppose|assuming|hypothetically|imagine|would|could|might|may)\b/iu;
+const HYPOTHETICAL_RE = /\b(?:if|when|unless|whenever|suppose|assuming|hypothetically|imagine|would|could|might|may)\b/iu;
 const QUESTION_RE = /\?|^\s*(?:does|do|did|can|could|would|should|what|why|how)\b/iu;
-const INDIRECT_QUESTION_RE =
-  /\b(?:i\s+(?:wonder|ask|want\s+to\s+know)|tell\s+me|whether|what|why|how)\b/iu;
-const FUTURE_RE =
-  /\b(?:will|shall|going\s+to|plan\s+to|intend\s+to|in\s+the\s+future|from\s+now\s+on|later)\b/iu;
-const NEGATION_RE =
-  /\b(?:does\s+not|doesn['’]t|do\s+not|don['’]t|did\s+not|never|isn['’]t|is\s+not)\b/iu;
+const INDIRECT_QUESTION_RE = /\b(?:i\s+(?:wonder|ask|want\s+to\s+know)|tell\s+me|whether|what|why|how)\b/iu;
+const FUTURE_RE = /\b(?:will|shall|going\s+to|plan\s+to|intend\s+to|in\s+the\s+future|from\s+now\s+on|later)\b/iu;
+const NEGATION_RE = /\b(?:does\s+not|doesn['’]t|do\s+not|don['’]t|did\s+not|never|isn['’]t|is\s+not)\b/iu;
 const SARCASM_RE = /(?:\b(?:sarcasm|sarcastically|just\s+kidding|jk)\b|\/s(?:\b|$))/iu;
-const ATTRIBUTION_RE =
-  /(?:\b(?:according\s+to|quoted\s+from|as\s+stated\s+by|the\s+(?:agent|assistant|docs?|documentation)\s+(?:says?|defines?)|[A-Z][\p{L}\p{M}'-]{1,31}\s+(?:says?|defines?|said|wrote|called))\b|^\s*(?!(?:correction|definition|example|note|term|meaning)\b)[\p{L}][\p{L}\p{M}'-]{1,31}\s*:\s*["'“‘`])/iu;
-const RETRACTION_RE =
-  /\b(?:i\s+retract|retract(?:ed|ion)?|withdraw(?:n|al)?|supersed(?:e|ed|es)|no\s+longer|disregard|take\s+back|replace(?:d|ment)?)\b/iu;
+const ATTRIBUTION_RE = /(?:\b(?:according\s+to|quoted\s+from|as\s+stated\s+by|the\s+(?:agent|assistant|docs?|documentation)\s+(?:says?|defines?)|[A-Z][\p{L}\p{M}'-]{1,31}\s+(?:says?|defines?|said|wrote|called))\b|^\s*(?!(?:correction|definition|example|note|term|meaning)\b)[\p{L}][\p{L}\p{M}'-]{1,31}\s*:\s*["'“‘`])/iu;
+const RETRACTION_RE = /\b(?:i\s+retract|retract(?:ed|ion)?|withdraw(?:n|al)?|supersed(?:e|ed|es)|no\s+longer|disregard|take\s+back|replace(?:d|ment)?)\b/iu;
 const CORRECTION_RE = /\b(?:actually|correction|not\s+quite|instead|rather)\b/iu;
-const PROJECT_SCOPE_RE =
-  /\b(?:in|within|for)\s+(?:this|the|our)\s+(?:repo(?:sitory)?|project|codebase)\b|\b(?:repo(?:sitory)?|project|codebase)[ -]only\b|\b(?:project|repo(?:sitory)?|codebase)\s+(?:term|meaning|definition)\b/iu;
-const DIRECT_SCOPE_REFERENCE_RE =
-  /\b(?:this|that|the\s+(?:following|above|below)|following|above|below)\s+(?:term|meaning|definition|usage|entry)\b/iu;
-const PERSONAL_SCOPE_RE =
-  /\b(?:i|we)\s+(?:use|mean|call|define)\b|\bmy\s+(?:term|meaning|definition)\b|\bfor\s+me\b|\bpersonally\b/iu;
+const PROJECT_SCOPE_RE = /\b(?:in|within|for)\s+(?:this|the|our)\s+(?:repo(?:sitory)?|project|codebase)\b|\b(?:repo(?:sitory)?|project|codebase)[ -]only\b|\b(?:project|repo(?:sitory)?|codebase)\s+(?:term|meaning|definition)\b/iu;
+const DIRECT_SCOPE_REFERENCE_RE = /\b(?:this|that|the\s+(?:following|above|below)|following|above|below)\s+(?:term|meaning|definition|usage|entry)\b/iu;
+const PERSONAL_SCOPE_RE = /\b(?:i|we)\s+(?:use|mean|call|define)\b|\bmy\s+(?:term|meaning|definition)\b|\bfor\s+me\b|\bpersonally\b/iu;
 
 export function dataObject(record: JsonObject): Record<string, unknown> {
   const data = record.data;
-  return data !== null && typeof data === "object" && !Array.isArray(data)
-    ? (data as Record<string, unknown>)
-    : {};
+  return data !== null && typeof data === "object" && !Array.isArray(data) ? (data as Record<string, unknown>) : {};
 }
 
 export function compareText(left: string, right: string): number {
@@ -86,11 +62,7 @@ function scalarAt(text: string, index: number): string {
 }
 
 function isApostropheInWord(text: string, index: number): boolean {
-  return (
-    text[index] === "'" &&
-    LETTER_OR_NUMBER_RE.test(scalarAt(text, index - 1)) &&
-    LETTER_OR_NUMBER_RE.test(scalarAt(text, index + 1))
-  );
+  return text[index] === "'" && LETTER_OR_NUMBER_RE.test(scalarAt(text, index - 1)) && LETTER_OR_NUMBER_RE.test(scalarAt(text, index + 1));
 }
 
 function delimitedRanges(text: string): Array<{ start: number; end: number }> {
@@ -101,10 +73,7 @@ function delimitedRanges(text: string): Array<{ start: number; end: number }> {
     if (isApostropheInWord(text, index)) continue;
     const current = stack.at(-1);
     if (current) {
-      if (
-        character === current.close &&
-        !(current.open === current.close && index === current.start)
-      ) {
+      if (character === current.close && !(current.open === current.close && index === current.start)) {
         stack.pop();
         ranges.push({ start: current.start, end: index });
       }
@@ -124,19 +93,12 @@ function insideRange(index: number, ranges: readonly { start: number; end: numbe
   return false;
 }
 
-function sentenceBoundaries(
-  text: string,
-  ranges: readonly { start: number; end: number }[],
-): number[] {
+function sentenceBoundaries(text: string, ranges: readonly { start: number; end: number }[]): number[] {
   const boundaries: number[] = [];
   for (let index = 0; index < text.length; index += 1) {
     const character = text[index]!;
     if (!SENTENCE_TERMINATORS.has(character) || insideRange(index, ranges)) continue;
-    if (
-      character === "." &&
-      ((/[\p{N}]/u.test(text[index - 1] ?? "") && /[\p{N}]/u.test(text[index + 1] ?? "")) ||
-        (text[index + 1] !== "" && !/[\s"'”’)]/u.test(text[index + 1] ?? "")))
-    ) {
+    if (character === "." && ((/[\p{N}]/u.test(text[index - 1] ?? "") && /[\p{N}]/u.test(text[index + 1] ?? "")) || (text[index + 1] !== "" && !/[\s"'”’)]/u.test(text[index + 1] ?? "")))) {
       continue;
     }
     boundaries.push(index + 1);
@@ -181,13 +143,7 @@ function trimMeaning(text: string, start: number, end: number): [number, number]
   return trimWhitespace(text, start, end);
 }
 
-function lastIndexOutsideRanges(
-  text: string,
-  character: string,
-  start: number,
-  end: number,
-  ranges: readonly { start: number; end: number }[],
-): number {
+function lastIndexOutsideRanges(text: string, character: string, start: number, end: number, ranges: readonly { start: number; end: number }[]): number {
   for (let index = end - 1; index >= start; index -= 1) {
     if (text[index] === character && !insideRange(index, ranges)) return index;
   }
@@ -220,13 +176,7 @@ function removeLeadingTermLabel(text: string, start: number, end: number): numbe
   return match ? start + match[0].length : start;
 }
 
-function unquotedTermBefore(
-  text: string,
-  cueStart: number,
-  segmentStart: number,
-  kind: string,
-  ranges: readonly { start: number; end: number }[],
-): [number, number] {
+function unquotedTermBefore(text: string, cueStart: number, segmentStart: number, kind: string, ranges: readonly { start: number; end: number }[]): [number, number] {
   let start = segmentStart;
   const prefixEnd = cueStart;
   const prefix = text.slice(segmentStart, prefixEnd);
@@ -237,35 +187,17 @@ function unquotedTermBefore(
     const use = lastWordIndex(text, "use", segmentStart, prefixEnd);
     if (use >= 0) start = use + 3;
   } else {
-    const directives = [
-      "to clarify",
-      "prefer",
-      "please use",
-      "i use",
-      "use",
-      "actually",
-      "correction",
-      "not quite",
-      "instead",
-      "rather",
-    ];
+    const directives = ["to clarify", "prefer", "please use", "i use", "use", "actually", "correction", "not quite", "instead", "rather"];
     let directiveEnd = -1;
     for (const directive of directives) {
-      const expression = new RegExp(
-        `(?:^|[^\\p{L}\\p{N}_])${directive}(?=$|[^\\p{L}\\p{N}_])`,
-        "giu",
-      );
+      const expression = new RegExp(`(?:^|[^\\p{L}\\p{N}_])${directive}(?=$|[^\\p{L}\\p{N}_])`, "giu");
       for (const match of prefix.matchAll(expression)) {
         const end = segmentStart + (match.index ?? 0) + match[0].length;
         if (end > directiveEnd) directiveEnd = end;
       }
     }
     if (directiveEnd >= 0) start = directiveEnd;
-    const separator = Math.max(
-      lastIndexOutsideRanges(text, ",", start, prefixEnd, ranges),
-      lastIndexOutsideRanges(text, ";", start, prefixEnd, ranges),
-      lastIndexOutsideRanges(text, ":", start, prefixEnd, ranges),
-    );
+    const separator = Math.max(lastIndexOutsideRanges(text, ",", start, prefixEnd, ranges), lastIndexOutsideRanges(text, ";", start, prefixEnd, ranges), lastIndexOutsideRanges(text, ":", start, prefixEnd, ranges));
     if (separator >= start) start = separator + 1;
   }
   start = removeLeadingTermLabel(text, start, prefixEnd);
@@ -288,20 +220,14 @@ function matchingClose(text: string, openIndex: number): number {
   return -1;
 }
 
-function meaningSpan(
-  text: string,
-  cueEnd: number,
-  sentenceEnd: number,
-  ranges: readonly { start: number; end: number }[],
-): [number, number] {
+function meaningSpan(text: string, cueEnd: number, sentenceEnd: number, ranges: readonly { start: number; end: number }[]): [number, number] {
   let start = cueEnd;
   while (start < sentenceEnd && /[\s:,-]/u.test(text[start]!)) start += 1;
   let end = sentenceEnd;
   for (let index = cueEnd; index < sentenceEnd; index += 1) {
     if (text[index] !== "\n" || insideRange(index, ranges)) continue;
     const nextLineStart = index + 1;
-    const nextLineEnd =
-      text.indexOf("\n", nextLineStart) < 0 ? sentenceEnd : text.indexOf("\n", nextLineStart);
+    const nextLineEnd = text.indexOf("\n", nextLineStart) < 0 ? sentenceEnd : text.indexOf("\n", nextLineStart);
     if (looksLikeDefinitionLine(text, nextLineStart, nextLineEnd, ranges)) {
       end = index;
       break;
@@ -319,24 +245,12 @@ function unwrapMeaning(text: string, start: number, end: number): [number, numbe
   return trimWhitespace(text, start + 1, close);
 }
 
-function parseWordCue(
-  text: string,
-  cueStart: number,
-  cueEnd: number,
-  kind: string,
-  boundaries: readonly number[],
-  ranges: readonly { start: number; end: number }[],
-  termEndForParsing = cueStart,
-): RawCue {
+function parseWordCue(text: string, cueStart: number, cueEnd: number, kind: string, boundaries: readonly number[], ranges: readonly { start: number; end: number }[], termEndForParsing = cueStart): RawCue {
   const sentenceStart = previousBoundary(boundaries, cueStart);
   const sentenceBoundary = nextBoundary(text, boundaries, cueStart);
   const term = delimitedTermBefore(text, termEndForParsing, sentenceStart);
-  const [termStart, termEnd] =
-    term ?? unquotedTermBefore(text, termEndForParsing, sentenceStart, kind, ranges);
-  const [meaningStart, meaningEnd] = unwrapMeaning(
-    text,
-    ...meaningSpan(text, cueEnd, sentenceBoundary, ranges),
-  );
+  const [termStart, termEnd] = term ?? unquotedTermBefore(text, termEndForParsing, sentenceStart, kind, ranges);
+  const [meaningStart, meaningEnd] = unwrapMeaning(text, ...meaningSpan(text, cueEnd, sentenceBoundary, ranges));
   return {
     kind,
     termStart,
@@ -348,11 +262,7 @@ function parseWordCue(
   };
 }
 
-function wordCues(
-  text: string,
-  boundaries: readonly number[],
-  ranges: readonly { start: number; end: number }[],
-): RawCue[] {
+function wordCues(text: string, boundaries: readonly number[], ranges: readonly { start: number; end: number }[]): RawCue[] {
   const patterns: Array<{ kind: string; expression: RegExp }> = [
     { kind: "means", expression: /\bmeans\b/giu },
     { kind: "refers_to", expression: /\brefers\s+to\b/giu },
@@ -369,9 +279,7 @@ function wordCues(
         const sentenceStart = previousBoundary(boundaries, start);
         if (lastWordIndex(text, "by", sentenceStart, start) < 0) continue;
       }
-      cues.push(
-        parseWordCue(text, start, start + match[0].length, pattern.kind, boundaries, ranges),
-      );
+      cues.push(parseWordCue(text, start, start + match[0].length, pattern.kind, boundaries, ranges));
     }
   }
   for (const match of text.matchAll(/\bfor\b/giu)) {
@@ -388,28 +296,11 @@ function wordCues(
     const sentenceEnd = nextBoundary(text, boundaries, start);
     const prefix = text.slice(sentenceStart, start);
     const sentence = text.slice(sentenceStart, sentenceEnd);
-    if (
-      lastWordIndex(text, "by", sentenceStart, start) >= 0 ||
-      (!NEGATION_RE.test(prefix) &&
-        !QUESTION_RE.test(sentence) &&
-        !/^\s*(?:does|do|did|can|could|would|should|when|may)\b/iu.test(prefix))
-    ) {
+    if (lastWordIndex(text, "by", sentenceStart, start) >= 0 || (!NEGATION_RE.test(prefix) && !QUESTION_RE.test(sentence) && !/^\s*(?:does|do|did|can|could|would|should|when|may)\b/iu.test(prefix))) {
       continue;
     }
-    const negation = /(?:does\s+not|doesn['’]t|do\s+not|don['’]t|did\s+not|never)\s*$/iu.exec(
-      prefix,
-    );
-    cues.push(
-      parseWordCue(
-        text,
-        start,
-        start + match[0].length,
-        "special_mean",
-        boundaries,
-        ranges,
-        negation ? sentenceStart + negation.index : start,
-      ),
-    );
+    const negation = /(?:does\s+not|doesn['’]t|do\s+not|don['’]t|did\s+not|never)\s*$/iu.exec(prefix);
+    cues.push(parseWordCue(text, start, start + match[0].length, "special_mean", boundaries, ranges, negation ? sentenceStart + negation.index : start));
   }
   return cues;
 }
@@ -425,11 +316,7 @@ function lineRanges(text: string): Array<{ start: number; end: number }> {
   return lines;
 }
 
-function commentStart(
-  text: string,
-  line: { start: number; end: number },
-  ranges: readonly { start: number; end: number }[],
-): number {
+function commentStart(text: string, line: { start: number; end: number }, ranges: readonly { start: number; end: number }[]): number {
   const firstNonWhitespace = text.slice(line.start, line.end).search(/\S/u);
   if (firstNonWhitespace >= 0) {
     const index = line.start + firstNonWhitespace;
@@ -442,24 +329,14 @@ function commentStart(
   return -1;
 }
 
-function segmentFloorBefore(
-  text: string,
-  end: number,
-  floor: number,
-  ranges: readonly { start: number; end: number }[],
-): number {
+function segmentFloorBefore(text: string, end: number, floor: number, ranges: readonly { start: number; end: number }[]): number {
   for (let index = end - 1; index >= floor; index -= 1) {
     if (!insideRange(index, ranges) && /[;,.!?]/u.test(text[index]!)) return index + 1;
   }
   return floor;
 }
 
-function colonOutsideRanges(
-  text: string,
-  start: number,
-  end: number,
-  ranges: readonly { start: number; end: number }[],
-): number {
+function colonOutsideRanges(text: string, start: number, end: number, ranges: readonly { start: number; end: number }[]): number {
   for (let index = start; index < end; index += 1) {
     if (text[index] === ":" && !insideRange(index, ranges)) return index;
   }
@@ -471,9 +348,7 @@ function acronymInitials(value: string): string {
   for (const word of value.trim().split(/\s+/u).filter(Boolean)) {
     const letters = [...word].filter((character) => LETTER_OR_NUMBER_RE.test(character));
     if (letters.length === 0) continue;
-    const capitals = letters.filter(
-      (character) => character.toUpperCase() === character && character.toLowerCase() !== character,
-    );
+    const capitals = letters.filter((character) => character.toUpperCase() === character && character.toLowerCase() !== character);
     if (capitals.length > 1) initials.push(...capitals);
     else initials.push(letters[0]!);
   }
@@ -483,39 +358,16 @@ function acronymInitials(value: string): string {
 function acronymExpansionMatches(term: string, meaning: string): boolean {
   if (!ACRONYM_RE.test(term) || Buffer.byteLength(term, "utf8") > 32) return false;
   const words = meaning.trim().split(/\s+/u).filter(Boolean);
-  return (
-    words.length > 0 &&
-    words.length <= 32 &&
-    acronymInitials(meaning).toLowerCase() === term.toLowerCase()
-  );
+  return words.length > 0 && words.length <= 32 && acronymInitials(meaning).toLowerCase() === term.toLowerCase();
 }
 
-function safeDefinitionListTerm(
-  text: string,
-  lineStart: number,
-  termFloor: number,
-  colon: number,
-  termStart: number,
-  termEnd: number,
-  meaningStart: number,
-  meaningEnd: number,
-  marked: boolean,
-): boolean {
+function safeDefinitionListTerm(text: string, lineStart: number, termFloor: number, colon: number, termStart: number, termEnd: number, meaningStart: number, meaningEnd: number, marked: boolean): boolean {
   const term = text.slice(termStart, termEnd);
   const meaning = text.slice(meaningStart, meaningEnd);
   const delimited = delimitedTermBefore(text, colon, termFloor);
-  const exactlyDelimited =
-    delimited?.[0] === termStart &&
-    delimited[1] === termEnd &&
-    text.slice(termFloor, Math.max(termFloor, termStart - 1)).trim().length === 0 &&
-    text.slice(termEnd + 1, colon).trim().length === 0;
+  const exactlyDelimited = delimited?.[0] === termStart && delimited[1] === termEnd && text.slice(termFloor, Math.max(termFloor, termStart - 1)).trim().length === 0 && text.slice(termEnd + 1, colon).trim().length === 0;
   if (text.slice(lineStart, termStart).includes("#")) return false;
-  if (
-    /[/\\=@#[\]{}]/u.test(term) ||
-    /:\/\//u.test(text.slice(lineStart, meaningEnd)) ||
-    /^(?:https?|ftp):\/\//iu.test(meaning.trim())
-  )
-    return false;
+  if (/[/\\=@#[\]{}]/u.test(term) || /:\/\//u.test(text.slice(lineStart, meaningEnd)) || /^(?:https?|ftp):\/\//iu.test(meaning.trim())) return false;
   if (/^\d{1,2}:\d{2}(?::\d{2})?$/u.test(`${term}:${meaning}`.split(/\s+/u)[0]!)) return false;
   if (marked) return LETTER_OR_NUMBER_RE.test(term);
   if (exactlyDelimited) return true;
@@ -523,12 +375,7 @@ function safeDefinitionListTerm(
   return false;
 }
 
-function looksLikeDefinitionLine(
-  text: string,
-  start: number,
-  end: number,
-  ranges: readonly { start: number; end: number }[],
-): boolean {
+function looksLikeDefinitionLine(text: string, start: number, end: number, ranges: readonly { start: number; end: number }[]): boolean {
   const colon = colonOutsideRanges(text, start, end, ranges);
   if (colon < 0) return false;
   const [termStart, termEnd] = trimTerm(text, start, colon);
@@ -539,11 +386,7 @@ function looksLikeDefinitionLine(
   return term.length > 0;
 }
 
-function listCues(
-  text: string,
-  ranges: readonly { start: number; end: number }[],
-  boundaries: readonly number[],
-): RawCue[] {
+function listCues(text: string, ranges: readonly { start: number; end: number }[], boundaries: readonly number[]): RawCue[] {
   const cues: RawCue[] = [];
   const lines = lineRanges(text);
   for (const line of lines) {
@@ -567,17 +410,7 @@ function listCues(
         if (termColon === undefined) continue;
         const [termStart, termEnd] = trimTerm(text, firstColon + 1, termColon);
         const [meaningStart, meaningEnd] = trimMeaning(text, termColon + 1, scanEnd);
-        const safe = safeDefinitionListTerm(
-          text,
-          line.start,
-          firstColon + 1,
-          termColon,
-          termStart,
-          termEnd,
-          meaningStart,
-          meaningEnd,
-          true,
-        );
+        const safe = safeDefinitionListTerm(text, line.start, firstColon + 1, termColon, termStart, termEnd, meaningStart, meaningEnd, true);
         cues.push({
           kind: "definition_list",
           termStart,
@@ -596,17 +429,7 @@ function listCues(
       const term = text.slice(termStart, termEnd);
       if (!delimited && !ACRONYM_RE.test(term)) continue;
       const [meaningStart, meaningEnd] = trimMeaning(text, firstColon + 1, scanEnd);
-      const safe = safeDefinitionListTerm(
-        text,
-        line.start,
-        segmentFloor,
-        firstColon,
-        termStart,
-        termEnd,
-        meaningStart,
-        meaningEnd,
-        false,
-      );
+      const safe = safeDefinitionListTerm(text, line.start, segmentFloor, firstColon, termStart, termEnd, meaningStart, meaningEnd, false);
       cues.push({
         kind: "definition_list",
         termStart,
@@ -622,20 +445,10 @@ function listCues(
   return cues;
 }
 
-function phraseBefore(
-  text: string,
-  start: number,
-  ranges: readonly { start: number; end: number }[],
-): [number, number] {
+function phraseBefore(text: string, start: number, ranges: readonly { start: number; end: number }[]): [number, number] {
   let floor = 0;
   for (let index = start - 1; index >= 0; index -= 1) {
-    if (
-      text[index] === "\n" ||
-      text[index] === "." ||
-      text[index] === "!" ||
-      text[index] === "?" ||
-      text[index] === ","
-    ) {
+    if (text[index] === "\n" || text[index] === "." || text[index] === "!" || text[index] === "?" || text[index] === ",") {
       if (!insideRange(index, ranges)) {
         floor = index + 1;
         break;
@@ -645,11 +458,7 @@ function phraseBefore(
   return trimTerm(text, floor, start);
 }
 
-function acronymCues(
-  text: string,
-  ranges: readonly { start: number; end: number }[],
-  boundaries: readonly number[],
-): RawCue[] {
+function acronymCues(text: string, ranges: readonly { start: number; end: number }[], boundaries: readonly number[]): RawCue[] {
   const cues: RawCue[] = [];
   for (let index = 0; index < text.length; index += 1) {
     if (text[index] !== "(" || insideRange(index, ranges)) continue;
@@ -695,14 +504,8 @@ function rawCueOrder(left: RawCue, right: RawCue, text: string): number {
   return (
     left.termStart - right.termStart ||
     left.meaningStart - right.meaningStart ||
-    compareText(
-      text.slice(left.termStart, left.termEnd),
-      text.slice(right.termStart, right.termEnd),
-    ) ||
-    compareText(
-      text.slice(left.meaningStart, left.meaningEnd),
-      text.slice(right.meaningStart, right.meaningEnd),
-    ) ||
+    compareText(text.slice(left.termStart, left.termEnd), text.slice(right.termStart, right.termEnd)) ||
+    compareText(text.slice(left.meaningStart, left.meaningEnd), text.slice(right.meaningStart, right.meaningEnd)) ||
     compareText(left.kind, right.kind)
   );
 }
@@ -711,11 +514,7 @@ export function rawCues(text: string): RawCue[] {
   const ranges = delimitedRanges(text);
   const boundaries = sentenceBoundaries(text, ranges);
   const grammar = loadExplicitSegmentGrammarContract();
-  const initial = [
-    ...wordCues(text, boundaries, ranges),
-    ...listCues(text, ranges, boundaries),
-    ...acronymCues(text, ranges, boundaries),
-  ];
+  const initial = [...wordCues(text, boundaries, ranges), ...listCues(text, ranges, boundaries), ...acronymCues(text, ranges, boundaries)];
   const unique = new Map<string, RawCue>();
   for (const cue of initial) unique.set(rawCueKey(cue), cue);
   return segmentAndBindExplicitCues(text, [...unique.values()], ranges, grammar, {
@@ -740,59 +539,25 @@ function cueValue(text: string, cue: RawCue): { term: string; meaning: string } 
 function termOccurs(text: string, term: string): boolean {
   const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
   if (!escaped) return false;
-  return new RegExp(
-    `(?<![\\p{ID_Continue}$\\u200C\\u200D])${escaped}(?![\\p{ID_Continue}$\\u200C\\u200D])`,
-    "iu",
-  ).test(text);
+  return new RegExp(`(?<![\\p{ID_Continue}$\\u200C\\u200D])${escaped}(?![\\p{ID_Continue}$\\u200C\\u200D])`, "iu").test(text);
 }
 
-function scopeReason(
-  text: string,
-  cue: RawCue,
-  record?: JsonObject,
-): ExplicitGlossaryReason | null {
+function scopeReason(text: string, cue: RawCue, record?: JsonObject): ExplicitGlossaryReason | null {
   const dataScope = String(dataObject(record ?? {}).scope ?? "").toLowerCase();
   const sentences = adjacentScopeTexts(text, cue);
   const term = text.slice(cue.termStart, cue.termEnd).trim();
-  const project =
-    dataScope === "project" ||
-    dataScope === "project_only" ||
-    sentences.some(
-      (sentence, index) =>
-        PROJECT_SCOPE_RE.test(sentence) &&
-        (index === 1 ||
-          termOccurs(sentence, term) ||
-          DIRECT_SCOPE_REFERENCE_RE.test(sentence) ||
-          /:\s*$/u.test(sentence)),
-    );
-  const personal = sentences.some(
-    (sentence) => PERSONAL_SCOPE_RE.test(sentence) && termOccurs(sentence, term),
-  );
+  const project = dataScope === "project" || dataScope === "project_only" || sentences.some((sentence, index) => PROJECT_SCOPE_RE.test(sentence) && (index === 1 || termOccurs(sentence, term) || DIRECT_SCOPE_REFERENCE_RE.test(sentence) || /:\s*$/u.test(sentence)));
+  const personal = sentences.some((sentence) => PERSONAL_SCOPE_RE.test(sentence) && termOccurs(sentence, term));
   if (project && personal) return EXPLICIT_GLOSSARY_REASONS.uncertainScope;
   if (project) return EXPLICIT_GLOSSARY_REASONS.projectOnlyScope;
   return null;
 }
 
-function pureCueReason(
-  text: string,
-  cue: RawCue,
-  record?: JsonObject,
-): ExplicitGlossaryReason | null {
+function pureCueReason(text: string, cue: RawCue, record?: JsonObject): ExplicitGlossaryReason | null {
   const value = cueValue(text, cue);
   if (!value.term.trim()) return EXPLICIT_GLOSSARY_REASONS.emptyTerm;
   if (!value.meaning.trim()) return EXPLICIT_GLOSSARY_REASONS.emptyMeaning;
-  if (
-    (value.term.startsWith('"') ||
-      value.term.startsWith("'") ||
-      value.term.startsWith("`") ||
-      value.term.startsWith("“") ||
-      value.term.startsWith("‘")) &&
-    !value.term.endsWith('"') &&
-    !value.term.endsWith("'") &&
-    !value.term.endsWith("`") &&
-    !value.term.endsWith("”") &&
-    !value.term.endsWith("’")
-  ) {
+  if ((value.term.startsWith('"') || value.term.startsWith("'") || value.term.startsWith("`") || value.term.startsWith("“") || value.term.startsWith("‘")) && !value.term.endsWith('"') && !value.term.endsWith("'") && !value.term.endsWith("`") && !value.term.endsWith("”") && !value.term.endsWith("’")) {
     return EXPLICIT_GLOSSARY_REASONS.malformedSpan;
   }
   const sentence = contextText(text, cue);
@@ -832,12 +597,7 @@ export function candidateBounds(): CandidateBounds {
   };
 }
 
-export function validCue(
-  text: string,
-  cue: RawCue,
-  bounds: CandidateBounds,
-  record?: JsonObject,
-): { cue: ValidCue | null; reason: ExplicitGlossaryReason | null } {
+export function validCue(text: string, cue: RawCue, bounds: CandidateBounds, record?: JsonObject): { cue: ValidCue | null; reason: ExplicitGlossaryReason | null } {
   if (cue.rejectionReason) return { cue: null, reason: cue.rejectionReason };
   const reason = pureCueReason(text, cue, record);
   if (reason) return { cue: null, reason };
@@ -847,10 +607,8 @@ export function validCue(
   const meaning = text.slice(meaningStart, meaningEnd);
   if (!term) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.emptyTerm };
   if (!meaning) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.emptyMeaning };
-  if (!LETTER_OR_NUMBER_RE.test(term))
-    return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
-  if (!LETTER_OR_NUMBER_RE.test(meaning))
-    return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
+  if (!LETTER_OR_NUMBER_RE.test(term)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
+  if (!LETTER_OR_NUMBER_RE.test(meaning)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
   if (cue.kind === "stands_for" && !acronymExpansionMatches(term, meaning)) {
     return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.unsafeSyntax };
   }
@@ -866,31 +624,15 @@ export function validCue(
   };
 }
 
-export function retractionInvalidatesCue(
-  text: string,
-  cue: ValidCue,
-  otherCues: readonly RawCue[],
-): boolean {
-  const nextSameTerm = otherCues.find(
-    (other) =>
-      other.termStart > cue.termStart &&
-      other.termEnd > other.termStart &&
-      stableGlossaryTermIdentity(text.slice(other.termStart, other.termEnd).trim()) ===
-        stableGlossaryTermIdentity(cue.term),
-  );
-  const limit = nextSameTerm
-    ? nextSameTerm.termStart
-    : Math.min(text.length, cue.sentenceEnd + 512);
+export function retractionInvalidatesCue(text: string, cue: ValidCue, otherCues: readonly RawCue[]): boolean {
+  const nextSameTerm = otherCues.find((other) => other.termStart > cue.termStart && other.termEnd > other.termStart && stableGlossaryTermIdentity(text.slice(other.termStart, other.termEnd).trim()) === stableGlossaryTermIdentity(cue.term));
+  const limit = nextSameTerm ? nextSameTerm.termStart : Math.min(text.length, cue.sentenceEnd + 512);
   const suffix = text.slice(cue.meaningEnd, limit);
   const marker = RETRACTION_RE.exec(suffix);
   if (marker) {
     const after = suffix.slice(marker.index);
     const sameSentence = marker.index < Math.max(0, cue.sentenceEnd - cue.meaningEnd);
-    if (
-      termOccurs(after, cue.term) ||
-      /\b(?:that|the\s+(?:previous|earlier|above))\s+(?:definition|meaning|term)\b/iu.test(after) ||
-      (sameSentence && /\b(?:it|that)\b\s*(?:$|[.!?,;:])/iu.test(after))
-    ) {
+    if (termOccurs(after, cue.term) || /\b(?:that|the\s+(?:previous|earlier|above))\s+(?:definition|meaning|term)\b/iu.test(after) || (sameSentence && /\b(?:it|that)\b\s*(?:$|[.!?,;:])/iu.test(after))) {
       return true;
     }
   }
@@ -934,23 +676,13 @@ export function discoverExplicitGlossaryCues(text: string): ExplicitGlossaryCue[
   }
   const unique = new Map<string, ExplicitGlossaryCue>();
   for (const cue of output) {
-    unique.set(
-      `${stableGlossaryTermIdentity(cue.term)}:${cue.meaning}:${cue.term_span.start}:${cue.meaning_span.start}`,
-      cue,
-    );
+    unique.set(`${stableGlossaryTermIdentity(cue.term)}:${cue.meaning}:${cue.term_span.start}:${cue.meaning_span.start}`, cue);
   }
-  return [...unique.values()].sort(
-    (left, right) =>
-      compareText(left.term, right.term) ||
-      compareText(left.meaning, right.meaning) ||
-      left.term_span.start - right.term_span.start,
-  );
+  return [...unique.values()].sort((left, right) => compareText(left.term, right.term) || compareText(left.meaning, right.meaning) || left.term_span.start - right.term_span.start);
 }
 
 /** Backwards-compatible narrow classifier, now backed by the deterministic cue parser. */
-export function classifyExplicitGlossaryLanguage(
-  text: string,
-): { term: string; meaning: string } | null {
+export function classifyExplicitGlossaryLanguage(text: string): { term: string; meaning: string } | null {
   const cues = discoverExplicitGlossaryCues(text);
   if (cues.length === 0) return null;
   const identities = new Map<string, Set<string>>();
@@ -965,8 +697,4 @@ export function classifyExplicitGlossaryLanguage(
   return { term: first.term, meaning: first.meaning };
 }
 
-export {
-  mineExplicitGlossaryCandidates,
-  mineExplicitGlossaryEvidence,
-  minePersonalExplicitGlossaryCandidates,
-} from "./personalGlossaryExplicitMining.js";
+export { mineExplicitGlossaryCandidates, mineExplicitGlossaryEvidence, minePersonalExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";

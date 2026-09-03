@@ -22,27 +22,15 @@ function managedApp(appHome: string, marker: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\nsub.add_parser('hej')\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: marker }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: marker }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 function npxBundle(root: string, version: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(root, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version }] }),
-  );
-  fs.writeFileSync(
-    path.join(root, NPX_BUNDLE_SENTINEL),
-    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }),
-  );
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version }] }));
+  fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }));
   fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
 }
 

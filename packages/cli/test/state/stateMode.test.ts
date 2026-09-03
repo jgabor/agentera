@@ -147,11 +147,7 @@ describe("state mode marker boundary", () => {
     let replaced = false;
 
     vi.spyOn(fs, "readFileSync").mockImplementation((...args) => {
-      if (
-        !replaced
-        && typeof args[0] === "string"
-        && args[0].endsWith("references/artifacts/state-storage-authority.yaml")
-      ) {
+      if (!replaced && typeof args[0] === "string" && args[0].endsWith("references/artifacts/state-storage-authority.yaml")) {
         fs.renameSync(root, held);
         fs.renameSync(replacement, root);
         replaced = true;

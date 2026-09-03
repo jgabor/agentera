@@ -3,11 +3,7 @@ import { createHash } from "node:crypto";
 
 import { loadProfileDecayParameters } from "../capabilities/profile/instructions.js";
 import { writeFileAtomic } from "../core/atomicWriter.js";
-import {
-  GlossaryEntryBoundError,
-  validateGlossaryEntry,
-  type GlossaryAdmissionContext,
-} from "../registries/glossaryEntryContract.js";
+import { GlossaryEntryBoundError, validateGlossaryEntry, type GlossaryAdmissionContext } from "../registries/glossaryEntryContract.js";
 import { unicodeCaselessExact } from "../registries/glossaryTermIdentity.js";
 
 const START = "<!-- agentera:personal-glossary:start -->";
@@ -36,10 +32,7 @@ export interface PersonalGlossaryEntry {
   confidence: number;
   permanence: Permanence;
   temporal: { observed_at: string; last_confirmed_at: string };
-  provenance:
-    | { kind: "personal_explicit_definition"; evidence: ExplicitEvidence[] }
-    | { kind: "personal_inferred_usage"; evidence: InferredEvidence[] }
-    | { kind: "personal_inferred_conversation"; evidence: ConversationEvidence[] };
+  provenance: { kind: "personal_explicit_definition"; evidence: ExplicitEvidence[] } | { kind: "personal_inferred_usage"; evidence: InferredEvidence[] } | { kind: "personal_inferred_conversation"; evidence: ConversationEvidence[] };
 }
 
 interface PersonalGlossaryDocument {
@@ -143,7 +136,14 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
   }
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("PROFILE.md Glossary section document is malformed");
   const document = value as PersonalGlossaryDocument;
-  if (JSON.stringify(Object.keys(document)) !== JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries"]) || document.schema_version !== SCHEMA_VERSION || !Array.isArray(document.entries) || !document.confidence_basis || typeof document.confidence_basis !== "object" || Array.isArray(document.confidence_basis)) {
+  if (
+    JSON.stringify(Object.keys(document)) !== JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries"]) ||
+    document.schema_version !== SCHEMA_VERSION ||
+    !Array.isArray(document.entries) ||
+    !document.confidence_basis ||
+    typeof document.confidence_basis !== "object" ||
+    Array.isArray(document.confidence_basis)
+  ) {
     throw new Error("PROFILE.md Glossary section document is malformed");
   }
   if (document.entries.length > maxEntries) throw new GlossaryEntryBoundError("personal glossary exceeds the consumer entry bound");
@@ -177,9 +177,7 @@ export function personalGlossaryConsumerEntries(profile: string, maxEntries: num
 /** Return profile grounding with the validated owned glossary range excluded byte-for-byte. */
 export function personalProfileGrounding(profile: string): string {
   const section = parseSection(profile);
-  return section.document === null
-    ? profile
-    : `${profile.slice(0, section.start)}${profile.slice(section.end)}`;
+  return section.document === null ? profile : `${profile.slice(0, section.start)}${profile.slice(section.end)}`;
 }
 
 function orderedEntry(entry: PersonalGlossaryEntry): PersonalGlossaryEntry {
@@ -266,11 +264,14 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
 
   merged.sort((left, right) => compareText(left.term, right.term));
   const orderedBasis = Object.fromEntries(merged.map((entry) => [entry.term, confidenceBasis.get(entry.term)!]));
-  const document: PersonalGlossaryDocument = { schema_version: SCHEMA_VERSION, as_of: input.asOf, confidence_basis: orderedBasis, entries: merged };
+  const document: PersonalGlossaryDocument = {
+    schema_version: SCHEMA_VERSION,
+    as_of: input.asOf,
+    confidence_basis: orderedBasis,
+    entries: merged,
+  };
   const rendered = render(document);
-  const candidate = section.document
-    ? `${original.slice(0, section.start)}${rendered}${original.slice(section.end)}`
-    : `${original}${original.endsWith("\n") ? "\n" : "\n\n"}${rendered}\n`;
+  const candidate = section.document ? `${original.slice(0, section.start)}${rendered}${original.slice(section.end)}` : `${original}${original.endsWith("\n") ? "\n" : "\n\n"}${rendered}\n`;
   const changed = candidate !== original;
   if (changed && !input.dryRun) {
     writeFileAtomic(input.profilePath, candidate, "utf8", { preserveTargetMode: true });

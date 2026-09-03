@@ -14,31 +14,7 @@ import { queryDocs } from "./docs.js";
 import { queryObjective } from "./objective.js";
 import { queryExperiments } from "./experiments.js";
 import { queryTodo, normalizeSeverity } from "./todo.js";
-import {
-  queryDecisions,
-  decisionContextEntry,
-  decisionSatisfactionContext,
-  decisionSourceContract,
-  extractDecisionEntries,
-  hydrateDecisionEntries,
-  displayFields,
-} from "./decisions.js";
+import { queryDecisions, decisionContextEntry, decisionSatisfactionContext, decisionSourceContract, extractDecisionEntries, hydrateDecisionEntries, displayFields } from "./decisions.js";
 
 export { StateArgs, Io };
-export {
-  queryProgress,
-  queryPlan,
-  queryHealth,
-  queryDocs,
-  queryObjective,
-  queryExperiments,
-  queryTodo,
-  queryDecisions,
-  normalizeSeverity,
-  decisionContextEntry,
-  decisionSatisfactionContext,
-  decisionSourceContract,
-  extractDecisionEntries,
-  hydrateDecisionEntries,
-  displayFields,
-};
+export { queryProgress, queryPlan, queryHealth, queryDocs, queryObjective, queryExperiments, queryTodo, queryDecisions, normalizeSeverity, decisionContextEntry, decisionSatisfactionContext, decisionSourceContract, extractDecisionEntries, hydrateDecisionEntries, displayFields };

@@ -87,9 +87,7 @@ function rejectUnsafeArtifactPath(p: string, artifactId: string): void {
 function projectPath(projectRoot: string, artifactPath: string, artifactId: string): string {
   rejectUnsafeArtifactPath(artifactPath, artifactId);
   const resolvedProject = resolvePath(projectRoot);
-  const resolved = path.isAbsolute(artifactPath)
-    ? resolvePath(artifactPath)
-    : resolvePath(path.join(resolvedProject, artifactPath));
+  const resolved = path.isAbsolute(artifactPath) ? resolvePath(artifactPath) : resolvePath(path.join(resolvedProject, artifactPath));
   const rel = path.relative(resolvedProject, resolved);
   if (rel !== "" && (rel.startsWith("..") || path.isAbsolute(rel))) {
     throw new Error(`artifact '${artifactId}' path escapes the project boundary`);
@@ -108,18 +106,14 @@ function readSchemaMeta(file: string): Record<string, unknown> | null {
 }
 
 function warnMalformedSchemaMeta(name: string): void {
-  process.stderr.write(
-    `warning: artifact schema ${name} is missing meta; expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
-  );
+  process.stderr.write(`warning: artifact schema ${name} is missing meta; expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`);
 }
 
 function warnSchemaVersionMismatch(meta: Record<string, unknown>, name: string): void {
   const version = String(meta.version ?? "").trim();
   if (!version || version !== EXPECTED_ARTIFACT_SCHEMA_VERSION) {
     const reported = version || "(missing)";
-    process.stderr.write(
-      `warning: artifact schema ${name} version ${reported} does not match expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`,
-    );
+    process.stderr.write(`warning: artifact schema ${name} version ${reported} does not match expected v3 schema version ${EXPECTED_ARTIFACT_SCHEMA_VERSION}\n`);
   }
 }
 
@@ -162,10 +156,7 @@ function schemaMetas(dir: string): Map<string, Record<string, unknown>> {
  * schemas in the same directory stay silent so callers resolving a single
  * identity (e.g. `profile`) don't fan out noise across the required-identity set.
  */
-function loadSchemaMetaForArtifact(
-  dir: string,
-  artifactId: string,
-): Record<string, unknown> | null {
+function loadSchemaMetaForArtifact(dir: string, artifactId: string): Record<string, unknown> | null {
   for (const name of listSchemaFiles(dir)) {
     let meta: Record<string, unknown> | null;
     try {
@@ -181,10 +172,7 @@ function loadSchemaMetaForArtifact(
   return null;
 }
 
-function findRequiredIdentity(
-  model: Record<string, unknown>,
-  artifactId: string,
-): { scope: string; identity: Record<string, unknown> } | null {
+function findRequiredIdentity(model: Record<string, unknown>, artifactId: string): { scope: string; identity: Record<string, unknown> } | null {
   const identities = (model.required_artifact_identities ?? {}) as Record<string, unknown>;
   for (const [scope, identityList] of Object.entries(identities)) {
     if (!Array.isArray(identityList)) continue;
@@ -199,10 +187,7 @@ function findRequiredIdentity(
   return null;
 }
 
-function findSpecialCase(
-  model: Record<string, unknown>,
-  artifactId: string,
-): Record<string, unknown> | null {
+function findSpecialCase(model: Record<string, unknown>, artifactId: string): Record<string, unknown> | null {
   const specialCases = (model.explicit_special_cases ?? []) as unknown[];
   for (const special of specialCases) {
     if (!special || typeof special !== "object" || Array.isArray(special)) continue;
@@ -214,11 +199,7 @@ function findSpecialCase(
   return null;
 }
 
-function buildRequiredRecord(
-  scope: string,
-  identity: Record<string, unknown>,
-  meta: Record<string, unknown>,
-): ArtifactRecord {
+function buildRequiredRecord(scope: string, identity: Record<string, unknown>, meta: Record<string, unknown>): ArtifactRecord {
   const template = identity.path_template;
   return {
     artifactId: String(identity.artifact_id ?? "").trim(),
@@ -228,10 +209,7 @@ function buildRequiredRecord(
     consumers: asSet(meta.consumers),
     artifactType: String(meta.artifact_type ?? "").trim(),
     scope: String(scope),
-    pathTemplate:
-      template && typeof template === "object" && !Array.isArray(template)
-        ? (template as Record<string, unknown>)
-        : null,
+    pathTemplate: template && typeof template === "object" && !Array.isArray(template) ? (template as Record<string, unknown>) : null,
     docsYamlCanOverridePath: true,
     implementationStatus: String(meta.implementation_status ?? "implemented").trim(),
   };
@@ -247,19 +225,13 @@ function buildSpecialCaseRecord(sp: Record<string, unknown>): ArtifactRecord {
     consumers: asSet(sp.consumers),
     artifactType: String(sp.artifact_type ?? "").trim(),
     scope: String(sp.scope ?? "").trim(),
-    pathTemplate:
-      template && typeof template === "object" && !Array.isArray(template)
-        ? (template as Record<string, unknown>)
-        : null,
+    pathTemplate: template && typeof template === "object" && !Array.isArray(template) ? (template as Record<string, unknown>) : null,
     docsYamlCanOverridePath: Boolean(sp.docs_yaml_can_override_path),
     implementationStatus: String(sp.implementation_status ?? "implemented").trim(),
   };
 }
 
-export function loadArtifactRegistry(
-  artifactSchemasDirPath: string = artifactSchemasDir(),
-  registryModelPathArg: string = registryModelPath(),
-): Map<string, ArtifactRecord> {
+export function loadArtifactRegistry(artifactSchemasDirPath: string = artifactSchemasDir(), registryModelPathArg: string = registryModelPath()): Map<string, ArtifactRecord> {
   const model = loadYaml(registryModelPathArg);
   const metas = schemaMetas(artifactSchemasDirPath);
   const records = new Map<string, ArtifactRecord>();
@@ -280,9 +252,7 @@ export function loadArtifactRegistry(
       }
       const meta = metas.get(artifactId);
       if (!meta) {
-        process.stderr.write(
-          `warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`,
-        );
+        process.stderr.write(`warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`);
         continue;
       }
       records.set(artifactId, buildRequiredRecord(scope, id, meta));
@@ -313,11 +283,7 @@ export function loadArtifactRegistry(
  * identity still warns and returns `undefined` when its matching schema file is
  * missing from the schemas directory.
  */
-export function loadArtifactRecord(
-  artifactId: string,
-  artifactSchemasDirPath: string = artifactSchemasDir(),
-  registryModelPathArg: string = registryModelPath(),
-): ArtifactRecord | undefined {
+export function loadArtifactRecord(artifactId: string, artifactSchemasDirPath: string = artifactSchemasDir(), registryModelPathArg: string = registryModelPath()): ArtifactRecord | undefined {
   const model = loadYaml(registryModelPathArg);
   const specialCase = findSpecialCase(model, artifactId);
   if (specialCase) {
@@ -329,9 +295,7 @@ export function loadArtifactRecord(
   }
   const meta = loadSchemaMetaForArtifact(artifactSchemasDirPath, artifactId);
   if (!meta) {
-    process.stderr.write(
-      `warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`,
-    );
+    process.stderr.write(`warning: required artifact identity '${artifactId}' has no matching schema file in ${artifactSchemasDirPath}\n`);
     return undefined;
   }
   return buildRequiredRecord(required.scope, required.identity, meta);
@@ -374,9 +338,7 @@ export function loadDocsPathOverrides(projectRoot: string, strict = false): Reco
     bytes = fs.readFileSync(docsPath);
   } catch (exc) {
     if (strict) throw new Error(`failed to load docs path overrides: ${(exc as Error).message}`);
-    process.stderr.write(
-      `warning: failed to load docs path overrides: ${(exc as Error).message}\n`,
-    );
+    process.stderr.write(`warning: failed to load docs path overrides: ${(exc as Error).message}\n`);
     return {};
   }
   return docsPathOverridesFromBytes(bytes, strict);
@@ -398,11 +360,7 @@ function nearestExistingAncestor(p: string): string {
   return fs.realpathSync.native(current);
 }
 
-export function assertRealpathBoundary(
-  projectRoot: string,
-  artifactPath: string,
-  artifactId: string,
-): void {
+export function assertRealpathBoundary(projectRoot: string, artifactPath: string, artifactId: string): void {
   const projectReal = nearestExistingAncestor(resolvePath(projectRoot));
   const ancestorReal = nearestExistingAncestor(artifactPath);
   const rel = path.relative(projectReal, ancestorReal);
@@ -411,16 +369,8 @@ export function assertRealpathBoundary(
   }
 }
 
-export function resolveArtifactPath(
-  record: ArtifactRecord,
-  projectRoot: string,
-  activeObjectiveNameOrOptions: string | null | ResolveArtifactPathOptions = null,
-  env: Record<string, string | undefined> = process.env,
-): string {
-  const options =
-    typeof activeObjectiveNameOrOptions === "object" && activeObjectiveNameOrOptions !== null
-      ? activeObjectiveNameOrOptions
-      : { activeObjectiveName: activeObjectiveNameOrOptions };
+export function resolveArtifactPath(record: ArtifactRecord, projectRoot: string, activeObjectiveNameOrOptions: string | null | ResolveArtifactPathOptions = null, env: Record<string, string | undefined> = process.env): string {
+  const options = typeof activeObjectiveNameOrOptions === "object" && activeObjectiveNameOrOptions !== null ? activeObjectiveNameOrOptions : { activeObjectiveName: activeObjectiveNameOrOptions };
   const activeObjectiveName = options.activeObjectiveName ?? null;
   let artifactPath = record.defaultPath;
   const overrides = options.docsPathOverrides ?? loadDocsPathOverrides(projectRoot, options.strictWrite === true);

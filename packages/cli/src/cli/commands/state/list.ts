@@ -30,13 +30,7 @@ function syntax(artifactId: string): string {
   return `agentera state ${artifactId} list [--limit N] [--cursor TOKEN]`;
 }
 
-function failure(
-  className: StateFailureBody["error"]["class"],
-  artifactId: string,
-  message: string,
-  example = `agentera state ${artifactId} list --limit 20`,
-  validValues?: string[],
-): StateRetrievalFailure {
+function failure(className: StateFailureBody["error"]["class"], artifactId: string, message: string, example = `agentera state ${artifactId} list --limit 20`, validValues?: string[]): StateRetrievalFailure {
   const family = entityListFamilies().find(({ key }) => key === artifactId);
   return new StateRetrievalFailure(
     {
@@ -70,7 +64,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
     const validValues = ENTITY_LIST_RUNTIME_FAMILIES.map(({ commandTokens }) => commandTokens.join(" "));
     throw failure("unsupported_artifact", artifactId, `unsupported state artifact '${artifactId}'`, undefined, validValues);
   }
-  const family = entityListFamilies().find(({ key }) => key === runtime.key as EntityListRuntimeFamilyKey)!;
+  const family = entityListFamilies().find(({ key }) => key === (runtime.key as EntityListRuntimeFamilyKey))!;
   let limit = family.bounds.default;
   let cursor: string | undefined;
   let format: StateListArgs["format"] = "json";
@@ -81,7 +75,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
   let cursorSupplied = false;
   let formatSupplied = false;
   const filterSupplied = new Set<string>();
-  for (let index = 0; index < argv.length; ) {
+  for (let index = 0; index < argv.length;) {
     const token = argv[index];
     if (token === "--ids-only") {
       if (selector.idsOnly) throw failure("invalid_request", artifactId, "--ids-only may only be supplied once");
@@ -90,7 +84,7 @@ function parseListArgs(artifactId: string, argv: string[]): StateListArgs {
       continue;
     }
     const matches = (flag: string): boolean => token === flag || token.startsWith(`${flag}=`);
-    const name = matches("--limit") ? "--limit" : matches("--cursor") ? "--cursor" : matches("--format") ? "--format" : matches("--fields") ? "--fields" : [...allowedFilters].find(matches) ?? null;
+    const name = matches("--limit") ? "--limit" : matches("--cursor") ? "--cursor" : matches("--format") ? "--format" : matches("--fields") ? "--fields" : ([...allowedFilters].find(matches) ?? null);
     if (!name) throw failure("invalid_request", artifactId, `unrecognized argument '${token}'`);
     let parsed: { value: string; next: number };
     try {
@@ -143,15 +137,32 @@ export function runStateList(artifactId: string, argv: string[], io: Io, project
   const sourceRoot = resolveSourceRoot();
   try {
     const args = parseListArgs(artifactId, argv);
-    const response = artifactId === "progress"
-      ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
-      : artifactId === "decisions"
-        ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
-        : artifactId === "health"
-          ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
-          : artifactId === "objective"
-            ? listObjectiveEntities(projectRoot, args.limit, args.cursor, { sourceRoot, format: args.format, selector: args.selector })
-            : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format, selector: args.selector });
+    const response =
+      artifactId === "progress"
+        ? listProgressEntities(projectRoot, args.limit, args.filters, args.cursor, {
+            sourceRoot,
+            format: args.format,
+            selector: args.selector,
+          })
+        : artifactId === "decisions"
+          ? listDecisionEntities(projectRoot, args.limit, args.filters.topic ?? undefined, args.cursor, {
+              sourceRoot,
+              format: args.format,
+              selector: args.selector,
+            })
+          : artifactId === "health"
+            ? listHealthEntities(projectRoot, args.limit, args.filters.dimension ?? undefined, args.cursor, {
+                sourceRoot,
+                format: args.format,
+                selector: args.selector,
+              })
+            : artifactId === "objective"
+              ? listObjectiveEntities(projectRoot, args.limit, args.cursor, {
+                  sourceRoot,
+                  format: args.format,
+                  selector: args.selector,
+                })
+              : listTodoDocsEntities(projectRoot, artifactId as "todo" | "docs", args.limit, args.cursor, args.filters as JsonObject, { sourceRoot, format: args.format, selector: args.selector });
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     emitStructured(response, "json", output);
     return 0;

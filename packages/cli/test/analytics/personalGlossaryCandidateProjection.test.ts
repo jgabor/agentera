@@ -12,10 +12,7 @@ import {
   readPersonalGlossaryCandidateProjection,
   type PersonalGlossaryProjectionCandidateInput,
 } from "../../src/analytics/personalGlossaryCandidateProjection.js";
-import {
-  canonicalGlossaryJson,
-  glossaryCanonicalSha256,
-} from "../../src/registries/glossaryTermIdentity.js";
+import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 import { createGlossaryEvidenceCapsule } from "../../src/registries/glossaryCandidateContracts.js";
 
 const GENERATION = "generation-candidate-projection";
@@ -89,18 +86,11 @@ function explicitContent(term: string, meaning: string) {
   });
 }
 
-function candidate(
-  capsule: ReturnType<typeof explicit>,
-  projectIds: readonly string[],
-  excerpts: readonly string[] = [],
-): PersonalGlossaryProjectionCandidateInput {
+function candidate(capsule: ReturnType<typeof explicit>, projectIds: readonly string[], excerpts: readonly string[] = []): PersonalGlossaryProjectionCandidateInput {
   return { capsule, project_ids: projectIds, excerpts };
 }
 
-function input(
-  candidates: readonly PersonalGlossaryProjectionCandidateInput[],
-  retainedAt = RETAINED_AT,
-) {
+function input(candidates: readonly PersonalGlossaryProjectionCandidateInput[], retainedAt = RETAINED_AT) {
   return {
     generation: GENERATION,
     policy_version: POLICY,
@@ -119,9 +109,7 @@ function rehashProjection<T extends Record<string, unknown>>(projection: T): T {
 }
 
 function projectionWithCapsule(capsule: ReturnType<typeof explicit>) {
-  const projection = projectPersonalGlossaryCandidates(
-    input([candidate(explicit(124), ["persisted-validation-project"])]),
-  );
+  const projection = projectPersonalGlossaryCandidates(input([candidate(explicit(124), ["persisted-validation-project"])]));
   const changed = structuredClone(projection);
   changed.candidates[0]!.capsule = capsule;
   return rehashProjection(changed);
@@ -129,20 +117,10 @@ function projectionWithCapsule(capsule: ReturnType<typeof explicit>) {
 
 describe("personal glossary candidate projection", () => {
   it("allocates capped candidates deterministically, retains both families, and reports ties and coverage", () => {
-    const candidates = [
-      ...Array.from({ length: 51 }, (_, index) => candidate(explicit(index), ["project-abundant"])),
-      candidate(recurring(1), ["project-recurring-a"]),
-      candidate(recurring(2), ["project-recurring-b"]),
-    ];
+    const candidates = [...Array.from({ length: 51 }, (_, index) => candidate(explicit(index), ["project-abundant"])), candidate(recurring(1), ["project-recurring-a"]), candidate(recurring(2), ["project-recurring-b"])];
 
     const first = projectPersonalGlossaryCandidates(input(candidates));
-    const replay = projectPersonalGlossaryCandidates(
-      input(
-        candidates
-          .map((item) => ({ ...item, project_ids: [...item.project_ids].reverse() }))
-          .reverse(),
-      ),
-    );
+    const replay = projectPersonalGlossaryCandidates(input(candidates.map((item) => ({ ...item, project_ids: [...item.project_ids].reverse() })).reverse()));
 
     expect(canonicalGlossaryJson(replay)).toBe(canonicalGlossaryJson(first));
     expect(first.report).toMatchObject({
@@ -164,9 +142,7 @@ describe("personal glossary candidate projection", () => {
       { family: "explicit", available: 51, retained: 48, dropped: 3 },
       { family: "recurring", available: 2, retained: 2, dropped: 0 },
     ]);
-    expect(first.candidates.map((item) => item.capsule.candidate_id)).toEqual(
-      [...first.candidates.map((item) => item.capsule.candidate_id)].sort(),
-    );
+    expect(first.candidates.map((item) => item.capsule.candidate_id)).toEqual([...first.candidates.map((item) => item.capsule.candidate_id)].sort());
   });
 
   it("fails closed when a candidate exceeds the declared project-diversity bound", () => {
@@ -187,25 +163,17 @@ describe("personal glossary candidate projection security", () => {
   it.each([
     ["term", "sk_live_secretcandidate123", "safe candidate meaning"],
     ["password meaning", "safe-candidate", "password=Secret-value-42"],
-    [
-      "authorization meaning",
-      "authorization-candidate",
-      "Authorization: Bearer AuthToken_987654321",
-    ],
+    ["authorization meaning", "authorization-candidate", "Authorization: Bearer AuthToken_987654321"],
     ["session meaning", "session-candidate", "session_id=sid-987654321"],
   ])("rejects secret-class candidate %s content without returning or persisting it", (_field, term, meaning) => {
-    const safeProjection = projectPersonalGlossaryCandidates(
-      input([candidate(explicit(125), ["safe-project"])]),
-    );
+    const safeProjection = projectPersonalGlossaryCandidates(input([candidate(explicit(125), ["safe-project"])]));
     const persisted = persistPersonalGlossaryCandidateProjection(safeProjection, storageOptions());
     const originalBytes = fs.readFileSync(persisted.path, "utf8");
     const secretValue = term.startsWith("sk_live_") ? term : meaning.split(/[=:]\s*/u).at(-1)!;
 
     let failure: unknown;
     try {
-      projectPersonalGlossaryCandidates(
-        input([candidate(explicitContent(term, meaning), ["sensitive-project"])]),
-      );
+      projectPersonalGlossaryCandidates(input([candidate(explicitContent(term, meaning), ["sensitive-project"])]));
     } catch (error) {
       failure = error;
     }
@@ -222,9 +190,7 @@ describe("personal glossary candidate projection security", () => {
     ["session-id", "Ordinary session-id terminology for a user session identifier"],
     ["password rotation", "The routine for changing stored credentials"],
   ])("keeps conceptual %s candidate terminology eligible", (term, meaning) => {
-    const projection = projectPersonalGlossaryCandidates(
-      input([candidate(explicitContent(term, meaning), ["safe-project"])]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(explicitContent(term, meaning), ["safe-project"])]));
     const bytes = canonicalGlossaryJson(projection);
 
     expect(projection.candidates).toHaveLength(1);
@@ -236,9 +202,7 @@ describe("personal glossary candidate projection security", () => {
 
   it("rejects a digest-valid secret-bearing projection before creating a file", () => {
     const secretValue = "AuthToken_987654321";
-    const secretProjection = projectionWithCapsule(
-      explicitContent("authorization-value", `Authorization: Bearer ${secretValue}`),
-    );
+    const secretProjection = projectionWithCapsule(explicitContent("authorization-value", `Authorization: Bearer ${secretValue}`));
     const pathname = personalGlossaryCandidateProjectionPath(storageOptions());
 
     let failure: unknown;
@@ -255,9 +219,7 @@ describe("personal glossary candidate projection security", () => {
 
   it("reads an existing digest-valid secret-bearing projection as corrupt without echo", () => {
     const secretValue = "sid-987654321";
-    const secretProjection = projectionWithCapsule(
-      explicitContent("session-value", `session_id=${secretValue}`),
-    );
+    const secretProjection = projectionWithCapsule(explicitContent("session-value", `session_id=${secretValue}`));
     const pathname = personalGlossaryCandidateProjectionPath(storageOptions());
     const bytes = `${canonicalGlossaryJson(secretProjection)}\n`;
     fs.mkdirSync(path.dirname(pathname), { recursive: true });
@@ -268,10 +230,7 @@ describe("personal glossary candidate projection security", () => {
     expect(JSON.stringify(result)).not.toContain(secretValue);
     let failure: unknown;
     try {
-      persistPersonalGlossaryCandidateProjection(
-        projectPersonalGlossaryCandidates(input([candidate(explicit(126), ["safe-project"])])),
-        storageOptions(),
-      );
+      persistPersonalGlossaryCandidateProjection(projectPersonalGlossaryCandidates(input([candidate(explicit(126), ["safe-project"])])), storageOptions());
     } catch (error) {
       failure = error;
     }
@@ -281,76 +240,40 @@ describe("personal glossary candidate projection security", () => {
   });
 
   it.each([
-    [
-      "authorization",
-      "Authorization",
-      "Authorization: a standard HTTP request header",
-      "Authorization is a standard HTTP request header.",
-      "Authorization: Bearer AuthToken_987654321",
-      "AuthToken_987654321",
-    ],
-    [
-      "session",
-      "session-id",
-      "Ordinary session-id terminology for a user session identifier",
-      "session-id is ordinary terminology for a user session identifier.",
-      "session-id context includes session_id=sid-987654321",
-      "sid-987654321",
-    ],
-  ])(
-    "distinguishes actual %s values from safe candidate and excerpt terminology",
-    (_label, term, meaning, safeExcerpt, secretExcerpt, secretValue) => {
-      const capsule = explicitContent(term, meaning);
-      const omitted = projectPersonalGlossaryCandidates(
-        input([candidate(capsule, ["sensitive-boundary-project"], [secretExcerpt])]),
-      );
-      const omittedBytes = canonicalGlossaryJson(omitted);
+    ["authorization", "Authorization", "Authorization: a standard HTTP request header", "Authorization is a standard HTTP request header.", "Authorization: Bearer AuthToken_987654321", "AuthToken_987654321"],
+    ["session", "session-id", "Ordinary session-id terminology for a user session identifier", "session-id is ordinary terminology for a user session identifier.", "session-id context includes session_id=sid-987654321", "sid-987654321"],
+  ])("distinguishes actual %s values from safe candidate and excerpt terminology", (_label, term, meaning, safeExcerpt, secretExcerpt, secretValue) => {
+    const capsule = explicitContent(term, meaning);
+    const omitted = projectPersonalGlossaryCandidates(input([candidate(capsule, ["sensitive-boundary-project"], [secretExcerpt])]));
+    const omittedBytes = canonicalGlossaryJson(omitted);
 
-      expect(omitted.candidates[0]!.safe_excerpt).toBeNull();
-      expect(omitted.report.excerpts.omissions.unsafe_content).toBe(1);
-      expect(omittedBytes).not.toContain(secretValue);
-      const omittedPersisted = persistPersonalGlossaryCandidateProjection(
-        omitted,
-        storageOptions(),
-      );
-      expect(fs.readFileSync(omittedPersisted.path, "utf8")).not.toContain(secretValue);
+    expect(omitted.candidates[0]!.safe_excerpt).toBeNull();
+    expect(omitted.report.excerpts.omissions.unsafe_content).toBe(1);
+    expect(omittedBytes).not.toContain(secretValue);
+    const omittedPersisted = persistPersonalGlossaryCandidateProjection(omitted, storageOptions());
+    expect(fs.readFileSync(omittedPersisted.path, "utf8")).not.toContain(secretValue);
 
-      const safe = projectPersonalGlossaryCandidates(
-        input([candidate(capsule, ["sensitive-boundary-project"], [safeExcerpt])]),
-      );
-      expect(safe.candidates[0]!.safe_excerpt).toEqual({
-        text: safeExcerpt,
-        expires_at: "2026-08-31T00:00:00.000Z",
-        redacted: false,
-      });
-      expect(canonicalGlossaryJson(safe)).toContain(safeExcerpt);
-      const safePersisted = persistPersonalGlossaryCandidateProjection(safe, storageOptions());
-      expect(fs.readFileSync(safePersisted.path, "utf8")).toContain(safeExcerpt);
-    },
-  );
+    const safe = projectPersonalGlossaryCandidates(input([candidate(capsule, ["sensitive-boundary-project"], [safeExcerpt])]));
+    expect(safe.candidates[0]!.safe_excerpt).toEqual({
+      text: safeExcerpt,
+      expires_at: "2026-08-31T00:00:00.000Z",
+      redacted: false,
+    });
+    expect(canonicalGlossaryJson(safe)).toContain(safeExcerpt);
+    const safePersisted = persistPersonalGlossaryCandidateProjection(safe, storageOptions());
+    expect(fs.readFileSync(safePersisted.path, "utf8")).toContain(safeExcerpt);
+  });
 });
 
 describe("personal glossary candidate projection bounds", () => {
   it("enforces the project cap after merging duplicate candidates", () => {
     const capsule = explicit(150);
     const projectIds = Array.from({ length: 101 }, (_, index) => `project-merged-${index}`);
-    const exact = projectPersonalGlossaryCandidates(
-      input([
-        candidate(capsule, projectIds.slice(0, 50)),
-        candidate(capsule, projectIds.slice(50, 100)),
-      ]),
-    );
+    const exact = projectPersonalGlossaryCandidates(input([candidate(capsule, projectIds.slice(0, 50)), candidate(capsule, projectIds.slice(50, 100))]));
 
     expect(exact.report.duplicate_count).toBe(1);
     expect(exact.candidates[0]?.project_keys).toHaveLength(100);
-    expect(() =>
-      projectPersonalGlossaryCandidates(
-        input([
-          candidate(capsule, projectIds.slice(0, 50)),
-          candidate(capsule, projectIds.slice(50)),
-        ]),
-      ),
-    ).toThrow("candidate project identities are outside their bound");
+    expect(() => projectPersonalGlossaryCandidates(input([candidate(capsule, projectIds.slice(0, 50)), candidate(capsule, projectIds.slice(50))]))).toThrow("candidate project identities are outside their bound");
   });
 });
 
@@ -359,15 +282,7 @@ describe("personal glossary candidate projection excerpt security", () => {
     const capsule = explicit(175);
     const rawPassword = "raw-password-987";
     const rawSession = "sid987654";
-    const projection = projectPersonalGlossaryCandidates(
-      input([
-        candidate(
-          capsule,
-          ["project-json"],
-          [`${capsule.term} {"password":"${rawPassword}","sessionId":"${rawSession}"}`],
-        ),
-      ]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(capsule, ["project-json"], [`${capsule.term} {"password":"${rawPassword}","sessionId":"${rawSession}"}`])]));
 
     expect(canonicalGlossaryJson(projection)).not.toContain(rawPassword);
     expect(canonicalGlossaryJson(projection)).not.toContain(rawSession);
@@ -378,15 +293,7 @@ describe("personal glossary candidate projection excerpt security", () => {
     expect(fs.readFileSync(persisted.path, "utf8")).not.toContain(rawPassword);
     expect(fs.readFileSync(persisted.path, "utf8")).not.toContain(rawSession);
 
-    const conceptual = projectPersonalGlossaryCandidates(
-      input([
-        candidate(
-          capsule,
-          ["project-json"],
-          [`${capsule.term} documents "password": a conceptual field name.`],
-        ),
-      ]),
-    );
+    const conceptual = projectPersonalGlossaryCandidates(input([candidate(capsule, ["project-json"], [`${capsule.term} documents "password": a conceptual field name.`])]));
     expect(conceptual.candidates[0]?.safe_excerpt).toMatchObject({ redacted: false });
     expect(conceptual.report.excerpts).toMatchObject({ retained: 1, redacted: 0 });
   });
@@ -409,9 +316,7 @@ describe("personal glossary candidate projection persistence", () => {
     [
       "merged project cap",
       (projection: any) => {
-        projection.candidates[0].project_keys = Array.from({ length: 101 }, (_, index) =>
-          `${index}`.padStart(64, "0"),
-        );
+        projection.candidates[0].project_keys = Array.from({ length: 101 }, (_, index) => `${index}`.padStart(64, "0"));
       },
     ],
     [
@@ -438,9 +343,7 @@ describe("personal glossary candidate projection persistence", () => {
       },
     ],
   ])("rejects a digest-valid persisted %s contradiction without effects", (_name, mutate) => {
-    const projection = projectPersonalGlossaryCandidates(
-      input([candidate(explicit(190), ["project-persisted"])]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(explicit(190), ["project-persisted"])]));
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     const tampered = rehashProjection(structuredClone(projection));
     mutate(tampered);
@@ -452,19 +355,12 @@ describe("personal glossary candidate projection persistence", () => {
       status: "corrupt",
       projection: null,
     });
-    expect(() => persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toThrow(
-      "stored candidate projection is corrupt",
-    );
+    expect(() => persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toThrow("stored candidate projection is corrupt");
     expect(fs.readFileSync(persisted.path, "utf8")).toBe(bytes);
   });
 
   it("rejects digest-valid candidate order and uniqueness contradictions", () => {
-    const projection = projectPersonalGlossaryCandidates(
-      input([
-        candidate(explicit(191), ["project-order-a"]),
-        candidate(explicit(192), ["project-order-b"]),
-      ]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(explicit(191), ["project-order-a"]), candidate(explicit(192), ["project-order-b"])]));
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     const reversed = rehashProjection({
       ...structuredClone(projection),
@@ -482,32 +378,19 @@ describe("personal glossary candidate projection persistence", () => {
   });
 
   it("preserves and repairs the private mode for unchanged replay", () => {
-    const projection = projectPersonalGlossaryCandidates(
-      input([candidate(explicit(195), ["project-mode"])]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(explicit(195), ["project-mode"])]));
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     expect(fs.statSync(persisted.path).mode & 0o777).toBe(0o600);
-    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe(
-      "unchanged_replay",
-    );
+    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe("unchanged_replay");
 
     fs.chmodSync(persisted.path, 0o644);
-    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe(
-      "unchanged_replay",
-    );
+    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe("unchanged_replay");
     expect(fs.statSync(persisted.path).mode & 0o777).toBe(0o600);
   });
 
   it("uses the configured profile path and preserves ordinary filesystem success and failure", () => {
-    const projection = projectPersonalGlossaryCandidates(
-      input([candidate(explicit(198), ["configured-profile-project"])]),
-    );
-    const expectedPath = path.join(
-      profileDir,
-      "intermediate",
-      "personal-glossary",
-      "candidate-projection.json",
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(explicit(198), ["configured-profile-project"])]));
+    const expectedPath = path.join(profileDir, "intermediate", "personal-glossary", "candidate-projection.json");
     expect(personalGlossaryCandidateProjectionPath(storageOptions())).toBe(expectedPath);
     expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toEqual({
       status: "changed",
@@ -543,29 +426,13 @@ describe("personal glossary candidate projection retained content security", () 
   it("omits sensitive excerpts completely and persists only complete safe context", () => {
     const capsule = explicit(200);
     const sensitiveValue = "top-secret";
-    const sensitive = projectPersonalGlossaryCandidates(
-      input([
-        candidate(
-          capsule,
-          ["private-project"],
-          [
-            `${capsule.term} uses API_KEY=${sensitiveValue} for jane@example.com from /home/jane/session-abc.`,
-          ],
-        ),
-      ]),
-    );
+    const sensitive = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], [`${capsule.term} uses API_KEY=${sensitiveValue} for jane@example.com from /home/jane/session-abc.`])]));
     expect(sensitive.candidates[0]!.safe_excerpt).toBeNull();
     expect(sensitive.report.excerpts).toMatchObject({ retained: 0, redacted: 0 });
     expect(sensitive.report.excerpts.omissions.unsafe_content).toBe(1);
-    expect(canonicalGlossaryJson(sensitive)).not.toMatch(
-      /top-secret|jane@example\.com|\/home\/jane|session-abc|\[REDACTED\]/,
-    );
+    expect(canonicalGlossaryJson(sensitive)).not.toMatch(/top-secret|jane@example\.com|\/home\/jane|session-abc|\[REDACTED\]/);
 
-    const projection = projectPersonalGlossaryCandidates(
-      input([
-        candidate(capsule, ["private-project"], [`${capsule.term} is complete safe context.`]),
-      ]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], [`${capsule.term} is complete safe context.`])]));
     const safe = projection.candidates[0]!.safe_excerpt;
 
     expect(safe).toEqual({
@@ -579,53 +446,26 @@ describe("personal glossary candidate projection retained content security", () 
     const persisted = persistPersonalGlossaryCandidateProjection(projection, storageOptions());
     expect(persisted.status).toBe("changed");
     expect(fs.statSync(persisted.path).mode & 0o777).toBe(0o600);
-    expect(fs.readFileSync(persisted.path, "utf8")).not.toMatch(
-      /top-secret|jane@example\.com|\/home\/jane|session-abc|private-project|\[REDACTED\]/,
-    );
-    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe(
-      "unchanged_replay",
-    );
+    expect(fs.readFileSync(persisted.path, "utf8")).not.toMatch(/top-secret|jane@example\.com|\/home\/jane|session-abc|private-project|\[REDACTED\]/);
+    expect(persistPersonalGlossaryCandidateProjection(projection, storageOptions()).status).toBe("unchanged_replay");
     expect(readPersonalGlossaryCandidateProjection(storageOptions())).toEqual({
       status: "current",
       projection,
     });
 
-    const unsafe = projectPersonalGlossaryCandidates(
-      input([
-        candidate(
-          capsule,
-          ["private-project"],
-          [`${capsule.term} tool arguments: {"token":"do-not-retain"}`],
-        ),
-      ]),
-    );
+    const unsafe = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], [`${capsule.term} tool arguments: {"token":"do-not-retain"}`])]));
     expect(unsafe.candidates[0]!.safe_excerpt).toBeNull();
     expect(unsafe.report.excerpts.omissions.unsafe_tool_arguments).toBe(1);
 
-    const bounded = projectPersonalGlossaryCandidates(
-      input([
-        candidate(
-          capsule,
-          ["private-project"],
-          [
-            `${capsule.term}\n${"x".repeat(600)}`,
-            `${capsule.term} alternate context that must not become a second excerpt.`,
-          ],
-        ),
-      ]),
-    );
+    const bounded = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], [`${capsule.term}\n${"x".repeat(600)}`, `${capsule.term} alternate context that must not become a second excerpt.`])]));
     expect(Buffer.byteLength(bounded.candidates[0]!.safe_excerpt!.text, "utf8")).toBe(500);
     expect(bounded.report.excerpts.truncated).toBe(1);
 
-    const omitted = projectPersonalGlossaryCandidates(
-      input([candidate(capsule, ["private-project"], ["unrelated context"])]),
-    );
+    const omitted = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], ["unrelated context"])]));
     expect(omitted.candidates[0]!.safe_excerpt).toBeNull();
     expect(omitted.report.excerpts.omissions.unrelated_context).toBe(1);
 
-    const oversized = projectPersonalGlossaryCandidates(
-      input([candidate(capsule, ["private-project"], [`${capsule.term} ${"x".repeat(4096)}`])]),
-    );
+    const oversized = projectPersonalGlossaryCandidates(input([candidate(capsule, ["private-project"], [`${capsule.term} ${"x".repeat(4096)}`])]));
     expect(oversized.candidates[0]!.safe_excerpt).toBeNull();
     expect(oversized.report.excerpts.omissions.source_bound_exceeded).toBe(1);
 
@@ -634,18 +474,14 @@ describe("personal glossary candidate projection retained content security", () 
       status: "corrupt",
       projection: null,
     });
-    expect(() => persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toThrow(
-      "stored candidate projection is corrupt",
-    );
+    expect(() => persistPersonalGlossaryCandidateProjection(projection, storageOptions())).toThrow("stored candidate projection is corrupt");
   });
 });
 
 describe("personal glossary candidate projection maintenance", () => {
   it("expires safe excerpts and applies the local-host-authorized purge without a public read surface", () => {
     const capsule = explicit(300);
-    const projection = projectPersonalGlossaryCandidates(
-      input([candidate(capsule, ["project-retention"], [`${capsule.term} is review context.`])]),
-    );
+    const projection = projectPersonalGlossaryCandidates(input([candidate(capsule, ["project-retention"], [`${capsule.term} is review context.`])]));
     persistPersonalGlossaryCandidateProjection(projection, storageOptions());
 
     expect(
@@ -658,9 +494,7 @@ describe("personal glossary candidate projection maintenance", () => {
     expect(expired.status).toBe("current");
     expect(expired.projection?.candidates[0]?.safe_excerpt).toBeNull();
     expect(expired.projection?.report.excerpts).toMatchObject({ retained: 0, expired: 1 });
-    expect(() =>
-      maintainPersonalGlossaryCandidateProjection({ ...storageOptions(), now: "not-a-time" }),
-    ).toThrow("maintenance now must be an ISO timestamp");
+    expect(() => maintainPersonalGlossaryCandidateProjection({ ...storageOptions(), now: "not-a-time" })).toThrow("maintenance now must be an ISO timestamp");
 
     expect(
       maintainPersonalGlossaryCandidateProjection({

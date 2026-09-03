@@ -28,10 +28,7 @@ function copiedAuthority(): string {
   temporaryRoots.push(root);
   fs.cpSync(path.join(ROOT, "skills"), path.join(root, "skills"), { recursive: true });
   fs.mkdirSync(path.join(root, "references", "cli"), { recursive: true });
-  fs.copyFileSync(
-    path.join(ROOT, "references/cli/hybrid-route-contract.yaml"),
-    path.join(root, "references/cli/hybrid-route-contract.yaml"),
-  );
+  fs.copyFileSync(path.join(ROOT, "references/cli/hybrid-route-contract.yaml"), path.join(root, "references/cli/hybrid-route-contract.yaml"));
   return root;
 }
 
@@ -40,7 +37,11 @@ describe("deterministic hybrid route resolver", () => {
     for (const { capability, alias } of CAPABILITY_CONTRACT.routeAliases.primaryAliases) {
       for (const name of new Set([capability, alias])) {
         const result = route(`/agentera ${name} preserve this topic`);
-        expect(result).toMatchObject({ outcome: "deterministic_selection", tier: "direct", capability });
+        expect(result).toMatchObject({
+          outcome: "deterministic_selection",
+          tier: "direct",
+          capability,
+        });
         if (result.outcome === "deterministic_selection") {
           const bytes = Buffer.from(`/agentera ${name} preserve this topic`, "utf8");
           expect(bytes.subarray(result.topic_span.start, result.topic_span.end).toString("utf8")).toBe(" preserve this topic");
@@ -57,31 +58,26 @@ describe("deterministic hybrid route resolver", () => {
         expect(result.tier, routeCase.id).toBe(routeCase.expected.tier);
         expect(result.capability, routeCase.id).toBe(routeCase.expected.capability);
         const bytes = Buffer.from(routeCase.request, "utf8");
-        expect(bytes.subarray(result.topic_span.start, result.topic_span.end).toString("utf8"), routeCase.id)
-          .toBe(routeCase.expected.topic ?? bytes.subarray(result.recognized_span.end).toString("utf8"));
+        expect(bytes.subarray(result.topic_span.start, result.topic_span.end).toString("utf8"), routeCase.id).toBe(routeCase.expected.topic ?? bytes.subarray(result.recognized_span.end).toString("utf8"));
       }
     }
   });
 
   it("normalizes phrase comparison while retaining original Unicode, whitespace, and separator bytes", () => {
     const result = route("  ＨＥＬＰ\tＭＥ　ＤＥＣＩＤＥ： cache");
-    expect(result).toMatchObject({ outcome: "deterministic_selection", tier: "phrase", capability: "discuss" });
+    expect(result).toMatchObject({
+      outcome: "deterministic_selection",
+      tier: "phrase",
+      capability: "discuss",
+    });
     if (result.outcome !== "deterministic_selection") return;
     const bytes = Buffer.from("  ＨＥＬＰ\tＭＥ　ＤＥＣＩＤＥ： cache", "utf8");
-    expect(bytes.subarray(result.recognized_span.start, result.recognized_span.end).toString("utf8"))
-      .toBe("ＨＥＬＰ\tＭＥ　ＤＥＣＩＤＥ");
+    expect(bytes.subarray(result.recognized_span.start, result.recognized_span.end).toString("utf8")).toBe("ＨＥＬＰ\tＭＥ　ＤＥＣＩＤＥ");
     expect(bytes.subarray(result.topic_span.start, result.topic_span.end).toString("utf8")).toBe("： cache");
   });
 
   it("abstains for negated, quoted, partial, unsupported punctuation, and non-owned text", () => {
-    for (const request of [
-      "Do not help me decide; just show alternatives.",
-      'The words "help me decide" appear in this quote.',
-      "help me deciding now",
-      "help me decide! now",
-      "refine the vision",
-      "/agentera planner import safety",
-    ]) {
+    for (const request of ["Do not help me decide; just show alternatives.", 'The words "help me decide" appear in this quote.', "help me deciding now", "help me decide! now", "refine the vision", "/agentera planner import safety"]) {
       expect(route(request).outcome, request).toBe("semantic_required");
     }
   });
@@ -98,7 +94,10 @@ describe("deterministic hybrid route resolver", () => {
       capabilities: first.semantic_capsule.capabilities.map(({ capability, triggers }) => ({
         triggers: triggers.map(({ id, description, priority, disambiguates_against }) => ({
           priority,
-          disambiguates_against: disambiguates_against.map(({ capability: target, hint }) => ({ hint, capability: target })),
+          disambiguates_against: disambiguates_against.map(({ capability: target, hint }) => ({
+            hint,
+            capability: target,
+          })),
           description,
           id,
         })),

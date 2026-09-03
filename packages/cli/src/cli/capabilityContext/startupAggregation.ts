@@ -4,14 +4,7 @@ import { preCutoverCommand } from "../preCutoverCommand.js";
 export type StartupAvailability = "included" | "deferred";
 export type StartupOutcome = "ok" | "degraded" | "blocked";
 
-export const STARTUP_INCLUDED_FAMILIES = new Set([
-  "plan",
-  "docs",
-  "progress",
-  "health",
-  "todo",
-  "objective",
-]);
+export const STARTUP_INCLUDED_FAMILIES = new Set(["plan", "docs", "progress", "health", "todo", "objective"]);
 
 const DETAIL_COMMANDS: Record<string, string> = {
   plan: preCutoverCommand("state plan list"),
@@ -40,7 +33,7 @@ function detailCommand(family: string): string {
 export function startupAvailabilityProjection(families: readonly string[]): JsonObject[] {
   return [...new Set(families)].map((family) => ({
     family,
-    availability: STARTUP_INCLUDED_FAMILIES.has(family) ? "included" : "deferred" as StartupAvailability,
+    availability: STARTUP_INCLUDED_FAMILIES.has(family) ? "included" : ("deferred" as StartupAvailability),
     detail_command: detailCommand(family),
   }));
 }
@@ -58,12 +51,7 @@ export function deferredStartupFamilies(contract: JsonObject): string[] {
  * Prime aggregates read availability. Mutation grammar remains discoverable
  * only through `agentera schema`, never through a startup payload.
  */
-export function startupAggregation(
-  contract: JsonObject,
-  health: JsonObject,
-  cutover: JsonObject | null = null,
-  todoReconciliation: JsonObject | null = null,
-): JsonObject {
+export function startupAggregation(contract: JsonObject, health: JsonObject, cutover: JsonObject | null = null, todoReconciliation: JsonObject | null = null): JsonObject {
   const cutoverRequired = cutover?.status === "required" || cutover?.status === "invalid_lifecycle";
   const reconciliationRequired = todoReconciliation?.status === "action_required";
   const blocked = cutoverRequired || reconciliationRequired || (typeof contract.schema_error === "string" && contract.schema_error.length > 0);
@@ -77,7 +65,6 @@ export function startupAggregation(
     availability: Array.isArray(contract.availability) ? contract.availability : [],
     detail_discovery: { schema: preCutoverCommand("schema") },
     raw_artifact_reads_required: false,
-    raw_artifact_read_policy:
-      "Use included bounded state first. For deferred detail, run that family's detail_command; raw reads are only for a named corruption or CLI-defect diagnostic.",
+    raw_artifact_read_policy: "Use included bounded state first. For deferred detail, run that family's detail_command; raw reads are only for a named corruption or CLI-defect diagnostic.",
   };
 }

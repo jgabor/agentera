@@ -3,17 +3,7 @@ import path from "node:path";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir } from "../appContext.js";
 import { capabilityStartupCommand } from "../../capabilities/index.js";
-import {
-  PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
-  PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
-  PLAN_PLANNING_LEVELS,
-  PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
-  PLAN_STARTUP_CONTRACT_VERSION,
-  PLAN_STEP_VERBS,
-  PLAN_TASK_COHERENCE_RULE,
-  STARTUP_ENVELOPE_STATE_FAMILIES,
-  STATE_FAMILY_FALLBACK_COMMANDS,
-} from "./types.js";
+import { PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION, PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS, PLAN_PLANNING_LEVELS, PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR, PLAN_STARTUP_CONTRACT_VERSION, PLAN_STEP_VERBS, PLAN_TASK_COHERENCE_RULE, STARTUP_ENVELOPE_STATE_FAMILIES, STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -52,12 +42,8 @@ export function capabilityInstructionTarget(capability: string): JsonObject {
 
 export function firstInvocationReadMetadata(capability: string): JsonObject {
   const authority = capabilityInstructionContract();
-  const firstRead: JsonObject =
-    authority.first_invocation_read && typeof authority.first_invocation_read === "object" && !Array.isArray(authority.first_invocation_read)
-      ? authority.first_invocation_read
-      : {};
-  const allowedValues: JsonObject =
-    firstRead.allowed_values && typeof firstRead.allowed_values === "object" && !Array.isArray(firstRead.allowed_values) ? firstRead.allowed_values : {};
+  const firstRead: JsonObject = authority.first_invocation_read && typeof authority.first_invocation_read === "object" && !Array.isArray(authority.first_invocation_read) ? authority.first_invocation_read : {};
+  const allowedValues: JsonObject = firstRead.allowed_values && typeof firstRead.allowed_values === "object" && !Array.isArray(firstRead.allowed_values) ? firstRead.allowed_values : {};
   const value = "prime_context";
   const valueContract = (allowedValues[value] ?? {}) as JsonObject;
   return {
@@ -87,9 +73,7 @@ export function planStartupContract(): JsonObject {
     bounded: true,
     instructions_runtime_read_required: false,
     instructions_authority: {
-      normal_startup:
-        "Use this compact context for normal Plan execution startup; " +
-        `shell out to \`${capabilityStartupCommand("plan")}\` for the full Plan instructions.`,
+      normal_startup: "Use this compact context for normal Plan execution startup; " + `shell out to \`${capabilityStartupCommand("plan")}\` for the full Plan instructions.`,
       read_plan_instructions_when: PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
     },
     planning: {
@@ -104,42 +88,41 @@ export function planStartupContract(): JsonObject {
       use_startup_state_first: true,
       current_plan_command: STATE_FAMILY_FALLBACK_COMMANDS.plan,
       complete_plan_contract_key: "source_contract.complete_for_plan_artifact",
-      fallback_policy:
-        "Use CLI-provided fallback commands for missing or incomplete state families " +
-        "before any last-resort raw artifact read.",
+      fallback_policy: "Use CLI-provided fallback commands for missing or incomplete state families " + "before any last-resort raw artifact read.",
     },
     artifact_access_boundaries: {
-      skip_raw_plan_artifact_when:
-        `\`${STATE_FAMILY_FALLBACK_COMMANDS.plan}\` reports source_contract.complete_for_plan_artifact=true ` +
-        "during normal read-only startup or evaluation.",
+      skip_raw_plan_artifact_when: `\`${STATE_FAMILY_FALLBACK_COMMANDS.plan}\` reports source_contract.complete_for_plan_artifact=true ` + "during normal read-only startup or evaluation.",
       raw_plan_artifact_allowed_for: PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
       completed_plan_archive_confirmation: PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
       artifact_mapping_source: STATE_FAMILY_FALLBACK_COMMANDS.docs,
     },
-    handoff_expectations: [
-      "skip level suggests ⧉ build and waits for confirmation unless the user already asked to implement now",
-      "single-task plans suggest ⧉ build and wait for confirmation",
-      "full plans suggest ⎈ orchestrate and wait for confirmation",
-    ],
+    handoff_expectations: ["skip level suggests ⧉ build and waits for confirmation unless the user already asked to implement now", "single-task plans suggest ⧉ build and wait for confirmation", "full plans suggest ⎈ orchestrate and wait for confirmation"],
     unsupported_command_boundary: {
       capability_cli_commands_added: true,
       forbidden_examples: [],
-      route_boundary:
-        "Use `/agentera plan` for routing, `agentera state plan list` for plan state, " +
-        "and `agentera plan` for capability routing guidance only.",
+      route_boundary: "Use `/agentera plan` for routing, `agentera state plan list` for plan state, " + "and `agentera plan` for capability routing guidance only.",
     },
     seam_decision: {
       selected: "prime --context",
       not_changed: [
-        { surface: preCutoverCommand("schema"), reason: "runtime/schema command discovery, not capability workflow startup context" },
-        { surface: "dispatcher guidance", reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload" },
+        {
+          surface: preCutoverCommand("schema"),
+          reason: "runtime/schema command discovery, not capability workflow startup context",
+        },
+        {
+          surface: "dispatcher guidance",
+          reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload",
+        },
       ],
     },
   };
 }
 
 export function capabilityArtifactInventory(capability: string): [JsonObject, string | null] {
-  const inventory: JsonObject & { read_needs: string[]; write_targets: string[] } = { read_needs: [], write_targets: [] };
+  const inventory: JsonObject & { read_needs: string[]; write_targets: string[] } = {
+    read_needs: [],
+    write_targets: [],
+  };
   const capabilityDir = path.join(String(activeAppModel().skillRoot), "capabilities", capability);
   const p = path.join(capabilityDir, "schemas", "artifacts.yaml");
   if (!isFile(p)) return [inventory, `No capability artifact schema found for ${capability}.`];

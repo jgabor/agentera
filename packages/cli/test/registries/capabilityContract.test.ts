@@ -6,11 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  ContractBootstrapError,
-  loadCapabilitySchemaContract,
-  validateContractBootstrap,
-} from "../../src/registries/capabilityContract.js";
+import { ContractBootstrapError, loadCapabilitySchemaContract, validateContractBootstrap } from "../../src/registries/capabilityContract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -26,7 +22,10 @@ function bootstrapErrors(data: any): string[] {
 }
 
 function assertHasErrorContaining(errors: string[], message: string): void {
-  expect(errors.some((e) => e.includes(message)), JSON.stringify(errors)).toBe(true);
+  expect(
+    errors.some((e) => e.includes(message)),
+    JSON.stringify(errors),
+  ).toBe(true);
 }
 
 let tmp: string;
@@ -48,12 +47,8 @@ describe("capability schema contract loader", () => {
     const contractData = validContractData();
     const model = loadCapabilitySchemaContract(CONTRACT_PATH);
 
-    expect(model.directoryRules.instructionPath).toBe(
-      contractData.DIRECTORY_REQUIREMENTS.instruction_module.path,
-    );
-    expect(model.directoryRules.instructionModulePath).toBe(
-      contractData.DIRECTORY_REQUIREMENTS.instruction_module.path,
-    );
+    expect(model.directoryRules.instructionPath).toBe(contractData.DIRECTORY_REQUIREMENTS.instruction_module.path);
+    expect(model.directoryRules.instructionModulePath).toBe(contractData.DIRECTORY_REQUIREMENTS.instruction_module.path);
     expect("required_files" in contractData.DIRECTORY_REQUIREMENTS).toBe(false);
     expect(model.requiredGroups).toEqual(["TRIGGERS", "ARTIFACTS", "VALIDATION", "EXIT_CONDITIONS"]);
     expect(model.directoryRules.instructionPath).toBe("packages/cli/src/capabilities/<name>/instructions.ts");
@@ -85,9 +80,7 @@ describe("capability schema contract loader", () => {
     expect(model.routeAliases.routePrefix).toBe("/agentera");
     expect(model.routeAliases.canonicalNamePrecedence).toBe(true);
     expect(model.routeAliases.cliBoundary).toContain("`/agentera plan` routes to the plan capability");
-    const aliasMap = Object.fromEntries(
-      model.routeAliases.primaryAliases.map((r) => [r.alias, r.capability]),
-    );
+    const aliasMap = Object.fromEntries(model.routeAliases.primaryAliases.map((r) => [r.alias, r.capability]));
     expect(aliasMap).toEqual({
       status: "status",
       vision: "vision",
@@ -108,9 +101,7 @@ describe("capability schema contract loader", () => {
     const model = loadCapabilitySchemaContract(CONTRACT_PATH);
     expect(model.triggerEnrichment.spec).toBe("references/cli/trigger-schema-enrichment.md");
     const fieldNames = Object.keys(model.triggerEnrichment.fields).sort();
-    expect(fieldNames).toEqual(
-      ["borderline_band", "confidence_threshold", "disambiguates_against", "patterns", "patterns_regex"].sort(),
-    );
+    expect(fieldNames).toEqual(["borderline_band", "confidence_threshold", "disambiguates_against", "patterns", "patterns_regex"].sort());
     expect(model.triggerEnrichment.fields.confidence_threshold).toMatchObject({
       type: "integer",
       required: false,
@@ -131,20 +122,7 @@ describe("capability schema contract loader", () => {
       required: true,
       nonEmpty: true,
     });
-    expect(model.triggerEnrichment.allowedCapabilityIds).toEqual([
-      "status",
-      "vision",
-      "discuss",
-      "research",
-      "plan",
-      "build",
-      "optimize",
-      "audit",
-      "document",
-      "profile",
-      "design",
-      "orchestrate",
-    ]);
+    expect(model.triggerEnrichment.allowedCapabilityIds).toEqual(["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]);
   });
 
   const malformed: Array<[(data: any) => void, string]> = [
@@ -169,74 +147,35 @@ describe("capability schema contract loader", () => {
       throw new Error("expected ContractBootstrapError");
     } catch (err) {
       expect(err).toBeInstanceOf(ContractBootstrapError);
-      expect((err as ContractBootstrapError).errors).toEqual([
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${p} must be packages/cli/src/capabilities/<name>/instructions.ts`,
-      ]);
+      expect((err as ContractBootstrapError).errors).toEqual([`bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${p} must be packages/cli/src/capabilities/<name>/instructions.ts`]);
     }
   });
 
   it("rejects required_files as duplicate directory authority", () => {
     const data = structuredClone(validContractData());
-    data.DIRECTORY_REQUIREMENTS.required_files = [
-      { path: LEGACY_INSTRUCTION_FILE, description: "Legacy duplicate authority." },
-    ];
+    data.DIRECTORY_REQUIREMENTS.required_files = [{ path: LEGACY_INSTRUCTION_FILE, description: "Legacy duplicate authority." }];
     const p = writeContract(data);
     try {
       loadCapabilitySchemaContract(p);
       throw new Error("expected ContractBootstrapError");
     } catch (err) {
       expect(err).toBeInstanceOf(ContractBootstrapError);
-      expect((err as ContractBootstrapError).errors).toEqual([
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${p} duplicates instruction_module and schemas_directory authority`,
-      ]);
+      expect((err as ContractBootstrapError).errors).toEqual([`bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${p} duplicates instruction_module and schemas_directory authority`]);
     }
   });
 
   const ruleFamily: Array<[(data: any) => void, string]> = [
-    [
-      (data) => (data.DIRECTORY_REQUIREMENTS.schema_files.minimum_count = 0),
-      "DIRECTORY_REQUIREMENTS.schema_files.minimum_count in fixture.yaml must be a positive integer",
-    ],
-    [
-      (data) => (data.ENTRY_REQUIREMENTS.deprecation = []),
-      "ENTRY_REQUIREMENTS.deprecation in fixture.yaml must be a mapping",
-    ],
-    [
-      (data) => (data.FIELD_RULES.TRIGGERS.priority.allowed_values = []),
-      "FIELD_RULES.TRIGGERS.priority.allowed_values in fixture.yaml must be a non-empty list of strings",
-    ],
-    [
-      (data) => (data.PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups = []),
-      "PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups in fixture.yaml must be a non-empty list of strings",
-    ],
-    [
-      (data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "status", capability: "duplicate" }),
-      "ROUTE_ALIASES.primary_aliases alias 'status' in fixture.yaml must be unique",
-    ],
-    [
-      (data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "duplicate", capability: "status" }),
-      "ROUTE_ALIASES.primary_aliases capability 'status' in fixture.yaml must be unique",
-    ],
-    [
-      (data) => delete data.TRIGGER_ENRICHMENT,
-      "TRIGGER_ENRICHMENT in fixture.yaml must be present as a mapping",
-    ],
-    [
-      (data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.max = 101),
-      "TRIGGER_ENRICHMENT.fields.confidence_threshold.max in fixture.yaml must be 100",
-    ],
-    [
-      (data) => delete data.TRIGGER_ENRICHMENT.fields.confidence_threshold,
-      "TRIGGER_ENRICHMENT.fields.confidence_threshold in fixture.yaml must be a mapping",
-    ],
-    [
-      (data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.required = true),
-      "TRIGGER_ENRICHMENT.fields.confidence_threshold.required in fixture.yaml must be false (enrichment is opt-in)",
-    ],
-    [
-      (data) => (data.TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source = "wrong"),
-      "TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in fixture.yaml must be ROUTE_ALIASES.primary_aliases.capability",
-    ],
+    [(data) => (data.DIRECTORY_REQUIREMENTS.schema_files.minimum_count = 0), "DIRECTORY_REQUIREMENTS.schema_files.minimum_count in fixture.yaml must be a positive integer"],
+    [(data) => (data.ENTRY_REQUIREMENTS.deprecation = []), "ENTRY_REQUIREMENTS.deprecation in fixture.yaml must be a mapping"],
+    [(data) => (data.FIELD_RULES.TRIGGERS.priority.allowed_values = []), "FIELD_RULES.TRIGGERS.priority.allowed_values in fixture.yaml must be a non-empty list of strings"],
+    [(data) => (data.PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups = []), "PRIMITIVE_REFERENCE_FIELDS.fields.severity.protocol_groups in fixture.yaml must be a non-empty list of strings"],
+    [(data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "status", capability: "duplicate" }), "ROUTE_ALIASES.primary_aliases alias 'status' in fixture.yaml must be unique"],
+    [(data) => data.ROUTE_ALIASES.primary_aliases.push({ alias: "duplicate", capability: "status" }), "ROUTE_ALIASES.primary_aliases capability 'status' in fixture.yaml must be unique"],
+    [(data) => delete data.TRIGGER_ENRICHMENT, "TRIGGER_ENRICHMENT in fixture.yaml must be present as a mapping"],
+    [(data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.max = 101), "TRIGGER_ENRICHMENT.fields.confidence_threshold.max in fixture.yaml must be 100"],
+    [(data) => delete data.TRIGGER_ENRICHMENT.fields.confidence_threshold, "TRIGGER_ENRICHMENT.fields.confidence_threshold in fixture.yaml must be a mapping"],
+    [(data) => (data.TRIGGER_ENRICHMENT.fields.confidence_threshold.required = true), "TRIGGER_ENRICHMENT.fields.confidence_threshold.required in fixture.yaml must be false (enrichment is opt-in)"],
+    [(data) => (data.TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source = "wrong"), "TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in fixture.yaml must be ROUTE_ALIASES.primary_aliases.capability"],
   ];
   it.each(ruleFamily)("each rule family has a focused failing fixture", (mutate, message) => {
     const data = structuredClone(validContractData());
@@ -253,9 +192,7 @@ describe("capability schema contract loader", () => {
       throw new Error("expected ContractBootstrapError");
     } catch (err) {
       expect(err).toBeInstanceOf(ContractBootstrapError);
-      expect((err as ContractBootstrapError).errors).toEqual([
-        `bootstrap [error]: GROUP_PREFIXES.TRIGGERS in ${p} must be a non-empty string`,
-      ]);
+      expect((err as ContractBootstrapError).errors).toEqual([`bootstrap [error]: GROUP_PREFIXES.TRIGGERS in ${p} must be a non-empty string`]);
     }
   });
 

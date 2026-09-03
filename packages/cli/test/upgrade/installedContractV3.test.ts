@@ -8,10 +8,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdValidateCapabilityContract } from "../../src/cli/commands/validate.js";
 import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
-import {
-  contractLooksV2,
-  detectStaleAppContentSurfaces,
-} from "../../src/upgrade/appContentRefresh.js";
+import { contractLooksV2, detectStaleAppContentSurfaces } from "../../src/upgrade/appContentRefresh.js";
 import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 import { sourceBuildOutputRoot } from "../helpers/sourceSubprocess.js";
@@ -23,20 +20,7 @@ const REPO_CONTRACT = path.join(REPO_ROOT, "skills", "agentera", "capability_sch
 const V2_CONTRACT_FIXTURE = path.join(FIXTURES, "v2-capability_schema_contract.yaml");
 const V3_INSTRUCTION_MODULE_PATH = "packages/cli/src/capabilities/<name>/instructions.ts";
 
-const SWEDISH_CAPABILITY_IDS = new Set([
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
-]);
+const SWEDISH_CAPABILITY_IDS = new Set(["hej", "visionera", "resonera", "inspirera", "planera", "realisera", "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"]);
 
 let tmp: string;
 let home: string;
@@ -47,12 +31,7 @@ function copyFixture(name: string, dest: string): string {
 }
 
 function seedV2Contract(appBundleRoot: string): void {
-  const contractPath = path.join(
-    appBundleRoot,
-    "skills",
-    "agentera",
-    "capability_schema_contract.yaml",
-  );
+  const contractPath = path.join(appBundleRoot, "skills", "agentera", "capability_schema_contract.yaml");
   fs.mkdirSync(path.dirname(contractPath), { recursive: true });
   fs.copyFileSync(V2_CONTRACT_FIXTURE, contractPath);
 }
@@ -63,10 +42,7 @@ function readInstalledContract(appHome: string): { text: string; data: Record<st
   return { text, data: YAML.parse(text) as Record<string, unknown> };
 }
 
-function assertInstalledContractIsV3(contract: {
-  text: string;
-  data: Record<string, unknown>;
-}): void {
+function assertInstalledContractIsV3(contract: { text: string; data: Record<string, unknown> }): void {
   const directoryRequirements = contract.data.DIRECTORY_REQUIREMENTS as Record<string, unknown>;
   const instructionModule = directoryRequirements.instruction_module as { path: string };
   expect(instructionModule.path).toBe(V3_INSTRUCTION_MODULE_PATH);
@@ -158,11 +134,7 @@ describe("installed contract after upgrade refresh (B6-3, #13)", () => {
     const ctx = migrationCtx(appHome, project, home, REPO_ROOT);
     const preview = dryRunMigration(ctx);
     const applied = applyMigrationPhases(ctx, preview);
-    expect(
-      applied.cleanup.items.some(
-        (item) => item.action === "refresh-app-content" && item.status === "applied",
-      ),
-    ).toBe(true);
+    expect(applied.cleanup.items.some((item) => item.action === "refresh-app-content" && item.status === "applied")).toBe(true);
 
     const installed = readInstalledContract(appHome);
     expect(installed.text).toBe(fs.readFileSync(REPO_CONTRACT, "utf8"));

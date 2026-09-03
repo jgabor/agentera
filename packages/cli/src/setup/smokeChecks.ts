@@ -45,11 +45,7 @@ function runCapabilitySmoke(sourceRoot: string): JsonObject {
   });
 }
 
-export function runNpmSmokeChecks(
-  sourceRoot: string,
-  _env: Env,
-  opts: { liveModelAllowed?: boolean } = {},
-): JsonObject {
+export function runNpmSmokeChecks(sourceRoot: string, _env: Env, opts: { liveModelAllowed?: boolean } = {}): JsonObject {
   const root = resolvePath(sourceRoot);
   const checks = [runCapabilitySmoke(root)];
   return {

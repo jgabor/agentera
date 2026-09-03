@@ -1,15 +1,6 @@
 import type { JsonObject } from "../core/jsonValue.js";
 
-const FIELD_SKIP = new Set([
-  "meta",
-  "GROUP_PREFIXES",
-  "BUDGET",
-  "COMPACTION",
-  "VALIDATION",
-  "ARCHIVE",
-  "CONVENTION",
-  "CONVENTIONS",
-]);
+const FIELD_SKIP = new Set(["meta", "GROUP_PREFIXES", "BUDGET", "COMPACTION", "VALIDATION", "ARCHIVE", "CONVENTION", "CONVENTIONS"]);
 
 function mapping(value: unknown): value is JsonObject {
   return Boolean(value && typeof value === "object" && !Array.isArray(value));
@@ -36,18 +27,13 @@ export function describeArtifactSchemaFields(schema: JsonObject): JsonObject[] {
   for (const [group, value] of Object.entries(schema)) {
     if (FIELD_SKIP.has(group) || !mapping(value)) continue;
     for (const entry of Object.values(value)) {
-      if (mapping(entry) && "field" in entry)
-        fields.push(artifactSchemaFieldDescription(entry, group));
+      if (mapping(entry) && "field" in entry) fields.push(artifactSchemaFieldDescription(entry, group));
     }
   }
   return fields;
 }
 
-export function artifactSchemaFieldsForOperation(
-  schema: JsonObject | null,
-  verb: string,
-): JsonObject[] {
+export function artifactSchemaFieldsForOperation(schema: JsonObject | null, verb: string): JsonObject[] {
   if (!schema) return [];
-  return describeArtifactSchemaFields(schema).filter((field) =>
-    Array.isArray(field.write_operations) && field.write_operations.includes(verb));
+  return describeArtifactSchemaFields(schema).filter((field) => Array.isArray(field.write_operations) && field.write_operations.includes(verb));
 }

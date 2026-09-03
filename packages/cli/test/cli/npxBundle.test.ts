@@ -10,10 +10,7 @@ import { resolvePath } from "../../src/core/paths.js";
 import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { resolveSourceRootStrict } from "../../src/upgrade/appModel.js";
-import {
-  STATUS_NO_CHANGES_NEEDED,
-  UPGRADE_PREVIEW_SCHEMA,
-} from "../../src/upgrade/compatibility.js";
+import { STATUS_NO_CHANGES_NEEDED, UPGRADE_PREVIEW_SCHEMA } from "../../src/upgrade/compatibility.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -31,10 +28,7 @@ describe("self-contained npx bundle resolution", () => {
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
     fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
     if (opts.sentinel) {
-      fs.writeFileSync(
-        path.join(root, ".agentera-npx-bundle.json"),
-        JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }),
-      );
+      fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "9.9.9" }));
     }
   }
 
@@ -79,9 +73,7 @@ describe("self-contained npx bundle resolution", () => {
     // An empty directory lacks skills/ and registry.json -> not a valid source root.
     const empty = fs.mkdtempSync(path.join(os.tmpdir(), "npxempty-"));
     try {
-      expect(() => resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: empty })).toThrow(
-        /bootstrap source root .* is missing/,
-      );
+      expect(() => resolveSourceRootStrict({ AGENTERA_BOOTSTRAP_SOURCE_ROOT: empty })).toThrow(/bootstrap source root .* is missing/);
     } finally {
       fs.rmSync(empty, { recursive: true, force: true });
     }
@@ -94,16 +86,13 @@ describe("self-contained doctor/upgrade semantics", () => {
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
     fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ version }] }));
-    fs.writeFileSync(
-      path.join(root, ".agentera-npx-bundle.json"),
-      JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }),
-    );
-    fs.cpSync(
-      path.join(REPO_ROOT, "skills", "agentera", "schemas"),
-      path.join(root, "skills", "agentera", "schemas"),
-      { recursive: true },
-    );
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), { recursive: true });
+    fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: version }));
+    fs.cpSync(path.join(REPO_ROOT, "skills", "agentera", "schemas"), path.join(root, "skills", "agentera", "schemas"), {
+      recursive: true,
+    });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(root, "references"), {
+      recursive: true,
+    });
   }
   beforeEach(() => {
     bundle = fs.mkdtempSync(path.join(os.tmpdir(), "npxdoctor-"));

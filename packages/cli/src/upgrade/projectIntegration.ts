@@ -1,44 +1,17 @@
 import { resolvePath } from "../core/paths.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
-import {
-  APP_MIGRATION_NEEDED,
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-} from "./doctor.js";
+import { APP_MIGRATION_NEEDED, APP_MANUAL_REVIEW_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "./doctor.js";
 import { resolveNpxPlatformStatus } from "./npxPlatformStatus.js";
 import { classifyInstall, crossMajorBoundaryApplies, type InstallClassification } from "./compatibility.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
-import {
-  planRuntimeRetirementPhase,
-  type MigrationContext,
-  type MigrationPhaseItem,
-} from "./migrateArtifactsV2ToV3.js";
-import {
-  projectHasProjectLevelRuntimeHooks,
-} from "./runtimeMigration.js";
+import { planRuntimeRetirementPhase, type MigrationContext, type MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
+import { projectHasProjectLevelRuntimeHooks } from "./runtimeMigration.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands } from "./upgradeCommands.js";
-import {
-  classifyIntegrationScenario,
-  integrationScenarioMessage,
-  integrationExit,
-  integrationPhase,
-  type IntegrationExit,
-  type IntegrationPhaseSummary,
-  type IntegrationRetry,
-  type IntegrationScenarioFacts,
-} from "./projectIntegrationDecision.js";
-import {
-  classifyUpgradeOutcome,
-  parseSemverMajor,
-  resolveRunningVersion,
-  shouldIncludeCrossMajorPlanItems,
-} from "./versionResolution.js";
+import { classifyIntegrationScenario, integrationScenarioMessage, integrationExit, integrationPhase, type IntegrationExit, type IntegrationPhaseSummary, type IntegrationRetry, type IntegrationScenarioFacts } from "./projectIntegrationDecision.js";
+import { classifyUpgradeOutcome, parseSemverMajor, resolveRunningVersion, shouldIncludeCrossMajorPlanItems } from "./versionResolution.js";
 
-const MAJOR_BOUNDARY_BLOCK_MESSAGE_PREFIX =
-  "v3 successor line is not announced yet; v2 managed app files remain current on the";
+const MAJOR_BOUNDARY_BLOCK_MESSAGE_PREFIX = "v3 successor line is not announced yet; v2 managed app files remain current on the";
 
 function majorBoundaryBlockMessage(channelName: string): string {
   const label = channelName.trim() || "current";
@@ -101,10 +74,7 @@ function isGlobalStaleRuntimeItem(item: MigrationPhaseItem, ctx: MigrationContex
   return false;
 }
 
-export function pendingRuntimeMigrationItems(
-  ctx: MigrationContext,
-  resolvedChannel?: ResolvedUpdateChannel,
-): MigrationPhaseItem[] {
+export function pendingRuntimeMigrationItems(ctx: MigrationContext, resolvedChannel?: ResolvedUpdateChannel): MigrationPhaseItem[] {
   const phase = planRuntimeRetirementPhase(ctx, resolvedChannel);
   const projectRoot = resolvePath(ctx.project);
   const hasProjectHooks = projectHasProjectLevelRuntimeHooks(ctx.project);
@@ -120,11 +90,7 @@ export function pendingRuntimeMigrationItems(
 }
 
 function appNeedsUpgrade(bundleStatus: string): boolean {
-  return (
-    bundleStatus === APP_OUTDATED ||
-    bundleStatus === APP_REPAIR_NEEDED ||
-    bundleStatus === APP_MIGRATION_NEEDED
-  );
+  return bundleStatus === APP_OUTDATED || bundleStatus === APP_REPAIR_NEEDED || bundleStatus === APP_MIGRATION_NEEDED;
 }
 
 function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
@@ -151,9 +117,7 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   // The executing npm bundle is already a complete app. A missing optional
   // platform install therefore needs no integration work, while an existing
   // stale or damaged platform install still retains its observed status.
-  const platformBundleStatus = platformStatus.rootStatus === "missing"
-    ? APP_UP_TO_DATE
-    : platformStatus.status;
+  const platformBundleStatus = platformStatus.rootStatus === "missing" ? APP_UP_TO_DATE : platformStatus.status;
   return {
     installRoot: platformRoot,
     bundleStatus: args.bundleStatus,
@@ -163,12 +127,7 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
   };
 }
 
-function commandChannel(
-  args: ProjectIntegrationArgs,
-  channel: ResolvedUpdateChannel,
-  crossMajor: boolean,
-  upgradeOutcome: ReturnType<typeof classifyUpgradeOutcome> | null,
-): ResolvedUpdateChannel {
+function commandChannel(args: ProjectIntegrationArgs, channel: ResolvedUpdateChannel, crossMajor: boolean, upgradeOutcome: ReturnType<typeof classifyUpgradeOutcome> | null): ResolvedUpdateChannel {
   if (crossMajor && upgradeOutcome && !shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome)) {
     return resolveInvokedUpdateChannel({
       channel: "development",
@@ -180,10 +139,7 @@ function commandChannel(
   return channel;
 }
 
-function appPhaseBlockers(
-  bundleStatus: string,
-  majorBoundaryBlock: string | null,
-): string[] {
+function appPhaseBlockers(bundleStatus: string, majorBoundaryBlock: string | null): string[] {
   const blockers: string[] = [];
   if (bundleStatus === APP_MANUAL_REVIEW_NEEDED) {
     blockers.push("app: manual review is required before choosing an app write path");
@@ -206,32 +162,29 @@ function retryGuidance(exit: IntegrationExit): string {
 }
 
 export function summarizeProjectIntegration(args: ProjectIntegrationArgs): ProjectIntegrationSummary {
-  const channel = args.resolvedChannel ?? resolveInvokedUpdateChannel({
-    channel: args.channel ?? null,
-    env: args.env,
-    home: args.home,
-    sourceRoot: args.sourceRoot,
-  });
+  const channel =
+    args.resolvedChannel ??
+    resolveInvokedUpdateChannel({
+      channel: args.channel ?? null,
+      env: args.env,
+      home: args.home,
+      sourceRoot: args.sourceRoot,
+    });
   const integrationTargets = resolveIntegrationTargets(args);
   const install = args.installClassification ?? classifyInstall({ appHome: integrationTargets.installRoot, sourceRoot: args.sourceRoot });
-  const crossMajorDetected =
-    args.crossMajorBoundaryDetected ??
-    crossMajorBoundaryApplies(install, args.sourceRoot);
+  const crossMajorDetected = args.crossMajorBoundaryDetected ?? crossMajorBoundaryApplies(install, args.sourceRoot);
   const successorAnnounced = args.successorAnnounced ?? isStableSuccessorAnnounced(args.sourceRoot, "stable");
   const crossMajor = crossMajorDetected && successorAnnounced;
   const runningMajor = crossMajorDetected
-    ? parseSemverMajor(
+    ? (parseSemverMajor(
         resolveRunningVersion({
           appHome: integrationTargets.installRoot,
           sourceRoot: args.sourceRoot,
           install,
         }),
-      ) ?? 0
+      ) ?? 0)
     : 0;
-  const majorBoundaryBlock =
-    crossMajorDetected && !successorAnnounced && runningMajor > 0 && runningMajor < 3
-      ? majorBoundaryBlockMessage(channel.channel)
-      : null;
+  const majorBoundaryBlock = crossMajorDetected && !successorAnnounced && runningMajor > 0 && runningMajor < 3 ? majorBoundaryBlockMessage(channel.channel) : null;
   const upgradeOutcome = crossMajor
     ? classifyUpgradeOutcome({
         appHome: integrationTargets.installRoot,
@@ -240,31 +193,24 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         channel,
       })
     : null;
-  const pendingProjectMigration = pendingRuntimeMigrationItems({
-    appHome: integrationTargets.installRoot,
-    project: args.project,
-    home: args.home,
-    force: false,
-    sourceRoot: args.sourceRoot,
-    channel: args.channel ?? null,
-    env: args.env,
-  }, channel);
-  const crossMajorMigration =
-    crossMajor && upgradeOutcome !== null && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
+  const pendingProjectMigration = pendingRuntimeMigrationItems(
+    {
+      appHome: integrationTargets.installRoot,
+      project: args.project,
+      home: args.home,
+      force: false,
+      sourceRoot: args.sourceRoot,
+      channel: args.channel ?? null,
+      env: args.env,
+    },
+    channel,
+  );
+  const crossMajorMigration = crossMajor && upgradeOutcome !== null && shouldIncludeCrossMajorPlanItems(channel, upgradeOutcome);
   const isNpx = isNpxBundleRoot(args.sourceRoot);
-  const classificationBundleStatus =
-    isNpx && integrationTargets.platformBundleStatus !== undefined
-      ? integrationTargets.platformBundleStatus
-      : integrationTargets.bundleStatus;
-  const needsAppUpgrade =
-    isNpx && integrationTargets.bundleStatus === APP_UP_TO_DATE
-      ? appNeedsUpgrade(integrationTargets.platformBundleStatus ?? APP_UP_TO_DATE)
-      : appNeedsUpgrade(classificationBundleStatus);
+  const classificationBundleStatus = isNpx && integrationTargets.platformBundleStatus !== undefined ? integrationTargets.platformBundleStatus : integrationTargets.bundleStatus;
+  const needsAppUpgrade = isNpx && integrationTargets.bundleStatus === APP_UP_TO_DATE ? appNeedsUpgrade(integrationTargets.platformBundleStatus ?? APP_UP_TO_DATE) : appNeedsUpgrade(classificationBundleStatus);
 
-  const appPending =
-    pendingProjectMigration.length +
-    (needsAppUpgrade ? 1 : 0) +
-    (crossMajorMigration ? 1 : 0);
+  const appPending = pendingProjectMigration.length + (needsAppUpgrade ? 1 : 0) + (crossMajorMigration ? 1 : 0);
   const appBlockers = appPhaseBlockers(classificationBundleStatus, majorBoundaryBlock);
   const appPhase = integrationPhase({
     total: appPending + appBlockers.length,
@@ -274,11 +220,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
   });
   const hasUpgradeWork = appPending > 0;
   const hasBlockers = appBlockers.length > 0;
-  const aggregateStatus: ProjectIntegrationSummary["aggregate_status"] = hasUpgradeWork
-    ? "upgrade"
-    : hasBlockers
-      ? "blocked"
-      : "stay";
+  const aggregateStatus: ProjectIntegrationSummary["aggregate_status"] = hasUpgradeWork ? "upgrade" : hasBlockers ? "blocked" : "stay";
   const scenarioFacts: IntegrationScenarioFacts = {
     bundleStatus: classificationBundleStatus,
     pendingArtifactCount: pendingProjectMigration.length,
@@ -288,11 +230,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
     needsAppUpgrade,
   };
   const scenario = classifyIntegrationScenario(scenarioFacts);
-  const guidanceMessage = appBlockers.length > 0
-    ? appBlockers.join("; ")
-    : hasUpgradeWork
-      ? "Preview the app or project-state upgrade, then apply the approved command."
-      : "No app or project-state upgrade is required.";
+  const guidanceMessage = appBlockers.length > 0 ? appBlockers.join("; ") : hasUpgradeWork ? "Preview the app or project-state upgrade, then apply the approved command." : "No app or project-state upgrade is required.";
   const exit = integrationExit(hasUpgradeWork, appBlockers.length > 0);
 
   const cmdsChannel = commandChannel(args, channel, crossMajor, upgradeOutcome);
@@ -305,9 +243,7 @@ export function summarizeProjectIntegration(args: ProjectIntegrationArgs): Proje
         cwdDefault: true,
       })
     : null;
-  const message = hasUpgradeWork
-    ? `${integrationScenarioMessage(scenario, scenarioFacts)} ${guidanceMessage}`
-    : guidanceMessage;
+  const message = hasUpgradeWork ? `${integrationScenarioMessage(scenario, scenarioFacts)} ${guidanceMessage}` : guidanceMessage;
 
   return {
     recommendation: aggregateStatus === "upgrade" ? "upgrade" : "stay",
@@ -334,10 +270,7 @@ export function projectIntegrationAttention(summary: ProjectIntegrationSummary):
     return null;
   }
   const preview = summary.dry_run_command ? `\`${summary.dry_run_command}\`` : "the preview command";
-  const prefix =
-    summary.pending_artifacts > 0
-      ? "normal"
-      : "degraded";
+  const prefix = summary.pending_artifacts > 0 ? "normal" : "degraded";
   const previewText = summary.dry_run_command ? ` Preview ${preview}.` : "";
   return `${prefix}: ${summary.message}${previewText}`;
 }

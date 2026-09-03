@@ -6,23 +6,12 @@ import { fileURLToPath } from "node:url";
 import type { JsonObject } from "../core/jsonValue.js";
 import { BOOTSTRAP_SOURCE_ROOT_ENV, resolveSourceRoot } from "../core/sourceRoot.js";
 import { withReadOnlyYamlMappingCache } from "../core/yaml.js";
-import {
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  type PersonalGlossaryCandidateProjection,
-} from "../analytics/personalGlossaryCandidateProjection.js";
-import {
-  ADAPTER_VERSION,
-  contentFingerprint,
-  originIdentity,
-} from "../analytics/extractCorpus/core.js";
+import { persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../analytics/personalGlossaryCandidateProjection.js";
+import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../analytics/extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "../analytics/personalGlossaryExplicitMining.js";
 import { mineRecurringGlossaryCandidates } from "../analytics/personalGlossaryRecurrence.js";
-import {
-  readCurrentPersonalGlossaryCandidateProjection,
-  type PersonalGlossaryCurrentGenerationResult,
-} from "../analytics/personalGlossaryCurrentGeneration.js";
+import { readCurrentPersonalGlossaryCandidateProjection, type PersonalGlossaryCurrentGenerationResult } from "../analytics/personalGlossaryCurrentGeneration.js";
 import { runPersonalGlossaryEvaluationDecisionCommand } from "../cli/commands/personalGlossaryDecision.js";
 import type { GlossaryEvidenceCapsule } from "../registries/glossaryCandidateContracts.js";
 import { personalGlossaryCandidateDecisionContract } from "../registries/glossaryCandidateDecisionContract.js";
@@ -80,20 +69,10 @@ function syntheticSourceId(id: string, index = 0): string {
   return `synthetic:${id}:${index}`;
 }
 
-function syntheticRecord(
-  id: string,
-  sourceKind: string,
-  text: string,
-  index = 0,
-  actor: "user" | "agent" = "user",
-): JsonObject {
+function syntheticRecord(id: string, sourceKind: string, text: string, index = 0, actor: "user" | "agent" = "user"): JsonObject {
   const sourceId = syntheticSourceId(id, index);
   const conversation = sourceKind === "conversation_turn";
-  const data = sourceKind === "instruction_document"
-    ? { content: text, signal_type: "instruction" }
-    : sourceKind === "project_config_signal"
-      ? { signals: [text], signal_type: "configuration" }
-      : { text, signal_type: "correction", actor: actor === "user" ? "user" : "assistant" };
+  const data = sourceKind === "instruction_document" ? { content: text, signal_type: "instruction" } : sourceKind === "project_config_signal" ? { signals: [text], signal_type: "configuration" } : { text, signal_type: "correction", actor: actor === "user" ? "user" : "assistant" };
   return {
     source_id: sourceId,
     source_kind: sourceKind,
@@ -109,10 +88,10 @@ function syntheticRecord(
     content_fingerprint: contentFingerprint(text),
     ...(conversation
       ? {
-        session_id: `evaluation-session-${id}-${index}`,
-        conversation_key: `evaluation-session-${id}-${index}`,
-        author_class: actor,
-      }
+          session_id: `evaluation-session-${id}-${index}`,
+          conversation_key: `evaluation-session-${id}-${index}`,
+          author_class: actor,
+        }
       : {}),
   } as unknown as JsonObject;
 }
@@ -126,18 +105,13 @@ function withBehaviorWorkspace<T>(label: string, run: (tiersDir: string, root: s
   }
 }
 
-function behaviorList(
-  fixture: Mapping,
-  key: "discovery" | "scope" | "inferred_review" | "explicit_admission",
-): Mapping[] {
+function behaviorList(fixture: Mapping, key: "discovery" | "scope" | "inferred_review" | "explicit_admission"): Mapping[] {
   const records = mappings(fixture[key]);
   if (records.length === 0) throw new Error(`behavior fixture ${key} is unavailable`);
   return records;
 }
 
-function mapExplicitCandidates<T extends { capsule: GlossaryEvidenceCapsule }>(
-  candidates: readonly T[],
-): Map<string, T> {
+function mapExplicitCandidates<T extends { capsule: GlossaryEvidenceCapsule }>(candidates: readonly T[]): Map<string, T> {
   return new Map(
     candidates.flatMap((candidate) => {
       const sourceId = candidate.capsule.evidence[0]?.source_id;
@@ -154,9 +128,7 @@ function candidateIdentity(capsule: GlossaryEvidenceCapsule): string {
   return `${capsule.candidate_id}\0${capsule.candidate_revision}\0${capsule.capsule_sha256}`;
 }
 
-function evaluationDecisionBatches(
-  candidates: readonly EvaluationDecisionCandidate[],
-): EvaluationDecisionCandidate[][] {
+function evaluationDecisionBatches(candidates: readonly EvaluationDecisionCandidate[]): EvaluationDecisionCandidate[][] {
   const maximum = personalGlossaryCandidateProjectionContract().candidatesMax;
   if (!Number.isSafeInteger(maximum) || maximum < 1) {
     throw new Error("candidate projection maximum is unavailable");
@@ -172,9 +144,7 @@ function evaluationDecisionBatches(
   const batches: EvaluationDecisionCandidate[][] = [];
   for (const key of [...byGeneration.keys()].sort(compareText)) {
     const group = byGeneration.get(key)!;
-    const ordered = [...group].sort((left, right) =>
-      compareText(`${candidateIdentity(left.capsule)}\0${left.id}`, `${candidateIdentity(right.capsule)}\0${right.id}`),
-    );
+    const ordered = [...group].sort((left, right) => compareText(`${candidateIdentity(left.capsule)}\0${left.id}`, `${candidateIdentity(right.capsule)}\0${right.id}`));
     let batch: EvaluationDecisionCandidate[] = [];
     let candidateIds = new Set<string>();
     for (const candidate of ordered) {
@@ -191,18 +161,9 @@ function evaluationDecisionBatches(
   return batches;
 }
 
-function assertCompleteEvaluationBatch(
-  projection: PersonalGlossaryCandidateProjection,
-  batch: readonly EvaluationDecisionCandidate[],
-): void {
+function assertCompleteEvaluationBatch(projection: PersonalGlossaryCandidateProjection, batch: readonly EvaluationDecisionCandidate[]): void {
   const capsule = batch[0]?.capsule;
-  if (
-    capsule === undefined ||
-    projection.generation !== capsule.generation ||
-    projection.policy_version !== capsule.policy_version ||
-    projection.report.cap.applied ||
-    projection.candidates.length !== batch.length
-  ) {
+  if (capsule === undefined || projection.generation !== capsule.generation || projection.policy_version !== capsule.policy_version || projection.report.cap.applied || projection.candidates.length !== batch.length) {
     throw new Error("evaluation projection did not retain its complete batch");
   }
   const retained = new Set(projection.candidates.map((candidate) => candidateIdentity(candidate.capsule)));
@@ -262,22 +223,13 @@ function runEvaluationDecision(
   } catch {
     throw new Error("evaluation decision command did not return JSON");
   }
-  if (
-    result?.schemaVersion !== "agentera.personalGlossaryAdmissionResult.v2" ||
-    mapping(result.receipt) === null ||
-    !["automatic_admission", "review_required", "abstain"].includes(String(result.status))
-  ) {
+  if (result?.schemaVersion !== "agentera.personalGlossaryAdmissionResult.v2" || mapping(result.receipt) === null || !["automatic_admission", "review_required", "abstain"].includes(String(result.status))) {
     throw new Error("evaluation decision command did not construct a current receipt");
   }
   return result.status as EvaluationDecisionStatus;
 }
 
-function runEvaluationDecisions(
-  candidates: readonly EvaluationDecisionCandidate[],
-  tiersDir: string,
-  root: string,
-  precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>,
-): Map<string, EvaluationDecisionStatus> {
+function runEvaluationDecisions(candidates: readonly EvaluationDecisionCandidate[], tiersDir: string, root: string, precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>): Map<string, EvaluationDecisionStatus> {
   const outcomes = new Map<string, EvaluationDecisionStatus>();
   const decisionContract = personalGlossaryCandidateDecisionContract();
   for (const [index, batch] of evaluationDecisionBatches(candidates).entries()) {
@@ -295,27 +247,12 @@ function runEvaluationDecisions(
     assertCompleteEvaluationBatch(projection, batch);
     persistPersonalGlossaryCandidateProjection(projection, { env });
     const current = readCurrentPersonalGlossaryCandidateProjection({ env, tiersDir });
-    if (
-      current.status !== "current" ||
-      current.projection === null ||
-      current.projection.projection_sha256 !== projection.projection_sha256
-    ) {
+    if (current.status !== "current" || current.projection === null || current.projection.projection_sha256 !== projection.projection_sha256) {
       throw new Error("evaluation projection is not bound to its current tier");
     }
     for (const candidate of batch) {
       if (outcomes.has(candidate.id)) throw new Error("evaluation decision IDs must be unique");
-      outcomes.set(
-        candidate.id,
-        runEvaluationDecision(
-          candidate.capsule,
-          projection,
-          env,
-          tiersDir,
-          current,
-          decisionContract,
-          precomputedExplicitMining,
-        ),
-      );
+      outcomes.set(candidate.id, runEvaluationDecision(candidate.capsule, projection, env, tiersDir, current, decisionContract, precomputedExplicitMining));
     }
   }
   return outcomes;
@@ -350,33 +287,19 @@ function executeScopeClassification(fixture: Mapping): { observations: Mapping[]
   return withBehaviorWorkspace("scope", (tiersDir) => {
     const cases = behaviorList(fixture, "scope");
     publishEvidenceTiers(
-      cases.map((record) => syntheticRecord(
-        String(record.id),
-        "conversation_turn",
-        String(record.text),
-        0,
-        record.actor === "agent" ? "agent" : "user",
-      )),
+      cases.map((record) => syntheticRecord(String(record.id), "conversation_turn", String(record.text), 0, record.actor === "agent" ? "agent" : "user")),
       { tiersDir, adapterVersion: ADAPTER_VERSION, publishedAt: FIXED_TIMESTAMP },
     );
     const mined = mineExplicitGlossaryCandidates({ tiersDir });
     if (mined.state !== "current") throw new Error("scope classification did not receive a current generation");
     const bySource = mapExplicitCandidates(mined.candidates);
-    const projectSources = new Set(
-      mined.abstentions
-        .filter((abstention) => abstention.reason === "project_only_scope")
-        .map((abstention) => abstention.source_id),
-    );
+    const projectSources = new Set(mined.abstentions.filter((abstention) => abstention.reason === "project_only_scope").map((abstention) => abstention.source_id));
     return {
       observations: cases.map((record) => {
         const sourceId = syntheticSourceId(String(record.id));
         return {
           id: record.id,
-          observed_scope: bySource.has(sourceId)
-            ? "personal"
-            : projectSources.has(sourceId)
-              ? "project"
-              : "neither",
+          observed_scope: bySource.has(sourceId) ? "personal" : projectSources.has(sourceId) ? "project" : "neither",
         };
       }),
       seam: {
@@ -395,9 +318,7 @@ function executeInferredReview(fixture: Mapping): { observations: Mapping[]; sea
     const cases = behaviorList(fixture, "inferred_review");
     const records = cases.flatMap((record) => {
       const id = String(record.id);
-      return mappings(record.sources).map((source, index) =>
-        syntheticRecord(id, String(source.source_kind), String(source.text), index),
-      );
+      return mappings(record.sources).map((source, index) => syntheticRecord(id, String(source.source_kind), String(source.text), index));
     });
     publishEvidenceTiers(records, {
       tiersDir,
@@ -491,31 +412,25 @@ export function evaluateGlossaryBehavior(fixture: Mapping): BehaviorExecution {
   });
 }
 
-function binaryExamples(
-  holdout: Mapping,
-  observations: Mapping,
-  key: "discovery" | "inferred_review" | "explicit_admission",
-  expected: string,
-  observed: string,
-): BinaryEvaluationExample[] {
-  const observedById = new Map(
-    mappings(observations[key]).flatMap((record) =>
-      nonEmptyString(record.id) ? [[record.id, record] as const] : []),
-  );
+function binaryExamples(holdout: Mapping, observations: Mapping, key: "discovery" | "inferred_review" | "explicit_admission", expected: string, observed: string): BinaryEvaluationExample[] {
+  const observedById = new Map(mappings(observations[key]).flatMap((record) => (nonEmptyString(record.id) ? [[record.id, record] as const] : [])));
   return mappings(holdout[key]).flatMap((record) => {
     const evaluated = nonEmptyString(record.id) ? observedById.get(record.id) : undefined;
     if (!record || !evaluated || !nonEmptyString(record.id) || typeof record[expected] !== "boolean" || typeof evaluated[observed] !== "boolean") {
       return [];
     }
-    return [{ id: record.id, expected: record[expected] as boolean, observed: evaluated[observed] as boolean }];
+    return [
+      {
+        id: record.id,
+        expected: record[expected] as boolean,
+        observed: evaluated[observed] as boolean,
+      },
+    ];
   });
 }
 
 function scopeExamples(holdout: Mapping, observations: Mapping): ScopeEvaluationExample[] {
-  const observedById = new Map(
-    mappings(observations.scope).flatMap((record) =>
-      nonEmptyString(record.id) ? [[record.id, record] as const] : []),
-  );
+  const observedById = new Map(mappings(observations.scope).flatMap((record) => (nonEmptyString(record.id) ? [[record.id, record] as const] : [])));
   return mappings(holdout.scope).flatMap((record) => {
     const evaluated = nonEmptyString(record.id) ? observedById.get(record.id) : undefined;
     if (!record || !evaluated || !nonEmptyString(record.id) || !nonEmptyString(record.expected_scope) || !nonEmptyString(evaluated.observed_scope)) {
@@ -544,7 +459,12 @@ function failureReport(errors: string[]): JsonObject {
     status: "fail",
     report: {
       exploratory: { release_authorizing: false, status: "not_run" },
-      release_gate: { release_authorizing: true, release_authorized: false, status: "fail", failure_reasons: errors },
+      release_gate: {
+        release_authorizing: true,
+        release_authorized: false,
+        status: "fail",
+        failure_reasons: errors,
+      },
     },
     authority: { path: "references/analysis/personal-glossary-evaluation-authority.yaml" },
     holdout: { path: "references/analysis/personal-glossary-holdout.yaml", status: "not_verified" },
@@ -557,7 +477,11 @@ function failureReport(errors: string[]): JsonObject {
         qualification_blocker: true,
         outcome: "explicit_automatic_admission_only",
       },
-      inferred_automatic_admission: { status: "disabled", enabled: false, measured_result: "cannot_enable" },
+      inferred_automatic_admission: {
+        status: "disabled",
+        enabled: false,
+        measured_result: "cannot_enable",
+      },
       release_authorizing: "fail_closed",
     },
     errors,
@@ -587,10 +511,7 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
   } catch {
     return failureReport([...authorityErrors, "cannot load frozen glossary evaluation fixture"]);
   }
-  const fixtureErrors = [
-    ...validateFrozenGlossaryHoldout(authority, holdout, holdoutBytes),
-    ...validateFrozenGlossaryBehaviorFixture(authority, holdout, behavior, behaviorBytes),
-  ];
+  const fixtureErrors = [...validateFrozenGlossaryHoldout(authority, holdout, holdoutBytes), ...validateFrozenGlossaryBehaviorFixture(authority, holdout, behavior, behaviorBytes)];
   if (authorityErrors.length > 0 || fixtureErrors.length > 0) {
     return failureReport([...authorityErrors, ...fixtureErrors]);
   }
@@ -622,24 +543,13 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
     return failureReport(["current personal glossary policy could not be recorded"]);
   }
   const results = [
-    calculateDiscoveryRecall(
-      binaryExamples(holdout, observations, "discovery", "expected_discoverable", "observed_discovered"),
-      metricRule(authority, "discovery_recall"),
-    ),
+    calculateDiscoveryRecall(binaryExamples(holdout, observations, "discovery", "expected_discoverable", "observed_discovered"), metricRule(authority, "discovery_recall")),
     calculateScopeAccuracy(scopeExamples(holdout, observations), metricRule(authority, "scope_accuracy")),
-    calculateInferredReviewPrecision(
-      binaryExamples(holdout, observations, "inferred_review", "expected_reviewable", "observed_reviewed"),
-      metricRule(authority, "inferred_review_precision"),
-    ),
-    calculateExplicitAdmissionPrecision(
-      binaryExamples(holdout, observations, "explicit_admission", "expected_admissible", "observed_admitted"),
-      metricRule(authority, "explicit_admission_precision"),
-    ),
+    calculateInferredReviewPrecision(binaryExamples(holdout, observations, "inferred_review", "expected_reviewable", "observed_reviewed"), metricRule(authority, "inferred_review_precision")),
+    calculateExplicitAdmissionPrecision(binaryExamples(holdout, observations, "explicit_admission", "expected_admissible", "observed_admitted"), metricRule(authority, "explicit_admission_precision")),
   ];
   const releaseGatePass = results.every((result) => result.status === "pass");
-  const releaseFailures = results
-    .filter((result) => result.status !== "pass")
-    .map((result) => `${result.metric}:${result.failure_reasons.join(",")}`);
+  const releaseFailures = results.filter((result) => result.status !== "pass").map((result) => `${result.metric}:${result.failure_reasons.join(",")}`);
   return {
     schemaVersion: GLOSSARY_EVALUATION_SCHEMA_VERSION,
     status: releaseGatePass ? "pass" : "fail",
@@ -662,9 +572,9 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
       id: holdout.holdout_id,
       status: holdout.status,
       fixture_sha256: sha256(holdoutBytes),
-       labels_sha256: glossaryEvaluationLabelDigest(holdout),
-       provenance: holdout.provenance as JsonObject,
-       case_counts: glossaryEvaluationCaseCounts(holdout),
+      labels_sha256: glossaryEvaluationLabelDigest(holdout),
+      provenance: holdout.provenance as JsonObject,
+      case_counts: glossaryEvaluationCaseCounts(holdout),
     },
     behavior_fixture: {
       id: behavior.fixture_id,
@@ -672,7 +582,7 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
       path: "references/analysis/personal-glossary-evaluation-corpus.yaml",
       fixture_sha256: sha256(behaviorBytes),
       provenance: behavior.provenance as JsonObject,
-       case_counts: glossaryEvaluationCaseCounts(behavior),
+      case_counts: glossaryEvaluationCaseCounts(behavior),
     },
     observations: {
       schema_version: observations.schema_version,
@@ -680,7 +590,7 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
       sha256: canonicalDigest(observations),
       holdout_fixture_sha256: observations.holdout_fixture_sha256,
       behavior_fixture_sha256: observations.behavior_fixture_sha256,
-       case_counts: glossaryEvaluationCaseCounts(observations),
+      case_counts: glossaryEvaluationCaseCounts(observations),
       seams: execution.seams,
       effects: [],
     },
@@ -709,10 +619,7 @@ export function evaluateGlossaryHoldout(root: string = resolveSourceRoot()): Jso
   } as unknown as JsonObject;
 }
 
-export function main(
-  out: (line: string) => void = (line) => process.stdout.write(line),
-  root: string = resolveSourceRoot(),
-): number {
+export function main(out: (line: string) => void = (line) => process.stdout.write(line), root: string = resolveSourceRoot()): number {
   const report = evaluateGlossaryHoldout(root);
   out(JSON.stringify(report, null, 2) + "\n");
   return report.status === "pass" ? 0 : 1;

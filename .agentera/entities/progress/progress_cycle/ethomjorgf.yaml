@@ -1,0 +1,15 @@
+id: ethomjorgf
+artifact: progress
+record:
+  timestamp: 2026-09-03 20:16
+  type: chore
+  phase: build
+  what: Normalized the CLI formatter-owned surface with Vite+ 0.3.0 and Oxfmt 0.64.0.
+  context:
+    intent: Establish a formatter-clean durable baseline without migrating root toolchain ownership.
+    constraints: Preserve fixtures, generated and packaged outputs, manifests, hooks, CI, and publication behavior.
+    scope: packages/cli maintained source, scripts, tests, and configuration, excluding declared protected surfaces.
+  discovered: Six near-limit source monoliths remain excluded so mechanical formatting does not duplicate TODO ehudiaaepe lint cleanup; semantic fixtures and generated outputs are excluded.
+  verified: Exact formatter check passed on 725 files; focused clean/drift regression, typecheck, build, 25 package tests, and compact passed. Source verification passed 4280 tests with 6 unrelated baseline/state failures.
+  next: Task hyemdltspp can adopt the normalized configuration during the root Vite+ migration.
+  publication_order: 317

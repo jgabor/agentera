@@ -62,36 +62,20 @@ function appendBounded(current: string, chunk: unknown): string {
 function observation(value: unknown): string {
   let rendered: string;
   try {
-    rendered = JSON.stringify(value, (_key, item) => item instanceof Error
-      ? { name: item.name, message: item.message }
-      : item) ?? String(value);
+    rendered = JSON.stringify(value, (_key, item) => (item instanceof Error ? { name: item.name, message: item.message } : item)) ?? String(value);
   } catch (error) {
     rendered = JSON.stringify({ serializationError: String(error), value: String(value) });
   }
   return rendered.slice(0, OBSERVATION_LIMIT);
 }
 
-export function assertRaceInvariant(
-  repetition: number,
-  invariant: string,
-  condition: boolean,
-  observed: unknown,
-): asserts condition {
+export function assertRaceInvariant(repetition: number, invariant: string, condition: boolean, observed: unknown): asserts condition {
   if (!condition) {
     throw new Error(`stale-lock race repetition ${repetition} violated invariant '${invariant}': ${observation(observed)}`);
   }
 }
 
-function startWorker(
-  root: string,
-  artifact: string,
-  boundary: string,
-  resultPath: string,
-  readyPath: string,
-  startPath: string,
-  controls: WorkerControls,
-  timeoutMs: number,
-): WorkerHandle {
+function startWorker(root: string, artifact: string, boundary: string, resultPath: string, readyPath: string, startPath: string, controls: WorkerControls, timeoutMs: number): WorkerHandle {
   const child = spawn(process.execPath, [publicationWorker], {
     cwd: path.resolve(import.meta.dirname, "../.."),
     env: {
@@ -120,8 +104,12 @@ function startWorker(
   let spawnError: string | undefined;
   child.stdout.setEncoding("utf8");
   child.stderr.setEncoding("utf8");
-  child.stdout.on("data", (chunk) => { stdout = appendBounded(stdout, chunk); });
-  child.stderr.on("data", (chunk) => { stderr = appendBounded(stderr, chunk); });
+  child.stdout.on("data", (chunk) => {
+    stdout = appendBounded(stdout, chunk);
+  });
+  child.stderr.on("data", (chunk) => {
+    stderr = appendBounded(stderr, chunk);
+  });
   handle.child = child;
   handle.completion = new Promise((resolve) => {
     let settled = false;
@@ -160,11 +148,7 @@ async function terminateWorkers(workers: WorkerHandle[]): Promise<void> {
   await Promise.all(workers.map(({ completion }) => completion));
 }
 
-async function waitForWorkerFiles(
-  paths: string[],
-  workers: WorkerHandle[],
-  timeoutMs: number,
-): Promise<{ ready: boolean; paths: string[]; outcomes: Array<WorkerOutcome | undefined> }> {
+async function waitForWorkerFiles(paths: string[], workers: WorkerHandle[], timeoutMs: number): Promise<{ ready: boolean; paths: string[]; outcomes: Array<WorkerOutcome | undefined> }> {
   const deadline = Date.now() + timeoutMs;
   while (!paths.every((candidate) => fs.existsSync(candidate))) {
     if (workers.some(({ outcome }) => outcome !== undefined) || Date.now() >= deadline) {
@@ -180,15 +164,7 @@ export async function waitForFiles(paths: string[], timeoutMs = WORKER_TIMEOUT_M
   if (!result.ready) throw new Error(`timed out waiting for publication barrier: ${observation(result)}`);
 }
 
-export async function publicationProcess(
-  root: string,
-  artifact: string,
-  boundary: string,
-  resultPath: string,
-  readyPath: string,
-  startPath: string,
-  controls: WorkerControls = {},
-): Promise<void> {
+export async function publicationProcess(root: string, artifact: string, boundary: string, resultPath: string, readyPath: string, startPath: string, controls: WorkerControls = {}): Promise<void> {
   const worker = startWorker(root, artifact, boundary, resultPath, readyPath, startPath, controls, WORKER_TIMEOUT_MS);
   const outcome = await worker.completion;
   if (outcome.code !== 0) throw new Error(`publication worker failed: ${observation(outcome)}`);
@@ -199,7 +175,10 @@ function readResult(repetition: number, file: string): PublicationResult {
   try {
     text = fs.readFileSync(file, "utf8");
     const parsed = JSON.parse(text) as PublicationResult;
-    assertRaceInvariant(repetition, "valid worker result", typeof parsed.published === "boolean", { path: file, parsed });
+    assertRaceInvariant(repetition, "valid worker result", typeof parsed.published === "boolean", {
+      path: file,
+      parsed,
+    });
     return parsed;
   } catch (error) {
     if (error instanceof Error && error.message.startsWith("stale-lock race repetition ")) throw error;
@@ -211,11 +190,7 @@ function readResult(repetition: number, file: string): PublicationResult {
   }
 }
 
-export async function concurrentPublication(
-  root: string,
-  suffix = "",
-  options: RaceOptions = {},
-): Promise<PublicationRaceResult> {
+export async function concurrentPublication(root: string, suffix = "", options: RaceOptions = {}): Promise<PublicationRaceResult> {
   const repetition = options.repetition ?? 1;
   const timeoutMs = options.timeoutMs ?? WORKER_TIMEOUT_MS;
   const healthResult = path.join(root, `health${suffix}-result.json`);
@@ -238,19 +213,7 @@ export async function concurrentPublication(
   let failed = true;
   try {
     try {
-      workers.push(
-        startWorker(root, "health", "health_audit", healthResult, healthReady, startPath, controls(0), timeoutMs),
-        startWorker(
-          root,
-          "decisions",
-          "decision",
-          decisionsResult,
-          decisionsReady,
-          startPath,
-          controls(1),
-          options.fault ? WORKER_TIMEOUT_MS : timeoutMs,
-        ),
-      );
+      workers.push(startWorker(root, "health", "health_audit", healthResult, healthReady, startPath, controls(0), timeoutMs), startWorker(root, "decisions", "decision", decisionsResult, decisionsReady, startPath, controls(1), options.fault ? WORKER_TIMEOUT_MS : timeoutMs));
     } catch (error) {
       assertRaceInvariant(repetition, "worker spawn", false, { error });
     }
@@ -267,19 +230,30 @@ export async function concurrentPublication(
       try {
         fs.writeFileSync(preparationContinuePath, "prepare\n");
       } catch (error) {
-        assertRaceInvariant(repetition, "writer preparation release", false, { path: preparationContinuePath, error });
+        assertRaceInvariant(repetition, "writer preparation release", false, {
+          path: preparationContinuePath,
+          error,
+        });
       }
       const overlap = await waitForWorkerFiles(reclaimReady, workers, timeoutMs);
       assertRaceInvariant(repetition, "both workers reached stale reclamation", overlap.ready, overlap);
       try {
         fs.writeFileSync(reclaimContinuePath, "reclaim\n");
       } catch (error) {
-        assertRaceInvariant(repetition, "stale reclamation release", false, { path: reclaimContinuePath, error });
+        assertRaceInvariant(repetition, "stale reclamation release", false, {
+          path: reclaimContinuePath,
+          error,
+        });
       }
     }
     const outcomes = await Promise.all(workers.map(({ completion }) => completion));
     const timedOut = outcomes.some((outcome) => outcome.timedOut);
-    assertRaceInvariant(repetition, timedOut ? "worker timeout" : "worker completion", outcomes.every(({ code }) => code === 0), outcomes);
+    assertRaceInvariant(
+      repetition,
+      timedOut ? "worker timeout" : "worker completion",
+      outcomes.every(({ code }) => code === 0),
+      outcomes,
+    );
     const results = [healthResult, decisionsResult].map((file) => readResult(repetition, file));
     failed = false;
     return { results, reclaimOverlap: options.reclaimBarrier === true };

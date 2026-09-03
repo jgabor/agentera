@@ -123,9 +123,7 @@ export function dispatch(argv, options = {}) {
     if (!result.fallthrough) {
       return result.exitCode;
     }
-    console.error(
-      `agentera: app-home backend crashed (exit ${result.exitCode}); falling through to next resolution strategy`,
-    );
+    console.error(`agentera: app-home backend crashed (exit ${result.exitCode}); falling through to next resolution strategy`);
     backend = resolveBackend({
       cwd: options.cwd,
       env: options.env,
@@ -152,10 +150,7 @@ export function dispatch(argv, options = {}) {
  * @param {string} [reason]
  */
 export function printInstallHelp(reason) {
-  const lines = [
-    "agentera: npm CLI shim (0.x) — native TypeScript CLI ships in Agentera 3.0.",
-    reason ? `agentera: ${reason}` : "",
-  ];
+  const lines = ["agentera: npm CLI shim (0.x) — native TypeScript CLI ships in Agentera 3.0.", reason ? `agentera: ${reason}` : ""];
   if (process.env.AGENTERA_NO_V3_HINT !== "1") {
     lines.push(
       "",
@@ -163,17 +158,11 @@ export function printInstallHelp(reason) {
       `  ${V3_NEXT_COMMAND}`,
       "",
       "Agentera v3 uses the shared skill plus CLI; preview or apply app/project migration:",
-      "  npx -y agentera@next upgrade --channel development --project \"$PWD\" --dry-run",
-      "  npx -y agentera@next upgrade --channel development --project \"$PWD\" --yes",
+      '  npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run',
+      '  npx -y agentera@next upgrade --channel development --project "$PWD" --yes',
     );
   }
-  lines.push(
-    "",
-    "Stable 2.x recovery from a clone (requires uv):",
-    "  uv run scripts/agentera prime",
-    "",
-    "https://github.com/jgabor/agentera#install",
-  );
+  lines.push("", "Stable 2.x recovery from a clone (requires uv):", "  uv run scripts/agentera prime", "", "https://github.com/jgabor/agentera#install");
   for (const line of lines.filter(Boolean)) {
     console.error(line);
   }

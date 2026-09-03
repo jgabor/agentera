@@ -11,11 +11,13 @@ const defaultExpectedFacts: JsonObject = {
   artifact_expectations: { writes: "none" },
 };
 
-function fixtureText(opts: {
-  output?: string;
-  toolTrace?: string[] | null;
-  expectedFacts?: JsonObject;
-} = {}): string {
+function fixtureText(
+  opts: {
+    output?: string;
+    toolTrace?: string[] | null;
+    expectedFacts?: JsonObject;
+  } = {},
+): string {
   const output = opts.output ?? "suggest ⧉ realisera for Task 2";
   const toolTrace = opts.toolTrace ?? null;
   const expectedFacts = opts.expectedFacts ?? defaultExpectedFacts;
@@ -212,15 +214,7 @@ describe("report summaries", () => {
       status: "pass",
       detail: "fixture expects no artifact writes; offline eval performed none",
     });
-    expect(new Set(result.checked_facts.map((f: any) => f.fact))).toEqual(
-      new Set([
-        "required_output[0]",
-        "required_output[1]",
-        "forbidden_output[0]",
-        "required_artifacts[0]",
-        "artifact_expectations.writes",
-      ]),
-    );
+    expect(new Set(result.checked_facts.map((f: any) => f.fact))).toEqual(new Set(["required_output[0]", "required_output[1]", "forbidden_output[0]", "required_artifacts[0]", "artifact_expectations.writes"]));
   });
 
   it("fails and reports the first failing fact", () => {

@@ -145,7 +145,11 @@ describe("SQLite extractors (node:sqlite)", () => {
     const errors: string[] = [];
     const recs = extractCopilotSessions(dbp, errors);
     const user = recs.find((r) => r.source_kind === "conversation_turn" && r.data.actor === "user");
-    expect(user).toMatchObject({ runtime: "copilot", source_product: "github-copilot", author_class: "user" });
+    expect(user).toMatchObject({
+      runtime: "copilot",
+      source_product: "github-copilot",
+      author_class: "user",
+    });
     expect(user!.content_fingerprint).toBe(contentFingerprint("should we change the plan?"));
     expect(user!.origin_id).toBe(originIdentity("session:s1"));
     expect(recs.some((r) => r.source_kind === "history_prompt")).toBe(true);
@@ -159,13 +163,19 @@ describe("SQLite extractors (node:sqlite)", () => {
     const dbp = path.join(sess, "store.db");
     const db = new DatabaseSync(dbp);
     db.exec("CREATE TABLE blobs(id INTEGER, data BLOB)");
-    const msg = JSON.stringify({ role: "user", content: [{ type: "text", text: "why avoid this?" }] });
+    const msg = JSON.stringify({
+      role: "user",
+      content: [{ type: "text", text: "why avoid this?" }],
+    });
     db.prepare("INSERT INTO blobs VALUES (?,?)").run(1, Buffer.from(msg, "utf-8"));
     db.close();
     const errors: string[] = [];
     const recs = extractCursorAgentSessions(chats, errors, [], null);
     const user = recs.find((r) => r.runtime === "cursor" && r.source_product === "cursor-agent" && r.source_kind === "conversation_turn");
-    expect(user).toMatchObject({ author_class: "user", origin_id: originIdentity("session:sess1") });
+    expect(user).toMatchObject({
+      author_class: "user",
+      origin_id: originIdentity("session:sess1"),
+    });
     expect(user!.content_fingerprint).toBe(contentFingerprint("why avoid this?"));
   });
 });
@@ -192,7 +202,11 @@ describe("bounded provenance", () => {
         JSON.stringify({
           type: "response_item",
           timestamp: "2026-01-01T00:00:02.000Z",
-          payload: { type: "message", role: "assistant", content: [{ type: "output_text", text: "done" }] },
+          payload: {
+            type: "message",
+            role: "assistant",
+            content: [{ type: "output_text", text: "done" }],
+          },
         }),
       ].join("\n") + "\n",
     );
@@ -218,7 +232,16 @@ describe("bounded provenance", () => {
     publishEvidenceTiers(records, {
       tiersDir,
       adapterVersion: "agentera-v3-corpus-3",
-      runtimeStatuses: [{ runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "ok", reason: "records_extracted" }],
+      runtimeStatuses: [
+        {
+          runtime: "codex",
+          source_product: "codex",
+          source_class: "active_runtime",
+          active_runtime: true,
+          status: "ok",
+          reason: "records_extracted",
+        },
+      ],
       publishedAt: "2026-01-03T00:00:00.000Z",
     });
     const signal = readSignalTier(tiersDir);
@@ -291,7 +314,16 @@ describe("bounded provenance", () => {
     publishEvidenceTiers(records, {
       tiersDir,
       adapterVersion: "agentera-v3-corpus-3",
-      runtimeStatuses: [{ runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "ok", reason: "records_extracted" }],
+      runtimeStatuses: [
+        {
+          runtime: "codex",
+          source_product: "codex",
+          source_class: "active_runtime",
+          active_runtime: true,
+          status: "ok",
+          reason: "records_extracted",
+        },
+      ],
       publishedAt: "2026-01-03T00:00:00.000Z",
     });
     expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "current" });
@@ -316,7 +348,11 @@ describe("bounded provenance", () => {
       [
         JSON.stringify({
           type: "session_meta",
-          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session", author_class: "injected_instruction" } },
+          payload: {
+            id: "s1",
+            cwd: "/project",
+            provenance: { origin: "instruction://session", author_class: "injected_instruction" },
+          },
         }),
         JSON.stringify({
           type: "session_meta",
@@ -324,7 +360,11 @@ describe("bounded provenance", () => {
         }),
         JSON.stringify({
           type: "response_item",
-          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "retained session author" }] },
+          payload: {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "retained session author" }],
+          },
         }),
         JSON.stringify({
           type: "session_meta",
@@ -332,7 +372,11 @@ describe("bounded provenance", () => {
         }),
         JSON.stringify({
           type: "response_item",
-          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "replacement session author" }] },
+          payload: {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "replacement session author" }],
+          },
         }),
       ].join("\n") + "\n",
     );
@@ -359,7 +403,11 @@ describe("bounded provenance", () => {
       [
         JSON.stringify({
           type: "session_meta",
-          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://one", author_class: "injected_instruction" } },
+          payload: {
+            id: "s1",
+            cwd: "/project",
+            provenance: { origin: "instruction://one", author_class: "injected_instruction" },
+          },
         }),
         JSON.stringify({
           type: "session_meta",
@@ -367,7 +415,11 @@ describe("bounded provenance", () => {
         }),
         JSON.stringify({
           type: "response_item",
-          payload: { type: "message", role: "user", content: [{ type: "input_text", text: "changed session origin" }] },
+          payload: {
+            type: "message",
+            role: "user",
+            content: [{ type: "input_text", text: "changed session origin" }],
+          },
         }),
       ].join("\n") + "\n",
     );
@@ -398,28 +450,43 @@ describe("bounded provenance", () => {
   it("distinguishes absent message origin from malformed message provenance", () => {
     const sessionsDir = path.join(tmp, "codex-message-provenance-shapes");
     fs.mkdirSync(sessionsDir, { recursive: true });
-    const message = (timestamp: string, text: string, provenance: Record<string, unknown>) => JSON.stringify({
-      type: "response_item",
-      timestamp,
-      payload: {
-        type: "message",
-        role: "user",
-        provenance,
-        content: [{ type: "input_text", text }],
-      },
-    });
+    const message = (timestamp: string, text: string, provenance: Record<string, unknown>) =>
+      JSON.stringify({
+        type: "response_item",
+        timestamp,
+        payload: {
+          type: "message",
+          role: "user",
+          provenance,
+          content: [{ type: "input_text", text }],
+        },
+      });
     fs.writeFileSync(
       path.join(sessionsDir, "session.jsonl"),
       [
         JSON.stringify({
           type: "session_meta",
-          payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session", author_class: "injected_instruction" } },
+          payload: {
+            id: "s1",
+            cwd: "/project",
+            provenance: { origin: "instruction://session", author_class: "injected_instruction" },
+          },
         }),
         message("2026-01-01T00:00:01.000Z", "author only absent origin", { author_class: "user" }),
-        message("2026-01-01T00:00:02.000Z", "malformed origin with author", { origin: 42, author_class: "user" }),
-        message("2026-01-01T00:00:03.000Z", "malformed author with origin", { origin: "instruction://session", author_class: [] }),
-        message("2026-01-01T00:00:04.000Z", "matching origin without author", { origin: "instruction://session" }),
-        message("2026-01-01T00:00:05.000Z", "malformed author without origin", { author_class: null }),
+        message("2026-01-01T00:00:02.000Z", "malformed origin with author", {
+          origin: 42,
+          author_class: "user",
+        }),
+        message("2026-01-01T00:00:03.000Z", "malformed author with origin", {
+          origin: "instruction://session",
+          author_class: [],
+        }),
+        message("2026-01-01T00:00:04.000Z", "matching origin without author", {
+          origin: "instruction://session",
+        }),
+        message("2026-01-01T00:00:05.000Z", "malformed author without origin", {
+          author_class: null,
+        }),
         message("2026-01-01T00:00:06.000Z", "malformed origin without author", { origin: "" }),
       ].join("\n") + "\n",
     );
@@ -436,15 +503,19 @@ describe("bounded provenance", () => {
     expect(corpus.records).toHaveLength(6);
     const byContent = new Map(corpus.records.map((record) => [record.data.content, record]));
     const sessionOrigin = originIdentity("instruction://session");
-    expect(byContent.get("author only absent origin")).toMatchObject({ origin_id: sessionOrigin, author_class: "user" });
-    expect(byContent.get("matching origin without author")).toMatchObject({ origin_id: sessionOrigin, author_class: "injected_instruction" });
-    for (const text of [
-      "malformed origin with author",
-      "malformed author with origin",
-      "malformed author without origin",
-      "malformed origin without author",
-    ]) {
-      expect(byContent.get(text)).toMatchObject({ origin_id: sessionOrigin, data: { actor: "user", content: text } });
+    expect(byContent.get("author only absent origin")).toMatchObject({
+      origin_id: sessionOrigin,
+      author_class: "user",
+    });
+    expect(byContent.get("matching origin without author")).toMatchObject({
+      origin_id: sessionOrigin,
+      author_class: "injected_instruction",
+    });
+    for (const text of ["malformed origin with author", "malformed author with origin", "malformed author without origin", "malformed origin without author"]) {
+      expect(byContent.get(text)).toMatchObject({
+        origin_id: sessionOrigin,
+        data: { actor: "user", content: text },
+      });
       expect(byContent.get(text)!.author_class).toBeUndefined();
     }
     expect(corpus.metadata.runtime_statuses.find((item) => item.runtime === "codex")).toMatchObject({
@@ -461,7 +532,10 @@ describe("bounded provenance", () => {
       runtimeStatuses: corpus.metadata.runtime_statuses,
       publishedAt: "2026-01-03T00:00:00.000Z",
     });
-    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "incomplete", reason: "provenance_missing" });
+    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({
+      state: "incomplete",
+      reason: "provenance_missing",
+    });
     expect(readSignalTier(tiersDir)).toBeNull();
   });
 
@@ -478,14 +552,26 @@ describe("bounded provenance", () => {
           role: "user",
           ...(origin === null
             ? {}
-            : { provenance: { origin, ...(authorClass === undefined ? {} : { author_class: authorClass }) } }),
+            : {
+                provenance: {
+                  origin,
+                  ...(authorClass === undefined ? {} : { author_class: authorClass }),
+                },
+              }),
           content: [{ type: "input_text", text }],
         },
       });
     fs.writeFileSync(
       transcript,
       [
-        JSON.stringify({ type: "session_meta", payload: { id: "s1", cwd: "/project", provenance: { origin: "instruction://session-origin" } } }),
+        JSON.stringify({
+          type: "session_meta",
+          payload: {
+            id: "s1",
+            cwd: "/project",
+            provenance: { origin: "instruction://session-origin" },
+          },
+        }),
         message("2026-01-01T00:00:01.000Z", "instruction://with-author", "transported with author", "injected_instruction"),
         message("2026-01-01T00:00:02.000Z", "instruction://missing-author", "transported without author"),
         message("2026-01-01T00:00:03.000Z", null, "session origin without author"),
@@ -499,7 +585,10 @@ describe("bounded provenance", () => {
           payload: {
             id: "s2",
             cwd: "/project",
-            provenance: { origin: "instruction://authored-session", author_class: "injected_instruction" },
+            provenance: {
+              origin: "instruction://authored-session",
+              author_class: "injected_instruction",
+            },
           },
         }),
         message("2026-01-01T00:00:04.000Z", "instruction://mismatched-message", "mismatched message origin"),
@@ -546,7 +635,10 @@ describe("bounded provenance", () => {
       runtimeStatuses: corpus.metadata.runtime_statuses,
       publishedAt: "2026-01-03T00:00:00.000Z",
     });
-    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({ state: "incomplete", reason: "provenance_missing" });
+    expect(evidenceTierCompatibility(tiersDir)).toMatchObject({
+      state: "incomplete",
+      reason: "provenance_missing",
+    });
     expect(readSignalTier(tiersDir)).toBeNull();
   });
 
@@ -597,7 +689,14 @@ describe("bounded provenance", () => {
     fs.mkdirSync(sessionsDir, { recursive: true });
     fs.writeFileSync(
       path.join(sessionsDir, "session.jsonl"),
-      JSON.stringify({ type: "response_item", payload: { type: "message", role: "external", content: [{ type: "input_text", text: "prefer this" }] } }) + "\n",
+      JSON.stringify({
+        type: "response_item",
+        payload: {
+          type: "message",
+          role: "external",
+          content: [{ type: "input_text", text: "prefer this" }],
+        },
+      }) + "\n",
     );
     const corpus = buildCorpus({
       projectRoots: [],
@@ -640,21 +739,7 @@ describe("coverage audit", () => {
     seedOpencode(dbp);
     let log = "";
     let errLog = "";
-    const rc = extractCorpusMain(
-      [
-        "--output",
-        path.join(tmp, "out", "corpus.json"),
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-opencode",
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-      ],
-      { out: (t) => (log += t + "\n"), err: (t) => (errLog += t), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--output", path.join(tmp, "out", "corpus.json"), "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-opencode", "--no-codex", "--no-copilot", "--no-cursor"], { out: (t) => (log += t + "\n"), err: (t) => (errLog += t), env: isolatedEnv(tmp), cwd: tmp });
     expect(rc).toBe(COVERAGE_EXIT_FLAGGED);
     expect(log).toContain("Coverage Audit (pre-extraction)");
     expect(log).toContain("opencode: available");
@@ -669,22 +754,7 @@ describe("coverage audit", () => {
     seedOpencode(dbp);
     const tiersDir = path.join(tmp, "out", "tiers");
     let log = "";
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-opencode",
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-        "--accept-coverage-gap",
-      ],
-      { out: (t) => (log += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-opencode", "--no-codex", "--no-copilot", "--no-cursor", "--accept-coverage-gap"], { out: (t) => (log += t + "\n"), env: isolatedEnv(tmp), cwd: tmp });
     expect(rc).toBe(0);
     expect(log.startsWith("Coverage Audit (pre-extraction)")).toBe(true);
     expect(log).toContain("Coverage gap accepted");
@@ -694,9 +764,7 @@ describe("coverage audit", () => {
     const envelope = tier!.manifest.corpus_metadata?.coverage_envelope;
     expect(envelope?.available_runtimes).toEqual(["opencode"]);
     expect(envelope?.selected_runtimes).not.toContain("opencode");
-    expect(envelope?.available_but_not_selected).toEqual([
-      { runtime: "opencode", reason: "disabled_by_flag", store_path: dbp },
-    ]);
+    expect(envelope?.available_but_not_selected).toEqual([{ runtime: "opencode", reason: "disabled_by_flag", store_path: dbp }]);
     // No monolithic corpus.json is written — tiers are the canonical output.
     expect(fs.existsSync(path.join(tmp, "out", "corpus.json"))).toBe(false);
   });
@@ -738,21 +806,11 @@ describe("coverage audit", () => {
     seedOpencode(dbp);
     const outp = path.join(tmp, "out", "corpus.json");
     let log = "";
-    const rc = extractCorpusMain(
-      [
-        "--output",
-        outp,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-        "--coverage-audit-only",
-      ],
-      { out: (t) => (log += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--output", outp, "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-codex", "--no-copilot", "--no-cursor", "--coverage-audit-only"], {
+      out: (t) => (log += t + "\n"),
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
     expect(rc).toBe(0);
     expect(log).toContain("Coverage Audit (pre-extraction)");
     expect(fs.existsSync(outp)).toBe(false);
@@ -845,10 +903,12 @@ describe("buildCorpus + extractCorpusMain", () => {
     const readSpy = vi.spyOn(fs, "readFileSync");
     const tiersDir = path.join(tmp, "out", "tiers");
 
-    const rc = extractCorpusMain(
-      ["--tier-output", tiersDir, "--project-root", tmp, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"],
-      { out: () => {}, err: () => {}, env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"], {
+      out: () => {},
+      err: () => {},
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
 
     expect(rc).toBe(0);
     expect(readSpy.mock.calls.some(([target]) => String(target).startsWith(path.join(tmp, ".claude")))).toBe(false);
@@ -868,16 +928,12 @@ describe("buildCorpus + extractCorpusMain", () => {
     const tiersDir = path.join(tmp, "out", "tiers");
     let warnings = "";
 
-    const rc = extractCorpusMain(
-      [
-        "--tier-output", tiersDir,
-        "--project-root", tmp,
-        "--import-source", "claude",
-        "--claude-projects-dir", claudeDir,
-        "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap",
-      ],
-      { out: () => {}, err: (text) => (warnings += text + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--import-source", "claude", "--claude-projects-dir", claudeDir, "--no-codex", "--no-opencode", "--no-copilot", "--no-cursor", "--accept-coverage-gap"], {
+      out: () => {},
+      err: (text) => (warnings += text + "\n"),
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
 
     expect(rc).toBe(0);
     expect(fs.readFileSync(transcript, "utf8")).toBe(bytes);
@@ -893,10 +949,12 @@ describe("buildCorpus + extractCorpusMain", () => {
 
   it("requires the import flag before accepting a Claude history path", () => {
     let error = "";
-    const rc = extractCorpusMain(
-      ["--claude-projects-dir", path.join(tmp, "history")],
-      { out: () => {}, err: (text) => (error += text), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--claude-projects-dir", path.join(tmp, "history")], {
+      out: () => {},
+      err: (text) => (error += text),
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
     expect(rc).toBe(2);
     expect(error).toContain("requires explicit --import-source claude");
   });

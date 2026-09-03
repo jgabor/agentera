@@ -1,24 +1,13 @@
 import fs from "node:fs";
 import { TextDecoder } from "node:util";
 
-import {
-  personalProfileGrounding,
-  PersonalGlossaryBoundaryError,
-} from "../analytics/personalGlossaryProfile.js";
+import { personalProfileGrounding, PersonalGlossaryBoundaryError } from "../analytics/personalGlossaryProfile.js";
 import { personalProfileGroundingContract } from "../registries/glossaryEntryContract.js";
 import { discoverSchemasDir } from "./appContext.js";
 import { parseProfileHeaderDates, registryArtifactPath } from "./orientation.js";
 
 export type ProfileValidityStatus = "absent" | "valid" | "repair_needed";
-export type ProfileValidityClass =
-  | "absent"
-  | "valid"
-  | "malformed"
-  | "ambiguous"
-  | "unreadable"
-  | "unsafe"
-  | "oversized"
-  | "invalid_utf8";
+export type ProfileValidityClass = "absent" | "valid" | "malformed" | "ambiguous" | "unreadable" | "unsafe" | "oversized" | "invalid_utf8";
 
 export interface ProfileValidityResult {
   status: ProfileValidityStatus;
@@ -52,17 +41,13 @@ export interface ProfileSafeReadHooks {
 
 type Env = Record<string, string | undefined>;
 type BigStat = fs.BigIntStats;
-type SafeReadResult =
-  | { status: "ok"; bytes: Buffer }
-  | { status: "absent" | "unreadable" | "unsafe" | "oversized" };
+type SafeReadResult = { status: "ok"; bytes: Buffer } | { status: "absent" | "unreadable" | "unsafe" | "oversized" };
 
 const DEFAULT_STALE_DAYS = 7;
 const STALE_DAYS_ENV = "AGENTERA_PROFILE_MAX_AGE_DAYS";
 
 function errorCode(error: unknown): string | undefined {
-  return typeof error === "object" && error !== null && "code" in error
-    ? String((error as NodeJS.ErrnoException).code)
-    : undefined;
+  return typeof error === "object" && error !== null && "code" in error ? String((error as NodeJS.ErrnoException).code) : undefined;
 }
 
 function sameIdentity(left: BigStat, right: BigStat): boolean {
@@ -70,18 +55,11 @@ function sameIdentity(left: BigStat, right: BigStat): boolean {
 }
 
 function sameSnapshot(left: BigStat, right: BigStat): boolean {
-  return sameIdentity(left, right)
-    && left.size === right.size
-    && left.mtimeNs === right.mtimeNs
-    && left.ctimeNs === right.ctimeNs;
+  return sameIdentity(left, right) && left.size === right.size && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
 }
 
 /** Read one path without following a final symlink and reject source changes. */
-export function readProfileSourceSafely(
-  profilePath: string,
-  maxBytes: number,
-  hooks: ProfileSafeReadHooks = {},
-): SafeReadResult {
+export function readProfileSourceSafely(profilePath: string, maxBytes: number, hooks: ProfileSafeReadHooks = {}): SafeReadResult {
   let pathSnapshot: BigStat;
   try {
     pathSnapshot = fs.lstatSync(profilePath, { bigint: true });
@@ -93,7 +71,7 @@ export function readProfileSourceSafely(
 
   let fd: number;
   try {
-    const noFollow = hooks.noFollowFlag ?? (fs.constants.O_NOFOLLOW ?? 0);
+    const noFollow = hooks.noFollowFlag ?? fs.constants.O_NOFOLLOW ?? 0;
     fd = fs.openSync(profilePath, fs.constants.O_RDONLY | noFollow);
   } catch (error) {
     return { status: errorCode(error) === "ELOOP" ? "unsafe" : "unreadable" };
@@ -154,14 +132,14 @@ function unknownFreshness(env: Env): ProfileFreshnessResult {
 
 function freshness(text: string, env: Env): ProfileFreshnessResult {
   const dates = parseProfileHeaderDates(text);
-  const anchor = dates.generatedUtc === null
-    ? dates.validatedUtc
-    : dates.validatedUtc === null
-      ? dates.generatedUtc
-      : Math.max(dates.generatedUtc, dates.validatedUtc);
+  const anchor = dates.generatedUtc === null ? dates.validatedUtc : dates.validatedUtc === null ? dates.generatedUtc : Math.max(dates.generatedUtc, dates.validatedUtc);
   const threshold = staleThreshold(env);
   if (anchor === null) {
-    return { ...unknownFreshness(env), generated_date: dates.generatedDate, validated_date: dates.validatedDate };
+    return {
+      ...unknownFreshness(env),
+      generated_date: dates.generatedDate,
+      validated_date: dates.validatedDate,
+    };
   }
   const now = new Date();
   const today = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
@@ -175,13 +153,7 @@ function freshness(text: string, env: Env): ProfileFreshnessResult {
   };
 }
 
-function result(
-  profilePath: string | null,
-  env: Env,
-  status: ProfileValidityStatus,
-  validityClass: ProfileValidityClass,
-  recovery: string | null,
-): ProfileAcquisitionResult {
+function result(profilePath: string | null, env: Env, status: ProfileValidityStatus, validityClass: ProfileValidityClass, recovery: string | null): ProfileAcquisitionResult {
   return {
     validity: { status, class: validityClass, recovery },
     freshness: unknownFreshness(env),
@@ -190,15 +162,13 @@ function result(
   };
 }
 
-export function acquireProfile(
-  schemasDir?: string,
-  env: Env = process.env,
-  hooks: ProfileSafeReadHooks = {},
-): ProfileAcquisitionResult {
+export function acquireProfile(schemasDir?: string, env: Env = process.env, hooks: ProfileSafeReadHooks = {}): ProfileAcquisitionResult {
   const contract = personalProfileGroundingContract();
   let profilePath: string;
   try {
-    profilePath = registryArtifactPath("profile", schemasDir ?? discoverSchemasDir(), env, { warn: false });
+    profilePath = registryArtifactPath("profile", schemasDir ?? discoverSchemasDir(), env, {
+      warn: false,
+    });
   } catch {
     return result(null, env, "repair_needed", "unsafe", contract.repairRecovery);
   }
@@ -227,9 +197,7 @@ export function acquireProfile(
       groundingContent,
     };
   } catch (error) {
-    const validityClass = error instanceof PersonalGlossaryBoundaryError
-      ? error.availability
-      : "malformed";
+    const validityClass = error instanceof PersonalGlossaryBoundaryError ? error.availability : "malformed";
     return result(profilePath, env, "repair_needed", validityClass, contract.repairRecovery);
   }
 }

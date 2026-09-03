@@ -72,12 +72,7 @@ function validateSchema(schema: RecordValue, value: unknown, location = "$"): st
   const errors: string[] = [];
   const isObject = typeof value === "object" && value !== null && !Array.isArray(value);
   const types = schema.type === undefined ? [] : Array.isArray(schema.type) ? schema.type : [schema.type];
-  if (types.length > 0 && !types.some((type) => (
-    (type === "object" && isObject)
-    || (type === "string" && typeof value === "string")
-    || (type === "integer" && Number.isInteger(value) && typeof value === "number")
-    || (type === "null" && value === null)
-  ))) return [`${location}.type`];
+  if (types.length > 0 && !types.some((type) => (type === "object" && isObject) || (type === "string" && typeof value === "string") || (type === "integer" && Number.isInteger(value) && typeof value === "number") || (type === "null" && value === null))) return [`${location}.type`];
   if (schema.const !== undefined && value !== schema.const) errors.push(`${location}.const`);
   if (schema.enum && !schema.enum.includes(value)) errors.push(`${location}.enum`);
   if (typeof value === "string" && schema.minLength !== undefined && [...value].length < schema.minLength) errors.push(`${location}.minLength`);
@@ -219,13 +214,7 @@ describe("hybrid route contract", () => {
       compound: contract.compound_intent.semantic,
       remainder_span: authority.request_bound_fields.remainder_span,
     });
-    expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual([
-      "bare",
-      "direct",
-      "curated_phrase",
-      "deterministic_abstention",
-      "semantic_receipt",
-    ]);
+    expect(contract.precedence.map((entry: { name: string }) => entry.name)).toEqual(["bare", "direct", "curated_phrase", "deterministic_abstention", "semantic_receipt"]);
     expect(contract.protocol.validation_result.startup_authorization).toEqual({
       selected: "selected capability only",
       clarification: "none",
@@ -259,7 +248,11 @@ describe("hybrid route contract", () => {
       const evidence = routeCases.find((routeCase) => routeCase.id === entry.evidence[0]);
       expect(evidence).toMatchObject({
         partition: "development",
-        expected: { phase1: "deterministic_selection", tier: "phrase", capability: entry.capability },
+        expected: {
+          phase1: "deterministic_selection",
+          tier: "phrase",
+          capability: entry.capability,
+        },
       });
     }
   });
@@ -289,9 +282,7 @@ describe("hybrid route contract", () => {
     const phraseEntries = phrases.phrases as RecordValue[];
     const routeCases = corpus.route_cases as RecordValue[];
     for (const routeCase of routeCases.filter((candidate) => candidate.expected?.tier === "phrase")) {
-      const match = phraseEntries
-        .map((entry) => ({ entry, span: deriveLeadingPhrase(routeCase.request, entry.phrase) }))
-        .find((candidate) => candidate.span);
+      const match = phraseEntries.map((entry) => ({ entry, span: deriveLeadingPhrase(routeCase.request, entry.phrase) })).find((candidate) => candidate.span);
       expect(match, routeCase.id).toBeDefined();
       expect(match!.entry.capability, routeCase.id).toBe(routeCase.expected.capability);
       expect(Buffer.from(routeCase.request, "utf8").subarray(match!.span.utf8Start, match!.span.utf8End).toString("utf8")).toBe(match!.span.recognized);
@@ -312,16 +303,21 @@ describe("hybrid route contract", () => {
       expect(errors.length === 0, `${receiptCase.id}: ${errors.join(", ")}`).toBe(receiptCase.valid);
       if (!receiptCase.valid) expect(errors).toContain(receiptCase.error);
       if (receiptCase.valid) {
-        expect(receiptCase.receipt).toEqual(expect.objectContaining({
-          version: "agentera.route_receipt.v1",
-          request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-          semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
-          outcome: expect.any(String),
-        }));
+        expect(receiptCase.receipt).toEqual(
+          expect.objectContaining({
+            version: "agentera.route_receipt.v1",
+            request_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+            semantic_capsule_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+            outcome: expect.any(String),
+          }),
+        );
       }
     }
     for (const terminal of contract.protocol.validation_result.terminal_outcomes) {
-      expect(receiptCases.some((receiptCase) => receiptCase.expected_terminal === terminal), terminal).toBe(true);
+      expect(
+        receiptCases.some((receiptCase) => receiptCase.expected_terminal === terminal),
+        terminal,
+      ).toBe(true);
     }
     expect(receiptCases.some((receiptCase) => receiptCase.valid && receiptCase.receipt.compound === "preserve")).toBe(true);
     expect(receiptCases.some((receiptCase) => !receiptCase.valid && receiptCase.error === "binding.remainder_span")).toBe(true);
@@ -335,13 +331,23 @@ describe("hybrid route contract", () => {
     expect(hostOutputSchemaErrors(hostShape.schema)).toEqual([]);
     expect(authority.host_to_cli_normalization).toMatchObject({
       name: "agentera.route_receipt_host_to_cli.v1",
-      rejection: { unsupported_key: "reject", unexpected_null: "reject", projection_bypass: "reject" },
+      rejection: {
+        unsupported_key: "reject",
+        unexpected_null: "reject",
+        projection_bypass: "reject",
+      },
     });
 
     const cases = [
       {
         request: "choose a route",
-        receipt: { outcome: "select", capability: "plan", compound: "none", question: null, remainder_span: null },
+        receipt: {
+          outcome: "select",
+          capability: "plan",
+          compound: "none",
+          question: null,
+          remainder_span: null,
+        },
       },
       {
         request: "plan the release then document it",
@@ -355,11 +361,23 @@ describe("hybrid route contract", () => {
       },
       {
         request: "make it better",
-        receipt: { outcome: "clarify", capability: null, compound: null, question: "Which capability should own this?", remainder_span: null },
+        receipt: {
+          outcome: "clarify",
+          capability: null,
+          compound: null,
+          question: "Which capability should own this?",
+          remainder_span: null,
+        },
       },
       {
         request: "hello there",
-        receipt: { outcome: "no_match", capability: null, compound: null, question: null, remainder_span: null },
+        receipt: {
+          outcome: "no_match",
+          capability: null,
+          compound: null,
+          question: null,
+          remainder_span: null,
+        },
       },
     ];
 
@@ -396,12 +414,8 @@ describe("hybrid route contract", () => {
     };
 
     expect(receiptErrors(apiSelect, request, authority, capabilities)).not.toEqual([]);
-    expect(normalizeHostReceipt({ ...apiSelect, capability: null }, authority).errors).toEqual([
-      "normalization.unexpected_null.capability",
-    ]);
-    expect(normalizeHostReceipt({ ...apiSelect, unexpected: null }, authority).errors).toEqual([
-      "host.$.additionalProperties.unexpected",
-    ]);
+    expect(normalizeHostReceipt({ ...apiSelect, capability: null }, authority).errors).toEqual(["normalization.unexpected_null.capability"]);
+    expect(normalizeHostReceipt({ ...apiSelect, unexpected: null }, authority).errors).toEqual(["host.$.additionalProperties.unexpected"]);
 
     const altered = normalizeHostReceipt({ ...apiSelect, request_sha256: "0".repeat(64) }, authority);
     expect(altered.errors).toEqual([]);
@@ -416,12 +430,7 @@ describe("hybrid route contract", () => {
     invalidSchema.allOf = [];
     invalidSchema.required = invalidSchema.required.filter((field: string) => field !== "question");
     invalidSchema.properties.question.type = "string";
-    expect(hostOutputSchemaErrors(invalidSchema)).toEqual(expect.arrayContaining([
-      "$.unsupported.allOf",
-      "$.all_properties_required",
-      "$.question.nullable",
-    ]));
-
+    expect(hostOutputSchemaErrors(invalidSchema)).toEqual(expect.arrayContaining(["$.unsupported.allOf", "$.all_properties_required", "$.question.nullable"]));
   });
 
   it("requires only offline conformance and leaves semantic evaluation host-dependent", () => {

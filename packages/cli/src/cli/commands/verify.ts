@@ -1,10 +1,7 @@
 import { main as evalSkillsMain } from "../../eval/evalSkills.js";
 import { main as semanticEvalMain } from "../../eval/semanticEval.js";
 import { runGlossaryEvaluationProcess } from "../../eval/glossaryEvaluationProcess.js";
-import {
-  validateGlossaryEvaluationSuccessReport,
-  type GlossaryEvaluationSuccessReport,
-} from "../../eval/glossaryEvaluationSuccessReport.js";
+import { validateGlossaryEvaluationSuccessReport, type GlossaryEvaluationSuccessReport } from "../../eval/glossaryEvaluationSuccessReport.js";
 import { evaluateHybridRoute } from "../../eval/hybridRouteEvaluation.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { routeEvaluationExitCode } from "./route.js";
@@ -65,32 +62,19 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
   const target = String(args.target ?? "");
   const outputFormat = String(args.format ?? "text");
   if (!(VERIFY_FORMATS as readonly string[]).includes(outputFormat)) {
-    throw new Error(
-      `unsupported verify format '${outputFormat}'; valid formats: ${VERIFY_FORMATS.join(", ")}. ` +
-        "Syntax: agentera verify <family> <target> --format text|json [target options]. " +
-        `Example: ${verifyExample("eval")}`,
-    );
+    throw new Error(`unsupported verify format '${outputFormat}'; valid formats: ${VERIFY_FORMATS.join(", ")}. ` + "Syntax: agentera verify <family> <target> --format text|json [target options]. " + `Example: ${verifyExample("eval")}`);
   }
   if ((RETIRED_VERIFY_FAMILIES as readonly string[]).includes(family)) {
     throw new Error(
-      `verify smoke is retired on the npm self-contained CLI; use \`agentera check verify eval skills\` ` +
-        "for bounded eval gates, or run smoke maintainer harnesses on the stable Python line with " +
-        "`uvx --from git+https://github.com/jgabor/agentera@main agentera check verify smoke installed-skills`.",
+      `verify smoke is retired on the npm self-contained CLI; use \`agentera check verify eval skills\` ` + "for bounded eval gates, or run smoke maintainer harnesses on the stable Python line with " + "`uvx --from git+https://github.com/jgabor/agentera@main agentera check verify smoke installed-skills`.",
     );
   }
   if (!(VERIFY_FAMILIES as readonly string[]).includes(family)) {
-    throw new Error(
-      `unsupported verify family '${family}'; valid families: ${VERIFY_FAMILIES.join(", ")}. ` +
-        `Syntax: ${verifySyntax()}. Examples: ${verifyExample()}`,
-    );
+    throw new Error(`unsupported verify family '${family}'; valid families: ${VERIFY_FAMILIES.join(", ")}. ` + `Syntax: ${verifySyntax()}. Examples: ${verifyExample()}`);
   }
   const validTargets = VERIFY_TARGETS[family];
   if (!validTargets.includes(target)) {
-    throw new Error(
-      `unsupported verify target '${target}' for family '${family}'; valid targets: ${validTargets.join(", ")}. ` +
-        `Syntax: agentera verify ${family} <target> [--format text|json] [target options]. ` +
-        `Example: ${verifyExample(family)}`,
-    );
+    throw new Error(`unsupported verify target '${target}' for family '${family}'; valid targets: ${validTargets.join(", ")}. ` + `Syntax: agentera verify ${family} <target> [--format text|json] [target options]. ` + `Example: ${verifyExample(family)}`);
   }
   if (family === "eval" && target === "skills" && args.run && args.dryRun) {
     throw new Error(
@@ -103,18 +87,10 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
   if (family === "eval" && target === "skills") {
     const runtime = String(args.runtime ?? "auto");
     if (!["auto", "opencode", "cursor"].includes(runtime)) {
-      throw new Error(
-        `unsupported eval skills runtime '${runtime}'; valid runtimes: auto, opencode, cursor. ` +
-          "Syntax: agentera verify eval skills [--run] [--runtime auto|opencode|cursor] [--format text|json]. " +
-          "Example: agentera verify eval skills",
-      );
+      throw new Error(`unsupported eval skills runtime '${runtime}'; valid runtimes: auto, opencode, cursor. ` + "Syntax: agentera verify eval skills [--run] [--runtime auto|opencode|cursor] [--format text|json]. " + "Example: agentera verify eval skills");
     }
     if ((args.parallel ?? 1) < 1 || (args.timeout ?? 120) < 1) {
-      throw new Error(
-        "eval skills bounds must be positive integers. " +
-          "Syntax: agentera verify eval skills [--parallel N] [--timeout SECONDS] [--format text|json]. " +
-          "Example: agentera verify eval skills --parallel 1 --timeout 120",
-      );
+      throw new Error("eval skills bounds must be positive integers. " + "Syntax: agentera verify eval skills [--parallel N] [--timeout SECONDS] [--format text|json]. " + "Example: agentera verify eval skills --parallel 1 --timeout 120");
     }
   }
   if (family === "eval" && target === "semantic" && (args.fixtures ?? []).length === 0) {
@@ -126,10 +102,7 @@ export function validateVerifyRequest(args: VerifyArgs): [string, string, string
     );
   }
   if (family === "eval" && target === "glossary" && (args.fixtures ?? []).length > 0) {
-    throw new Error(
-      "glossary verify uses the contract-owned frozen holdout and accepts no fixture path. " +
-        "It always runs current product behavior. Syntax: agentera check verify eval glossary --format text|json.",
-    );
+    throw new Error("glossary verify uses the contract-owned frozen holdout and accepts no fixture path. " + "It always runs current product behavior. Syntax: agentera check verify eval glossary --format text|json.");
   }
   return [family, target, outputFormat];
 }
@@ -174,9 +147,7 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
         long_running_default: false,
       };
     }
-    const result = runInProcess(["eval", "skills", ...engineArgs], (out, err) =>
-      evalSkillsMain(engineArgs, { out: (l) => out(l + "\n"), err: (l) => err(l + "\n") }),
-    );
+    const result = runInProcess(["eval", "skills", ...engineArgs], (out, err) => evalSkillsMain(engineArgs, { out: (l) => out(l + "\n"), err: (l) => err(l + "\n") }));
     return { result, safety };
   }
   if (family === "eval" && target === "semantic") {
@@ -187,9 +158,7 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
       live: false,
       long_running_default: false,
     };
-    const result = runInProcess(["eval", "semantic", ...fixtures], (out) =>
-      semanticEvalMain(fixtures, (l) => out(l)),
-    );
+    const result = runInProcess(["eval", "semantic", ...fixtures], (out) => semanticEvalMain(fixtures, (l) => out(l)));
     return { result, safety };
   }
   if (family === "eval" && target === "glossary") {
@@ -225,10 +194,7 @@ function runVerifyEngine(family: string, target: string, args: VerifyArgs): { re
   throw new Error(`unhandled verify target ${family}/${target}`);
 }
 
-function runInProcess(
-  command: string[],
-  invoke: (out: (l: string) => void, err: (l: string) => void) => number,
-): EngineResult {
+function runInProcess(command: string[], invoke: (out: (l: string) => void, err: (l: string) => void) => number): EngineResult {
   let stdout = "";
   let stderr = "";
   // Verbatim appenders: each engine call site adapts its own newline convention.
@@ -256,11 +222,7 @@ function boundedLines(text: string, limit = VERIFY_DIAGNOSTIC_LINE_LIMIT): strin
   return [...lines.slice(0, limit), `... truncated ${lines.length - limit} line(s)`];
 }
 
-function publicVerifyResult(
-  family: string,
-  target: string,
-  result: EngineResult,
-): { result: EngineResult; glossaryEvaluation?: GlossaryEvaluationPublicResult } {
+function publicVerifyResult(family: string, target: string, result: EngineResult): { result: EngineResult; glossaryEvaluation?: GlossaryEvaluationPublicResult } {
   if (family !== "eval" || target !== "glossary" || result.returncode !== 0) return { result };
   const glossaryEvaluation = validateGlossaryEvaluationSuccessReport(result);
   if (glossaryEvaluation !== null) return { result, glossaryEvaluation };
@@ -278,13 +240,7 @@ function verifyStatus(result: EngineResult): string {
   return result.returncode === 0 ? "pass" : "fail";
 }
 
-export function buildVerifyPayload(
-  family: string,
-  target: string,
-  outputFormat: string,
-  result: EngineResult,
-  safety: JsonObject,
-): VerifyPayload {
+export function buildVerifyPayload(family: string, target: string, outputFormat: string, result: EngineResult, safety: JsonObject): VerifyPayload {
   const publicResult = publicVerifyResult(family, target, result);
   return {
     command: "verify",
@@ -299,9 +255,7 @@ export function buildVerifyPayload(
       line_limit: VERIFY_DIAGNOSTIC_LINE_LIMIT,
     },
     safety,
-    ...(publicResult.glossaryEvaluation === undefined
-      ? {}
-      : { glossary_evaluation: publicResult.glossaryEvaluation }),
+    ...(publicResult.glossaryEvaluation === undefined ? {} : { glossary_evaluation: publicResult.glossaryEvaluation }),
   };
 }
 

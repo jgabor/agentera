@@ -4,20 +4,8 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  appendLifecycleOwnershipJournal,
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-} from "../../src/runtime/lifecycleOwnershipJournal.js";
-import {
-  applyLifecycleOperations,
-  createLifecycleOwnershipManifest,
-  emptyLifecycleOwnershipLedger,
-  lifecycleOperationFingerprint,
-  planLifecycleOperations,
-  type LifecycleOperationSpec,
-  type LifecycleOwnershipLedger,
-} from "../../src/runtime/lifecycleOperations.js";
+import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath, readLifecycleOwnershipJournal } from "../../src/runtime/lifecycleOwnershipJournal.js";
+import { applyLifecycleOperations, createLifecycleOwnershipManifest, emptyLifecycleOwnershipLedger, lifecycleOperationFingerprint, planLifecycleOperations, type LifecycleOperationSpec, type LifecycleOwnershipLedger } from "../../src/runtime/lifecycleOperations.js";
 
 let root: string;
 let appHome: string;
@@ -47,15 +35,17 @@ function spec(id: string, dependsOn: string[] = []): LifecycleOperationSpec {
 function pendingLedger(operation: LifecycleOperationSpec): LifecycleOwnershipLedger {
   return {
     ...emptyLifecycleOwnershipLedger(),
-    records: [{
-      resourceId: operation.id,
-      destination: operation.destination,
-      kind: operation.kind,
-      scope: "whole",
-      status: "pending_create",
-      fingerprint: lifecycleOperationFingerprint(operation),
-      identity: null,
-    }],
+    records: [
+      {
+        resourceId: operation.id,
+        destination: operation.destination,
+        kind: operation.kind,
+        scope: "whole",
+        status: "pending_create",
+        fingerprint: lifecycleOperationFingerprint(operation),
+        identity: null,
+      },
+    ],
   };
 }
 
@@ -74,13 +64,7 @@ function persist(next: LifecycleOwnershipLedger): void {
 
 function interruptedPublicationTemporary(sequence: number): void {
   fs.mkdirSync(journalPath, { recursive: true });
-  fs.writeFileSync(
-    path.join(
-      journalPath,
-      `.event-${String(sequence).padStart(20, "0")}-00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}.tmp`,
-    ),
-    '{"schemaVersion":"agentera.lifecycleOwnershipJournalEvent.v1"',
-  );
+  fs.writeFileSync(path.join(journalPath, `.event-${String(sequence).padStart(20, "0")}-00000000-0000-4000-8000-${String(sequence).padStart(12, "0")}.tmp`), '{"schemaVersion":"agentera.lifecycleOwnershipJournalEvent.v1"');
 }
 
 describe("lifecycle crash recovery and convergence", () => {
@@ -98,7 +82,9 @@ describe("lifecycle crash recovery and convergence", () => {
     const restartedLedger = readLifecycleOwnershipJournal(journalPath).ledger;
     expect(restartedLedger.records[0]).toMatchObject({ status: "pending_create", identity: null });
 
-    const retry = applyLifecycleOperations(plan([operation], restartedLedger), { persistLedger: persist });
+    const retry = applyLifecycleOperations(plan([operation], restartedLedger), {
+      persistLedger: persist,
+    });
     expect(retry.operations[0].status).toBe("applied");
     expect(fs.readFileSync(operation.destination, "utf8")).toBe("before-resource\n");
   });
@@ -110,7 +96,10 @@ describe("lifecycle crash recovery and convergence", () => {
 
     const restartedLedger = readLifecycleOwnershipJournal(journalPath).ledger;
     const restartPlan = plan([operation], restartedLedger);
-    expect(restartPlan.operations[0]).toMatchObject({ action: "finalize_ownership", state: "exact" });
+    expect(restartPlan.operations[0]).toMatchObject({
+      action: "finalize_ownership",
+      state: "exact",
+    });
 
     const retry = applyLifecycleOperations(restartPlan, { persistLedger: persist });
     expect(retry.operations[0].status).toBe("applied");
@@ -127,7 +116,9 @@ describe("lifecycle crash recovery and convergence", () => {
     expect(restarted).toMatchObject({ state: "clean", temporaryArtifacts: 1 });
     expect(restarted.ledger.records[0]).toMatchObject({ status: "pending_create", identity: null });
 
-    const retry = applyLifecycleOperations(plan([operation], restarted.ledger), { persistLedger: persist });
+    const retry = applyLifecycleOperations(plan([operation], restarted.ledger), {
+      persistLedger: persist,
+    });
     expect(retry.operations[0]).toMatchObject({ action: "finalize_ownership", status: "applied" });
   });
 
@@ -141,7 +132,9 @@ describe("lifecycle crash recovery and convergence", () => {
 
     const restarted = readLifecycleOwnershipJournal(journalPath);
     expect(restarted).toMatchObject({ state: "clean", temporaryArtifacts: 1 });
-    const retry = applyLifecycleOperations(plan([operation], restarted.ledger), { persistLedger: persist });
+    const retry = applyLifecycleOperations(plan([operation], restarted.ledger), {
+      persistLedger: persist,
+    });
     expect(retry.operations[0]).toMatchObject({ action: "noop", status: "noop" });
   });
 
@@ -165,7 +158,9 @@ describe("lifecycle crash recovery and convergence", () => {
     expect(first.operations[2].dependencyCauses).toEqual(["a"]);
 
     const restarted = readLifecycleOwnershipJournal(journalPath);
-    const retry = applyLifecycleOperations(plan(operations, restarted.ledger), { persistLedger: persist });
+    const retry = applyLifecycleOperations(plan(operations, restarted.ledger), {
+      persistLedger: persist,
+    });
     expect(retry.operations.map(({ id, status }) => [id, status])).toEqual([
       ["a", "applied"],
       ["b", "noop"],

@@ -9,20 +9,13 @@ export function progressPublicationOrder(record: JsonObject | null): number | nu
 
 export function progressPublicationOrderViolations(record: JsonObject): string[] {
   if (!(PROGRESS_PUBLICATION_ORDER_FIELD in record)) return [];
-  return progressPublicationOrder(record) === null
-    ? ["publication_order must be a positive safe integer when present"]
-    : [];
+  return progressPublicationOrder(record) === null ? ["publication_order must be a positive safe integer when present"] : [];
 }
 
 export function nextProgressPublicationOrder(records: JsonObject[]): number {
-  const maximum = records.reduce(
-    (current, record) => Math.max(current, progressPublicationOrder(record) ?? 0),
-    0,
-  );
+  const maximum = records.reduce((current, record) => Math.max(current, progressPublicationOrder(record) ?? 0), 0);
   if (maximum >= Number.MAX_SAFE_INTEGER) {
-    throw new Error(
-      "progress publication order is exhausted; preserve state and request repair before retrying",
-    );
+    throw new Error("progress publication order is exhausted; preserve state and request repair before retrying");
   }
   return maximum + 1;
 }

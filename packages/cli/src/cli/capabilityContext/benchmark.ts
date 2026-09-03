@@ -13,18 +13,10 @@ export const BENCHMARK_CONTEXT_CMD = preCutoverCommand("prime --context optimize
 export const BENCHMARK_LATEST_REPORT_LABEL = "startup_benchmark_latest_report";
 export const BENCHMARK_HISTORY_LABEL = "startup_benchmark_history";
 export const BENCHMARK_CONTEXT_SOURCE_LABELS = [BENCHMARK_LATEST_REPORT_LABEL, BENCHMARK_HISTORY_LABEL];
-export const BENCHMARK_TOKEN_NULL_REASONS = [
-  "previous_row_missing", "previous_missing_token_estimates", "estimator_version_mismatch",
-  "runtime_scope_mismatch", "benchmark_mode_mismatch", "contract_version_mismatch",
-];
-export const BENCHMARK_RECOMMENDATION_ACTIONS = new Set([
-  "plan_cli_startup_envelope", "targeted_capability_guidance_fixes", "close_without_implementation",
-]);
+export const BENCHMARK_TOKEN_NULL_REASONS = ["previous_row_missing", "previous_missing_token_estimates", "estimator_version_mismatch", "runtime_scope_mismatch", "benchmark_mode_mismatch", "contract_version_mismatch"];
+export const BENCHMARK_RECOMMENDATION_ACTIONS = new Set(["plan_cli_startup_envelope", "targeted_capability_guidance_fixes", "close_without_implementation"]);
 export const BENCHMARK_CAVEATED_RUNTIME_STATUSES = new Set(["degraded", "missing", "skipped", "locked", "unreadable"]);
-export const BENCHMARK_FORBIDDEN_OUTPUTS = [
-  "raw_transcripts", "raw_corpus_files", "raw_intermediates", "raw_runtime_store_paths", "raw_session_ids",
-  "private_salts", "generated_salted_hashes", "raw_benchmark_report_bodies", "full_local_benchmark_paths",
-];
+export const BENCHMARK_FORBIDDEN_OUTPUTS = ["raw_transcripts", "raw_corpus_files", "raw_intermediates", "raw_runtime_store_paths", "raw_session_ids", "private_salts", "generated_salted_hashes", "raw_benchmark_report_bodies", "full_local_benchmark_paths"];
 export const BENCHMARK_SAFE_LABEL_RE = /^[A-Za-z0-9][A-Za-z0-9 .:_-]{0,79}$/;
 export const BENCHMARK_SAFE_SCALAR_RE = /^[A-Za-z0-9][A-Za-z0-9 .:_+@-]{0,119}$/;
 export const HEX16_RE = /^[0-9a-fA-F]{16,}$/;
@@ -143,9 +135,17 @@ export function latestBenchmarkSummary(status: string, report: JsonObject | null
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "latest_report");
   if (status !== "available" || report === null) {
     return {
-      status, source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-      non_empty_evidence_present: false, contract_version: null, generated_at: null, benchmark_mode: null,
-      benchmark_window: {}, total_records: null, total_state_sequences: null, caveats,
+      status,
+      source_label: BENCHMARK_LATEST_REPORT_LABEL,
+      source_provenance: source,
+      non_empty_evidence_present: false,
+      contract_version: null,
+      generated_at: null,
+      benchmark_mode: null,
+      benchmark_window: {},
+      total_records: null,
+      total_state_sequences: null,
+      caveats,
     };
   }
   const sc = [...caveats];
@@ -163,11 +163,21 @@ export function latestBenchmarkSummary(status: string, report: JsonObject | null
   const totalStateSequences = safeBenchmarkNumber(report.total_state_sequences);
   if (totalStateSequences === null) sc.push("Latest startup benchmark report is missing total_state_sequences.");
   return {
-    status: "available", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-    non_empty_evidence_present: true, contract_version: contractVersion, generated_at: generatedAt,
+    status: "available",
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
+    non_empty_evidence_present: true,
+    contract_version: contractVersion,
+    generated_at: generatedAt,
     benchmark_mode: benchmarkMode,
-    benchmark_window: { previous_watermark_at: previousWatermark, window_started_after: windowStarted, watermark_at: watermarkAt },
-    total_records: safeBenchmarkNumber(report.total_records), total_state_sequences: totalStateSequences, caveats: sc,
+    benchmark_window: {
+      previous_watermark_at: previousWatermark,
+      window_started_after: windowStarted,
+      watermark_at: watermarkAt,
+    },
+    total_records: safeBenchmarkNumber(report.total_records),
+    total_state_sequences: totalStateSequences,
+    caveats: sc,
   };
 }
 
@@ -189,25 +199,37 @@ export function historyBenchmarkSummary(status: string, rows: JsonObject[], cave
     const benchmarkMode = scalar("benchmark_mode");
     const recommendationAction = scalar("startup_recommendation_action", BENCHMARK_RECOMMENDATION_ACTIONS);
     latestSummary = {
-      generated_at: generatedAt, agentera_version: agenteraVersion, runtime_scope: safeScope,
-      benchmark_mode: benchmarkMode, total_state_sequences: safeBenchmarkNumber(latest.total_state_sequences),
+      generated_at: generatedAt,
+      agentera_version: agenteraVersion,
+      runtime_scope: safeScope,
+      benchmark_mode: benchmarkMode,
+      total_state_sequences: safeBenchmarkNumber(latest.total_state_sequences),
       raw_after_cli_rate: safeBenchmarkNumber(latest.raw_after_cli_rate),
       redundant_raw_access_rate: safeBenchmarkNumber(latest.redundant_raw_access_rate),
       startup_recommendation_action: recommendationAction,
     };
   }
   return {
-    status, source_label: BENCHMARK_HISTORY_LABEL,
+    status,
+    source_label: BENCHMARK_HISTORY_LABEL,
     source_provenance: sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "history_summary"),
-    non_empty_evidence_present: rows.length > 0, row_count: rows.length, latest_row: latestSummary, caveats: sc,
+    non_empty_evidence_present: rows.length > 0,
+    row_count: rows.length,
+    latest_row: latestSummary,
+    caveats: sc,
   };
 }
 
 export function runtimeBenchmarkCoverage(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "runtime_coverage");
   const miss = (caveat: string): JsonObject => ({
-    status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-    non_empty_evidence_present: false, items: [], status_counts: {}, caveats: [caveat],
+    status: "missing",
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
+    non_empty_evidence_present: false,
+    items: [],
+    status_counts: {},
+    caveats: [caveat],
   });
   if (reportStatus !== "available" || report === null) return miss("Runtime coverage is unavailable without a valid latest startup benchmark report.");
   const rawItems = report.runtime_coverage;
@@ -242,10 +264,7 @@ export function runtimeBenchmarkCoverage(reportStatus: string, report: JsonObjec
   let statusValue: string;
   if (caveatedStatuses.length > 0) {
     statusValue = "degraded";
-    caveats.push(
-      "One or more runtime stores are missing, skipped, locked, unreadable, or degraded; " +
-        "treat this as benchmark evidence caveat, not successful product behavior.",
-    );
+    caveats.push("One or more runtime stores are missing, skipped, locked, unreadable, or degraded; " + "treat this as benchmark evidence caveat, not successful product behavior.");
   } else if (items.some((i) => i.status === "sparse")) {
     statusValue = "sparse";
     caveats.push("One or more runtime stores are sparse; benchmark coverage is caveated.");
@@ -258,8 +277,13 @@ export function runtimeBenchmarkCoverage(reportStatus: string, report: JsonObjec
   const sortedCounts: Record<string, number> = {};
   for (const k of Object.keys(statusCounts).sort()) sortedCounts[k] = statusCounts[k];
   return {
-    status: statusValue, source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-    non_empty_evidence_present: items.length > 0, items, status_counts: sortedCounts, caveats: uniqueList(caveats),
+    status: statusValue,
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
+    non_empty_evidence_present: items.length > 0,
+    items,
+    status_counts: sortedCounts,
+    caveats: uniqueList(caveats),
   };
 }
 
@@ -267,7 +291,9 @@ export function stateAccessBenchmarkMetrics(reportStatus: string, report: JsonOb
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "state_access_metrics");
   if (reportStatus !== "available" || report === null) {
     return {
-      status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
+      status: "missing",
+      source_label: BENCHMARK_LATEST_REPORT_LABEL,
+      source_provenance: source,
       non_empty_evidence_present: false,
       caveats: ["State-access metrics are unavailable without a valid latest startup benchmark report."],
     };
@@ -285,12 +311,15 @@ export function stateAccessBenchmarkMetrics(reportStatus: string, report: JsonOb
     raw_after_cli_sequence_rate: safeBenchmarkNumber(report.raw_after_cli_sequence_rate),
     redundant_raw_sequence_rate: safeBenchmarkNumber(report.redundant_raw_sequence_rate),
   };
-  const missing = Object.entries(required).filter(([, v]) => v === null).map(([k]) => k);
+  const missing = Object.entries(required)
+    .filter(([, v]) => v === null)
+    .map(([k]) => k);
   if (missing.length > 0) caveats.push(`Latest startup benchmark report is missing state-access metric fields: ${missing.join(", ")}.`);
   if (required.total_state_sequences === 0) caveats.push("Startup benchmark observed zero state-gathering sequences; optimization conclusions are weak.");
   return {
     status: missing.length > 0 ? "incomplete" : "available",
-    source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
     non_empty_evidence_present: missing.length === 0,
     ...required,
     total_cli_state_calls: safeBenchmarkNumber(report.total_cli_state_calls),
@@ -308,7 +337,9 @@ export function tokenBenchmarkImpact(reportStatus: string, report: JsonObject | 
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "token_impact");
   if (reportStatus !== "available" || report === null) {
     return {
-      status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
+      status: "missing",
+      source_label: BENCHMARK_LATEST_REPORT_LABEL,
+      source_provenance: source,
       non_empty_evidence_present: false,
       caveats: ["Token-impact estimates are unavailable without a valid latest startup benchmark report."],
     };
@@ -321,12 +352,15 @@ export function tokenBenchmarkImpact(reportStatus: string, report: JsonObject | 
     estimated_raw_after_cli_tokens: safeBenchmarkNumber(report.estimated_raw_after_cli_tokens),
     estimated_redundant_raw_tokens: safeBenchmarkNumber(report.estimated_redundant_raw_tokens),
   };
-  const missing = Object.entries(required).filter(([, v]) => v === null || v === undefined || v === "").map(([k]) => k);
+  const missing = Object.entries(required)
+    .filter(([, v]) => v === null || v === undefined || v === "")
+    .map(([k]) => k);
   const caveats = [...rawCaveats, ...redundantCaveats, ...estimatorCaveats];
   if (missing.length > 0) caveats.push(`Latest startup benchmark report is missing token-impact fields: ${missing.join(", ")}.`);
   return {
     status: missing.length > 0 ? "missing" : "available",
-    source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
     non_empty_evidence_present: missing.length === 0,
     ...required,
     estimated_raw_after_cli_tokens_by_artifact: rawByArtifact,
@@ -339,8 +373,12 @@ export function benchmarkComparison(reportStatus: string, report: JsonObject | n
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "comparison");
   if (reportStatus !== "available" || report === null) {
     return {
-      status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-      estimated_tokens_saved_vs_previous: null, null_reason: null, allowed_null_reasons: BENCHMARK_TOKEN_NULL_REASONS,
+      status: "missing",
+      source_label: BENCHMARK_LATEST_REPORT_LABEL,
+      source_provenance: source,
+      estimated_tokens_saved_vs_previous: null,
+      null_reason: null,
+      allowed_null_reasons: BENCHMARK_TOKEN_NULL_REASONS,
       caveats: ["Benchmark comparison is unavailable without a valid latest startup benchmark report."],
     };
   }
@@ -360,19 +398,29 @@ export function benchmarkComparison(reportStatus: string, report: JsonObject | n
     caveats = ["Benchmark comparison status is missing from latest startup benchmark report."];
   }
   return {
-    status, source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
+    status,
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
     estimated_tokens_saved_vs_previous: safeBenchmarkNumber(saved),
     null_reason: BENCHMARK_TOKEN_NULL_REASONS.includes(reason) ? reason : null,
-    allowed_null_reasons: BENCHMARK_TOKEN_NULL_REASONS, caveats,
+    allowed_null_reasons: BENCHMARK_TOKEN_NULL_REASONS,
+    caveats,
   };
 }
 
 export function benchmarkRecommendation(reportStatus: string, report: JsonObject | null): JsonObject {
   const source = sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "recommendation");
   const miss = (caveat: string): JsonObject => ({
-    status: "missing", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-    action: null, measured_trigger: null, rationale: null, rationale_present: false,
-    rationale_boundary: "not_emitted_from_retained_report", implementation_recommended: false, caveats: [caveat],
+    status: "missing",
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
+    action: null,
+    measured_trigger: null,
+    rationale: null,
+    rationale_present: false,
+    rationale_boundary: "not_emitted_from_retained_report",
+    implementation_recommended: false,
+    caveats: [caveat],
   });
   if (reportStatus !== "available" || report === null) return miss("Startup benchmark recommendation is unavailable without a valid latest report.");
   const recommendation = report.startup_recommendation;
@@ -396,10 +444,16 @@ export function benchmarkRecommendation(reportStatus: string, report: JsonObject
   const rationalePresent = typeof rec.rationale === "string" && rec.rationale.trim().length > 0;
   if (rationalePresent) caveats.push("Startup benchmark recommendation rationale is present but not emitted from retained benchmark JSON.");
   return {
-    status: "available", source_label: BENCHMARK_LATEST_REPORT_LABEL, source_provenance: source,
-    action, measured_trigger: trigger, rationale: null, rationale_present: rationalePresent,
+    status: "available",
+    source_label: BENCHMARK_LATEST_REPORT_LABEL,
+    source_provenance: source,
+    action,
+    measured_trigger: trigger,
+    rationale: null,
+    rationale_present: rationalePresent,
     rationale_boundary: "not_emitted_from_retained_report",
-    implementation_recommended: Boolean(report.implementation_recommended), caveats,
+    implementation_recommended: Boolean(report.implementation_recommended),
+    caveats,
   };
 }
 
@@ -417,7 +471,13 @@ export function benchmarkManualRefresh(complete: boolean, latestReport: JsonObje
   } else {
     status = "requires_manual_run";
   }
-  return { status, command: "mage bench:startupState", execution_status: "not_run_by_design", auto_run: false, caveats: uniqueList(caveats) };
+  return {
+    status,
+    command: "mage bench:startupState",
+    execution_status: "not_run_by_design",
+    auto_run: false,
+    caveats: uniqueList(caveats),
+  };
 }
 
 export function benchmarkPrivacyBoundary(): JsonObject {
@@ -426,11 +486,10 @@ export function benchmarkPrivacyBoundary(): JsonObject {
     source_provenance: sourceProvenance("benchmark_context", BENCHMARK_CONTEXT_CMD, "privacy_boundary"),
     user_local_benchmark_reads: "cli_internal_summary_only",
     normal_agent_file_reads: "last_resort_diagnostics_only",
-    raw_paths_emitted: false, raw_report_bodies_emitted: false, forbidden_outputs: BENCHMARK_FORBIDDEN_OUTPUTS,
-    allowed_outputs: [
-      "canonical source labels", "canonical runtime labels", "canonical artifact labels",
-      "bounded counts and rates", "token estimate aggregates", "comparison null reasons", "manual refresh command",
-    ],
+    raw_paths_emitted: false,
+    raw_report_bodies_emitted: false,
+    forbidden_outputs: BENCHMARK_FORBIDDEN_OUTPUTS,
+    allowed_outputs: ["canonical source labels", "canonical runtime labels", "canonical artifact labels", "bounded counts and rates", "token estimate aggregates", "comparison null reasons", "manual refresh command"],
   };
 }
 
@@ -456,14 +515,24 @@ export function optimizeBenchmarkContext(capability: string | null): JsonObject 
     recommendation_status: ["available", "missing"].includes(recommendation.status as string),
     source_contract: true,
   };
-  const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([k]) => k);
+  const missingRequired = Object.entries(requiredState)
+    .filter(([, present]) => !present)
+    .map(([k]) => k);
   const complete = missingRequired.length === 0;
   const manualRefresh = benchmarkManualRefresh(complete, latestReport, stateMetrics);
   const benchmarkSourceCaveats = [...latestCaveats, ...historyCaveats];
   const retainedOutputs = [
-    { source_label: BENCHMARK_LATEST_REPORT_LABEL, filename: "latest-report.json", status: latestStatus },
+    {
+      source_label: BENCHMARK_LATEST_REPORT_LABEL,
+      filename: "latest-report.json",
+      status: latestStatus,
+    },
     { source_label: BENCHMARK_HISTORY_LABEL, filename: "runs.jsonl", status: historyStatus },
-    { source_label: "startup_benchmark_latest_markdown", filename: "latest-report.md", status: "not_read_by_context" },
+    {
+      source_label: "startup_benchmark_latest_markdown",
+      filename: "latest-report.md",
+      status: "not_read_by_context",
+    },
   ];
   const caveats = uniqueList([
     ...benchmarkSourceCaveats,
@@ -502,20 +571,18 @@ export function optimizeBenchmarkContext(capability: string | null): JsonObject 
       complete_for_benchmark_context: complete,
       caveated: caveats.length > 0,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy:
-        `Use this benchmark_context from \`${preCutoverCommand("prime --context optimize")}\` first. ` +
-        "If incomplete, follow fallback_commands and manual_refresh before any last-resort direct latest-report.json, " +
-        "latest-report.md, or runs.jsonl diagnostic read.",
-      benchmark_state_families: [
-        "latest_report", "history_summary", "runtime_coverage", "state_access_metrics", "token_impact",
-        "comparison", "recommendation", "manual_refresh", "privacy_boundary",
-      ],
+      raw_artifact_read_policy: `Use this benchmark_context from \`${preCutoverCommand("prime --context optimize")}\` first. ` + "If incomplete, follow fallback_commands and manual_refresh before any last-resort direct latest-report.json, " + "latest-report.md, or runs.jsonl diagnostic read.",
+      benchmark_state_families: ["latest_report", "history_summary", "runtime_coverage", "state_access_metrics", "token_impact", "comparison", "recommendation", "manual_refresh", "privacy_boundary"],
       required_benchmark_state: requiredState,
       missing_required_benchmark_state: missingRequired,
       source_labels: BENCHMARK_CONTEXT_SOURCE_LABELS,
       fallback_commands: fallbackCommands,
       manual_refresh_status: manualRefresh.status,
-      privacy_boundary: { raw_paths_emitted: false, raw_report_bodies_emitted: false, forbidden_outputs: BENCHMARK_FORBIDDEN_OUTPUTS },
+      privacy_boundary: {
+        raw_paths_emitted: false,
+        raw_report_bodies_emitted: false,
+        forbidden_outputs: BENCHMARK_FORBIDDEN_OUTPUTS,
+      },
       caveats,
       owns: [
         "retained startup benchmark source status",

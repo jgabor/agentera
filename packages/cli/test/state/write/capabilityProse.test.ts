@@ -19,30 +19,15 @@ const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..
 
 function planCreate(root: string, input: string): { rc: number; output: string } {
   let output = "";
-  const rc = main(
-    [
-      "node",
-      "agentera",
-      "state",
-      "plan",
-      "create",
-      "--input",
-      input,
-      "--format",
-      "json",
-      "--project",
-      root,
-    ],
-    {
-      out: (text) => {
-        output += text;
-      },
-      err: (text) => {
-        output += text;
-      },
-      stdin: () => "",
+  const rc = main(["node", "agentera", "state", "plan", "create", "--input", input, "--format", "json", "--project", root], {
+    out: (text) => {
+      output += text;
     },
-  );
+    err: (text) => {
+      output += text;
+    },
+    stdin: () => "",
+  });
   return { rc, output };
 }
 
@@ -61,23 +46,17 @@ function servedBuildInstructions(): string {
   const previous = process.cwd();
   try {
     fs.mkdirSync(path.join(root, ".agentera"));
-    fs.writeFileSync(
-      path.join(root, ".agentera/state-mode.yaml"),
-      "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-    );
+    fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     process.chdir(root);
-    const rc = main(
-      ["node", "agentera", "prime", "--context", "build", "--format", "json"],
-      {
-        out: (text) => {
-          output += text;
-        },
-        err: (text) => {
-          output += text;
-        },
-        stdin: () => "",
+    const rc = main(["node", "agentera", "prime", "--context", "build", "--format", "json"], {
+      out: (text) => {
+        output += text;
       },
-    );
+      err: (text) => {
+        output += text;
+      },
+      stdin: () => "",
+    });
     expect(rc, output).toBe(0);
     servedBuildInstructionsCache = (JSON.parse(output) as Record<string, any>).capability_context.instructions as string;
     return servedBuildInstructionsCache;
@@ -113,12 +92,7 @@ function buildCycleOrderViolations(text: string): string[] {
   if (log < 0 || commit < 0 || log >= commit) violations.push("log_must_precede_commit");
   if (!text.includes("### Step 7: Log")) violations.push("log_must_be_step_7");
   if (!text.includes("### Step 8: Commit")) violations.push("commit_must_be_step_8");
-  for (const requiredWrite of [
-    "**TODO.md**",
-    "agentera state progress append",
-    "**CHANGELOG.md**",
-    "agentera state plan set-status",
-  ]) {
+  for (const requiredWrite of ["**TODO.md**", "agentera state progress append", "**CHANGELOG.md**", "agentera state plan set-status"]) {
     const write = text.indexOf(requiredWrite, Math.max(log, 0));
     if (write < log || write >= commit) violations.push(`write_before_commit:${requiredWrite}`);
   }
@@ -143,9 +117,7 @@ function restoreOldCommitBeforeLogOrder(text: string): string {
 describe("producer capability writer integration", () => {
   it("routes every writable capability artifact through the state writer", () => {
     expect(buildInstructions).toContain("agentera state progress append");
-    expect(buildInstructions).toContain(
-      "agentera state plan set-status --id ID --status complete",
-    );
+    expect(buildInstructions).toContain("agentera state plan set-status --id ID --status complete");
     expect(discussInstructions).toContain("agentera state decisions append");
     expect(discussInstructions).toContain("agentera state decisions append --input <path|->");
     expect(discussInstructions).toContain("agentera state decisions amend --id ID --base-sha256 HASH --input <path|->");
@@ -164,20 +136,9 @@ describe("producer capability writer integration", () => {
   });
 
   it("makes Build progress conditional while retaining typed writer authority", () => {
-    const variants = [buildInstructions, servedBuildInstructions()]
-      .map((text) => text.replaceAll("npx -y agentera@next ", "agentera "));
-    const artifacts = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/artifacts.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
-    const validation = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
+    const variants = [buildInstructions, servedBuildInstructions()].map((text) => text.replaceAll("npx -y agentera@next ", "agentera "));
+    const artifacts = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/artifacts.yaml"), "utf8")) as Record<string, any>;
+    const validation = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"), "utf8")) as Record<string, any>;
 
     for (const text of variants) {
       expect(text).toContain("agentera state progress explain --verb append");
@@ -204,45 +165,24 @@ describe("producer capability writer integration", () => {
       source: buildInstructions,
       served: servedBuildInstructions(),
     };
-    const staleClaims = [
-      "assigns the number",
-      "inserts newest-first",
-      "validates, compacts",
-      "Progress compaction is writer-owned",
-    ];
+    const staleClaims = ["assigns the number", "inserts newest-first", "validates, compacts", "Progress compaction is writer-owned"];
 
     for (const [variant, text] of Object.entries(variants)) {
       expect(buildCycleOrderViolations(text), `${variant} valid order`).toEqual([]);
-      expect(
-        buildCycleOrderViolations(restoreOldCommitBeforeLogOrder(text)),
-        `${variant} old Commit-before-Log order`,
-      ).toContain("log_must_precede_commit");
+      expect(buildCycleOrderViolations(restoreOldCommitBeforeLogOrder(text)), `${variant} old Commit-before-Log order`).toContain("log_must_precede_commit");
       expect(text, `${variant} single commit`).toContain("Commit once with a conventional commit message");
       for (const policy of BUILD_TERMINAL_ORDER_POLICIES) {
         expect(text, `${variant} terminal order`).toContain(policy.current);
         expect(text, `${variant} stale terminal order`).not.toContain(policy.stale);
-        expect(
-          buildCycleOrderViolations(text.replace(policy.current, policy.stale)),
-          `${variant} terminal-order regression: ${policy.violation}`,
-        ).toContain(policy.violation);
+        expect(buildCycleOrderViolations(text.replace(policy.current, policy.stale)), `${variant} terminal-order regression: ${policy.violation}`).toContain(policy.violation);
       }
       for (const claim of staleClaims) expect(text, `${variant} stale claim: ${claim}`).not.toContain(claim);
     }
   });
 
   it("keeps Build validation and exit schemas aligned with Log Step 7 and Commit Step 8", () => {
-    const validation = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
-    const exit = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/exit.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
+    const validation = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/validation.yaml"), "utf8")) as Record<string, any>;
+    const exit = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/exit.yaml"), "utf8")) as Record<string, any>;
 
     expect(validation.VALIDATION[2].description).toContain("logging required artifacts (Step 7)");
     expect(validation.VALIDATION[2].description).toContain("committing once (Step 8)");
@@ -268,16 +208,8 @@ describe("producer capability writer integration", () => {
   });
 
   it("orders terminal-open health closure before plan completion and preserves failure follow-up", () => {
-    const artifacts = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/orchestrate/schemas/artifacts.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
-    const healthSchema = fs.readFileSync(
-      path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/health.yaml"),
-      "utf8",
-    );
+    const artifacts = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/orchestrate/schemas/artifacts.yaml"), "utf8")) as Record<string, any>;
+    const healthSchema = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/schemas/artifacts/health.yaml"), "utf8");
     const health = YAML.parse(healthSchema) as Record<string, any>;
     const closureStart = orchestrateInstructions.indexOf("**Terminal-open closure sequence**");
     const closureEnd = orchestrateInstructions.indexOf("Step markers", closureStart);
@@ -294,9 +226,7 @@ describe("producer capability writer integration", () => {
     expect(health.meta.description).toContain("limited artifact_freshness record for terminal-plan closure after Audit passes.");
     expect(orchestrateInstructions).toContain("Plan exists, `active: true` and `complete_plan: true`");
     expect(closure).toContain("agentera state health append --input PATH");
-    expect(closure.indexOf("agentera state health append --input PATH")).toBeLessThan(
-      closure.indexOf("agentera state plan set-plan-status --status complete"),
-    );
+    expect(closure.indexOf("agentera state health append --input PATH")).toBeLessThan(closure.indexOf("agentera state plan set-plan-status --status complete"));
     expect(closure).toContain("WARN or FAIL requiring follow-up");
     expect(closure).toContain("keep the plan open");
     expect(closure).not.toContain("run `agentera state plan archive");
@@ -306,10 +236,7 @@ describe("producer capability writer integration", () => {
   });
 
   it("uses the writer as the final plan publication gate", () => {
-    const vocabulary = fs.readFileSync(
-      path.join(REPO_ROOT, "references/cli/vocabulary.md"),
-      "utf8",
-    );
+    const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
 
     expect(planInstructions).toContain("### Step 4: Validate and publish");
     expect(planInstructions).toContain("Normally run exactly one `agentera state plan create");
@@ -322,12 +249,7 @@ describe("producer capability writer integration", () => {
   });
 
   it("uses lifecycle coherence instead of a fixed full-plan task count", () => {
-    const validation = YAML.parse(
-      fs.readFileSync(
-        path.join(REPO_ROOT, "skills/agentera/capabilities/plan/schemas/validation.yaml"),
-        "utf8",
-      ),
-    ) as Record<string, any>;
+    const validation = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/plan/schemas/validation.yaml"), "utf8")) as Record<string, any>;
     const rule = validation.VALIDATION[2] as Record<string, any>;
 
     expect(rule.rule).toBe("coherent_lifecycle_scope");
@@ -350,9 +272,7 @@ describe("producer capability writer integration", () => {
       const parsed = YAML.parse(example) as Record<string, any>;
       expect(parsed.overall_acceptance).toEqual(expect.any(String));
       expect(parsed.tasks[1].depends_on).toEqual(["1"]);
-      expect(parsed.rejected).toEqual([
-        expect.objectContaining({ issue: expect.any(String), rationale: expect.any(String) }),
-      ]);
+      expect(parsed.rejected).toEqual([expect.objectContaining({ issue: expect.any(String), rationale: expect.any(String) })]);
 
       const input = path.join(root, "plan.yaml");
       fs.mkdirSync(path.join(root, ".agentera"));
@@ -377,10 +297,7 @@ describe("producer capability writer integration", () => {
   it("keeps cold-start agent surfaces discoverable", () => {
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const agents = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
-    const stateSkill = fs.readFileSync(
-      path.join(REPO_ROOT, ".opencode/skills/agentera-state/SKILL.md"),
-      "utf8",
-    );
+    const stateSkill = fs.readFileSync(path.join(REPO_ROOT, ".opencode/skills/agentera-state/SKILL.md"), "utf8");
     expect(skill).toContain("npx -y agentera@next state decisions explain");
     expect(agents).toContain("agentera-state");
     expect(stateSkill).toContain("npx -y agentera@next state decisions explain");

@@ -43,10 +43,7 @@ if (crashPoint === "claim-created") {
   fs.fsyncSync = (fd) => {
     original(fd);
     try {
-      if (
-        fs.realpathSync(`/proc/self/fd/${fd}`).endsWith("/.writer.lock")
-        && fs.existsSync(`${project}/.agentera/.writer.lock/.reclaim.json`)
-      ) crash();
+      if (fs.realpathSync(`/proc/self/fd/${fd}`).endsWith("/.writer.lock") && fs.existsSync(`${project}/.agentera/.writer.lock/.reclaim.json`)) crash();
     } catch {
       // The fd may have been closed between inspection and diagnostic lookup.
     }
@@ -61,12 +58,7 @@ if (crashPoint === "claim-created") {
   const original = fs.rmdirSync;
   fs.rmdirSync = (target, options) => {
     const result = original(target, options);
-    if (
-      String(target).includes("/.writer.")
-      && String(target).endsWith(".tmp")
-      && canonicalOwnerIsOurs()
-      && fs.existsSync(`${project}/.agentera/.writer.lock/.reclaim.json`)
-    ) crash();
+    if (String(target).includes("/.writer.") && String(target).endsWith(".tmp") && canonicalOwnerIsOurs() && fs.existsSync(`${project}/.agentera/.writer.lock/.reclaim.json`)) crash();
     return result;
   };
 } else if (crashPoint === "claim-removed") {

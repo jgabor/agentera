@@ -12,11 +12,7 @@ import { main } from "../../src/cli/dispatch.js";
 import { runStateGet } from "../../src/cli/commands/state/get.js";
 import { runStateList } from "../../src/cli/commands/state/list.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
-import {
-  appendProgressEntity,
-  getProgressEntity,
-  listProgressEntities,
-} from "../../src/state/progressEntities.js";
+import { appendProgressEntity, getProgressEntity, listProgressEntities } from "../../src/state/progressEntities.js";
 import { detectStateMode } from "../../src/state/stateMode.js";
 import { executeStateWrite } from "../../src/state/write/transaction.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
@@ -39,34 +35,33 @@ function authoritySource(): string {
   roots.push(root);
   const directory = path.join(root, "references", "artifacts");
   fs.mkdirSync(directory, { recursive: true });
-  for (const name of ["state-storage-authority.yaml", "glossary-entry-contract.yaml"])
-    fs.copyFileSync(path.join(SOURCE_ROOT, "references", "artifacts", name), path.join(directory, name));
+  for (const name of ["state-storage-authority.yaml", "glossary-entry-contract.yaml"]) fs.copyFileSync(path.join(SOURCE_ROOT, "references", "artifacts", name), path.join(directory, name));
   return root;
 }
 
 function activate(root: string): void {
   fs.mkdirSync(path.join(root, ".agentera"), { recursive: true });
-  fs.writeFileSync(
-    path.join(root, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
 }
 
 function writeProgressEnvelope(root: string, id: string, caveat: unknown): string {
   const target = path.join(root, ".agentera/entities/progress/progress_cycle", `${id}.yaml`);
   fs.mkdirSync(path.dirname(target), { recursive: true });
-  fs.writeFileSync(target, dumpYamlMapping({
-    id,
-    artifact: "progress",
-    record: {
-      timestamp: "2026-07-27 09:30",
-      type: "test",
-      phase: "build",
-      what: "fixture",
-      context: { intent: "validate caveat" },
-      glossary_caveat: caveat,
-    },
-  }));
+  fs.writeFileSync(
+    target,
+    dumpYamlMapping({
+      id,
+      artifact: "progress",
+      record: {
+        timestamp: "2026-07-27 09:30",
+        type: "test",
+        phase: "build",
+        what: "fixture",
+        context: { intent: "validate caveat" },
+        glossary_caveat: caveat,
+      },
+    }),
+  );
   return target;
 }
 
@@ -82,11 +77,7 @@ function validCaveat(overrides: Record<string, unknown> = {}): Record<string, un
   };
 }
 
-function request(
-  root: string,
-  what = "shipped",
-  timestamp = "2026-07-17 12:00",
-): StateWriteRequest {
+function request(root: string, what = "shipped", timestamp = "2026-07-17 12:00"): StateWriteRequest {
   const spec = operationSpec("progress", "append");
   if (!spec) throw new Error("progress append spec missing");
   const values = {
@@ -140,7 +131,9 @@ function expectNoProgressWrite(...projectRoots: string[]): void {
 
 describe("progress entity authority", () => {
   it("refreshes glossary authority when unchanged state authority remains cached", () => {
-    const root = project(); activate(root); writeProgressEnvelope(root, "caveatidxx", validCaveat());
+    const root = project();
+    activate(root);
+    writeProgressEnvelope(root, "caveatidxx", validCaveat());
     const sourceRoot = authoritySource();
     const statePath = path.join(sourceRoot, "references/artifacts/state-storage-authority.yaml");
     const glossaryPath = path.join(sourceRoot, "references/artifacts/glossary-entry-contract.yaml");
@@ -148,10 +141,7 @@ describe("progress entity authority", () => {
     expect(validateEntityState(root, sourceRoot).valid).toBe(true);
 
     const glossary = fs.readFileSync(glossaryPath, "utf8");
-    const changed = glossary.replace(
-      "reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]",
-      "reasons: [authority_unavailable, personal_input_unavailable]",
-    );
+    const changed = glossary.replace("reasons: [inferred_equivalence, authority_unavailable, personal_input_unavailable]", "reasons: [authority_unavailable, personal_input_unavailable]");
     expect(changed).not.toBe(glossary);
     fs.writeFileSync(glossaryPath, changed);
 
@@ -163,46 +153,118 @@ describe("progress entity authority", () => {
   });
 
   it("publishes bounded Build caveat lifecycle events idempotently without glossary writes", () => {
-    const root = project(); activate(root);
+    const root = project();
+    activate(root);
     const append = (extra: string[], what = "conservative work") => {
-      let out = ""; let err = "";
+      let out = "";
+      let err = "";
       const caveat: Record<string, unknown> = {};
-      const fields: Record<string, string> = { "--glossary-caveat-event": "event", "--glossary-caveat-reason": "reason", "--glossary-caveat-ownership-state": "ownership_state", "--glossary-caveat-id": "caveat_id", "--glossary-caveat-transition-id": "transition_id" };
+      const fields: Record<string, string> = {
+        "--glossary-caveat-event": "event",
+        "--glossary-caveat-reason": "reason",
+        "--glossary-caveat-ownership-state": "ownership_state",
+        "--glossary-caveat-id": "caveat_id",
+        "--glossary-caveat-transition-id": "transition_id",
+      };
       for (let index = 0; index < extra.length; index += 2) caveat[fields[extra[index]]] = extra[index + 1];
-      const input = { type: "feat", phase: "build", what, verified: "bounded caveat verified", context: { intent: "Avoid disputed terminology" }, glossary_caveat: caveat };
-      const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify(input) });
+      const input = {
+        type: "feat",
+        phase: "build",
+        what,
+        verified: "bounded caveat verified",
+        context: { intent: "Avoid disputed terminology" },
+        glossary_caveat: caveat,
+      };
+      const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], {
+        out: (text) => {
+          out += text;
+        },
+        err: (text) => {
+          err += text;
+        },
+        stdin: () => JSON.stringify(input),
+      });
       return { rc, out, err, json: out ? JSON.parse(out) : null };
     };
     const currentFlags = ["--glossary-caveat-event", "current", "--glossary-caveat-reason", "inferred_equivalence", "--glossary-caveat-ownership-state", "review_required"];
     const current = append(currentFlags);
     expect(current.rc).toBe(0);
-    expect(current.json.record.glossary_caveat).toEqual({ caveat_id: expect.stringMatching(/^[a-z]{10}$/), event: "current", capability: "build", reason: "inferred_equivalence", ownership_state: "review_required", transition_id: null });
+    expect(current.json.record.glossary_caveat).toEqual({
+      caveat_id: expect.stringMatching(/^[a-z]{10}$/),
+      event: "current",
+      capability: "build",
+      reason: "inferred_equivalence",
+      ownership_state: "review_required",
+      transition_id: null,
+    });
     const caveatId = current.json.record.glossary_caveat.caveat_id as string;
-    expect(append(currentFlags, "retried work").json).toMatchObject({ id: current.json.id, operation: { idempotent_replay: true } });
+    expect(append(currentFlags, "retried work").json).toMatchObject({
+      id: current.json.id,
+      operation: { idempotent_replay: true },
+    });
     const successor = append(["--glossary-caveat-event", "current", "--glossary-caveat-reason", "authority_unavailable", "--glossary-caveat-ownership-state", "authority_unavailable"]);
     const successorId = successor.json.record.glossary_caveat.caveat_id as string;
     const supersededFlags = ["--glossary-caveat-event", "superseded", "--glossary-caveat-reason", "inferred_equivalence", "--glossary-caveat-ownership-state", "review_required", "--glossary-caveat-id", caveatId, "--glossary-caveat-transition-id", successorId];
     const superseded = append(supersededFlags);
-    expect(superseded.json.record.glossary_caveat).toMatchObject({ caveat_id: caveatId, event: "superseded", transition_id: successorId });
-    expect(append(supersededFlags).json).toMatchObject({ id: superseded.json.id, operation: { idempotent_replay: true } });
+    expect(superseded.json.record.glossary_caveat).toMatchObject({
+      caveat_id: caveatId,
+      event: "superseded",
+      transition_id: successorId,
+    });
+    expect(append(supersededFlags).json).toMatchObject({
+      id: superseded.json.id,
+      operation: { idempotent_replay: true },
+    });
     const resolvedFlags = ["--glossary-caveat-event", "resolved", "--glossary-caveat-reason", "authority_unavailable", "--glossary-caveat-ownership-state", "authority_unavailable", "--glossary-caveat-id", successorId];
-    expect(append(resolvedFlags).json.record.glossary_caveat).toMatchObject({ caveat_id: successorId, event: "resolved", transition_id: null });
+    expect(append(resolvedFlags).json.record.glossary_caveat).toMatchObject({
+      caveat_id: successorId,
+      event: "resolved",
+      transition_id: null,
+    });
     expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
     expect(fs.readdirSync(path.join(root, ".agentera/entities/progress/progress_cycle"))).toHaveLength(4);
   });
 
   it("rejects private caveat vocabulary without echoing or writing it", () => {
-    const root = project(); activate(root); const trap = "PRIVATE_TERM_MEANING_ANCHOR_PATH_PROVENANCE"; let out = ""; let err = "";
-    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ type: "feat", phase: "build", what: "safe", context: { intent: "safe" }, glossary_caveat: { event: "current", reason: trap, ownership_state: "review_required" } }) });
-    expect(rc).not.toBe(0); expect(out + err).not.toContain(trap); expectNoProgressWrite(root); expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
+    const root = project();
+    activate(root);
+    const trap = "PRIVATE_TERM_MEANING_ANCHOR_PATH_PROVENANCE";
+    let out = "";
+    let err = "";
+    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], {
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
+      stdin: () =>
+        JSON.stringify({
+          type: "feat",
+          phase: "build",
+          what: "safe",
+          context: { intent: "safe" },
+          glossary_caveat: { event: "current", reason: trap, ownership_state: "review_required" },
+        }),
+    });
+    expect(rc).not.toBe(0);
+    expect(out + err).not.toContain(trap);
+    expectNoProgressWrite(root);
+    expect(fs.existsSync(path.join(root, ".agentera/glossary.yaml"))).toBe(false);
   });
 
   it("distinguishes absent caveats from present-invalid mutation input", () => {
-    const root = project(); activate(root);
+    const root = project();
+    activate(root);
     expect(executeStateWrite(request(root))).toMatchObject({ status: "pass" });
     for (const glossary_caveat of [
       null,
-      { event: "current", reason: "inferred_equivalence", ownership_state: "review_required", PRIVATE_TRAP_FIELD: "PRIVATE_TRAP_VALUE" },
+      {
+        event: "current",
+        reason: "inferred_equivalence",
+        ownership_state: "review_required",
+        PRIVATE_TRAP_FIELD: "PRIVATE_TRAP_VALUE",
+      },
     ]) {
       const candidate = request(root, "invalid mutation");
       candidate.values.glossary_caveat = glossary_caveat;
@@ -231,9 +293,7 @@ describe("progress entity authority", () => {
 
     const validation = validateEntityState(root);
     expect(validation.valid).toBe(false);
-    expect(validation.issues).toEqual(expect.arrayContaining([
-      expect.objectContaining({ code: "malformed_entity", id: "zzzzzzzzzz" }),
-    ]));
+    expect(validation.issues).toEqual(expect.arrayContaining([expect.objectContaining({ code: "malformed_entity", id: "zzzzzzzzzz" })]));
 
     for (const argv of [
       ["state", "progress", "list", "--format", "json"],
@@ -241,8 +301,23 @@ describe("progress entity authority", () => {
       ["state", "progress", "append", "--input", "-", "--format", "json"],
       ["check", "validate", "state", "--cwd", root, "--format", "json"],
     ]) {
-      let out = ""; let err = "";
-      const rc = main(["node", "agentera", ...argv, ...(argv[0] === "state" ? ["--project", root] : [])], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ type: "test", phase: "build", what: "blocked", context: { intent: "fail before effects" } }) });
+      let out = "";
+      let err = "";
+      const rc = main(["node", "agentera", ...argv, ...(argv[0] === "state" ? ["--project", root] : [])], {
+        out: (text) => {
+          out += text;
+        },
+        err: (text) => {
+          err += text;
+        },
+        stdin: () =>
+          JSON.stringify({
+            type: "test",
+            phase: "build",
+            what: "blocked",
+            context: { intent: "fail before effects" },
+          }),
+      });
       expect(rc).not.toBe(0);
       expect(out + err).not.toContain("PRIVATE_TRAP");
       expect(out + err).not.toContain("P".repeat(65));
@@ -252,24 +327,36 @@ describe("progress entity authority", () => {
   });
 
   it("marks invalid caveat lifecycle relationships malformed while accepting valid lifecycles", () => {
-    const valid = project(); activate(valid);
+    const valid = project();
+    activate(valid);
     writeProgressEnvelope(valid, "aaaaaaaaaa", validCaveat({ caveat_id: "firstcavea" }));
     writeProgressEnvelope(valid, "bbbbbbbbbb", validCaveat({ caveat_id: "firstcavea", event: "resolved" }));
-    writeProgressEnvelope(valid, "cccccccccc", validCaveat({ caveat_id: "nextcaveat", reason: "authority_unavailable", ownership_state: "authority_unavailable" }));
+    writeProgressEnvelope(
+      valid,
+      "cccccccccc",
+      validCaveat({
+        caveat_id: "nextcaveat",
+        reason: "authority_unavailable",
+        ownership_state: "authority_unavailable",
+      }),
+    );
     writeProgressEnvelope(valid, "dddddddddd", validCaveat({ caveat_id: "oldcaveatx" }));
     writeProgressEnvelope(valid, "eeeeeeeeee", validCaveat({ caveat_id: "oldcaveatx", event: "superseded", transition_id: "nextcaveat" }));
     expect(validateEntityState(valid)).toMatchObject({ valid: true, entityCount: 5 });
 
-    const missingCurrent = project(); activate(missingCurrent);
+    const missingCurrent = project();
+    activate(missingCurrent);
     writeProgressEnvelope(missingCurrent, "aaaaaaaaaa", validCaveat({ event: "resolved" }));
     expect(validateEntityState(missingCurrent)).toMatchObject({ valid: false });
 
-    const duplicateCurrent = project(); activate(duplicateCurrent);
+    const duplicateCurrent = project();
+    activate(duplicateCurrent);
     writeProgressEnvelope(duplicateCurrent, "aaaaaaaaaa", validCaveat());
     writeProgressEnvelope(duplicateCurrent, "bbbbbbbbbb", validCaveat());
     expect(validateEntityState(duplicateCurrent)).toMatchObject({ valid: false });
 
-    const missingSuccessor = project(); activate(missingSuccessor);
+    const missingSuccessor = project();
+    activate(missingSuccessor);
     writeProgressEnvelope(missingSuccessor, "aaaaaaaaaa", validCaveat());
     writeProgressEnvelope(missingSuccessor, "bbbbbbbbbb", validCaveat({ event: "superseded", transition_id: "nextcaveat" }));
     expect(validateEntityState(missingSuccessor)).toMatchObject({ valid: false });
@@ -358,9 +445,7 @@ describe("progress entity authority", () => {
         provenance: { storage: "canonical_entity_file", detail: "full" },
       },
     });
-    expect(() => appendProgressEntity(request(root, "different"), { id: "aaaaaaaaaa" })).toThrow(
-      /divergent content/,
-    );
+    expect(() => appendProgressEntity(request(root, "different"), { id: "aaaaaaaaaa" })).toThrow(/divergent content/);
 
     let output = "";
     expect(
@@ -427,11 +512,7 @@ describe("progress entity authority", () => {
       omission_reason: "page_limit",
       counts: { total: 3, returned: 2, remaining: 1 },
     });
-    expect(
-      first.entries.every(
-        (entry: any) => entry.record.verified && entry.provenance.detail === "full",
-      ),
-    ).toBe(true);
+    expect(first.entries.every((entry: any) => entry.record.verified && entry.provenance.detail === "full")).toBe(true);
     const second = listProgressEntities(root, 2, {}, first.next_cursor) as any;
     expect(second.entries.map((entry: any) => entry.id)).toEqual(["bbbbbbbbbb"]);
     expect(getProgressEntity(root, "bbbbbbbbbb")).toMatchObject({
@@ -441,16 +522,22 @@ describe("progress entity authority", () => {
     appendProgressEntity(request(root, "new", "2026-07-17 12:00"), { id: "dddddddddd" });
     expect(() => listProgressEntities(root, 2, {}, first.next_cursor)).toThrow(/source changed/);
 
-    const filtered = listProgressEntities(root, 1, { topic: "deliver", status: "feat" }, undefined, { selector: { idsOnly: true } }) as any;
+    const filtered = listProgressEntities(root, 1, { topic: "deliver", status: "feat" }, undefined, {
+      selector: { idsOnly: true },
+    }) as any;
     expect(filtered.retrieval.continue).toMatch(/^agentera state progress list --topic 'deliver' --status 'feat' --ids-only --limit 1 --cursor \S+$/);
 
     const authorityPath = path.resolve(import.meta.dirname, "../../../..", "references/artifacts/state-storage-authority.yaml");
     const prior = decodeListCursor(first.next_cursor, root, authorityPath) as any;
-    const priorCursor = encodeListCursor({
-      ...prior,
-      version: 1,
-      order: "timestamp_desc_then_id_asc",
-    }, root, authorityPath);
+    const priorCursor = encodeListCursor(
+      {
+        ...prior,
+        version: 1,
+        order: "timestamp_desc_then_id_asc",
+      },
+      root,
+      authorityPath,
+    );
     expect(() => listProgressEntities(root, 2, {}, priorCursor)).toThrow(/version 2 progress ordering contract/);
   });
 
@@ -478,7 +565,9 @@ describe("progress entity authority", () => {
   it("projects the final same-minute publication as latest in complete Prime JSON, status, and text", () => {
     const root = project();
     activate(root);
-    appendProgressEntity(request(root, "lexically first but published first"), { id: "aaaaaaaaaa" });
+    appendProgressEntity(request(root, "lexically first but published first"), {
+      id: "aaaaaaaaaa",
+    });
     appendProgressEntity(request(root, "final resolved publication"), { id: "zzzzzzzzzz" });
     const prime = (args: string[]) => {
       const cwd = process.cwd();
@@ -487,8 +576,12 @@ describe("progress entity authority", () => {
       process.chdir(root);
       try {
         const rc = main(["node", "agentera", "prime", ...args], {
-          out: (text) => { out += text; },
-          err: (text) => { err += text; },
+          out: (text) => {
+            out += text;
+          },
+          err: (text) => {
+            err += text;
+          },
         });
         expect(rc, err || out).toBe(0);
         return out;
@@ -497,7 +590,10 @@ describe("progress entity authority", () => {
       }
     };
     const json = JSON.parse(prime(["--format", "json"]));
-    expect(json.progress.latest).toMatchObject({ id: "zzzzzzzzzz", what: "final resolved publication" });
+    expect(json.progress.latest).toMatchObject({
+      id: "zzzzzzzzzz",
+      what: "final resolved publication",
+    });
     const status = JSON.parse(prime(["--context", "status", "--format", "json"]));
     expect(JSON.stringify(status.capability_context.context.status_context)).toContain("final resolved publication");
     const text = prime([]);
@@ -511,26 +607,31 @@ describe("progress entity authority", () => {
     const start = path.join(root, "race.start");
     const ready = ["first", "second"].map((name) => path.join(root, `${name}.ready`));
     const results = ["first", "second"].map((name) => path.join(root, `${name}.json`));
-    const children = results.map((result, index) => new Promise<void>((resolve, reject) => {
-      const child = spawn(process.execPath, [progressPublicationWorker], {
-        cwd: path.resolve(import.meta.dirname, "../.."),
-        env: {
-          ...sourceSubprocessEnv(),
-          AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."),
-          AGENTERA_PROGRESS_RACE_ROOT: root,
-          AGENTERA_PROGRESS_RACE_READY: ready[index],
-          AGENTERA_PROGRESS_RACE_START: start,
-          AGENTERA_PROGRESS_RACE_RESULT: result,
-          AGENTERA_PROGRESS_RACE_WHAT: `publisher ${index}`,
-        },
-        stdio: "pipe",
-      });
-      let stderr = "";
-      child.stderr.setEncoding("utf8");
-      child.stderr.on("data", (chunk) => { stderr += chunk; });
-      child.on("error", reject);
-      child.on("exit", (code) => code === 0 ? resolve() : reject(new Error(`progress worker exited ${code}: ${stderr}`)));
-    }));
+    const children = results.map(
+      (result, index) =>
+        new Promise<void>((resolve, reject) => {
+          const child = spawn(process.execPath, [progressPublicationWorker], {
+            cwd: path.resolve(import.meta.dirname, "../.."),
+            env: {
+              ...sourceSubprocessEnv(),
+              AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.resolve(import.meta.dirname, "../../../.."),
+              AGENTERA_PROGRESS_RACE_ROOT: root,
+              AGENTERA_PROGRESS_RACE_READY: ready[index],
+              AGENTERA_PROGRESS_RACE_START: start,
+              AGENTERA_PROGRESS_RACE_RESULT: result,
+              AGENTERA_PROGRESS_RACE_WHAT: `publisher ${index}`,
+            },
+            stdio: "pipe",
+          });
+          let stderr = "";
+          child.stderr.setEncoding("utf8");
+          child.stderr.on("data", (chunk) => {
+            stderr += chunk;
+          });
+          child.on("error", reject);
+          child.on("exit", (code) => (code === 0 ? resolve() : reject(new Error(`progress worker exited ${code}: ${stderr}`))));
+        }),
+    );
     const deadline = Date.now() + 10_000;
     while (!ready.every((file) => fs.existsSync(file))) {
       if (Date.now() > deadline) throw new Error("progress workers did not become ready");
@@ -549,33 +650,29 @@ describe("progress entity authority", () => {
     activate(root);
     const directory = path.join(root, ".agentera/entities/progress/progress_cycle");
     fs.mkdirSync(directory, { recursive: true });
-    const write = (id: string, what: string, publicationOrder?: number) => fs.writeFileSync(
-      path.join(directory, `${id}.yaml`),
-      dumpYamlMapping({
-        id,
-        artifact: "progress",
-        record: {
-          timestamp: "2026-07-17 12:00",
-          type: "feat",
-          phase: "build",
-          what,
-          context: { intent: what },
-          ...(publicationOrder === undefined ? {} : { publication_order: publicationOrder }),
-        },
-      }),
-    );
+    const write = (id: string, what: string, publicationOrder?: number) =>
+      fs.writeFileSync(
+        path.join(directory, `${id}.yaml`),
+        dumpYamlMapping({
+          id,
+          artifact: "progress",
+          record: {
+            timestamp: "2026-07-17 12:00",
+            type: "feat",
+            phase: "build",
+            what,
+            context: { intent: what },
+            ...(publicationOrder === undefined ? {} : { publication_order: publicationOrder }),
+          },
+        }),
+      );
     write("dddddddddd", "legacy d");
     write("bbbbbbbbbb", "legacy b");
     write("cccccccccc", "duplicate c", 4);
     write("aaaaaaaaaa", "duplicate a", 4);
 
     expect(validateEntityState(root).valid).toBe(true);
-    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual([
-      "aaaaaaaaaa",
-      "cccccccccc",
-      "bbbbbbbbbb",
-      "dddddddddd",
-    ]);
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual(["aaaaaaaaaa", "cccccccccc", "bbbbbbbbbb", "dddddddddd"]);
     const published = appendProgressEntity(request(root, "new publication"), { id: "zzzzzzzzzz" });
     expect(published.record.publication_order).toBe(5);
     expect((listProgressEntities(root, 1) as any).entries[0].id).toBe("zzzzzzzzzz");
@@ -586,10 +683,23 @@ describe("progress entity authority", () => {
     activate(root);
     let out = "";
     let err = "";
-    const rc = main([
-      "node", "agentera", "state", "progress", "append", "--project", root,
-      "--input", "-", "--format", "json",
-    ], { out: (text) => { out += text; }, err: (text) => { err += text; }, stdin: () => JSON.stringify({ timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "spoofed", context: { intent: "spoofed" }, publication_order: 99 }) });
+    const rc = main(["node", "agentera", "state", "progress", "append", "--project", root, "--input", "-", "--format", "json"], {
+      out: (text) => {
+        out += text;
+      },
+      err: (text) => {
+        err += text;
+      },
+      stdin: () =>
+        JSON.stringify({
+          timestamp: "2026-07-17 12:00",
+          type: "fix",
+          phase: "build",
+          what: "spoofed",
+          context: { intent: "spoofed" },
+          publication_order: 99,
+        }),
+    });
     expect(rc).toBe(2);
     expect(out + err).toMatch(/publication[_-]order|unrecognized/);
     expect(Buffer.byteLength(out + err)).toBeLessThan(2048);
@@ -638,10 +748,7 @@ describe("progress entity authority", () => {
     fs.mkdirSync(progressDir, { recursive: true });
     fs.writeFileSync(path.join(progressDir, "bbbbbbbbbb.yaml"), "not: [valid\n");
     expect(() => getProgressEntity(root, "bbbbbbbbbb")).toThrow(/corrupt/);
-    fs.writeFileSync(
-      path.join(progressDir, "dddddddddd.yaml"),
-      dumpYamlMapping({ id: "eeeeeeeeee", artifact: "progress", record: {} }),
-    );
+    fs.writeFileSync(path.join(progressDir, "dddddddddd.yaml"), dumpYamlMapping({ id: "eeeeeeeeee", artifact: "progress", record: {} }));
     expect(() => getProgressEntity(root, "dddddddddd")).toThrow(/canonical progress evidence is corrupt/);
 
     fs.writeFileSync(
@@ -654,10 +761,7 @@ describe("progress entity authority", () => {
     );
     const duplicateDir = path.join(root, ".agentera/entities/health/health_audit");
     fs.mkdirSync(duplicateDir, { recursive: true });
-    fs.writeFileSync(
-      path.join(duplicateDir, "cccccccccc.yaml"),
-      dumpYamlMapping({ id: "cccccccccc", artifact: "health", record: {} }),
-    );
+    fs.writeFileSync(path.join(duplicateDir, "cccccccccc.yaml"), dumpYamlMapping({ id: "cccccccccc", artifact: "health", record: {} }));
     expect(() => getProgressEntity(root, "cccccccccc")).toThrow(/multiple canonical candidates/);
   });
 
@@ -685,13 +789,8 @@ describe("progress entity authority", () => {
     git(root, "merge", "--ff-only", "left");
     git(root, "merge", "--no-edit", "right");
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 2 });
-    expect(
-      (listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id).sort(),
-    ).toEqual(["aaaaaaaaaa", "bbbbbbbbbb"]);
-    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual([
-      "aaaaaaaaaa",
-      "bbbbbbbbbb",
-    ]);
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id).sort()).toEqual(["aaaaaaaaaa", "bbbbbbbbbb"]);
+    expect((listProgressEntities(root, 20) as any).entries.map((entry: any) => entry.id)).toEqual(["aaaaaaaaaa", "bbbbbbbbbb"]);
     expect(fs.existsSync(path.join(root, ".agentera/progress.yaml"))).toBe(false);
   });
 });

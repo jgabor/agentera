@@ -31,9 +31,7 @@ export function activeStructuredInputSources(): StructuredInputSources {
 }
 
 export function activeStructuredInputRouteIds(inputs = activeStructuredInputSources()): string[] {
-  const writers = inputs.writerOperations
-    .filter((operation) => operation.structuredInputSources.length > 0)
-    .map((operation) => `writer.${operation.artifact}.${operation.verb}.input`);
+  const writers = inputs.writerOperations.filter((operation) => operation.structuredInputSources.length > 0).map((operation) => `writer.${operation.artifact}.${operation.verb}.input`);
   const optionName = (option: string) => option.slice(2);
   const reports = [
     ...inputs.glossaryAdviceOptions.map((option) => `report.glossary-advice.${optionName(option)}`),
@@ -70,8 +68,16 @@ type Inventory = {
   synthetic_baseline?: {
     route_identity?: string;
     content_bytes?: number;
-    fixtures?: Array<{ child_process_count?: number; wrapper_count?: number; duplicate_content_bytes?: number }>;
-    deltas?: { child_process_count?: number; wrapper_count?: number; duplicate_content_bytes?: number };
+    fixtures?: Array<{
+      child_process_count?: number;
+      wrapper_count?: number;
+      duplicate_content_bytes?: number;
+    }>;
+    deltas?: {
+      child_process_count?: number;
+      wrapper_count?: number;
+      duplicate_content_bytes?: number;
+    };
   };
   closure_evidence?: {
     active_registry_routes?: number;
@@ -156,7 +162,10 @@ export function validateStructuredInputInventory(inventoryPath = structuredInput
   } else {
     const contentBytes = baseline.content_bytes as number;
     const expected = [
-      computeSyntheticMetrics(contentBytes, [{ wrapper: true, contentBearing: true }, { wrapper: false, contentBearing: true }]),
+      computeSyntheticMetrics(contentBytes, [
+        { wrapper: true, contentBearing: true },
+        { wrapper: false, contentBearing: true },
+      ]),
       computeSyntheticMetrics(contentBytes, [{ wrapper: false, contentBearing: true }]),
     ];
     baseline.fixtures.forEach((fixture, index) => {
@@ -164,9 +173,7 @@ export function validateStructuredInputInventory(inventoryPath = structuredInput
         if (fixture[key as keyof typeof fixture] !== value) errors.push(`synthetic fixture ${index + 1} has invalid ${key}`);
       }
     });
-    const deltas = Object.fromEntries(
-      Object.keys(expected[0]).map((key) => [key, expected[1][key as keyof typeof expected[1]] - expected[0][key as keyof typeof expected[0]]]),
-    );
+    const deltas = Object.fromEntries(Object.keys(expected[0]).map((key) => [key, expected[1][key as keyof (typeof expected)[1]] - expected[0][key as keyof (typeof expected)[0]]]));
     for (const [key, value] of Object.entries(deltas)) {
       if (baseline.deltas?.[key as keyof NonNullable<typeof baseline.deltas>] !== value) {
         errors.push(`synthetic baseline has invalid ${key} delta`);

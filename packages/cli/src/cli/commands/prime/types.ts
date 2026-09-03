@@ -24,4 +24,8 @@ export interface PrimeArgs {
   expectedVersion?: string | null;
 }
 
-export type Io = { out?: (t: string) => void; err?: (t: string) => void; stdin?: () => string | Buffer };
+export type Io = {
+  out?: (t: string) => void;
+  err?: (t: string) => void;
+  stdin?: () => string | Buffer;
+};

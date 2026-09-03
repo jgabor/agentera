@@ -150,13 +150,11 @@ export function glossaryCandidateRevision(input: GlossaryCandidateRevisionInput)
     }
     canonicalEvidence.add(canonical);
   }
-  evidence.sort(
-    (left, right) => {
-      const leftCanonical = canonicalGlossaryJson(left);
-      const rightCanonical = canonicalGlossaryJson(right);
-      return compareGlossaryUnicodeStrings(leftCanonical, rightCanonical);
-    },
-  );
+  evidence.sort((left, right) => {
+    const leftCanonical = canonicalGlossaryJson(left);
+    const rightCanonical = canonicalGlossaryJson(right);
+    return compareGlossaryUnicodeStrings(leftCanonical, rightCanonical);
+  });
   return sha256Utf8(
     canonicalGlossaryJson({
       schema_version: "agentera.personalGlossaryCandidateRevision.v1",

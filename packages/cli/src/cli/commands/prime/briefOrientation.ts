@@ -45,10 +45,7 @@ export function briefUtf8Bytes(value: unknown): number {
 /** Byte-gate primitive: deterministic UTF-8 measurement + budget comparison.
  *  AC5: a passing fixture (bytes <= budget) is accepted; an over-budget fixture
  *  (bytes > budget) is rejected. */
-export function briefByteGate(
-  value: unknown,
-  budget: number = PRIME_BRIEF_MAX_UTF8_BYTES,
-): { accepted: boolean; bytes: number } {
+export function briefByteGate(value: unknown, budget: number = PRIME_BRIEF_MAX_UTF8_BYTES): { accepted: boolean; bytes: number } {
   const bytes = briefUtf8Bytes(value);
   return { accepted: bytes <= budget, bytes };
 }
@@ -65,16 +62,52 @@ const planTaskFamily = entityListFamily("plan_tasks");
 const planTaskListRecovery = preCutoverCommand(`state ${planTaskFamily.commandTokens.join(" ")} list`);
 
 const OMITTED_RICH_STATE: readonly OmittedRichStateEntry[] = [
-  { field: "startup.path_diagnostics", reason: "startup_path_diagnostics", recovery: preCutoverCommand("doctor") },
+  {
+    field: "startup.path_diagnostics",
+    reason: "startup_path_diagnostics",
+    recovery: preCutoverCommand("doctor"),
+  },
   { field: "plan.tasks", reason: "plan_task_detail", recovery: planTaskListRecovery },
-  { field: "plan.archived_plans", reason: "archive_catalog", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
-  { field: "plan.diagnostics", reason: "plan_diagnostics", recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan },
-  { field: "history.progress.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.progress },
-  { field: "history.decisions.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions },
-  { field: "history.health.entries", reason: "startup_history_entries", recovery: STATE_FAMILY_FALLBACK_COMMANDS.health },
-  { field: "project_integration.phases", reason: "phase_blockers", recovery: preCutoverCommand("doctor") },
-  { field: "docs.source_contract", reason: "docs_state_families", recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs },
-  { field: "profile.bounded_signals", reason: "profile_signal_detail", recovery: preCutoverCommand("report profile-grounding") },
+  {
+    field: "plan.archived_plans",
+    reason: "archive_catalog",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan,
+  },
+  {
+    field: "plan.diagnostics",
+    reason: "plan_diagnostics",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.plan,
+  },
+  {
+    field: "history.progress.entries",
+    reason: "startup_history_entries",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.progress,
+  },
+  {
+    field: "history.decisions.entries",
+    reason: "startup_history_entries",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.decisions,
+  },
+  {
+    field: "history.health.entries",
+    reason: "startup_history_entries",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.health,
+  },
+  {
+    field: "project_integration.phases",
+    reason: "phase_blockers",
+    recovery: preCutoverCommand("doctor"),
+  },
+  {
+    field: "docs.source_contract",
+    reason: "docs_state_families",
+    recovery: STATE_FAMILY_FALLBACK_COMMANDS.docs,
+  },
+  {
+    field: "profile.bounded_signals",
+    reason: "profile_signal_detail",
+    recovery: preCutoverCommand("report profile-grounding"),
+  },
 ];
 
 /** Maximum number of ranked next_action alternatives retained in the brief.
@@ -181,23 +214,12 @@ function briefStatePresence(value: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): 
   return out;
 }
 
-function briefSelectedPlanTask(
-  task: unknown,
-  projection: SourceContractProjection,
-): Record<string, unknown> | null {
+function briefSelectedPlanTask(task: unknown, projection: SourceContractProjection): Record<string, unknown> | null {
   if (task === null) return null;
   if (!isObject(task)) return {};
   const maxChars = projectionMaxChars(projection);
   const maxItems = projectionMaxItems(projection);
-  const out = pick(task, [
-    "id",
-    "artifact",
-    "status",
-    "dependency_count",
-    "omitted_dependency_count",
-    "acceptance_count",
-    "omitted_acceptance_count",
-  ]);
+  const out = pick(task, ["id", "artifact", "status", "dependency_count", "omitted_dependency_count", "acceptance_count", "omitted_acceptance_count"]);
   const name = boundedString(task.name ?? task.title, maxChars);
   if (name !== undefined) out.name = name;
   const dependencies = boundedStringList(task.depends_on, maxItems, maxChars);
@@ -210,26 +232,12 @@ function briefSelectedPlanTask(
   return out;
 }
 
-function briefPlan(
-  plan: unknown,
-  projection: SourceContractProjection = "normal",
-): Record<string, unknown> {
+function briefPlan(plan: unknown, projection: SourceContractProjection = "normal"): Record<string, unknown> {
   // Keep canonical plan/task identity and the routing-essential summary consumers
   // read plus the selected task's dependencies, acceptance, and exact retrieval.
   // Drop the optional task catalog, archive catalog, diagnostics, and
   // lifecycle_state — each recovers via OMITTED_RICH_STATE.
-  const out = pick(plan, [
-    "exists",
-    "id",
-    "artifact",
-    "active",
-    "status",
-    "complete",
-    "total",
-    "complete_plan",
-    "task_count",
-    "omitted_task_count",
-  ]);
+  const out = pick(plan, ["exists", "id", "artifact", "active", "status", "complete", "total", "complete_plan", "task_count", "omitted_task_count"]);
   if (isObject(plan)) {
     const title = boundedString(plan.title, projectionMaxChars(projection));
     if (title !== undefined) out.title = title;
@@ -253,18 +261,7 @@ function briefHistoryCaveats(value: unknown, maxChars: number): unknown[] | unde
     if (typeof caveat === "string") return truncateCodePoints(caveat, maxChars, "…");
     if (!isObject(caveat)) return {};
     const out: Record<string, unknown> = {};
-    for (const key of [
-      "class",
-      "kind",
-      "state",
-      "confidence",
-      "satisfaction_state",
-      "message",
-      "reason",
-      "detail_availability",
-      "compatibility",
-      "recovery",
-    ]) {
+    for (const key of ["class", "kind", "state", "confidence", "satisfaction_state", "message", "reason", "detail_availability", "compatibility", "recovery"]) {
       const bounded = boundedString(caveat[key], maxChars);
       if (bounded !== undefined) out[key] = bounded;
     }
@@ -273,10 +270,7 @@ function briefHistoryCaveats(value: unknown, maxChars: number): unknown[] | unde
   });
 }
 
-function briefHistory(
-  history: unknown,
-  projection: SourceContractProjection = "normal",
-): Record<string, unknown> {
+function briefHistory(history: unknown, projection: SourceContractProjection = "normal"): Record<string, unknown> {
   if (!isObject(history)) return {};
   const out: Record<string, unknown> = {};
   const maxChars = projectionMaxChars(projection);
@@ -284,17 +278,9 @@ function briefHistory(
     // Entity startup history owns canonical full/summary counts. Entry detail
     // remains omitted and recovers through exact list/get commands.
     const entryObj = isObject(entry) ? (entry as Record<string, unknown>) : {};
-    const counts = isObject(entryObj.counts) ? entryObj.counts as Record<string, unknown> : {};
+    const counts = isObject(entryObj.counts) ? (entryObj.counts as Record<string, unknown>) : {};
     const projected: Record<string, unknown> = {
-      ...pick(entryObj, [
-        "artifact",
-        "status",
-        "compatibility",
-        "detail_availability",
-        "omitted",
-        "omitted_count",
-        "omission_reason",
-      ]),
+      ...pick(entryObj, ["artifact", "status", "compatibility", "detail_availability", "omitted", "omitted_count", "omission_reason"]),
       counts: pick(counts, ["total", "returned", "remaining", "full", "summary"]),
       retrieval: briefHistoryRetrieval(entryObj.retrieval),
     };
@@ -317,22 +303,13 @@ function briefHistory(
   return out;
 }
 
-function briefProjectIntegration(
-  integration: unknown,
-  maxChars = BRIEF_SCALAR_MAX_CHARS,
-): Record<string, unknown> {
+function briefProjectIntegration(integration: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> {
   // Keep the routing recommendation, message, pending counts, channel,
   // aggregate status, and any major-boundary block (which overrides
   // next_action). Upgrade commands are part of the executable upgrade route;
   // preserve them only for that recommendation. Phase blockers and guidance
   // detail recover via doctor.
-  const fields = [
-    "recommendation",
-    "update_channel",
-    "pending_artifacts",
-    "aggregate_status",
-    "major_boundary_block",
-  ];
+  const fields = ["recommendation", "update_channel", "pending_artifacts", "aggregate_status", "major_boundary_block"];
   if (isObject(integration) && integration.recommendation === "upgrade") {
     fields.push("dry_run_command", "apply_command");
   }
@@ -346,17 +323,7 @@ function briefProfile(profile: unknown): Record<string, unknown> {
   // opencode reads profile.status; the dashboard glyph reads profile.status.
   // bounded_signals (a legacy recovery blob) is omitted and recovers via
   // `agentera profile`.
-  return pick(profile, [
-    "status",
-    "validity",
-    "freshness",
-    "days_since_generated",
-    "stale",
-    "stale_threshold_days",
-    "generated_date",
-    "validated_date",
-    "suggested_action",
-  ]);
+  return pick(profile, ["status", "validity", "freshness", "days_since_generated", "stale", "stale_threshold_days", "generated_date", "validated_date", "suggested_action"]);
 }
 
 function briefApp(app: unknown): Record<string, unknown> {
@@ -364,21 +331,14 @@ function briefApp(app: unknown): Record<string, unknown> {
   // reads its verbose path list (the packaging gate reads app_home.source).
   // Keep safety identity; path diagnostics recover through doctor so checkout
   // depth cannot displace routing or canonical history evidence.
-  return pick(app, [
-    "status",
-    "expectedVersion",
-    "updateChannel",
-  ]);
+  return pick(app, ["status", "expectedVersion", "updateChannel"]);
 }
 
 function briefAppHome(appHome: unknown): Record<string, unknown> {
   return pick(appHome, ["install_track", "status", "source"]);
 }
 
-function briefSharedSkill(
-  sharedSkill: unknown,
-  maxChars = BRIEF_SCALAR_MAX_CHARS,
-): Record<string, unknown> {
+function briefSharedSkill(sharedSkill: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> {
   if (!isObject(sharedSkill)) return {};
   const out = pick(sharedSkill, ["name", "status", "source", "gap"]);
   const message = boundedString(sharedSkill.message, maxChars);
@@ -398,9 +358,7 @@ function briefAttention(attention: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): 
   // lifecycle procedure text cannot blow the budget; the full detail recovers
   // via the named recovery commands in omitted_rich_state.
   if (!Array.isArray(attention)) return attention ?? [];
-  return attention.map((entry) =>
-    typeof entry === "string" ? truncateCodePoints(entry, maxChars, "…") : entry,
-  );
+  return attention.map((entry) => (typeof entry === "string" ? truncateCodePoints(entry, maxChars, "…") : entry));
 }
 
 function briefDecisionAttention(attention: unknown): Record<string, unknown> | null {
@@ -451,10 +409,7 @@ function briefDocEntry(value: unknown, maxChars: number): Record<string, unknown
   return out;
 }
 
-function briefDocs(
-  docs: unknown,
-  projection: SourceContractProjection = "normal",
-): Record<string, unknown> {
+function briefDocs(docs: unknown, projection: SourceContractProjection = "normal"): Record<string, unknown> {
   if (!isObject(docs)) return {};
   const maxChars = projectionMaxChars(projection);
   const entryLimit = projection === "normal" ? 3 : 1;
@@ -464,22 +419,20 @@ function briefDocs(
   const caveats = briefHistoryCaveats(docs.caveats, maxChars);
   if (caveats !== undefined) out.caveats = caveats;
   const sourceEntries = Array.isArray(docs.entries) ? docs.entries : null;
-  let detailAvailability = Number(docs.mapping_entries) > 0 || Number(docs.indexed_documents) > 0
-    ? "summary"
-    : "full";
+  let detailAvailability = Number(docs.mapping_entries) > 0 || Number(docs.indexed_documents) > 0 ? "summary" : "full";
   if (sourceEntries) {
     const entries = sourceEntries.slice(0, entryLimit).map((entry) => briefDocEntry(entry, maxChars));
     const declaredTotal = Number(docs.indexed_documents);
-    const total = Number.isSafeInteger(declaredTotal) && declaredTotal >= entries.length
-      ? declaredTotal
-      : sourceEntries.length;
-    out.counts = { total, returned: entries.length, remaining: Math.max(0, total - entries.length) };
+    const total = Number.isSafeInteger(declaredTotal) && declaredTotal >= entries.length ? declaredTotal : sourceEntries.length;
+    out.counts = {
+      total,
+      returned: entries.length,
+      remaining: Math.max(0, total - entries.length),
+    };
     out.entries = entries;
     detailAvailability = total > entries.length ? "summary" : "full";
   }
-  const sourceContract = isObject(docs.source_contract)
-    ? pick(docs.source_contract, ["detail_availability", "raw_artifact_reads_required", "capability_startup_complete", "inventory_authority"])
-    : {};
+  const sourceContract = isObject(docs.source_contract) ? pick(docs.source_contract, ["detail_availability", "raw_artifact_reads_required", "capability_startup_complete", "inventory_authority"]) : {};
   sourceContract.detail_availability = detailAvailability;
   sourceContract.retrieval = STATE_FAMILY_FALLBACK_COMMANDS.docs;
   out.source_contract = sourceContract;
@@ -493,11 +446,7 @@ function briefDegradedHistory(value: unknown, omitRetrieval: boolean): Record<st
   return out;
 }
 
-function briefProgress(
-  progress: unknown,
-  omitDegradedRetrieval = false,
-  maxChars = BRIEF_SCALAR_MAX_CHARS,
-): Record<string, unknown> {
+function briefProgress(progress: unknown, omitDegradedRetrieval = false, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> {
   // opencode reads progress.latest.number/what/next; the brief keeps the
   // latest cycle but caps free-text scalars at BRIEF_SCALAR_MAX_CHARS so a
   // pathological value cannot blow the budget. Full detail recovers via
@@ -533,11 +482,7 @@ function briefTodo(todo: unknown): Record<string, unknown> {
   return out;
 }
 
-function briefHealth(
-  health: unknown,
-  omitDegradedRetrieval = false,
-  maxChars = BRIEF_SCALAR_MAX_CHARS,
-): Record<string, unknown> {
+function briefHealth(health: unknown, omitDegradedRetrieval = false, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> {
   const out = pick(health, ["exists", "id", "artifact", "date", "grade"]);
   if (isObject(health)) {
     const trajectory = boundedString(health.trajectory, maxChars);
@@ -551,9 +496,7 @@ function briefHealth(
 function hasCanonicalHistoryRetrieval(history: unknown, artifact: "progress" | "health"): boolean {
   if (!isObject(history) || !isObject(history[artifact])) return false;
   const retrieval = history[artifact].retrieval;
-  return isObject(retrieval)
-    && typeof retrieval.list === "string" && retrieval.list.length > 0
-    && typeof retrieval.get === "string" && retrieval.get.length > 0;
+  return isObject(retrieval) && typeof retrieval.list === "string" && retrieval.list.length > 0 && typeof retrieval.get === "string" && retrieval.get.length > 0;
 }
 
 function briefAction(action: unknown, maxChars: number): Record<string, unknown> {
@@ -567,20 +510,11 @@ function briefAction(action: unknown, maxChars: number): Record<string, unknown>
   return out;
 }
 
-function briefNextAction(
-  nextAction: unknown,
-  projection: SourceContractProjection = "normal",
-): Record<string, unknown> {
+function briefNextAction(nextAction: unknown, projection: SourceContractProjection = "normal"): Record<string, unknown> {
   if (!isObject(nextAction)) return {};
   const maxChars = projectionMaxChars(projection);
-  const alternativeLimit = projection === "normal"
-    ? BRIEF_NEXT_ACTION_ALTERNATIVES
-    : projection === "compact"
-      ? 1
-      : 0;
-  const alternatives = Array.isArray(nextAction.alternatives)
-    ? (nextAction.alternatives as JsonValue[]).slice(0, alternativeLimit).map((entry) => briefAction(entry, maxChars))
-    : [];
+  const alternativeLimit = projection === "normal" ? BRIEF_NEXT_ACTION_ALTERNATIVES : projection === "compact" ? 1 : 0;
+  const alternatives = Array.isArray(nextAction.alternatives) ? (nextAction.alternatives as JsonValue[]).slice(0, alternativeLimit).map((entry) => briefAction(entry, maxChars)) : [];
   return {
     ...briefAction(nextAction, maxChars),
     alternatives,
@@ -600,21 +534,10 @@ function briefCapabilityContext(value: unknown, maxChars: number): Record<string
   return out;
 }
 
-function briefSourceContract(
-  sourceContract: unknown,
-  projection: SourceContractProjection = "normal",
-): Record<string, unknown> {
+function briefSourceContract(sourceContract: unknown, projection: SourceContractProjection = "normal"): Record<string, unknown> {
   if (!isObject(sourceContract)) return {};
-  const maxItems = projection === "normal"
-    ? BRIEF_SOURCE_FIELDS_MAX
-    : projection === "compact"
-      ? BRIEF_COMPACT_SOURCE_FIELDS_MAX
-      : BRIEF_IRREDUCIBLE_SOURCE_FIELDS_MAX;
-  const maxChars = projection === "normal"
-    ? BRIEF_SOURCE_STRING_MAX_CHARS
-    : projection === "compact"
-      ? BRIEF_COMPACT_SOURCE_STRING_MAX_CHARS
-      : BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS;
+  const maxItems = projection === "normal" ? BRIEF_SOURCE_FIELDS_MAX : projection === "compact" ? BRIEF_COMPACT_SOURCE_FIELDS_MAX : BRIEF_IRREDUCIBLE_SOURCE_FIELDS_MAX;
+  const maxChars = projection === "normal" ? BRIEF_SOURCE_STRING_MAX_CHARS : projection === "compact" ? BRIEF_COMPACT_SOURCE_STRING_MAX_CHARS : BRIEF_IRREDUCIBLE_SOURCE_STRING_MAX_CHARS;
   const out: Record<string, unknown> = {};
   const fields = boundedStringList(sourceContract.fields, maxItems, maxChars);
   if (fields !== undefined) out.fields = fields;
@@ -642,10 +565,7 @@ function briefSourceContract(
  *  trailing newline. The reported `utf8_bytes` is settled to a fixed point so
  *  it equals the actual emitted byte count (self-measurement otherwise changes
  *  its own digit count); the gate then decides on the final form. */
-export function briefOrientationPayload(
-  payload: Record<string, unknown>,
-  options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {},
-): Record<string, unknown> {
+export function briefOrientationPayload(payload: Record<string, unknown>, options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {}): Record<string, unknown> {
   const budget = options.budgetBytes ?? PRIME_BRIEF_MAX_UTF8_BYTES;
   if (!Number.isSafeInteger(budget) || budget < 0) {
     throw new RangeError("brief budget must be a non-negative safe integer");
@@ -666,12 +586,7 @@ export function briefOrientationPayload(
 /** Attach the brief meta block and settle `utf8_bytes` to a fixed point so the
  *  reported size equals the actual emitted byte count (otherwise the digits of
  *  `utf8_bytes` itself would change the measurement). */
-function withBriefMeta(
-  body: Record<string, unknown>,
-  projection: "ok" | "degraded",
-  budget: number,
-  error: JsonObject | null,
-): Record<string, unknown> {
+function withBriefMeta(body: Record<string, unknown>, projection: "ok" | "degraded", budget: number, error: JsonObject | null): Record<string, unknown> {
   const meta: JsonObject = {
     budget_utf8_bytes: budget,
     projection,
@@ -799,10 +714,7 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   return out;
 }
 
-function statusRoutingDegradedBody(
-  payload: Record<string, unknown>,
-  projection: SourceContractProjection,
-): Record<string, unknown> {
+function statusRoutingDegradedBody(payload: Record<string, unknown>, projection: SourceContractProjection): Record<string, unknown> {
   return {
     ...degradedBody(payload, projection),
     todo: briefTodo(payload.todo),
@@ -830,21 +742,14 @@ export class BriefBudgetError extends Error {
   readonly minimumBytes: number;
 
   constructor(budgetBytes: number, minimumBytes: number) {
-    super(
-      `brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use prime --context status`,
-    );
+    super(`brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use prime --context status`);
     this.name = "BriefBudgetError";
     this.budgetBytes = budgetBytes;
     this.minimumBytes = minimumBytes;
   }
 }
 
-function degradedBriefEnvelope(
-  payload: Record<string, unknown>,
-  budget: number,
-  attemptedBytes: number,
-  mode: "minimal" | "status_routing",
-): Record<string, unknown> {
+function degradedBriefEnvelope(payload: Record<string, unknown>, budget: number, attemptedBytes: number, mode: "minimal" | "status_routing"): Record<string, unknown> {
   const detailedMeta: JsonObject = {
     budget_utf8_bytes: budget,
     projection: "degraded",
@@ -853,16 +758,11 @@ function degradedBriefEnvelope(
     omitted_rich_state: OMITTED_RICH_STATE.map((entry) => ({ ...entry })),
     error: {
       class: "brief_output_budget",
-      message:
-        "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
-      recovery:
-        `Run \`${preCutoverCommand("prime --context status")}\` for status startup, or \`${preCutoverCommand("state <artifact> list")}\` for a specific record family.`,
+      message: "the projected decision brief exceeded the authority byte budget; a bounded degraded envelope was emitted instead of the over-budget payload",
+      recovery: `Run \`${preCutoverCommand("prime --context status")}\` for status startup, or \`${preCutoverCommand("state <artifact> list")}\` for a specific record family.`,
     },
   };
-  const body = (projection: SourceContractProjection): Record<string, unknown> =>
-    mode === "status_routing"
-      ? statusRoutingDegradedBody(payload, projection)
-      : degradedBody(payload, projection);
+  const body = (projection: SourceContractProjection): Record<string, unknown> => (mode === "status_routing" ? statusRoutingDegradedBody(payload, projection) : degradedBody(payload, projection));
   const detailed = settledBriefEnvelope(body("normal"), detailedMeta);
   if (briefByteGate(detailed, budget).accepted) return detailed;
 

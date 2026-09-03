@@ -3,17 +3,7 @@ import type { SchemaInfo } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { entryStatus, sourceProvenance, uniqueList, hasRecordedValue, taskRef } from "./shared.js";
-import {
-  closeoutChangelogBoundary,
-  dependencyReadyTasks,
-  orchestrationTaskSummary,
-  planContextField,
-  buildArtifactUpdateRequirements,
-  buildPlanCompletionSweep,
-  buildScopeBoundary,
-  selectEvidenceTarget,
-  taskByRef,
-} from "./planState.js";
+import { closeoutChangelogBoundary, dependencyReadyTasks, orchestrationTaskSummary, planContextField, buildArtifactUpdateRequirements, buildPlanCompletionSweep, buildScopeBoundary, selectEvidenceTarget, taskByRef } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";
@@ -54,14 +44,10 @@ export function buildExecutionContext(
   if (capability !== "build") return null;
   const capabilityContract = capabilityContext(capability) ?? {};
   const lifecycle = planLifecycleState(plan);
-  const tasks =
-    lifecycle.current_plan_degraded === true
-      ? []
-      : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
+  const tasks = lifecycle.current_plan_degraded === true ? [] : asList(plan.tasks).filter((t) => t && typeof t === "object" && !Array.isArray(t));
   const target = selectEvidenceTarget(plan);
   const selected = taskByRef(plan, (target && typeof target === "object" ? target.task : null) as JsonObject | null);
-  const acceptance = buildRequest?.acceptance
-    ?? (selected && typeof selected === "object" ? asList(selected.acceptance) : []);
+  const acceptance = buildRequest?.acceptance ?? (selected && typeof selected === "object" ? asList(selected.acceptance) : []);
   const progressVerification = progressVerificationSummary(progress);
   const changelogBoundary = closeoutChangelogBoundary(projectRoot, plan);
   const sweep = buildPlanCompletionSweep(plan);
@@ -94,11 +80,11 @@ export function buildExecutionContext(
   }
   if (!progress.exists) {
     stateCaveats.push("progress state is unavailable; progress logging context is incomplete.");
-     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.progress);
   }
   if (!health.exists) {
     stateCaveats.push("health state is unavailable or incomplete.");
-     fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
+    fallbackCommands.push(STATE_FAMILY_FALLBACK_COMMANDS.health);
   }
   if (!docs.exists) {
     stateCaveats.push("docs mapping state is unavailable or incomplete.");
@@ -120,22 +106,20 @@ export function buildExecutionContext(
   if (bundle.status !== "up_to_date") {
     stateCaveats.push("Agentera app files are not up to date; this is a caveat, not approval to repair or update app files.");
   }
-  const scopeBoundary = buildRequest === null
-    ? buildScopeBoundary(plan, selected)
-    : {
-        artifact_families: ["progress", "todo", "docs", "health", "changelog", "decisions", "vision", "profile", "design"],
-        explicit_scope: buildRequest.scope,
-        source_scope: {
-          status: "unspecified",
-          explicit_paths: [],
-          policy: "The transient scope defines work intent only; no source-file allowlist or exclusion is inferred from its text.",
-        },
-        source_provenance: transientSourceProvenance(buildRequest, "scope"),
-      };
-  const sourceScope =
-    scopeBoundary.source_scope && typeof scopeBoundary.source_scope === "object" && !Array.isArray(scopeBoundary.source_scope)
-      ? scopeBoundary.source_scope
-      : {};
+  const scopeBoundary =
+    buildRequest === null
+      ? buildScopeBoundary(plan, selected)
+      : {
+          artifact_families: ["progress", "todo", "docs", "health", "changelog", "decisions", "vision", "profile", "design"],
+          explicit_scope: buildRequest.scope,
+          source_scope: {
+            status: "unspecified",
+            explicit_paths: [],
+            policy: "The transient scope defines work intent only; no source-file allowlist or exclusion is inferred from its text.",
+          },
+          source_provenance: transientSourceProvenance(buildRequest, "scope"),
+        };
+  const sourceScope = scopeBoundary.source_scope && typeof scopeBoundary.source_scope === "object" && !Array.isArray(scopeBoundary.source_scope) ? scopeBoundary.source_scope : {};
   if (sourceScope.status === "unspecified") {
     stateCaveats.push("source-file scope is unspecified; no allowed or prohibited source paths were inferred.");
   }
@@ -159,26 +143,28 @@ export function buildExecutionContext(
     safety_boundaries: true,
     plan_state_healthy: lifecycle.status !== "degraded",
   };
-  const missingRequired = Object.entries(requiredState).filter(([, present]) => !present).map(([name]) => name);
+  const missingRequired = Object.entries(requiredState)
+    .filter(([, present]) => !present)
+    .map(([name]) => name);
   const caveated = stateCaveats.length > 0;
-  const complete = (mode === "plan_driven" || mode === "completed_plan_sweep" || buildRequest !== null)
-    && missingRequired.length === 0;
-  const workSelection: JsonObject = buildRequest === null
-    ? {
-        status: target.status,
-        selection_reason: target.selection_reason,
-        task: selected && typeof selected === "object" ? taskRef(selected) : null,
-        source_provenance: target.source_provenance,
-        caveats: target.caveats ?? [],
-      }
-    : {
-        status: "selected",
-        selection_reason: "explicit_no_plan_scope",
-        task: null,
-        scope: buildRequest.scope,
-        source_provenance: transientSourceProvenance(buildRequest, "scope"),
-        caveats: [],
-      };
+  const complete = (mode === "plan_driven" || mode === "completed_plan_sweep" || buildRequest !== null) && missingRequired.length === 0;
+  const workSelection: JsonObject =
+    buildRequest === null
+      ? {
+          status: target.status,
+          selection_reason: target.selection_reason,
+          task: selected && typeof selected === "object" ? taskRef(selected) : null,
+          source_provenance: target.source_provenance,
+          caveats: target.caveats ?? [],
+        }
+      : {
+          status: "selected",
+          selection_reason: "explicit_no_plan_scope",
+          task: null,
+          scope: buildRequest.scope,
+          source_provenance: transientSourceProvenance(buildRequest, "scope"),
+          caveats: [],
+        };
   const artifactUpdateRequirements = buildArtifactUpdateRequirements(plan, docs);
   if (buildRequest !== null) {
     artifactUpdateRequirements.required_families = ["todo", "changelog"];
@@ -186,11 +172,7 @@ export function buildExecutionContext(
     artifactUpdateRequirements.plan_status_update_required = false;
     artifactUpdateRequirements.policy = "Transient no-plan work does not create, mutate, or require plan state.";
   }
-  const progressRequirement = archiveOnly
-    ? "none"
-    : mode === "completed_plan_sweep"
-      ? "required"
-      : "conditional";
+  const progressRequirement = archiveOnly ? "none" : mode === "completed_plan_sweep" ? "required" : "conditional";
   return {
     capability: "build",
     mode,
@@ -200,27 +182,14 @@ export function buildExecutionContext(
       status: acceptance.length > 0 ? "available" : "incomplete",
       items: acceptance,
       count: acceptance.length,
-      source_provenance: buildRequest === null
-        ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance")
-        : transientSourceProvenance(buildRequest, "acceptance"),
+      source_provenance: buildRequest === null ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "entries.acceptance") : transientSourceProvenance(buildRequest, "acceptance"),
     },
     constraints: {
       plan_constraints_present: buildRequest === null && hasRecordedValue(planContextField(plan, "constraints")),
-      plan_constraints_summary: buildRequest === null
-        ? "Plan constraints are represented here as structured safety and fallback policy; run the plan CLI fallback only if full wording is needed."
-        : "Transient no-plan input supplies scope and acceptance only; no plan constraints are inferred.",
-      protected_actions: [
-        "no profile refresh",
-        "no installed app refresh",
-        "no vision edit",
-        "no objective-state edit",
-        "no dispatch without explicit cycle execution",
-        "no commit/push/tag/publication without explicit approval",
-      ],
+      plan_constraints_summary: buildRequest === null ? "Plan constraints are represented here as structured safety and fallback policy; run the plan CLI fallback only if full wording is needed." : "Transient no-plan input supplies scope and acceptance only; no plan constraints are inferred.",
+      protected_actions: ["no profile refresh", "no installed app refresh", "no vision edit", "no objective-state edit", "no dispatch without explicit cycle execution", "no commit/push/tag/publication without explicit approval"],
       unsupported_cli_command_policy: "Do not introduce capability-name or slash-alias CLI commands for Build.",
-      source_provenance: buildRequest === null
-        ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.constraints")
-        : transientSourceProvenance(buildRequest, "scope"),
+      source_provenance: buildRequest === null ? sourceProvenance("plan", STATE_FAMILY_FALLBACK_COMMANDS.plan, "summary.constraints") : transientSourceProvenance(buildRequest, "scope"),
     },
     scope_boundary: scopeBoundary,
     verification_expectations: {
@@ -251,9 +220,7 @@ export function buildExecutionContext(
       complete_for_execution_context: complete,
       caveated,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy:
-        "Use this execution_context and included status state first. Run listed routine/query CLI fallback commands " +
-        "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Build startup behavior.",
+      raw_artifact_read_policy: "Use this execution_context and included status state first. Run listed routine/query CLI fallback commands " + "for missing or incomplete execution state; raw artifact reads are last-resort diagnostics, not normal Build startup behavior.",
       required_execution_state: requiredState,
       missing_required_execution_state: missingRequired,
       fallback_commands: fallbackCommands,

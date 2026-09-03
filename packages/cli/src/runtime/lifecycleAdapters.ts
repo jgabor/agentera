@@ -3,16 +3,7 @@ import path from "node:path";
 
 import { declaresAgenteraSkill } from "../core/skillIdentity.js";
 
-import {
-  buildRuntimeLifecycleState,
-  loadLifecycleAuthority,
-  type LifecycleEvidenceValue,
-  type LifecycleRuntimeObservation,
-  type LifecycleSurfaceDefinition,
-  type RuntimeLifecycleAuthority,
-  type RuntimeLifecycleState,
-  type LifecycleSupportFloorViolation,
-} from "./lifecycleAuthority.js";
+import { buildRuntimeLifecycleState, loadLifecycleAuthority, type LifecycleEvidenceValue, type LifecycleRuntimeObservation, type LifecycleSurfaceDefinition, type RuntimeLifecycleAuthority, type RuntimeLifecycleState, type LifecycleSupportFloorViolation } from "./lifecycleAuthority.js";
 import {
   RUNTIME_ADAPTER_CATEGORIES,
   loadRuntimeLifecycleAdapterContract,
@@ -491,16 +482,7 @@ function actionRequiredSummary(operations: PlannedLifecycleOperation[]): string 
   return `Resolve these lifecycle blockers manually, then rerun preview: ${operations.map((operation) => `${operation.id}: ${operation.reason}`).join("; ")}.`;
 }
 
-function remediationFor(
-  state: RuntimeAdapterEvidenceState,
-  claim: RuntimeAdapterCategoryClaim,
-  operations: PlannedLifecycleOperation[],
-  nativeActions: RuntimeAdapterNativeActionDeclaration[],
-  runtimeId: string,
-  surfaceId: string,
-  evidencePath?: string,
-  sourceRoot?: string,
-): RuntimeAdapterRemediation {
+function remediationFor(state: RuntimeAdapterEvidenceState, claim: RuntimeAdapterCategoryClaim, operations: PlannedLifecycleOperation[], nativeActions: RuntimeAdapterNativeActionDeclaration[], runtimeId: string, surfaceId: string, evidencePath?: string, sourceRoot?: string): RuntimeAdapterRemediation {
   const blockedOperations = operations.filter((operation) => operation.action === "blocked_unowned");
   if (blockedOperations.length > 0) {
     return {
@@ -722,8 +704,7 @@ function categorySurface(
     evidence.push(...resources.evidence);
     state = aggregateState([state, resources.state]);
   } else {
-    const override =
-      context.categoryEvidence?.[category]?.[surface.id] ?? (category === "trust" ? context.surfaceEvidence?.[surface.id]?.trusted : undefined) ?? (category === "enablement" ? context.surfaceEvidence?.[surface.id]?.enabled : undefined);
+    const override = context.categoryEvidence?.[category]?.[surface.id] ?? (category === "trust" ? context.surfaceEvidence?.[surface.id]?.trusted : undefined) ?? (category === "enablement" ? context.surfaceEvidence?.[surface.id]?.enabled : undefined);
     state = evidenceState(override ?? "unknown", category);
     evidence = [
       {
@@ -853,19 +834,7 @@ export class RuntimeLifecycleAdapter {
     for (const category of RUNTIME_ADAPTER_CATEGORIES) {
       const surfaceReports = this.runtimeAuthority.surfaces.map((surface) => {
         const expected = expectedSurfaces[surface.id] === true;
-        return categorySurface(
-          this.runtimeId,
-          surface,
-          category,
-          this.runtime.categories[category][surface.id],
-          expected,
-          context,
-          values,
-          expanded,
-          repairPlan,
-          skills,
-          category === "native_actions" ? this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id) : [],
-        );
+        return categorySurface(this.runtimeId, surface, category, this.runtime.categories[category][surface.id], expected, context, values, expanded, repairPlan, skills, category === "native_actions" ? this.runtime.nativeActions.filter((action) => action.surfaceId === surface.id) : []);
       });
       categories[category] = {
         category,
@@ -929,10 +898,7 @@ export class CopilotLifecycleAdapter extends RuntimeLifecycleAdapter {
 }
 
 export function runtimeLifecycleAdapters(contract = loadRuntimeLifecycleAdapterContract(), authority = loadLifecycleAuthority()): RuntimeLifecycleAdapter[] {
-  const constructors: Record<string, new (
-    contract?: RuntimeLifecycleAdapterContract,
-    authority?: RuntimeLifecycleAuthority,
-  ) => RuntimeLifecycleAdapter> = {
+  const constructors: Record<string, new (contract?: RuntimeLifecycleAdapterContract, authority?: RuntimeLifecycleAuthority) => RuntimeLifecycleAdapter> = {
     opencode: OpenCodeLifecycleAdapter,
     codex: CodexLifecycleAdapter,
     cursor: CursorLifecycleAdapter,

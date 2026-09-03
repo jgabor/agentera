@@ -1,23 +1,7 @@
-import {
-  appendLifecycleOwnershipJournal,
-  lifecycleOwnershipJournalPath,
-  readLifecycleOwnershipJournal,
-  type LifecycleOwnershipJournalRead,
-} from "../runtime/lifecycleOwnershipJournal.js";
+import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath, readLifecycleOwnershipJournal, type LifecycleOwnershipJournalRead } from "../runtime/lifecycleOwnershipJournal.js";
 import { secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
-import {
-  applyNativeResourceCleanup,
-  classifyAutomaticRetirement,
-  previewNativeResourceCleanup,
-  type NativeResourceCleanupPreview,
-  type NativeResourceCleanupResult,
-  resolveNativeResourceCleanupId,
-} from "../runtime/nativeResourceCleanup.js";
-import type {
-  LifecycleApplyOptions,
-  LifecycleApplySummary,
-  LifecycleOperationPlan,
-} from "../runtime/lifecycleOperations.js";
+import { applyNativeResourceCleanup, classifyAutomaticRetirement, previewNativeResourceCleanup, type NativeResourceCleanupPreview, type NativeResourceCleanupResult, resolveNativeResourceCleanupId } from "../runtime/nativeResourceCleanup.js";
+import type { LifecycleApplyOptions, LifecycleApplySummary, LifecycleOperationPlan } from "../runtime/lifecycleOperations.js";
 
 export const LIFECYCLE_UPGRADE_SCHEMA = "agentera.lifecycleUpgrade.v1" as const;
 
@@ -85,9 +69,7 @@ function resultSummary(result: NativeResourceCleanupResult): LifecycleCleanupSum
 function blockedPlan(plan: LifecycleOperationPlan, reason: string): LifecycleOperationPlan {
   return {
     ...plan,
-    operations: plan.operations.map((operation) => operation.action === "noop"
-      ? operation
-      : { ...operation, action: "action_required", reason }),
+    operations: plan.operations.map((operation) => (operation.action === "noop" ? operation : { ...operation, action: "action_required", reason })),
   };
 }
 
@@ -96,33 +78,19 @@ function journalBlocksMutation(journal: LifecycleOwnershipJournalRead): boolean 
 }
 
 function journalBlocker(journal: LifecycleOwnershipJournalRead): string {
-  const diagnostics = journal.diagnostics
-    .map((diagnostic) => diagnostic.replace(/^\d{20}-[0-9a-f-]{36}\.json:\s*/i, ""));
+  const diagnostics = journal.diagnostics.map((diagnostic) => diagnostic.replace(/^\d{20}-[0-9a-f-]{36}\.json:\s*/i, ""));
   return `ownership journal is ${journal.state}: ${diagnostics.join("; ")}`;
 }
 
-function statusFor(
-  mode: "preview" | "apply",
-  summary: LifecycleCleanupSummary,
-  requiredUnmet: string[],
-): LifecycleUpgradeResult["status"] {
-  if (
-    summary.failed > 0
-    || summary.blocked_unowned > 0
-    || summary.skipped_dependency > 0
-    || summary.action_required > 0
-    || requiredUnmet.length > 0
-  ) return "non_success";
+function statusFor(mode: "preview" | "apply", summary: LifecycleCleanupSummary, requiredUnmet: string[]): LifecycleUpgradeResult["status"] {
+  if (summary.failed > 0 || summary.blocked_unowned > 0 || summary.skipped_dependency > 0 || summary.action_required > 0 || requiredUnmet.length > 0) return "non_success";
   if (mode === "preview" && summary.pending > 0) return "pending";
   if (mode === "apply" && summary.applied > 0) return "success";
   return "noop";
 }
 
 /** Preview or apply one explicit ownership-proven native Agentera resource cleanup. */
-export function runLifecycleUpgrade(
-  args: LifecycleUpgradeArgs,
-  options: LifecycleUpgradeApplyOptions = {},
-): LifecycleUpgradeResult {
+export function runLifecycleUpgrade(args: LifecycleUpgradeArgs, options: LifecycleUpgradeApplyOptions = {}): LifecycleUpgradeResult {
   const journal = readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(args.appHome));
   let preview = previewNativeResourceCleanup({
     resourceId: args.resourceCleanup,
@@ -132,11 +100,7 @@ export function runLifecycleUpgrade(
     automaticRetirement: args.automaticRetirement,
   });
   if (args.automaticRetirement && preview.plan.operations[0]?.action !== "noop") {
-    const qualification = classifyAutomaticRetirement(
-      args.resourceCleanup,
-      preview.plan.operations[0]!.destination,
-      journal.path,
-    );
+    const qualification = classifyAutomaticRetirement(args.resourceCleanup, preview.plan.operations[0]!.destination, journal.path);
     if (qualification.qualification !== "qualified") {
       const reason = `automatic retirement requires manual review: ${qualification.reason}`;
       preview = {
@@ -172,11 +136,7 @@ export function runLifecycleUpgrade(
     outputJournal = readLifecycleOwnershipJournal(journal.path);
   }
 
-  const requiredUnmet = "plan" in nativeResourceCleanup
-    ? nativeResourceCleanup.plan.operations
-      .filter((operation) => operation.required && operation.action !== "noop")
-      .map((operation) => operation.id)
-    : nativeResourceCleanup.requiredUnmet;
+  const requiredUnmet = "plan" in nativeResourceCleanup ? nativeResourceCleanup.plan.operations.filter((operation) => operation.required && operation.action !== "noop").map((operation) => operation.id) : nativeResourceCleanup.requiredUnmet;
   const mode = args.apply ? "apply" : "preview";
   return {
     schemaVersion: LIFECYCLE_UPGRADE_SCHEMA,

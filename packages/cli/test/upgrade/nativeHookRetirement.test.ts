@@ -5,10 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  applyRuntimeRetirementPhase,
-  planRuntimeRetirementPhase,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyRuntimeRetirementPhase, planRuntimeRetirementPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { wholeResourceProvesV2HookOwnership } from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
@@ -59,10 +56,7 @@ describe("runtime hook retirement", () => {
   it("removes proven Codex and Cursor hooks while leaving declared Copilot cleanup to its authority seam", () => {
     const ctx = context();
     const codexConfig = write(ctx.home, ".codex/config.toml", '[shell_environment_policy]\nset = { USER = "keep" }\n');
-    const hooks = [
-      write(ctx.home, ".codex/hooks/codex-hooks.json", ownedHook()),
-      write(ctx.project, ".cursor/hooks.json", ownedHook()),
-    ];
+    const hooks = [write(ctx.home, ".codex/hooks/codex-hooks.json", ownedHook()), write(ctx.project, ".cursor/hooks.json", ownedHook())];
     const copilotHook = write(ctx.project, ".github/hooks/agentera.json", ownedHook());
     const configBefore = fs.readFileSync(codexConfig, "utf8");
 
@@ -84,19 +78,23 @@ describe("runtime hook retirement", () => {
     const hook = write(
       ctx.project,
       ".cursor/hooks.json",
-      JSON.stringify({ hooks: { PreToolUse: [{ command: V2_HOOK }, { command: "/usr/local/bin/user-hook" }] } }),
+      JSON.stringify({
+        hooks: { PreToolUse: [{ command: V2_HOOK }, { command: "/usr/local/bin/user-hook" }] },
+      }),
     );
     const before = fs.readFileSync(hook, "utf8");
 
     const phase = planRuntimeRetirementPhase(ctx);
 
     expect(phase.status).toBe("blocked");
-    expect(phase.items).toContainEqual(expect.objectContaining({
-      action: "retire-hooks",
-      source: hook,
-      status: "blocked",
-      message: expect.stringContaining("complete resource ownership is unproven"),
-    }));
+    expect(phase.items).toContainEqual(
+      expect.objectContaining({
+        action: "retire-hooks",
+        source: hook,
+        status: "blocked",
+        message: expect.stringContaining("complete resource ownership is unproven"),
+      }),
+    );
     applyRuntimeRetirementPhase(phase, ctx);
     expect(fs.readFileSync(hook, "utf8")).toBe(before);
   });

@@ -1,12 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  loadNativeResourceCleanupContract,
-  resolveRetiredResourceDiagnosticId,
-  type NativeResourceCleanupContract,
-  type RetiredResourceDiagnosticDefinition,
-} from "../runtime/nativeResourceCleanup.js";
+import { loadNativeResourceCleanupContract, resolveRetiredResourceDiagnosticId, type NativeResourceCleanupContract, type RetiredResourceDiagnosticDefinition } from "../runtime/nativeResourceCleanup.js";
 import { opencodeConfigDir } from "../setup/opencode.js";
 
 export interface RetiredResourceDiagnostic {
@@ -69,19 +64,11 @@ export function expandRetiredResourcePath(template: string, roots: RetiredResour
   return resolved;
 }
 
-export function resolveRetiredResourceRoots(opts: {
-  home: string;
-  project: string;
-  installRoot: string;
-  env?: Record<string, string | undefined>;
-}): RetiredResourceRoots {
+export function resolveRetiredResourceRoots(opts: { home: string; project: string; installRoot: string; env?: Record<string, string | undefined> }): RetiredResourceRoots {
   const home = path.resolve(opts.home);
   const configured = path.resolve(opencodeConfigDir(home, { ...opts.env, HOME: home }));
   const configuredRelative = path.relative(home, configured);
-  const opencodeConfig = configuredRelative === ""
-    || (configuredRelative !== ".." && !configuredRelative.startsWith(`..${path.sep}`) && !path.isAbsolute(configuredRelative))
-    ? configured
-    : path.join(home, ".config", "opencode");
+  const opencodeConfig = configuredRelative === "" || (configuredRelative !== ".." && !configuredRelative.startsWith(`..${path.sep}`) && !path.isAbsolute(configuredRelative)) ? configured : path.join(home, ".config", "opencode");
   return {
     home,
     project: path.resolve(opts.project),
@@ -111,11 +98,7 @@ function fileContains(pathname: string, marker: string, maximumFileBytes: number
   }
 }
 
-function observeDestination(
-  pathname: string,
-  definition: RetiredResourceDiagnosticDefinition,
-  maximumFileBytes: number,
-): ResourceObservation | null {
+function observeDestination(pathname: string, definition: RetiredResourceDiagnosticDefinition, maximumFileBytes: number): ResourceObservation | null {
   if (definition.contains) {
     const observation = fileContains(pathname, definition.contains, maximumFileBytes);
     return observation ? { path: pathname, observation } : null;
@@ -124,29 +107,15 @@ function observeDestination(
     fs.lstatSync(pathname);
     return { path: pathname, observation: "path_present" };
   } catch (error) {
-    return (error as NodeJS.ErrnoException).code === "ENOENT"
-      ? null
-      : { path: pathname, observation: "uninspectable" };
+    return (error as NodeJS.ErrnoException).code === "ENOENT" ? null : { path: pathname, observation: "uninspectable" };
   }
 }
 
 function namesFor(definition: RetiredResourceDiagnosticDefinition): string[] {
-  return definition.id.includes("{name}") || definition.destinations.some((item) => item.includes("{name}"))
-    ? definition.names
-    : [""];
+  return definition.id.includes("{name}") || definition.destinations.some((item) => item.includes("{name}")) ? definition.names : [""];
 }
 
-export function diagnoseRetiredResources(
-  opts: {
-    home: string;
-    project: string;
-    installRoot: string;
-    resourceId?: string | null;
-    contract?: NativeResourceCleanupContract;
-    env?: Record<string, string | undefined>;
-    sourceRoot?: string | null;
-  },
-): RetiredResourceDiagnosis {
+export function diagnoseRetiredResources(opts: { home: string; project: string; installRoot: string; resourceId?: string | null; contract?: NativeResourceCleanupContract; env?: Record<string, string | undefined>; sourceRoot?: string | null }): RetiredResourceDiagnosis {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
   const selected = opts.resourceId ? resolveRetiredResourceDiagnosticId(opts.resourceId, contract) : null;
   if (opts.resourceId && !selected) {
@@ -155,8 +124,7 @@ export function diagnoseRetiredResources(
   const roots = resolveRetiredResourceRoots(opts);
   const observed = new Map<string, { definition: RetiredResourceDiagnosticDefinition; observations: ResourceObservation[] }>();
   for (const definition of contract.diagnosticResources) {
-    if (definition.boundary === "external_install_only"
-      && opts.sourceRoot && path.resolve(opts.sourceRoot) === roots.install_root) continue;
+    if (definition.boundary === "external_install_only" && opts.sourceRoot && path.resolve(opts.sourceRoot) === roots.install_root) continue;
     for (const name of namesFor(definition)) {
       const id = definition.id.replace("{name}", name);
       if (selected && id !== selected.id) continue;
@@ -182,9 +150,7 @@ export function diagnoseRetiredResources(
     markerSyntax: definition.markerSyntax,
     evidence: {
       paths: [...new Set(observations.map((observation) => observation.path))].sort(),
-      observation: observations.some((observation) => observation.observation === "uninspectable")
-        ? "uninspectable" as const
-        : "path_present" as const,
+      observation: observations.some((observation) => observation.observation === "uninspectable") ? ("uninspectable" as const) : ("path_present" as const),
     },
   }));
   return {

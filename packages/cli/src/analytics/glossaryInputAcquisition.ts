@@ -2,36 +2,14 @@ import fs from "node:fs";
 import path from "node:path";
 import { TextDecoder } from "node:util";
 
-import {
-  personalGlossaryConsumerEntries,
-  PersonalGlossaryBoundaryError,
-} from "./personalGlossaryProfile.js";
-import {
-  glossaryAcquisitionContract,
-  GlossaryEntryBoundError,
-  type GlossaryOwner,
-} from "../registries/glossaryEntryContract.js";
-import {
-  docsPathOverridesFromBytes,
-  loadArtifactRecord,
-  resolveArtifactPath,
-} from "../registries/artifactRegistry.js";
+import { personalGlossaryConsumerEntries, PersonalGlossaryBoundaryError } from "./personalGlossaryProfile.js";
+import { glossaryAcquisitionContract, GlossaryEntryBoundError, type GlossaryOwner } from "../registries/glossaryEntryContract.js";
+import { docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
 import { ARTIFACT_PROTOCOL_PATHS } from "../registries/artifactProtocolIds.js";
-import {
-  assertValidatedProjectRoot,
-  validateRealProjectRoot,
-  type ValidatedProjectRoot,
-} from "../state/projectRoot.js";
+import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "../state/projectRoot.js";
 import { parseProjectGlossaryDocument } from "../state/write/glossaryPublication.js";
 
-export type GlossaryAvailability =
-  | "absent"
-  | "valid_empty"
-  | "valid_present"
-  | "malformed"
-  | "unreadable"
-  | "ambiguous"
-  | "over_bound";
+export type GlossaryAvailability = "absent" | "valid_empty" | "valid_present" | "malformed" | "unreadable" | "ambiguous" | "over_bound";
 
 export interface ConsumerGlossaryEntry {
   term: string;
@@ -58,16 +36,10 @@ export interface AcquiredGlossaryInputs {
   personal: GlossaryInputAvailability;
 }
 
-const PROJECT_RECOVERY =
-  "Repair the canonical GLOSSARY.md artifact or docs mapping, then run agentera state query --list-artifacts before retrying glossary acquisition.";
-const PERSONAL_RECOVERY =
-  "Run agentera profile to repair or regenerate the owned Glossary section, then retry glossary acquisition.";
+const PROJECT_RECOVERY = "Repair the canonical GLOSSARY.md artifact or docs mapping, then run agentera state query --list-artifacts before retrying glossary acquisition.";
+const PERSONAL_RECOVERY = "Run agentera profile to repair or regenerate the owned Glossary section, then retry glossary acquisition.";
 
-function valid(
-  owner: GlossaryOwner,
-  availability: "absent" | "valid_empty" | "valid_present",
-  entries: ConsumerGlossaryEntry[],
-): GlossaryInputAvailability {
+function valid(owner: GlossaryOwner, availability: "absent" | "valid_empty" | "valid_present", entries: ConsumerGlossaryEntry[]): GlossaryInputAvailability {
   return {
     owner,
     availability,
@@ -77,10 +49,7 @@ function valid(
   };
 }
 
-function invalid(
-  owner: GlossaryOwner,
-  availability: Exclude<GlossaryAvailability, "absent" | "valid_empty" | "valid_present">,
-): GlossaryInputAvailability {
+function invalid(owner: GlossaryOwner, availability: Exclude<GlossaryAvailability, "absent" | "valid_empty" | "valid_present">): GlossaryInputAvailability {
   return {
     owner,
     availability,
@@ -94,17 +63,10 @@ function invalid(
 }
 
 function errorCode(error: unknown): string | undefined {
-  return typeof error === "object" && error !== null && "code" in error
-    ? String((error as { code?: unknown }).code)
-    : undefined;
+  return typeof error === "object" && error !== null && "code" in error ? String((error as { code?: unknown }).code) : undefined;
 }
 
-function readBoundedRegularFile(
-  pathname: string,
-  maxBytes: number,
-):
-  | { status: "ok"; bytes: Buffer }
-  | { status: "absent" | "unreadable" | "ambiguous" | "over_bound" } {
+function readBoundedRegularFile(pathname: string, maxBytes: number): { status: "ok"; bytes: Buffer } | { status: "absent" | "unreadable" | "ambiguous" | "over_bound" } {
   let before: fs.BigIntStats;
   try {
     before = fs.lstatSync(pathname, { bigint: true });
@@ -153,14 +115,7 @@ function sameIdentity(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
 }
 
 function sameFileSnapshot(left: fs.BigIntStats, right: fs.BigIntStats): boolean {
-  return (
-    sameIdentity(left, right) &&
-    left.isFile() &&
-    right.isFile() &&
-    left.size === right.size &&
-    left.mtimeNs === right.mtimeNs &&
-    left.ctimeNs === right.ctimeNs
-  );
+  return sameIdentity(left, right) && left.isFile() && right.isFile() && left.size === right.size && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs;
 }
 
 function readDescriptorBounded(descriptor: number, maxBytes: number): Buffer | null {
@@ -178,35 +133,17 @@ function identitiesStable(identities: readonly PathIdentity[]): boolean {
   return identities.every((identity) => {
     try {
       const current = fs.lstatSync(identity.pathname, { bigint: true });
-      return (
-        current.dev === identity.dev &&
-        current.ino === identity.ino &&
-        (identity.type === "directory" ? current.isDirectory() : current.isFile()) &&
-        !current.isSymbolicLink()
-      );
+      return current.dev === identity.dev && current.ino === identity.ino && (identity.type === "directory" ? current.isDirectory() : current.isFile()) && !current.isSymbolicLink();
     } catch {
       return false;
     }
   });
 }
 
-function readStableProjectFile(
-  root: ValidatedProjectRoot,
-  pathname: string,
-  maxBytes: number,
-  kind: ProjectAcquisitionReadKind,
-  hooks: ProjectAcquisitionReadHooks,
-):
-  | { status: "ok"; bytes: Buffer }
-  | { status: "absent" | "unreadable" | "ambiguous" | "over_bound" } {
+function readStableProjectFile(root: ValidatedProjectRoot, pathname: string, maxBytes: number, kind: ProjectAcquisitionReadKind, hooks: ProjectAcquisitionReadHooks): { status: "ok"; bytes: Buffer } | { status: "absent" | "unreadable" | "ambiguous" | "over_bound" } {
   assertValidatedProjectRoot(root);
   const relative = path.relative(root.path, pathname);
-  if (
-    relative === "" ||
-    relative === ".." ||
-    relative.startsWith(`..${path.sep}`) ||
-    path.isAbsolute(relative)
-  ) {
+  if (relative === "" || relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) {
     return { status: "ambiguous" };
   }
   const identities: PathIdentity[] = [];
@@ -258,12 +195,7 @@ function readStableProjectFile(
     descriptor = fs.openSync(pathname, fs.constants.O_RDONLY | noFollow);
     const opened = fs.fstatSync(descriptor, { bigint: true });
     const leaf = identities.at(-1)!;
-    if (
-      !opened.isFile() ||
-      opened.dev !== leaf.dev ||
-      opened.ino !== leaf.ino ||
-      !identitiesStable(identities)
-    ) {
+    if (!opened.isFile() || opened.dev !== leaf.dev || opened.ino !== leaf.ino || !identitiesStable(identities)) {
       return { status: "ambiguous" };
     }
     if (opened.size > BigInt(maxBytes)) return { status: "over_bound" };
@@ -277,9 +209,7 @@ function readStableProjectFile(
     return { status: "ok", bytes };
   } catch (error) {
     const code = errorCode(error);
-    return code === "EACCES" || code === "EPERM"
-      ? { status: "unreadable" }
-      : { status: "ambiguous" };
+    return code === "EACCES" || code === "EPERM" ? { status: "unreadable" } : { status: "ambiguous" };
   } finally {
     if (descriptor !== undefined) {
       try {
@@ -299,10 +229,7 @@ function decodeUtf8(bytes: Buffer): string | null {
   }
 }
 
-export function acquireProjectGlossaryInput(
-  projectRoot: string,
-  hooks: ProjectAcquisitionReadHooks = {},
-): GlossaryInputAvailability {
+export function acquireProjectGlossaryInput(projectRoot: string, hooks: ProjectAcquisitionReadHooks = {}): GlossaryInputAvailability {
   const bounds = glossaryAcquisitionContract();
   let root;
   let pathname: string;
@@ -311,13 +238,7 @@ export function acquireProjectGlossaryInput(
     const record = loadArtifactRecord("glossary");
     if (!record) return invalid("project", "ambiguous");
     const docsPath = path.join(root.path, ARTIFACT_PROTOCOL_PATHS.docs!);
-    const docsSource = readStableProjectFile(
-      root,
-      docsPath,
-      bounds.maxSourceUtf8Bytes,
-      "docs_override",
-      hooks,
-    );
+    const docsSource = readStableProjectFile(root, docsPath, bounds.maxSourceUtf8Bytes, "docs_override", hooks);
     if (docsSource.status !== "ok" && docsSource.status !== "absent") {
       return invalid("project", "ambiguous");
     }
@@ -337,13 +258,7 @@ export function acquireProjectGlossaryInput(
     return invalid("project", "ambiguous");
   }
 
-  const source = readStableProjectFile(
-    root,
-    pathname,
-    bounds.maxSourceUtf8Bytes,
-    "glossary_target",
-    hooks,
-  );
+  const source = readStableProjectFile(root, pathname, bounds.maxSourceUtf8Bytes, "glossary_target", hooks);
   if (source.status === "absent") return valid("project", "absent", []);
   if (source.status !== "ok") return invalid("project", source.status);
 
@@ -360,10 +275,7 @@ export function acquireProjectGlossaryInput(
     }));
     return valid("project", entries.length === 0 ? "valid_empty" : "valid_present", entries);
   } catch (error) {
-    return invalid(
-      "project",
-      error instanceof GlossaryEntryBoundError ? "over_bound" : "malformed",
-    );
+    return invalid("project", error instanceof GlossaryEntryBoundError ? "over_bound" : "malformed");
   }
 }
 
@@ -386,17 +298,12 @@ export function acquirePersonalGlossaryInput(profilePath: string): GlossaryInput
     return valid("personal", entries.length === 0 ? "valid_empty" : "valid_present", entries);
   } catch (error) {
     if (error instanceof GlossaryEntryBoundError) return invalid("personal", "over_bound");
-    if (error instanceof PersonalGlossaryBoundaryError)
-      return invalid("personal", error.availability);
+    if (error instanceof PersonalGlossaryBoundaryError) return invalid("personal", error.availability);
     return invalid("personal", "malformed");
   }
 }
 
-export function acquireGlossaryInputs(
-  projectRoot: string,
-  personalProfilePath: string,
-  projectHooks: ProjectAcquisitionReadHooks = {},
-): AcquiredGlossaryInputs {
+export function acquireGlossaryInputs(projectRoot: string, personalProfilePath: string, projectHooks: ProjectAcquisitionReadHooks = {}): AcquiredGlossaryInputs {
   return {
     project: acquireProjectGlossaryInput(projectRoot, projectHooks),
     personal: acquirePersonalGlossaryInput(personalProfilePath),

@@ -16,10 +16,7 @@ function temporary(label: string): string {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), `compact-todo-reference-${label}-`));
   roots.push(root);
   fs.mkdirSync(path.join(root, ".agentera"));
-  fs.writeFileSync(
-    path.join(root, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return root;
 }
 
@@ -38,35 +35,19 @@ function writeProgressEntity(root: string, index: number, what: string, intent =
   write(
     root,
     `.agentera/entities/progress/progress_cycle/${id}.yaml`,
-    [
-      `id: ${id}`,
-      "artifact: progress",
-      "record:",
-      '  timestamp: "2026-08-09 10:00"',
-      "  type: test",
-      "  phase: build",
-      `  what: ${JSON.stringify(what)}`,
-      "  context:",
-      `    intent: ${JSON.stringify(intent)}`,
-      `  publication_order: ${index + 1}`,
-      "",
-    ].join("\n"),
+    [`id: ${id}`, "artifact: progress", "record:", '  timestamp: "2026-08-09 10:00"', "  type: test", "  phase: build", `  what: ${JSON.stringify(what)}`, "  context:", `    intent: ${JSON.stringify(intent)}`, `  publication_order: ${index + 1}`, ""].join("\n"),
   );
 }
 
 function runGate(root: string, ...args: string[]) {
-  return spawnSync(
-    process.execPath,
-    [CLI, "check", "compact", "--project", root, ...args, "--format", "json"],
-    {
-      cwd: root,
-      encoding: "utf8",
-      env: {
-        ...sourceSubprocessEnv(),
-        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
-      },
+  return spawnSync(process.execPath, [CLI, "check", "compact", "--project", root, ...args, "--format", "json"], {
+    cwd: root,
+    encoding: "utf8",
+    env: {
+      ...sourceSubprocessEnv(),
+      AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
     },
-  );
+  });
 }
 
 function fixtureFiles(root: string): Record<string, string> {
@@ -89,17 +70,7 @@ afterEach(() => {
 describe("check compact stable TODO reference gate", () => {
   it("passes unchanged when active state is clean and history alone uses volatile references", () => {
     const root = temporary("history");
-    write(
-      root,
-      ".agentera/docs.yaml",
-      [
-        "# TODO line 8",
-        '"TODO.md:9": quoted key',
-        "note: stable TODO anchor",
-        "near_miss: TODO.md line 8",
-        "",
-      ].join("\n"),
-    );
+    write(root, ".agentera/docs.yaml", ["# TODO line 8", '"TODO.md:9": quoted key', "note: stable TODO anchor", "near_miss: TODO.md line 8", ""].join("\n"));
     writeProgressEntity(root, 0, "Stable progress reference");
     write(root, ".agentera/archive/progress-1.yaml", "note: TODO line 13\n");
     write(root, ".agentera/migrations/legacy.yaml", "note: TODO.md:14\n");
@@ -119,9 +90,7 @@ describe("check compact stable TODO reference gate", () => {
       changed_count: 0,
       action_counts: { skipped: 1 },
     });
-    expect(payload.operations).toEqual([
-      expect.objectContaining({ artifact: "entity_state", action: "skipped" }),
-    ]);
+    expect(payload.operations).toEqual([expect.objectContaining({ artifact: "entity_state", action: "skipped" })]);
     expect(fixtureFiles(root)).toEqual(before);
   });
 
@@ -141,9 +110,7 @@ describe("check compact stable TODO reference gate", () => {
       summary: Record<string, unknown>;
       operations: Array<Record<string, unknown>>;
     };
-    const hygiene = checkPayload.operations.find(
-      (operation) => operation.action === "volatile_todo_reference",
-    )!;
+    const hygiene = checkPayload.operations.find((operation) => operation.action === "volatile_todo_reference")!;
     const diagnostics = hygiene.diagnostics as Array<{ path: string; reference: string }>;
     expect(checkPayload.status).toBe("fail");
     expect(checkPayload.summary).toMatchObject({
@@ -187,10 +154,12 @@ describe("check compact stable TODO reference gate", () => {
       status: "fail",
       summary: { status: "fail", mode: "fix", changed_count: 0 },
     });
-    expect(applyPayload.operations).toContainEqual(expect.objectContaining({
-      action: "volatile_todo_reference",
-      omitted_count: 4,
-    }));
+    expect(applyPayload.operations).toContainEqual(
+      expect.objectContaining({
+        action: "volatile_todo_reference",
+        omitted_count: 4,
+      }),
+    );
     expect(fixtureFiles(root)).toEqual(before);
   });
 });

@@ -3,25 +3,12 @@ import path from "node:path";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { ExperimentArchivePublication } from "../experimentArchive.js";
-import {
-  publishImmutableFile,
-  publishNumberedArchive,
-  type ArchivePublicationResult,
-} from "../archivePublication.js";
+import { publishImmutableFile, publishNumberedArchive, type ArchivePublicationResult } from "../archivePublication.js";
 import { assertValidatedProjectRoot, type ValidatedProjectRoot } from "../projectRoot.js";
 import type { WritableArtifact } from "./operations.js";
 import { acquireWriterLock } from "./lock.js";
 
-export const MUTATION_FAILURE_BOUNDARIES = [
-  "staged-write",
-  "archive-directory-publication",
-  "archive-publication",
-  "backup-publication",
-  "revision-publication",
-  "projection-consistency",
-  "projection-publication",
-  "directory-sync",
-] as const;
+export const MUTATION_FAILURE_BOUNDARIES = ["staged-write", "archive-directory-publication", "archive-publication", "backup-publication", "revision-publication", "projection-consistency", "projection-publication", "directory-sync"] as const;
 
 export type MutationFailureBoundary = (typeof MUTATION_FAILURE_BOUNDARIES)[number];
 
@@ -53,10 +40,7 @@ function fsyncDirectory(directory: string): void {
 
 function stagePath(target: string): string {
   stageSequence += 1;
-  return path.join(
-    path.dirname(target),
-    `.${path.basename(target)}.writer.${process.pid}.${stageSequence}.tmp`,
-  );
+  return path.join(path.dirname(target), `.${path.basename(target)}.writer.${process.pid}.${stageSequence}.tmp`);
 }
 
 function isMutationStage(name: string): boolean {
@@ -125,11 +109,7 @@ export class StateMutationTransaction {
     this.failAfter("staged-write");
   }
 
-  publishArchive(
-    artifact: WritableArtifact,
-    entryNumber: number,
-    record: JsonObject,
-  ): ArchivePublicationResult {
+  publishArchive(artifact: WritableArtifact, entryNumber: number, record: JsonObject): ArchivePublicationResult {
     const archive = publishNumberedArchive(this.projectRoot, artifact, entryNumber, record, {
       afterDirectorySync: () => this.failAfter("directory-sync"),
     });
@@ -137,10 +117,7 @@ export class StateMutationTransaction {
     return archive;
   }
 
-  publishExperimentArchive(
-    publication: ExperimentArchivePublication,
-    onExisting: () => void,
-  ): boolean {
+  publishExperimentArchive(publication: ExperimentArchivePublication, onExisting: () => void): boolean {
     const published = publishImmutableFile(publication.target, publication.bytes, {
       directoryDurabilityRoot: publication.directoryDurabilityRoot,
       onExisting,
@@ -178,9 +155,7 @@ export class StateMutationTransaction {
       if (expectedBytes !== undefined) {
         const currentBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
         if (currentBytes !== expectedBytes) {
-          throw new Error(
-            `revision document '${target}' changed before publication; existing bytes were preserved`,
-          );
+          throw new Error(`revision document '${target}' changed before publication; existing bytes were preserved`);
         }
       }
       fs.renameSync(stage, target);
@@ -203,14 +178,11 @@ export class StateMutationTransaction {
     this.failAfter("projection-consistency");
   }
 
-
   publishProjection(stage: string, target: string, expectedBytes?: string): void {
     if (expectedBytes !== undefined) {
       const currentBytes = fs.existsSync(target) ? fs.readFileSync(target, "utf8") : "";
       if (currentBytes !== expectedBytes) {
-        throw new Error(
-          `projection target '${target}' changed before publication; existing bytes were preserved`,
-        );
+        throw new Error(`projection target '${target}' changed before publication; existing bytes were preserved`);
       }
     }
     fs.renameSync(stage, target);
@@ -220,10 +192,7 @@ export class StateMutationTransaction {
     this.failAfter("directory-sync");
   }
 
-  mutateProjection<T extends { changed: boolean }>(
-    target: string,
-    mutation: (stage: string) => T,
-  ): T {
+  mutateProjection<T extends { changed: boolean }>(target: string, mutation: (stage: string) => T): T {
     const stage = this.stageProjection(target, fs.readFileSync(target, "utf8"));
     try {
       const result = mutation(stage);
@@ -258,12 +227,7 @@ export class StateMutationTransaction {
   }
 }
 
-export function withStateMutation<T>(
-  projectRoot: string,
-  operation: (transaction: StateMutationTransaction) => T,
-  options: StateMutationOptions = {},
-  validatedRoot?: ValidatedProjectRoot,
-): T {
+export function withStateMutation<T>(projectRoot: string, operation: (transaction: StateMutationTransaction) => T, options: StateMutationOptions = {}, validatedRoot?: ValidatedProjectRoot): T {
   const lock = acquireWriterLock(projectRoot, options.lockTimeoutMs, validatedRoot);
   const transaction = new StateMutationTransaction(projectRoot, options);
   try {

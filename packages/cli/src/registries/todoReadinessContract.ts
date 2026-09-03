@@ -7,34 +7,9 @@ import { loadYamlMapping } from "../core/yaml.js";
 
 const SCHEMA_VERSION = "agentera.todoReadiness.v1";
 const PHASE_AUTHORITY = "protocol.yaml#PHASES[*].capabilities";
-const REQUIRED_FIELDS = [
-  "capability",
-  "reason",
-  "dependencies",
-  "blocked",
-  "gate",
-  "queue_rank",
-  "order_reason",
-] as const;
-const EVALUATION_PRECEDENCE = [
-  "todo_resolved",
-  "readiness_absent",
-  "blocked",
-  "gate_pending",
-  "dependency_cross_artifact",
-  "dependency_missing",
-  "dependency_cycle",
-  "dependency_open",
-  "ordering_conflict",
-  "actionable",
-] as const;
-const PROHIBITED_TIEBREAKERS = [
-  "entity_id",
-  "file_order",
-  "filesystem_time",
-  "created_or_modified_time",
-  "description_text",
-] as const;
+const REQUIRED_FIELDS = ["capability", "reason", "dependencies", "blocked", "gate", "queue_rank", "order_reason"] as const;
+const EVALUATION_PRECEDENCE = ["todo_resolved", "readiness_absent", "blocked", "gate_pending", "dependency_cross_artifact", "dependency_missing", "dependency_cycle", "dependency_open", "ordering_conflict", "actionable"] as const;
+const PROHIBITED_TIEBREAKERS = ["entity_id", "file_order", "filesystem_time", "created_or_modified_time", "description_text"] as const;
 
 type OutcomeExpectation = {
   result: string;
@@ -45,15 +20,40 @@ type OutcomeExpectation = {
 
 const OUTCOME_EXPECTATIONS: Record<string, OutcomeExpectation> = {
   todo_resolved: { result: "resolved", eligible: false, attention: "none", recovery: "null" },
-  readiness_absent: { result: "needs-triage", eligible: false, attention: "item", recovery: "required" },
+  readiness_absent: {
+    result: "needs-triage",
+    eligible: false,
+    attention: "item",
+    recovery: "required",
+  },
   blocked: { result: "blocked", eligible: false, attention: "item", recovery: "required" },
   gate_pending: { result: "gated", eligible: false, attention: "none", recovery: "required" },
-  dependency_cross_artifact: { result: "needs-triage", eligible: false, attention: "item", recovery: "required" },
-  dependency_missing: { result: "needs-triage", eligible: false, attention: "item", recovery: "required" },
-  dependency_cycle: { result: "needs-triage", eligible: false, attention: "item", recovery: "required" },
+  dependency_cross_artifact: {
+    result: "needs-triage",
+    eligible: false,
+    attention: "item",
+    recovery: "required",
+  },
+  dependency_missing: {
+    result: "needs-triage",
+    eligible: false,
+    attention: "item",
+    recovery: "required",
+  },
+  dependency_cycle: {
+    result: "needs-triage",
+    eligible: false,
+    attention: "item",
+    recovery: "required",
+  },
   dependency_open: { result: "waiting", eligible: false, attention: "none", recovery: "required" },
   dependency_resolved: { result: "satisfied", eligible: null, attention: "none", recovery: "null" },
-  ordering_conflict: { result: "needs-triage", eligible: false, attention: "item", recovery: "required" },
+  ordering_conflict: {
+    result: "needs-triage",
+    eligible: false,
+    attention: "item",
+    recovery: "required",
+  },
   actionable: { result: "actionable", eligible: true, attention: "none", recovery: "null" },
 };
 
@@ -83,9 +83,7 @@ function sameList(actual: unknown, expected: readonly string[]): boolean {
 }
 
 function canonicalCapabilities(capabilityContract: JsonObject, errors: string[], sourceLabel: string): string[] {
-  const aliases = isMapping(capabilityContract.ROUTE_ALIASES)
-    ? capabilityContract.ROUTE_ALIASES.primary_aliases
-    : null;
+  const aliases = isMapping(capabilityContract.ROUTE_ALIASES) ? capabilityContract.ROUTE_ALIASES.primary_aliases : null;
   if (!Array.isArray(aliases)) {
     errors.push(`${sourceLabel}: ROUTE_ALIASES.primary_aliases must be a list`);
     return [];
@@ -101,12 +99,7 @@ function canonicalCapabilities(capabilityContract: JsonObject, errors: string[],
   return capabilities;
 }
 
-function derivePhaseMapping(
-  protocol: JsonObject,
-  canonical: Set<string>,
-  errors: string[],
-  sourceLabel: string,
-): Map<string, string> {
+function derivePhaseMapping(protocol: JsonObject, canonical: Set<string>, errors: string[], sourceLabel: string): Map<string, string> {
   const mapping = new Map<string, string>();
   if (!isMapping(protocol.PHASES)) {
     errors.push(`${sourceLabel}: protocol PHASES must be a mapping`);
@@ -155,12 +148,8 @@ function validateFields(readiness: JsonObject, errors: string[], sourceLabel: st
     errors.push(`${sourceLabel}: READINESS.fields.capability.enum_source must be ${PHASE_AUTHORITY}`);
   }
   const dependencies = fields.dependencies;
-  const dependencyEntries = isMapping(dependencies) && isMapping(dependencies.entries)
-    ? dependencies.entries
-    : null;
-  const dependencyArtifact = dependencyEntries && isMapping(dependencyEntries.artifact)
-    ? dependencyEntries.artifact
-    : null;
+  const dependencyEntries = isMapping(dependencies) && isMapping(dependencies.entries) ? dependencies.entries : null;
+  const dependencyArtifact = dependencyEntries && isMapping(dependencyEntries.artifact) ? dependencyEntries.artifact : null;
   if (dependencyArtifact?.const !== "todo") {
     errors.push(`${sourceLabel}: dependency artifact const must be todo`);
   }
@@ -187,9 +176,7 @@ function validateOutcomes(readiness: JsonObject, errors: string[], sourceLabel: 
     if (outcome.attention !== expected.attention) {
       errors.push(`${sourceLabel}: READINESS.outcomes.${name}.attention must be one of: none, item`);
     }
-    const validRecovery = expected.recovery === "null"
-      ? outcome.recovery === null
-      : typeof outcome.recovery === "string" && outcome.recovery.trim().length > 0;
+    const validRecovery = expected.recovery === "null" ? outcome.recovery === null : typeof outcome.recovery === "string" && outcome.recovery.trim().length > 0;
     if (!validRecovery) {
       errors.push(`${sourceLabel}: READINESS.outcomes.${name}.recovery must be ${expected.recovery === "null" ? "null" : "a non-empty string"}`);
     }
@@ -276,12 +263,7 @@ function validateOrdering(readiness: JsonObject, errors: string[], sourceLabel: 
   }
 }
 
-export function validateTodoReadinessContract(
-  todoSchema: JsonObject,
-  protocol: JsonObject,
-  capabilityContract: JsonObject,
-  sourceLabel = "TODO readiness contract",
-): string[] {
+export function validateTodoReadinessContract(todoSchema: JsonObject, protocol: JsonObject, capabilityContract: JsonObject, sourceLabel = "TODO readiness contract"): string[] {
   const errors: string[] = [];
   const readiness = todoSchema.READINESS;
   if (!isMapping(readiness)) return [`${sourceLabel}: READINESS must be a mapping`];
@@ -364,17 +346,14 @@ function requiredMappingFields(label: string, value: unknown, names: readonly st
   return errors;
 }
 
-export function todoReadinessRecordViolations(
-  readiness: unknown,
-  contract = loadTodoReadinessContract(),
-): string[] {
+export function todoReadinessRecordViolations(readiness: unknown, contract = loadTodoReadinessContract()): string[] {
   if (!isMapping(readiness)) return ["readiness must be a mapping"];
   const errors: string[] = [];
   for (const field of REQUIRED_FIELDS) {
     if (!(field in readiness)) errors.push(`${field} is required when readiness is declared`);
   }
   for (const field of Object.keys(readiness)) {
-    if (!REQUIRED_FIELDS.includes(field as typeof REQUIRED_FIELDS[number])) errors.push(`readiness has unsupported field '${field}'`);
+    if (!REQUIRED_FIELDS.includes(field as (typeof REQUIRED_FIELDS)[number])) errors.push(`readiness has unsupported field '${field}'`);
   }
   if (typeof readiness.capability !== "string" || !contract.allowedDestinations.includes(readiness.capability)) {
     errors.push(`capability must be one of: ${contract.allowedDestinations.join(", ")}`);
@@ -382,17 +361,18 @@ export function todoReadinessRecordViolations(
   if (typeof readiness.reason !== "string" || !readiness.reason.trim()) errors.push("reason must be a non-empty string");
 
   if (!Array.isArray(readiness.dependencies)) errors.push("dependencies must be a list");
-  else for (const [index, dependency] of readiness.dependencies.entries()) {
-    if (!isMapping(dependency)) {
-      errors.push(`dependencies[${index}] must be a mapping`);
-      continue;
+  else
+    for (const [index, dependency] of readiness.dependencies.entries()) {
+      if (!isMapping(dependency)) {
+        errors.push(`dependencies[${index}] must be a mapping`);
+        continue;
+      }
+      for (const field of Object.keys(dependency)) {
+        if (field !== "artifact" && field !== "id") errors.push(`dependencies[${index}] has unsupported field '${field}'`);
+      }
+      if (dependency.artifact !== "todo") errors.push(`dependencies[${index}] dependency artifact must be 'todo'`);
+      if (!/^[a-z]{10}$/.test(String(dependency.id ?? ""))) errors.push(`dependencies[${index}] dependency ID must be ten lowercase letters`);
     }
-    for (const field of Object.keys(dependency)) {
-      if (field !== "artifact" && field !== "id") errors.push(`dependencies[${index}] has unsupported field '${field}'`);
-    }
-    if (dependency.artifact !== "todo") errors.push(`dependencies[${index}] dependency artifact must be 'todo'`);
-    if (!/^[a-z]{10}$/.test(String(dependency.id ?? ""))) errors.push(`dependencies[${index}] dependency ID must be ten lowercase letters`);
-  }
 
   if (readiness.blocked !== null) errors.push(...requiredMappingFields("blocked", readiness.blocked, ["reason", "recovery"]));
   if (readiness.gate !== null) {
@@ -410,11 +390,7 @@ export function todoReadinessRecordViolations(
   return [...new Set(errors)];
 }
 
-export function todoReadinessReferenceViolations(
-  itemId: string,
-  readiness: unknown,
-  todos: Array<{ id: string; record: JsonObject }>,
-): string[] {
+export function todoReadinessReferenceViolations(itemId: string, readiness: unknown, todos: Array<{ id: string; record: JsonObject }>): string[] {
   if (!isMapping(readiness) || !Array.isArray(readiness.dependencies)) return [];
   const dependencies = readiness.dependencies
     .filter(isMapping)
@@ -431,9 +407,7 @@ export function todoReadinessReferenceViolations(
     if (seen.has(id)) return false;
     seen.add(id);
     const record = byId.get(id);
-    const nested = isMapping(record?.readiness) && Array.isArray(record.readiness.dependencies)
-      ? record.readiness.dependencies.filter(isMapping).map((dependency) => String(dependency.id ?? ""))
-      : [];
+    const nested = isMapping(record?.readiness) && Array.isArray(record.readiness.dependencies) ? record.readiness.dependencies.filter(isMapping).map((dependency) => String(dependency.id ?? "")) : [];
     return nested.some((dependency) => reachesItem(dependency, seen));
   };
   if (!errors.length && dependencies.some((dependency) => reachesItem(dependency, new Set()))) {

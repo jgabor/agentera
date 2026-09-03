@@ -48,7 +48,14 @@ afterEach(() => {
 function capture(args: Parameters<typeof cmdPrime>[0]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const rc = cmdPrime(args, { out: (text) => { out += text; }, err: (text) => { err += text; } });
+  const rc = cmdPrime(args, {
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
+  });
   return { rc, out, err };
 }
 
@@ -72,15 +79,17 @@ const projectionCases = [
   {
     name: "capability",
     args: { command: "prime", context: "build", format: "json" } as const,
-    todo: (payload: Record<string, any>) => payload.capability_context.startup.availability.find(
-      (entry: Record<string, unknown>) => entry.family === "todo",
-    ),
+    todo: (payload: Record<string, any>) => payload.capability_context.startup.availability.find((entry: Record<string, unknown>) => entry.family === "todo"),
   },
 ] as const;
 
 describe("prime runtime compatibility boundary", () => {
   it("accepts every declared prime field and rejects unknown fields", () => {
-    const result = capture({ command: "prime", format: "json", fields: PRIME_STRUCTURED_FIELDS.join(",") });
+    const result = capture({
+      command: "prime",
+      format: "json",
+      fields: PRIME_STRUCTURED_FIELDS.join(","),
+    });
     expect(result.rc).toBe(0);
     const payload = JSON.parse(result.out) as Record<string, unknown>;
     for (const field of PRIME_STRUCTURED_FIELDS) expect(payload).toHaveProperty(field);
@@ -104,18 +113,22 @@ describe("prime runtime compatibility boundary", () => {
     const commands = schema.commands as Array<{ name: string; structured_fields: string[] }>;
     const prime = commands.find((entry) => entry.name === "prime");
     expect(prime?.structured_fields).toEqual([...PRIME_STRUCTURED_FIELDS, "capability_context"]);
-    const structuredOutput = schema.structured_output as { fields_by_command: { status: string[] } };
+    const structuredOutput = schema.structured_output as {
+      fields_by_command: { status: string[] };
+    };
     expect(structuredOutput.fields_by_command.status).toEqual(PRIME_STRUCTURED_FIELDS);
   });
 
   it("emits only the canonical TODO field without an alias warning", () => {
     const { payload, err } = primePayload();
-    expect(payload.todo).toEqual(expect.objectContaining({
-      critical: expect.any(Number),
-      degraded: expect.any(Number),
-      normal: expect.any(Number),
-      annoying: expect.any(Number),
-    }));
+    expect(payload.todo).toEqual(
+      expect.objectContaining({
+        critical: expect.any(Number),
+        degraded: expect.any(Number),
+        normal: expect.any(Number),
+        annoying: expect.any(Number),
+      }),
+    );
     expect(payload).not.toHaveProperty("issues");
     expect(err).toBe("");
   });

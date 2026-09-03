@@ -380,6 +380,8 @@ records:
           reason: Routing evaluation transitively publishes guarded startup provenance.
         - path: packages/cli/src/state/todoDocsEntities.ts
           reason: TODO reconciliation output transitively publishes guarded retrieval guidance.
+        - path: packages/cli/src/state/todoDocsReconciliation.ts
+          reason: TODO reconciliation reads publish guarded recovery and authority guidance.
         - path: packages/cli/src/state/todoReconciliationInspection.ts
           reason: TODO reconciliation inspection publishes bounded preview and effect-bound apply guidance.
       constructor_non_producers:
@@ -453,6 +455,8 @@ records:
           reason: Imports constructor-closure retrieval modules for projection, but does not construct command guidance.
         - path: packages/cli/src/state/entityMigrationPreview.ts
           reason: Imports constructor-closure migration modules for preview, but does not construct command guidance.
+        - path: packages/cli/src/state/entityMigrationPreviewSupport.ts
+          reason: Provides migration preview data contracts and helpers without constructing command guidance.
         - path: packages/cli/src/state/healthEntities.ts
           reason: Imports constructor-closure state modules for entity persistence, but does not construct command guidance.
         - path: packages/cli/src/state/listRetrieval.ts
@@ -461,6 +465,8 @@ records:
           reason: Imports constructor-closure state modules for entity persistence, but does not construct command guidance.
         - path: packages/cli/src/state/planEntities.ts
           reason: Imports constructor-closure state modules for entity persistence, but does not construct command guidance.
+        - path: packages/cli/src/state/todoDocsWrite.ts
+          reason: Provides TODO and docs write helpers whose guidance is published by the owning entity module.
         - path: packages/cli/src/state/planRetrieval.ts
           reason: Imports constructor-closure retrieval modules for execution, but does not construct command guidance.
         - path: packages/cli/src/state/planTaskRetrieval.ts

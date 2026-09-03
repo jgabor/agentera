@@ -18,9 +18,7 @@ const SCRIPT_PACKAGE_VERSION = `1.0.0-${Date.now()}`;
 const COREPACK = process.platform === "win32" ? "corepack.cmd" : "corepack";
 
 export function loadToolchainBaseline() {
-  return YAML.parse(
-    fs.readFileSync(path.join(REPO_ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"),
-  );
+  return YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
 }
 
 function writeJson(file, value) {
@@ -109,15 +107,9 @@ try {
   const retainedBaseline = loadToolchainBaseline();
   assert.equal(retainedBaseline.selection.vite_plus.version, REQUIRED_VP);
   assert.equal(retainedBaseline.selection.setup_vp.selected.version, REQUIRED_SETUP_VP);
-  assert.equal(
-    retainedBaseline.selection.setup_vp.selected.action_commit,
-    REQUIRED_SETUP_VP_COMMIT,
-  );
+  assert.equal(retainedBaseline.selection.setup_vp.selected.action_commit, REQUIRED_SETUP_VP_COMMIT);
   assert.equal(retainedBaseline.selection.setup_vp.selected.classification, "accepted_risk");
-  assert.equal(
-    retainedBaseline.selection.setup_vp.selected.boundary,
-    "non_oidc_install_or_build_jobs_only",
-  );
+  assert.equal(retainedBaseline.selection.setup_vp.selected.boundary, "non_oidc_install_or_build_jobs_only");
 
   const fixture = path.join(sandbox, "project");
   const sources = path.join(sandbox, "package-sources");
@@ -130,12 +122,7 @@ try {
   fs.writeFileSync(npmrc, "");
 
   const env = { ...process.env };
-  for (const key of [
-    "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-    "ACTIONS_ID_TOKEN_REQUEST_URL",
-    "NODE_AUTH_TOKEN",
-    "NPM_TOKEN",
-  ]) {
+  for (const key of ["ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_URL", "NODE_AUTH_TOKEN", "NPM_TOKEN"]) {
     delete env[key];
   }
   env.NPM_CONFIG_USERCONFIG = npmrc;
@@ -143,10 +130,7 @@ try {
   env.AGENTERA_TOOLCHAIN_MARKERS = markers;
 
   const livePnpm = requirePinnedPnpm(REPO_ROOT, env);
-  const livePolicy = parseJsonOutput(
-    "live onlyBuiltDependencies probe",
-    runPnpm(REPO_ROOT, ["config", "get", "onlyBuiltDependencies", "--json"], env),
-  );
+  const livePolicy = parseJsonOutput("live onlyBuiltDependencies probe", runPnpm(REPO_ROOT, ["config", "get", "onlyBuiltDependencies", "--json"], env));
   assert.deepEqual(livePolicy, ["esbuild"], "live dependency-script policy drifted");
 
   const rejectedPinRoot = path.join(sandbox, "rejected-pin");
@@ -158,20 +142,8 @@ try {
   });
   assert.throws(() => requirePinnedPnpm(rejectedPinRoot, env), /packageManager pin rejected/);
 
-  const allowedTarball = packScriptPackage(
-    fixture,
-    path.join(sources, "esbuild"),
-    artifacts,
-    "esbuild",
-    env,
-  );
-  const blockedTarball = packScriptPackage(
-    fixture,
-    path.join(sources, "blocked-build"),
-    artifacts,
-    "blocked-build",
-    env,
-  );
+  const allowedTarball = packScriptPackage(fixture, path.join(sources, "esbuild"), artifacts, "esbuild", env);
+  const blockedTarball = packScriptPackage(fixture, path.join(sources, "blocked-build"), artifacts, "blocked-build", env);
   writeJson(path.join(fixture, "package.json"), {
     name: "agentera-toolchain-baseline-fixture",
     private: true,
@@ -182,19 +154,12 @@ try {
       "vite-plus": REQUIRED_VP,
     },
   });
-  fs.copyFileSync(
-    path.join(REPO_ROOT, "pnpm-workspace.yaml"),
-    path.join(fixture, "pnpm-workspace.yaml"),
-  );
+  fs.copyFileSync(path.join(REPO_ROOT, "pnpm-workspace.yaml"), path.join(fixture, "pnpm-workspace.yaml"));
 
   const staleBin = path.join(sandbox, "stale-bin");
   const staleMarker = path.join(markers, "stale-vp.marker");
   fs.mkdirSync(staleBin);
-  fs.writeFileSync(
-    path.join(staleBin, "vp"),
-    `#!/usr/bin/env node\nrequire("node:fs").writeFileSync(${JSON.stringify(staleMarker)}, "executed\\n");\nconsole.log("vp 0.1.19");\n`,
-    { mode: 0o755 },
-  );
+  fs.writeFileSync(path.join(staleBin, "vp"), `#!/usr/bin/env node\nrequire("node:fs").writeFileSync(${JSON.stringify(staleMarker)}, "executed\\n");\nconsole.log("vp 0.1.19");\n`, { mode: 0o755 });
   const staleEnv = { ...env, PATH: `${staleBin}${path.delimiter}${env.PATH}` };
   const staleProbe = requireSuccess(
     "stale global vp probe",
@@ -206,50 +171,26 @@ try {
   assert.match(staleProbe.stdout, /0\.1\.19/);
   assert.ok(fs.existsSync(staleMarker), "stale vp probe did not execute the stale binary");
 
-  requireSuccess(
-    "fixture lockfile generation",
-    runPnpm(fixture, ["install", "--lockfile-only", "--prefer-offline"], staleEnv),
-  );
+  requireSuccess("fixture lockfile generation", runPnpm(fixture, ["install", "--lockfile-only", "--prefer-offline"], staleEnv));
   fs.rmSync(path.join(fixture, "node_modules"), { recursive: true, force: true });
   fs.rmSync(markers, { recursive: true, force: true });
 
-  const freshInstall = requireSuccess(
-    "fresh frozen install",
-    runPnpm(fixture, ["install", "--frozen-lockfile", "--prefer-offline"], staleEnv),
-  );
-  assert.ok(
-    fs.existsSync(path.join(markers, "esbuild.marker")),
-    "allowed esbuild script did not run",
-  );
-  assert.ok(
-    !fs.existsSync(path.join(markers, "blocked-build.marker")),
-    "unlisted dependency script was not suppressed",
-  );
+  const freshInstall = requireSuccess("fresh frozen install", runPnpm(fixture, ["install", "--frozen-lockfile", "--prefer-offline"], staleEnv));
+  assert.ok(fs.existsSync(path.join(markers, "esbuild.marker")), "allowed esbuild script did not run");
+  assert.ok(!fs.existsSync(path.join(markers, "blocked-build.marker")), "unlisted dependency script was not suppressed");
 
-  const rootVp = requireSuccess(
-    "root-local Vite+ probe",
-    runPnpm(fixture, ["exec", "vp", "--version"], staleEnv),
-  );
+  const rootVp = requireSuccess("root-local Vite+ probe", runPnpm(fixture, ["exec", "vp", "--version"], staleEnv));
   assert.match(`${rootVp.stdout}${rootVp.stderr}`, /(?:vp\s+)?0\.3\.0/);
   assert.ok(!fs.existsSync(staleMarker), "stale global vp owned the root-local probe");
 
-  const delegatedInstall = requireSuccess(
-    "root-local Vite+ frozen install",
-    runPnpm(fixture, ["exec", "vp", "install", "--frozen-lockfile"], staleEnv),
-  );
+  const delegatedInstall = requireSuccess("root-local Vite+ frozen install", runPnpm(fixture, ["exec", "vp", "install", "--frozen-lockfile"], staleEnv));
   assert.ok(!fs.existsSync(staleMarker), "stale global vp owned the project install");
-  assert.ok(
-    !fs.existsSync(path.join(markers, "blocked-build.marker")),
-    "unlisted dependency script ran during the delegated install",
-  );
+  assert.ok(!fs.existsSync(path.join(markers, "blocked-build.marker")), "unlisted dependency script ran during the delegated install");
 
   const manifest = JSON.parse(fs.readFileSync(path.join(fixture, "package.json"), "utf8"));
   manifest.devDependencies["vite-plus"] = "0.2.9";
   writeJson(path.join(fixture, "package.json"), manifest);
-  const rejectedFrozen = requireFailure(
-    "outdated frozen lockfile",
-    runPnpm(fixture, ["install", "--frozen-lockfile"], staleEnv),
-  );
+  const rejectedFrozen = requireFailure("outdated frozen lockfile", runPnpm(fixture, ["install", "--frozen-lockfile"], staleEnv));
   assert.match(`${rejectedFrozen.stdout}${rejectedFrozen.stderr}`, /ERR_PNPM_OUTDATED_LOCKFILE/);
 
   console.log(

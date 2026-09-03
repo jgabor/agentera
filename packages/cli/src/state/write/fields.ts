@@ -7,12 +7,7 @@ function schemaEntry(schema: JsonObject, fieldPath: string): JsonObject | null {
   for (const value of Object.values(schema)) {
     if (!value || typeof value !== "object" || Array.isArray(value)) continue;
     for (const entry of Object.values(value as JsonObject)) {
-      if (
-        entry &&
-        typeof entry === "object" &&
-        !Array.isArray(entry) &&
-        String(entry.field ?? "") === leaf
-      ) {
+      if (entry && typeof entry === "object" && !Array.isArray(entry) && String(entry.field ?? "") === leaf) {
         return entry as JsonObject;
       }
     }
@@ -33,10 +28,7 @@ function valuesFromValidation(entry: JsonObject | null): string[] | undefined {
   return undefined;
 }
 
-export function projectedFields(
-  spec: OperationSpec,
-  validator = new ArtifactSchemaValidator(),
-): OperationField[] {
+export function projectedFields(spec: OperationSpec, validator = new ArtifactSchemaValidator()): OperationField[] {
   const schema = validator.loadSchema(spec.artifact);
   if (!schema) return spec.fields;
   return spec.fields.map((field) => {
@@ -45,25 +37,15 @@ export function projectedFields(
       ...field,
       required: field.required ?? Boolean(entry?.required),
       validValues: field.validValues ?? valuesFromValidation(entry),
-      description:
-        field.description ?? (entry?.description ? String(entry.description) : undefined),
+      description: field.description ?? (entry?.description ? String(entry.description) : undefined),
     };
   });
 }
 
-export function schemaBudget(
-  artifact: string,
-  validator = new ArtifactSchemaValidator(),
-): Record<string, number | null> {
+export function schemaBudget(artifact: string, validator = new ArtifactSchemaValidator()): Record<string, number | null> {
   const schema = validator.loadSchema(artifact);
   const result: Record<string, number | null> = {};
-  if (
-    !schema ||
-    !schema.BUDGET ||
-    typeof schema.BUDGET !== "object" ||
-    Array.isArray(schema.BUDGET)
-  )
-    return result;
+  if (!schema || !schema.BUDGET || typeof schema.BUDGET !== "object" || Array.isArray(schema.BUDGET)) return result;
   for (const entry of Object.values(schema.BUDGET as JsonObject)) {
     if (!entry || typeof entry !== "object" || Array.isArray(entry)) continue;
     const scope = String(entry.scope ?? "");

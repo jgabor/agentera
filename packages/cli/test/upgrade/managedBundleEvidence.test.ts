@@ -15,10 +15,7 @@ function managedRoot(name: string): string {
 
 function writeV3Marker(root: string): void {
   fs.mkdirSync(root, { recursive: true });
-  fs.writeFileSync(
-    path.join(root, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "3.0.0-next.1" }),
-  );
+  fs.writeFileSync(path.join(root, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "3.0.0-next.1" }));
 }
 
 function writeV2LegacyPair(root: string): void {

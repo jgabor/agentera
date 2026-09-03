@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  canonicalArtifactLabel,
-  hashLabel,
-  parseTimestamp,
-  redactForStartupOutput,
-} from "../../src/state/startupAnalysis.js";
+import { canonicalArtifactLabel, hashLabel, parseTimestamp, redactForStartupOutput } from "../../src/state/startupAnalysis.js";
 
 describe("startup analysis: redaction core", () => {
   it("hashes private labels deterministically and salted", () => {

@@ -7,12 +7,7 @@ import { isFile, pathExists, resolvePath } from "../core/paths.js";
 import type { LifecyclePublicationBoundaryHook } from "../runtime/lifecyclePublication.js";
 import { doctorRoots } from "./appModel.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
-import {
-  INSTALLED_HOOKS_SURFACE_LABEL,
-  applyInstalledHooksRetirementItems,
-  detectStaleInstalledHooksSurface,
-  planInstalledHooksRetirementItems,
-} from "./installedHooksRetirement.js";
+import { INSTALLED_HOOKS_SURFACE_LABEL, applyInstalledHooksRetirementItems, detectStaleInstalledHooksSurface, planInstalledHooksRetirementItems } from "./installedHooksRetirement.js";
 import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
 import { bindMigrationResource, withBoundMigrationDirectory } from "./migrationPublication.js";
 
@@ -25,39 +20,12 @@ export const APP_CONTENT_REFRESH_ACTION = "refresh-app-content";
  * false-positive "unrecognized entries" block. Sourced here as the single authority;
  * do not mirror this list in the gate or doctor.
  */
-export const MANAGED_APP_CONTENT_ROOT_ENTRIES = new Set([
-  "skills",
-  "references",
-  "registry.json",
-  "dist",
-]);
+export const MANAGED_APP_CONTENT_ROOT_ENTRIES = new Set(["skills", "references", "registry.json", "dist"]);
 
 /** Stale-surface labels surfaced in upgrade dry-run (B6 / defect #11). */
-export const APP_CONTENT_SURFACE_LABELS = [
-  "SKILL.md",
-  "protocol.yaml",
-  "capability_schema_contract.yaml",
-  "capabilities/*/schemas/*",
-  "references/",
-  "registry.json",
-  "dist/capabilities",
-  INSTALLED_HOOKS_SURFACE_LABEL,
-] as const;
+export const APP_CONTENT_SURFACE_LABELS = ["SKILL.md", "protocol.yaml", "capability_schema_contract.yaml", "capabilities/*/schemas/*", "references/", "registry.json", "dist/capabilities", INSTALLED_HOOKS_SURFACE_LABEL] as const;
 
-const V2_CAPABILITY_VERBS = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
-] as const;
+const V2_CAPABILITY_VERBS = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera", "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"] as const;
 
 const SKIP_COPY_PARTS = new Set(["__pycache__", ".pytest_cache", "node_modules"]);
 const SKIP_COPY_SUFFIXES = [".pyc", ".pyo"] as const;
@@ -245,13 +213,7 @@ export function detectStaleAppContentSurfaces(appHome: string, sourceRoot: strin
 
   const contractRel = path.join("skills", "agentera", "capability_schema_contract.yaml");
   const contractText = readInstalledText(installedRoot, contractRel);
-  if (
-    !filesEqual(
-      path.join(sources.skillsDir, "agentera", "capability_schema_contract.yaml"),
-      path.join(installedRoot, contractRel),
-    ) ||
-    (contractText !== null && contractLooksV2(contractText))
-  ) {
+  if (!filesEqual(path.join(sources.skillsDir, "agentera", "capability_schema_contract.yaml"), path.join(installedRoot, contractRel)) || (contractText !== null && contractLooksV2(contractText))) {
     stale.push("capability_schema_contract.yaml");
   }
 
@@ -326,7 +288,6 @@ function applyAppContentRefreshToTarget(targetRoot: string, sourceRoot: string, 
   if (sources.distCapabilities) {
     copyTree(sources.distCapabilities, path.join(targetRoot, "dist", "capabilities"), "dist/capabilities");
   }
-
 }
 
 export function applyAppContentRefresh(appHome: string, sourceRoot: string, compiledRoot?: string): void {
@@ -347,14 +308,18 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   const installedRoot = installedRootForDetection(appHome);
   if (!installedRoot) {
     if (!pathExists(appHome)) {
-      return ctx.installAppContentIfMissing ? [{
-        status: "pending",
-        action: APP_CONTENT_REFRESH_ACTION,
-        runtime: "installed-app",
-        source: resolvedSourceRoot,
-        target: refreshAppContentTargetRoot(appHome),
-        message: "will install stable app content required by selected lifecycle repair",
-      }] : [];
+      return ctx.installAppContentIfMissing
+        ? [
+            {
+              status: "pending",
+              action: APP_CONTENT_REFRESH_ACTION,
+              runtime: "installed-app",
+              source: resolvedSourceRoot,
+              target: refreshAppContentTargetRoot(appHome),
+              message: "will install stable app content required by selected lifecycle repair",
+            },
+          ]
+        : [];
     }
     const target = refreshAppContentTargetRoot(appHome);
     const item: MigrationPhaseItem = {
@@ -363,8 +328,7 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
       runtime: "installed-app",
       source: resolvedSourceRoot,
       target,
-      message:
-        "install root has user data only; will install v3 app content (skills, references, registry, dist/capabilities)",
+      message: "install root has user data only; will install v3 app content (skills, references, registry, dist/capabilities)",
     };
     const evidenceError = bindMigrationResource(item, "target", target, [path.dirname(target)], "directory");
     if (evidenceError) {
@@ -410,22 +374,13 @@ export function planAppContentRefreshItems(ctx: MigrationContext): MigrationPhas
   return [...refreshItems, ...hookItems.filter((item) => item.status !== "noop")];
 }
 
-export function applyAppContentRefreshItem(
-  item: MigrationPhaseItem,
-  ctx: MigrationContext,
-  beforePublication?: LifecyclePublicationBoundaryHook,
-): void {
+export function applyAppContentRefreshItem(item: MigrationPhaseItem, ctx: MigrationContext, beforePublication?: LifecyclePublicationBoundaryHook): void {
   if (item.status !== "pending" || item.action !== APP_CONTENT_REFRESH_ACTION) {
     return;
   }
   try {
     const sourceRoot = resolvePath(ctx.sourceRoot ?? item.source ?? "");
-    withBoundMigrationDirectory(
-      item,
-      "target",
-      (targetRoot) => applyAppContentRefreshToTarget(targetRoot, sourceRoot, ctx.compiledRoot),
-      beforePublication,
-    );
+    withBoundMigrationDirectory(item, "target", (targetRoot) => applyAppContentRefreshToTarget(targetRoot, sourceRoot, ctx.compiledRoot), beforePublication);
     item.status = "applied";
     item.message = "refreshed installed app content from v3 sourceRoot";
   } catch (exc) {

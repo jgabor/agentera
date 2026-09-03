@@ -8,11 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
-import {
-  classifyConfidenceLabel,
-  decisionRevisionContract,
-  legacyLabelCoexistence,
-} from "../../src/state/decisionRevision.js";
+import { classifyConfidenceLabel, decisionRevisionContract, legacyLabelCoexistence } from "../../src/state/decisionRevision.js";
 import { decisionOverlayContract } from "../../src/state/archiveDiscovery.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -41,7 +37,15 @@ interface Captured {
 
 function run(root: string, args: string[], stdin = ""): Captured {
   if (!stdin && args.includes("--input") && args[args.indexOf("--input") + 1] === "-") {
-    if (args[0] === "decisions" && args[1] === "append") stdin = JSON.stringify({ question: "Where should writes live?", context: "The read side already lives under state", alternatives: { chosen: "state family", rejected: ["top-level write"] }, choice: "Use the state family", reasoning: "One artifact namespace", confidence: "firm" });
+    if (args[0] === "decisions" && args[1] === "append")
+      stdin = JSON.stringify({
+        question: "Where should writes live?",
+        context: "The read side already lives under state",
+        alternatives: { chosen: "state family", rejected: ["top-level write"] },
+        choice: "Use the state family",
+        reasoning: "One artifact namespace",
+        confidence: "firm",
+      });
     else if (args[0] === "decisions" && args[1] === "amend") stdin = JSON.stringify({ choice: "revised choice" });
   }
   let out = "";
@@ -64,10 +68,11 @@ function run(root: string, args: string[], stdin = ""): Captured {
 function runHelp(root: string, args: string[]): Captured {
   let out = "";
   let err = "";
-  const rc = main(
-    ["node", "agentera", "state", ...args, "--help", "--project", root],
-    { out: (t) => (out += t), err: (t) => (err += t), stdin: () => "" },
-  );
+  const rc = main(["node", "agentera", "state", ...args, "--help", "--project", root], {
+    out: (t) => (out += t),
+    err: (t) => (err += t),
+    stdin: () => "",
+  });
   return { rc, out, err, json: null };
 }
 
@@ -87,14 +92,7 @@ function withMutatedAuthority(mutate: (doc: Record<string, any>) => void): strin
 }
 
 function decisionAppendArgs(): string[] {
-  return [
-    "decisions",
-    "append",
-    "--input",
-    "-",
-    "--format",
-    "json",
-  ];
+  return ["decisions", "append", "--input", "-", "--format", "json"];
 }
 
 describe("decision amendment revision authority", () => {
@@ -104,16 +102,7 @@ describe("decision amendment revision authority", () => {
     expect(contract.location).toBe(".agentera/revisions/decisions.yaml");
     expect(contract.schemaVersion).toBe("agentera.decisionRevision.v1");
     expect(contract.identityKey).toBe("decisions:<decision-number>");
-    expect(contract.amendablePaths).toEqual([
-      "question",
-      "context",
-      "alternatives.chosen",
-      "alternatives.rejected",
-      "choice",
-      "reasoning",
-      "confidence",
-      "feeds_into",
-    ]);
+    expect(contract.amendablePaths).toEqual(["question", "context", "alternatives.chosen", "alternatives.rejected", "choice", "reasoning", "confidence", "feeds_into"]);
     expect(contract.migrationAmendablePaths).toEqual(["alternatives"]);
     expect(contract.legacyAmendablePaths).toContain("alternatives");
     expect(contract.identityPaths).toEqual(["number"]);
@@ -131,11 +120,7 @@ describe("decision amendment revision authority", () => {
 
     // Revisions never touch satisfaction overlay mutable paths.
     for (const amendable of revision.amendablePaths) {
-      expect(
-        overlay.mutablePaths.some(
-          (mutable) => amendable === mutable || amendable.startsWith(`${mutable}.`),
-        ),
-      ).toBe(false);
+      expect(overlay.mutablePaths.some((mutable) => amendable === mutable || amendable.startsWith(`${mutable}.`))).toBe(false);
     }
     // Identity and temporal paths are never amendable.
     for (const reserved of [...revision.identityPaths, ...revision.temporalPaths]) {
@@ -193,14 +178,10 @@ describe("decision amend command discovery", () => {
 
   it("surfaces amend as a decisions writer mutation across schema introspection and help", () => {
     const payload = buildSchemaPayload("schema");
-    const decisions = (payload.state_writer.artifacts as any[]).find(
-      (a) => a.artifact === "decisions",
-    );
+    const decisions = (payload.state_writer.artifacts as any[]).find((a) => a.artifact === "decisions");
 
     expect(decisions.mutations).toEqual(["append", "update", "amend"]);
-    expect(decisions.explain_by_verb.amend).toBe(
-      "agentera state decisions explain --verb amend",
-    );
+    expect(decisions.explain_by_verb.amend).toBe("agentera state decisions explain --verb amend");
 
     const root = project();
     const help = runHelp(root, ["decisions"]);
@@ -211,22 +192,21 @@ describe("decision amend command discovery", () => {
 
   it("refuses to amend a missing decision entity before side effects", () => {
     const root = project();
-    const result = run(root, [
-      "decisions",
-      "amend",
-      "--id",
-      "aaaaaaaaaa",
-      "--base-sha256",
-      "0".repeat(64),
-      "--input",
-      "-",
-      "--dry-run",
-      "--format",
-      "json",
-    ], JSON.stringify({ choice: "revised choice", reasoning: "revised reasoning", confidence: "firm" }));
+    const result = run(
+      root,
+      ["decisions", "amend", "--id", "aaaaaaaaaa", "--base-sha256", "0".repeat(64), "--input", "-", "--dry-run", "--format", "json"],
+      JSON.stringify({
+        choice: "revised choice",
+        reasoning: "revised reasoning",
+        confidence: "firm",
+      }),
+    );
 
     expect(result.rc).toBe(1);
-    expect(JSON.parse(result.out).error).toMatchObject({ id: "aaaaaaaaaa", message: expect.stringMatching(/not found|does not exist/) });
+    expect(JSON.parse(result.out).error).toMatchObject({
+      id: "aaaaaaaaaa",
+      message: expect.stringMatching(/not found|does not exist/),
+    });
     // No side effects: no revision entity or decision projection is created.
     expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera", "decisions.yaml"))).toBe(false);
@@ -240,60 +220,38 @@ describe("decision number ownership across append, update, and amend", () => {
     const appendExplain = run(root, ["decisions", "explain", "--verb", "append", "--format", "json"]);
     expect(appendExplain.rc).toBe(0);
     expect(appendExplain.json?.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
-    expect(
-      (appendExplain.json?.fields as any[]).some((f) => f.flag === "--number"),
-    ).toBe(false);
+    expect((appendExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
 
     const updateExplain = run(root, ["decisions", "explain", "--verb", "update", "--format", "json"]);
     expect(updateExplain.rc).toBe(0);
     const updateGuidance = updateExplain.json?.guidance as string[];
     expect(updateGuidance.some((g) => g.includes("bare --id"))).toBe(true);
-    expect((updateExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({ required: true, type: "string" });
+    expect((updateExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
+      required: true,
+      type: "string",
+    });
     expect((updateExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
 
     const amendExplain = run(root, ["decisions", "explain", "--verb", "amend", "--format", "json"]);
     const amendGuidance = amendExplain.json?.guidance as string[];
     expect(amendGuidance.some((g) => g.includes("bare --id"))).toBe(true);
-    expect((amendExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({ required: true, type: "string" });
+    expect((amendExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
+      required: true,
+      type: "string",
+    });
     expect((amendExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
   });
 
   it("rejects --number on append and requires --number on update", () => {
     const root = project();
 
-    const appendWithNumber = run(root, [
-      "decisions",
-      "append",
-      "--number",
-      "5",
-      "--question",
-      "x",
-      "--context",
-      "x",
-      "--alternative-chosen",
-      "x",
-      "--choice",
-      "x",
-      "--reasoning",
-      "x",
-      "--confidence",
-      "firm",
-      "--format",
-      "json",
-    ]);
+    const appendWithNumber = run(root, ["decisions", "append", "--number", "5", "--question", "x", "--context", "x", "--alternative-chosen", "x", "--choice", "x", "--reasoning", "x", "--confidence", "firm", "--format", "json"]);
     expect(appendWithNumber.rc).toBe(2);
     expect(appendWithNumber.json?.error.class).toBe("unrecognized_argument");
     expect(appendWithNumber.json?.error.message).toContain("--number is assigned by the CLI");
 
     // update without --number is rejected because the caller must select an existing decision.
-    const updateWithoutNumber = run(root, [
-      "decisions",
-      "update",
-      "--satisfaction-state",
-      "open",
-      "--format",
-      "json",
-    ]);
+    const updateWithoutNumber = run(root, ["decisions", "update", "--satisfaction-state", "open", "--format", "json"]);
     expect(updateWithoutNumber.rc).toBe(2);
     expect(updateWithoutNumber.json?.error.class).toBe("missing_argument");
   });
@@ -334,19 +292,7 @@ describe("legacy confidence label coexistence", () => {
     const root = project();
 
     // New/amended confidence must be current vocabulary; "high" is rejected before side effects.
-    const amendLegacy = run(root, [
-      "decisions",
-      "amend",
-      "--id",
-      "qjtrmnpvka",
-      "--base-sha256",
-      "0".repeat(64),
-      "--input",
-      "-",
-      "--dry-run",
-      "--format",
-      "json",
-    ], JSON.stringify({ confidence: "high" }));
+    const amendLegacy = run(root, ["decisions", "amend", "--id", "qjtrmnpvka", "--base-sha256", "0".repeat(64), "--input", "-", "--dry-run", "--format", "json"], JSON.stringify({ confidence: "high" }));
     expect(amendLegacy.rc).toBe(2);
     expect(amendLegacy.json?.error.class).toBe("schema_violation");
     expect(fs.existsSync(path.join(root, ".agentera", "entities", "decisions", "decision_revision"))).toBe(false);
@@ -355,7 +301,18 @@ describe("legacy confidence label coexistence", () => {
   it("rejects a new appended decision confidence outside the current vocabulary", () => {
     const root = project();
 
-    const appended = run(root, decisionAppendArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "high" }));
+    const appended = run(
+      root,
+      decisionAppendArgs(),
+      JSON.stringify({
+        question: "q",
+        context: "c",
+        alternatives: { chosen: "a" },
+        choice: "a",
+        reasoning: "r",
+        confidence: "high",
+      }),
+    );
 
     expect(appended.rc).toBe(2);
     expect(appended.json?.error.class).toBe("schema_violation");

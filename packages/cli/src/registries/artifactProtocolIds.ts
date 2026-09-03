@@ -20,30 +20,9 @@ export const ARTIFACT_PROTOCOL_PATHS: Readonly<Record<string, string>> = {
 
 export const HUMAN_FACING_ARTIFACT_IDS = new Set(["todo", "changelog", "design"]);
 
-export const TRACKED_ARTIFACT_IDS: readonly string[] = [
-  "progress",
-  "decisions",
-  "plan",
-  "health",
-  "design",
-  "docs",
-  "vision",
-  "todo",
-  "changelog",
-];
+export const TRACKED_ARTIFACT_IDS: readonly string[] = ["progress", "decisions", "plan", "health", "design", "docs", "vision", "todo", "changelog"];
 
-export const VALIDATE_ARTIFACT_PROTOCOL_IDS: readonly string[] = [
-  "changelog",
-  "decisions",
-  "design",
-  "docs",
-  "health",
-  "plan",
-  "progress",
-  "todo",
-  "vision",
-  "glossary",
-];
+export const VALIDATE_ARTIFACT_PROTOCOL_IDS: readonly string[] = ["changelog", "decisions", "design", "docs", "health", "plan", "progress", "todo", "vision", "glossary"];
 
 function artifactProtocolStem(input: string): string {
   const lower = input.trim().toLowerCase();

@@ -13,7 +13,5 @@ const INSTRUCTION_MODULE_ROOT = path.join("packages", "cli", "src", "capabilitie
  */
 export function projectUsesV3CapabilityInstructionModules(projectRoot: string): boolean {
   const root = path.resolve(projectRoot);
-  return Object.keys(CAPABILITY_INSTRUCTIONS).every((name) =>
-    isFile(path.join(root, INSTRUCTION_MODULE_ROOT, name, "instructions.ts")),
-  );
+  return Object.keys(CAPABILITY_INSTRUCTIONS).every((name) => isFile(path.join(root, INSTRUCTION_MODULE_ROOT, name, "instructions.ts")));
 }

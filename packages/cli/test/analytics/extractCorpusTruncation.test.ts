@@ -37,28 +37,16 @@ describe("SQLite cap overrides and truncation", () => {
     seedOpencodeManySessions(dbp, 65);
     const tiersDir = path.join(tmp, "out", "tiers");
     let errLog = "";
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-        "--max-sqlite-sessions",
-        "100",
-      ],
-      { out: () => {}, err: (t) => (errLog += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-codex", "--no-copilot", "--no-cursor", "--max-sqlite-sessions", "100"], {
+      out: () => {},
+      err: (t) => (errLog += t + "\n"),
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
     expect(rc).toBe(0);
     const tier = readSignalTier(tiersDir);
     expect(tier).not.toBeNull();
-    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
-      (s: { runtime?: string }) => s.runtime === "opencode",
-    );
+    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find((s: { runtime?: string }) => s.runtime === "opencode");
     expect(opencodeStatus?.truncated_at).toBeUndefined();
     expect(errLog).not.toContain("SQLite extraction truncated");
   });
@@ -67,31 +55,16 @@ describe("SQLite cap overrides and truncation", () => {
     const dbp = path.join(tmp, "opencode.db");
     seedOpencodeManySessions(dbp, 65);
     const tiersDir = path.join(tmp, "out", "tiers");
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-      ],
-      {
-        out: () => {},
-        err: () => {},
-        env: { ...isolatedEnv(tmp), AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS: "100" },
-        cwd: tmp,
-      },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-codex", "--no-copilot", "--no-cursor"], {
+      out: () => {},
+      err: () => {},
+      env: { ...isolatedEnv(tmp), AGENTERA_EXTRACT_MAX_SQLITE_SESSIONS: "100" },
+      cwd: tmp,
+    });
     expect(rc).toBe(0);
     const tier = readSignalTier(tiersDir);
     expect(tier).not.toBeNull();
-    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find(
-      (s: { runtime?: string }) => s.runtime === "opencode",
-    );
+    const opencodeStatus = tier!.manifest.corpus_metadata?.runtime_statuses?.find((s: { runtime?: string }) => s.runtime === "opencode");
     expect(opencodeStatus?.truncated_at).toBeUndefined();
   });
 
@@ -100,20 +73,12 @@ describe("SQLite cap overrides and truncation", () => {
     seedOpencodeManySessions(dbp, 65);
     const tiersDir = path.join(tmp, "out", "tiers");
     let errLog = "";
-    const rc = extractCorpusMain(
-      [
-        "--tier-output",
-        tiersDir,
-        "--project-root",
-        tmp,
-        "--opencode-conversations-dir",
-        dbp,
-        "--no-codex",
-        "--no-copilot",
-        "--no-cursor",
-      ],
-      { out: () => {}, err: (t) => (errLog += t + "\n"), env: isolatedEnv(tmp), cwd: tmp },
-    );
+    const rc = extractCorpusMain(["--tier-output", tiersDir, "--project-root", tmp, "--opencode-conversations-dir", dbp, "--no-codex", "--no-copilot", "--no-cursor"], {
+      out: () => {},
+      err: (t) => (errLog += t + "\n"),
+      env: isolatedEnv(tmp),
+      cwd: tmp,
+    });
     expect(rc).toBe(0);
     expect(errLog).toContain("SQLite extraction truncated");
     expect(errLog).toContain("opencode:");

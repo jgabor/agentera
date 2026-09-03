@@ -42,10 +42,7 @@ describe("diagnoseCanonicalSkill", () => {
     const result = diagnoseCanonicalSkill(home());
 
     expect(result.status).toBe("warn");
-    expect(result.details).toEqual(expect.arrayContaining([
-      expect.stringContaining("install or repair the shared Agentera skill"),
-      expect.stringContaining("use the Agentera CLI directly"),
-    ]));
+    expect(result.details).toEqual(expect.arrayContaining([expect.stringContaining("install or repair the shared Agentera skill"), expect.stringContaining("use the Agentera CLI directly")]));
   });
 
   it("preserves an existing unrelated target and requests manual review", () => {

@@ -9,36 +9,17 @@ export const STATE_RETRIEVAL_AUTHORITY_PATH = "references/artifacts/state-storag
 export const STATE_RETRIEVAL_SCHEMA_VERSION = "agentera.entityPublicRetrieval.v1";
 
 const POLICY_SCHEMA_VERSION = "agentera.entityPublicRetrievalPolicy.v1";
-const FAILURE_CLASSES = [
-  "invalid_request",
-  "unsupported_artifact",
-  "not_found",
-  "ambiguous",
-  "corrupt",
-  "incomplete",
-  "cursor_invalid",
-  "cursor_snapshot_unavailable",
-  "unsupported_state",
-] as const;
+const FAILURE_CLASSES = ["invalid_request", "unsupported_artifact", "not_found", "ambiguous", "corrupt", "incomplete", "cursor_invalid", "cursor_snapshot_unavailable", "unsupported_state"] as const;
 
 function mapping(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? value as Record<string, unknown>
-    : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function strings(value: unknown): string[] {
-  return Array.isArray(value) && value.every((item) => typeof item === "string")
-    ? value
-    : [];
+  return Array.isArray(value) && value.every((item) => typeof item === "string") ? value : [];
 }
 
-function requireNonEmpty(
-  record: Record<string, unknown>,
-  field: string,
-  prefix: string,
-  errors: string[],
-): void {
+function requireNonEmpty(record: Record<string, unknown>, field: string, prefix: string, errors: string[]): void {
   if (typeof record[field] !== "string" || String(record[field]).trim() === "") {
     errors.push(`${prefix}.${field}`);
   }
@@ -165,10 +146,7 @@ export function entityPublicRetrieval(sourceRoot = resolveSourceRoot()): JsonObj
   return loadStateRetrievalAuthority(sourceRoot).retrieval;
 }
 
-export function startupSurfaceBudget(
-  surface: "prime_briefing" | "prime_dashboard" | "prime_status_context" | "prime_sparse",
-  sourceRoot = resolveSourceRoot(),
-): number {
+export function startupSurfaceBudget(surface: "prime_briefing" | "prime_dashboard" | "prime_status_context" | "prime_sparse", sourceRoot = resolveSourceRoot()): number {
   const authority = loadStateStorageAuthority(sourceRoot);
   const surfaces = mapping(mapping(mapping(authority.document.budgets).startup).surfaces);
   const budget = Number(mapping(surfaces[surface]).max_utf8_bytes);

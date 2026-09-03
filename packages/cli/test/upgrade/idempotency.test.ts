@@ -6,25 +6,13 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  UPGRADE_PREVIEW_SCHEMA,
-} from "../../src/upgrade/compatibility.js";
-import {
-  applyMigrationPhases,
-  dryRunMigration,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { UPGRADE_PREVIEW_SCHEMA } from "../../src/upgrade/compatibility.js";
+import { applyMigrationPhases, dryRunMigration } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
-import {
-  buildUpgradePlan,
-  upgradeExitCode,
-} from "../../src/upgrade/upgradeOrchestrator.js";
+import { buildUpgradePlan, upgradeExitCode } from "../../src/upgrade/upgradeOrchestrator.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
-import {
-  assertChecksumsUnchanged,
-  checksumManifest,
-  listProjectArtifactRelPaths,
-} from "./helpers/preservation.js";
+import { assertChecksumsUnchanged, checksumManifest, listProjectArtifactRelPaths } from "./helpers/preservation.js";
 import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -41,10 +29,7 @@ function managedV2(appHome: string): void {
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
   fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "2.7.0" }] }));
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 function seedLayout(sandbox: string): { appHome: string; project: string } {
@@ -96,11 +81,16 @@ describe("idempotency", () => {
     });
     expect(second.schemaVersion).toBe(UPGRADE_PREVIEW_SCHEMA);
     expect(second.lifecycleStatus).toBe("manual_review_needed");
-    expect(second.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({ action: "entity-cutover", status: "pending" });
-    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(expect.objectContaining({
-      resourceId: "agentera.registration.restorer.codex",
-      status: "blocked",
-    }));
+    expect(second.phases.find((phase) => phase.name === "entities")?.items[0]).toMatchObject({
+      action: "entity-cutover",
+      status: "pending",
+    });
+    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(
+      expect.objectContaining({
+        resourceId: "agentera.registration.restorer.codex",
+        status: "blocked",
+      }),
+    );
     expect(upgradeExitCode(second)).toBe(1);
   });
 
@@ -131,10 +121,12 @@ describe("idempotency", () => {
     expect(upgradeExitCode(second)).toBe(1);
     expect(second.summary.pending).toBe(0);
     expect(second.summary.failed).toBe(0);
-    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(expect.objectContaining({
-      resourceId: "agentera.registration.restorer.codex",
-      status: "blocked",
-    }));
+    expect(second.phases.find((phase) => phase.name === "cleanup")?.items).toContainEqual(
+      expect.objectContaining({
+        resourceId: "agentera.registration.restorer.codex",
+        status: "blocked",
+      }),
+    );
     assertChecksumsUnchanged(project, projectBefore);
     assertChecksumsUnchanged(home, runtimeBefore);
   });

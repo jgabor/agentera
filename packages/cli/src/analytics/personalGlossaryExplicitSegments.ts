@@ -1,38 +1,18 @@
-import {
-  EXPLICIT_SEGMENT_REASONS,
-  explicitSegmentTransition,
-  type ExplicitSegmentGrammarContract,
-  type ExplicitSegmentInput,
-  type ExplicitSegmentState,
-} from "../registries/explicitSegmentGrammarContract.js";
+import { EXPLICIT_SEGMENT_REASONS, explicitSegmentTransition, type ExplicitSegmentGrammarContract, type ExplicitSegmentInput, type ExplicitSegmentState } from "../registries/explicitSegmentGrammarContract.js";
 import { stableGlossaryTermIdentity } from "../registries/glossaryTermIdentity.js";
-import {
-  EXPLICIT_GLOSSARY_REASONS,
-  type ExplicitGlossaryReason,
-  type RawCue,
-} from "./personalGlossaryExplicitTypes.js";
+import { EXPLICIT_GLOSSARY_REASONS, type ExplicitGlossaryReason, type RawCue } from "./personalGlossaryExplicitTypes.js";
 
 const LETTER_OR_NUMBER_RE = /[\p{L}\p{N}]/u;
 const EXAMPLE_RE = /\b(?:for\s+example|e\.g\.?|example|such\s+as)\b/iu;
-const HYPOTHETICAL_RE =
-  /\b(?:if|when|unless|whenever|suppose|assuming|hypothetically|imagine|would|could|might|may)\b/iu;
+const HYPOTHETICAL_RE = /\b(?:if|when|unless|whenever|suppose|assuming|hypothetically|imagine|would|could|might|may)\b/iu;
 const QUESTION_RE = /\?|^\s*(?:does|do|did|can|could|would|should|what|why|how)\b/iu;
-const INDIRECT_QUESTION_RE =
-  /\b(?:i\s+(?:wonder|ask|want\s+to\s+know)|tell\s+me|whether|what|why|how)\b/iu;
-const FUTURE_RE =
-  /\b(?:will|shall|going\s+to|plan\s+to|intend\s+to|in\s+the\s+future|from\s+now\s+on|later)\b/iu;
+const INDIRECT_QUESTION_RE = /\b(?:i\s+(?:wonder|ask|want\s+to\s+know)|tell\s+me|whether|what|why|how)\b/iu;
+const FUTURE_RE = /\b(?:will|shall|going\s+to|plan\s+to|intend\s+to|in\s+the\s+future|from\s+now\s+on|later)\b/iu;
 const FOLLOWING_CUE_REFERENCE_RE = /\b(?:the\s+)?following\s+(?:definition|term|meaning)\b/iu;
 const PREVIOUS_CUE_REFERENCE_RE = /\bthis\s+(?:definition|term|meaning)\b/iu;
 
 type Line = { start: number; end: number };
-type SegmentLineKind =
-  | "blank"
-  | "comment"
-  | "indentation"
-  | "list_boundary"
-  | "structural_fragment"
-  | "approved_cue"
-  | "prose";
+type SegmentLineKind = "blank" | "comment" | "indentation" | "list_boundary" | "structural_fragment" | "approved_cue" | "prose";
 
 interface SegmentLinePlan extends Line {
   scanEnd: number;
@@ -81,12 +61,7 @@ function safeMarkerPrefix(value: string): boolean {
   return /^\s*(?:[-*+]\s+)?(?:definition|term|correction|sarcasm)\s*:\s*$/iu.test(value);
 }
 
-function linePlans(
-  text: string,
-  raws: readonly RawCue[],
-  ranges: readonly Line[],
-  deps: ExplicitSegmentParserDependencies,
-): SegmentLinePlan[] {
+function linePlans(text: string, raws: readonly RawCue[], ranges: readonly Line[], deps: ExplicitSegmentParserDependencies): SegmentLinePlan[] {
   const lines = deps.lineRanges(text);
   const byLine = lines.map(() => [] as RawCue[]);
   for (const raw of raws) {
@@ -101,24 +76,14 @@ function linePlans(
     const rawsOnLine = byLine[index]!.sort((left, right) => deps.rawCueOrder(left, right, text));
     const firstColon = deps.colonOutsideRanges(text, line.start, scanEnd, ranges);
     const firstRaw = rawsOnLine[0];
-    const markerPrefix =
-      firstColon >= 0 && firstRaw !== undefined
-        ? safeMarkerPrefix(text.slice(line.start, firstColon + 1))
-        : false;
-    const unsafePrefix =
-      firstColon >= 0 && firstRaw !== undefined && firstColon < firstRaw.termStart && !markerPrefix;
+    const markerPrefix = firstColon >= 0 && firstRaw !== undefined ? safeMarkerPrefix(text.slice(line.start, firstColon + 1)) : false;
+    const unsafePrefix = firstColon >= 0 && firstRaw !== undefined && firstColon < firstRaw.termStart && !markerPrefix;
     const leadingWhitespace = /^\s+\S/u.test(value);
     const commentOnly = text.slice(line.start, line.end).trim().startsWith("#");
     const listMarker = hasListMarker(value);
     const heading = hasHeadingMarker(value);
     const blockScalar = hasBlockScalarHeader(value);
-    const approved =
-      rawsOnLine.length > 0 &&
-      !leadingWhitespace &&
-      !commentOnly &&
-      !heading &&
-      !blockScalar &&
-      !unsafePrefix;
+    const approved = rawsOnLine.length > 0 && !leadingWhitespace && !commentOnly && !heading && !blockScalar && !unsafePrefix;
     let kind: SegmentLineKind;
     if (commentOnly) kind = "comment";
     else if (trimmed.length === 0) kind = "blank";
@@ -162,21 +127,11 @@ function structuralRejection(line: Line, reason: ExplicitGlossaryReason): RawCue
   };
 }
 
-function loadedStructuralReason(
-  transition: ReturnType<typeof explicitSegmentTransition>,
-): ExplicitGlossaryReason {
-  return transition.reason === EXPLICIT_SEGMENT_REASONS.structuralFragment
-    ? transition.reason
-    : EXPLICIT_GLOSSARY_REASONS.structuralFragment;
+function loadedStructuralReason(transition: ReturnType<typeof explicitSegmentTransition>): ExplicitGlossaryReason {
+  return transition.reason === EXPLICIT_SEGMENT_REASONS.structuralFragment ? transition.reason : EXPLICIT_GLOSSARY_REASONS.structuralFragment;
 }
 
-function segmentRawCues(
-  text: string,
-  initial: readonly RawCue[],
-  ranges: readonly Line[],
-  grammar: ExplicitSegmentGrammarContract,
-  deps: ExplicitSegmentParserDependencies,
-): { raws: RawCue[]; plans: SegmentLinePlan[] } {
+function segmentRawCues(text: string, initial: readonly RawCue[], ranges: readonly Line[], grammar: ExplicitSegmentGrammarContract, deps: ExplicitSegmentParserDependencies): { raws: RawCue[]; plans: SegmentLinePlan[] } {
   const plans = linePlans(text, initial, ranges, deps);
   const accepted: RawCue[] = [];
   let state: ExplicitSegmentState = grammar.initialState;
@@ -212,28 +167,13 @@ function segmentRawCues(
   return { raws: accepted, plans };
 }
 
-function firstRawAfter(
-  plan: SegmentLinePlan,
-  position: number,
-  text: string,
-  deps: ExplicitSegmentParserDependencies,
-): RawCue | undefined {
-  return plan.raws
-    .filter((raw) => raw.termStart > position)
-    .sort((left, right) => deps.rawCueOrder(left, right, text))[0];
+function firstRawAfter(plan: SegmentLinePlan, position: number, text: string, deps: ExplicitSegmentParserDependencies): RawCue | undefined {
+  return plan.raws.filter((raw) => raw.termStart > position).sort((left, right) => deps.rawCueOrder(left, right, text))[0];
 }
 
-function cueBoundaryStart(
-  text: string,
-  cue: RawCue,
-  closeToOpen: ReadonlyMap<string, string>,
-): number {
+function cueBoundaryStart(text: string, cue: RawCue, closeToOpen: ReadonlyMap<string, string>): number {
   if (cue.kind === "definition_list") {
-    const floor =
-      Math.max(
-        text.lastIndexOf("\n", cue.termStart - 1),
-        text.lastIndexOf(";", cue.termStart - 1),
-      ) + 1;
+    const floor = Math.max(text.lastIndexOf("\n", cue.termStart - 1), text.lastIndexOf(";", cue.termStart - 1)) + 1;
     const prefix = text.slice(floor, cue.termStart);
     if (/^\s*(?:[-*+]\s+)?(?:definition|term)\s*:\s*$/iu.test(prefix)) {
       const first = prefix.search(/\S/u);
@@ -249,16 +189,10 @@ function cueBoundaryStart(
 }
 
 function isBoundaryLine(plan: SegmentLinePlan): boolean {
-  return ["blank", "comment", "indentation", "list_boundary", "structural_fragment"].includes(
-    plan.kind,
-  );
+  return ["blank", "comment", "indentation", "list_boundary", "structural_fragment"].includes(plan.kind);
 }
 
-function sentenceRanges(
-  text: string,
-  ranges: readonly Line[],
-  deps: ExplicitSegmentParserDependencies,
-): Line[] {
+function sentenceRanges(text: string, ranges: readonly Line[], deps: ExplicitSegmentParserDependencies): Line[] {
   const boundaries = deps.sentenceBoundaries(text, ranges);
   return [0, ...boundaries].map((start, index, starts) => ({
     start,
@@ -270,19 +204,10 @@ function nearMissTermOccurs(text: string, term: string, start: number, end: numb
   const literal = escapedTerm(term);
   if (!literal) return false;
   const identifierContinue = "\\p{ID_Continue}$\\u200C\\u200D";
-  return new RegExp(
-    `(?:(?<![${identifierContinue}])${literal}(?=[${identifierContinue}])|(?<=[${identifierContinue}])${literal}(?![${identifierContinue}]))`,
-    "iu",
-  ).test(text.slice(start, end));
+  return new RegExp(`(?:(?<![${identifierContinue}])${literal}(?=[${identifierContinue}])|(?<=[${identifierContinue}])${literal}(?![${identifierContinue}]))`, "iu").test(text.slice(start, end));
 }
 
-function referenceLikeQualifierStart(
-  text: string,
-  line: Line,
-  raws: readonly RawCue[],
-  ranges: readonly Line[],
-  deps: ExplicitSegmentParserDependencies,
-): number | null {
+function referenceLikeQualifierStart(text: string, line: Line, raws: readonly RawCue[], ranges: readonly Line[], deps: ExplicitSegmentParserDependencies): number | null {
   for (const sentence of sentenceRanges(text, ranges, deps)) {
     if (sentence.end <= line.start || sentence.start > line.end) continue;
     const value = text.slice(sentence.start, sentence.end);
@@ -291,23 +216,12 @@ function referenceLikeQualifierStart(
     if (following?.index !== undefined) return Math.max(sentence.start, line.start);
     const previous = value.match(new RegExp(PREVIOUS_CUE_REFERENCE_RE.source, "iu"));
     if (previous?.index !== undefined) return Math.max(sentence.start, line.start);
-    if (
-      raws.some(
-        (raw) =>
-          raw.rejectionReason === undefined &&
-          raw.termStart >= sentence.start &&
-          raw.termStart < sentence.end,
-      )
-    )
-      continue;
+    if (raws.some((raw) => raw.rejectionReason === undefined && raw.termStart >= sentence.start && raw.termStart < sentence.end)) continue;
     for (const raw of raws) {
       if (raw.rejectionReason !== undefined || raw.termEnd <= raw.termStart) continue;
       const term = text.slice(raw.termStart, raw.termEnd).trim();
       const occurrence = exactTermOccurrences(text, term, sentence.start, sentence.end)[0];
-      if (
-        occurrence !== undefined ||
-        nearMissTermOccurs(text, term, sentence.start, sentence.end)
-      ) {
+      if (occurrence !== undefined || nearMissTermOccurs(text, term, sentence.start, sentence.end)) {
         return Math.max(sentence.start, line.start);
       }
     }
@@ -315,33 +229,18 @@ function referenceLikeQualifierStart(
   return null;
 }
 
-function boundedSegmentCues(
-  text: string,
-  raws: readonly RawCue[],
-  plans: readonly SegmentLinePlan[],
-  ranges: readonly Line[],
-  grammar: ExplicitSegmentGrammarContract,
-  deps: ExplicitSegmentParserDependencies,
-): RawCue[] {
+function boundedSegmentCues(text: string, raws: readonly RawCue[], plans: readonly SegmentLinePlan[], ranges: readonly Line[], grammar: ExplicitSegmentGrammarContract, deps: ExplicitSegmentParserDependencies): RawCue[] {
   const lines = deps.lineRanges(text);
-  const structural = raws.filter(
-    (raw) => raw.termStart === raw.termEnd && raw.meaningStart === raw.meaningEnd,
-  );
-  const usable = raws.filter(
-    (raw) => !(raw.termStart === raw.termEnd && raw.meaningStart === raw.meaningEnd),
-  );
+  const structural = raws.filter((raw) => raw.termStart === raw.termEnd && raw.meaningStart === raw.meaningEnd);
+  const usable = raws.filter((raw) => !(raw.termStart === raw.termEnd && raw.meaningStart === raw.meaningEnd));
   const bounded = usable.map((raw) => {
     if (raw.kind === "acronym_parenthetical") return raw;
     if (raw.kind !== "definition_list") {
       const line = plans[lineIndexAt(lines, raw.termStart)]!;
       const next = firstRawAfter(line, raw.termStart, text, deps);
-      const boundary =
-        next === undefined ? raw.sentenceEnd : cueBoundaryStart(text, next, deps.closeToOpen);
+      const boundary = next === undefined ? raw.sentenceEnd : cueBoundaryStart(text, next, deps.closeToOpen);
       const end = boundary < raw.sentenceEnd ? boundary : raw.sentenceEnd;
-      const [meaningStart, meaningEnd] = deps.unwrapMeaning(
-        text,
-        ...deps.trimMeaning(text, raw.meaningStart, end),
-      );
+      const [meaningStart, meaningEnd] = deps.unwrapMeaning(text, ...deps.trimMeaning(text, raw.meaningStart, end));
       return { ...raw, meaningStart, meaningEnd };
     }
     const lineIndex = lineIndexAt(lines, raw.termStart);
@@ -349,36 +248,25 @@ function boundedSegmentCues(
     const nextOnLine = firstRawAfter(line, raw.termStart, text, deps);
     let end = nextOnLine ? cueBoundaryStart(text, nextOnLine, deps.closeToOpen) : line.scanEnd;
     const referenceStart = referenceLikeQualifierStart(text, line, raws, ranges, deps);
-    const sameLineReference =
-      referenceStart !== null && referenceStart > raw.meaningStart ? referenceStart : null;
+    const sameLineReference = referenceStart !== null && referenceStart > raw.meaningStart ? referenceStart : null;
     if (sameLineReference !== null) {
       end = Math.min(end, sameLineReference);
     }
     let state: ExplicitSegmentState = "cue";
     const inline = deps.trimMeaning(text, raw.meaningStart, end);
     const inlineNonEmpty = LETTER_OR_NUMBER_RE.test(text.slice(...inline));
-    const cueTransition = explicitSegmentTransition(
-      grammar,
-      state,
-      inlineNonEmpty ? "non_empty_inline_meaning" : nextOnLine ? "next_cue" : "blank_line",
-    );
+    const cueTransition = explicitSegmentTransition(grammar, state, inlineNonEmpty ? "non_empty_inline_meaning" : nextOnLine ? "next_cue" : "blank_line");
     if (!inlineNonEmpty) {
       return {
         ...raw,
         meaningStart: inline[0],
         meaningEnd: inline[1],
-        ...(raw.rejectionReason === undefined
-          ? { rejectionReason: EXPLICIT_GLOSSARY_REASONS.emptyMeaning }
-          : {}),
+        ...(raw.rejectionReason === undefined ? { rejectionReason: EXPLICIT_GLOSSARY_REASONS.emptyMeaning } : {}),
       };
     }
     state = cueTransition.to;
     let lastIncludedEnd = end;
-    for (
-      let index = lineIndex + 1;
-      sameLineReference === null && index < plans.length;
-      index += 1
-    ) {
+    for (let index = lineIndex + 1; sameLineReference === null && index < plans.length; index += 1) {
       const nextPlan = plans[index]!;
       const nextCue = nextPlan.raws.find((candidate) => candidate.termStart > raw.termStart);
       const transition = explicitSegmentTransition(grammar, state, nextPlan.input);
@@ -407,20 +295,13 @@ function boundedSegmentCues(
         break;
       }
     }
-    const [meaningStart, meaningEnd] = deps.unwrapMeaning(
-      text,
-      ...deps.trimMeaning(text, raw.meaningStart, end),
-    );
-    const overBound =
-      Buffer.byteLength(text.slice(meaningStart, meaningEnd), "utf8") >
-      grammar.continuation.maximumUtf8Bytes;
+    const [meaningStart, meaningEnd] = deps.unwrapMeaning(text, ...deps.trimMeaning(text, raw.meaningStart, end));
+    const overBound = Buffer.byteLength(text.slice(meaningStart, meaningEnd), "utf8") > grammar.continuation.maximumUtf8Bytes;
     return {
       ...raw,
       meaningStart,
       meaningEnd,
-      ...(overBound && raw.rejectionReason === undefined
-        ? { rejectionReason: EXPLICIT_GLOSSARY_REASONS.meaningBoundExceeded }
-        : {}),
+      ...(overBound && raw.rejectionReason === undefined ? { rejectionReason: EXPLICIT_GLOSSARY_REASONS.meaningBoundExceeded } : {}),
     };
   });
   return [...bounded, ...structural];
@@ -433,13 +314,8 @@ function escapedTerm(term: string): string {
 function exactTermOccurrences(text: string, term: string, start: number, end: number): number[] {
   const literal = escapedTerm(term);
   if (!literal) return [];
-  const expression = new RegExp(
-    `(?<![\\p{ID_Continue}$\\u200C\\u200D])${literal}(?![\\p{ID_Continue}$\\u200C\\u200D])`,
-    "giu",
-  );
-  return [...text.slice(start, end).matchAll(expression)].map(
-    (match) => start + (match.index ?? 0),
-  );
+  const expression = new RegExp(`(?<![\\p{ID_Continue}$\\u200C\\u200D])${literal}(?![\\p{ID_Continue}$\\u200C\\u200D])`, "giu");
+  return [...text.slice(start, end).matchAll(expression)].map((match) => start + (match.index ?? 0));
 }
 
 function occurrenceInsideMeaning(position: number, raw: RawCue): boolean {
@@ -456,21 +332,9 @@ function referenceQualifier(text: string): ExplicitGlossaryReason | null {
   return null;
 }
 
-function applyReferenceBindings(
-  text: string,
-  raws: readonly RawCue[],
-  ranges: readonly Line[],
-  deps: ExplicitSegmentParserDependencies,
-): RawCue[] {
+function applyReferenceBindings(text: string, raws: readonly RawCue[], ranges: readonly Line[], deps: ExplicitSegmentParserDependencies): RawCue[] {
   const sentences = sentenceRanges(text, ranges, deps);
-  const cues = raws
-    .filter(
-      (raw) =>
-        raw.rejectionReason === undefined &&
-        raw.termEnd > raw.termStart &&
-        raw.meaningEnd > raw.meaningStart,
-    )
-    .sort((left, right) => deps.rawCueOrder(left, right, text));
+  const cues = raws.filter((raw) => raw.rejectionReason === undefined && raw.termEnd > raw.termStart && raw.meaningEnd > raw.meaningStart).sort((left, right) => deps.rawCueOrder(left, right, text));
   const rejected = new Map<RawCue, ExplicitGlossaryReason>();
   const missing: RawCue[] = [];
   const reject = (target: RawCue, reason: ExplicitGlossaryReason): void => {
@@ -479,66 +343,32 @@ function applyReferenceBindings(
   const cueSentence = (cue: RawCue): number =>
     Math.max(
       0,
-      sentences.findIndex(
-        (sentence) => cue.termStart >= sentence.start && cue.termStart < sentence.end,
-      ),
+      sentences.findIndex((sentence) => cue.termStart >= sentence.start && cue.termStart < sentence.end),
     );
-  const cuesBySentence = sentences.map((_, index) =>
-    cues.filter((cue) => cueSentence(cue) === index),
-  );
+  const cuesBySentence = sentences.map((_, index) => cues.filter((cue) => cueSentence(cue) === index));
   for (const [sentenceIndex, sentence] of sentences.entries()) {
     const value = text.slice(sentence.start, sentence.end);
     const qualifier = referenceQualifier(value);
     if (!qualifier) continue;
     for (const match of value.matchAll(new RegExp(FOLLOWING_CUE_REFERENCE_RE.source, "giu"))) {
       const position = sentence.start + (match.index ?? 0) + match[0].length;
-      const target = (cuesBySentence[sentenceIndex + 1] ?? []).find(
-        (cue) => cue.termStart >= position,
-      );
+      const target = (cuesBySentence[sentenceIndex + 1] ?? []).find((cue) => cue.termStart >= position);
       if (target) reject(target, qualifier);
-      else
-        missing.push(
-          structuralRejection(
-            { start: sentence.start, end: sentence.end },
-            EXPLICIT_GLOSSARY_REASONS.ambiguousReference,
-          ),
-        );
+      else missing.push(structuralRejection({ start: sentence.start, end: sentence.end }, EXPLICIT_GLOSSARY_REASONS.ambiguousReference));
     }
     for (const match of value.matchAll(new RegExp(PREVIOUS_CUE_REFERENCE_RE.source, "giu"))) {
       const position = sentence.start + (match.index ?? 0);
-      const target = [...(cuesBySentence[sentenceIndex - 1] ?? [])]
-        .reverse()
-        .find((cue) => cue.termStart < position);
+      const target = [...(cuesBySentence[sentenceIndex - 1] ?? [])].reverse().find((cue) => cue.termStart < position);
       if (target) reject(target, qualifier);
-      else
-        missing.push(
-          structuralRejection(
-            { start: sentence.start, end: sentence.end },
-            EXPLICIT_GLOSSARY_REASONS.ambiguousReference,
-          ),
-        );
+      else missing.push(structuralRejection({ start: sentence.start, end: sentence.end }, EXPLICIT_GLOSSARY_REASONS.ambiguousReference));
     }
-    if (cues.some((cue) => cue.termStart >= sentence.start && cue.termStart < sentence.end))
-      continue;
-    const directExactReference =
-      QUESTION_RE.test(value) ||
-      EXAMPLE_RE.test(value) ||
-      HYPOTHETICAL_RE.test(value) ||
-      FUTURE_RE.test(value);
+    if (cues.some((cue) => cue.termStart >= sentence.start && cue.termStart < sentence.end)) continue;
+    const directExactReference = QUESTION_RE.test(value) || EXAMPLE_RE.test(value) || HYPOTHETICAL_RE.test(value) || FUTURE_RE.test(value);
     const nearbyCues = cues.filter((cue) => Math.abs(cueSentence(cue) - sentenceIndex) <= 1);
     const matches = new Map<string, RawCue[]>();
     for (const cue of nearbyCues) {
       const term = text.slice(cue.termStart, cue.termEnd).trim();
-      const occurrences = exactTermOccurrences(text, term, sentence.start, sentence.end).filter(
-        (position) =>
-          !nearbyCues.some(
-            (other) =>
-              other !== cue &&
-              other.rejectionReason === undefined &&
-              occurrenceInsideMeaning(position, other) &&
-              !directExactReference,
-          ),
-      );
+      const occurrences = exactTermOccurrences(text, term, sentence.start, sentence.end).filter((position) => !nearbyCues.some((other) => other !== cue && other.rejectionReason === undefined && occurrenceInsideMeaning(position, other) && !directExactReference));
       if (occurrences.length > 0) {
         const identity = stableGlossaryTermIdentity(term);
         matches.set(identity, [...(matches.get(identity) ?? []), cue]);
@@ -554,24 +384,14 @@ function applyReferenceBindings(
   return [
     ...raws.map((raw) => {
       const reason = rejected.get(raw);
-      return reason === undefined || raw.rejectionReason !== undefined
-        ? raw
-        : { ...raw, rejectionReason: reason };
+      return reason === undefined || raw.rejectionReason !== undefined ? raw : { ...raw, rejectionReason: reason };
     }),
     ...missing,
   ];
 }
 
-export function segmentAndBindExplicitCues(
-  text: string,
-  initial: readonly RawCue[],
-  ranges: readonly Line[],
-  grammar: ExplicitSegmentGrammarContract,
-  deps: ExplicitSegmentParserDependencies,
-): RawCue[] {
+export function segmentAndBindExplicitCues(text: string, initial: readonly RawCue[], ranges: readonly Line[], grammar: ExplicitSegmentGrammarContract, deps: ExplicitSegmentParserDependencies): RawCue[] {
   const segmented = segmentRawCues(text, initial, ranges, grammar, deps);
   const bounded = boundedSegmentCues(text, segmented.raws, segmented.plans, ranges, grammar, deps);
-  return applyReferenceBindings(text, bounded, ranges, deps).sort((left, right) =>
-    deps.rawCueOrder(left, right, text),
-  );
+  return applyReferenceBindings(text, bounded, ranges, deps).sort((left, right) => deps.rawCueOrder(left, right, text));
 }

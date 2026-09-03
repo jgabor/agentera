@@ -1,16 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import {
-  ADAPTER_VERSION,
-  COPILOT_SPARSE_REMEDIATION,
-  FAMILIES,
-  MAX_SQLITE_ROWS,
-  MAX_SQLITE_SESSIONS,
-  MAX_TOOL_ARG_TEXT,
-  RUNTIME_STORE_GLOBS,
-  discoverRuntimeStore,
-} from "./core.js";
+import { ADAPTER_VERSION, COPILOT_SPARSE_REMEDIATION, FAMILIES, MAX_SQLITE_ROWS, MAX_SQLITE_SESSIONS, MAX_TOOL_ARG_TEXT, RUNTIME_STORE_GLOBS, discoverRuntimeStore } from "./core.js";
 import { buildCorpus } from "./corpus.js";
 import { runCoverageAudit } from "./coverageAudit.js";
 import { extractOpencodeSessions } from "./sqliteSessions.js";
@@ -70,7 +61,10 @@ function trackLatest(current: string | null, candidate: string | null): string |
   return candidate > current ? candidate : current;
 }
 
-function boundsFromRecords(records: Array<{ timestamp?: unknown }>): { earliest: string | null; latest: string | null } {
+function boundsFromRecords(records: Array<{ timestamp?: unknown }>): {
+  earliest: string | null;
+  latest: string | null;
+} {
   let earliest: string | null = null;
   let latest: string | null = null;
   for (const item of records) {
@@ -130,9 +124,7 @@ export function opencodeParitySnapshot(dbPath: string): OpencodeParitySnapshot {
     claudeProjectsDir: null,
     opencodeConversationsDir: dbPath,
   });
-  const runtimeStatus = (corpus.metadata.runtime_statuses as Array<{ runtime?: string; record_count?: number }>).find(
-    (status) => status.runtime === "opencode",
-  );
+  const runtimeStatus = (corpus.metadata.runtime_statuses as Array<{ runtime?: string; record_count?: number }>).find((status) => status.runtime === "opencode");
   const recordCount = runtimeStatus?.record_count ?? extracted.length;
 
   const discovery = discoverRuntimeStore("opencode", dbPath);

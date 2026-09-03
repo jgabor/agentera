@@ -14,77 +14,27 @@ const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const REPO_SKILL = path.join(REPO_ROOT, "skills", "agentera", "SKILL.md");
 
 /** v2 Swedish capability IDs (defect #4); kept in sync with appContentRefresh.ts V2_CAPABILITY_VERBS. */
-const V2_SWEDISH_CAPABILITY_VERBS = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
-] as const;
+const V2_SWEDISH_CAPABILITY_VERBS = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera", "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"] as const;
 
-const V3_ENGLISH_CAPABILITIES = [
-  "status",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-] as const;
+const V3_ENGLISH_CAPABILITIES = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"] as const;
 
 function seedV2SkillMd(appHome: string): void {
   const skillPath = path.join(appHome, "skills", "agentera", "SKILL.md");
   fs.mkdirSync(path.dirname(skillPath), { recursive: true });
-  fs.writeFileSync(
-    skillPath,
-    [
-      "---",
-      "name: agentera",
-      "capabilities:",
-      "  - planera",
-      "  - inspektera",
-      "---",
-      "",
-      "# hej",
-      "",
-      "Route /agentera planera to the planera capability.",
-      "Read capabilities/plan/instructions.md for prose.",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+  fs.writeFileSync(skillPath, ["---", "name: agentera", "capabilities:", "  - planera", "  - inspektera", "---", "", "# hej", "", "Route /agentera planera to the planera capability.", "Read capabilities/plan/instructions.md for prose.", ""].join("\n"), "utf8");
 }
 
 function assertV3EnglishSkillMd(text: string, label: string): void {
   expect(skillMdLooksV2(text), `${label}: must not look like v2 Swedish routing`).toBe(false);
   for (const cap of V3_ENGLISH_CAPABILITIES) {
-    expect(text, `${label}: frontmatter lists English capability ${cap}`).toMatch(
-      new RegExp(`^\\s+- ${cap}\\s*$`, "m"),
-    );
+    expect(text, `${label}: frontmatter lists English capability ${cap}`).toMatch(new RegExp(`^\\s+- ${cap}\\s*$`, "m"));
   }
   for (const verb of V2_SWEDISH_CAPABILITY_VERBS) {
-    expect(text, `${label}: must not route /agentera ${verb}`).not.toMatch(
-      new RegExp(`/agentera ${verb}\\b`),
-    );
+    expect(text, `${label}: must not route /agentera ${verb}`).not.toMatch(new RegExp(`/agentera ${verb}\\b`));
   }
 }
 
-function capturePrime(
-  context: string,
-  env: Record<string, string>,
-): { rc: number; out: string; err: string } {
+function capturePrime(context: string, env: Record<string, string>): { rc: number; out: string; err: string } {
   const saved: Record<string, string | undefined> = {};
   for (const key of Object.keys(env)) {
     saved[key] = process.env[key];

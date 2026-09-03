@@ -33,14 +33,10 @@ describe("app-home contract validator (text surfaces)", () => {
   });
 
   it("rejects recovery jargon", () => {
-    fs.writeFileSync(
-      path.join(tmp, "README.md"),
-      "Agentera-managed bundle install is blocked; use the platform app-home recovery path\n",
-    );
+    fs.writeFileSync(path.join(tmp, "README.md"), "Agentera-managed bundle install is blocked; use the platform app-home recovery path\n");
     const errors = validate(tmp);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.some((e) => e.includes("README.md:1"))).toBe(true);
     expect(errors.some((e) => e.includes("jargon in recovery wording"))).toBe(true);
   });
-
 });

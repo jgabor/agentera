@@ -33,9 +33,7 @@ const canonicalInstructions: Record<string, string> = {
   orchestrate: orchestrateInstructions,
 };
 
-export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(
-  Object.entries(canonicalInstructions).map(([capability, body]) => [capability, preCutoverInstructionBody(body)]),
-);
+export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(Object.entries(canonicalInstructions).map(([capability, body]) => [capability, preCutoverInstructionBody(body)]));
 
 Object.defineProperty(CAPABILITY_INSTRUCTIONS, "profile", {
   enumerable: true,

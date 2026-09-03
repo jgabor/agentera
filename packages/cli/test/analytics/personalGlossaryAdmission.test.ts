@@ -4,16 +4,10 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  admitPersonalGlossaryEvidence,
-  classifyExplicitGlossaryLanguage,
-} from "../../src/analytics/personalGlossaryAdmission.js";
+import { admitPersonalGlossaryEvidence, classifyExplicitGlossaryLanguage } from "../../src/analytics/personalGlossaryAdmission.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
-import {
-  publishEvidenceTiers,
-  resolveEvidenceAnchor,
-} from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { publishEvidenceTiers, resolveEvidenceAnchor } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { recoveryForState } from "../../src/analytics/extractCorpus/tierReader.js";
 
 let root: string;
@@ -26,22 +20,15 @@ beforeEach(() => {
 
 afterEach(() => fs.rmSync(root, { recursive: true, force: true }));
 
-function record(
-  sourceId: string,
-  sourceKind: string,
-  signalType: string,
-  data: Record<string, unknown>,
-): Record<string, unknown> {
+function record(sourceId: string, sourceKind: string, signalType: string, data: Record<string, unknown>): Record<string, unknown> {
   const record: Record<string, unknown> = {
     source_id: sourceId,
     source_kind: sourceKind,
     timestamp: `2026-07-2${sourceId.length}T00:00:00.000Z`,
     project_id: "personal-evidence",
-    runtime:
-      sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
+    runtime: sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
     source_class: "active_runtime",
-    source_product:
-      sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
+    source_product: sourceKind.includes("document") || sourceKind.includes("config") ? "filesystem" : "opencode",
     active_runtime: true,
     adapter_version: ADAPTER_VERSION,
     data: { ...data, signal_type: signalType },
@@ -100,13 +87,10 @@ describe("bounded personal evidence admission", () => {
       }),
     ]);
     const resolved: string[] = [];
-    const result = admitPersonalGlossaryEvidence(
-      { tiersDir, requestedTerms: [] },
-      (anchor, directory) => {
-        resolved.push(anchor);
-        return resolveEvidenceAnchor(anchor, directory);
-      },
-    );
+    const result = admitPersonalGlossaryEvidence({ tiersDir, requestedTerms: [] }, (anchor, directory) => {
+      resolved.push(anchor);
+      return resolveEvidenceAnchor(anchor, directory);
+    });
 
     expect(result.status).toBe("admitted");
     expect(result.candidates).toEqual([
@@ -114,9 +98,7 @@ describe("bounded personal evidence admission", () => {
         kind: "personal_explicit_definition",
         term: "ship shape",
         meaning: "the complete form of a deliverable",
-        evidence: [
-          { source_id: "explicit", evidence_anchor: "explicit", signal_type: "correction" },
-        ],
+        evidence: [{ source_id: "explicit", evidence_anchor: "explicit", signal_type: "correction" }],
       },
     ]);
     expect(resolved).toEqual(["explicit"]);
@@ -251,9 +233,12 @@ describe("bounded personal evidence admission", () => {
 
   it.each([
     ["missing", (manifest: Record<string, unknown>) => delete manifest.schema_version],
-    ["unknown", (manifest: Record<string, unknown>) => {
-      manifest.schema_version = "agentera.evidenceTiers.v999";
-    }],
+    [
+      "unknown",
+      (manifest: Record<string, unknown>) => {
+        manifest.schema_version = "agentera.evidenceTiers.v999";
+      },
+    ],
   ])("rejects a manifest with a %s schema version without admitting a candidate", (_case, mutate) => {
     publish([
       record("explicit", "conversation_turn", "correction", {
@@ -285,38 +270,29 @@ describe("bounded personal evidence admission", () => {
     expect(result.recovery).toBeTruthy();
   });
 
-  it.each(["missing", "legacy", "corrupt"] as const)(
-    "returns deterministic recovery without claims for %s evidence",
-    (state) => {
-      const corpusPath = path.join(root, "profile", "intermediate", "corpus.json");
-      if (state === "legacy") {
-        fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
-        fs.writeFileSync(corpusPath, "not read", "utf8");
-      } else if (state === "corrupt") {
-        publish([
-          record("explicit", "conversation_turn", "correction", { text: "Actually, `x` means y." }),
-        ]);
-        const pointer = JSON.parse(
-          fs.readFileSync(path.join(tiersDir, "current.json"), "utf8"),
-        ) as { generation: string };
-        fs.writeFileSync(
-          path.join(tiersDir, "generations", pointer.generation, "signal.json"),
-          "{",
-          "utf8",
-        );
-      }
+  it.each(["missing", "legacy", "corrupt"] as const)("returns deterministic recovery without claims for %s evidence", (state) => {
+    const corpusPath = path.join(root, "profile", "intermediate", "corpus.json");
+    if (state === "legacy") {
+      fs.mkdirSync(path.dirname(corpusPath), { recursive: true });
+      fs.writeFileSync(corpusPath, "not read", "utf8");
+    } else if (state === "corrupt") {
+      publish([record("explicit", "conversation_turn", "correction", { text: "Actually, `x` means y." })]);
+      const pointer = JSON.parse(fs.readFileSync(path.join(tiersDir, "current.json"), "utf8")) as {
+        generation: string;
+      };
+      fs.writeFileSync(path.join(tiersDir, "generations", pointer.generation, "signal.json"), "{", "utf8");
+    }
 
-      const result = admitPersonalGlossaryEvidence({
-        tiersDir,
-        corpusPath,
-        requestedTerms: ["ship shape"],
-      });
-      expect(result.state).toBe(state);
-      expect(result.status).toBe("unavailable");
-      expect(result.candidates).toEqual([]);
-      expect(result.recovery).toBeTruthy();
-    },
-  );
+    const result = admitPersonalGlossaryEvidence({
+      tiersDir,
+      corpusPath,
+      requestedTerms: ["ship shape"],
+    });
+    expect(result.state).toBe(state);
+    expect(result.status).toBe("unavailable");
+    expect(result.candidates).toEqual([]);
+    expect(result.recovery).toBeTruthy();
+  });
 
   it("is invariant to project glossary presence and never returns its path or records", () => {
     publish([

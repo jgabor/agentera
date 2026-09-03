@@ -68,12 +68,7 @@ function variantSortKey(term: string): string {
 }
 
 function orderedEvidence(evidence: ProjectTermEvidence[]): ProjectTermEvidence[] {
-  return [...evidence].sort(
-    (left, right) =>
-      compareText(left.source_path, right.source_path)
-      || left.line - right.line
-      || compareText(left.source_record_sha256, right.source_record_sha256),
-  );
+  return [...evidence].sort((left, right) => compareText(left.source_path, right.source_path) || left.line - right.line || compareText(left.source_record_sha256, right.source_record_sha256));
 }
 
 function evidenceIdentity(item: ProjectTermEvidence): string {
@@ -85,13 +80,7 @@ function proposalWithoutDigest(proposal: TerminologyDriftFinding | ProposalWitho
   return {
     ...finding,
     canonical_evidence: orderedEvidence(finding.canonical_evidence),
-    variants: finding.variants
-      .map((variant) => ({ ...variant, evidence: orderedEvidence(variant.evidence) }))
-      .sort(
-        (left, right) =>
-          compareText(variantSortKey(left.term), variantSortKey(right.term))
-          || compareText(left.term, right.term),
-      ),
+    variants: finding.variants.map((variant) => ({ ...variant, evidence: orderedEvidence(variant.evidence) })).sort((left, right) => compareText(variantSortKey(left.term), variantSortKey(right.term)) || compareText(left.term, right.term)),
   };
 }
 
@@ -108,9 +97,7 @@ export function canonicalTerminologyJson(value: unknown): string {
 }
 
 /** Digest one complete finding while ignoring semantically irrelevant array order. */
-export function terminologyProposalDigest(
-  proposal: TerminologyDriftFinding | ProposalWithoutDigest,
-): string {
+export function terminologyProposalDigest(proposal: TerminologyDriftFinding | ProposalWithoutDigest): string {
   return crypto
     .createHash("sha256")
     .update(canonicalTerminologyJson(proposalWithoutDigest(proposal)))
@@ -122,20 +109,14 @@ function canonicalProposal(
     terms: Array<{ term: string; evidence: ProjectTermEvidence[] }>;
   },
 ): TerminologyDriftFinding {
-  const ordered = seed.terms
-    .map((term) => ({ term: term.term, evidence: orderedEvidence(term.evidence) }))
-    .sort((left, right) => right.evidence.length - left.evidence.length || compareText(left.term, right.term));
+  const ordered = seed.terms.map((term) => ({ term: term.term, evidence: orderedEvidence(term.evidence) })).sort((left, right) => right.evidence.length - left.evidence.length || compareText(left.term, right.term));
   const [canonical, ...variants] = ordered;
   const finding: ProposalWithoutDigest = {
     family: "terminology_drift",
     concept: seed.concept,
     proposed_canonical_term: canonical!.term,
     canonical_evidence: canonical!.evidence,
-    variants: variants.sort(
-      (left, right) =>
-        compareText(variantSortKey(left.term), variantSortKey(right.term))
-        || compareText(left.term, right.term),
-    ),
+    variants: variants.sort((left, right) => compareText(variantSortKey(left.term), variantSortKey(right.term)) || compareText(left.term, right.term)),
     severity: seed.confidence < 70 ? "info" : seed.severity,
     confidence: seed.confidence,
     ...(seed.personal_divergence ? { personal_divergence: seed.personal_divergence } : {}),
@@ -156,13 +137,7 @@ function proposalEvidence(value: unknown, label: string, violations: string[]): 
     violations.push(`${label} must contain only source_path, line, and source_record_sha256`);
     return null;
   }
-  if (
-    !isSafeProjectSourcePath(value.source_path)
-    || !Number.isInteger(value.line)
-    || Number(value.line) < 1
-    || typeof value.source_record_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(value.source_record_sha256)
-  ) {
+  if (!isSafeProjectSourcePath(value.source_path) || !Number.isInteger(value.line) || Number(value.line) < 1 || typeof value.source_record_sha256 !== "string" || !/^[a-f0-9]{64}$/.test(value.source_record_sha256)) {
     violations.push(`${label} must identify one safe project-relative source line with a lowercase SHA-256`);
     return null;
   }
@@ -174,7 +149,10 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
   const violations: string[] = [];
   const fields = ["family", "concept", "proposed_canonical_term", "canonical_evidence", "variants", "severity", "confidence", "personal_divergence", "proposal_digest"];
   if (!mapping(value) || !exactFields(value, fields)) {
-    return { proposal: null, violations: ["proposal must be one complete terminology_drift finding with no undeclared fields"] };
+    return {
+      proposal: null,
+      violations: ["proposal must be one complete terminology_drift finding with no undeclared fields"],
+    };
   }
   if (value.family !== "terminology_drift") violations.push("proposal family must be terminology_drift");
   if (typeof value.concept !== "string" || value.concept.trim() === "") violations.push("proposal concept must be non-empty");
@@ -199,9 +177,7 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
       violations.push(`${label} evidence must be non-empty`);
       return;
     }
-    const parsed = records
-      .map((record, index) => proposalEvidence(record, `${label}[${index}]`, violations))
-      .filter((record): record is ProjectTermEvidence => record !== null);
+    const parsed = records.map((record, index) => proposalEvidence(record, `${label}[${index}]`, violations)).filter((record): record is ProjectTermEvidence => record !== null);
     if (new Set(parsed.map(evidenceIdentity)).size !== parsed.length) {
       violations.push(`${label} identities must be distinct`);
     }
@@ -225,13 +201,8 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
 
   let divergence: { personal_term: string; project_term: string } | undefined;
   if (value.personal_divergence !== undefined) {
-    if (
-      !mapping(value.personal_divergence)
-      || !exactFields(value.personal_divergence, ["personal_term", "project_term"])
-      || typeof value.personal_divergence.personal_term !== "string"
-      || value.personal_divergence.personal_term.trim() === ""
-      || value.personal_divergence.project_term !== value.proposed_canonical_term
-    ) violations.push("personal_divergence must bind a non-empty personal term to the proposed project term");
+    if (!mapping(value.personal_divergence) || !exactFields(value.personal_divergence, ["personal_term", "project_term"]) || typeof value.personal_divergence.personal_term !== "string" || value.personal_divergence.personal_term.trim() === "" || value.personal_divergence.project_term !== value.proposed_canonical_term)
+      violations.push("personal_divergence must bind a non-empty personal term to the proposed project term");
     else divergence = value.personal_divergence as { personal_term: string; project_term: string };
   }
 
@@ -253,9 +224,7 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
 }
 
 function confidenceFloor(): number {
-  const protocol = loadYamlMappingFile(
-    path.join(resolveSourceRoot(), "skills", "agentera", "protocol.yaml"),
-  );
+  const protocol = loadYamlMappingFile(path.join(resolveSourceRoot(), "skills", "agentera", "protocol.yaml"));
   const scale = protocol.CONFIDENCE_SCALE as Record<string, { range?: unknown }>;
   const range = scale?.["3"]?.range;
   if (!Array.isArray(range) || !Number.isInteger(range[0])) {
@@ -264,17 +233,12 @@ function confidenceFloor(): number {
   return Number(range[0]);
 }
 
-function verifiedEvidence(
-  projectRoot: string,
-  term: string,
-  evidence: ProjectTermEvidenceInput[],
-): ProjectTermEvidence[] | null {
+function verifiedEvidence(projectRoot: string, term: string, evidence: ProjectTermEvidenceInput[]): ProjectTermEvidence[] | null {
   const root = fs.realpathSync(projectRoot);
   const verified: ProjectTermEvidence[] = [];
   const identities = new Set<string>();
   for (const item of evidence) {
-    if (!Number.isInteger(item.line) || item.line < 1 || !isSafeProjectSourcePath(item.source_path))
-      return null;
+    if (!Number.isInteger(item.line) || item.line < 1 || !isSafeProjectSourcePath(item.source_path)) return null;
     const pathname = path.resolve(root, item.source_path);
     if (pathname !== root && !pathname.startsWith(`${root}${path.sep}`)) return null;
     let realPath: string;
@@ -304,14 +268,7 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
   const minimumConfidence = confidenceFloor();
   const findings: TerminologyDriftFinding[] = [];
   for (const concept of input.concepts) {
-    if (
-      concept.confidence < minimumConfidence ||
-      concept.confidence > 100 ||
-      !Number.isInteger(concept.confidence) ||
-      input.deliberateDecisionConcepts.has(concept.concept) ||
-      input.trackedIssueConcepts.has(concept.concept)
-    )
-      continue;
+    if (concept.confidence < minimumConfidence || concept.confidence > 100 || !Number.isInteger(concept.confidence) || input.deliberateDecisionConcepts.has(concept.concept) || input.trackedIssueConcepts.has(concept.concept)) continue;
 
     const consolidated: Array<{ term: string; evidence: Map<string, ProjectTermEvidence> }> = [];
     let invalidEvidence = false;
@@ -322,7 +279,10 @@ export function assessTerminologyDrift(input: TerminologyDriftInput): Terminolog
         invalidEvidence = true;
         break;
       }
-      const group = consolidated.find((item) => unicodeCaselessExact(item.term, term)) ?? { term, evidence: new Map() };
+      const group = consolidated.find((item) => unicodeCaselessExact(item.term, term)) ?? {
+        term,
+        evidence: new Map(),
+      };
       for (const item of evidence) group.evidence.set(`${item.source_path}:${item.line}`, item);
       if (!consolidated.includes(group)) consolidated.push(group);
     }

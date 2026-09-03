@@ -7,19 +7,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers, readCurrentGeneration } from "../../src/analytics/extractCorpus/evidenceTiers.js";
-import {
-  personalGlossaryCandidateProjectionPath,
-  persistPersonalGlossaryCandidateProjection,
-  projectPersonalGlossaryCandidates,
-  readPersonalGlossaryCandidateProjection,
-} from "../../src/analytics/personalGlossaryCandidateProjection.js";
-import {
-  acquirePersonalGlossaryRefreshCommitLock,
-  PersonalGlossaryRefreshCommitBusyError,
-  PersonalGlossaryRefreshCommitLockError,
-  produceCurrentPersonalGlossaryProjection,
-  releasePersonalGlossaryRefreshCommitLock,
-} from "../../src/analytics/personalGlossaryRefreshProjection.js";
+import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, readPersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
+import { acquirePersonalGlossaryRefreshCommitLock, PersonalGlossaryRefreshCommitBusyError, PersonalGlossaryRefreshCommitLockError, produceCurrentPersonalGlossaryProjection, releasePersonalGlossaryRefreshCommitLock } from "../../src/analytics/personalGlossaryRefreshProjection.js";
 import { main } from "../../src/cli/dispatch.js";
 
 const PUBLISHED_AT = "2026-08-12T10:11:12.000Z";
@@ -28,12 +17,7 @@ let profileDir: string;
 let tiersDir: string;
 let previousProfileDir: string | undefined;
 
-function record(
-  sourceId: string,
-  sourceKind: "conversation_turn" | "instruction_document" | "project_config_signal",
-  projectId: string,
-  data: Record<string, unknown>,
-): Record<string, unknown> {
+function record(sourceId: string, sourceKind: "conversation_turn" | "instruction_document" | "project_config_signal", projectId: string, data: Record<string, unknown>): Record<string, unknown> {
   const text = String(data.text ?? data.content ?? (data.signals as string[] | undefined)?.join("\n") ?? sourceId);
   return {
     source_id: sourceId,
@@ -47,11 +31,13 @@ function record(
     adapter_version: ADAPTER_VERSION,
     origin_id: originIdentity(`origin:${sourceId}`),
     content_fingerprint: contentFingerprint(text),
-    ...(sourceKind === "conversation_turn" ? {
-      session_id: `session-${sourceId}`,
-      conversation_key: `session-${sourceId}`,
-      author_class: "user",
-    } : {}),
+    ...(sourceKind === "conversation_turn"
+      ? {
+          session_id: `session-${sourceId}`,
+          conversation_key: `session-${sourceId}`,
+          author_class: "user",
+        }
+      : {}),
     data,
   };
 }
@@ -89,11 +75,9 @@ function refreshLockPath(): string {
 function leaveInterruptedLock(): void {
   const lockPath = refreshLockPath();
   fs.mkdirSync(path.dirname(lockPath), { recursive: true });
-  const script = [
-    "const fs=require('node:fs')",
-    "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000001',created_at:'2026-08-15T12:00:00.000Z'}",
-    "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})",
-  ].join(";");
+  const script = ["const fs=require('node:fs')", "const record={schema_version:'agentera.personalGlossaryRefreshLock.v1',pid:process.pid,token:'00000000-0000-4000-8000-000000000001',created_at:'2026-08-15T12:00:00.000Z'}", "fs.writeFileSync(process.argv[1],JSON.stringify(record)+'\\n',{mode:0o600,flag:'wx'})"].join(
+    ";",
+  );
   const child = spawnSync(process.execPath, ["-e", script, lockPath]);
   expect(child.status).toBe(0);
   expect(() => process.kill(child.pid!, 0)).toThrow(expect.objectContaining({ code: "ESRCH" }));
@@ -102,7 +86,14 @@ function leaveInterruptedLock(): void {
 function run(argv: string[]): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const rc = main(["node", "agentera", ...argv], { out: (text) => { out += text; }, err: (text) => { err += text; } });
+  const rc = main(["node", "agentera", ...argv], {
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
+  });
   return { rc, out, err };
 }
 
@@ -139,14 +130,7 @@ describe("refresh candidate projection production", () => {
     expect(listPayload.entries).toHaveLength(2);
 
     const capsule = projection.candidates[0]!.capsule;
-    const exact = run([
-      "report", "personal-glossary-candidates", "get",
-      "--candidate-id", capsule.candidate_id,
-      "--candidate-revision", capsule.candidate_revision,
-      "--generation", generation,
-      "--policy-version", projection.policy_version,
-      "--format", "json",
-    ]);
+    const exact = run(["report", "personal-glossary-candidates", "get", "--candidate-id", capsule.candidate_id, "--candidate-revision", capsule.candidate_revision, "--generation", generation, "--policy-version", projection.policy_version, "--format", "json"]);
     expect(exact.rc).toBe(0);
     expect(JSON.parse(exact.out).candidate_projection_sha256).toBe(produced.candidate_projection_sha256);
   });
@@ -179,12 +163,14 @@ describe("refresh candidate projection production", () => {
     expect(readPersonalGlossaryCandidateProjection().status).toBe("current");
 
     const current = readCurrentGeneration(tiersDir)!;
-    persistPersonalGlossaryCandidateProjection(projectPersonalGlossaryCandidates({
-      generation: current.manifest.generation,
-      policy_version: "agentera.personalGlossaryMiningPolicy.v1",
-      retained_at: current.manifest.published_at,
-      candidates: [],
-    }));
+    persistPersonalGlossaryCandidateProjection(
+      projectPersonalGlossaryCandidates({
+        generation: current.manifest.generation,
+        policy_version: "agentera.personalGlossaryMiningPolicy.v1",
+        retained_at: current.manifest.published_at,
+        candidates: [],
+      }),
+    );
     expect(readPersonalGlossaryCandidateProjection().projection?.candidates).toHaveLength(0);
     expect(produceCurrentPersonalGlossaryProjection({ tiersDir }).status).toBe("changed");
     expect(readPersonalGlossaryCandidateProjection().projection?.candidates).toHaveLength(2);

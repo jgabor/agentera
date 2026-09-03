@@ -5,18 +5,10 @@ import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const workflow = YAML.parse(
-  fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"),
-);
-const developmentPackage = JSON.parse(
-  fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"),
-);
-const publicationContract = JSON.parse(
-  fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"),
-);
-const verificationPolicy = YAML.parse(
-  fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"),
-);
+const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
+const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
+const publicationContract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"));
+const verificationPolicy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 
 const RELEASE_COMMAND = "pnpm -C packages/cli run verify:release";
 const PARITY_TEST = "packages/cli/test/scripts/pyTsParity.test.ts";
@@ -44,7 +36,10 @@ const REMOVED_DUPLICATES = [
 function runLines(candidate: any): string[] {
   return candidate.jobs.cli.steps.flatMap((step: { run?: string }) =>
     typeof step.run === "string"
-      ? step.run.split(/\r?\n/u).map((line) => line.trim()).filter(Boolean)
+      ? step.run
+          .split(/\r?\n/u)
+          .map((line) => line.trim())
+          .filter(Boolean)
       : [],
   );
 }
@@ -73,28 +68,18 @@ describe("routine CI owner DAG", () => {
     expect(workflow.on.push.branches).toEqual(["main"]);
     expect(workflow.on).toHaveProperty("pull_request");
     expect(workflow.jobs["source-migration"].name).toBe("v2→v3 migration (source build)");
-    expect(workflow.jobs["source-migration"].if).toBe(
-      "github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'",
-    );
+    expect(workflow.jobs["source-migration"].if).toBe("github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'");
     const migrationSteps = workflow.jobs["source-migration"].steps;
-    const scenarioStep = migrationSteps.find(
-      (step: { name?: string }) => step.name === "Run v2→v3 migration scenarios",
-    );
+    const scenarioStep = migrationSteps.find((step: { name?: string }) => step.name === "Run v2→v3 migration scenarios");
     expect(scenarioStep).toMatchObject({ env: expect.any(Object), run: expect.any(String) });
-    const reportStep = migrationSteps.find(
-      (step: { name?: string }) => step.name === "Upload sandbox reports",
-    );
+    const reportStep = migrationSteps.find((step: { name?: string }) => step.name === "Upload sandbox reports");
     expect(reportStep).toMatchObject({
       if: "always()",
       uses: "actions/upload-artifact@v4",
       with: { name: "source-migration-reports" },
     });
-    expect(developmentPackage.scripts["verify:release"]).toBe(
-      "node scripts/release-qualification.mjs verify --json",
-    );
-    const step = workflow.jobs.cli.steps.find(
-      (candidate: { run?: string }) => candidate.run === RELEASE_COMMAND,
-    );
+    expect(developmentPackage.scripts["verify:release"]).toBe("node scripts/release-qualification.mjs verify --json");
+    const step = workflow.jobs.cli.steps.find((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
     expect(step).toMatchObject({
       env: {
         AGENTERA_VITEST_RUNNER_POLICY: "unmeasured",
@@ -105,50 +90,26 @@ describe("routine CI owner DAG", () => {
     expect(step).not.toHaveProperty("continue-on-error");
   });
 
-  it.each(REMOVED_DUPLICATES)(
-    "retains positive $owner coverage through generated overlap",
-    ({ owner, gate, command }) => {
-      const source = publicationContract.qualification.source;
-      expect(source.dag.generatedOverlapOrigins).toContain(owner);
-      expect(source.gates.find((entry: { name: string }) => entry.name === gate)?.command.join(" "))
-        .toBe(command);
-    },
-  );
+  it.each(REMOVED_DUPLICATES)("retains positive $owner coverage through generated overlap", ({ owner, gate, command }) => {
+    const source = publicationContract.qualification.source;
+    expect(source.dag.generatedOverlapOrigins).toContain(owner);
+    expect(source.gates.find((entry: { name: string }) => entry.name === gate)?.command.join(" ")).toBe(command);
+  });
 
-  it.each(REMOVED_DUPLICATES)(
-    "rejects a forbidden standalone $owner invocation",
-    ({ owner, forbidden }) => {
-      const candidate = structuredClone(workflow);
-      candidate.jobs.cli.steps.push({ name: `Forbidden ${owner}`, run: forbidden[0] });
-      expect(() => validateRoutineCiOwnership(candidate))
-        .toThrow(`routine CI must not invoke ${owner} outside generated overlap`);
-    },
-  );
+  it.each(REMOVED_DUPLICATES)("rejects a forbidden standalone $owner invocation", ({ owner, forbidden }) => {
+    const candidate = structuredClone(workflow);
+    candidate.jobs.cli.steps.push({ name: `Forbidden ${owner}`, run: forbidden[0] });
+    expect(() => validateRoutineCiOwnership(candidate)).toThrow(`routine CI must not invoke ${owner} outside generated overlap`);
+  });
 
   it("retains typecheck, parity, compact, stress, performance, and capacity coverage", () => {
     const source = publicationContract.qualification.source;
     const gateNames = source.gates.map((entry: { name: string }) => entry.name);
-    expect(gateNames).toEqual(expect.arrayContaining([
-      "typecheck",
-      "compact",
-      "stress",
-      "performance",
-      "capacity",
-    ]));
-    expect(verificationPolicy.policies.release).toEqual([
-      "source",
-      "stress",
-      "performance",
-      "capacity",
-      "package",
-    ]);
+    expect(gateNames).toEqual(expect.arrayContaining(["typecheck", "compact", "stress", "performance", "capacity"]));
+    expect(verificationPolicy.policies.release).toEqual(["source", "stress", "performance", "capacity", "package"]);
     expect(verificationPolicy.inventory.default_owner).toBe("source");
-    expect(verificationPolicy.inventory.rules.some(
-      (rule: { path?: string; prefix?: string }) =>
-        rule.path === PARITY_TEST || PARITY_TEST.startsWith(rule.prefix ?? "never/"),
-    )).toBe(false);
-    expect(verificationPolicy.owners.performance.execution.authoritative_runner.runs_on)
-      .toBe("ubuntu-24.04");
+    expect(verificationPolicy.inventory.rules.some((rule: { path?: string; prefix?: string }) => rule.path === PARITY_TEST || PARITY_TEST.startsWith(rule.prefix ?? "never/"))).toBe(false);
+    expect(verificationPolicy.owners.performance.execution.authoritative_runner.runs_on).toBe("ubuntu-24.04");
 
     const lines = runLines(workflow);
     const fetchIndex = lines.indexOf("git fetch origin main --depth=1");

@@ -15,24 +15,21 @@ function requestedFormat(argv: string[]): Format {
 function failure(message: string, verb: "list" | "get"): StateRetrievalFailure {
   const list = verb === "list";
   const family = entityListFamily("plans");
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: "invalid_request",
-      message,
-      syntax: list
-        ? family.syntax
-        : family.get,
-      example: list
-        ? family.example
-        : "agentera state plan get --id qjtrmnpvka",
-      recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Correct the command using one of the valid forms and retry; no state was changed.",
-      valid_values: list
-        ? entityListValidValues(family)
-        : ["get", "--id ID", "--format text|json|yaml"],
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: "invalid_request",
+        message,
+        syntax: list ? family.syntax : family.get,
+        example: list ? family.example : "agentera state plan get --id qjtrmnpvka",
+        recovery: list ? `Run \`${family.example}\`; no state was changed.` : "Correct the command using one of the valid forms and retry; no state was changed.",
+        valid_values: list ? entityListValidValues(family) : ["get", "--id ID", "--format text|json|yaml"],
+      },
     },
-  }, 2);
+    2,
+  );
 }
 
 function readValue(argv: string[], index: number, name: string): { value: string; next: number } {
@@ -43,7 +40,17 @@ function readValue(argv: string[], index: number, name: string): { value: string
   return { value, next: index + 2 };
 }
 
-function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: number; cursor?: string; id?: string; status?: string; selector: EntityListSelectorInput } {
+function parse(
+  argv: string[],
+  verb: "list" | "get",
+): {
+  format: Format;
+  limit: number;
+  cursor?: string;
+  id?: string;
+  status?: string;
+  selector: EntityListSelectorInput;
+} {
   const family = entityListFamily("plans");
   let format: Format = "json";
   let limit = family.bounds.default;
@@ -56,7 +63,9 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
     const token = argv[index]!;
     if (verb === "list" && token === "--ids-only") {
       if (selector.idsOnly) throw failure("--ids-only may only be supplied once", verb);
-      selector.idsOnly = true; index += 1; continue;
+      selector.idsOnly = true;
+      index += 1;
+      continue;
     }
     const allowed = verb === "list" ? ["--format", "--limit", "--cursor", "--status", "--fields"] : ["--format", "--id"];
     const name = allowed.find((flag) => token === flag || token.startsWith(`${flag}=`));
@@ -66,8 +75,11 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
     if (seen.has(name)) throw failure(`${name} may only be supplied once`, verb);
     seen.add(name);
     let parsed: { value: string; next: number };
-    try { parsed = readValue(argv, index, name); }
-    catch (error) { throw failure((error as Error).message, verb); }
+    try {
+      parsed = readValue(argv, index, name);
+    } catch (error) {
+      throw failure((error as Error).message, verb);
+    }
     index = parsed.next;
     if (name === "--format") {
       if (parsed.value !== "json") throw failure(`invalid --format '${parsed.value}'`, verb);
@@ -83,7 +95,14 @@ function parse(argv: string[], verb: "list" | "get"): { format: Format; limit: n
       status = parsed.value;
     } else id = parsed.value;
   }
-  return { format, limit, ...(cursor ? { cursor } : {}), ...(id ? { id } : {}), ...(status ? { status } : {}), selector };
+  return {
+    format,
+    limit,
+    ...(cursor ? { cursor } : {}),
+    ...(id ? { id } : {}),
+    ...(status ? { status } : {}),
+    selector,
+  };
 }
 
 function emitFailure(error: StateRetrievalFailure, _format: Format, io: Io): number {
@@ -98,24 +117,36 @@ export function runPlans(argv: string[], io: Io): number {
   try {
     const args = parse(argv.slice(1), verb);
     if (verb === "get" && !args.id) throw failure("entity mode requires --id ID", verb);
-    const response = verb === "list"
-      ? listPlanEntities(process.cwd(), args.limit, args.cursor, { format: args.format, selector: args.selector, ...(args.status ? { statuses: [args.status] } : {}) })
-      : getPlanEntity(process.cwd(), args.id!);
+    const response =
+      verb === "list"
+        ? listPlanEntities(process.cwd(), args.limit, args.cursor, {
+            format: args.format,
+            selector: args.selector,
+            ...(args.status ? { statuses: [args.status] } : {}),
+          })
+        : getPlanEntity(process.cwd(), args.id!);
     const output = io.out ?? ((text: string) => process.stdout.write(text));
     emitStructured(response, "json", output);
     return 0;
   } catch (error) {
     if (error instanceof StateRetrievalFailure) return emitFailure(error, format, io);
-    return emitFailure(new StateRetrievalFailure({
-      schemaVersion: "agentera.stateFailure.v1",
-      status: "fail",
-      error: {
-        class: "unsupported_state",
-        message: (error as Error).message,
-        syntax: "agentera state plan {list|get} [options]",
-        example: "agentera state plan list",
-        recovery: "Use supported plan state and retry; no state was changed.",
-      },
-    }, 1), format, io);
+    return emitFailure(
+      new StateRetrievalFailure(
+        {
+          schemaVersion: "agentera.stateFailure.v1",
+          status: "fail",
+          error: {
+            class: "unsupported_state",
+            message: (error as Error).message,
+            syntax: "agentera state plan {list|get} [options]",
+            example: "agentera state plan list",
+            recovery: "Use supported plan state and retry; no state was changed.",
+          },
+        },
+        1,
+      ),
+      format,
+      io,
+    );
   }
 }

@@ -3,19 +3,9 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
-import {
-  emitInvalidInput,
-  INVALID_INPUT_EXIT_CODE,
-  type InvalidInputErrorClass,
-  type InvalidInputEnvelope,
-} from "../../src/cli/errors.js";
+import { emitInvalidInput, INVALID_INPUT_EXIT_CODE, type InvalidInputErrorClass, type InvalidInputEnvelope } from "../../src/cli/errors.js";
 
-const ORACLE_PATH = path.join(
-  __dirname,
-  "fixtures",
-  "oracle",
-  "invalid-input-envelope.json",
-);
+const ORACLE_PATH = path.join(__dirname, "fixtures", "oracle", "invalid-input-envelope.json");
 const ORACLE = JSON.parse(fs.readFileSync(ORACLE_PATH, "utf8")) as {
   format: "json" | "text";
   exitCode: number;
@@ -32,9 +22,11 @@ const ORACLE = JSON.parse(fs.readFileSync(ORACLE_PATH, "utf8")) as {
   };
 };
 
-function capture(
-  fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number,
-): { rc: number; out: string; err: string } {
+function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
+  rc: number;
+  out: string;
+  err: string;
+} {
   let out = "";
   let err = "";
   const rc = fn({ out: (t) => (out += t), err: (t) => (err += t) });
@@ -108,9 +100,7 @@ describe("invalid-input envelope (oracle parity)", () => {
 
   describe("check validate (the wired exemplar)", () => {
     it("emits the envelope in json mode when no family is given and returns rc 2", () => {
-      const { rc, out, err } = capture((io) =>
-        main(["node", "agentera", "check", "validate", "--format", "json"], io),
-      );
+      const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "validate", "--format", "json"], io));
       expect(rc).toBe(2);
       expect(err).toBe("");
       const envelope = readEnvelope(out);
@@ -122,21 +112,14 @@ describe("invalid-input envelope (oracle parity)", () => {
     });
 
     it("emits JSON when no family is given and returns rc 2", () => {
-      const { rc, out, err } = capture((io) =>
-        main(["node", "agentera", "check", "validate"], io),
-      );
+      const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "validate"], io));
       expect(rc).toBe(2);
       expect(err).toBe("");
       expect(readEnvelope(out).error).toMatchObject({ class: "missing_argument" });
     });
 
     it("emits the envelope in json mode for an unsupported family and returns rc 2", () => {
-      const { rc, out, err } = capture((io) =>
-        main(
-          ["node", "agentera", "check", "validate", "bogus", "--format", "json"],
-          io,
-        ),
-      );
+      const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "validate", "bogus", "--format", "json"], io));
       expect(rc).toBe(2);
       expect(err).toBe("");
       const envelope = readEnvelope(out);
@@ -146,15 +129,13 @@ describe("invalid-input envelope (oracle parity)", () => {
     });
 
     it("emits JSON for an invalid --format choice and returns rc 2", () => {
-      const { rc, out, err } = capture((io) =>
-        main(
-          ["node", "agentera", "check", "validate", "--format", "xml"],
-          io,
-        ),
-      );
+      const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "validate", "--format", "xml"], io));
       expect(rc).toBe(2);
       expect(err).toBe("");
-      expect(readEnvelope(out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+      expect(readEnvelope(out).error).toMatchObject({
+        class: "invalid_choice",
+        valid_values: ["json"],
+      });
     });
   });
 
@@ -187,8 +168,8 @@ describe("invalid-input envelope (oracle parity)", () => {
         invalid_format: true,
         unsupported_target: true,
         schema_violation: true,
-      conflict: true,
-      invalid_receipt: true,
+        conflict: true,
+        invalid_receipt: true,
       } satisfies Record<InvalidInputErrorClass, true>;
       expect(new Set(ORACLE.errorClassUnion)).toEqual(new Set(Object.keys(liveClasses)));
     });

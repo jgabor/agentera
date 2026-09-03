@@ -4,35 +4,9 @@ import path from "node:path";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  DEFAULT_PARALLEL,
-  DEFAULT_TIMEOUT,
-  ExitError,
-  TRIGGER_PROMPTS,
-  buildDryRun,
-  buildReport,
-  detectRuntime,
-  discoverSkills,
-  invokeSkill,
-  main,
-  parseArgs,
-  parseFrontmatterName,
-} from "../../src/eval/evalSkills.js";
+import { DEFAULT_PARALLEL, DEFAULT_TIMEOUT, ExitError, TRIGGER_PROMPTS, buildDryRun, buildReport, detectRuntime, discoverSkills, invokeSkill, main, parseArgs, parseFrontmatterName } from "../../src/eval/evalSkills.js";
 
-const ALL_SKILL_NAMES = [
-  "document",
-  "status",
-  "audit",
-  "research",
-  "optimize",
-  "orchestrate",
-  "plan",
-  "profile",
-  "build",
-  "discuss",
-  "vision",
-  "design",
-].sort();
+const ALL_SKILL_NAMES = ["document", "status", "audit", "research", "optimize", "orchestrate", "plan", "profile", "build", "discuss", "vision", "design"].sort();
 
 let tmp: string;
 beforeEach(() => {
@@ -130,8 +104,7 @@ describe("buildReport / buildDryRun / parseArgs", () => {
 });
 
 describe("detectRuntime", () => {
-  const which = (table: Record<string, boolean>) => (name: string) =>
-    table[name] ? `/usr/bin/${name}` : null;
+  const which = (table: Record<string, boolean>) => (name: string) => (table[name] ? `/usr/bin/${name}` : null);
 
   it("ignores retired Claude and prefers an active eval runtime", () => {
     expect(detectRuntime(null, { which: which({ claude: true, opencode: true }) })).toBe("opencode");
@@ -181,14 +154,7 @@ describe("invokeSkill command selection", () => {
       return { status: 0, stdout: "{}", stderr: "" };
     };
     invokeSkill("status", "status briefing", 5, "cursor", { which, run, repoRoot: tmp });
-    expect(captured).toEqual([
-      "cursor-agent",
-      "-p",
-      "--output-format",
-      "json",
-      "--force",
-      "status briefing",
-    ]);
+    expect(captured).toEqual(["cursor-agent", "-p", "--output-format", "json", "--force", "status briefing"]);
   });
 });
 

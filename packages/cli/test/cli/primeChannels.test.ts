@@ -22,10 +22,7 @@ function managedV2(appHome: string): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env node\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }),
-  );
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: "2.7.0" }));
 }
 
 beforeEach(() => {
@@ -57,16 +54,15 @@ describe("prime channel-aware migration and app_home gates", () => {
     fs.mkdirSync(path.join(unannouncedRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(unannouncedRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(unannouncedRoot, "registry.json"));
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(unannouncedRoot, "references"), {
+      recursive: true,
+    });
     const channelsPath = path.join(unannouncedRoot, "references/cli/update-channels.yaml");
     let channels = fs.readFileSync(channelsPath, "utf8");
     const stableStart = channels.indexOf("  stable:");
     const devStart = channels.indexOf("  development:");
     const stableBlock = channels.slice(stableStart, devStart);
-    channels =
-      channels.slice(0, stableStart) +
-      stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") +
-      channels.slice(devStart);
+    channels = channels.slice(0, stableStart) + stableBlock.replace(/\n      announced: (true|false)/, "\n      announced: false") + channels.slice(devStart);
     fs.writeFileSync(channelsPath, channels);
     resetUpdateChannelsAuthorityCache();
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = unannouncedRoot;
@@ -80,9 +76,7 @@ describe("prime channel-aware migration and app_home gates", () => {
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.app.crossMajorBoundary).toBe(false);
     expect(state.project_integration.recommendation).toBe("stay");
-    const crossMajorAttention = (state.attention as string[]).find((line) =>
-      line.includes("v2 while the CLI is on v3"),
-    );
+    const crossMajorAttention = (state.attention as string[]).find((line) => line.includes("v2 while the CLI is on v3"));
     expect(crossMajorAttention).toBeUndefined();
   });
 
@@ -92,11 +86,11 @@ describe("prime channel-aware migration and app_home gates", () => {
     fs.mkdirSync(path.join(authorityRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(authorityRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(authorityRoot, "registry.json"));
-    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), { recursive: true });
+    fs.cpSync(path.join(REPO_ROOT, "references"), path.join(authorityRoot, "references"), {
+      recursive: true,
+    });
     const channelsPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
-    const channels = fs
-      .readFileSync(channelsPath, "utf8")
-      .replace("announced: false", "announced: true");
+    const channels = fs.readFileSync(channelsPath, "utf8").replace("announced: false", "announced: true");
     fs.writeFileSync(channelsPath, channels);
     resetUpdateChannelsAuthorityCache();
     process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = authorityRoot;
@@ -112,9 +106,7 @@ describe("prime channel-aware migration and app_home gates", () => {
 
     const state = collectOrientationState({ home, installRoot: appHome, env: process.env });
     expect(state.project_integration.recommendation).toBe("upgrade");
-    const crossMajorAttention = (state.attention as string[]).find((line) =>
-      line.includes("cross-major"),
-    );
+    const crossMajorAttention = (state.attention as string[]).find((line) => line.includes("cross-major"));
     expect(crossMajorAttention).toBeTruthy();
     expect(crossMajorAttention).toContain("agentera@next");
     expect(crossMajorAttention).not.toContain("--target-major");

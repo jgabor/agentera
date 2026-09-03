@@ -3,12 +3,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  REPO_STATE_FIXTURE_NAMES,
-  cleanupFixtureProject,
-  repoStateFixturePath,
-  useFixtureProject,
-} from "./useFixtureProject.js";
+import { REPO_STATE_FIXTURE_NAMES, cleanupFixtureProject, repoStateFixturePath, useFixtureProject } from "./useFixtureProject.js";
 
 const cleanups: string[] = [];
 afterEach(() => {

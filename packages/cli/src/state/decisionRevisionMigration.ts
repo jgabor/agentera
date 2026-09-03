@@ -8,7 +8,7 @@ import { classifyCompleteDecisionConfidence, decisionLegacyCoexistence } from ".
 import type { DurableEntityMigrationEntry } from "./entityMigrationPreview.js";
 
 function mapping(value: unknown): JsonObject | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value) ? value as JsonObject : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as JsonObject) : null;
 }
 
 function hash(value: string): string {
@@ -29,14 +29,7 @@ function changesFrom(source: JsonObject): JsonObject {
   return structuredClone(changes ?? Object.fromEntries(Object.entries(source).filter(([field]) => !["decision", "date", "provenance", "base_sha256"].includes(field))));
 }
 
-export function migrateDecisionRevisionEntries(
-  entries: DurableEntityMigrationEntry[],
-  decisions: Map<string, JsonObject>,
-  legacyDecisions: Map<string, JsonObject>,
-  sourceRoot: string,
-  forbiddenAliases: readonly string[],
-  sourceFingerprint: string,
-): void {
+export function migrateDecisionRevisionEntries(entries: DurableEntityMigrationEntry[], decisions: Map<string, JsonObject>, legacyDecisions: Map<string, JsonObject>, sourceRoot: string, forbiddenAliases: readonly string[], sourceFingerprint: string): void {
   const coexistence = decisionLegacyCoexistence(sourceRoot);
   const grouped = new Map<string, DurableEntityMigrationEntry[]>();
   for (const entry of entries.filter(({ boundary }) => boundary === "decision_revision")) {
@@ -50,15 +43,21 @@ export function migrateDecisionRevisionEntries(
     const legacyBaseSha256 = legacyBase ? hash(canonicalRecordJson(legacyBase)) : null;
     let chainValid = decisions.has(decision) && legacyBaseSha256 !== null;
     for (const entry of revisions.sort((left, right) => left.source_identity.localeCompare(right.source_identity, undefined, { numeric: true }))) {
-      if (!entry.proposed_target) { chainValid = false; continue; }
+      if (!entry.proposed_target) {
+        chainValid = false;
+        continue;
+      }
       const source = entry.record;
       const changes = changesFrom(source);
       const expectedBase = hash(canonicalRecordJson(effective));
       const claimedBase = typeof source.base_sha256 === "string" ? source.base_sha256 : null;
       if (!chainValid || (claimedBase !== null && claimedBase !== legacyBaseSha256)) {
-        refuse(entry, claimedBase !== null && claimedBase !== legacyBaseSha256
-          ? `Legacy revision '${entry.source_identity}' claims base ${claimedBase}, but the immutable legacy base is ${legacyBaseSha256}; preserve the source and reconcile the stale hash before migration.`
-          : `Legacy revision '${entry.source_identity}' follows an invalid or unavailable revision base; preserve the source and repair the ordered chain before migration.`);
+        refuse(
+          entry,
+          claimedBase !== null && claimedBase !== legacyBaseSha256
+            ? `Legacy revision '${entry.source_identity}' claims base ${claimedBase}, but the immutable legacy base is ${legacyBaseSha256}; preserve the source and reconcile the stale hash before migration.`
+            : `Legacy revision '${entry.source_identity}' follows an invalid or unavailable revision base; preserve the source and repair the ordered chain before migration.`,
+        );
         chainValid = false;
         continue;
       }

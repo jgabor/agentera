@@ -7,12 +7,7 @@ import type { JsonObject } from "../core/jsonValue.js";
  * port of scripts/semantic_fixtures.py. Defines the fixture shape only.
  */
 
-export const REQUIRED_SECTIONS = [
-  "Prompt",
-  "Seeded Project State",
-  "Captured Output",
-  "Expected Facts",
-] as const;
+export const REQUIRED_SECTIONS = ["Prompt", "Seeded Project State", "Captured Output", "Expected Facts"] as const;
 
 export interface SemanticFixture {
   prompt: string;
@@ -145,19 +140,14 @@ function validateExpectedFacts(sectionText: string): [JsonObject, string[]] {
 
   const requiredOutput = d.required_output;
   const forbiddenOutput = d.forbidden_output;
-  const hasOutputFact = Boolean(
-    (Array.isArray(requiredOutput) || typeof requiredOutput === "string" ? requiredOutput.length : 0) ||
-      (Array.isArray(forbiddenOutput) || typeof forbiddenOutput === "string" ? forbiddenOutput.length : 0),
-  );
+  const hasOutputFact = Boolean((Array.isArray(requiredOutput) || typeof requiredOutput === "string" ? requiredOutput.length : 0) || (Array.isArray(forbiddenOutput) || typeof forbiddenOutput === "string" ? forbiddenOutput.length : 0));
   const requiredToolCalls = d.required_tool_calls;
   const forbiddenToolCalls = d.forbidden_tool_calls;
   const toolCallCounts = d.tool_call_counts;
   const hasToolFact = Boolean(
     (Array.isArray(requiredToolCalls) || typeof requiredToolCalls === "string" ? requiredToolCalls.length : 0) ||
-      (Array.isArray(forbiddenToolCalls) || typeof forbiddenToolCalls === "string" ? forbiddenToolCalls.length : 0) ||
-      (toolCallCounts && typeof toolCallCounts === "object" && !Array.isArray(toolCallCounts)
-        ? Object.keys(toolCallCounts).length
-        : 0),
+    (Array.isArray(forbiddenToolCalls) || typeof forbiddenToolCalls === "string" ? forbiddenToolCalls.length : 0) ||
+    (toolCallCounts && typeof toolCallCounts === "object" && !Array.isArray(toolCallCounts) ? Object.keys(toolCallCounts).length : 0),
   );
   const hasArtifactFact = "artifact_expectations" in d;
   if (!hasOutputFact && !hasToolFact && !hasArtifactFact) {
@@ -208,9 +198,7 @@ function validateArtifactExpectations(value: unknown): string[] {
     if ("contains" in item) {
       const contains = item.contains;
       if (!Array.isArray(contains) || !contains.every((s: unknown) => nonEmptyString(s))) {
-        return [
-          `malformed section: Expected Facts: artifact_expectations.writes[${index}].contains must be non-empty strings`,
-        ];
+        return [`malformed section: Expected Facts: artifact_expectations.writes[${index}].contains must be non-empty strings`];
       }
     }
   }

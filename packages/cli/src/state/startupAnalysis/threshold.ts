@@ -28,29 +28,9 @@ import {
 export const THRESHOLD_EVIDENCE_ENVELOPE = "threshold_evidence_scan_v1";
 export const THRESHOLD_CLASSIFICATION_ENVELOPE = "threshold_evidence_classification_v1";
 
-export const STATE_EVENT_CLASSES = new Set([
-  "cli_state_call",
-  "raw_artifact_access",
-  "capability_prose_read",
-  "implementation_boundary",
-  "non_state_context",
-]);
-export const BOUNDARY_DEGRADATION_REASONS = new Set([
-  "pre_boundary_record",
-  "missing_timestamp",
-  "malformed_record",
-  "missing_conversation_key",
-  "no_agentera_state_sequence",
-  "privacy_redaction_required",
-]);
-export const BOUNDED_RUNTIME_STATUSES = new Set([
-  "ok",
-  "available",
-  "missing",
-  "sparse",
-  "degraded",
-  "skipped",
-]);
+export const STATE_EVENT_CLASSES = new Set(["cli_state_call", "raw_artifact_access", "capability_prose_read", "implementation_boundary", "non_state_context"]);
+export const BOUNDARY_DEGRADATION_REASONS = new Set(["pre_boundary_record", "missing_timestamp", "malformed_record", "missing_conversation_key", "no_agentera_state_sequence", "privacy_redaction_required"]);
+export const BOUNDED_RUNTIME_STATUSES = new Set(["ok", "available", "missing", "sparse", "degraded", "skipped"]);
 export const BOUNDED_RUNTIME_REASONS = new Set([
   "candidate_files_found",
   "disabled",
@@ -98,19 +78,7 @@ export function boundedRuntimeStatus(status: JsonObject): JsonObject {
   return item;
 }
 
-export const STATE_CLI_COMMANDS = new Set([
-  "status",
-  "prime",
-  "plan",
-  "progress",
-  "health",
-  "todo",
-  "decisions",
-  "docs",
-  "objective",
-  "experiments",
-  "query",
-]);
+export const STATE_CLI_COMMANDS = new Set(["status", "prime", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments", "query"]);
 export function startupConversationKey(record: JsonObject): string | null {
   const key = record.conversation_key;
   if (typeof key === "string" && key) return key;
@@ -128,7 +96,11 @@ export function startupConversationKey(record: JsonObject): string | null {
 
 function stateCliCommand(command: string): string | null {
   if (!command) return null;
-  const tokens = command.replace(/"/g, " ").replace(/'/g, " ").split(/\s+/).filter((t) => t);
+  const tokens = command
+    .replace(/"/g, " ")
+    .replace(/'/g, " ")
+    .split(/\s+/)
+    .filter((t) => t);
   for (let i = 0; i < tokens.length - 1; i++) {
     if (tokens[i].endsWith("agentera") && STATE_CLI_COMMANDS.has(tokens[i + 1])) {
       return tokens[i + 1];
@@ -138,7 +110,11 @@ function stateCliCommand(command: string): string | null {
 }
 function stateCliArtifacts(command: string, stateCommand: string): Set<string> {
   if (stateCommand === "query") {
-    const tokens = command.replace(/"/g, " ").replace(/'/g, " ").split(/\s+/).filter((t) => t);
+    const tokens = command
+      .replace(/"/g, " ")
+      .replace(/'/g, " ")
+      .split(/\s+/)
+      .filter((t) => t);
     for (let i = 0; i < tokens.length - 1; i++) {
       if (tokens[i].endsWith("agentera") && tokens[i + 1] === "query") {
         for (const arg of tokens.slice(i + 2)) {
@@ -165,12 +141,7 @@ export function classifyStartupEvent(record: JsonObject): [string, string | null
     return ["implementation_boundary", null, null, new Set()];
   }
   const argsText = argumentsText(record).replace(/\\/g, "/");
-  if (
-    ["read", "grep", "glob"].includes(tool) &&
-    (argsText.includes("skills/agentera/capabilities/") ||
-      argsText.includes("skills/agentera/SKILL.md") ||
-      argsText.includes("skills/agentera/protocol.yaml"))
-  ) {
+  if (["read", "grep", "glob"].includes(tool) && (argsText.includes("skills/agentera/capabilities/") || argsText.includes("skills/agentera/SKILL.md") || argsText.includes("skills/agentera/protocol.yaml"))) {
     return ["capability_prose_read", argsText.includes("SKILL.md") ? "SKILL.md" : null, null, new Set()];
   }
   const artifactLabel = ["read", "grep", "glob"].includes(tool) ? canonicalArtifactLabel(argsText) : null;
@@ -211,10 +182,7 @@ function nowIsoSeconds(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "+00:00");
 }
 
-export function scanThresholdEvidence(
-  corpus: JsonObject,
-  opts: { salt: string; contract?: JsonObject | null },
-): JsonObject {
+export function scanThresholdEvidence(corpus: JsonObject, opts: { salt: string; contract?: JsonObject | null }): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   let records = corpus && typeof corpus === "object" && !Array.isArray(corpus) ? (corpus.records ?? []) : [];
@@ -223,9 +191,7 @@ export function scanThresholdEvidence(
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) metadata = {};
   let runtimeStatuses = metadata.runtime_statuses;
   if (!Array.isArray(runtimeStatuses)) runtimeStatuses = [];
-  const runtimeCoverage = runtimeStatuses
-    .filter((s): s is JsonObject => s !== null && typeof s === "object" && !Array.isArray(s))
-    .map((s) => boundedRuntimeStatus(s));
+  const runtimeCoverage = runtimeStatuses.filter((s): s is JsonObject => s !== null && typeof s === "object" && !Array.isArray(s)).map((s) => boundedRuntimeStatus(s));
   const coverageCaveats: string[] = [];
   if (runtimeCoverage.length === 0) {
     coverageCaveats.push("No runtime coverage metadata was available for threshold evidence scanning.");
@@ -264,7 +230,10 @@ export function scanThresholdEvidence(
       return ta < tb ? -1 : ta > tb ? 1 : 0;
     });
     let capability = "unknown";
-    let pending: Array<{ event: JsonObject; metrics: { word_count: number; anchor_count: number } }> = [];
+    let pending: Array<{
+      event: JsonObject;
+      metrics: { word_count: number; anchor_count: number };
+    }> = [];
     for (const record of items) {
       const text = recordThresholdText(record);
       const data = record.data && typeof record.data === "object" && !Array.isArray(record.data) ? record.data : {};
@@ -362,10 +331,7 @@ export function scanThresholdEvidence(
   };
 }
 
-export function scanRetainedThresholdEvidence(
-  artifacts: Record<string, string>,
-  opts: { salt: string; contract?: JsonObject | null },
-): JsonObject {
+export function scanRetainedThresholdEvidence(artifacts: Record<string, string>, opts: { salt: string; contract?: JsonObject | null }): JsonObject {
   const salt = opts.salt;
   const loaded = opts.contract ?? loadContract();
   const warningCounts: Record<string, number> = {};
@@ -377,15 +343,13 @@ export function scanRetainedThresholdEvidence(
   for (const sourceLabel of Object.keys(artifacts).sort()) {
     const text = artifacts[sourceLabel];
     if (typeof sourceLabel !== "string" || typeof text !== "string") continue;
-    const artifactLabel =
-      canonicalArtifactLabel(sourceLabel, loaded) || canonicalArtifactLabel(text, loaded) || "unknown";
+    const artifactLabel = canonicalArtifactLabel(sourceLabel, loaded) || canonicalArtifactLabel(text, loaded) || "unknown";
     const warnings = thresholdWarnings(text);
     if (warnings.length === 0) continue;
     const postAuditMarkers = countMatches(POST_AUDIT_FLAG_RE, text);
     const budgetMentions = countMatches(BUDGET_PRESSURE_RE, text);
     const fullPlanBudgetPressure = artifactLabel === "plan" && budgetMentions > 0 && FULL_PLAN_BUDGET_RE.test(text);
-    const detailStatus =
-      postAuditMarkers && fullPlanBudgetPressure ? "retained_artifact_false_positive_signal" : "not_assessed";
+    const detailStatus = postAuditMarkers && fullPlanBudgetPressure ? "retained_artifact_false_positive_signal" : "not_assessed";
 
     const event: JsonObject = {
       event_label: hashLabel("record", sourceLabel, salt),
@@ -533,9 +497,7 @@ export function classifyThresholdEvidence(scan: JsonObject): JsonObject {
     counts: {
       by_classification: counterDict(classificationCounts),
       category_count: categories.length,
-      repeated_false_positive_categories: categories.filter(
-        (c) => c.classification === "likely_false_positive" && Number(c.event_count) >= 2,
-      ).length,
+      repeated_false_positive_categories: categories.filter((c) => c.classification === "likely_false_positive" && Number(c.event_count) >= 2).length,
     },
     recommendation,
     coverage_caveats: coverageCaveats.map((c: unknown) => String(c)),

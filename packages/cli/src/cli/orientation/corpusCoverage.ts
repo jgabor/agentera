@@ -2,11 +2,7 @@ import fs from "node:fs";
 
 import { corpusTooLargeReason } from "../../analytics/usageStats.js";
 import { statsCorpusPath } from "../commands/report.js";
-import {
-  tiersDirForCorpusPath,
-  assessTiers,
-  readBoundedMetadata,
-} from "../../analytics/extractCorpus/index.js";
+import { tiersDirForCorpusPath, assessTiers, readBoundedMetadata } from "../../analytics/extractCorpus/index.js";
 
 type Env = Record<string, string | undefined>;
 
@@ -90,23 +86,14 @@ export function corpusCoverageSummary(env: Env = process.env, platform: NodeJS.P
   } catch {
     return emptyCoverageSummary(corpusPath, "unreadable");
   }
-  const metadata =
-    data && typeof data === "object" && !Array.isArray(data) && "metadata" in data
-      ? (data as { metadata?: unknown }).metadata
-      : null;
+  const metadata = data && typeof data === "object" && !Array.isArray(data) && "metadata" in data ? (data as { metadata?: unknown }).metadata : null;
   if (!metadata || typeof metadata !== "object" || Array.isArray(metadata)) {
     return emptyCoverageSummary(corpusPath, "unreadable");
   }
   const md = metadata as Record<string, unknown>;
-  const availableRuntimes = Array.isArray(md.available_runtimes)
-    ? md.available_runtimes.filter((item): item is string => typeof item === "string")
-    : [];
-  const selectedRuntimes = Array.isArray(md.selected_runtimes)
-    ? md.selected_runtimes.filter((item): item is string => typeof item === "string")
-    : [];
-  const skipped = Array.isArray(md.available_but_not_selected)
-    ? md.available_but_not_selected.map(parseCoverageGap).filter((item): item is CorpusCoverageGap => item !== null)
-    : [];
+  const availableRuntimes = Array.isArray(md.available_runtimes) ? md.available_runtimes.filter((item): item is string => typeof item === "string") : [];
+  const selectedRuntimes = Array.isArray(md.selected_runtimes) ? md.selected_runtimes.filter((item): item is string => typeof item === "string") : [];
+  const skipped = Array.isArray(md.available_but_not_selected) ? md.available_but_not_selected.map(parseCoverageGap).filter((item): item is CorpusCoverageGap => item !== null) : [];
   return {
     path: corpusPath,
     status: "loaded",
@@ -120,8 +107,5 @@ export function corpusCoverageSummary(env: Env = process.env, platform: NodeJS.P
 export function corpusCoverageAttention(summary: CorpusCoverageSummary): string | null {
   if (summary.available_but_not_selected.length === 0) return null;
   const skipped = summary.available_but_not_selected.map((item) => `${item.runtime} (${item.reason})`).join(", ");
-  return (
-    `flagged: corpus coverage loss (EX2): available runtimes skipped (${skipped}); ` +
-    "suggest running profile stats refresh without --no-* flags"
-  );
+  return `flagged: corpus coverage loss (EX2): available runtimes skipped (${skipped}); ` + "suggest running profile stats refresh without --no-* flags";
 }

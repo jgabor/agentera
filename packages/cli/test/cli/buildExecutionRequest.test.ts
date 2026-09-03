@@ -7,37 +7,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import {
-  BUILD_EXECUTION_REQUEST_MAX_UTF8_BYTES,
-  BuildExecutionRequestError,
-  loadBuildExecutionRequest,
-  type BuildExecutionRequest,
-} from "../../src/cli/commands/prime/buildExecutionRequest.js";
+import { BUILD_EXECUTION_REQUEST_MAX_UTF8_BYTES, BuildExecutionRequestError, loadBuildExecutionRequest, type BuildExecutionRequest } from "../../src/cli/commands/prime/buildExecutionRequest.js";
 import { main } from "../../src/cli/dispatch.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 import { planLifecycleState } from "../../src/cli/planLifecycleState.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const VALID_YAML = [
-  "schema_version: agentera.buildExecutionRequest.v1",
-  "scope: Repair bounded startup",
-  "acceptance:",
-  "  - No plan fallback is emitted",
-  "",
-].join("\n");
-const VALID_EMPTY_PROFILE = [
-  "# Profile",
-  "",
-  "<!-- agentera:personal-glossary:start -->",
-  "## Glossary",
-  "",
-  "```json",
-  '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}',
-  "```",
-  "<!-- agentera:personal-glossary:end -->",
-  "",
-].join("\n");
+const VALID_YAML = ["schema_version: agentera.buildExecutionRequest.v1", "scope: Repair bounded startup", "acceptance:", "  - No plan fallback is emitted", ""].join("\n");
+const VALID_EMPTY_PROFILE = ["# Profile", "", "<!-- agentera:personal-glossary:start -->", "## Glossary", "", "```json", '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}', "```", "<!-- agentera:personal-glossary:end -->", ""].join("\n");
 
 let tmp: string;
 
@@ -52,7 +30,14 @@ afterEach(() => {
 function capture(fn: (io: { out: (text: string) => void; err: (text: string) => void; stdin?: () => string }) => number) {
   let out = "";
   let err = "";
-  const io = { out: (text: string) => { out += text; }, err: (text: string) => { err += text; } };
+  const io = {
+    out: (text: string) => {
+      out += text;
+    },
+    err: (text: string) => {
+      err += text;
+    },
+  };
   const rc = fn(io);
   return { rc, out, err };
 }
@@ -76,11 +61,13 @@ describe("Build execution request parser", () => {
     fs.writeFileSync(file, VALID_YAML);
     expect(loadBuildExecutionRequest(file)).toEqual(request("file"));
 
-    const fromStdin = loadBuildExecutionRequest("-", () => JSON.stringify({
-      schema_version: "agentera.buildExecutionRequest.v1",
-      scope: "Repair bounded startup",
-      acceptance: ["No plan fallback is emitted"],
-    }));
+    const fromStdin = loadBuildExecutionRequest("-", () =>
+      JSON.stringify({
+        schema_version: "agentera.buildExecutionRequest.v1",
+        scope: "Repair bounded startup",
+        acceptance: ["No plan fallback is emitted"],
+      }),
+    );
     expect(fromStdin).toEqual(request("stdin"));
   });
 
@@ -93,7 +80,17 @@ describe("Build execution request parser", () => {
     ["empty scope", Buffer.from(VALID_YAML.replace("Repair bounded startup", "   "), "utf8")],
     ["overlong scope", Buffer.from(VALID_YAML.replace("Repair bounded startup", "x".repeat(161)), "utf8")],
     ["overlong acceptance", Buffer.from(VALID_YAML.replace("No plan fallback is emitted", "x".repeat(161)), "utf8")],
-    ["control character", Buffer.from(JSON.stringify({ schema_version: "agentera.buildExecutionRequest.v1", scope: "bad\u0007", acceptance: ["pass"] }), "utf8")],
+    [
+      "control character",
+      Buffer.from(
+        JSON.stringify({
+          schema_version: "agentera.buildExecutionRequest.v1",
+          scope: "bad\u0007",
+          acceptance: ["pass"],
+        }),
+        "utf8",
+      ),
+    ],
     ["empty acceptance", Buffer.from(VALID_YAML.replace("  - No plan fallback is emitted", "  - ' '"), "utf8")],
     ["too many acceptance items", Buffer.from(VALID_YAML.replace("  - No plan fallback is emitted", Array.from({ length: 13 }, (_, i) => `  - item ${i}`).join("\n")), "utf8")],
     ["duplicate acceptance", Buffer.from(VALID_YAML.replace("  - No plan fallback is emitted", "  - same\n  - same"), "utf8")],
@@ -113,14 +110,19 @@ describe("Build execution request parser", () => {
     const sensitive = `private-${"x".repeat(BUILD_EXECUTION_REQUEST_MAX_UTF8_BYTES + 1)}`;
     const file = path.join(tmp, "oversized-request.yaml");
     if (sourceKind === "file") fs.writeFileSync(file, sensitive);
-    const result = capture((io) => cmdPrime({
-      context: "build",
-      format: "json",
-      input: sourceKind === "file" ? file : "-",
-      projectRoot: tmp,
-      home: path.join(tmp, "home"),
-      installRoot: REPO_ROOT,
-    }, sourceKind === "stdin" ? { ...io, stdin: () => sensitive } : io));
+    const result = capture((io) =>
+      cmdPrime(
+        {
+          context: "build",
+          format: "json",
+          input: sourceKind === "file" ? file : "-",
+          projectRoot: tmp,
+          home: path.join(tmp, "home"),
+          installRoot: REPO_ROOT,
+        },
+        sourceKind === "stdin" ? { ...io, stdin: () => sensitive } : io,
+      ),
+    );
     expect(result.rc).toBe(2);
     expect(JSON.parse(result.out)).toMatchObject({
       schemaVersion: "agentera.invalidInputEnvelope.v2",
@@ -136,10 +138,19 @@ describe("Build execution request parser", () => {
     const input = path.join(tmp, kind);
     if (kind === "symlink") fs.symlinkSync(target, input);
     else fs.mkdirSync(input);
-    const result = capture((io) => cmdPrime({
-      context: "build", format: "json", input, projectRoot: tmp,
-      home: path.join(tmp, "home"), installRoot: REPO_ROOT,
-    }, io));
+    const result = capture((io) =>
+      cmdPrime(
+        {
+          context: "build",
+          format: "json",
+          input,
+          projectRoot: tmp,
+          home: path.join(tmp, "home"),
+          installRoot: REPO_ROOT,
+        },
+        io,
+      ),
+    );
     expect(result.rc).toBe(2);
     expect(JSON.parse(result.out)).toMatchObject({
       schemaVersion: "agentera.invalidInputEnvelope.v2",
@@ -204,7 +215,10 @@ describe("Build no-plan execution context", () => {
       acceptance_criteria: {
         status: "available",
         items: ["No plan fallback is emitted"],
-        source_provenance: { field: "acceptance", schema_version: "agentera.buildExecutionRequest.v1" },
+        source_provenance: {
+          field: "acceptance",
+          schema_version: "agentera.buildExecutionRequest.v1",
+        },
       },
       artifact_update_requirements: {
         required_families: ["todo", "changelog"],
@@ -218,11 +232,10 @@ describe("Build no-plan execution context", () => {
   });
 
   it("fails safe without transient input and gives one advancing no-plan recovery", () => {
-    const context = buildExecutionContext(
-      "build", {}, { exists: false, active: false, tasks: [] }, { exists: false }, { exists: false }, [],
-      { exists: false }, { status: "not_loaded" }, { status: "up_to_date" }, tmp,
-    );
-    expect(planLifecycleState({ exists: false, active: false })).toMatchObject({ status: "unavailable" });
+    const context = buildExecutionContext("build", {}, { exists: false, active: false, tasks: [] }, { exists: false }, { exists: false }, [], { exists: false }, { status: "not_loaded" }, { status: "up_to_date" }, tmp);
+    expect(planLifecycleState({ exists: false, active: false })).toMatchObject({
+      status: "unavailable",
+    });
     expect(context).toMatchObject({
       mode: "no_plan",
       plan_lifecycle_state: { status: "unavailable" },
@@ -236,42 +249,82 @@ describe("Build no-plan execution context", () => {
   it("allows healthy archived-only history with transient work but keeps degraded history fail-safe", () => {
     const changelog = path.join(tmp, "CHANGELOG.md");
     fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n## [1.0.0] - 2026-01-01\n");
-    const base = [
-      "build", schema("changelog", changelog), undefined, { exists: true }, { exists: true },
-      [{ status: "open", severity: "normal", text: "bounded work" }], { exists: true, mapping: [] },
-      { status: "loaded" }, { status: "up_to_date" }, tmp, request(),
-    ] as const;
-    const healthy = buildExecutionContext(...[...base.slice(0, 2), { exists: true, active: false, tasks: [] }, ...base.slice(3)] as Parameters<typeof buildExecutionContext>);
-    const degraded = buildExecutionContext(...[...base.slice(0, 2), { exists: true, active: false, tasks: [], diagnostics: [{ category: "invalid", path: "archive" }] }, ...base.slice(3)] as Parameters<typeof buildExecutionContext>);
-    expect(healthy).toMatchObject({ mode: "no_plan", source_contract: { complete_for_execution_context: true } });
+    const base = ["build", schema("changelog", changelog), undefined, { exists: true }, { exists: true }, [{ status: "open", severity: "normal", text: "bounded work" }], { exists: true, mapping: [] }, { status: "loaded" }, { status: "up_to_date" }, tmp, request()] as const;
+    const healthy = buildExecutionContext(...([...base.slice(0, 2), { exists: true, active: false, tasks: [] }, ...base.slice(3)] as Parameters<typeof buildExecutionContext>));
+    const degraded = buildExecutionContext(
+      ...([
+        ...base.slice(0, 2),
+        {
+          exists: true,
+          active: false,
+          tasks: [],
+          diagnostics: [{ category: "invalid", path: "archive" }],
+        },
+        ...base.slice(3),
+      ] as Parameters<typeof buildExecutionContext>),
+    );
+    expect(healthy).toMatchObject({
+      mode: "no_plan",
+      source_contract: { complete_for_execution_context: true },
+    });
     expect(healthy?.fallback_commands).not.toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
-    expect(degraded).toMatchObject({ mode: "no_plan", source_contract: { complete_for_execution_context: false } });
+    expect(degraded).toMatchObject({
+      mode: "no_plan",
+      source_contract: { complete_for_execution_context: false },
+    });
     expect(degraded?.fallback_commands).toContain(STATE_FAMILY_FALLBACK_COMMANDS.plan);
   });
 
   it("preserves plan-driven and completed-plan pass and fail-safe completeness", () => {
     const changelog = path.join(tmp, "CHANGELOG.md");
     fs.writeFileSync(changelog, "# Changelog\n\n## [Unreleased]\n## [1.0.0] - 2026-01-01\n");
-    const run = (plan: Record<string, unknown>, docsExists = true) => buildExecutionContext(
-      "build", schema("changelog", changelog), plan, { exists: true }, { exists: true },
-      [{ status: "open", severity: "normal", text: "bounded work" }],
-      { exists: docsExists, mapping: [] }, { status: "loaded" }, { status: "up_to_date" }, tmp,
-    );
+    const run = (plan: Record<string, unknown>, docsExists = true) =>
+      buildExecutionContext("build", schema("changelog", changelog), plan, { exists: true }, { exists: true }, [{ status: "open", severity: "normal", text: "bounded work" }], { exists: docsExists, mapping: [] }, { status: "loaded" }, { status: "up_to_date" }, tmp);
     const pending = {
-      exists: true, active: true, complete_plan: false,
-      tasks: [{ id: "aaaaaaaaaa", name: "Current", status: "pending", depends_on: [], acceptance: ["Pass"] }],
+      exists: true,
+      active: true,
+      complete_plan: false,
+      tasks: [
+        {
+          id: "aaaaaaaaaa",
+          name: "Current",
+          status: "pending",
+          depends_on: [],
+          acceptance: ["Pass"],
+        },
+      ],
     };
-    expect(run(pending)).toMatchObject({ mode: "plan_driven", source_contract: { complete_for_execution_context: true } });
+    expect(run(pending)).toMatchObject({
+      mode: "plan_driven",
+      source_contract: { complete_for_execution_context: true },
+    });
     expect(run({ ...pending, tasks: [{ ...pending.tasks[0], acceptance: [] }] })).toMatchObject({
-      mode: "plan_driven", source_contract: { complete_for_execution_context: false },
+      mode: "plan_driven",
+      source_contract: { complete_for_execution_context: false },
     });
 
     const completed = {
-      exists: true, active: true, complete_plan: true,
-      tasks: [{ id: "bbbbbbbbbb", name: "Done", status: "complete", depends_on: [], acceptance: ["Pass"] }],
+      exists: true,
+      active: true,
+      complete_plan: true,
+      tasks: [
+        {
+          id: "bbbbbbbbbb",
+          name: "Done",
+          status: "complete",
+          depends_on: [],
+          acceptance: ["Pass"],
+        },
+      ],
     };
-    expect(run(completed)).toMatchObject({ mode: "completed_plan_sweep", source_contract: { complete_for_execution_context: true } });
-    expect(run(completed, false)).toMatchObject({ mode: "completed_plan_sweep", source_contract: { complete_for_execution_context: false } });
+    expect(run(completed)).toMatchObject({
+      mode: "completed_plan_sweep",
+      source_contract: { complete_for_execution_context: true },
+    });
+    expect(run(completed, false)).toMatchObject({
+      mode: "completed_plan_sweep",
+      source_contract: { complete_for_execution_context: false },
+    });
   });
 });
 
@@ -283,18 +336,29 @@ describe("prime --context build --input", () => {
     ["dashboard", ["--context", "build", "--dashboard"]],
     ["guidance", ["--context", "build", "--guidance"]],
   ])("rejects %s input use before reading input through the canonical envelope", (name, mode) => {
-    const { rc, out } = capture((io) => main([
-      "node", "agentera", "prime", ...mode, "--input", "sensitive-request.yaml", "--format", "json",
-    ], io));
+    const { rc, out } = capture((io) => main(["node", "agentera", "prime", ...mode, "--input", "sensitive-request.yaml", "--format", "json"], io));
     expect(rc).toBe(2);
-    expect(JSON.parse(out)).toMatchObject({ schemaVersion: "agentera.invalidInputEnvelope.v2", error: { class: name === "guidance" ? "unrecognized_argument" : "unsupported_target" } });
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      error: { class: name === "guidance" ? "unrecognized_argument" : "unsupported_target" },
+    });
     expect(out).not.toContain("sensitive-request");
   });
 
   it("emits the canonical envelope for malformed request input", () => {
-    const { rc, out } = capture((io) => cmdPrime({
-      context: "build", format: "json", input: "-", projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
-    }, { ...io, stdin: () => "scope: [" }));
+    const { rc, out } = capture((io) =>
+      cmdPrime(
+        {
+          context: "build",
+          format: "json",
+          input: "-",
+          projectRoot: tmp,
+          home: path.join(tmp, "home"),
+          installRoot: REPO_ROOT,
+        },
+        { ...io, stdin: () => "scope: [" },
+      ),
+    );
     expect(rc).toBe(2);
     expect(JSON.parse(out)).toMatchObject({
       schemaVersion: "agentera.invalidInputEnvelope.v2",
@@ -307,19 +371,30 @@ describe("prime --context build --input", () => {
     const planDir = path.join(tmp, ".agentera/entities/plan/plan");
     fs.mkdirSync(planDir, { recursive: true });
     fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    fs.writeFileSync(path.join(planDir, "aaaaaaaaaa.yaml"), [
-      "id: aaaaaaaaaa", "artifact: plan", "record:", "  header:", "    level: light", "    created: 2026-07-30",
-      "    title: Current", "    status: open", "  what: Execute current work", "  why: Preserve plan ownership",
-      "  scope:", "    included: [state]", "    excluded: []", "",
-    ].join("\n"));
+    fs.writeFileSync(
+      path.join(planDir, "aaaaaaaaaa.yaml"),
+      ["id: aaaaaaaaaa", "artifact: plan", "record:", "  header:", "    level: light", "    created: 2026-07-30", "    title: Current", "    status: open", "  what: Execute current work", "  why: Preserve plan ownership", "  scope:", "    included: [state]", "    excluded: []", ""].join("\n"),
+    );
     const input = path.join(tmp, "request.yaml");
     fs.writeFileSync(input, VALID_YAML);
-    const { rc, out } = capture((io) => cmdPrime({
-      context: "build", format: "json", input, projectRoot: tmp, home: path.join(tmp, "home"),
-      installRoot: REPO_ROOT,
-    }, io));
+    const { rc, out } = capture((io) =>
+      cmdPrime(
+        {
+          context: "build",
+          format: "json",
+          input,
+          projectRoot: tmp,
+          home: path.join(tmp, "home"),
+          installRoot: REPO_ROOT,
+        },
+        io,
+      ),
+    );
     expect(rc).toBe(2);
-    expect(JSON.parse(out)).toMatchObject({ schemaVersion: "agentera.invalidInputEnvelope.v2", error: { class: "conflict" } });
+    expect(JSON.parse(out)).toMatchObject({
+      schemaVersion: "agentera.invalidInputEnvelope.v2",
+      error: { class: "conflict" },
+    });
     expect(out).not.toContain("Repair bounded startup");
   });
 
@@ -327,9 +402,19 @@ describe("prime --context build --input", () => {
     fs.mkdirSync(path.join(tmp, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const before = fs.readFileSync(path.join(tmp, ".agentera/state-mode.yaml"), "utf8");
-    const result = capture((io) => cmdPrime({
-      context: "build", format: "json", input: "-", projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
-    }, { ...io, stdin: () => VALID_YAML }));
+    const result = capture((io) =>
+      cmdPrime(
+        {
+          context: "build",
+          format: "json",
+          input: "-",
+          projectRoot: tmp,
+          home: path.join(tmp, "home"),
+          installRoot: REPO_ROOT,
+        },
+        { ...io, stdin: () => VALID_YAML },
+      ),
+    );
     expect(result.rc).toBe(0);
     const execution = JSON.parse(result.out).capability_context.context.execution_context;
     expect(execution).toMatchObject({
@@ -355,10 +440,20 @@ describe("prime --context build --input", () => {
 
     vi.stubEnv("AGENTERA_PROFILE_DIR", profileDir);
     try {
-      const result = capture((io) => cmdPrime({
-        context: "build", format: "json", input: requestFile, termInput: termFile,
-        projectRoot: tmp, home: path.join(tmp, "home"), installRoot: REPO_ROOT,
-      }, io));
+      const result = capture((io) =>
+        cmdPrime(
+          {
+            context: "build",
+            format: "json",
+            input: requestFile,
+            termInput: termFile,
+            projectRoot: tmp,
+            home: path.join(tmp, "home"),
+            installRoot: REPO_ROOT,
+          },
+          io,
+        ),
+      );
 
       expect(result.rc).toBe(0);
       const payload = JSON.parse(result.out).capability_context;
@@ -372,9 +467,15 @@ describe("prime --context build --input", () => {
 
   it("rejects shared stdin before reading either input", () => {
     let reads = 0;
-    const result = capture((io) => main([
-      "node", "agentera", "prime", "--context", "build", "--input", "-", "--term-input", "-", "--format", "json",
-    ], { ...io, stdin: () => { reads += 1; return "private"; } }));
+    const result = capture((io) =>
+      main(["node", "agentera", "prime", "--context", "build", "--input", "-", "--term-input", "-", "--format", "json"], {
+        ...io,
+        stdin: () => {
+          reads += 1;
+          return "private";
+        },
+      }),
+    );
     expect(result.rc).toBe(2);
     expect(JSON.parse(result.out).error.class).toBe("conflicting_stdin");
     expect(reads).toBe(0);

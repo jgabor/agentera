@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  aggregateStartupMetrics,
-  classifyStartupRecords,
-} from "../../src/state/startupAnalysis.js";
+import { aggregateStartupMetrics, classifyStartupRecords } from "../../src/state/startupAnalysis.js";
 
 const CONTRACT = {
   version: "vT",
@@ -14,11 +11,41 @@ const CONTRACT = {
 function corpus(): any {
   return {
     records: [
-      { source_kind: "conversation_turn", source_id: "u1", session_id: "c1", timestamp: "2026-02-01T00:00:00Z", data: { actor: "user", content: "/build build it" } },
-      { source_kind: "tool_call", source_id: "t1", session_id: "c1", timestamp: "2026-02-01T00:00:01Z", data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } } },
-      { source_kind: "tool_call", source_id: "t2", session_id: "c1", timestamp: "2026-02-01T00:00:02Z", data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } } },
-      { source_kind: "tool_call", source_id: "t3", session_id: "c1", timestamp: "2026-02-01T00:00:03Z", data: { tool: "read", arguments: { path: ".agentera/health.yaml" } } },
-      { source_kind: "tool_call", source_id: "t4", session_id: "c1", timestamp: "2026-02-01T00:00:04Z", data: { tool: "apply_patch", arguments: { path: "x.py" } } },
+      {
+        source_kind: "conversation_turn",
+        source_id: "u1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:00Z",
+        data: { actor: "user", content: "/build build it" },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t1",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:01Z",
+        data: { tool: "bash", arguments: { command: "uv run scripts/agentera plan" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t2",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:02Z",
+        data: { tool: "read", arguments: { path: ".agentera/plan.yaml" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t3",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:03Z",
+        data: { tool: "read", arguments: { path: ".agentera/health.yaml" } },
+      },
+      {
+        source_kind: "tool_call",
+        source_id: "t4",
+        session_id: "c1",
+        timestamp: "2026-02-01T00:00:04Z",
+        data: { tool: "apply_patch", arguments: { path: "x.py" } },
+      },
     ],
   };
 }

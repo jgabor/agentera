@@ -64,13 +64,8 @@ function boundedCounts(value: JsonObject): TodoReconciliationInspection["counts"
     stale: numberValue(value.stale),
     conflicting: numberValue(value.conflicting),
   };
-  const counts = Object.fromEntries(
-    Object.entries(raw).map(([key, count]) => [key, Math.min(count, DIAGNOSTIC_LIMIT)]),
-  ) as TodoReconciliationInspection["counts"];
-  const omitted = Object.values(raw).reduce(
-    (total, count) => total + Math.max(0, count - DIAGNOSTIC_LIMIT),
-    numberValue(value.omitted_count),
-  );
+  const counts = Object.fromEntries(Object.entries(raw).map(([key, count]) => [key, Math.min(count, DIAGNOSTIC_LIMIT)])) as TodoReconciliationInspection["counts"];
+  const omitted = Object.values(raw).reduce((total, count) => total + Math.max(0, count - DIAGNOSTIC_LIMIT), numberValue(value.omitted_count));
   return { ...counts, omitted: Math.min(DIAGNOSTIC_LIMIT, omitted) };
 }
 
@@ -139,11 +134,7 @@ function errorInspection(state: "unsafe_inactive" | "unsafe_active", error: unkn
 }
 
 /** Read-only classification shared by prime, doctor, and whole-state validation. */
-export function inspectTodoReconciliationState(
-  root: string,
-  sourceRoot = resolveSourceRoot(),
-  discovery?: EntityDiscoveryResult,
-): TodoReconciliationInspection | null {
+export function inspectTodoReconciliationState(root: string, sourceRoot = resolveSourceRoot(), discovery?: EntityDiscoveryResult): TodoReconciliationInspection | null {
   try {
     if (detectStateMode(root, sourceRoot) !== "entities") return null;
   } catch {
@@ -185,7 +176,13 @@ export function inspectTodoReconciliationState(
 }
 
 function publicSnapshot(record: JsonObject, order?: number): Record<string, unknown> {
-  return { present: true, description: renderTodoPublicRecord(record), severity: String(record.severity), status: String(record.status), ...(order === undefined ? {} : { order }) };
+  return {
+    present: true,
+    description: renderTodoPublicRecord(record),
+    severity: String(record.severity),
+    status: String(record.status),
+    ...(order === undefined ? {} : { order }),
+  };
 }
 
 function baseline(record: JsonObject): Record<string, unknown> | null {
@@ -195,7 +192,10 @@ function baseline(record: JsonObject): Record<string, unknown> | null {
 }
 
 function rowSnapshot(row: ManagedRow, record: JsonObject): Record<string, unknown> {
-  return { ...row.snapshot, severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity };
+  return {
+    ...row.snapshot,
+    severity: row.section === "resolved" ? String(record.severity) : row.snapshot.severity,
+  };
 }
 
 function samePublic(left: Record<string, unknown>, right: Record<string, unknown>, includeOrder = true): boolean {
@@ -203,14 +203,15 @@ function samePublic(left: Record<string, unknown>, right: Record<string, unknown
   return fields.every((field) => left[field] === right[field]);
 }
 
-export function todoCutoverPublicProjectionViolations(
-  markdown: string,
-  targets: readonly { id: string; record: JsonObject }[],
-): string[] {
+export function todoCutoverPublicProjectionViolations(markdown: string, targets: readonly { id: string; record: JsonObject }[]): string[] {
   let rows: Map<string, ManagedRow>;
   try {
     const activation = JSON.parse(todoReconciliationActivationBytes([]));
-    rows = managedRows(markdown, activation, targets.map(({ id, record }) => ({ boundary: "todo_item", id, record }))).rows;
+    rows = managedRows(
+      markdown,
+      activation,
+      targets.map(({ id, record }) => ({ boundary: "todo_item", id, record })),
+    ).rows;
   } catch (error) {
     return [error instanceof StateWriteInputError ? error.body.message : (error as Error).message];
   }

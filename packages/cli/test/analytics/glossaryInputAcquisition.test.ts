@@ -5,21 +5,11 @@ import path from "node:path";
 import YAML from "yaml";
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  acquireGlossaryInputs,
-  acquirePersonalGlossaryInput,
-  acquireProjectGlossaryInput,
-} from "../../src/analytics/glossaryInputAcquisition.js";
-import {
-  assessTerminologyDrift,
-  type TerminologyDriftFinding,
-} from "../../src/audit/terminologyDrift.js";
+import { acquireGlossaryInputs, acquirePersonalGlossaryInput, acquireProjectGlossaryInput } from "../../src/analytics/glossaryInputAcquisition.js";
+import { assessTerminologyDrift, type TerminologyDriftFinding } from "../../src/audit/terminologyDrift.js";
 import { main } from "../../src/cli/dispatch.js";
 import { glossaryAcquisitionContract } from "../../src/registries/glossaryEntryContract.js";
-import {
-  updatePersonalGlossaryProfile,
-  type PersonalGlossaryEntry,
-} from "../../src/analytics/personalGlossaryProfile.js";
+import { updatePersonalGlossaryProfile, type PersonalGlossaryEntry } from "../../src/analytics/personalGlossaryProfile.js";
 
 const roots: string[] = [];
 const START = "<!-- agentera:personal-glossary:start -->";
@@ -34,10 +24,7 @@ function temporaryRoot(label: string): string {
 function projectRoot(): string {
   const root = temporaryRoot("glossary-acquisition-project");
   fs.mkdirSync(path.join(root, ".agentera"));
-  fs.writeFileSync(
-    path.join(root, ".agentera/state-mode.yaml"),
-    "schemaVersion: agentera.stateMode.v1\nmode: entities\n",
-  );
+  fs.writeFileSync(path.join(root, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   return root;
 }
 
@@ -138,22 +125,7 @@ function publishProjectGlossary(root: string): string {
       confirmed_at: "2026-07-27T12:00:00Z",
     },
   };
-  const rc = main(
-    [
-      "node",
-      "agentera",
-      "state",
-      "glossary",
-      "publish",
-      "--input",
-      "-",
-      "--format",
-      "json",
-      "--project",
-      root,
-    ],
-    { out: () => {}, err: () => {}, stdin: () => JSON.stringify(request) },
-  );
+  const rc = main(["node", "agentera", "state", "glossary", "publish", "--input", "-", "--format", "json", "--project", root], { out: () => {}, err: () => {}, stdin: () => JSON.stringify(request) });
   expect(rc).toBe(0);
   return path.join(root, ".agentera/glossary.yaml");
 }
@@ -181,15 +153,7 @@ describe("bounded glossary input acquisition", () => {
     expect(glossaryAcquisitionContract()).toEqual({
       maxSourceUtf8Bytes: 65536,
       maxEntries: 100,
-      availabilityStates: [
-        "absent",
-        "valid_empty",
-        "valid_present",
-        "malformed",
-        "unreadable",
-        "ambiguous",
-        "over_bound",
-      ],
+      availabilityStates: ["absent", "valid_empty", "valid_present", "malformed", "unreadable", "ambiguous", "over_bound"],
       outputEntryFields: ["term", "meaning", "owner"],
     });
   });
@@ -221,9 +185,7 @@ describe("bounded glossary input acquisition", () => {
       gap_proving: false,
       diagnostic: null,
     });
-    expect(JSON.stringify(present)).not.toMatch(
-      /approval|proposal|source_path|provenance|term\.ts/,
-    );
+    expect(JSON.stringify(present)).not.toMatch(/approval|proposal|source_path|provenance|term\.ts/);
     expect(present).not.toHaveProperty("gapProving");
   });
 
@@ -268,9 +230,7 @@ describe("bounded glossary input acquisition", () => {
       gap_proving: false,
       diagnostic: null,
     });
-    expect(JSON.stringify(present)).not.toMatch(
-      /PRIVATE_PROFILE_TRAP|PRIVATE_SOURCE|PRIVATE_ANCHOR|provenance|profile/i,
-    );
+    expect(JSON.stringify(present)).not.toMatch(/PRIVATE_PROFILE_TRAP|PRIVATE_SOURCE|PRIVATE_ANCHOR|provenance|profile/i);
   });
 
   it.each([
@@ -308,10 +268,7 @@ describe("bounded glossary input acquisition", () => {
     });
 
     const invalidRoot = projectRoot();
-    fs.writeFileSync(
-      path.join(invalidRoot, ".agentera/glossary.yaml"),
-      Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_PROJECT_TRAP")]),
-    );
+    fs.writeFileSync(path.join(invalidRoot, ".agentera/glossary.yaml"), Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_PROJECT_TRAP")]));
     const malformed = acquireProjectGlossaryInput(invalidRoot);
     expect(malformed).toMatchObject({ availability: "malformed", entries: [], gap_proving: false });
     expect(JSON.stringify(malformed)).not.toContain("PRIVATE_INVALID_UTF8_PROJECT_TRAP");
@@ -378,15 +335,10 @@ describe("bounded glossary input acquisition", () => {
     fs.symlinkSync(externalDocs, path.join(symlinkRoot, ".agentera/docs.yaml"));
     const symlinked = acquireProjectGlossaryInput(symlinkRoot);
     expect(symlinked).toMatchObject({ availability: "ambiguous", entries: [], gap_proving: false });
-    expect(JSON.stringify(symlinked)).not.toMatch(
-      /PRIVATE_EXTERNAL_TARGET|external-docs-authority/,
-    );
+    expect(JSON.stringify(symlinked)).not.toMatch(/PRIVATE_EXTERNAL_TARGET|external-docs-authority/);
 
     const invalidDocsRoot = projectRoot();
-    fs.writeFileSync(
-      path.join(invalidDocsRoot, ".agentera/docs.yaml"),
-      Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_DOCS_TARGET")]),
-    );
+    fs.writeFileSync(path.join(invalidDocsRoot, ".agentera/docs.yaml"), Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_DOCS_TARGET")]));
     const invalidDocs = acquireProjectGlossaryInput(invalidDocsRoot);
     expect(invalidDocs).toMatchObject({
       availability: "ambiguous",
@@ -396,19 +348,13 @@ describe("bounded glossary input acquisition", () => {
     expect(JSON.stringify(invalidDocs)).not.toContain("PRIVATE_INVALID_UTF8_DOCS_TARGET");
 
     const docsSwapRoot = projectRoot();
-    fs.writeFileSync(
-      path.join(docsSwapRoot, ".agentera/docs.yaml"),
-      YAML.stringify({ mapping: [] }),
-    );
+    fs.writeFileSync(path.join(docsSwapRoot, ".agentera/docs.yaml"), YAML.stringify({ mapping: [] }));
     let docsSwapped = false;
     const docsRaced = acquireProjectGlossaryInput(docsSwapRoot, {
       afterPathSnapshot(kind) {
         if (kind !== "docs_override" || docsSwapped) return;
         docsSwapped = true;
-        fs.renameSync(
-          path.join(docsSwapRoot, ".agentera"),
-          path.join(docsSwapRoot, ".agentera-old"),
-        );
+        fs.renameSync(path.join(docsSwapRoot, ".agentera"), path.join(docsSwapRoot, ".agentera-old"));
         fs.mkdirSync(path.join(docsSwapRoot, ".agentera"));
         fs.writeFileSync(
           path.join(docsSwapRoot, ".agentera/docs.yaml"),
@@ -449,17 +395,13 @@ describe("bounded glossary input acquisition", () => {
   });
 
   it("fails closed for malformed, ambiguous, unreadable, byte-over-bound, and entry-over-bound personal input", () => {
-    const malformed = profilePath(
-      `${START}\n## Glossary\n\n\`\`\`json\nPRIVATE_RAW_TRAP\n\`\`\`\n${END}`,
-    );
+    const malformed = profilePath(`${START}\n## Glossary\n\n\`\`\`json\nPRIVATE_RAW_TRAP\n\`\`\`\n${END}`);
     expect(acquirePersonalGlossaryInput(malformed)).toMatchObject({
       availability: "malformed",
       entries: [],
     });
 
-    const ambiguous = profilePath(
-      `${START}\n## Glossary\n${END}\n${START}\nPRIVATE_AMBIGUOUS_TRAP`,
-    );
+    const ambiguous = profilePath(`${START}\n## Glossary\n${END}\n${START}\nPRIVATE_AMBIGUOUS_TRAP`);
     expect(acquirePersonalGlossaryInput(ambiguous)).toMatchObject({
       availability: "ambiguous",
       entries: [],
@@ -483,9 +425,7 @@ describe("bounded glossary input acquisition", () => {
     writePersonalGlossaryFixture(overCount, 101);
     const bounded = acquirePersonalGlossaryInput(overCount);
     expect(bounded).toMatchObject({ availability: "over_bound", entries: [] });
-    expect(
-      JSON.stringify({ malformed: acquirePersonalGlossaryInput(malformed), bounded }),
-    ).not.toMatch(/PRIVATE_RAW_TRAP|PRIVATE_SOURCE|PRIVATE_ANCHOR|PRIVATE_OVERSIZE_TRAP/);
+    expect(JSON.stringify({ malformed: acquirePersonalGlossaryInput(malformed), bounded })).not.toMatch(/PRIVATE_RAW_TRAP|PRIVATE_SOURCE|PRIVATE_ANCHOR|PRIVATE_OVERSIZE_TRAP/);
   });
 
   it("accepts exact personal byte and entry bounds and fatally rejects invalid UTF-8", () => {
@@ -503,17 +443,12 @@ describe("bounded glossary input acquisition", () => {
     expect(fs.statSync(exactEntries).size).toBeLessThanOrEqual(65536);
     expect(acquirePersonalGlossaryInput(exactEntries)).toMatchObject({
       availability: "valid_present",
-      entries: expect.arrayContaining([
-        { term: "PersonalTerm99", meaning: "Personal meaning 99", owner: "personal" },
-      ]),
+      entries: expect.arrayContaining([{ term: "PersonalTerm99", meaning: "Personal meaning 99", owner: "personal" }]),
     });
     expect(acquirePersonalGlossaryInput(exactEntries).entries).toHaveLength(100);
 
     const invalidUtf8 = profilePath();
-    fs.writeFileSync(
-      invalidUtf8,
-      Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_PROFILE_TRAP")]),
-    );
+    fs.writeFileSync(invalidUtf8, Buffer.concat([Buffer.from([0xff]), Buffer.from("PRIVATE_INVALID_UTF8_PROFILE_TRAP")]));
     const malformed = acquirePersonalGlossaryInput(invalidUtf8);
     expect(malformed).toMatchObject({ availability: "malformed", entries: [], gap_proving: false });
     expect(JSON.stringify(malformed)).not.toContain("PRIVATE_INVALID_UTF8_PROFILE_TRAP");

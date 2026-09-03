@@ -4,11 +4,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  personalProfileGrounding,
-  updatePersonalGlossaryProfile,
-  type PersonalGlossaryEntry,
-} from "../../src/analytics/personalGlossaryProfile.js";
+import { personalProfileGrounding, updatePersonalGlossaryProfile, type PersonalGlossaryEntry } from "../../src/analytics/personalGlossaryProfile.js";
 import type { GlossaryAdmissionContext } from "../../src/registries/glossaryEntryContract.js";
 
 const roots: string[] = [];
@@ -17,8 +13,22 @@ const retainedHistory: GlossaryAdmissionContext = {
   retainedHistory: new Map([
     ["anchor-explicit", { sourceId: "source-explicit", sourceKind: "conversation_turn", signalType: "correction" }],
     ["anchor-refresh", { sourceId: "source-refresh", sourceKind: "conversation_turn", signalType: "decision" }],
-    ["anchor-instruction", { sourceId: "source-instruction", sourceKind: "instruction_document", signalType: "instruction" }],
-    ["anchor-config", { sourceId: "source-config", sourceKind: "project_config_signal", signalType: "configuration" }],
+    [
+      "anchor-instruction",
+      {
+        sourceId: "source-instruction",
+        sourceKind: "instruction_document",
+        signalType: "instruction",
+      },
+    ],
+    [
+      "anchor-config",
+      {
+        sourceId: "source-config",
+        sourceKind: "project_config_signal",
+        signalType: "configuration",
+      },
+    ],
   ]),
 };
 
@@ -43,7 +53,13 @@ function explicit(overrides: Partial<PersonalGlossaryEntry> = {}): PersonalGloss
     temporal: { observed_at: "2026-07-01", last_confirmed_at: "2026-07-01" },
     provenance: {
       kind: "personal_explicit_definition",
-      evidence: [{ source_id: "source-explicit", evidence_anchor: "anchor-explicit", signal_type: "correction" }],
+      evidence: [
+        {
+          source_id: "source-explicit",
+          evidence_anchor: "anchor-explicit",
+          signal_type: "correction",
+        },
+      ],
     },
     ...overrides,
   } as PersonalGlossaryEntry;
@@ -59,8 +75,16 @@ function inferred(overrides: Partial<PersonalGlossaryEntry> = {}): PersonalGloss
     provenance: {
       kind: "personal_inferred_usage",
       evidence: [
-        { source_id: "source-instruction", evidence_anchor: "anchor-instruction", source_kind: "instruction_document" },
-        { source_id: "source-config", evidence_anchor: "anchor-config", source_kind: "project_config_signal" },
+        {
+          source_id: "source-instruction",
+          evidence_anchor: "anchor-instruction",
+          source_kind: "instruction_document",
+        },
+        {
+          source_id: "source-config",
+          evidence_anchor: "anchor-config",
+          source_kind: "project_config_signal",
+        },
       ],
     },
     ...overrides,
@@ -118,7 +142,22 @@ describe("personal PROFILE.md glossary output", () => {
 
   it.each([
     ["explicit", explicit({ provenance: { kind: "personal_explicit_definition", evidence: [] } as any }), /exactly one/],
-    ["inferred", inferred({ provenance: { kind: "personal_inferred_usage", evidence: [{ source_id: "source-instruction", evidence_anchor: "anchor-instruction", source_kind: "instruction_document" }] } as any }), /exactly two/],
+    [
+      "inferred",
+      inferred({
+        provenance: {
+          kind: "personal_inferred_usage",
+          evidence: [
+            {
+              source_id: "source-instruction",
+              evidence_anchor: "anchor-instruction",
+              source_kind: "instruction_document",
+            },
+          ],
+        } as any,
+      }),
+      /exactly two/,
+    ],
   ])("rejects invalid %s anchor cardinality before effects", (_kind, entry, expected) => {
     const pathname = profilePath();
     expect(() => update(pathname, [entry])).toThrow(expected);
@@ -152,27 +191,40 @@ describe("personal PROFILE.md glossary output", () => {
 
   it("uses Unicode caseless identity without normalizing distinct spellings", () => {
     const duplicatePath = profilePath();
-    expect(() => update(duplicatePath, [
-      explicit({ term: "ΟΣ" }),
-      inferred({ term: "οσ" }),
-    ])).toThrow(/duplicate/i);
+    expect(() => update(duplicatePath, [explicit({ term: "ΟΣ" }), inferred({ term: "οσ" })])).toThrow(/duplicate/i);
     expect(fs.readFileSync(duplicatePath, "utf8")).toBe(baseProfile);
 
     const refreshPath = profilePath();
     update(refreshPath, [explicit({ term: "ΟΣ" })]);
-    update(refreshPath, [explicit({
-      term: "οσ",
-      confidence: 91,
-      provenance: {
-        kind: "personal_explicit_definition",
-        evidence: [{ source_id: "source-refresh", evidence_anchor: "anchor-refresh", signal_type: "decision" }],
-      },
-    })], "2026-07-02");
+    update(
+      refreshPath,
+      [
+        explicit({
+          term: "οσ",
+          confidence: 91,
+          provenance: {
+            kind: "personal_explicit_definition",
+            evidence: [
+              {
+                source_id: "source-refresh",
+                evidence_anchor: "anchor-refresh",
+                signal_type: "decision",
+              },
+            ],
+          },
+        }),
+      ],
+      "2026-07-02",
+    );
     expect(document(refreshPath).entries).toMatchObject([{ term: "ΟΣ", confidence: 91 }]);
 
     const distinctPath = profilePath();
     update(distinctPath, [explicit({ term: "é" }), inferred({ term: "e\u0301" })]);
-    expect(document(distinctPath).entries.map((entry: any) => entry.term).sort()).toEqual(["é", "e\u0301"].sort());
+    expect(
+      document(distinctPath)
+        .entries.map((entry: any) => entry.term)
+        .sort(),
+    ).toEqual(["é", "e\u0301"].sort());
   });
 
   it("is invariant to a project-glossary trap path", () => {
@@ -187,8 +239,7 @@ describe("personal PROFILE.md glossary output", () => {
     update(pathname, [explicit()]);
     const stored = fs.readFileSync(pathname, "utf8");
     const start = stored.indexOf("<!-- agentera:personal-glossary:start -->");
-    const end = stored.indexOf("<!-- agentera:personal-glossary:end -->", start)
-      + "<!-- agentera:personal-glossary:end -->".length;
+    const end = stored.indexOf("<!-- agentera:personal-glossary:end -->", start) + "<!-- agentera:personal-glossary:end -->".length;
     expect(personalProfileGrounding(stored)).toBe(`${stored.slice(0, start)}${stored.slice(end)}`);
     expect(personalProfileGrounding(stored)).not.toContain("ship shape");
   });
@@ -235,7 +286,13 @@ describe("personal glossary lifecycle", () => {
       temporal: { observed_at: "2026-07-10", last_confirmed_at: "2026-07-10" },
       provenance: {
         kind: "personal_explicit_definition",
-        evidence: [{ source_id: "source-refresh", evidence_anchor: "anchor-refresh", signal_type: "decision" }],
+        evidence: [
+          {
+            source_id: "source-refresh",
+            evidence_anchor: "anchor-refresh",
+            signal_type: "decision",
+          },
+        ],
       },
     });
     update(pathname, [fresh], "2026-07-10");

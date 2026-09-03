@@ -28,16 +28,9 @@ export const STARTUP_AVAILABLE_STATE_FIELDS = [
   "execution_context",
 ] as const;
 
-export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = [
-  "representative benchmark evidence exists, but some source products remain degraded by schema divergence",
-  "Audit evidence context uses existing status, plan, progress, docs, health, TODO, and decisions state outputs",
-] as const;
+export const STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS = ["representative benchmark evidence exists, but some source products remain degraded by schema divergence", "Audit evidence context uses existing status, plan, progress, docs, health, TODO, and decisions state outputs"] as const;
 
-export const STARTUP_COMPLETENESS_CLI_FALLBACK = [
-  STATE_FAMILY_FALLBACK_COMMANDS.plan,
-  STATE_FAMILY_FALLBACK_COMMANDS.docs,
-  STATE_FAMILY_LIST_COMMANDS.progress,
-] as const;
+export const STARTUP_COMPLETENESS_CLI_FALLBACK = [STATE_FAMILY_FALLBACK_COMMANDS.plan, STATE_FAMILY_FALLBACK_COMMANDS.docs, STATE_FAMILY_LIST_COMMANDS.progress] as const;
 
 export function startupCompletenessContract(input: StartupCompletenessInput = {}): JsonObject {
   const missingState: string[] = [];
@@ -52,9 +45,7 @@ export function startupCompletenessContract(input: StartupCompletenessInput = {}
   return {
     complete_for_capability_startup: complete,
     raw_artifact_reads_required: false,
-    raw_artifact_read_policy:
-      "Do not read raw artifacts when complete_for_capability_startup is true. " +
-       "When incomplete, try cli_fallback first; raw reads are permitted only for a named corruption or CLI-defect diagnostic.",
+    raw_artifact_read_policy: "Do not read raw artifacts when complete_for_capability_startup is true. " + "When incomplete, try cli_fallback first; raw reads are permitted only for a named corruption or CLI-defect diagnostic.",
     available_state: [...STARTUP_AVAILABLE_STATE_FIELDS],
     missing_state: missingState,
     confidence_caveats: [...STARTUP_COMPLETENESS_CONFIDENCE_CAVEATS],

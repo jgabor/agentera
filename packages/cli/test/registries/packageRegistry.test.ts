@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  PackageRegistry,
-  RegistryError,
-  loadRegistry,
-  validateRegistryData,
-} from "../../src/registries/packageRegistry.js";
+import { PackageRegistry, RegistryError, loadRegistry, validateRegistryData } from "../../src/registries/packageRegistry.js";
 import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -37,25 +32,21 @@ describe("package registry", () => {
     expect(registry.packageIds).toEqual(["agentera"]);
     expect(registry.suiteVersion()).toBe(manifestSuiteVersion());
     expect(registry.packageIds.length).toBe(new Set(registry.packageIds).size);
-    expect(registry.versionSurfaceIds()).toEqual([
-      "registry",
-      "cli-package",
-      "cli-suite-marker",
-      "skill-frontmatter",
-    ]);
+    expect(registry.versionSurfaceIds()).toEqual(["registry", "cli-package", "cli-suite-marker", "skill-frontmatter"]);
     expect(registry.versionSurfaceIds().length).toBe(new Set(registry.versionSurfaceIds()).size);
     const versions = registry.versionSurfaceValues();
     const developmentVersion = JSON.parse(fs.readFileSync(CLI_PACKAGE_PATH, "utf8")).version;
     expect(developmentVersion).toMatch(/^3\.0\.0-dev\.\d+$/);
     expect(versions["cli-package"]).toBe(developmentVersion);
-    expect(new Set(Object.entries(versions)
-      .filter(([surface]) => surface !== "cli-package")
-      .map(([, version]) => version))).toEqual(new Set(["3.0.0"]));
+    expect(
+      new Set(
+        Object.entries(versions)
+          .filter(([surface]) => surface !== "cli-package")
+          .map(([, version]) => version),
+      ),
+    ).toEqual(new Set(["3.0.0"]));
     const record = registry.get("agentera");
-    expect(record.bundle_surfaces.directories.map((d: any) => d.id)).toEqual([
-      "skills",
-      "references",
-    ]);
+    expect(record.bundle_surfaces.directories.map((d: any) => d.id)).toEqual(["skills", "references"]);
     expect(record).not.toHaveProperty("runtime_package_manifests");
     expect(record).not.toHaveProperty("package_commands");
     expect(record.docs_targets.version_files.at(-1)).toBe("registry.json");
@@ -89,9 +80,7 @@ describe("package registry", () => {
     expect(errors).toContain("records[0]: missing required group docs_targets");
     expect(errors).toContain("duplicate package id: agentera");
     expect(errors).toContain("records[0].version_surfaces.surfaces: duplicate id registry");
-    expect(errors).toContain(
-      "records[0].version_surfaces.surfaces[2].path must stay inside repo root",
-    );
+    expect(errors).toContain("records[0].version_surfaces.surfaces[2].path must stay inside repo root");
     expect(errors).toContain("records[0]: unknown group runtime_package_manifests");
     expect(errors).toContain("records[0].version_authority: forbidden install-root field install_root");
     expect(errors).toContain("records[0].identity: forbidden RuntimeAdapter field lifecycle_events");
@@ -142,51 +131,34 @@ describe("package registry", () => {
 
   it("rejects string-list bundle entries and undeclared entry fields", () => {
     const fixture = registryFixture();
-    fixture.records[0].bundle_surfaces.directories = [
-      "skills",
-      { id: "references", path: "references", native_manifest: false },
-    ];
+    fixture.records[0].bundle_surfaces.directories = ["skills", { id: "references", path: "references", native_manifest: false }];
 
     const errors = validateRegistryData(fixture, REPO_ROOT);
     expect(errors).toContain("records[0].bundle_surfaces.directories[0] must be an object");
-    expect(errors).toContain(
-      "records[0].bundle_surfaces.directories[1]: unknown field native_manifest",
-    );
+    expect(errors).toContain("records[0].bundle_surfaces.directories[1]: unknown field native_manifest");
   });
 
   it("rejects duplicate ids and paths across bundle directories and files", () => {
     const duplicateId = registryFixture();
     duplicateId.records[0].bundle_surfaces.files[0].id = "skills";
-    expect(validateRegistryData(duplicateId, REPO_ROOT)).toContain(
-      'records[0].bundle_surfaces.files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across bundle directories and files',
-    );
+    expect(validateRegistryData(duplicateId, REPO_ROOT)).toContain('records[0].bundle_surfaces.files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across bundle directories and files');
 
     const duplicatePath = registryFixture();
     duplicatePath.records[0].bundle_surfaces.files[0].path = "skills";
-    expect(validateRegistryData(duplicatePath, REPO_ROOT)).toContain(
-      'records[0].bundle_surfaces.files[0].path "skills" for id "readme" duplicates records[0].bundle_surfaces.directories[0].path; correction: use a unique path across bundle directories and files',
-    );
+    expect(validateRegistryData(duplicatePath, REPO_ROOT)).toContain('records[0].bundle_surfaces.files[0].path "skills" for id "readme" duplicates records[0].bundle_surfaces.directories[0].path; correction: use a unique path across bundle directories and files');
 
     const generatedDuplicate = registryFixture();
     generatedDuplicate.records[0].bundle_surfaces.generated_files[0].id = "skills";
     generatedDuplicate.records[0].bundle_surfaces.generated_files[2].path = "README.md";
-    expect(validateRegistryData(generatedDuplicate, REPO_ROOT)).toEqual(expect.arrayContaining([
-      'records[0].bundle_surfaces.generated_files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across all bundle surfaces',
-      'records[0].bundle_surfaces.generated_files[2].path "README.md" for id "extract-corpus-parity" duplicates records[0].bundle_surfaces.files[0].path; correction: use a unique path across all bundle surfaces',
-    ]));
+    expect(validateRegistryData(generatedDuplicate, REPO_ROOT)).toEqual(
+      expect.arrayContaining([
+        'records[0].bundle_surfaces.generated_files[0].id "skills" duplicates records[0].bundle_surfaces.directories[0].id; correction: use a unique id across all bundle surfaces',
+        'records[0].bundle_surfaces.generated_files[2].path "README.md" for id "extract-corpus-parity" duplicates records[0].bundle_surfaces.files[0].path; correction: use a unique path across all bundle surfaces',
+      ]),
+    );
   });
 
-  it.each([
-    "",
-    "../outside",
-    "./README.md",
-    "/tmp/outside",
-    "C:/outside/file",
-    "C:\\outside\\file",
-    "nested\\file",
-    "README.md/",
-    "nested//file",
-  ])("rejects noncanonical bundle path %j", (invalidPath) => {
+  it.each(["", "../outside", "./README.md", "/tmp/outside", "C:/outside/file", "C:\\outside\\file", "nested\\file", "README.md/", "nested//file"])("rejects noncanonical bundle path %j", (invalidPath) => {
     const fixture = registryFixture();
     fixture.records[0].bundle_surfaces.files[0].path = invalidPath;
 
@@ -218,8 +190,7 @@ describe("package registry", () => {
   it("consumer views do not hide changed package facts", () => {
     const fixture = registryFixture();
     const changed = structuredClone(fixture);
-    changed.records[0].version_authority.future_authority_change_requires =
-      "explicit ADR plus migration plan";
+    changed.records[0].version_authority.future_authority_change_requires = "explicit ADR plus migration plan";
 
     expect(validateRegistryData(changed, REPO_ROOT)).toEqual([]);
     const registry = new PackageRegistry(changed.records, REPO_ROOT);
@@ -236,9 +207,7 @@ describe("package registry", () => {
     const docs = YAML.parse(fs.readFileSync(FIXTURE_DOCS_PATH, "utf8"));
     const docsView = registry.consumerView("docs");
 
-    expect(new Set(docsView.docs_targets.version_files)).toEqual(
-      new Set(docs.conventions.version_files),
-    );
+    expect(new Set(docsView.docs_targets.version_files)).toEqual(new Set(docs.conventions.version_files));
     for (const target of docsView.docs_targets.index_targets) {
       expect(fs.existsSync(path.join(REPO_ROOT, target)), `index target missing: ${target}`).toBe(true);
     }

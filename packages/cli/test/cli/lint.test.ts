@@ -47,22 +47,18 @@ describe("cli lint: payload", () => {
   });
 
   it("flags abstraction creep with no anchor", () => {
-    const payload = lintPayload({ artifact: "PLAN.md", text: "we should probably improve the system somehow" });
+    const payload = lintPayload({
+      artifact: "PLAN.md",
+      text: "we should probably improve the system somehow",
+    });
     expect(payload.status).toBe("fail");
-    const abstraction = (payload.checks as Array<{ name: string; status: string }>).find(
-      (c) => c.name === "abstraction",
-    );
+    const abstraction = (payload.checks as Array<{ name: string; status: string }>).find((c) => c.name === "abstraction");
     expect(abstraction?.status).toBe("fail");
   });
 
   it("preserves non-verbosity findings when full-file word lint is unlimited", () => {
-    const payload = lintFullArtifactPayload(
-      "DECISIONS.md",
-      "In summary, we should probably improve the system somehow",
-    );
-    const checks = Object.fromEntries(
-      (payload.checks as Array<{ name: string; status: string; detail: string }>).map((check) => [check.name, check]),
-    );
+    const payload = lintFullArtifactPayload("DECISIONS.md", "In summary, we should probably improve the system somehow");
+    const checks = Object.fromEntries((payload.checks as Array<{ name: string; status: string; detail: string }>).map((check) => [check.name, check]));
     expect(checks.verbosity.status).toBe("pass");
     expect(checks.abstraction.status).toBe("fail");
     expect(checks.abstraction.detail).toContain("abstraction creep");
@@ -80,9 +76,7 @@ describe("cli lint: payload", () => {
 
 describe("cli lint: command output", () => {
   it.each([false, true])("emits human text and returns 0 on pass (strict=%s)", (strict) => {
-    const { rc, out } = capture((io) =>
-      cmdLint({ artifact: "PLAN.md", text: "wrote scripts/agentera at line 42", strict }, io),
-    );
+    const { rc, out } = capture((io) => cmdLint({ artifact: "PLAN.md", text: "wrote scripts/agentera at line 42", strict }, io));
     expect(rc).toBe(0);
     expect(out).toContain("lint pass: PLAN.md (text)");
     expect(out).toContain("all self-audit checks passed");
@@ -156,10 +150,7 @@ describe("cli lint: command output", () => {
   });
 
   it("keeps internal full-artifact lint strict for publication callers", () => {
-    const payload = lintFullArtifactPayload(
-      "plan",
-      "In summary, we should probably improve the system somehow",
-    );
+    const payload = lintFullArtifactPayload("plan", "In summary, we should probably improve the system somehow");
     expect(payload.strict).toBe(true);
     expect(payload.summary.advisory).toBe(false);
     expect(payload.status).toBe("fail");
@@ -178,9 +169,7 @@ describe("cli dispatch: lint routing", () => {
   });
 
   it("keeps the top-level lint alias JSON-only", () => {
-    const { out, err } = capture((io) =>
-      main(["node", "agentera", "lint", "--artifact", "PLAN.md", "--text", "wrote foo/bar.ts line 3"], io),
-    );
+    const { out, err } = capture((io) => main(["node", "agentera", "lint", "--artifact", "PLAN.md", "--text", "wrote foo/bar.ts line 3"], io));
     expect(JSON.parse(out).status).toBe("pass");
     expect(err).toBe("");
   });
@@ -195,9 +184,7 @@ describe("cli dispatch: lint routing", () => {
   it("rejects mutually-exclusive --file and --text", () => {
     const f = path.join(tmp, "d.yaml");
     fs.writeFileSync(f, "x");
-    const { rc, out, err } = capture((io) =>
-      main(["node", "agentera", "check", "lint", "--artifact", "PLAN.md", "--file", f, "--text", "y"], io),
-    );
+    const { rc, out, err } = capture((io) => main(["node", "agentera", "check", "lint", "--artifact", "PLAN.md", "--file", f, "--text", "y"], io));
     expect(rc).toBe(2);
     expect(err).toBe("");
     expect(JSON.parse(out).error.message).toContain("not allowed with argument --file");

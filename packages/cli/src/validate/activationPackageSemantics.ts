@@ -17,11 +17,31 @@ export function packageSemanticSelector(entry: any): string {
 
 export function packageDescriptors(record: any): ActivationPackageDescriptor[] {
   return [
-    ...record.version_surfaces.surfaces.map((entry: any) => ({ id: `version:${String(entry.id)}`, entry, selector: `records[agentera].version_surfaces.surfaces[id=${String(entry.id)}]` })),
-    ...record.bundle_surfaces.directories.map((entry: any) => ({ id: `bundle:${String(entry.id)}`, entry, selector: `records[agentera].bundle_surfaces.directories[id=${String(entry.id)}]` })),
-    ...record.bundle_surfaces.files.map((entry: any) => ({ id: `bundle:${String(entry.id)}`, entry, selector: `records[agentera].bundle_surfaces.files[id=${String(entry.id)}]` })),
-    ...record.bundle_surfaces.generated_files.map((entry: any) => ({ id: `generated:${String(entry.id)}`, entry, selector: `records[agentera].bundle_surfaces.generated_files[id=${String(entry.id)}]` })),
-    ...record.bootstrap_command_authority.emitted_producers.map((entry: any) => ({ id: `emitted:${String(entry.path)}`, entry, selector: `records[agentera].bootstrap_command_authority.emitted_producers[path=${String(entry.path)}]` })),
+    ...record.version_surfaces.surfaces.map((entry: any) => ({
+      id: `version:${String(entry.id)}`,
+      entry,
+      selector: `records[agentera].version_surfaces.surfaces[id=${String(entry.id)}]`,
+    })),
+    ...record.bundle_surfaces.directories.map((entry: any) => ({
+      id: `bundle:${String(entry.id)}`,
+      entry,
+      selector: `records[agentera].bundle_surfaces.directories[id=${String(entry.id)}]`,
+    })),
+    ...record.bundle_surfaces.files.map((entry: any) => ({
+      id: `bundle:${String(entry.id)}`,
+      entry,
+      selector: `records[agentera].bundle_surfaces.files[id=${String(entry.id)}]`,
+    })),
+    ...record.bundle_surfaces.generated_files.map((entry: any) => ({
+      id: `generated:${String(entry.id)}`,
+      entry,
+      selector: `records[agentera].bundle_surfaces.generated_files[id=${String(entry.id)}]`,
+    })),
+    ...record.bootstrap_command_authority.emitted_producers.map((entry: any) => ({
+      id: `emitted:${String(entry.path)}`,
+      entry,
+      selector: `records[agentera].bootstrap_command_authority.emitted_producers[path=${String(entry.path)}]`,
+    })),
   ];
 }
 

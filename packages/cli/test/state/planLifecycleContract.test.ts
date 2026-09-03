@@ -31,35 +31,19 @@ function repositoryPath(file: string): string {
 
 function scanOptions(contract = lifecycleContract()) {
   const inventory = contract.inventory;
-  const families = [
-    "readers",
-    "writers",
-    "migrators",
-    "schemas",
-    "adapters",
-    "fixtures",
-    "documented_external_commitments",
-  ];
+  const families = ["readers", "writers", "migrators", "schemas", "adapters", "fixtures", "documented_external_commitments"];
   return {
     inventory,
     classifiedPatterns: families.flatMap((family) => inventory[family]),
-    exclusions: inventory.scan.exclusions.flatMap(
-      (entry: { patterns: string[] }) => entry.patterns,
-    ),
+    exclusions: inventory.scan.exclusions.flatMap((entry: { patterns: string[] }) => entry.patterns),
     excludedDirectoryNames: inventory.scan.excluded_directory_names.names as string[],
-    excludedRoots: inventory.scan.generated_output.package_roots.map((packageRoot: string) =>
-      repositoryPath(generatedOutputRoot(packageRoot))
-    ),
+    excludedRoots: inventory.scan.generated_output.package_roots.map((packageRoot: string) => repositoryPath(generatedOutputRoot(packageRoot))),
   };
 }
 
 function repositoryFiles(root: string, inventory: Record<string, any>): string[] {
   const { exclusions, excludedDirectoryNames, excludedRoots } = scanOptions({ inventory });
-  const output = execFileSync(
-    "git",
-    ["-C", root, "ls-files", "--cached", "--others", "-z", "--", ...inventory.scan.roots],
-    { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 },
-  );
+  const output = execFileSync("git", ["-C", root, "ls-files", "--cached", "--others", "-z", "--", ...inventory.scan.roots], { encoding: "utf8", maxBuffer: 16 * 1024 * 1024 });
   return output
     .split("\0")
     .filter(Boolean)
@@ -137,9 +121,7 @@ describe("plan lifecycle contract", () => {
       existing_successor: expect.stringContaining("previous_plan_archived"),
       create_successor: expect.stringContaining("complete plan document"),
       replay: expect.stringContaining("exact input identity"),
-      atomicity: expect.stringContaining(
-        "complete predecessor, successor, and created-task target set",
-      ),
+      atomicity: expect.stringContaining("complete predecessor, successor, and created-task target set"),
     });
   });
 
@@ -166,22 +148,8 @@ describe("plan lifecycle contract", () => {
     expect(window.scope).toContain("typed-writer canonicalization");
     expect(window.removal_condition).toContain("regression tests prove");
     expect(window.test_boundary).toHaveLength(5);
-    expect(contract.compatibility.external_consumers.commitment).toContain(
-      "No compatibility window",
-    );
-    expect(Object.keys(contract.inventory).sort()).toEqual(
-      [
-        "adapters",
-        "documented_external_commitments",
-        "fixtures",
-        "method",
-        "migrators",
-        "readers",
-        "scan",
-        "schemas",
-        "writers",
-      ].sort(),
-    );
+    expect(contract.compatibility.external_consumers.commitment).toContain("No compatibility window");
+    expect(Object.keys(contract.inventory).sort()).toEqual(["adapters", "documented_external_commitments", "fixtures", "method", "migrators", "readers", "scan", "schemas", "writers"].sort());
     for (const surfaces of Object.values(contract.inventory)) {
       if (Array.isArray(surfaces)) expect(surfaces.length).toBeGreaterThan(0);
     }
@@ -195,18 +163,7 @@ describe("plan lifecycle contract", () => {
     });
     expect(excludedRoots).toEqual([repositoryPath(generatedOutputRoot("packages/cli"))]);
     expect(inventory.scan.excluded_directory_names.reason).toContain("any repository depth");
-    expect(excludedDirectoryNames).toEqual(
-      expect.arrayContaining([
-        ".git",
-        "node_modules",
-        "dist",
-        "__pycache__",
-        ".snapshots",
-        ".wrangler",
-        ".playwright-cli",
-        ".agentera-generated",
-      ]),
-    );
+    expect(excludedDirectoryNames).toEqual(expect.arrayContaining([".git", "node_modules", "dist", "__pycache__", ".snapshots", ".wrangler", ".playwright-cli", ".agentera-generated"]));
     expect(inventory.scan.markers).toEqual(expect.arrayContaining(["plan.yaml", "state.plan."]));
     expect(exclusions).toContain("**/*.tgz");
     expect(exclusions).toContain(".playwright-cli/**");
@@ -220,34 +177,17 @@ describe("plan lifecycle contract", () => {
     expect(candidates.length).toBeGreaterThan(100);
     expect(unclassified).toEqual([]);
     expect(matchesAny("packages/cli/src/cli/planEvidence.ts", inventory.readers)).toBe(true);
-    expect(matchesAny("packages/cli/src/cli/commands/state/write.ts", inventory.writers)).toBe(
-      true,
-    );
-    expect(
-      matchesAny("packages/cli/src/cli/capabilityContext/orchestration.ts", inventory.readers),
-    ).toBe(true);
-    expect(
-      matchesAny("packages/cli/src/hooks/validateArtifact/violations.ts", inventory.adapters),
-    ).toBe(true);
-    expect(matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators)).toBe(
-      true,
-    );
+    expect(matchesAny("packages/cli/src/cli/commands/state/write.ts", inventory.writers)).toBe(true);
+    expect(matchesAny("packages/cli/src/cli/capabilityContext/orchestration.ts", inventory.readers)).toBe(true);
+    expect(matchesAny("packages/cli/src/hooks/validateArtifact/violations.ts", inventory.adapters)).toBe(true);
+    expect(matchesAny("packages/cli/src/upgrade/upgradeOrchestrator.ts", inventory.migrators)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-cli-budget.md", inventory.fixtures)).toBe(true);
     expect(matchesAny("fixtures/semantic/status-bare-message.md", inventory.fixtures)).toBe(true);
     expect(matchesAny("skills/agentera/schemas/artifacts/plan.yaml", inventory.schemas)).toBe(true);
     expect(matchesAny(".agentera/docs.yaml", inventory.adapters)).toBe(true);
     expect(matchesAny("scripts/schemas/contracts.json", inventory.adapters)).toBe(true);
     expect(matchesAny("scripts/json_output_surface_manifest.yaml", inventory.adapters)).toBe(true);
-    expect(candidates).toEqual(
-      expect.arrayContaining([
-        "fixtures/semantic/status-cli-budget.md",
-        "fixtures/semantic/status-bare-message.md",
-        "skills/agentera/schemas/artifacts/plan.yaml",
-        ".agentera/docs.yaml",
-        "scripts/schemas/contracts.json",
-        "scripts/json_output_surface_manifest.yaml",
-      ]),
-    );
+    expect(candidates).toEqual(expect.arrayContaining(["fixtures/semantic/status-cli-budget.md", "fixtures/semantic/status-bare-message.md", "skills/agentera/schemas/artifacts/plan.yaml", ".agentera/docs.yaml", "scripts/schemas/contracts.json", "scripts/json_output_surface_manifest.yaml"]));
     expect(scanned.some((file: string) => file === ".git" || file.startsWith(".git/"))).toBe(false);
     expect(scanned.some((file: string) => file.split("/").includes("node_modules"))).toBe(false);
     expect(scanned.some((file: string) => file.split("/").includes(".wrangler"))).toBe(false);
@@ -261,10 +201,7 @@ describe("plan lifecycle contract", () => {
       execFileSync("git", ["init", "-q"], { cwd: root });
       const inventory = lifecycleContract().inventory;
       const generatedRoot = repositoryPath(generatedOutputRoot("packages/cli"));
-      const generatedEvidence = path.posix.join(
-        generatedRoot,
-        "generations/test-generation/activation-evidence.json",
-      );
+      const generatedEvidence = path.posix.join(generatedRoot, "generations/test-generation/activation-evidence.json");
       const repositoryEvidence = "packages/cli/retained-verification-evidence/activation-evidence.json";
       const lifecycleContent = '{"authority":"plan.yaml","selector":"state.plan.current"}\n';
       writeFixtureFile(root, generatedEvidence, lifecycleContent);
@@ -325,9 +262,7 @@ describe("plan lifecycle contract", () => {
       expect(candidates).toEqual(["ignored-contract.txt", "packages/cli/src/cli/planReader.ts"]);
       expect(unclassified).toEqual(["ignored-contract.txt"]);
       expect(scanned).not.toEqual(expect.arrayContaining(excludedPaths));
-      expect(readPaths).not.toEqual(
-        expect.arrayContaining(excludedPaths.map((file) => path.join(root, file))),
-      );
+      expect(readPaths).not.toEqual(expect.arrayContaining(excludedPaths.map((file) => path.join(root, file))));
     } finally {
       readFileSync?.mockRestore();
       if (server && listening) {

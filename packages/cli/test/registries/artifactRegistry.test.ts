@@ -6,13 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  EXPECTED_ARTIFACT_SCHEMA_VERSION,
-  loadArtifactRecord,
-  loadArtifactRegistry,
-  loadDocsPathOverrides,
-  resolveArtifactPath,
-} from "../../src/registries/artifactRegistry.js";
+import { EXPECTED_ARTIFACT_SCHEMA_VERSION, loadArtifactRecord, loadArtifactRegistry, loadDocsPathOverrides, resolveArtifactPath } from "../../src/registries/artifactRegistry.js";
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import { repoStateFixturePath } from "../helpers/useFixtureProject.js";
 
@@ -35,7 +29,10 @@ function modelFixture(): JsonObject {
 
 function artifactSchemaMetas(): Record<string, JsonObject> {
   const metas: Record<string, JsonObject> = {};
-  const files = fs.readdirSync(ARTIFACT_SCHEMA_DIR).filter((n) => n.endsWith(".yaml")).sort();
+  const files = fs
+    .readdirSync(ARTIFACT_SCHEMA_DIR)
+    .filter((n) => n.endsWith(".yaml"))
+    .sort();
   for (const name of files) {
     const meta = loadYaml(path.join(ARTIFACT_SCHEMA_DIR, name)).meta;
     expect(meta, `${name} missing meta`).toBeTruthy();
@@ -103,10 +100,7 @@ function validateRegistryContract(model: JsonObject, metas: Record<string, JsonO
           errors.push(`${prefix}.${relationshipField} must be non-empty string or list[string]`);
         }
       }
-      if (
-        (defaultPath.includes("<") || defaultPath.includes("{") || defaultPath.includes("$")) &&
-        !record.path_template
-      ) {
+      if ((defaultPath.includes("<") || defaultPath.includes("{") || defaultPath.includes("$")) && !record.path_template) {
         errors.push(`${prefix}.path_template required for templated default_path`);
       }
     });
@@ -114,14 +108,7 @@ function validateRegistryContract(model: JsonObject, metas: Record<string, JsonO
 
   (model.explicit_special_cases ?? []).forEach((record: JsonObject, index: number) => {
     const prefix = `explicit_special_cases[${index}]`;
-    for (const field of [
-      "artifact_id",
-      "display_name",
-      "artifact_type",
-      "scope",
-      "default_path",
-      "docs_yaml_can_override_path",
-    ]) {
+    for (const field of ["artifact_id", "display_name", "artifact_type", "scope", "default_path", "docs_yaml_can_override_path"]) {
       if (!(field in record)) errors.push(`${prefix}.${field} missing`);
     }
     const artifactId = record.artifact_id;
@@ -141,11 +128,7 @@ function validateRegistryContract(model: JsonObject, metas: Record<string, JsonO
     if ((dp.includes("<") || dp.includes("{") || dp.includes("$")) && !template) {
       errors.push(`${prefix}.path_template required for special-case default_path`);
     }
-    if (
-      template &&
-      typeof template === "object" &&
-      (template.aliases_rejected_after_migration ?? []).includes(template.placeholder)
-    ) {
+    if (template && typeof template === "object" && (template.aliases_rejected_after_migration ?? []).includes(template.placeholder)) {
       errors.push(`${prefix}.path_template.placeholder uses rejected alias: ${template.placeholder}`);
     }
   });
@@ -211,15 +194,7 @@ function validateCapabilityArtifactEntries(model: JsonObject): string[] {
 function validateDocsMappingOverrides(docs: JsonObject, model: JsonObject): string[] {
   const errors: string[] = [];
   const knownNames = knownDisplayNames(model);
-  const forbiddenCanonicalFields = new Set([
-    "artifact_id",
-    "display_name",
-    "default_path",
-    "consumers",
-    "artifact_type",
-    "scope",
-    "path_template",
-  ]);
+  const forbiddenCanonicalFields = new Set(["artifact_id", "display_name", "default_path", "consumers", "artifact_type", "scope", "path_template"]);
   (docs.mapping ?? []).forEach((mapping: any, index: number) => {
     if (!mapping || typeof mapping !== "object" || Array.isArray(mapping)) {
       errors.push(`mapping[${index}] must be an object`);
@@ -248,28 +223,18 @@ describe("artifact registry contract", () => {
     malformed.explicit_special_cases[2].path_template.placeholder = "<objective-name>";
 
     const errors = validateRegistryContract(malformed, artifactSchemaMetas());
-    expect(errors).toContain(
-      "required_artifact_identities.project_root[0].artifact_id unknown artifact schema: ghost",
-    );
+    expect(errors).toContain("required_artifact_identities.project_root[0].artifact_id unknown artifact schema: ghost");
     expect(errors).toContain("explicit_special_cases[0].artifact_type unknown: runtime_config");
-    expect(errors).toContain(
-      "explicit_special_cases[2].path_template.placeholder uses rejected alias: <objective-name>",
-    );
+    expect(errors).toContain("explicit_special_cases[2].path_template.placeholder uses rejected alias: <objective-name>");
   });
 
   it("rejects invalid ids, missing roles, and repeated registry facts in capability references", () => {
     const model = modelFixture();
-    expect(validateCapabilityReference({ artifact: "ghost", display_name: "PLAN.md" }, model)).toEqual([
-      "capability_reference.artifact unknown: ghost",
-      "capability_reference.local_role missing",
-      "capability_reference.display_name repeats canonical registry fact",
-    ]);
+    expect(validateCapabilityReference({ artifact: "ghost", display_name: "PLAN.md" }, model)).toEqual(["capability_reference.artifact unknown: ghost", "capability_reference.local_role missing", "capability_reference.display_name repeats canonical registry fact"]);
 
     const validId = model.required_artifact_identities.project_agent_state[0].artifact_id;
     expect(validateCapabilityReference({ artifact: validId, local_role: "consumes" }, model)).toEqual([]);
-    expect(validateCapabilityReference({ artifact: validId, local_role: "observes" }, model)).toEqual([
-      "capability_reference.local_role unsupported: observes",
-    ]);
+    expect(validateCapabilityReference({ artifact: validId, local_role: "observes" }, model)).toEqual(["capability_reference.local_role unsupported: observes"]);
   });
 
   it("capability artifact schemas use registry references for local usage", () => {
@@ -351,12 +316,14 @@ describe("artifact registry module", () => {
   it("applies a known glossary docs override without admitting an unknown identity", () => {
     const glossary = loadArtifactRecord("glossary");
     expect(glossary).toBeDefined();
-    expect(resolveArtifactPath(glossary!, tmp, {
-      docsPathOverrides: {
-        "GLOSSARY.md": "docs/project-terms.yaml",
-        "UNKNOWN.md": "docs/unknown.yaml",
-      },
-    })).toBe(path.join(tmp, "docs/project-terms.yaml"));
+    expect(
+      resolveArtifactPath(glossary!, tmp, {
+        docsPathOverrides: {
+          "GLOSSARY.md": "docs/project-terms.yaml",
+          "UNKNOWN.md": "docs/unknown.yaml",
+        },
+      }),
+    ).toBe(path.join(tmp, "docs/project-terms.yaml"));
     expect(loadArtifactRecord("unknown")).toBeUndefined();
   });
 });
@@ -374,10 +341,7 @@ describe("artifact registry loader diagnostics", () => {
   /** Minimal registry model containing exactly the required identities passed
    *  in. Synthetic diagnostics tests validate loader behavior against a known
    *  small identity set instead of the full production list. */
-  function minimalModel(
-    identities: { artifact_id: string; display_name: string; default_path: string }[],
-    specialCases: any[] = [],
-  ): any {
+  function minimalModel(identities: { artifact_id: string; display_name: string; default_path: string }[], specialCases: any[] = []): any {
     return {
       interface: "ArtifactRegistry",
       status: "design_contract",
@@ -435,10 +399,13 @@ describe("artifact registry loader diagnostics", () => {
   });
 
   it("full load warns for every required identity when schemas dir is absent", () => {
-    writeYaml(tmpModel, minimalModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
-    ]));
+    writeYaml(
+      tmpModel,
+      minimalModel([
+        { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+        { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+      ]),
+    );
     // tmpSchemas is never created — the schemas directory is absent.
     const { result, written } = captureStderr(() => loadArtifactRegistry(tmpSchemas, tmpModel));
     expect(result.size).toBe(0);
@@ -447,10 +414,13 @@ describe("artifact registry loader diagnostics", () => {
   });
 
   it("full partial load warns for omitted required identities only", () => {
-    writeYaml(tmpModel, minimalModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
-    ]));
+    writeYaml(
+      tmpModel,
+      minimalModel([
+        { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+        { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+      ]),
+    );
     // Only plan.yaml is present; health is omitted.
     writeYaml(path.join(tmpSchemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
     const { result, written } = captureStderr(() => loadArtifactRegistry(tmpSchemas, tmpModel));
@@ -463,10 +433,7 @@ describe("artifact registry loader diagnostics", () => {
   it("targeted special-case lookup emits no unrelated identity warnings", () => {
     // Profile co-exists with a required identity (plan) that has no schema —
     // resolving profile must not walk or warn about plan's absent schema.
-    writeYaml(tmpModel, minimalModel(
-      [{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }],
-      [profileSpecialCase()],
-    ));
+    writeYaml(tmpModel, minimalModel([{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }], [profileSpecialCase()]));
     const { result, written } = captureStderr(() => loadArtifactRecord("profile", tmpSchemas, tmpModel));
     expect(result).toBeDefined();
     expect(result!.artifactId).toBe("profile");
@@ -474,10 +441,13 @@ describe("artifact registry loader diagnostics", () => {
   });
 
   it("targeted required identity lookup warns and returns undefined when its schema is missing", () => {
-    writeYaml(tmpModel, minimalModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
-    ]));
+    writeYaml(
+      tmpModel,
+      minimalModel([
+        { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+        { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+      ]),
+    );
     // tmpSchemas is absent; plan is a required identity, so its missing schema
     // must warn — but health (also missing) must not, because only plan was
     // requested.
@@ -488,9 +458,7 @@ describe("artifact registry loader diagnostics", () => {
   });
 
   it("targeted required identity lookup ignores malformed unrelated schemas", () => {
-    writeYaml(tmpModel, minimalModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-    ]));
+    writeYaml(tmpModel, minimalModel([{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }]));
     fs.mkdirSync(tmpSchemas, { recursive: true });
     fs.writeFileSync(path.join(tmpSchemas, "unrelated.yaml"), "meta: [\n");
 
@@ -501,10 +469,13 @@ describe("artifact registry loader diagnostics", () => {
   });
 
   it("targeted required identity lookup resolves when its schema is present", () => {
-    writeYaml(tmpModel, minimalModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
-    ]));
+    writeYaml(
+      tmpModel,
+      minimalModel([
+        { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
+        { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
+      ]),
+    );
     writeYaml(path.join(tmpSchemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
     // health schema is intentionally absent; resolving plan must not warn about
     // health because only plan was requested.

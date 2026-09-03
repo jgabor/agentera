@@ -16,10 +16,7 @@ export function slimBenchmarkContext(value: JsonObject): JsonObject {
   compact.latest_report = pickObject(value.latest_report, ["status", "source_label", "non_empty_evidence_present", "status_counts", "caveats"]);
   compact.history_summary = pickObject(value.history_summary, ["status", "source_label", "non_empty_evidence_present", "rows", "caveats"]);
   compact.runtime_coverage = pickObject(value.runtime_coverage, ["status", "source_label", "non_empty_evidence_present", "status_counts", "caveats"]);
-  compact.state_access_metrics = pickObject(value.state_access_metrics, [
-    "status", "total_state_sequences", "state_sequences_with_raw_after_cli", "state_sequences_with_redundant_raw_access",
-    "raw_after_cli_sequence_rate", "redundant_raw_sequence_rate", "caveats",
-  ]);
+  compact.state_access_metrics = pickObject(value.state_access_metrics, ["status", "total_state_sequences", "state_sequences_with_raw_after_cli", "state_sequences_with_redundant_raw_access", "raw_after_cli_sequence_rate", "redundant_raw_sequence_rate", "caveats"]);
   compact.token_impact = pickObject(value.token_impact, ["status", "estimated_tokens_saved_vs_previous", "caveats"]);
   compact.comparison = pickObject(value.comparison, ["status", "rows", "caveats"]);
   compact.recommendation = pickObject(value.recommendation, ["status", "action", "rationale", "caveats"]);
@@ -39,8 +36,8 @@ export function compactTaskSummaryForSlim(task: any): any {
     name: task.name ?? null,
     status: task.status ?? null,
     depends_on: task.depends_on ?? null,
-    acceptance_count: task.acceptance_summary && typeof task.acceptance_summary === "object" ? task.acceptance_summary.count ?? null : null,
-    evidence_count: task.evidence_summary && typeof task.evidence_summary === "object" ? task.evidence_summary.count ?? null : null,
+    acceptance_count: task.acceptance_summary && typeof task.acceptance_summary === "object" ? (task.acceptance_summary.count ?? null) : null,
+    evidence_count: task.evidence_summary && typeof task.evidence_summary === "object" ? (task.evidence_summary.count ?? null) : null,
     blocked_reasons: task.blocked_reasons ?? null,
   };
 }
@@ -48,10 +45,7 @@ export function compactTaskSummaryForSlim(task: any): any {
 export function compactProgressVerification(value: any): any {
   if (!value || typeof value !== "object" || Array.isArray(value)) return value;
   const out: JsonObject = {};
-  for (const key of [
-    "status", "source_provenance", "cycle", "verified_present",
-    "non_empty_evidence_present", "non_empty_evidence_fields", "latest_progress_verification_pointer", "caveats",
-  ]) {
+  for (const key of ["status", "source_provenance", "cycle", "verified_present", "non_empty_evidence_present", "non_empty_evidence_fields", "latest_progress_verification_pointer", "caveats"]) {
     if (key in value) out[key] = value[key];
   }
   return out;
@@ -72,13 +66,37 @@ export function slimOrchestrationContext(value: JsonObject): JsonObject {
     blocked_tasks: blocked.slice(0, 10).map((t) => compactTaskSummaryForSlim(t)),
     dependency_ready_count: ready.length,
     blocked_count: blocked.length,
-    ...(ready.length > 10 ? { dependency_ready_omission: { omitted: true, omitted_count: ready.length - 10, omission_reason: "startup_detail_capacity", retrieval } } : {}),
-    ...(blocked.length > 10 ? { blocked_omission: { omitted: true, omitted_count: blocked.length - 10, omission_reason: "startup_detail_capacity", retrieval } } : {}),
+    ...(ready.length > 10
+      ? {
+          dependency_ready_omission: {
+            omitted: true,
+            omitted_count: ready.length - 10,
+            omission_reason: "startup_detail_capacity",
+            retrieval,
+          },
+        }
+      : {}),
+    ...(blocked.length > 10
+      ? {
+          blocked_omission: {
+            omitted: true,
+            omitted_count: blocked.length - 10,
+            omission_reason: "startup_detail_capacity",
+            retrieval,
+          },
+        }
+      : {}),
   };
   compact.progress_verification = compactProgressVerification(value.progress_verification);
   const summaries = asList(value.task_summaries);
   compact.task_summaries = summaries.slice(0, 10).map((t) => compactTaskSummaryForSlim(t));
-  if (summaries.length > 10) compact.task_summaries_omission = { omitted: true, omitted_count: summaries.length - 10, omission_reason: "startup_detail_capacity", retrieval };
+  if (summaries.length > 10)
+    compact.task_summaries_omission = {
+      omitted: true,
+      omitted_count: summaries.length - 10,
+      omission_reason: "startup_detail_capacity",
+      retrieval,
+    };
   return compact;
 }
 
@@ -96,11 +114,7 @@ export function compactItemsState(value: any, maxItems = 3, maxChars = 180): any
   const items = (value as JsonObject).items;
   if (Array.isArray(items)) {
     compact.item_count = items.length;
-    compact.items = items.slice(0, maxItems).map((item) =>
-      item && typeof item === "object" && !Array.isArray(item)
-        ? Object.fromEntries(Object.entries(item).map(([k, v]) => [k, truncateContextText(v, maxChars)]))
-        : truncateContextText(item, maxChars),
-    );
+    compact.items = items.slice(0, maxItems).map((item) => (item && typeof item === "object" && !Array.isArray(item) ? Object.fromEntries(Object.entries(item).map(([k, v]) => [k, truncateContextText(v, maxChars)])) : truncateContextText(item, maxChars)));
     compact.truncated_item_count = Math.max(items.length - maxItems, 0);
   }
   const attributed = (value as JsonObject).attributed_items;

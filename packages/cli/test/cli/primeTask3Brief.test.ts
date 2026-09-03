@@ -23,13 +23,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { collectOrientationState } from "../../src/cli/commands/prime/collectOrientationState.js";
-import {
-  BriefBudgetError,
-  briefByteGate,
-  briefOrientationPayload,
-  briefUtf8Bytes,
-  PRIME_BRIEF_MAX_UTF8_BYTES,
-} from "../../src/cli/commands/prime/briefOrientation.js";
+import { BriefBudgetError, briefByteGate, briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/briefOrientation.js";
 import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
@@ -72,24 +66,28 @@ afterEach(() => {
   fs.rmSync(tmp, { recursive: true, force: true });
 });
 
-function capturePrime(): { rc: number; out: string; err: string; payload: Record<string, unknown> } {
+function capturePrime(): {
+  rc: number;
+  out: string;
+  err: string;
+  payload: Record<string, unknown>;
+} {
   let out = "";
   let err = "";
-  const rc = cmdPrime(
-    { command: "prime", format: "json", home, installRoot: appHome },
-    { out: (t: string) => (out += t), err: (t: string) => (err += t) },
-  );
+  const rc = cmdPrime({ command: "prime", format: "json", home, installRoot: appHome }, { out: (t: string) => (out += t), err: (t: string) => (err += t) });
   expect(rc, "bare prime must exit 0").toBe(0);
   return { rc, out, err, payload: JSON.parse(out) };
 }
 
-function capturePrimeDashboard(): { rc: number; out: string; err: string; payload: Record<string, unknown> } {
+function capturePrimeDashboard(): {
+  rc: number;
+  out: string;
+  err: string;
+  payload: Record<string, unknown>;
+} {
   let out = "";
   let err = "";
-  const rc = cmdPrime(
-    { command: "prime", format: "json", dashboard: true, home, installRoot: appHome },
-    { out: (t: string) => (out += t), err: (t: string) => (err += t) },
-  );
+  const rc = cmdPrime({ command: "prime", format: "json", dashboard: true, home, installRoot: appHome }, { out: (t: string) => (out += t), err: (t: string) => (err += t) });
   expect(rc, "prime --dashboard must exit 0").toBe(0);
   return { rc, out, err, payload: JSON.parse(out) };
 }
@@ -121,7 +119,9 @@ function docsRichFixture(): Record<string, unknown> {
         path: `.agentera/entities/docs/documentation_inventory_entry/${String.fromCharCode(97 + index)}ddddddddd.yaml`,
         immutable: false,
       },
-      retrieval: { get: `agentera state docs get --id ${String.fromCharCode(97 + index)}ddddddddd` },
+      retrieval: {
+        get: `agentera state docs get --id ${String.fromCharCode(97 + index)}ddddddddd`,
+      },
     })),
   };
 }
@@ -141,27 +141,8 @@ function nestedPathAtLeast(base: string, minimumLength: number, label: string): 
 }
 
 function returningFixture(): void {
-  writeArtifact("plan.yaml", [
-    "header:",
-    "  title: Returning Task",
-    "  status: in_progress",
-    "tasks:",
-    "  - number: 1",
-    "    name: Ship feature",
-    "    status: pending",
-    "    depends_on: []",
-    "    acceptance: [tests pass]",
-    "",
-  ].join("\n"));
-  writeArtifact("progress.yaml", [
-    "cycles:",
-    "  - number: 1",
-    "    status: complete",
-    "    what: Initial setup",
-    "    next: Ship feature",
-    "    verification: tests pass",
-    "",
-  ].join("\n"));
+  writeArtifact("plan.yaml", ["header:", "  title: Returning Task", "  status: in_progress", "tasks:", "  - number: 1", "    name: Ship feature", "    status: pending", "    depends_on: []", "    acceptance: [tests pass]", ""].join("\n"));
+  writeArtifact("progress.yaml", ["cycles:", "  - number: 1", "    status: complete", "    what: Initial setup", "    next: Ship feature", "    verification: tests pass", ""].join("\n"));
   writeArtifact("decisions.yaml", "decisions:\n  - summary: Use SQLite\n    what: picked embedded store\n");
   writeArtifact("health.yaml", "audits:\n  - number: 1\n    status: complete\n    what: Initial audit\n");
   writeArtifact("docs.yaml", "mapping: []\nindex: []\n");
@@ -195,18 +176,7 @@ function degradedProjectFixture(): void {
   // One stale health audit (many cycles since)
   writeArtifact("health.yaml", "audits:\n  - number: 1\n    status: complete\n    what: Old audit\n");
   // In-progress plan with pending tasks
-  writeArtifact("plan.yaml", [
-    "header:",
-    "  title: Stale project",
-    "  status: in_progress",
-    "tasks:",
-    "  - number: 1",
-    "    name: Fix staleness",
-    "    status: pending",
-    "    depends_on: []",
-    "    acceptance: [audit passes]",
-    "",
-  ].join("\n"));
+  writeArtifact("plan.yaml", ["header:", "  title: Stale project", "  status: in_progress", "tasks:", "  - number: 1", "    name: Fix staleness", "    status: pending", "    depends_on: []", "    acceptance: [audit passes]", ""].join("\n"));
   writeArtifact("docs.yaml", "mapping: []\nindex: []\n");
   writeArtifact("TODO.md", "# TODO\n\n## normal\n");
 }
@@ -310,9 +280,7 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
     expect(bareResult.payload, "bare default has brief meta").toHaveProperty("brief");
     const dashboard = capturePrimeDashboard();
     expect(dashboard.err).toContain("Deprecation: prime --dashboard");
-    expect(dashboard.payload.capability_context.context.status_context.outcome).toBe(
-      dashboard.payload.capability_context.startup.outcome,
-    );
+    expect(dashboard.payload.capability_context.context.status_context.outcome).toBe(dashboard.payload.capability_context.startup.outcome);
     expect(JSON.stringify(dashboard.payload)).not.toContain('"write_contract"');
   });
 
@@ -438,10 +406,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       depends_on: ["uuuuuuuuuu"],
       dependency_count: 1,
       omitted_dependency_count: 0,
-      acceptance: [
-        "Preserve selected task identity and dependency evidence.",
-        "Retain one exact recovery command in every successful envelope.",
-      ],
+      acceptance: ["Preserve selected task identity and dependency evidence.", "Retain one exact recovery command in every successful envelope."],
       acceptance_count: 2,
       omitted_acceptance_count: 0,
       retrieval: { get: "agentera state plan tasks get --id vvvvvvvvvv" },
@@ -454,13 +419,17 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 },
       caveats: [
         `${artifact} compacted history is incomplete and requires exact review.`,
-        ...(artifact === "decisions" ? [{
-          class: "review_needed",
-          confidence: "firm",
-          satisfaction_state: "provisionally_satisfied",
-          review_needed: true,
-          message: "Use explicit state; never infer satisfaction.",
-        }] : []),
+        ...(artifact === "decisions"
+          ? [
+              {
+                class: "review_needed",
+                confidence: "firm",
+                satisfaction_state: "provisionally_satisfied",
+                review_needed: true,
+                message: "Use explicit state; never infer satisfaction.",
+              },
+            ]
+          : []),
       ],
       degraded_history: {
         summary_count: 12,
@@ -584,7 +553,11 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       startup: {
         schemaVersion: "agentera.primeStartup.v1",
         outcome: "ok",
-        availability: Array.from({ length: 8 }, (_, index) => ({ family: `optional-${index}`, availability: "deferred", detail_command: "agentera schema" })),
+        availability: Array.from({ length: 8 }, (_, index) => ({
+          family: `optional-${index}`,
+          availability: "deferred",
+          detail_command: "agentera schema",
+        })),
         detail_discovery: { schema: "agentera schema" },
         raw_artifact_reads_required: false,
         raw_artifact_read_policy: "Use the exact detail command.",
@@ -613,16 +586,18 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         detail_availability: "summary",
         retrieval: "npx -y agentera@next state docs list",
       },
-      entries: [{
-        id: "addddddddd",
-        artifact: "docs",
-        record: {
-          path: ".agentera/archive/documentation-inventory-01.md",
-          status: "stale",
-          caveats: ["This stale entry needs exact review before update."],
+      entries: [
+        {
+          id: "addddddddd",
+          artifact: "docs",
+          record: {
+            path: ".agentera/archive/documentation-inventory-01.md",
+            status: "stale",
+            caveats: ["This stale entry needs exact review before update."],
+          },
+          retrieval: { get: "agentera state docs get --id addddddddd" },
         },
-        retrieval: { get: "agentera state docs get --id addddddddd" },
-      }],
+      ],
     });
     expect(projectedDocs.entries).toHaveLength(1);
     expect(projectedDocs.entries[0]).not.toHaveProperty("provenance");
@@ -638,10 +613,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         caveats: [expect.stringContaining("summary history remains exact")],
       });
       expect(projected.degraded_history).not.toHaveProperty("retrieval");
-      for (const route of [
-        `agentera state ${artifact} list --limit 20`,
-        `agentera state ${artifact} get --id ID`,
-      ]) {
+      for (const route of [`agentera state ${artifact} list --limit 20`, `agentera state ${artifact} get --id ID`]) {
         expect(JSON.stringify(docsRich).split(route)).toHaveLength(2);
       }
     }
@@ -716,7 +688,10 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
               review_needed: true,
             }),
           ]),
-          source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "mixed" },
+          source_contract: {
+            authority: "references/artifacts/state-storage-authority.yaml",
+            detail: "mixed",
+          },
         },
         health: { degraded_history: { summary_count: 12, omitted_count: 12 } },
       });
@@ -728,7 +703,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         exists: true,
         degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
       });
-      expect((payload.profile as Record<string, unknown>)).not.toHaveProperty("path");
+      expect(payload.profile as Record<string, unknown>).not.toHaveProperty("path");
     }
   });
 
@@ -801,8 +776,12 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       fs.mkdirSync(matrixRoot);
       const matrixHome = nestedPathAtLeast(matrixRoot, minimumLength, "home");
       const matrixSource = nestedPathAtLeast(matrixRoot, minimumLength, "source");
-      fs.cpSync(path.join(REPO_ROOT, "skills"), path.join(matrixSource, "skills"), { recursive: true });
-      fs.cpSync(path.join(REPO_ROOT, "references"), path.join(matrixSource, "references"), { recursive: true });
+      fs.cpSync(path.join(REPO_ROOT, "skills"), path.join(matrixSource, "skills"), {
+        recursive: true,
+      });
+      fs.cpSync(path.join(REPO_ROOT, "references"), path.join(matrixSource, "references"), {
+        recursive: true,
+      });
       fs.copyFileSync(path.join(REPO_ROOT, "registry.json"), path.join(matrixSource, "registry.json"));
       fs.writeFileSync(path.join(matrixSource, ".agentera-npx-bundle.json"), "{}\n");
       process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = matrixSource;
@@ -810,10 +789,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       const capture = (fields?: string): { out: string; payload: Record<string, unknown> } => {
         let out = "";
         let err = "";
-        const rc = cmdPrime(
-          { command: "prime", format: "json", home: matrixHome, installRoot: matrixSource, fields },
-          { out: (text) => (out += text), err: (text) => (err += text) },
-        );
+        const rc = cmdPrime({ command: "prime", format: "json", home: matrixHome, installRoot: matrixSource, fields }, { out: (text) => (out += text), err: (text) => (err += text) });
         expect(rc, err).toBe(0);
         return { out, payload: JSON.parse(out) as Record<string, unknown> };
       };
@@ -833,11 +809,19 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           id: fixture.selectedTaskId,
           object: expect.any(String),
           capability: expect.any(String),
-          retrieval: { exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}` },
+          retrieval: {
+            exact: `npx -y agentera@next state plan tasks get --id ${fixture.selectedTaskId}`,
+          },
         },
         history: {
           progress: {
-            counts: { total: expect.any(Number), returned: expect.any(Number), remaining: expect.any(Number), full: expect.any(Number), summary: expect.any(Number) },
+            counts: {
+              total: expect.any(Number),
+              returned: expect.any(Number),
+              remaining: expect.any(Number),
+              full: expect.any(Number),
+              summary: expect.any(Number),
+            },
             retrieval: { list: expect.any(String), get: expect.any(String) },
           },
           decisions: { retrieval: { list: expect.any(String), get: expect.any(String) } },
@@ -856,13 +840,24 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
   });
 
   it("fails explicitly when a tiny configured budget cannot contain the irreducible envelope", () => {
-    expect(() => briefOrientationPayload({
-      command: "prime",
-      status: "ok",
-      mode: "fresh",
-      state_presence: { active: {}, available: {}, any_active: false, absence_explained: false, absence: {} },
-      source_contract: {},
-    }, { budgetBytes: 1 })).toThrow(BriefBudgetError);
+    expect(() =>
+      briefOrientationPayload(
+        {
+          command: "prime",
+          status: "ok",
+          mode: "fresh",
+          state_presence: {
+            active: {},
+            available: {},
+            any_active: false,
+            absence_explained: false,
+            absence: {},
+          },
+          source_contract: {},
+        },
+        { budgetBytes: 1 },
+      ),
+    ).toThrow(BriefBudgetError);
   });
 
   it("keeps compact status routing inside the public budget and rejects the byte below it", () => {
@@ -870,7 +865,13 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       command: "prime",
       outcome: "ok",
       mode: "v3",
-      state_presence: { active: {}, available: {}, any_active: true, absence_explained: false, absence: {} },
+      state_presence: {
+        active: {},
+        available: {},
+        any_active: true,
+        absence_explained: false,
+        absence: {},
+      },
       source_contract: {},
       todo: {
         exists: true,
@@ -905,10 +906,12 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     });
     expect(compactBytes).toBe(11_906);
     expect(PRIME_BRIEF_MAX_UTF8_BYTES - compactBytes).toBe(94);
-    expect(() => briefOrientationPayload(payload, {
-      budgetBytes: compactBytes - 1,
-      degradedMode: "status_routing",
-    })).toThrow(BriefBudgetError);
+    expect(() =>
+      briefOrientationPayload(payload, {
+        budgetBytes: compactBytes - 1,
+        degradedMode: "status_routing",
+      }),
+    ).toThrow(BriefBudgetError);
   });
 
   it("keeps one canonical TODO reconciliation route in a degraded brief", () => {
@@ -917,13 +920,23 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       status: "action_required",
       preview_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --dry-run",
       apply_command: "npx -y agentera@next state todo correct-owners --input OWNER_MAPPING.yaml --effect-sha256 SHA256 --yes",
-      risks: { resurrected_count: 161, resurrected_ids: Array.from({ length: 20 }, (_, index) => `todo-${index}`), omitted_count: 141 },
+      risks: {
+        resurrected_count: 161,
+        resurrected_ids: Array.from({ length: 20 }, (_, index) => `todo-${index}`),
+        omitted_count: 141,
+      },
     };
     const payload: Record<string, unknown> = {
       command: "prime",
       outcome: "blocked",
       mode: "returning",
-      state_presence: { active: {}, available: {}, any_active: true, absence_explained: false, absence: {} },
+      state_presence: {
+        active: {},
+        available: {},
+        any_active: true,
+        absence_explained: false,
+        absence: {},
+      },
       source_contract: {},
       todo_reconciliation: reconciliation,
       startup: {
@@ -940,7 +953,6 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(compact.startup).not.toHaveProperty("todo_reconciliation");
     expect(briefUtf8Bytes(compact)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
   });
-
 });
 
 /** Read a dotted path from a JSON payload. Returns undefined when any segment

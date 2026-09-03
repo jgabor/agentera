@@ -5,10 +5,7 @@ import path from "node:path";
 
 import { afterEach, describe, expect, it } from "vitest";
 
-import {
-  coordinateDevelopmentReadiness,
-  READINESS_CONTRACT,
-} from "../../scripts/release-readiness.mjs";
+import { coordinateDevelopmentReadiness, READINESS_CONTRACT } from "../../scripts/release-readiness.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const SCRIPT = path.join(REPO_ROOT, "packages/cli/scripts/release-readiness.mjs");
@@ -23,11 +20,18 @@ function git(root: string, ...args: string[]): string {
 function writeManifest(repo: string, version: string, gitRef: string): void {
   const file = path.join(repo, "packages/cli/package.json");
   fs.mkdirSync(path.dirname(file), { recursive: true });
-  fs.writeFileSync(file, `${JSON.stringify({
-    name: "agentera",
-    version,
-    agentera: { suiteVersion: "3.0.0", gitRef },
-  }, null, 2)}\n`);
+  fs.writeFileSync(
+    file,
+    `${JSON.stringify(
+      {
+        name: "agentera",
+        version,
+        agentera: { suiteVersion: "3.0.0", gitRef },
+      },
+      null,
+      2,
+    )}\n`,
+  );
 }
 
 function fixture() {
@@ -73,7 +77,9 @@ function operations() {
     issueSource: async ({ candidateDirectory }: { candidateDirectory: string }) => {
       counters.sourceIssues += 1;
       fs.mkdirSync(candidateDirectory, { recursive: true });
-      fs.writeFileSync(path.join(candidateDirectory, "source-receipt.json"), "valid-source\n", { flag: "wx" });
+      fs.writeFileSync(path.join(candidateDirectory, "source-receipt.json"), "valid-source\n", {
+        flag: "wx",
+      });
       return {
         reused: false,
         receipt: { receiptSha256: "a".repeat(64) },
@@ -87,25 +93,22 @@ function operations() {
       }
       return { receiptSha256: "a".repeat(64) };
     },
-    issueCandidate: (input: {
-      candidateDirectory: string;
-      sourceCommit: string;
-    }) => {
+    issueCandidate: (input: { candidateDirectory: string; sourceCommit: string }) => {
       expect(input).not.toHaveProperty("targetVersion");
       const { candidateDirectory, sourceCommit } = input;
       counters.candidateIssues += 1;
       counters.candidateConstructions += 1;
       expect(sourceCommit).toMatch(/^[0-9a-f]{40}$/);
-      fs.writeFileSync(path.join(candidateDirectory, artifactName), artifactBytes, { flag: "wx", mode: 0o444 });
+      fs.writeFileSync(path.join(candidateDirectory, artifactName), artifactBytes, {
+        flag: "wx",
+        mode: 0o444,
+      });
       fs.writeFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "valid-candidate\n", { flag: "wx" });
       return { reused: false, receipt: { receiptSha256: "b".repeat(64) } };
     },
     validateCandidate: ({ candidateDirectory }: { candidateDirectory: string }) => {
       counters.candidateChecks += 1;
-      if (
-        fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8") !== "valid-candidate\n"
-        || !fs.readFileSync(path.join(candidateDirectory, artifactName)).equals(artifactBytes)
-      ) {
+      if (fs.readFileSync(path.join(candidateDirectory, "candidate-receipt.json"), "utf8") !== "valid-candidate\n" || !fs.readFileSync(path.join(candidateDirectory, artifactName)).equals(artifactBytes)) {
         throw new Error("package artifact changed after verification");
       }
       return { receipt: { receiptSha256: "b".repeat(64) } };
@@ -314,15 +317,7 @@ describe("development release readiness coordinator", () => {
     temporary.push(root);
     const candidateDirectory = path.join(root, "candidate");
     const before = fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"));
-    const rejected = spawnSync(process.execPath, [
-      SCRIPT,
-      "development",
-      "--candidate-dir",
-      candidateDirectory,
-      "--source-commit",
-      "invalid",
-      "--json",
-    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    const rejected = spawnSync(process.execPath, [SCRIPT, "development", "--candidate-dir", candidateDirectory, "--source-commit", "invalid", "--json"], { cwd: REPO_ROOT, encoding: "utf8" });
     expect(rejected.status).toBe(READINESS_CONTRACT.exitCodes.rejected);
     expect(JSON.parse(rejected.stdout)).toMatchObject({
       schemaVersion: "agentera.releaseReadiness.v1",
@@ -336,17 +331,10 @@ describe("development release readiness coordinator", () => {
     expect(fs.existsSync(candidateDirectory)).toBe(false);
     expect(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"))).toEqual(before);
 
-    const obsolete = spawnSync(process.execPath, [
-      SCRIPT,
-      "development",
-      "--candidate-dir",
-      candidateDirectory,
-      "--target-version",
-      "3.0.0-dev.73",
-      "--source-commit",
-      "0".repeat(40),
-      "--json",
-    ], { cwd: REPO_ROOT, encoding: "utf8" });
+    const obsolete = spawnSync(process.execPath, [SCRIPT, "development", "--candidate-dir", candidateDirectory, "--target-version", "3.0.0-dev.73", "--source-commit", "0".repeat(40), "--json"], {
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+    });
     expect(obsolete.status).toBe(READINESS_CONTRACT.exitCodes.rejected);
     expect(obsolete.stderr).toContain("unexpected argument '--target-version'");
     expect(fs.existsSync(candidateDirectory)).toBe(false);

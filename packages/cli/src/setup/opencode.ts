@@ -20,7 +20,8 @@ export function hasManagedMarker(text: string): boolean {
   if (!match) return false;
   try {
     const frontmatter = parseYaml(match[1]);
-    return typeof frontmatter === "object" && frontmatter !== null
-      && (frontmatter as Record<string, unknown>).agentera_managed === true;
-  } catch { return false; }
+    return typeof frontmatter === "object" && frontmatter !== null && (frontmatter as Record<string, unknown>).agentera_managed === true;
+  } catch {
+    return false;
+  }
 }

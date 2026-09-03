@@ -76,20 +76,11 @@ function identity(stat: fs.BigIntStats): PathIdentity {
 }
 
 function sameIdentity(left: PathIdentity, right: PathIdentity): boolean {
-  return left.dev === right.dev
-    && left.ino === right.ino
-    && left.type === right.type
-    && left.size === right.size
-    && left.mtimeNs === right.mtimeNs
-    && left.ctimeNs === right.ctimeNs
-    && left.nlink === right.nlink;
+  return left.dev === right.dev && left.ino === right.ino && left.type === right.type && left.size === right.size && left.mtimeNs === right.mtimeNs && left.ctimeNs === right.ctimeNs && left.nlink === right.nlink;
 }
 
 function sameDirectory(left: StableDirectory, right: fs.BigIntStats): boolean {
-  return right.isDirectory()
-    && !right.isSymbolicLink()
-    && left.dev === right.dev
-    && left.ino === right.ino;
+  return right.isDirectory() && !right.isSymbolicLink() && left.dev === right.dev && left.ino === right.ino;
 }
 
 function sha256(bytes: Buffer | string): string {
@@ -108,11 +99,7 @@ function publishedIdentity(file: StableFile): PublishedTargetIdentity {
 
 function matchesPublished(file: StableFile, expected: PublishedTargetIdentity): boolean {
   const observed = publishedIdentity(file);
-  return observed.dev === expected.dev
-    && observed.ino === expected.ino
-    && observed.type === expected.type
-    && observed.size === expected.size
-    && observed.sha256 === expected.sha256;
+  return observed.dev === expected.dev && observed.ino === expected.ino && observed.type === expected.type && observed.size === expected.size && observed.sha256 === expected.sha256;
 }
 
 function matchesExpected(file: StableFile, expected: Buffer | PublishedTargetIdentity): boolean {
@@ -144,11 +131,7 @@ function readStableFile(absolute: string, label: string): StableFile {
     const after = fs.fstatSync(descriptor, { bigint: true });
     const pathname = fs.lstatSync(absolute, { bigint: true });
     const openedIdentity = identity(opened);
-    if (
-      !sameIdentity(openedIdentity, identity(after))
-      || !sameIdentity(openedIdentity, identity(pathname))
-      || BigInt(bytes.length) !== opened.size
-    ) throw new Error(`${label} changed while its exact bytes were read`);
+    if (!sameIdentity(openedIdentity, identity(after)) || !sameIdentity(openedIdentity, identity(pathname)) || BigInt(bytes.length) !== opened.size) throw new Error(`${label} changed while its exact bytes were read`);
     return { absolute, identity: identity(after), bytes };
   } finally {
     if (descriptor !== undefined) fs.closeSync(descriptor);
@@ -176,21 +159,11 @@ function readStableDirectory(absolute: string, created = false): StableDirectory
 function projectLocalPath(root: ValidatedProjectRoot, absolute: string, allowRoot = false): boolean {
   const resolved = path.resolve(absolute);
   const relative = path.relative(root.path, resolved);
-  return resolved === absolute
-    && (allowRoot || relative.length > 0)
-    && relative !== ".."
-    && !relative.startsWith(`..${path.sep}`)
-    && !path.isAbsolute(relative);
+  return resolved === absolute && (allowRoot || relative.length > 0) && relative !== ".." && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative);
 }
 
 /** Validate a recovery directory before listing or mutating anything through it. */
-export function validateEntityRecoveryDirectory(
-  root: ValidatedProjectRoot,
-  absolute: string,
-  targetDirectory: string,
-  label: string,
-  expected?: EntityRecoveryDirectoryIdentity,
-): EntityRecoveryDirectoryIdentity {
+export function validateEntityRecoveryDirectory(root: ValidatedProjectRoot, absolute: string, targetDirectory: string, label: string, expected?: EntityRecoveryDirectoryIdentity): EntityRecoveryDirectoryIdentity {
   assertValidatedProjectRoot(root);
   if (!projectLocalPath(root, absolute) || !projectLocalPath(root, targetDirectory, true)) {
     throw new FileReplacementError(`${label} must be a real project-local directory under the validated project root`);
@@ -215,11 +188,7 @@ export function validateEntityRecoveryDirectory(
   if (directory.dev !== target.dev) {
     throw new FileReplacementError(`${label} must share the replacement target filesystem`);
   }
-  if (expected && (
-    directory.absolute !== expected.absolute
-    || directory.dev !== expected.dev
-    || directory.ino !== expected.ino
-  )) {
+  if (expected && (directory.absolute !== expected.absolute || directory.dev !== expected.dev || directory.ino !== expected.ino)) {
     throw new FileReplacementError(`${label} changed after its recovery boundary was validated`);
   }
   return { absolute: directory.absolute, dev: directory.dev, ino: directory.ino };
@@ -239,23 +208,21 @@ function syncDirectory(absolute: string): void {
 }
 
 function syncDirectoryBestEffort(absolute: string): void {
-  try { syncDirectory(absolute); } catch { /* The canonical rename already linearized. */ }
+  try {
+    syncDirectory(absolute);
+  } catch {
+    /* The canonical rename already linearized. */
+  }
 }
 
 function safeSegments(relativeTarget: string, label: string): string[] {
   const segments = relativeTarget.split(/[\\/]/).filter(Boolean);
-  if (
-    segments.length < 1
-    || path.posix.isAbsolute(relativeTarget)
-    || path.win32.isAbsolute(relativeTarget)
-    || relativeTarget.includes("\0")
-    || segments.includes("..")
-    || segments.includes(".")
-  ) reject({
-    class: "unsupported_target",
-    message: `${label} '${relativeTarget}' is outside the validated project path grammar`,
-    recovery: "Use one project-relative path without symbolic, dot, parent, drive, UNC, or absolute segments; no state was changed.",
-  });
+  if (segments.length < 1 || path.posix.isAbsolute(relativeTarget) || path.win32.isAbsolute(relativeTarget) || relativeTarget.includes("\0") || segments.includes("..") || segments.includes("."))
+    reject({
+      class: "unsupported_target",
+      message: `${label} '${relativeTarget}' is outside the validated project path grammar`,
+      recovery: "Use one project-relative path without symbolic, dot, parent, drive, UNC, or absolute segments; no state was changed.",
+    });
   return segments;
 }
 
@@ -274,25 +241,27 @@ function createDurableFile(absolute: string, bytes: Buffer | string, mode = 0o60
   let descriptor: number | undefined;
   let opened: PathIdentity | undefined;
   try {
-    descriptor = fs.openSync(
-      absolute,
-      fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0),
-      mode,
-    );
+    descriptor = fs.openSync(absolute, fs.constants.O_RDWR | fs.constants.O_CREAT | fs.constants.O_EXCL | (fs.constants.O_NOFOLLOW ?? 0), mode);
     opened = identity(fs.fstatSync(descriptor, { bigint: true }));
     fs.writeFileSync(descriptor, bytes);
     if (typeof process.getuid === "function") fs.fchmodSync(descriptor, mode);
     fs.fsyncSync(descriptor);
   } catch (error) {
     if (descriptor !== undefined) {
-      try { fs.closeSync(descriptor); } catch { /* Preserve the primary failure. */ }
+      try {
+        fs.closeSync(descriptor);
+      } catch {
+        /* Preserve the primary failure. */
+      }
       descriptor = undefined;
     }
     if (opened) {
       try {
         const current = readFileIfPresent(absolute, `failed stage '${absolute}'`);
         if (current && sameIdentity(opened, current.identity)) fs.unlinkSync(absolute);
-      } catch { /* Preserve changed or partially inspectable attempt state. */ }
+      } catch {
+        /* Preserve changed or partially inspectable attempt state. */
+      }
     }
     throw error;
   } finally {
@@ -378,8 +347,11 @@ export class EntityPublicationContext {
       return;
     }
     let current: StableFile;
-    try { current = readStableFile(this.marker.absolute, `state mode marker '${this.markerPath}'`); }
-    catch { publicationConflict(this.markerPath); }
+    try {
+      current = readStableFile(this.marker.absolute, `state mode marker '${this.markerPath}'`);
+    } catch {
+      publicationConflict(this.markerPath);
+    }
     if (!sameStableFile(this.marker, current!)) publicationConflict(this.markerPath);
   }
 
@@ -398,11 +370,7 @@ export class EntityPublicationContext {
     return published;
   }
 
-  private publishImmutableInternal(
-    relativeTarget: string,
-    bytes: string,
-    activateMarker: boolean,
-  ): PublishedTargetIdentity | null {
+  private publishImmutableInternal(relativeTarget: string, bytes: string, activateMarker: boolean): PublishedTargetIdentity | null {
     const segments = safeSegments(relativeTarget, "immutable entity target");
     if (segments.length < 2) throw new Error(`unsafe immutable entity target '${relativeTarget}'`);
     if (activateMarker && relativeTarget !== this.markerPath) throw new Error("only the state mode marker can activate fresh entity state");
@@ -423,14 +391,17 @@ export class EntityPublicationContext {
       stage = createDurableFile(stagePath, bytes);
       this.assertBoundary(directories, undefined, [stage]);
       if (readFileIfPresent(target, `immutable entity target '${relativeTarget}'`)) {
-        removeExactFile(stage); stage = undefined;
+        removeExactFile(stage);
+        stage = undefined;
         this.removeCreatedDirectories(directories);
         return null;
       }
-      try { fs.linkSync(stage.absolute, target); }
-      catch (error) {
+      try {
+        fs.linkSync(stage.absolute, target);
+      } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "EEXIST") {
-          removeExactFile(stage); stage = undefined;
+          removeExactFile(stage);
+          stage = undefined;
           this.removeCreatedDirectories(directories);
           return null;
         }
@@ -445,7 +416,8 @@ export class EntityPublicationContext {
       publicationOwned = true;
       if (activateMarker) this.marker = published;
       this.assertBoundary(directories, published, [stage]);
-      removeExactFile(stage); stage = undefined;
+      removeExactFile(stage);
+      stage = undefined;
       syncDirectory(directory);
       published = readStableFile(target, `published entity '${relativeTarget}'`);
       if (activateMarker) this.marker = published;
@@ -458,17 +430,27 @@ export class EntityPublicationContext {
       if (activateMarker) this.marker = null;
       if (publicationOwned && published) {
         if (stage) {
-          try { if (removeExactFile(stage)) stage = undefined; } catch { /* Preserve changed attempt bytes. */ }
+          try {
+            if (removeExactFile(stage)) stage = undefined;
+          } catch {
+            /* Preserve changed attempt bytes. */
+          }
         }
         if (!stage) {
           try {
             const current = readFileIfPresent(target, `failed immutable publication '${relativeTarget}'`);
             if (current && matchesPublished(current, publishedIdentity(published))) removeExactFile(current);
-          } catch { /* Preserve a changed successor. */ }
+          } catch {
+            /* Preserve a changed successor. */
+          }
         }
       }
       if (stage) {
-        try { removeExactFile(stage); } catch { /* Preserve changed attempt bytes. */ }
+        try {
+          removeExactFile(stage);
+        } catch {
+          /* Preserve changed attempt bytes. */
+        }
       }
       this.removeCreatedDirectories(directories);
       throw error;
@@ -488,8 +470,12 @@ export class EntityPublicationContext {
     try {
       this.assertBoundary(directories, undefined, [receipt]);
       if (!readFileIfPresent(target, `preowned target '${relativeTarget}'`)) {
-        try { fs.linkSync(receipt.absolute, target); syncDirectory(directory); }
-        catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+        try {
+          fs.linkSync(receipt.absolute, target);
+          syncDirectory(directory);
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        }
       }
       const published = readStableFile(target, `preowned target '${relativeTarget}'`);
       if (!matchesPublished(published, expected) || published.identity.dev !== receipt.identity.dev || published.identity.ino !== receipt.identity.ino) {
@@ -545,13 +531,7 @@ export class EntityPublicationContext {
     this.closed = true;
   }
 
-  private replaceOwned(
-    relativeTarget: string,
-    expected: Buffer | PublishedTargetIdentity,
-    bytes: string,
-    maxEntityBytes: number,
-    verifyContext = true,
-  ): ExactReplacementResult {
+  private replaceOwned(relativeTarget: string, expected: Buffer | PublishedTargetIdentity, bytes: string, maxEntityBytes: number, verifyContext = true): ExactReplacementResult {
     const segments = safeSegments(relativeTarget, "recoverable replacement target");
     const directories = this.openDirectories(segments.slice(0, -1), false, false, verifyContext);
     if (!directories) throw new FileReplacementError(`replacement target '${relativeTarget}' is absent before publication`);
@@ -574,25 +554,26 @@ export class EntityPublicationContext {
     try {
       recovery = this.createRecoveryAttempt(directory);
       backup = createDurableFile(path.join(recovery.attempt.absolute, "original.previous"), baseline.bytes);
-      stage = createDurableFile(
-        path.join(recovery.attempt.absolute, "replacement.tmp"),
-        after,
-        Number(baseline.identity.mode & 0o7777n),
+      stage = createDurableFile(path.join(recovery.attempt.absolute, "replacement.tmp"), after, Number(baseline.identity.mode & 0o7777n));
+      metadata = createDurableFile(
+        path.join(recovery.attempt.absolute, FILE_REPLACEMENT_METADATA_NAME),
+        `${JSON.stringify({
+          schema_version: FILE_REPLACEMENT_RECOVERY_VERSION,
+          target_path: segments.join("/"),
+          before_sha256: sha256(baseline.bytes),
+          after_sha256: sha256(after),
+        })}\n`,
       );
-      metadata = createDurableFile(path.join(recovery.attempt.absolute, FILE_REPLACEMENT_METADATA_NAME), `${JSON.stringify({
-        schema_version: FILE_REPLACEMENT_RECOVERY_VERSION,
-        target_path: segments.join("/"),
-        before_sha256: sha256(baseline.bytes),
-        after_sha256: sha256(after),
-      })}\n`);
       syncDirectory(recovery.attempt.absolute);
       this.assertBoundary(directories, baseline, [backup, stage, metadata], verifyContext);
       const boundaryTarget = readStableFile(target, `replacement target '${relativeTarget}'`);
       if (!sameStableFile(boundaryTarget, baseline)) {
         throw new ExactReplacementConflictError(`target '${relativeTarget}' changed at the final validation boundary; the detected change was preserved`);
       }
-      try { fs.renameSync(stage.absolute, target); renameCompleted = true; }
-      catch (error) {
+      try {
+        fs.renameSync(stage.absolute, target);
+        renameCompleted = true;
+      } catch (error) {
         throw new FileReplacementError(`complete-file replacement for '${relativeTarget}' failed before publication${(error as NodeJS.ErrnoException).code ? ` (${(error as NodeJS.ErrnoException).code})` : ""}`, error);
       }
       syncDirectory(directory);
@@ -602,7 +583,10 @@ export class EntityPublicationContext {
         throw new ExactReplacementConflictError(`target '${relativeTarget}' changed through the publication boundary`);
       }
       this.assertBoundary(directories, published, [backup, metadata], verifyContext);
-      committed = { previousBytes: baseline.bytes.toString("utf8"), publishedIdentity: publishedIdentity(published) };
+      committed = {
+        previousBytes: baseline.bytes.toString("utf8"),
+        publishedIdentity: publishedIdentity(published),
+      };
       this.cleanupCommittedReplacement(recovery.attempt.absolute, [backup, metadata]);
       backup = undefined;
       metadata = undefined;
@@ -611,10 +595,16 @@ export class EntityPublicationContext {
     } catch (error) {
       if (committed) return committed;
       let current: StableFile | null = null;
-      try { current = readFileIfPresent(target, `replacement target '${relativeTarget}'`); } catch { /* Preserve all recovery evidence. */ }
+      try {
+        current = readFileIfPresent(target, `replacement target '${relativeTarget}'`);
+      } catch {
+        /* Preserve all recovery evidence. */
+      }
       if (!renameCompleted && error instanceof ExactReplacementConflictError) {
         const retained = this.cleanupAttemptFiles([stage, backup, metadata]);
-        stage = undefined; backup = undefined; metadata = undefined;
+        stage = undefined;
+        backup = undefined;
+        metadata = undefined;
         if (retained.length) {
           throw new ExactReplacementConflictError(`${error.message}; cleanup retained changed recovery roles`, retained);
         }
@@ -628,8 +618,22 @@ export class EntityPublicationContext {
           syncDirectory(directory);
           const restored = readStableFile(target, `restored replacement target '${relativeTarget}'`);
           if (!restored.bytes.equals(baseline.bytes)) throw new Error("restored bytes do not match the exact baseline");
-          if (stage) { try { removeExactFile(stage); } catch { /* Preserve changed stage. */ } stage = undefined; }
-          if (metadata) { try { removeExactFile(metadata); } catch { /* Preserve changed metadata. */ } metadata = undefined; }
+          if (stage) {
+            try {
+              removeExactFile(stage);
+            } catch {
+              /* Preserve changed stage. */
+            }
+            stage = undefined;
+          }
+          if (metadata) {
+            try {
+              removeExactFile(metadata);
+            } catch {
+              /* Preserve changed metadata. */
+            }
+            metadata = undefined;
+          }
           syncDirectoryBestEffort(recovery?.attempt.absolute ?? directory);
           throw new FileReplacementError(`${(error as Error).message}; restored exact prior bytes at '${relativeTarget}'`, error);
         } catch (restoreError) {
@@ -638,20 +642,17 @@ export class EntityPublicationContext {
       }
       if (!renameCompleted && current && sameStableFile(current, baseline)) {
         const retained = this.cleanupAttemptFiles([stage, backup, metadata]);
-        stage = undefined; backup = undefined; metadata = undefined;
+        stage = undefined;
+        backup = undefined;
+        metadata = undefined;
         if (retained.length) {
           throw new ExactReplacementConflictError(`${(error as Error).message}; cleanup retained changed recovery roles`, retained);
         }
         if (error instanceof ExactReplacementConflictError || error instanceof FileReplacementError || error instanceof StateWriteInputError) throw error;
         throw new FileReplacementError(`${(error as Error).message}; target bytes remained unchanged`, error);
       }
-      const retained = [backup, stage, metadata]
-        .filter((file): file is StableFile => Boolean(file && fs.existsSync(file.absolute)))
-        .map((file) => relativeDisplay(this.projectRoot, file.absolute));
-      throw new ExactReplacementConflictError(
-        `${(error as Error).message}; recoverable publication did not report success and preserved the canonical target plus ${retained.length} bounded recovery role${retained.length === 1 ? "" : "s"}`,
-        retained,
-      );
+      const retained = [backup, stage, metadata].filter((file): file is StableFile => Boolean(file && fs.existsSync(file.absolute))).map((file) => relativeDisplay(this.projectRoot, file.absolute));
+      throw new ExactReplacementConflictError(`${(error as Error).message}; recoverable publication did not report success and preserved the canonical target plus ${retained.length} bounded recovery role${retained.length === 1 ? "" : "s"}`, retained);
     } finally {
       if (recovery) this.closeRecoveryAttempt(recovery);
     }
@@ -665,8 +666,9 @@ export class EntityPublicationContext {
       else assertValidatedProjectRoot(this.validatedRoot);
       const absolute = path.join(parent, segment);
       let entry: StableDirectory;
-      try { entry = readStableDirectory(absolute); }
-      catch (error) {
+      try {
+        entry = readStableDirectory(absolute);
+      } catch (error) {
         if ((error as NodeJS.ErrnoException).code === "ENOENT" || (error as Error).message.includes("ENOENT")) {
           if (missingIsAbsent) return null;
           if (!create) throw error;
@@ -682,18 +684,16 @@ export class EntityPublicationContext {
     return directories;
   }
 
-  private assertBoundary(
-    directories: StableDirectory[],
-    target?: StableFile,
-    roles: StableFile[] = [],
-    verifyContext = true,
-  ): void {
+  private assertBoundary(directories: StableDirectory[], target?: StableFile, roles: StableFile[] = [], verifyContext = true): void {
     if (verifyContext) this.assertValid();
     else assertValidatedProjectRoot(this.validatedRoot);
     for (const directory of directories) {
       let current: fs.BigIntStats;
-      try { current = fs.lstatSync(directory.absolute, { bigint: true }); }
-      catch { throw new ExactReplacementConflictError(`publication directory '${relativeDisplay(this.projectRoot, directory.absolute)}' changed at a validation boundary`); }
+      try {
+        current = fs.lstatSync(directory.absolute, { bigint: true });
+      } catch {
+        throw new ExactReplacementConflictError(`publication directory '${relativeDisplay(this.projectRoot, directory.absolute)}' changed at a validation boundary`);
+      }
       if (!sameDirectory(directory, current)) {
         throw new ExactReplacementConflictError(`publication directory '${relativeDisplay(this.projectRoot, directory.absolute)}' changed at a validation boundary`);
       }
@@ -721,26 +721,26 @@ export class EntityPublicationContext {
     let ignore: StableFile | undefined;
     let attempt: StableDirectory | undefined;
     try {
-      try { root = readStableDirectory(rootPath); }
-      catch (error) {
+      try {
+        root = readStableDirectory(rootPath);
+      } catch (error) {
         if (!(error as Error).message.includes("ENOENT")) {
           throw new FileReplacementError(`private entity recovery root '.agentera/.entity-recovery' cannot be opened safely: ${(error as Error).message}`, error);
         }
-        fs.mkdirSync(rootPath, 0o700); rootCreated = true; syncDirectory(agentera.absolute);
+        fs.mkdirSync(rootPath, 0o700);
+        rootCreated = true;
+        syncDirectory(agentera.absolute);
         root = readStableDirectory(rootPath, true);
       }
-      const trustedRoot = validateEntityRecoveryDirectory(
-        this.validatedRoot,
-        root.absolute,
-        targetDirectory,
-        "private entity recovery root '.agentera/.entity-recovery'",
-        root,
-      );
+      const trustedRoot = validateEntityRecoveryDirectory(this.validatedRoot, root.absolute, targetDirectory, "private entity recovery root '.agentera/.entity-recovery'", root);
       root = { ...trustedRoot, created: rootCreated };
       const ignorePath = path.join(root.absolute, ".gitignore");
       const existingIgnore = readFileIfPresent(ignorePath, "private entity recovery ignore marker");
       if (existingIgnore) ignore = existingIgnore;
-      else { ignore = createDurableFile(ignorePath, RECOVERY_IGNORE_BYTES); ignoreCreated = true; }
+      else {
+        ignore = createDurableFile(ignorePath, RECOVERY_IGNORE_BYTES);
+        ignoreCreated = true;
+      }
       if (!ignore.bytes.equals(Buffer.from(RECOVERY_IGNORE_BYTES))) {
         throw new FileReplacementError("private entity recovery ignore marker must contain the authoritative rules");
       }
@@ -755,24 +755,43 @@ export class EntityPublicationContext {
           fs.mkdirSync(attemptPath, 0o700);
           const opened = readStableDirectory(attemptPath, true);
           attempt = opened;
-          const trusted = validateEntityRecoveryDirectory(
-            this.validatedRoot,
-            attemptPath,
-            targetDirectory,
-            `private entity recovery attempt '${relativeDisplay(this.projectRoot, attemptPath)}'`,
-            opened,
-          );
+          const trusted = validateEntityRecoveryDirectory(this.validatedRoot, attemptPath, targetDirectory, `private entity recovery attempt '${relativeDisplay(this.projectRoot, attemptPath)}'`, opened);
           attempt = { ...trusted, created: true };
           break;
-        } catch (error) { if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error; }
+        } catch (error) {
+          if ((error as NodeJS.ErrnoException).code !== "EEXIST") throw error;
+        }
       }
       if (!attempt) throw new FileReplacementError("could not allocate a unique private entity recovery attempt after 8 tries");
       syncDirectory(root.absolute);
-      return { root, attempt, ignore, relativePath: relativeDisplay(this.projectRoot, attempt.absolute) };
+      return {
+        root,
+        attempt,
+        ignore,
+        relativePath: relativeDisplay(this.projectRoot, attempt.absolute),
+      };
     } catch (error) {
-      if (attempt) { try { fs.rmdirSync(attempt.absolute); } catch { /* Preserve unexpected contents. */ } }
-      if (ignore && ignoreCreated) { try { removeExactFile(ignore); } catch { /* Preserve changed marker. */ } }
-      if (root && rootCreated) { try { fs.rmdirSync(root.absolute); } catch { /* Preserve non-empty root. */ } }
+      if (attempt) {
+        try {
+          fs.rmdirSync(attempt.absolute);
+        } catch {
+          /* Preserve unexpected contents. */
+        }
+      }
+      if (ignore && ignoreCreated) {
+        try {
+          removeExactFile(ignore);
+        } catch {
+          /* Preserve changed marker. */
+        }
+      }
+      if (root && rootCreated) {
+        try {
+          fs.rmdirSync(root.absolute);
+        } catch {
+          /* Preserve non-empty root. */
+        }
+      }
       throw error;
     }
   }
@@ -783,7 +802,9 @@ export class EntityPublicationContext {
       if (!file) continue;
       try {
         if (!removeExactFile(file) && fs.existsSync(file.absolute)) retained.push(relativeDisplay(this.projectRoot, file.absolute));
-      } catch { retained.push(relativeDisplay(this.projectRoot, file.absolute)); }
+      } catch {
+        retained.push(relativeDisplay(this.projectRoot, file.absolute));
+      }
     }
     return retained;
   }
@@ -794,8 +815,12 @@ export class EntityPublicationContext {
   }
 
   private closeRecoveryAttempt(recovery: RecoveryAttempt): void {
-    try { fs.rmdirSync(recovery.attempt.absolute); syncDirectoryBestEffort(recovery.root.absolute); }
-    catch { return; }
+    try {
+      fs.rmdirSync(recovery.attempt.absolute);
+      syncDirectoryBestEffort(recovery.root.absolute);
+    } catch {
+      return;
+    }
     try {
       const names = fs.readdirSync(recovery.root.absolute);
       if (names.length === 1 && names[0] === ".gitignore") {
@@ -806,7 +831,9 @@ export class EntityPublicationContext {
         fs.rmdirSync(recovery.root.absolute);
         syncDirectoryBestEffort(path.dirname(recovery.root.absolute));
       }
-    } catch { /* Preserve non-empty or changed recovery authority. */ }
+    } catch {
+      /* Preserve non-empty or changed recovery authority. */
+    }
   }
 
   private removeCreatedDirectories(directories: StableDirectory[]): void {
@@ -828,7 +855,10 @@ export class EntityPublicationContext {
     for (const [relativePath, expected] of paths) {
       try {
         const current = fs.lstatSync(expected.absolute, { bigint: true });
-        if (!sameDirectory(expected, current)) { this.createdDirectories.delete(relativePath); continue; }
+        if (!sameDirectory(expected, current)) {
+          this.createdDirectories.delete(relativePath);
+          continue;
+        }
         fs.rmdirSync(expected.absolute);
         syncDirectoryBestEffort(path.dirname(expected.absolute));
         this.createdDirectories.delete(relativePath);

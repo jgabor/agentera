@@ -75,27 +75,26 @@ function writeProjectFile(relativePath: string, contents: string): void {
   fs.writeFileSync(target, contents);
 }
 
-function writeTodoEntity(
-  id: string,
-  severity: string,
-  status: string,
-  description: string,
-  readiness?: Record<string, unknown>,
-): void {
-  writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, YAML.stringify({
-    id,
-    artifact: "todo",
-    record: { severity, status, description, ...(readiness ? { readiness } : {}) },
-  }));
+function writeTodoEntity(id: string, severity: string, status: string, description: string, readiness?: Record<string, unknown>): void {
+  writeProjectFile(
+    `.agentera/entities/todo/todo_item/${id}.yaml`,
+    YAML.stringify({
+      id,
+      artifact: "todo",
+      record: { severity, status, description, ...(readiness ? { readiness } : {}) },
+    }),
+  );
 }
 
 function todoId(index: number): string {
   let value = index;
   return Array.from({ length: 10 }, () => {
-    const character = String.fromCharCode(97 + value % 26);
+    const character = String.fromCharCode(97 + (value % 26));
     value = Math.floor(value / 26);
     return character;
-  }).reverse().join("");
+  })
+    .reverse()
+    .join("");
 }
 
 function seedUnsafeInactiveTodos(count: number, sentinel = "PRIVATE_STATUS_STARTUP_TODO"): string[] {
@@ -106,21 +105,24 @@ function seedUnsafeInactiveTodos(count: number, sentinel = "PRIVATE_STATUS_START
     const id = todoId(index);
     const title = `${sentinel}_${String(index).padStart(3, "0")}`;
     ids.push(id);
-    writeProjectFile(`.agentera/entities/todo/todo_item/${id}.yaml`, YAML.stringify({
-      id,
-      artifact: "todo",
-      record: {
-        kind: "task",
-        target_version: "3.0.0",
-        title,
-        requirements: [],
-        acceptance: [],
-        release_blocker: false,
-        severity: "critical",
-        status: "open",
-        ...(index === 0 ? { readiness: readyTodo("build", `${sentinel} private readiness`, 1) } : {}),
-      },
-    }));
+    writeProjectFile(
+      `.agentera/entities/todo/todo_item/${id}.yaml`,
+      YAML.stringify({
+        id,
+        artifact: "todo",
+        record: {
+          kind: "task",
+          target_version: "3.0.0",
+          title,
+          requirements: [],
+          acceptance: [],
+          release_blocker: false,
+          severity: "critical",
+          status: "open",
+          ...(index === 0 ? { readiness: readyTodo("build", `${sentinel} private readiness`, 1) } : {}),
+        },
+      }),
+    );
     rows.push(`${index % 2 ? "  " : ""}- [x] [task:3.0.0] ${title}`);
   }
   rows.push("", "Private fixture closing prose.", "");
@@ -143,10 +145,7 @@ function readyTodo(capability: string, reason: string, queueRank: number): Recor
 function captureStatus(): { rc: number; out: string; err: string } {
   let out = "";
   let err = "";
-  const rc = cmdPrime(
-    { command: "prime", context: "status", format: "json", home, installRoot: appHome },
-    { out: (text) => (out += text), err: (text) => (err += text) },
-  );
+  const rc = cmdPrime({ command: "prime", context: "status", format: "json", home, installRoot: appHome }, { out: (text) => (out += text), err: (text) => (err += text) });
   return { rc, out, err };
 }
 
@@ -200,7 +199,11 @@ describe("status capability self-contained startup", () => {
       recovery_command: TODO_UNSAFE_INACTIVE_RECOVERY,
     });
     expect(startup.availability.filter((entry: Record<string, unknown>) => entry.family === "todo")).toEqual([
-      { family: "todo", availability: "included", detail_command: "npx -y agentera@next state todo list" },
+      {
+        family: "todo",
+        availability: "included",
+        detail_command: "npx -y agentera@next state todo list",
+      },
     ]);
     expect(status.outcome).toBe("blocked");
     expect(status).not.toHaveProperty("todo_reconciliation");
@@ -288,24 +291,7 @@ describe("status capability self-contained startup", () => {
         );
       },
     ],
-    [
-      "waiting",
-      () =>
-        writeProjectFile(
-          ".agentera/plan.yaml",
-          [
-            "header:",
-            "  title: Waiting for a decision",
-            "  status: open",
-            "tasks:",
-            "  - number: 1",
-            "    name: Choose the release boundary",
-            "    status: pending",
-            "    depends_on: []",
-            "",
-          ].join("\n"),
-        ),
-    ],
+    ["waiting", () => writeProjectFile(".agentera/plan.yaml", ["header:", "  title: Waiting for a decision", "  status: open", "tasks:", "  - number: 1", "    name: Choose the release boundary", "    status: pending", "    depends_on: []", ""].join("\n"))],
     ["incomplete-state", () => writeProjectFile(".agentera/progress.yaml", "cycles: []\n")],
   ] as const)("keeps safety rails and routing markers for $0 state", (name, setup) => {
     setup();
@@ -337,17 +323,33 @@ describe("status capability self-contained startup", () => {
     expect(result.payload.runtime_lifecycle).toBeUndefined();
     expect(result.payload.shared_skill).toBeDefined();
     expect(state.shared_skill).toBeUndefined();
-    expect(capsule.startup).toEqual(expect.objectContaining({
-      schemaVersion: "agentera.primeStartup.v1",
-      outcome: expect.any(String),
-      availability: expect.any(Array),
-      detail_discovery: { schema: "npx -y agentera@next schema" },
-    }));
-    expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      { family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" },
-      { family: "vision", availability: "deferred", detail_command: "npx -y agentera@next state query vision" },
-      { family: "profile", availability: "deferred", detail_command: "npx -y agentera@next report profile-grounding" },
-    ]));
+    expect(capsule.startup).toEqual(
+      expect.objectContaining({
+        schemaVersion: "agentera.primeStartup.v1",
+        outcome: expect.any(String),
+        availability: expect.any(Array),
+        detail_discovery: { schema: "npx -y agentera@next schema" },
+      }),
+    );
+    expect(capsule.startup.availability).toEqual(
+      expect.arrayContaining([
+        {
+          family: "decisions",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state decisions list",
+        },
+        {
+          family: "vision",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state query vision",
+        },
+        {
+          family: "profile",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next report profile-grounding",
+        },
+      ]),
+    );
     expect(capsule.context).toHaveProperty("first_invocation_read");
     expect(capsule.context).toHaveProperty("schema_error");
     expect(state.project_integration).not.toHaveProperty("phases");
@@ -367,16 +369,19 @@ describe("status capability self-contained startup", () => {
   ] as const)("keeps aggregate and dashboard outcomes aligned for %s", (_name, health, outcome) => {
     if (health) {
       writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-      writeProjectFile(".agentera/entities/health/health_audit/aaaaaaaaaa.yaml", YAML.stringify({
-        id: "aaaaaaaaaa",
-        artifact: "health",
-        record: {
-          date: "2026-08-03",
-          dimensions: ["test_health"],
-          findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
-          ...health,
-        },
-      }));
+      writeProjectFile(
+        ".agentera/entities/health/health_audit/aaaaaaaaaa.yaml",
+        YAML.stringify({
+          id: "aaaaaaaaaa",
+          artifact: "health",
+          record: {
+            date: "2026-08-03",
+            dimensions: ["test_health"],
+            findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+            ...health,
+          },
+        }),
+      );
     }
     const result = runStatus();
     const capsule = result.payload.capability_context;
@@ -394,7 +399,13 @@ describe("status capability self-contained startup", () => {
     [
       "corrupt artifact schema",
       {
-        availability: [{ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }],
+        availability: [
+          {
+            family: "decisions",
+            availability: "deferred",
+            detail_command: "npx -y agentera@next state decisions list",
+          },
+        ],
         schema_error: "Capability artifact schema for status could not be read: malformed YAML",
       },
     ],
@@ -413,7 +424,7 @@ describe("status capability self-contained startup", () => {
   it("projects only open entity TODOs before applying the 20-item bound", () => {
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (let index = 0; index < 19; index += 1) {
-      writeTodoEntity(`aaaaaaaa${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`, "critical", "resolved", `Resolved critical ${index}`);
+      writeTodoEntity(`aaaaaaaa${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`, "critical", "resolved", `Resolved critical ${index}`);
     }
     writeTodoEntity("aaaaaaaaba", "degraded", "resolved", "Resolved degraded");
     writeTodoEntity("aaaaaaaabb", "normal", "open", "Ship open fix", readyTodo("build", "The fix is scoped.", 1));
@@ -426,14 +437,17 @@ describe("status capability self-contained startup", () => {
     expect(state.attention).toContain("normal: TODO: Ship open fix");
     expect(state.attention.join("\n")).not.toContain("Resolved critical");
     expect(state.attention.join("\n")).not.toContain("Resolved degraded");
-    expect(state.next_action).toMatchObject({ object: "TODO aaaaaaaabb: Ship open fix", capability: "build" });
+    expect(state.next_action).toMatchObject({
+      object: "TODO aaaaaaaabb: Ship open fix",
+      capability: "build",
+    });
   });
 
   it("reports complete open TODO totals while keeping detail bounded and recoverable", () => {
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     writeTodoEntity("aaaaaaaaaa", "critical", "resolved", "Resolved critical must not count");
     for (let index = 0; index < 21; index += 1) {
-      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`;
       writeTodoEntity(`bbbbbbbb${suffix}`, "normal", "open", `Normal open ${index}`);
     }
     writeTodoEntity("ccccccccaa", "degraded", "open", "Degraded open");
@@ -452,7 +466,10 @@ describe("status capability self-contained startup", () => {
       detail: { total: 23, returned: 20, omitted: 3 },
     });
     expect(state.attention).toContain("critical: TODO: Critical open");
-    expect(state.next_action).toMatchObject({ object: "TODO zzzzzzzzzz: Critical open", capability: "build" });
+    expect(state.next_action).toMatchObject({
+      object: "TODO zzzzzzzzzz: Critical open",
+      capability: "build",
+    });
 
     const recovery = state.todo.detail.retrieval.continue as string;
     expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+$/);
@@ -461,31 +478,22 @@ describe("status capability self-contained startup", () => {
 
     let recoveryOut = "";
     let recoveryErr = "";
-    const recoveryRc = runState(
-      "todo",
-      ["list", "--status", "open", "--limit", "20", "--cursor", cursor!, "--format", "json"],
-      { out: (text) => (recoveryOut += text), err: (text) => (recoveryErr += text) },
-      "agentera",
-    );
+    const recoveryRc = runState("todo", ["list", "--status", "open", "--limit", "20", "--cursor", cursor!, "--format", "json"], { out: (text) => (recoveryOut += text), err: (text) => (recoveryErr += text) }, "agentera");
     expect(recoveryRc).toBe(0);
     expect(recoveryErr).toBe("");
-    expect(JSON.parse(recoveryOut)).toMatchObject({ counts: { total: 23, returned: 3, remaining: 0 } });
+    expect(JSON.parse(recoveryOut)).toMatchObject({
+      counts: { total: 23, returned: 3, remaining: 0 },
+    });
   });
 
   it("selects from complete TODO records before bounding and preserves discuss identity", () => {
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (let index = 0; index < 21; index += 1) {
-      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`;
       writeTodoEntity(`aaaaaaaa${suffix}`, "critical", "open", `Needs triage ${index}`);
     }
     const decisiveSuffix = "The visible prefix is intentionally irrelevant. ".repeat(600);
-    writeTodoEntity(
-      "zzzzzzzzzz",
-      "critical",
-      "open",
-      decisiveSuffix,
-      readyTodo("discuss", "Resolve the declared product boundary.", 1),
-    );
+    writeTodoEntity("zzzzzzzzzz", "critical", "open", decisiveSuffix, readyTodo("discuss", "Resolve the declared product boundary.", 1));
 
     const result = runStatus();
     const state = statusState(result.payload);
@@ -501,16 +509,18 @@ describe("status capability self-contained startup", () => {
       outcome: "actionable",
       retrieval: { exact: "npx -y agentera@next state todo get --id zzzzzzzzzz" },
     });
-    expect(state.next_action.alternatives).toContainEqual(expect.objectContaining({
-      capability: "status",
-      outcome: "needs-triage",
-    }));
+    expect(state.next_action.alternatives).toContainEqual(
+      expect.objectContaining({
+        capability: "status",
+        outcome: "needs-triage",
+      }),
+    );
   });
 
   it("reports an exact full detail page without continuation at the 20-item bound", () => {
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     for (let index = 0; index < 20; index += 1) {
-      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + index % 26)}`;
+      const suffix = `${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`;
       writeTodoEntity(`dddddddd${suffix}`, "degraded", "open", `Bounded open ${index}`);
     }
     writeTodoEntity("eeeeeeeeaa", "critical", "resolved", "Resolved at exact bound");
@@ -538,18 +548,7 @@ describe("status capability self-contained startup", () => {
     expect(statusState(fresh.payload).state_presence.any_active).toBe(false);
 
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    writeProjectFile(".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml", [
-      "id: aaaaaaaaaa",
-      "artifact: progress",
-      "record:",
-      "  timestamp: 2026-07-16 00:00",
-      "  type: test",
-      "  phase: build",
-      "  what: returning",
-      "  context:",
-      "    intent: exercise returning status",
-      "",
-    ].join("\n"));
+    writeProjectFile(".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml", ["id: aaaaaaaaaa", "artifact: progress", "record:", "  timestamp: 2026-07-16 00:00", "  type: test", "  phase: build", "  what: returning", "  context:", "    intent: exercise returning status", ""].join("\n"));
     const returning = runStatus();
     const returningDashboard = renderStatusDashboard(statusState(returning.payload));
     expect(returningDashboard.mode).toBe("returning");

@@ -2,12 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import { resolvePath } from "../../core/paths.js";
-import {
-  isPlainObject,
-  isoFromMtime,
-  record,
-  splitLines,
-} from "./core.js";
+import { isPlainObject, isoFromMtime, record, splitLines } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 
 export function extractInstructionDocuments(projectRoots: string[], errors: string[]): JsonObject[] {
@@ -70,10 +65,7 @@ function textConfigSignals(p: string, configType: string): string[] {
     if (!line || line.startsWith("#") || line.startsWith("//")) continue;
     if (configType === "gomod" && (line.startsWith("module ") || line.startsWith("go ") || line.startsWith("require "))) {
       signals.push(line);
-    } else if (
-      configType === "pyproject" &&
-      (line.startsWith("[") || line.startsWith("requires-python") || line.startsWith("dependencies") || line.startsWith("name"))
-    ) {
+    } else if (configType === "pyproject" && (line.startsWith("[") || line.startsWith("requires-python") || line.startsWith("dependencies") || line.startsWith("name"))) {
       signals.push(line);
     } else if (configType === "cargo_toml" && (line.startsWith("[") || line.startsWith("name") || line.startsWith("edition"))) {
       signals.push(line);

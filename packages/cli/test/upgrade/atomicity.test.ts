@@ -53,5 +53,4 @@ describe("atomicity", () => {
     expect(fs.readdirSync(tmp).some((e) => e.includes(".tmp."))).toBe(false);
     expect(spy).toHaveBeenCalledTimes(1);
   });
-
 });

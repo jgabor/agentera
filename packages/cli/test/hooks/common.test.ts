@@ -2,14 +2,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  MAX_FULL_ENTRIES,
-  MAX_TOTAL_ENTRIES,
-  applyRetentionCaps,
-  parseArtifactMapping,
-  parseDocsYamlMapping,
-  resolveArtifactPath,
-} from "../../src/hooks/common.js";
+import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES, applyRetentionCaps, parseArtifactMapping, parseDocsYamlMapping, resolveArtifactPath } from "../../src/hooks/common.js";
 
 describe("applyRetentionCaps", () => {
   it("enforces the total and full limits", () => {
@@ -24,9 +17,7 @@ describe("applyRetentionCaps", () => {
 describe("artifact path resolution", () => {
   it("uses defaults and overrides", () => {
     expect(resolveArtifactPath("/p", "plan")).toBe(path.join("/p", ".agentera/plan.yaml"));
-    expect(resolveArtifactPath("/p", "PLAN.md", { plan: "custom/plan.yaml" })).toBe(
-      path.join("/p", "custom/plan.yaml"),
-    );
+    expect(resolveArtifactPath("/p", "PLAN.md", { plan: "custom/plan.yaml" })).toBe(path.join("/p", "custom/plan.yaml"));
     expect(resolveArtifactPath("/p", "UNKNOWN.md")).toBe(path.join("/p", ".agentera/UNKNOWN.md.yaml"));
   });
 

@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: seltbrpsin
   name: Select the accepted toolchain baseline with explicit setup risk
-  status: in_progress
+  status: complete
   depends_on:
     []
   acceptance:
@@ -11,3 +11,13 @@ record:
     - GIVEN fresh and installed environments WHEN ownership is probed THEN bootstrap hands off to the exact root toolchain and stale global tooling cannot own project commands.
     - GIVEN accepted and rejected install cases WHEN tested THEN pnpm pinning, frozen-lock failure, script restrictions, and observational timing remain proven.
     - GIVEN publication credentials WHEN boundaries are inspected THEN setup-vp remains absent from the setup-free OIDC publisher.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-gwedzsstko-1
+      source: "Independent audit: criteria 4/4 pass; evidence audit pass; exact versions and accepted non-OIDC risk are explicit; publisher unchanged."
+      recorded_at: 2026-09-03 19:58
+      writer_command: agentera state plan record-evaluation

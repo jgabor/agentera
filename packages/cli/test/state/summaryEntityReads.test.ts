@@ -30,12 +30,25 @@ function project(): string {
 function request(root: string, artifact: "progress" | "decisions" | "health", verb: "append" | "amend" | "update", values: Record<string, unknown>, dryRun = false): StateWriteRequest {
   const spec = operationSpec(artifact, verb);
   if (!spec) throw new Error(`${artifact} ${verb} spec missing`);
-  return { artifact, spec, projectRoot: root, dryRun, force: false, values, callerPayload: structuredClone(values), input: artifact === "health" && verb === "append" ? values : null };
+  return {
+    artifact,
+    spec,
+    projectRoot: root,
+    dryRun,
+    force: false,
+    values,
+    callerPayload: structuredClone(values),
+    input: artifact === "health" && verb === "append" ? values : null,
+  };
 }
 
 function audit(): Record<string, unknown> {
   return {
-    date: "2026-07-17", dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" },
+    date: "2026-07-17",
+    dimensions: ["architecture_alignment"],
+    findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+    trajectory: "stable",
+    grades: { architecture_alignment: "A" },
   };
 }
 
@@ -50,20 +63,37 @@ function summary(root: string, artifact: "progress" | "decisions" | "health", id
   const digest = createHash("sha256").update(canonicalRecordJson(physical)).digest("hex");
   const boundary = artifact === "progress" ? "progress_summary" : artifact === "decisions" ? "decision_summary" : "health_summary";
   fs.mkdirSync(path.join(root, ".agentera/entities", artifact, boundary), { recursive: true });
-  fs.writeFileSync(path.join(root, ".agentera/entities", artifact, boundary, `${id}.yaml`), dumpYamlMapping({
-    id,
-    artifact,
-    record: { summary: text, ...(satisfaction ? { satisfaction } : {}), migration_provenance: { source_path: sourcePath, source_record_sha256: digest } },
-  }));
+  fs.writeFileSync(
+    path.join(root, ".agentera/entities", artifact, boundary, `${id}.yaml`),
+    dumpYamlMapping({
+      id,
+      artifact,
+      record: {
+        summary: text,
+        ...(satisfaction ? { satisfaction } : {}),
+        migration_provenance: { source_path: sourcePath, source_record_sha256: digest },
+      },
+    }),
+  );
 }
 
 function cli(root: string, args: string[]): { rc: number; out: string; err: string } {
   const previous = process.cwd();
   const sourceRoot = process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
-  process.chdir(root); process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = SOURCE_ROOT;
-  let out = ""; let err = "";
+  process.chdir(root);
+  process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = SOURCE_ROOT;
+  let out = "";
+  let err = "";
   try {
-    const rc = main(["node", "agentera", ...args], { out: (value) => { out += value; }, err: (value) => { err += value; }, stdin: () => args.includes("--input") ? JSON.stringify({ choice: "cannot amend" }) : "" });
+    const rc = main(["node", "agentera", ...args], {
+      out: (value) => {
+        out += value;
+      },
+      err: (value) => {
+        err += value;
+      },
+      stdin: () => (args.includes("--input") ? JSON.stringify({ choice: "cannot amend" }) : ""),
+    });
     return { rc, out, err };
   } finally {
     process.chdir(previous);
@@ -73,15 +103,40 @@ function cli(root: string, args: string[]): { rc: number; out: string; err: stri
 }
 
 function full(root: string): void {
-  appendProgressEntity(request(root, "progress", "append", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "full progress", context: { intent: "retain ordinary detail" } }), { id: "aaaaaaaaaa", sourceRoot: SOURCE_ROOT });
-  appendDecisionEntity(request(root, "decisions", "append", { date: "2026-07-17", question: "Full decision?", context: "Current detail", alternatives: { chosen: "yes" }, choice: "yes", reasoning: "full evidence", confidence: "firm" }), { id: "bbbbbbbbbb", sourceRoot: SOURCE_ROOT });
-  appendHealthEntity(request(root, "health", "append", audit()), { id: "cccccccccc", sourceRoot: SOURCE_ROOT });
+  appendProgressEntity(
+    request(root, "progress", "append", {
+      timestamp: "2026-07-17 12:00",
+      type: "fix",
+      phase: "build",
+      what: "full progress",
+      context: { intent: "retain ordinary detail" },
+    }),
+    { id: "aaaaaaaaaa", sourceRoot: SOURCE_ROOT },
+  );
+  appendDecisionEntity(
+    request(root, "decisions", "append", {
+      date: "2026-07-17",
+      question: "Full decision?",
+      context: "Current detail",
+      alternatives: { chosen: "yes" },
+      choice: "yes",
+      reasoning: "full evidence",
+      confidence: "firm",
+    }),
+    { id: "bbbbbbbbbb", sourceRoot: SOURCE_ROOT },
+  );
+  appendHealthEntity(request(root, "health", "append", audit()), {
+    id: "cccccccccc",
+    sourceRoot: SOURCE_ROOT,
+  });
 }
 
 function mixed(root: string): void {
   full(root);
   summary(root, "progress", "dddddddddd", "retained progress history");
-  summary(root, "decisions", "eeeeeeeeee", "retained decision history", { state: "user_confirmed_satisfied" });
+  summary(root, "decisions", "eeeeeeeeee", "retained decision history", {
+    state: "user_confirmed_satisfied",
+  });
   summary(root, "health", "ffffffffff", "retained health history");
 }
 
@@ -97,11 +152,14 @@ function signatureAlias(token: string): string {
   throw new Error("expected a noncanonical signature alias");
 }
 
-afterEach(() => { while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true }); });
+afterEach(() => {
+  while (roots.length) fs.rmSync(roots.pop()!, { recursive: true, force: true });
+});
 
 describe("summary entity ordinary reads", () => {
   it("lists and gets full and immutable summary records with explicit retained-history metadata", () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const readers = [
       ["progress", listProgressEntities(root, 20, {}, undefined, { sourceRoot: SOURCE_ROOT }), getProgressEntity(root, "dddddddddd", SOURCE_ROOT), "dddddddddd"],
       ["decisions", listDecisionEntities(root, 20, undefined, undefined, { sourceRoot: SOURCE_ROOT }), getDecisionEntity(root, "eeeeeeeeee", SOURCE_ROOT), "eeeeeeeeee"],
@@ -110,26 +168,56 @@ describe("summary entity ordinary reads", () => {
     for (const [artifact, listed, exact, summaryId] of readers) {
       const entries = (listed as any).entries;
       expect(entries.map((entry: any) => entry.id)).toContain(summaryId);
-      expect(entries.find((entry: any) => entry.detail_availability === "full")).toMatchObject({ compatibility: "current", boundary: ({ progress: "progress_cycle", decisions: "decision", health: "health_audit" } as const)[artifact] });
-      expect((exact as any)).toMatchObject({ status: "degraded", entry: {
-        id: summaryId, artifact, detail_availability: "summary", compatibility: "degraded",
-        record: { migration_provenance: { source_path: `.agentera/${artifact}.yaml`, source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/) } },
-        provenance: { boundary: ({ progress: "progress_summary", decisions: "decision_summary", health: "health_summary" } as const)[artifact], migration_provenance: expect.any(Object) },
-        caveats: [expect.stringContaining("incomplete historical evidence")],
-      } });
+      expect(entries.find((entry: any) => entry.detail_availability === "full")).toMatchObject({
+        compatibility: "current",
+        boundary: ({ progress: "progress_cycle", decisions: "decision", health: "health_audit" } as const)[artifact],
+      });
+      expect(exact as any).toMatchObject({
+        status: "degraded",
+        entry: {
+          id: summaryId,
+          artifact,
+          detail_availability: "summary",
+          compatibility: "degraded",
+          record: {
+            migration_provenance: {
+              source_path: `.agentera/${artifact}.yaml`,
+              source_record_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
+            },
+          },
+          provenance: {
+            boundary: (
+              {
+                progress: "progress_summary",
+                decisions: "decision_summary",
+                health: "health_summary",
+              } as const
+            )[artifact],
+            migration_provenance: expect.any(Object),
+          },
+          caveats: [expect.stringContaining("incomplete historical evidence")],
+        },
+      });
     }
-    expect((getDecisionEntity(root, "eeeeeeeeee", SOURCE_ROOT) as any).entry.record.satisfaction).toEqual({ state: "user_confirmed_satisfied" });
+    expect((getDecisionEntity(root, "eeeeeeeeee", SOURCE_ROOT) as any).entry.record.satisfaction).toEqual({
+      state: "user_confirmed_satisfied",
+    });
   });
 
   it("orders summaries without absent temporal fields and invalidates a cursor when their retained provenance changes", () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const pages = [
       [listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT }), (cursor: string) => listProgressEntities(root, 1, {}, cursor, { sourceRoot: SOURCE_ROOT }), "aaaaaaaaaa", "dddddddddd"],
       [listDecisionEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT }), (cursor: string) => listDecisionEntities(root, 1, undefined, cursor, { sourceRoot: SOURCE_ROOT }), "bbbbbbbbbb", "eeeeeeeeee"],
       [listHealthEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT }), (cursor: string) => listHealthEntities(root, 1, undefined, cursor, { sourceRoot: SOURCE_ROOT }), "cccccccccc", "ffffffffff"],
     ] as const;
     for (const [first, continuePage, fullId, summaryId] of pages) {
-      expect((first as any)).toMatchObject({ omitted: true, omitted_count: 1, entries: [{ id: fullId, detail_availability: "full" }] });
+      expect(first as any).toMatchObject({
+        omitted: true,
+        omitted_count: 1,
+        entries: [{ id: fullId, detail_availability: "full" }],
+      });
       expect((continuePage((first as any).next_cursor) as any).entries).toMatchObject([{ id: summaryId, detail_availability: "summary" }]);
     }
     const first = pages[0][0] as any;
@@ -140,20 +228,46 @@ describe("summary entity ordinary reads", () => {
   it("orders same-minute full progress by publication order before compacted summaries", () => {
     const root = project();
     summary(root, "progress", "aaaaaaaaaa", "retained compacted history");
-    appendProgressEntity(request(root, "progress", "append", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "first full", context: { intent: "first" } }), { id: "zzzzzzzzzz", sourceRoot: SOURCE_ROOT });
-    appendProgressEntity(request(root, "progress", "append", { timestamp: "2026-07-17 12:00", type: "fix", phase: "build", what: "last full", context: { intent: "last" } }), { id: "yyyyyyyyyy", sourceRoot: SOURCE_ROOT });
-    const listed = listProgressEntities(root, 20, {}, undefined, { sourceRoot: SOURCE_ROOT }) as any;
+    appendProgressEntity(
+      request(root, "progress", "append", {
+        timestamp: "2026-07-17 12:00",
+        type: "fix",
+        phase: "build",
+        what: "first full",
+        context: { intent: "first" },
+      }),
+      { id: "zzzzzzzzzz", sourceRoot: SOURCE_ROOT },
+    );
+    appendProgressEntity(
+      request(root, "progress", "append", {
+        timestamp: "2026-07-17 12:00",
+        type: "fix",
+        phase: "build",
+        what: "last full",
+        context: { intent: "last" },
+      }),
+      { id: "yyyyyyyyyy", sourceRoot: SOURCE_ROOT },
+    );
+    const listed = listProgressEntities(root, 20, {}, undefined, {
+      sourceRoot: SOURCE_ROOT,
+    }) as any;
     expect(listed.entries.map((entry: any) => [entry.id, entry.record.publication_order ?? null])).toEqual([
       ["yyyyyyyyyy", 2],
       ["zzzzzzzzzz", 1],
       ["aaaaaaaaaa", null],
     ]);
-    expect(listed.entries[2]).toMatchObject({ boundary: "progress_summary", detail_availability: "summary" });
+    expect(listed.entries[2]).toMatchObject({
+      boundary: "progress_summary",
+      detail_availability: "summary",
+    });
   });
 
   it("hashes the exact composed decision list projection and contract", () => {
-    const root = project(); mixed(root);
-    const listed = listDecisionEntities(root, 20, undefined, undefined, { sourceRoot: SOURCE_ROOT }) as any;
+    const root = project();
+    mixed(root);
+    const listed = listDecisionEntities(root, 20, undefined, undefined, {
+      sourceRoot: SOURCE_ROOT,
+    }) as any;
     const projection = {
       schemaVersion: listed.schemaVersion,
       command: listed.command,
@@ -163,7 +277,11 @@ describe("summary entity ordinary reads", () => {
       source_contract: listed.source_contract,
       entries: listed.entries,
     };
-    expect(listed.entries.find((entry: any) => entry.id === "bbbbbbbbbb")).toMatchObject({ effective_sha256: expect.any(String), provenance: { revisions: [], satisfaction: null }, retrieval: { get: expect.any(String) } });
+    expect(listed.entries.find((entry: any) => entry.id === "bbbbbbbbbb")).toMatchObject({
+      effective_sha256: expect.any(String),
+      provenance: { revisions: [], satisfaction: null },
+      retrieval: { get: expect.any(String) },
+    });
     expect(listed.snapshot.id).toBe(projectedListSnapshot(projection));
     const changed = structuredClone(projection);
     changed.entries[0].package_only_composed_field = true;
@@ -171,7 +289,8 @@ describe("summary entity ordinary reads", () => {
   });
 
   it("rejects noncanonical payload and signature spellings for every list cursor while unchanged cursors continue", () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const pages = [
       [() => listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT }), (cursor: string) => listProgressEntities(root, 1, {}, cursor, { sourceRoot: SOURCE_ROOT })],
       [() => listDecisionEntities(root, 1, undefined, undefined, { sourceRoot: SOURCE_ROOT }), (cursor: string) => listDecisionEntities(root, 1, undefined, cursor, { sourceRoot: SOURCE_ROOT })],
@@ -188,7 +307,8 @@ describe("summary entity ordinary reads", () => {
   });
 
   it("refuses summary decision mutations before effects while full decisions remain amendable", () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const before = fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort();
     for (const dryRun of [false, true]) {
       expect(() => amendDecisionEntity(request(root, "decisions", "amend", { id: "eeeeeeeeee", base_sha256: "a".repeat(64), choice: "cannot amend" }, dryRun), { sourceRoot: SOURCE_ROOT })).toThrow(/incomplete historical evidence is read-only/);
@@ -196,7 +316,9 @@ describe("summary entity ordinary reads", () => {
     }
     expect(fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort()).toEqual(before);
     const current = getDecisionEntity(root, "bbbbbbbbbb", SOURCE_ROOT) as any;
-    const dry = amendDecisionEntity(request(root, "decisions", "amend", { id: "bbbbbbbbbb", base_sha256: current.entry.effective_sha256, choice: "still full" }, true), { sourceRoot: SOURCE_ROOT }) as any;
+    const dry = amendDecisionEntity(request(root, "decisions", "amend", { id: "bbbbbbbbbb", base_sha256: current.entry.effective_sha256, choice: "still full" }, true), {
+      sourceRoot: SOURCE_ROOT,
+    }) as any;
     expect(dry.operation.dry_run).toBe(true);
     expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_revision"))).toBe(false);
   });
@@ -204,37 +326,79 @@ describe("summary entity ordinary reads", () => {
   it("starts prime on summary-only and mixed history without fabricating current detail", () => {
     const summaryOnly = project();
     summary(summaryOnly, "progress", "dddddddddd", "retained progress history");
-    summary(summaryOnly, "decisions", "eeeeeeeeee", "retained decision history", { state: "user_confirmed_satisfied" });
+    summary(summaryOnly, "decisions", "eeeeeeeeee", "retained decision history", {
+      state: "user_confirmed_satisfied",
+    });
     summary(summaryOnly, "health", "ffffffffff", "retained health history");
-    const previous = process.cwd(); process.chdir(summaryOnly);
+    const previous = process.cwd();
+    process.chdir(summaryOnly);
     try {
-      let out = ""; let err = "";
-      expect(cmdPrime({ format: "json", dashboard: true }, { out: (value) => { out += value; }, err: (value) => { err += value; } })).toBe(0);
+      let out = "";
+      let err = "";
+      expect(
+        cmdPrime(
+          { format: "json", dashboard: true },
+          {
+            out: (value) => {
+              out += value;
+            },
+            err: (value) => {
+              err += value;
+            },
+          },
+        ),
+      ).toBe(0);
       const payload = JSON.parse(out).capability_context.context.status_context;
       expect(err).toContain("Deprecation");
       expect(payload.progress).toMatchObject({ exists: true, status: "degraded_history" });
       expect(payload.progress.latest).toBeNull();
       expect(payload.health).toMatchObject({ exists: true, status: "degraded" });
       expect(payload.health.id).toBeNull();
-    } finally { process.chdir(previous); }
+    } finally {
+      process.chdir(previous);
+    }
 
-    const mixedRoot = project(); mixed(mixedRoot); process.chdir(mixedRoot);
+    const mixedRoot = project();
+    mixed(mixedRoot);
+    process.chdir(mixedRoot);
     try {
       let out = "";
-      expect(cmdPrime({ format: "json", dashboard: true }, { out: (value) => { out += value; }, err: () => undefined })).toBe(0);
+      expect(
+        cmdPrime(
+          { format: "json", dashboard: true },
+          {
+            out: (value) => {
+              out += value;
+            },
+            err: () => undefined,
+          },
+        ),
+      ).toBe(0);
       const payload = JSON.parse(out).capability_context.context.status_context;
       expect(payload.progress.latest).toMatchObject({ id: "aaaaaaaaaa", what: "full progress" });
       expect(payload.health).toMatchObject({ id: "cccccccccc" });
-    } finally { process.chdir(previous); }
+    } finally {
+      process.chdir(previous);
+    }
   });
 
   it("reports oversized current health as summary-only with exact typed recovery", () => {
     const root = project();
     for (let index = 0; index < 10; index++) {
-      appendHealthEntity(request(root, "health", "append", {
-        ...audit(),
-        dimensions_detail: [{ name: "architecture_alignment", grade: "A", summary: "x".repeat(20_000), findings: [] }],
-      }), { id: `${String.fromCharCode(97 + index).repeat(10)}`, sourceRoot: SOURCE_ROOT });
+      appendHealthEntity(
+        request(root, "health", "append", {
+          ...audit(),
+          dimensions_detail: [
+            {
+              name: "architecture_alignment",
+              grade: "A",
+              summary: "x".repeat(20_000),
+              findings: [],
+            },
+          ],
+        }),
+        { id: `${String.fromCharCode(97 + index).repeat(10)}`, sourceRoot: SOURCE_ROOT },
+      );
     }
 
     const status = cli(root, ["prime", "--context", "status", "--format", "json"]);
@@ -263,7 +427,8 @@ describe("summary entity ordinary reads", () => {
   });
 
   it("keeps canonical full and compacted history evidence in bare prime", () => {
-    const fullRoot = project(); full(fullRoot);
+    const fullRoot = project();
+    full(fullRoot);
     const fullPrime = cli(fullRoot, ["prime", "--format", "json"]);
     expect(fullPrime.rc, fullPrime.err || fullPrime.out).toBe(0);
     const fullPayload = JSON.parse(fullPrime.out);
@@ -323,7 +488,12 @@ describe("summary entity ordinary reads", () => {
         },
       });
       expect(history).not.toHaveProperty("entries");
-      const recovery = cli(compactedRoot, String(history.retrieval.list).replace(/^npx -y agentera@next /, "").split(" "));
+      const recovery = cli(
+        compactedRoot,
+        String(history.retrieval.list)
+          .replace(/^npx -y agentera@next /, "")
+          .split(" "),
+      );
       expect(recovery.rc, recovery.err || recovery.out).toBe(0);
     }
     expect((getDecisionEntity(compactedRoot, "eeeeeeeeee", SOURCE_ROOT) as any).entry.record.satisfaction).toEqual({
@@ -347,13 +517,20 @@ describe("summary entity ordinary reads", () => {
     const payload = JSON.parse(json.out);
     expect(implicit).toEqual(json);
     expect(Buffer.byteLength(json.out, "utf8")).toBeLessThanOrEqual(12_000);
-    expect(payload.progress).toMatchObject({ status: "degraded_history", degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 } });
-    expect(payload.health).toMatchObject({ exists: true, degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 } });
+    expect(payload.progress).toMatchObject({
+      status: "degraded_history",
+      degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
+    });
+    expect(payload.health).toMatchObject({
+      exists: true,
+      degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
+    });
     expect(payload.health).not.toHaveProperty("id");
   });
 
   it("keeps full current human lines and adds bounded mixed-history signals beyond the page limit", () => {
-    const root = project(); full(root);
+    const root = project();
+    full(root);
     for (let index = 0; index < 12; index++) {
       const suffix = String.fromCharCode("a".charCodeAt(0) + index).repeat(9);
       summary(root, "progress", `p${suffix}`, `retained progress ${index}`);
@@ -363,10 +540,18 @@ describe("summary entity ordinary reads", () => {
     const implicit = cli(root, ["prime"]);
     expect(implicit.rc, implicit.err).toBe(0);
     const implicitPayload = JSON.parse(implicit.out);
-    expect(implicitPayload.progress.latest).toMatchObject({ id: "aaaaaaaaaa", artifact: "progress", what: "full progress" });
+    expect(implicitPayload.progress.latest).toMatchObject({
+      id: "aaaaaaaaaa",
+      artifact: "progress",
+      what: "full progress",
+    });
     expect(implicitPayload.health).toMatchObject({ id: "cccccccccc", artifact: "health" });
     for (const artifact of ["progress", "decisions", "health"]) {
-      expect(implicitPayload.history[artifact].degraded_history).toMatchObject({ summary_count: 12, returned_count: 0, omitted_count: 12 });
+      expect(implicitPayload.history[artifact].degraded_history).toMatchObject({
+        summary_count: 12,
+        returned_count: 0,
+        omitted_count: 12,
+      });
     }
     expect(Buffer.byteLength(implicit.out, "utf8")).toBeLessThan(25_000);
 
@@ -405,7 +590,8 @@ describe("summary entity ordinary reads", () => {
   });
 
   it("emits structured, actionable summary-decision mutation failures before effects", () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const before = fs.readdirSync(path.join(root, ".agentera/entities/decisions")).sort();
     for (const args of [
       ["state", "decisions", "amend", "--id", "eeeeeeeeee", "--base-sha256", "a".repeat(64), "--input", "-"],
@@ -415,7 +601,17 @@ describe("summary entity ordinary reads", () => {
         const rejected = cli(root, [...args, ...(dryRun ? ["--dry-run"] : []), "--format", "json"]);
         expect(rejected.rc).toBe(1);
         const body = JSON.parse(rejected.out);
-        expect(body).toMatchObject({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error: { class: "unsupported_state", message: expect.stringContaining("incomplete historical evidence is read-only"), syntax: expect.stringContaining(`decisions ${args[2]}`), example: "agentera state decisions get --id eeeeeeeeee", recovery: expect.stringContaining("agentera state decisions append") } });
+        expect(body).toMatchObject({
+          schemaVersion: "agentera.stateFailure.v1",
+          status: "fail",
+          error: {
+            class: "unsupported_state",
+            message: expect.stringContaining("incomplete historical evidence is read-only"),
+            syntax: expect.stringContaining(`decisions ${args[2]}`),
+            example: "agentera state decisions get --id eeeeeeeeee",
+            recovery: expect.stringContaining("agentera state decisions append"),
+          },
+        });
       }
     }
     const implicit = cli(root, ["state", "decisions", "update", "--id", "eeeeeeeeee", "--satisfaction-state", "open"]);
@@ -425,12 +621,19 @@ describe("summary entity ordinary reads", () => {
   });
 
   it("invalidates an existing cursor when package-projected summary caveats change", async () => {
-    const root = project(); mixed(root);
+    const root = project();
+    mixed(root);
     const first = listProgressEntities(root, 1, {}, undefined, { sourceRoot: SOURCE_ROOT }) as any;
     vi.resetModules();
     vi.doMock("../../src/state/summaryEntityRead.js", async (importOriginal) => {
       const actual = await importOriginal<typeof import("../../src/state/summaryEntityRead.js")>();
-      return { ...actual, detailMetadata: (entity: any) => ({ ...actual.detailMetadata(entity), ...(entity.boundary === "progress_summary" ? { caveats: ["package-projected caveat changed"] } : {}) }) };
+      return {
+        ...actual,
+        detailMetadata: (entity: any) => ({
+          ...actual.detailMetadata(entity),
+          ...(entity.boundary === "progress_summary" ? { caveats: ["package-projected caveat changed"] } : {}),
+        }),
+      };
     });
     try {
       const reader = await import("../../src/state/progressEntities.js");

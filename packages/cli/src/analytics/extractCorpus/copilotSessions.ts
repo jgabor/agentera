@@ -1,32 +1,11 @@
 import fs from "node:fs";
 
 import { resolvePath } from "../../core/paths.js";
-import {
-  authorClassForRole,
-  isoFromMtime,
-  record,
-  signalType,
-  textFromContent,
-  transportProvenance,
-} from "./core.js";
+import { authorClassForRole, isoFromMtime, record, signalType, textFromContent, transportProvenance } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isFilePath } from "./core.js";
-import {
-  type SqliteCaps,
-  type SqliteTruncationInfo,
-  resolveSqliteCaps,
-} from "./sqliteCaps.js";
-import {
-  type SqliteDb,
-  PermissionDeniedError,
-  openSqlite,
-  jsonDict,
-  sqliteTimestamp,
-  tableColumns,
-  firstColumn,
-  qualified,
-  type ExtractorContext,
-} from "./sqliteSessions.js";
+import { type SqliteCaps, type SqliteTruncationInfo, resolveSqliteCaps } from "./sqliteCaps.js";
+import { type SqliteDb, PermissionDeniedError, openSqlite, jsonDict, sqliteTimestamp, tableColumns, firstColumn, qualified, type ExtractorContext } from "./sqliteSessions.js";
 
 function copilotDbCandidates(storePath: string): string[] {
   if (isFilePath(storePath)) return [storePath];
@@ -35,11 +14,17 @@ function copilotDbCandidates(storePath: string): string[] {
 
 function copilotRows(conn: SqliteDb, caps: SqliteCaps): JsonObject[] {
   const tables = new Set(
-    conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
+    conn
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all()
+      .map((r) => String(r.name)),
   );
   for (const t of ["sessions", "turns"]) {
     if (!tables.has(t)) {
-      const missing = ["sessions", "turns"].filter((x) => !tables.has(x)).sort().join(",");
+      const missing = ["sessions", "turns"]
+        .filter((x) => !tables.has(x))
+        .sort()
+        .join(",");
       throw new Error(`missing copilot tables: ${missing}`);
     }
   }
@@ -60,9 +45,7 @@ function copilotRows(conn: SqliteDb, caps: SqliteCaps): JsonObject[] {
   const turnData = firstColumn(turnCols, ["data", "payload", "json"]);
   const turnType = firstColumn(turnCols, ["type", "kind"]);
   const toolNameCol = firstColumn(turnCols, ["tool_name", "toolName", "tool", "name", "command_name", "commandName"]);
-  const toolArgs = firstColumn(turnCols, [
-    "arguments", "args", "input", "tool_input", "toolInput", "command", "command_line", "commandLine",
-  ]);
+  const toolArgs = firstColumn(turnCols, ["arguments", "args", "input", "tool_input", "toolInput", "command", "command_line", "commandLine"]);
 
   const orderExpr = turnOrder ? `t."${turnOrder}"` : `t."${turnTime || turnSession}"`;
   const idExpr = turnId ? `t."${turnId}"` : "t.rowid";
@@ -89,13 +72,12 @@ function copilotRows(conn: SqliteDb, caps: SqliteCaps): JsonObject[] {
   return conn.prepare(query).all(caps.maxRows);
 }
 
-export function probeCopilotTruncation(
-  conn: SqliteDb,
-  caps: SqliteCaps,
-  fallback: string,
-): SqliteTruncationInfo | null {
+export function probeCopilotTruncation(conn: SqliteDb, caps: SqliteCaps, fallback: string): SqliteTruncationInfo | null {
   const tables = new Set(
-    conn.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => String(r.name)),
+    conn
+      .prepare("SELECT name FROM sqlite_master WHERE type = 'table'")
+      .all()
+      .map((r) => String(r.name)),
   );
   if (!tables.has("sessions") || !tables.has("turns")) return null;
   const sessionCols = tableColumns(conn, "sessions");
@@ -110,9 +92,7 @@ export function probeCopilotTruncation(
   const turnOrder = firstColumn(turnCols, ["turn_index", "turnIndex", "idx", "position", "sequence"]);
   const orderExpr = turnOrder ? `t."${turnOrder}"` : `t."${turnTime || turnSession}"`;
   const idExpr = turnId ? `t."${turnId}"` : "t.rowid";
-  const turnCount = Number(
-    conn.prepare("SELECT COUNT(*) AS c FROM turns t JOIN sessions s ON t.\"" + turnSession + "\" = s.\"" + sessionId + "\"").get()?.c ?? 0,
-  );
+  const turnCount = Number(conn.prepare('SELECT COUNT(*) AS c FROM turns t JOIN sessions s ON t."' + turnSession + '" = s."' + sessionId + '"').get()?.c ?? 0);
   if (turnCount <= caps.maxRows) return null;
   const timeExpr = `COALESCE(t."${turnTime || turnSession}", s."${sessionTime || sessionId}")`;
   const query = `
@@ -167,11 +147,7 @@ function copilotJsonTools(value: unknown, errors?: string[], malformedLabel?: st
   if (!isPlainObject(value)) return [];
   const toolName = value.tool_name || value.toolName || value.tool || value.name;
   const valueType = String(value.type || value.kind || "").toLowerCase();
-  if (
-    typeof toolName === "string" &&
-    toolName &&
-    ["", "tool", "tool_call", "function_call", "tool_use", "command"].includes(valueType)
-  ) {
+  if (typeof toolName === "string" && toolName && ["", "tool", "tool_call", "function_call", "tool_use", "command"].includes(valueType)) {
     return [
       {
         tool_name: toolName,
@@ -200,11 +176,7 @@ function copilotRowTools(row: JsonObject, errors: string[]): JsonObject[] {
   return tools.filter((t) => typeof t.tool_name === "string" && t.tool_name);
 }
 
-export function extractCopilotSessions(
-  storePath: string | null,
-  errors: string[],
-  ctx?: ExtractorContext,
-): JsonObject[] {
+export function extractCopilotSessions(storePath: string | null, errors: string[], ctx?: ExtractorContext): JsonObject[] {
   if (storePath === null || !fs.existsSync(storePath)) return [];
   const caps = ctx?.sqliteCaps ?? resolveSqliteCaps();
   const records: JsonObject[] = [];

@@ -4,10 +4,7 @@ import path from "node:path";
 
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
 import type { SchemaInfo } from "../../appContext.js";
-import {
-  selectStatusReadiness,
-  statePresence,
-} from "../../orientation.js";
+import { selectStatusReadiness, statePresence } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
@@ -38,7 +35,11 @@ function stateCutover(project: string, sourceRoot: string): OrientationState["st
       recovery_command: projectState === "legacy" ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project),
     };
   } catch {
-    return { status: "invalid_lifecycle", project_state: "invalid_lifecycle", recovery_command: preCutoverCommand("check validate state") };
+    return {
+      status: "invalid_lifecycle",
+      project_state: "invalid_lifecycle",
+      recovery_command: preCutoverCommand("check validate state"),
+    };
   }
 }
 
@@ -105,22 +106,24 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     successorAnnounced,
   });
   const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
-  const reconciliationReadiness = entity.todoReconciliation?.status === "action_required"
-    ? withRecommended(readiness, {
-      object: entity.todoReconciliation.state === "unsafe_inactive" ? "Correct unsafe TODO ownership" : entity.todoReconciliation.state === "inactive" ? "Activate TODO reconciliation" : "Repair TODO reconciliation",
-      capability: "build",
-      reason: entity.todoReconciliation.recovery_command,
-      phase: entity.todoReconciliation.state === "unsafe_inactive" ? "build" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
-    })
-    : readiness;
-  const nextAction = cutover.status === "required" || cutover.status === "invalid_lifecycle"
-    ? withRecommended(readiness, {
-      object: "Complete Agentera entity-state cutover",
-      capability: "status",
-      reason: `Status startup is blocked until entity-state cutover completes. Exact recovery: ${cutover.recovery_command}`,
-      phase: "build",
-    })
-    : selectProjectIntegrationNextAction(reconciliationReadiness, projectIntegration);
+  const reconciliationReadiness =
+    entity.todoReconciliation?.status === "action_required"
+      ? withRecommended(readiness, {
+          object: entity.todoReconciliation.state === "unsafe_inactive" ? "Correct unsafe TODO ownership" : entity.todoReconciliation.state === "inactive" ? "Activate TODO reconciliation" : "Repair TODO reconciliation",
+          capability: "build",
+          reason: entity.todoReconciliation.recovery_command,
+          phase: entity.todoReconciliation.state === "unsafe_inactive" ? "build" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
+        })
+      : readiness;
+  const nextAction =
+    cutover.status === "required" || cutover.status === "invalid_lifecycle"
+      ? withRecommended(readiness, {
+          object: "Complete Agentera entity-state cutover",
+          capability: "status",
+          reason: `Status startup is blocked until entity-state cutover completes. Exact recovery: ${cutover.recovery_command}`,
+          phase: "build",
+        })
+      : selectProjectIntegrationNextAction(reconciliationReadiness, projectIntegration);
 
   const attention = buildOrientationAttention({
     project_root: project,
@@ -190,20 +193,12 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
  *  override (upgrade, major-boundary block) takes precedence over the
  *  state-derived cascade; the demoted candidates remain visible as what to do
  *  once the override is resolved. */
-export function selectProjectIntegrationNextAction(
-  readiness: ReadinessHint,
-  projectIntegration: OrientationState["project_integration"],
-): ReadinessHint {
+export function selectProjectIntegrationNextAction(readiness: ReadinessHint, projectIntegration: OrientationState["project_integration"]): ReadinessHint {
   if (projectIntegration.recommendation === "upgrade") {
     return withRecommended(readiness, {
-      object:
-        (projectIntegration.pending_artifacts as number) > 0
-          ? "Upgrade Agentera artifacts"
-          : "Upgrade Agentera",
+      object: (projectIntegration.pending_artifacts as number) > 0 ? "Upgrade Agentera artifacts" : "Upgrade Agentera",
       capability: "status",
-      reason: projectIntegration.dry_run_command
-        ? `${projectIntegration.message} Exact preview: ${projectIntegration.dry_run_command}`
-        : projectIntegration.message,
+      reason: projectIntegration.dry_run_command ? `${projectIntegration.message} Exact preview: ${projectIntegration.dry_run_command}` : projectIntegration.message,
       phase: "build",
     });
   }

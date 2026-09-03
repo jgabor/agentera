@@ -4,11 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import {
-  detectShebangContentMismatch,
-  findAppHomeScript,
-  resolveBackend,
-} from "../lib/resolve.mjs";
+import { detectShebangContentMismatch, findAppHomeScript, resolveBackend } from "../lib/resolve.mjs";
 
 function mktmp(prefix = "shim-resolve-") {
   return fs.mkdtempSync(path.join(os.tmpdir(), prefix));
@@ -46,16 +42,8 @@ function withPath(value, fn) {
 test("detectShebangContentMismatch flags node shebang with python content", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env node",
-      "def main():",
-      "    print('hello')",
-      "",
-    ].join("\n"));
-    assert.equal(
-      detectShebangContentMismatch(scriptPath),
-      "shebang=js content=python",
-    );
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env node", "def main():", "    print('hello')", ""].join("\n"));
+    assert.equal(detectShebangContentMismatch(scriptPath), "shebang=js content=python");
   } finally {
     clean(tmp);
   }
@@ -64,16 +52,8 @@ test("detectShebangContentMismatch flags node shebang with python content", () =
 test("detectShebangContentMismatch flags python shebang with js content", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env -S uv run --script",
-      "const x = require('foo');",
-      "console.log(x);",
-      "",
-    ].join("\n"));
-    assert.equal(
-      detectShebangContentMismatch(scriptPath),
-      "shebang=python content=js",
-    );
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env -S uv run --script", "const x = require('foo');", "console.log(x);", ""].join("\n"));
+    assert.equal(detectShebangContentMismatch(scriptPath), "shebang=python content=js");
   } finally {
     clean(tmp);
   }
@@ -82,16 +62,7 @@ test("detectShebangContentMismatch flags python shebang with js content", () => 
 test("detectShebangContentMismatch accepts python shebang with PEP 723 metadata", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# requires-python = '>=3.11'",
-      "# ///",
-      "import sys",
-      "def main():",
-      "    print('hello')",
-      "",
-    ].join("\n"));
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env -S uv run --script", "# /// script", "# requires-python = '>=3.11'", "# ///", "import sys", "def main():", "    print('hello')", ""].join("\n"));
     assert.equal(detectShebangContentMismatch(scriptPath), null);
   } finally {
     clean(tmp);
@@ -101,12 +72,7 @@ test("detectShebangContentMismatch accepts python shebang with PEP 723 metadata"
 test("detectShebangContentMismatch accepts python3 shebang with python content", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env python3",
-      "import sys",
-      "print('hello')",
-      "",
-    ].join("\n"));
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env python3", "import sys", "print('hello')", ""].join("\n"));
     assert.equal(detectShebangContentMismatch(scriptPath), null);
   } finally {
     clean(tmp);
@@ -116,12 +82,7 @@ test("detectShebangContentMismatch accepts python3 shebang with python content",
 test("detectShebangContentMismatch accepts node shebang with js content", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env node",
-      "const x = require('foo');",
-      "console.log(x);",
-      "",
-    ].join("\n"));
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env node", "const x = require('foo');", "console.log(x);", ""].join("\n"));
     assert.equal(detectShebangContentMismatch(scriptPath), null);
   } finally {
     clean(tmp);
@@ -141,11 +102,7 @@ test("detectShebangContentMismatch returns null when file has no shebang", () =>
 test("detectShebangContentMismatch returns null for unknown shebang (bash)", () => {
   const tmp = mktmp();
   try {
-    const scriptPath = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env bash",
-      "echo 'shell script'",
-      "",
-    ].join("\n"));
+    const scriptPath = writeAppHomeScript(tmp, ["#!/usr/bin/env bash", "echo 'shell script'", ""].join("\n"));
     assert.equal(detectShebangContentMismatch(scriptPath), null);
   } finally {
     clean(tmp);
@@ -167,15 +124,7 @@ test("findAppHomeScript returns null and logs the missing-script diagnostic when
 
     assert.equal(scriptPath, null);
     assert.equal(messages.length, 1);
-    assert.equal(
-      messages[0],
-      `agentera: AGENTERA_HOME is set but no managed script at ${path.join(
-        tmp,
-        "app",
-        "scripts",
-        "agentera",
-      )}`,
-    );
+    assert.equal(messages[0], `agentera: AGENTERA_HOME is set but no managed script at ${path.join(tmp, "app", "scripts", "agentera")}`);
   } finally {
     clean(tmp);
   }
@@ -184,12 +133,7 @@ test("findAppHomeScript returns null and logs the missing-script diagnostic when
 test("findAppHomeScript returns null and logs stderr when shebang/content mismatch", () => {
   const tmp = mktmp();
   try {
-    writeAppHomeScript(tmp, [
-      "#!/usr/bin/env node",
-      "def main():",
-      "    print('hi')",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(tmp, ["#!/usr/bin/env node", "def main():", "    print('hi')", ""].join("\n"));
 
     const messages = [];
     const scriptPath = findAppHomeScript(tmp, {
@@ -198,10 +142,7 @@ test("findAppHomeScript returns null and logs stderr when shebang/content mismat
 
     assert.equal(scriptPath, null);
     assert.equal(messages.length, 1);
-    assert.match(
-      messages[0],
-      /app-home backend unavailable: shebang\/content mismatch/,
-    );
+    assert.match(messages[0], /app-home backend unavailable: shebang\/content mismatch/);
     assert.match(messages[0], /shebang=js content=python/);
   } finally {
     clean(tmp);
@@ -211,15 +152,7 @@ test("findAppHomeScript returns null and logs stderr when shebang/content mismat
 test("findAppHomeScript returns the script path for a valid PEP 723 python script", () => {
   const tmp = mktmp();
   try {
-    const written = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# requires-python = '>=3.11'",
-      "# ///",
-      "def main():",
-      "    pass",
-      "",
-    ].join("\n"));
+    const written = writeAppHomeScript(tmp, ["#!/usr/bin/env -S uv run --script", "# /// script", "# requires-python = '>=3.11'", "# ///", "def main():", "    pass", ""].join("\n"));
 
     const messages = [];
     const scriptPath = findAppHomeScript(tmp, {
@@ -236,11 +169,7 @@ test("findAppHomeScript returns the script path for a valid PEP 723 python scrip
 test("findAppHomeScript returns the script path for a valid node + js script", () => {
   const tmp = mktmp();
   try {
-    const written = writeAppHomeScript(tmp, [
-      "#!/usr/bin/env node",
-      "console.log('hello');",
-      "",
-    ].join("\n"));
+    const written = writeAppHomeScript(tmp, ["#!/usr/bin/env node", "console.log('hello');", ""].join("\n"));
 
     const scriptPath = findAppHomeScript(tmp);
     assert.equal(scriptPath, written);
@@ -252,13 +181,7 @@ test("findAppHomeScript returns the script path for a valid node + js script", (
 test("resolveBackend returns app-home when AGENTERA_HOME has a valid script", () => {
   const tmp = mktmp();
   try {
-    writeAppHomeScript(tmp, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "import sys",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(tmp, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "import sys", ""].join("\n"));
 
     const result = resolveBackend({
       cwd: tmp,
@@ -275,19 +198,8 @@ test("resolveBackend logs mismatch and returns repo when app-home is corrupt and
   const appHome = mktmp("shim-app-home-");
   const repoRoot = mktmp("shim-repo-");
   try {
-    writeAppHomeScript(appHome, [
-      "#!/usr/bin/env node",
-      "def main():",
-      "    print('corrupt')",
-      "",
-    ].join("\n"));
-    writeRepoScript(repoRoot, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(appHome, ["#!/usr/bin/env node", "def main():", "    print('corrupt')", ""].join("\n"));
+    writeRepoScript(repoRoot, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
 
     const messages = [];
     const result = resolveBackend({
@@ -299,10 +211,7 @@ test("resolveBackend logs mismatch and returns repo when app-home is corrupt and
     assert.equal(result.kind, "repo");
     assert.equal(result.repoRoot, repoRoot);
     assert.equal(messages.length, 1);
-    assert.match(
-      messages[0],
-      /app-home backend unavailable: shebang\/content mismatch/,
-    );
+    assert.match(messages[0], /app-home backend unavailable: shebang\/content mismatch/);
   } finally {
     clean(appHome);
     clean(repoRoot);
@@ -313,12 +222,7 @@ test("resolveBackend logs mismatch and returns uvx when app-home is corrupt and 
   const appHome = mktmp("shim-app-home-");
   const uvDir = mktmp("shim-uv-bin-");
   try {
-    writeAppHomeScript(appHome, [
-      "#!/usr/bin/env node",
-      "def main():",
-      "    print('corrupt')",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(appHome, ["#!/usr/bin/env node", "def main():", "    print('corrupt')", ""].join("\n"));
     const fakeUv = path.join(uvDir, "uv");
     fs.writeFileSync(fakeUv, "#!/bin/sh\nexit 0\n");
     fs.chmodSync(fakeUv, 0o755);
@@ -334,10 +238,7 @@ test("resolveBackend logs mismatch and returns uvx when app-home is corrupt and 
 
     assert.equal(result.kind, "uvx");
     assert.equal(messages.length, 1);
-    assert.match(
-      messages[0],
-      /app-home backend unavailable: shebang\/content mismatch/,
-    );
+    assert.match(messages[0], /app-home backend unavailable: shebang\/content mismatch/);
   } finally {
     clean(appHome);
     clean(uvDir);
@@ -350,13 +251,7 @@ test("resolveBackend logs missing-script diagnostic and returns repo when AGENTE
   const binDir = mktmp("shim-bin-");
   try {
     // AGENTERA_HOME is set but $AGENTERA_HOME/app/scripts/agentera is absent.
-    writeRepoScript(repoRoot, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    writeRepoScript(repoRoot, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
     const uvPath = path.join(binDir, "uv");
     fs.writeFileSync(uvPath, "#!/bin/sh\nexit 0\n");
     fs.chmodSync(uvPath, 0o755);
@@ -373,15 +268,7 @@ test("resolveBackend logs missing-script diagnostic and returns repo when AGENTE
     assert.equal(result.kind, "repo");
     assert.equal(result.repoRoot, repoRoot);
     assert.equal(messages.length, 1);
-    assert.equal(
-      messages[0],
-      `agentera: AGENTERA_HOME is set but no managed script at ${path.join(
-        appHome,
-        "app",
-        "scripts",
-        "agentera",
-      )}`,
-    );
+    assert.equal(messages[0], `agentera: AGENTERA_HOME is set but no managed script at ${path.join(appHome, "app", "scripts", "agentera")}`);
   } finally {
     clean(appHome);
     clean(repoRoot);
@@ -410,13 +297,7 @@ test("resolveBackend stays silent when excludeAppHome is set even if AGENTERA_HO
 test("resolveBackend with excludeAppHome skips app-home even when valid", () => {
   const appHome = mktmp("shim-app-home-");
   try {
-    writeAppHomeScript(appHome, [
-      "#!/usr/bin/env -S uv run --script",
-      "# /// script",
-      "# ///",
-      "pass",
-      "",
-    ].join("\n"));
+    writeAppHomeScript(appHome, ["#!/usr/bin/env -S uv run --script", "# /// script", "# ///", "pass", ""].join("\n"));
 
     const result = withPath("", () =>
       resolveBackend({
@@ -443,8 +324,5 @@ test("resolveBackend returns kind:none with install help when nothing is availab
   );
 
   assert.equal(result.kind, "none");
-  assert.match(
-    result.reason,
-    /no installed app, no repo checkout, and uv is not on PATH/,
-  );
+  assert.match(result.reason, /no installed app, no repo checkout, and uv is not on PATH/);
 });

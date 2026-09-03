@@ -23,11 +23,7 @@
  *                                      `python_smaller` to a pass
  */
 
-export type DriftDirection =
-  | "equal"
-  | "ts_smaller"
-  | "python_smaller"
-  | "intentional_version_break";
+export type DriftDirection = "equal" | "ts_smaller" | "python_smaller" | "intentional_version_break";
 
 export interface NormalizeRules {
   timestamp: { regex: string; shape: string };
@@ -36,7 +32,10 @@ export interface NormalizeRules {
 }
 
 const DEFAULT_RULES: NormalizeRules = {
-  timestamp: { regex: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$", shape: "YYYY-MM-DD" },
+  timestamp: {
+    regex: "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d+)?(Z|[+-]\\d{2}:?\\d{2})?$",
+    shape: "YYYY-MM-DD",
+  },
   hash: { regex: "^(sha256:|sha1:|md5:)?([0-9a-fA-F]{8,})$", shape: "0xXXXXXXXX" },
   path: { shape: "forward-slash", pathKeys: [] },
 };
@@ -49,11 +48,7 @@ const DEFAULT_RULES: NormalizeRules = {
  * @param rules - the normalization rules (defaults to the rules pinned in
  *                `parity-remaining-families.json`)
  */
-export function normalizeEnvelope(
-  value: unknown,
-  key: string | null = null,
-  rules: NormalizeRules = DEFAULT_RULES,
-): unknown {
+export function normalizeEnvelope(value: unknown, key: string | null = null, rules: NormalizeRules = DEFAULT_RULES): unknown {
   if (Array.isArray(value)) {
     return value.map((entry) => normalizeEnvelope(entry, key, rules));
   }
@@ -99,13 +94,7 @@ export interface ParityRow {
 }
 
 const EXPECTED_SHAPE_TYPE_MARKERS = new Set(["string", "object", "array", "boolean", "number"]);
-const EXPECTED_SHAPE_LITERAL_PIN_KEYS = new Set([
-  "command_value",
-  "target_family_value",
-  "family_value",
-  "gate_value",
-  "target_value",
-]);
+const EXPECTED_SHAPE_LITERAL_PIN_KEYS = new Set(["command_value", "target_family_value", "family_value", "gate_value", "target_value"]);
 
 const EXPECTED_SHAPE_LITERAL_PIN_MAP: Record<string, string> = {
   command_value: "command",
@@ -121,15 +110,7 @@ const EXPECTED_SHAPE_LITERAL_PIN_MAP: Record<string, string> = {
  * verify `engine`/`diagnostics`/`safety` classify as `equal` when present.
  */
 function isExpectedShapeRequiredKey(key: string, value: unknown): boolean {
-  if (
-    key.endsWith("Union") ||
-    key.endsWith("_union") ||
-    key.endsWith("RequiredKeys") ||
-    key.endsWith("Length") ||
-    key.endsWith("_value") ||
-    key.includes("_value_") ||
-    EXPECTED_SHAPE_LITERAL_PIN_KEYS.has(key)
-  ) {
+  if (key.endsWith("Union") || key.endsWith("_union") || key.endsWith("RequiredKeys") || key.endsWith("Length") || key.endsWith("_value") || key.includes("_value_") || EXPECTED_SHAPE_LITERAL_PIN_KEYS.has(key)) {
     return false;
   }
   if (EXPECTED_SHAPE_TYPE_MARKERS.has(value as string)) {
@@ -168,12 +149,7 @@ export interface DriftClassification {
  * pin. The four directions are mutually exclusive: a row with both missing
  * keys and extra keys is reported as `ts_smaller` (the more severe drift).
  */
-export function classifyDrift(
-  normalized: Record<string, unknown>,
-  expectedKeys: string[],
-  expectedLiteralPins: Record<string, unknown> = {},
-  forbiddenSubstrings: string[] = [],
-): DriftClassification {
+export function classifyDrift(normalized: Record<string, unknown>, expectedKeys: string[], expectedLiteralPins: Record<string, unknown> = {}, forbiddenSubstrings: string[] = []): DriftClassification {
   const actual = new Set(Object.keys(normalized));
   const expected = new Set(expectedKeys);
   const missingKeys = [...expected].filter((k) => !actual.has(k)).sort();
@@ -183,18 +159,11 @@ export function classifyDrift(
   const literalMismatches: string[] = [];
   for (const [key, pin] of Object.entries(expectedLiteralPins)) {
     if (key in normalized && normalized[key] !== pin) {
-      literalMismatches.push(
-        `${key}: expected ${JSON.stringify(pin)}, got ${JSON.stringify(normalized[key])}`,
-      );
+      literalMismatches.push(`${key}: expected ${JSON.stringify(pin)}, got ${JSON.stringify(normalized[key])}`);
     }
   }
   let direction: DriftDirection;
-  if (
-    missingKeys.length === 0 &&
-    extraKeys.length === 0 &&
-    forbiddenHits.length === 0 &&
-    literalMismatches.length === 0
-  ) {
+  if (missingKeys.length === 0 && extraKeys.length === 0 && forbiddenHits.length === 0 && literalMismatches.length === 0) {
     direction = "equal";
   } else if (missingKeys.length > 0) {
     direction = "ts_smaller";
@@ -211,10 +180,7 @@ export function classifyDrift(
  * `version_break` flag. `version_break=true` lifts any non-equal
  * classification to `intentional_version_break`.
  */
-export function effectiveDriftDirection(
-  row: ParityRow,
-  classification: DriftClassification,
-): DriftDirection {
+export function effectiveDriftDirection(row: ParityRow, classification: DriftClassification): DriftDirection {
   if (row.version_break && classification.direction !== "equal") {
     return "intentional_version_break";
   }

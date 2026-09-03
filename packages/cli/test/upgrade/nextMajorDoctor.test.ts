@@ -6,16 +6,7 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { loadUpdateChannelsAuthority } from "../../src/upgrade/channels.js";
-import {
-  NEXT_MAJOR_LINE_CAP,
-  NEXT_MAJOR_SECTION_HEADER,
-  formatNextMajorDoctorLines,
-  isStableSuccessorAnnounced,
-  loadChannelNextMajor,
-  prependNextMajorDoctorSection,
-  resolveNextMajorDoctorLines,
-  setSuccessorAnnouncedOverrideForTests,
-} from "../../src/upgrade/nextMajorDoctor.js";
+import { NEXT_MAJOR_LINE_CAP, NEXT_MAJOR_SECTION_HEADER, formatNextMajorDoctorLines, isStableSuccessorAnnounced, loadChannelNextMajor, prependNextMajorDoctorSection, resolveNextMajorDoctorLines, setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -50,10 +41,7 @@ describe("update-channels authority next_major", () => {
   it("returns null when a channel omits next_major in the authority", () => {
     const authorityRoot = path.join(tmp, "no-successor");
     fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
-    fs.copyFileSync(
-      path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
-      path.join(authorityRoot, "references/cli/update-channels.yaml"),
-    );
+    fs.copyFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), path.join(authorityRoot, "references/cli/update-channels.yaml"));
     const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
     const text = fs.readFileSync(authorityPath, "utf8");
     fs.writeFileSync(authorityPath, text.replace(/\n    next_major:[\s\S]*?(?=\n    resolution:)/, "\n"));
@@ -81,19 +69,13 @@ describe("loadChannelNextMajor", () => {
 function authorityRootWithAnnouncedSuccessor(announced: boolean): string {
   const authorityRoot = path.join(tmp, `announced-${announced}`);
   fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
-  fs.copyFileSync(
-    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
-    path.join(authorityRoot, "references/cli/update-channels.yaml"),
-  );
+  fs.copyFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), path.join(authorityRoot, "references/cli/update-channels.yaml"));
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   const text = fs.readFileSync(authorityPath, "utf8");
   const stableStart = text.indexOf("  stable:");
   const devStart = text.indexOf("  development:");
   const stableBlock = text.slice(stableStart, devStart);
-  const patchedStable = stableBlock.replace(
-    /\n      announced: (true|false)/,
-    `\n      announced: ${announced}`,
-  );
+  const patchedStable = stableBlock.replace(/\n      announced: (true|false)/, `\n      announced: ${announced}`);
   const patched = text.slice(0, stableStart) + patchedStable + text.slice(devStart);
   fs.writeFileSync(authorityPath, patched);
   return authorityRoot;
@@ -102,20 +84,14 @@ function authorityRootWithAnnouncedSuccessor(announced: boolean): string {
 function authorityRootWithDevelopmentNextMajor(announced: boolean): string {
   const authorityRoot = path.join(tmp, `dev-announced-${announced}`);
   fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
-  fs.copyFileSync(
-    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
-    path.join(authorityRoot, "references/cli/update-channels.yaml"),
-  );
+  fs.copyFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), path.join(authorityRoot, "references/cli/update-channels.yaml"));
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   const text = fs.readFileSync(authorityPath, "utf8");
   const devStart = text.indexOf("  development:");
   const devResolution = text.indexOf("\n    resolution:", devStart);
   const before = text.slice(0, devStart);
   const devBlock = text.slice(devStart, devResolution);
-  const patchedDev = devBlock.replace(
-    /\n      announced: (true|false)/,
-    `\n      announced: ${announced}`,
-  );
+  const patchedDev = devBlock.replace(/\n      announced: (true|false)/, `\n      announced: ${announced}`);
   const patched = before + patchedDev + text.slice(devResolution);
   fs.writeFileSync(authorityPath, patched);
   return authorityRoot;
@@ -124,10 +100,7 @@ function authorityRootWithDevelopmentNextMajor(announced: boolean): string {
 function authorityRootWithoutDevelopmentNextMajor(): string {
   const authorityRoot = path.join(tmp, "no-dev-successor");
   fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
-  fs.copyFileSync(
-    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
-    path.join(authorityRoot, "references/cli/update-channels.yaml"),
-  );
+  fs.copyFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), path.join(authorityRoot, "references/cli/update-channels.yaml"));
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   const text = fs.readFileSync(authorityPath, "utf8");
   const devStart = text.indexOf("  development:");
@@ -144,10 +117,7 @@ function authorityRootWithoutDevelopmentNextMajor(): string {
 function authorityRootWithStableAnnouncedDevUnannounced(): string {
   const authorityRoot = path.join(tmp, "stable-ann-dev-no");
   fs.mkdirSync(path.join(authorityRoot, "references/cli"), { recursive: true });
-  fs.copyFileSync(
-    path.join(REPO_ROOT, "references/cli/update-channels.yaml"),
-    path.join(authorityRoot, "references/cli/update-channels.yaml"),
-  );
+  fs.copyFileSync(path.join(REPO_ROOT, "references/cli/update-channels.yaml"), path.join(authorityRoot, "references/cli/update-channels.yaml"));
   const authorityPath = path.join(authorityRoot, "references/cli/update-channels.yaml");
   let text = fs.readFileSync(authorityPath, "utf8");
   text = text.replace("announced: false", "announced: true");

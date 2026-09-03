@@ -1,11 +1,6 @@
 import fs from "node:fs";
 
-import {
-  checkAbstraction,
-  checkFiller,
-  checkFullFileVerbosity,
-  checkVerbosity,
-} from "../../validate/selfAudit.js";
+import { checkAbstraction, checkFiller, checkFullFileVerbosity, checkVerbosity } from "../../validate/selfAudit.js";
 import { artifactPath, discoverSchemasDir, loadSchemas, SchemaInfo } from "../appContext.js";
 import { pathStem, validateAgentString } from "../argvalidate.js";
 import { emitStructured } from "../structured.js";
@@ -50,11 +45,7 @@ function resolveLintArtifactFile(artifact: string): [string, string] {
   const schemaName = lintSchemaName(artifact, schemas);
   if (schemaName === null) {
     const validLabels = VALIDATE_ARTIFACT_PROTOCOL_IDS.join(", ");
-    throw new Error(
-      `unsupported artifact ${pyRepr(artifact)}; provide --file or --text, ` +
-        "or use a schema name from `agentera query --list-artifacts` " +
-        `or a canonical label (${validLabels})`,
-    );
+    throw new Error(`unsupported artifact ${pyRepr(artifact)}; provide --file or --text, ` + "or use a schema name from `agentera query --list-artifacts` " + `or a canonical label (${validLabels})`);
   }
   const info = schemas[schemaName];
   const p = artifactPath(info, schemaName);
@@ -88,9 +79,7 @@ function lintInputText(args: LintArgs): [string, string, boolean, string | null]
       throw new Error(`could not read lint file ${p}: ${(exc as Error).message}`);
     }
   }
-  throw new Error(
-    `lint requires --text, --file, or piped stdin; artifact file ${p} does not exist`,
-  );
+  throw new Error(`lint requires --text, --file, or piped stdin; artifact file ${p} does not exist`);
 }
 
 function isFileSafe(p: string): boolean {
@@ -120,23 +109,13 @@ function lintChecks(text: string, artifact: string, fullArtifact: boolean): Arra
       name,
       status: passed ? "pass" : "fail",
       detail,
-      action: passed
-        ? ""
-        : name === "verbosity" && isVerbosityAuthorityError(detail)
-          ? "Repair the verbosity budget authority or its owning artifact schema, then retry lint."
-          : actions[name],
+      action: passed ? "" : name === "verbosity" && isVerbosityAuthorityError(detail) ? "Repair the verbosity budget authority or its owning artifact schema, then retry lint." : actions[name],
     });
   }
   return checks;
 }
 
-function lintPayloadForContent(
-  artifact: string,
-  text: string,
-  source: string,
-  fullArtifact: boolean,
-  strict = false,
-): Record<string, any> {
+function lintPayloadForContent(artifact: string, text: string, source: string, fullArtifact: boolean, strict = false): Record<string, any> {
   validateAgentString(artifact, "artifact");
   const checks = lintChecks(text, artifact, fullArtifact);
   const failures = checks.filter((c) => c.status === "fail");
@@ -180,10 +159,7 @@ function emitLintText(payload: Record<string, any>, out: (text: string) => void)
   }
 }
 
-export function cmdLint(
-  args: LintArgs,
-  io: { out?: (t: string) => void; err?: (t: string) => void } = {},
-): number {
+export function cmdLint(args: LintArgs, io: { out?: (t: string) => void; err?: (t: string) => void } = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const payload = lintPayload(args);
   if ((args.format ?? "text") === "json") {
@@ -191,8 +167,6 @@ export function cmdLint(
   } else {
     emitLintText(payload, out);
   }
-  const operationalFailure = (payload.checks as Array<Record<string, string>>).some(
-    (check) => check.status === "fail" && isVerbosityAuthorityError(check.detail),
-  );
+  const operationalFailure = (payload.checks as Array<Record<string, string>>).some((check) => check.status === "fail" && isVerbosityAuthorityError(check.detail));
   return operationalFailure || (args.strict && payload.status === "fail") ? 1 : 0;
 }

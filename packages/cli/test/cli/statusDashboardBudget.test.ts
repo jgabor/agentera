@@ -22,7 +22,12 @@ beforeAll(() => {
   try {
     state = collectOrientationState({
       home,
-      env: { ...process.env, HOME: home, AGENTERA_HOME: path.join(home, "agentera"), AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT },
+      env: {
+        ...process.env,
+        HOME: home,
+        AGENTERA_HOME: path.join(home, "agentera"),
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: REPO_ROOT,
+      },
     });
   } finally {
     process.chdir(before);
@@ -40,15 +45,24 @@ describe("status startup budget", () => {
     expect(briefUtf8Bytes(payload)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
     expect(payload.outcome).toBe(capsule.startup.outcome);
     expect(dashboard.outcome).toBe(capsule.startup.outcome);
-    expect(capsule.startup.availability).toEqual(expect.arrayContaining([
-      expect.objectContaining({ family: "decisions", availability: "deferred", detail_command: "npx -y agentera@next state decisions list" }),
-    ]));
+    expect(capsule.startup.availability).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          family: "decisions",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next state decisions list",
+        }),
+      ]),
+    );
     expect(dashboard).not.toHaveProperty("profile");
     expect(JSON.stringify(payload)).not.toContain('"write_contract"');
   });
 
   it("keeps the status view bounded when omitted dashboard detail is adversarial", () => {
-    const adversarialState = { ...state, attention: Array.from({ length: 100 }, () => "attention ".repeat(500)) };
+    const adversarialState = {
+      ...state,
+      attention: Array.from({ length: 100 }, () => "attention ".repeat(500)),
+    };
     const payload = buildStatusCapabilityContextPayload(adversarialState) as Record<string, any>;
     const finalized = finalizeStatusCapabilityContextPayload(payload, adversarialState) as Record<string, any>;
 

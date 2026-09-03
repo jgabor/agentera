@@ -76,7 +76,9 @@ describe("state storage authority loader", () => {
     const document = loadStateStorageAuthority(sourceRoot("fixed")).document;
     const nested = document.nested as { values: string[] };
 
-    expect(() => { document.marker = "changed"; }).toThrow(TypeError);
+    expect(() => {
+      document.marker = "changed";
+    }).toThrow(TypeError);
     expect(() => nested.values.push("three")).toThrow(TypeError);
     expect(document.marker).toBe("fixed");
     expect(nested.values).toEqual(["one", "two"]);

@@ -5,18 +5,11 @@ import path from "node:path";
 import { resolvePath } from "../core/paths.js";
 import { confirmedVariantGuardContract } from "../registries/glossaryEntryContract.js";
 import { containsGlossaryTerm } from "../registries/glossaryTermOccurrence.js";
-import {
-  loadProjectGlossaryDocument,
-  type ProjectGlossaryDocument,
-} from "../state/write/glossaryPublication.js";
+import { loadProjectGlossaryDocument, type ProjectGlossaryDocument } from "../state/write/glossaryPublication.js";
 
 const EXCLUDED_DIRECTORIES = new Set(confirmedVariantGuardContract().excludedDirectories);
 // Lowercased extensions classify ASCII path suffixes; they are not term identities.
-const TEXT_EXTENSIONS = new Set([
-  ".cjs", ".css", ".go", ".html", ".js", ".json", ".jsonc", ".jsx",
-  ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt",
-  ".xml", ".yaml", ".yml",
-]);
+const TEXT_EXTENSIONS = new Set([".cjs", ".css", ".go", ".html", ".js", ".json", ".jsonc", ".jsx", ".md", ".mjs", ".py", ".rs", ".sh", ".toml", ".ts", ".tsx", ".txt", ".xml", ".yaml", ".yml"]);
 const RERUN = "npx -y agentera@next check validate state";
 
 interface ConfirmedVariant {
@@ -32,13 +25,12 @@ function confirmedVariants(document: ProjectGlossaryDocument): ConfirmedVariant[
     const canonical = String(entry.term);
     // Project-glossary validation already rejects every canonical/variant
     // identity collision. Preserve all validated variants for guard scanning.
-    return approval.proposal.variants
-      .map(({ term, evidence }) => ({
-        variant: term,
-        canonical,
-        approvalDigest: approval.proposal_digest,
-        evidence,
-      }));
+    return approval.proposal.variants.map(({ term, evidence }) => ({
+      variant: term,
+      canonical,
+      approvalDigest: approval.proposal_digest,
+      evidence,
+    }));
   });
 }
 
@@ -63,23 +55,12 @@ function lineDigest(line: string): string {
   return crypto.createHash("sha256").update(line).digest("hex");
 }
 
-function isApprovedEvidence(
-  variant: ConfirmedVariant,
-  sourcePath: string,
-  line: number,
-  text: string,
-): boolean {
+function isApprovedEvidence(variant: ConfirmedVariant, sourcePath: string, line: number, text: string): boolean {
   const digest = lineDigest(text);
-  return variant.evidence.some((item) =>
-    item.source_path === sourcePath && item.line === line && item.source_record_sha256 === digest
-  );
+  return variant.evidence.some((item) => item.source_path === sourcePath && item.line === line && item.source_record_sha256 === digest);
 }
 
-function variantViolations(
-  root: string,
-  document: ProjectGlossaryDocument,
-  glossaryPath: string,
-): string[] {
+function variantViolations(root: string, document: ProjectGlossaryDocument, glossaryPath: string): string[] {
   const violations: string[] = [];
   const seen = new Set<string>();
   for (const file of projectTextFiles(root)) {
@@ -96,8 +77,8 @@ function variantViolations(
         const evidence = variant.evidence.map((item) => `${item.source_path}:${item.line}`).join(", ");
         violations.push(
           `confirmed variant '${variant.variant}' reintroduced at ${sourcePath}:${line}; canonical term '${variant.canonical}' ` +
-          `from approval ${variant.approvalDigest} (confirmed variant evidence: ${evidence}). ` +
-          `Correction: replace '${variant.variant}' with '${variant.canonical}' at ${sourcePath}:${line}; rerun: ${RERUN}`,
+            `from approval ${variant.approvalDigest} (confirmed variant evidence: ${evidence}). ` +
+            `Correction: replace '${variant.variant}' with '${variant.canonical}' at ${sourcePath}:${line}; rerun: ${RERUN}`,
         );
       }
     }
@@ -112,10 +93,7 @@ export function scanConfirmedVariantViolations(root: string): string[] {
     const loaded = loadProjectGlossaryDocument(resolved);
     if (loaded) violations.push(...variantViolations(resolved, loaded.document, loaded.path));
   } catch (error) {
-    violations.push(
-      `project glossary is malformed: ${(error as Error).message}. ` +
-      `Correction: restore a valid confirmed document or rerun agentera state glossary publish --input REQUEST.yaml; rerun: ${RERUN}`,
-    );
+    violations.push(`project glossary is malformed: ${(error as Error).message}. ` + `Correction: restore a valid confirmed document or rerun agentera state glossary publish --input REQUEST.yaml; rerun: ${RERUN}`);
   }
   return violations.sort();
 }

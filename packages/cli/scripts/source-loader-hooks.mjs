@@ -19,9 +19,7 @@ export function canonicalContainedRegularFile(root, candidate) {
 }
 
 function explicitRelative(specifier) {
-  return (specifier.startsWith("./") || specifier.startsWith("../"))
-    && !specifier.includes("?")
-    && !specifier.includes("#");
+  return (specifier.startsWith("./") || specifier.startsWith("../")) && !specifier.includes("?") && !specifier.includes("#");
 }
 
 function sourceFile(specifier, parentURL) {

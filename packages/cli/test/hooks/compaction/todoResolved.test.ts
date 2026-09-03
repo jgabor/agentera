@@ -5,15 +5,7 @@ import path from "node:path";
 import { describe, expect, it, beforeEach, afterEach } from "vitest";
 
 import { ArtifactSchemaValidator } from "../../../src/hooks/validateArtifact/index.js";
-import {
-  countTodoResolvedEntries,
-  countTodoResolvedInSeverityBands,
-  countTodoResolvedSectionHeadings,
-  countTodoPendingSummarization,
-  extractResolvedSection,
-  isTodoResolvedSectionHeading,
-  normalizeTodoResolvedLayout,
-} from "../../../src/hooks/compaction/parse.js";
+import { countTodoResolvedEntries, countTodoResolvedInSeverityBands, countTodoResolvedSectionHeadings, countTodoPendingSummarization, extractResolvedSection, isTodoResolvedSectionHeading, normalizeTodoResolvedLayout } from "../../../src/hooks/compaction/parse.js";
 import { compactFile } from "../../../src/hooks/compaction/apply.js";
 import { checkCompaction, computeCompactionStatus, runCompaction } from "../../../src/hooks/compaction/status.js";
 
@@ -34,16 +26,7 @@ describe("parse todo-resolved layout", () => {
   });
 
   it("counts mis-placed resolved rows in severity bands for the compaction gate", () => {
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [x] [fix] Done in critical",
-      "",
-      "## → Normal",
-      "- [ ] [chore] Still open",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [x] [fix] Done in critical", "", "## → Normal", "- [ ] [chore] Still open", ""].join("\n");
     expect(countTodoResolvedInSeverityBands(todo)).toBe(1);
     // Positional tiering per TC9: a single resolved row occupies the
     // first full-detail slot (min(N,10)=1), yielding full=1/oneline=0
@@ -52,21 +35,7 @@ describe("parse todo-resolved layout", () => {
   });
 
   it("migrates mis-placed resolved rows into ## ✓ Resolved on normalize", () => {
-    const todo = [
-      "# TODO",
-      "",
-      "## ⇶ Critical",
-      "- [x] [fix] First",
-      "",
-      "## → Normal",
-      "- [ ] [chore] Open",
-      "- [x] [feat] Second",
-      "",
-      "## ⇢ Annoying",
-      "",
-      "## ✓ Resolved",
-      "",
-    ].join("\n");
+    const todo = ["# TODO", "", "## ⇶ Critical", "- [x] [fix] First", "", "## → Normal", "- [ ] [chore] Open", "- [x] [feat] Second", "", "## ⇢ Annoying", "", "## ✓ Resolved", ""].join("\n");
     const { text, changed } = normalizeTodoResolvedLayout(todo);
     expect(changed).toBe(true);
     expect(text).toContain("## ✓ Resolved");
@@ -80,22 +49,7 @@ describe("parse todo-resolved layout", () => {
 });
 
 describe("duplicate ## ✓ Resolved section detection", () => {
-  const duplicateTodo = [
-    "# TODO",
-    "",
-    "## → Normal",
-    "- [ ] [chore] Open item one",
-    "",
-    "## ✓ Resolved",
-    "- [x] [fix] First resolved",
-    "",
-    "## ⇢ Annoying",
-    "- [ ] [chore] Annoying open item",
-    "",
-    "## ✓ Resolved",
-    "- [x] [fix] Second resolved",
-    "",
-  ].join("\n");
+  const duplicateTodo = ["# TODO", "", "## → Normal", "- [ ] [chore] Open item one", "", "## ✓ Resolved", "- [x] [fix] First resolved", "", "## ⇢ Annoying", "- [ ] [chore] Annoying open item", "", "## ✓ Resolved", "- [x] [fix] Second resolved", ""].join("\n");
 
   it("countTodoResolvedSectionHeadings returns the true section count", () => {
     expect(countTodoResolvedSectionHeadings(duplicateTodo)).toBe(2);
@@ -115,9 +69,7 @@ describe("duplicate ## ✓ Resolved section detection", () => {
     const todoPath = path.join(tmp, "TODO.md");
     fs.writeFileSync(todoPath, duplicateTodo);
     const violations = new ArtifactSchemaValidator().validateExplicit("TODO.md", todoPath, tmp);
-    expect(
-      violations.some((v) => v.includes("2 '## ✓ Resolved' sections") && v.includes("merge")),
-    ).toBe(true);
+    expect(violations.some((v) => v.includes("2 '## ✓ Resolved' sections") && v.includes("merge"))).toBe(true);
   });
 
   it("compaction status emits an error (not ok) and surfaces Git recovery guidance", () => {
@@ -153,9 +105,7 @@ describe("duplicate ## ✓ Resolved section detection", () => {
   it("compactFile throws on a duplicate-section TODO (defense for direct callers)", () => {
     const todoPath = path.join(tmp, "TODO.md");
     fs.writeFileSync(todoPath, duplicateTodo);
-    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(
-      /2 '## ✓ Resolved' sections.*merge into exactly one.*git log -p -- :\/TODO\.md/s,
-    );
+    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(/2 '## ✓ Resolved' sections.*merge into exactly one.*git log -p -- :\/TODO\.md/s);
     // File unchanged.
     expect(fs.readFileSync(todoPath, "utf8")).toBe(duplicateTodo);
   });
@@ -164,10 +114,7 @@ describe("duplicate ## ✓ Resolved section detection", () => {
 describe("todo-resolved compaction ordering and diagnostics", () => {
   function resolvedEntry(i: number): string[] {
     const day = String((i % 28) + 1).padStart(2, "0");
-    return [
-      `- [x] ~~[fix:3.0.0] item ${i} resolved 2026-01-${day} MARKER-${i} brief description~~`,
-      `    Detail body for item ${i} with additional resolved context.`,
-    ];
+    return [`- [x] ~~[fix:3.0.0] item ${i} resolved 2026-01-${day} MARKER-${i} brief description~~`, `    Detail body for item ${i} with additional resolved context.`];
   }
 
   function overLimitTodo(count: number): string {
@@ -249,19 +196,7 @@ describe("shared resolved-heading matcher variants", () => {
   });
 
   it("countTodoResolvedSectionHeadings counts all variant headings consistently", () => {
-    const variants = [
-      "# TODO",
-      "",
-      "## ✓ Resolved",
-      "- [x] [fix] First",
-      "",
-      "## resolved",
-      "- [x] [fix] Second",
-      "",
-      "## RESOLVED",
-      "- [x] [fix] Third",
-      "",
-    ].join("\n");
+    const variants = ["# TODO", "", "## ✓ Resolved", "- [x] [fix] First", "", "## resolved", "- [x] [fix] Second", "", "## RESOLVED", "- [x] [fix] Third", ""].join("\n");
     expect(countTodoResolvedSectionHeadings(variants)).toBe(3);
   });
 
@@ -286,7 +221,7 @@ describe("inline-row positional tier regression", () => {
   function inlineTodo(count: number, firstBodyless: number): string {
     const entries: string[] = [];
     for (let i = 1; i <= count; i++) {
-      entries.push(`- [x] ~~[fix:3.0.0] item ${i} resolved 2026-07-${String(i % 28 + 1).padStart(2, "0")} MARKER-${i}~~`);
+      entries.push(`- [x] ~~[fix:3.0.0] item ${i} resolved 2026-07-${String((i % 28) + 1).padStart(2, "0")} MARKER-${i}~~`);
       if (i > firstBodyless) {
         entries.push(`    Inline detail body for item ${i} with context.`);
       }
@@ -432,9 +367,7 @@ describe("≤15-word summary enforcement for rows 11-50", () => {
   function bodylessTodo(count: number): string {
     const entries: string[] = [];
     for (let i = 1; i <= count; i++) {
-      entries.push(
-        `- [x] ~~[fix:3.0.0] item ${i} resolved 2026-07-${String(i % 28 + 1).padStart(2, "0")} WORDY-${i} this is a very long resolved entry that exceeds fifteen words and should be truncated to a summary at position eleven through fifty~~`,
-      );
+      entries.push(`- [x] ~~[fix:3.0.0] item ${i} resolved 2026-07-${String((i % 28) + 1).padStart(2, "0")} WORDY-${i} this is a very long resolved entry that exceeds fifteen words and should be truncated to a summary at position eleven through fifty~~`);
       entries.push("");
     }
     return ["# TODO", "", "## → Normal", "- [ ] [chore] Open", "", "## ✓ Resolved", "", ...entries].join("\n");
@@ -531,14 +464,7 @@ describe("≤15-word summary enforcement for rows 11-50", () => {
 });
 
 describe("zero Resolved heading enforcement", () => {
-  const zeroHeadingTodo = [
-    "# TODO",
-    "",
-    "## → Normal",
-    "- [x] [fix] Resolved item in a severity band with no heading",
-    "- [ ] [chore] Open item",
-    "",
-  ].join("\n");
+  const zeroHeadingTodo = ["# TODO", "", "## → Normal", "- [x] [fix] Resolved item in a severity band with no heading", "- [ ] [chore] Open item", ""].join("\n");
 
   it("validation flags missing heading when resolved items are misplaced", () => {
     const todoPath = path.join(tmp, "TODO.md");
@@ -566,9 +492,7 @@ describe("zero Resolved heading enforcement", () => {
   it("compactFile throws on zero-heading TODO with resolved items", () => {
     const todoPath = path.join(tmp, "TODO.md");
     fs.writeFileSync(todoPath, zeroHeadingTodo);
-    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(
-      /no required '## ✓ Resolved' section.*add exactly one/s,
-    );
+    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(/no required '## ✓ Resolved' section.*add exactly one/s);
     // File unchanged.
     expect(fs.readFileSync(todoPath, "utf8")).toBe(zeroHeadingTodo);
   });
@@ -581,8 +505,6 @@ describe("zero Resolved heading enforcement", () => {
     const status = computeCompactionStatus(tmp).find((s) => s.artifact === "todo#Resolved");
     expect(status?.classification).toBe("error");
     expect(status?.reason).toContain("no required '## ✓ Resolved' section");
-    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(
-      /no required '## ✓ Resolved' section/,
-    );
+    expect(() => compactFile(todoPath, "todo-resolved")).toThrow(/no required '## ✓ Resolved' section/);
   });
 });

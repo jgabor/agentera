@@ -5,16 +5,8 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  LIFECYCLE_AUTHORITY_RELATIVE_PATH,
-  loadLifecycleAuthority,
-  validateLifecycleAuthorityData,
-  validateLifecycleAuthorityRoot,
-} from "../../src/runtime/lifecycleAuthority.js";
-import {
-  loadRuntimeLifecycleAdapterContract,
-  validateRuntimeLifecycleAdapterContractRoot,
-} from "../../src/runtime/lifecycleAdapterContract.js";
+import { LIFECYCLE_AUTHORITY_RELATIVE_PATH, loadLifecycleAuthority, validateLifecycleAuthorityData, validateLifecycleAuthorityRoot } from "../../src/runtime/lifecycleAuthority.js";
+import { loadRuntimeLifecycleAdapterContract, validateRuntimeLifecycleAdapterContractRoot } from "../../src/runtime/lifecycleAdapterContract.js";
 import { validateLifecycleOperationContractRoot } from "../../src/runtime/lifecycleOperationContract.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -49,17 +41,13 @@ describe("migration-only runtime lifecycle authority", () => {
       surfaces: [{ id: "host", display_name: "OpenCode host", presence: "required" }],
     });
 
-    expect(validateLifecycleAuthorityData(fixture, LIFECYCLE_AUTHORITY_RELATIVE_PATH)).toContain(
-      `${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:active_runtimes: must be empty because repository-native runtime integrations are retired`,
-    );
+    expect(validateLifecycleAuthorityData(fixture, LIFECYCLE_AUTHORITY_RELATIVE_PATH)).toContain(`${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:active_runtimes: must be empty because repository-native runtime integrations are retired`);
   });
 
   it("rejects an internally active status label", () => {
     const fixture = authorityFixture();
     fixture.status = "active_authority";
 
-    expect(validateLifecycleAuthorityData(fixture, LIFECYCLE_AUTHORITY_RELATIVE_PATH)).toContain(
-      `${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:status: must be migration_only_authority`,
-    );
+    expect(validateLifecycleAuthorityData(fixture, LIFECYCLE_AUTHORITY_RELATIVE_PATH)).toContain(`${LIFECYCLE_AUTHORITY_RELATIVE_PATH}:status: must be migration_only_authority`);
   });
 });

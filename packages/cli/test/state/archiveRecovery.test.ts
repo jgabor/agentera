@@ -7,10 +7,7 @@ import { afterEach, describe, expect, it } from "vitest";
 
 import { checkCompaction, compactYamlBytes } from "../../src/hooks/compaction/index.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
-import {
-  gateProjectionEntries,
-  verifyArchiveForProjection,
-} from "../../src/state/archiveRecovery.js";
+import { gateProjectionEntries, verifyArchiveForProjection } from "../../src/state/archiveRecovery.js";
 
 const roots: string[] = [];
 const sourceRoot = path.resolve(import.meta.dirname, "../../../..");
@@ -39,10 +36,7 @@ function overLimitBytes(entry: Record<string, unknown>): string {
   });
 }
 
-function expectFailureReason(
-  recovery: ReturnType<typeof verifyArchiveForProjection>,
-  reason: string,
-): void {
+function expectFailureReason(recovery: ReturnType<typeof verifyArchiveForProjection>, reason: string): void {
   expect(recovery.reason).toBe(reason);
   expect(recovery.source).toBe("current_projection");
   expect(recovery.detail_availability).toBe("full");
@@ -92,8 +86,15 @@ describe("projection archive recovery gate", () => {
     const result = compactYamlBytes(overLimitBytes(entry), "progress", root);
 
     expectFailureReason(verifyArchiveForProjection(root, "progress", entry, { sourceRoot }), "not_found");
-    expect(result.result.recovery).toMatchObject({ status: "degraded", retained_full: 1, refused_count: 1 });
-    const projected = YAML.parse(result.bytes) as { cycles: Array<Record<string, unknown>>; archive: unknown[] };
+    expect(result.result.recovery).toMatchObject({
+      status: "degraded",
+      retained_full: 1,
+      refused_count: 1,
+    });
+    const projected = YAML.parse(result.bytes) as {
+      cycles: Array<Record<string, unknown>>;
+      archive: unknown[];
+    };
     expect(projected.cycles).toHaveLength(11);
     expect(projected.cycles.find((candidate) => candidate.number === 1)?.what).toBe("Cycle 1");
     expect(projected.archive).toHaveLength(0);
@@ -118,14 +119,15 @@ describe("projection archive recovery gate", () => {
     const entry = progressEntry(1);
     publishNumberedArchive(root, "progress", 1, entry, { sourceRoot });
     const archivePath = path.join(root, ".agentera", "archive", "progress", "1.yaml");
-    fs.writeFileSync(
-      archivePath,
-      fs.readFileSync(archivePath, "utf8").replace(/record_sha256: [0-9a-f]{64}/, `record_sha256: ${"0".repeat(64)}`),
-    );
+    fs.writeFileSync(archivePath, fs.readFileSync(archivePath, "utf8").replace(/record_sha256: [0-9a-f]{64}/, `record_sha256: ${"0".repeat(64)}`));
 
     const result = compactYamlBytes(overLimitBytes(entry), "progress", root);
     expectFailureReason(verifyArchiveForProjection(root, "progress", entry, { sourceRoot }), "corrupt");
-    expect(result.result.recovery).toMatchObject({ status: "blocked", retained_full: 1, refused_count: 1 });
+    expect(result.result.recovery).toMatchObject({
+      status: "blocked",
+      retained_full: 1,
+      refused_count: 1,
+    });
     expect((YAML.parse(result.bytes) as { cycles: Array<Record<string, unknown>> }).cycles).toHaveLength(11);
   });
 
@@ -135,11 +137,12 @@ describe("projection archive recovery gate", () => {
     publishNumberedArchive(root, "progress", 1, { ...entry, what: "Different immutable record" }, { sourceRoot });
 
     const result = compactYamlBytes(overLimitBytes(entry), "progress", root);
-    expectFailureReason(
-      verifyArchiveForProjection(root, "progress", entry, { sourceRoot }),
-      "immutable_conflict",
-    );
-    expect(result.result.recovery).toMatchObject({ status: "blocked", retained_full: 1, refused_count: 1 });
+    expectFailureReason(verifyArchiveForProjection(root, "progress", entry, { sourceRoot }), "immutable_conflict");
+    expect(result.result.recovery).toMatchObject({
+      status: "blocked",
+      retained_full: 1,
+      refused_count: 1,
+    });
     expect((YAML.parse(result.bytes) as { cycles: Array<Record<string, unknown>> }).cycles).toHaveLength(11);
   });
 
@@ -148,20 +151,15 @@ describe("projection archive recovery gate", () => {
     const entry = progressEntry(1);
     publishNumberedArchive(root, "progress", 1, entry, { sourceRoot });
     const archivePath = path.join(root, ".agentera", "archive", "progress", "1.yaml");
-    fs.writeFileSync(
-      archivePath,
-      fs.readFileSync(archivePath, "utf8").replace(
-        "schemaVersion: agentera.stateArchiveEntry.v1",
-        "schemaVersion: agentera.stateArchiveEntry.v2",
-      ),
-    );
+    fs.writeFileSync(archivePath, fs.readFileSync(archivePath, "utf8").replace("schemaVersion: agentera.stateArchiveEntry.v1", "schemaVersion: agentera.stateArchiveEntry.v2"));
 
     const result = compactYamlBytes(overLimitBytes(entry), "progress", root);
-    expectFailureReason(
-      verifyArchiveForProjection(root, "progress", entry, { sourceRoot }),
-      "unsupported_state",
-    );
-    expect(result.result.recovery).toMatchObject({ status: "unsupported", retained_full: 1, refused_count: 1 });
+    expectFailureReason(verifyArchiveForProjection(root, "progress", entry, { sourceRoot }), "unsupported_state");
+    expect(result.result.recovery).toMatchObject({
+      status: "unsupported",
+      retained_full: 1,
+      refused_count: 1,
+    });
     expect((YAML.parse(result.bytes) as { cycles: Array<Record<string, unknown>> }).cycles).toHaveLength(11);
   });
 
@@ -173,6 +171,10 @@ describe("projection archive recovery gate", () => {
     expect(gate.verified).toEqual([]);
     expect(gate.refused).toHaveLength(1);
     expectFailureReason(gate.refused[0].recovery, "unsupported_state");
-    expect(gate.recovery).toMatchObject({ status: "unsupported", retained_full: 1, refused_count: 1 });
+    expect(gate.recovery).toMatchObject({
+      status: "unsupported",
+      retained_full: 1,
+      refused_count: 1,
+    });
   });
 });

@@ -5,9 +5,7 @@ import { loadTodoReadinessContract } from "../registries/todoReadinessContract.j
 import { TODO_SEVERITY_ORDER } from "./todoSeverity.js";
 import { renderTodoPublicRecord } from "./todoMarkdown.js";
 
-export type TodoProjectedStartupOrder =
-  | { kind: "managed"; markdownOrder: number }
-  | { kind: "absent" };
+export type TodoProjectedStartupOrder = { kind: "managed"; markdownOrder: number } | { kind: "absent" };
 
 export interface TodoReadinessEntity {
   id: string;
@@ -48,10 +46,7 @@ function mapping(value: unknown): value is Record<string, unknown> {
 function validProjectedOrder(value: unknown): value is TodoProjectedStartupOrder {
   if (!mapping(value)) return false;
   if (value.kind === "absent") return Object.keys(value).length === 1;
-  return value.kind === "managed"
-    && Object.keys(value).sort().join(",") === "kind,markdownOrder"
-    && Number.isSafeInteger(value.markdownOrder)
-    && Number(value.markdownOrder) > 0;
+  return value.kind === "managed" && Object.keys(value).sort().join(",") === "kind,markdownOrder" && Number.isSafeInteger(value.markdownOrder) && Number(value.markdownOrder) > 0;
 }
 
 function projectedMode(entities: TodoReadinessEntity[]): boolean {
@@ -72,15 +67,10 @@ function compareProjectedOrder(left: TodoReadinessEvaluation, right: TodoReadine
 }
 
 function dependencies(readiness: Record<string, unknown>): Array<Record<string, unknown>> {
-  return Array.isArray(readiness.dependencies)
-    ? readiness.dependencies.filter(mapping)
-    : [];
+  return Array.isArray(readiness.dependencies) ? readiness.dependencies.filter(mapping) : [];
 }
 
-function hasDependencyCycle(
-  itemId: string,
-  byId: Map<string, TodoReadinessEntity>,
-): boolean {
+function hasDependencyCycle(itemId: string, byId: Map<string, TodoReadinessEntity>): boolean {
   const visit = (id: string, visiting: Set<string>, visited: Set<string>): boolean => {
     if (visiting.has(id)) return true;
     if (visited.has(id)) return false;
@@ -100,10 +90,7 @@ function hasDependencyCycle(
   return visit(itemId, new Set(), new Set());
 }
 
-export function evaluateTodoReadinessQueue(
-  entities: TodoReadinessEntity[],
-  sourceRoot?: string,
-): TodoReadinessQueueSelection {
+export function evaluateTodoReadinessQueue(entities: TodoReadinessEntity[], sourceRoot?: string): TodoReadinessQueueSelection {
   if (entities.length === 0) {
     return {
       selected: null,
@@ -112,13 +99,7 @@ export function evaluateTodoReadinessQueue(
       abstainRecovery: null,
     };
   }
-  const contract = sourceRoot
-    ? loadTodoReadinessContract(
-      path.join(sourceRoot, "skills/agentera/schemas/artifacts/todo.yaml"),
-      path.join(sourceRoot, "skills/agentera/protocol.yaml"),
-      path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml"),
-    )
-    : loadTodoReadinessContract();
+  const contract = sourceRoot ? loadTodoReadinessContract(path.join(sourceRoot, "skills/agentera/schemas/artifacts/todo.yaml"), path.join(sourceRoot, "skills/agentera/protocol.yaml"), path.join(sourceRoot, "skills/agentera/capability_schema_contract.yaml")) : loadTodoReadinessContract();
   const projected = projectedMode(entities);
   const byId = new Map(entities.map((entity) => [entity.id, entity]));
 
@@ -133,9 +114,7 @@ export function evaluateTodoReadinessQueue(
     else if (!readiness) outcome = "readiness_absent";
     else if (readiness.blocked !== null) {
       outcome = "blocked";
-      declaredRecovery = mapping(readiness.blocked) && typeof readiness.blocked.recovery === "string"
-        ? readiness.blocked.recovery
-        : null;
+      declaredRecovery = mapping(readiness.blocked) && typeof readiness.blocked.recovery === "string" ? readiness.blocked.recovery : null;
     } else if (mapping(readiness.gate) && readiness.gate.state === "pending") {
       outcome = "gate_pending";
       declaredRecovery = typeof readiness.gate.recovery === "string" ? readiness.gate.recovery : null;
@@ -156,18 +135,20 @@ export function evaluateTodoReadinessQueue(
       id: entity.id,
       artifact: entity.artifact,
       severity: String(record.severity ?? "normal"),
-       description: renderTodoPublicRecord(record),
+      description: renderTodoPublicRecord(record),
       outcome,
       result: String(authority.result),
       eligible: authority.eligible === true,
       attention: String(authority.attention),
       recovery: declaredRecovery ?? (typeof authority.recovery === "string" ? authority.recovery : null),
       retrieval: { exact: preCutoverCommand(`state todo get --id ${entity.id}`) },
-      ...(capability ? {
-        capability,
-        phase: contract.phaseByCapability.get(capability),
-        reason: typeof readiness?.reason === "string" ? readiness.reason : "",
-      } : {}),
+      ...(capability
+        ? {
+            capability,
+            phase: contract.phaseByCapability.get(capability),
+            reason: typeof readiness?.reason === "string" ? readiness.reason : "",
+          }
+        : {}),
       ...(queueRank === undefined ? {} : { queueRank }),
       ...(projected ? { projectedOrder: entity.projectedOrder! } : {}),
     };
@@ -194,39 +175,28 @@ export function evaluateTodoReadinessQueue(
     }
   }
 
-  const selected = evaluations
-    .filter((entry) => entry.eligible)
-    .sort((left, right) =>
-      (TODO_SEVERITY_ORDER[left.severity] ?? TODO_SEVERITY_ORDER.normal)
-      - (TODO_SEVERITY_ORDER[right.severity] ?? TODO_SEVERITY_ORDER.normal)
-      || (projected
-        ? compareProjectedOrder(left, right)
-        : (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id)),
-    )[0] ?? null;
+  const selected =
+    evaluations
+      .filter((entry) => entry.eligible)
+      .sort(
+        (left, right) =>
+          (TODO_SEVERITY_ORDER[left.severity] ?? TODO_SEVERITY_ORDER.normal) - (TODO_SEVERITY_ORDER[right.severity] ?? TODO_SEVERITY_ORDER.normal) ||
+          (projected ? compareProjectedOrder(left, right) : (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER) || left.id.localeCompare(right.id)),
+      )[0] ?? null;
   const triageCount = evaluations.filter((entry) => entry.attention === "item").length;
   const mixedRecovery = contract.queueOutcomes.mixed_actionable_and_triage?.recovery;
   const queueRecovery = contract.queueOutcomes.all_non_actionable?.recovery;
   const nonActionable = evaluations
     .filter((entry) => !entry.eligible && entry.result !== "resolved")
-    .sort((left, right) =>
-      (TODO_SEVERITY_ORDER[left.severity] ?? TODO_SEVERITY_ORDER.normal)
-      - (TODO_SEVERITY_ORDER[right.severity] ?? TODO_SEVERITY_ORDER.normal)
-      || contract.precedence.indexOf(left.outcome) - contract.precedence.indexOf(right.outcome)
-      || (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER),
+    .sort(
+      (left, right) =>
+        (TODO_SEVERITY_ORDER[left.severity] ?? TODO_SEVERITY_ORDER.normal) - (TODO_SEVERITY_ORDER[right.severity] ?? TODO_SEVERITY_ORDER.normal) ||
+        contract.precedence.indexOf(left.outcome) - contract.precedence.indexOf(right.outcome) ||
+        (left.queueRank ?? Number.MAX_SAFE_INTEGER) - (right.queueRank ?? Number.MAX_SAFE_INTEGER),
     );
   const recoveryCandidate = nonActionable[0];
-  const equallyRankedRecoveries = recoveryCandidate
-    ? new Set(nonActionable
-      .filter((entry) =>
-        entry.severity === recoveryCandidate.severity
-        && entry.outcome === recoveryCandidate.outcome
-        && entry.queueRank === recoveryCandidate.queueRank,
-      )
-      .map((entry) => entry.recovery))
-    : new Set<string | null>();
-  const abstainRecovery = equallyRankedRecoveries.size === 1
-    ? recoveryCandidate?.recovery ?? null
-    : typeof queueRecovery === "string" ? queueRecovery : null;
+  const equallyRankedRecoveries = recoveryCandidate ? new Set(nonActionable.filter((entry) => entry.severity === recoveryCandidate.severity && entry.outcome === recoveryCandidate.outcome && entry.queueRank === recoveryCandidate.queueRank).map((entry) => entry.recovery)) : new Set<string | null>();
+  const abstainRecovery = equallyRankedRecoveries.size === 1 ? (recoveryCandidate?.recovery ?? null) : typeof queueRecovery === "string" ? queueRecovery : null;
   return {
     selected,
     evaluations,

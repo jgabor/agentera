@@ -44,9 +44,7 @@ function canonicalRetrieval(family: EntityListFamilyHelp): JsonObject {
 }
 
 function mapping(value: unknown): Record<string, unknown> {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : {};
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Record<string, unknown>) : {};
 }
 
 function positiveInteger(value: unknown, field: string): number {
@@ -63,25 +61,13 @@ export function loadProjectionPolicy(sourceRoot: string = resolveSourceRoot()): 
     throw new Error(`state storage authority schema_version must be ${AUTHORITY_SCHEMA_VERSION}`);
   }
   const capacity = mapping(mapping(authority.projections).current).default_capacity;
-  const activeEntries = positiveInteger(
-    mapping(capacity).active_entries,
-    "projections.current.default_capacity.active_entries",
-  );
-  const summaryEntries = positiveInteger(
-    mapping(capacity).summary_entries,
-    "projections.current.default_capacity.summary_entries",
-  );
-  const totalEntries = positiveInteger(
-    mapping(capacity).total_entries,
-    "projections.current.default_capacity.total_entries",
-  );
+  const activeEntries = positiveInteger(mapping(capacity).active_entries, "projections.current.default_capacity.active_entries");
+  const summaryEntries = positiveInteger(mapping(capacity).summary_entries, "projections.current.default_capacity.summary_entries");
+  const totalEntries = positiveInteger(mapping(capacity).total_entries, "projections.current.default_capacity.total_entries");
   if (activeEntries + summaryEntries !== totalEntries) {
     throw new Error("state storage authority projection capacity must equal active plus summary entries");
   }
-  const maxUtf8Bytes = positiveInteger(
-    mapping(mapping(authority.budgets).projection).max_utf8_bytes,
-    "budgets.projection.max_utf8_bytes",
-  );
+  const maxUtf8Bytes = positiveInteger(mapping(mapping(authority.budgets).projection).max_utf8_bytes, "budgets.projection.max_utf8_bytes");
   return { activeEntries, summaryEntries, totalEntries, maxUtf8Bytes };
 }
 
@@ -111,7 +97,10 @@ export function projectionOmission(
   command: string,
   count: number,
   reason: string,
-  options: { forceOmitted?: boolean; provenance?: ProjectionOmissionProvenance | ProjectionOmissionProvenance[] } = {},
+  options: {
+    forceOmitted?: boolean;
+    provenance?: ProjectionOmissionProvenance | ProjectionOmissionProvenance[];
+  } = {},
 ): ProjectionOmissionMetadata {
   return {
     omitted: options.forceOmitted ?? count > 0,
@@ -123,8 +112,7 @@ export function projectionOmission(
 }
 
 export function serializedProjectionBytes(value: unknown, format: string): number {
-  const serialized =
-    format === "yaml" ? YAML.stringify(value, { sortMapEntries: false }) : JSON.stringify(value, null, 2) + "\n";
+  const serialized = format === "yaml" ? YAML.stringify(value, { sortMapEntries: false }) : JSON.stringify(value, null, 2) + "\n";
   return Buffer.byteLength(serialized, "utf8");
 }
 
@@ -149,13 +137,7 @@ function omissionCount(value: JsonObject): number {
   return typeof count === "number" && Number.isSafeInteger(count) && count > 0 ? count : 0;
 }
 
-function boundedValue(
-  value: JsonObject,
-  itemKey: "entries" | "operations",
-  items: JsonValue[],
-  omittedCount: number,
-  command: string,
-): JsonObject {
+function boundedValue(value: JsonObject, itemKey: "entries" | "operations", items: JsonValue[], omittedCount: number, command: string): JsonObject {
   const result: JsonObject = { ...value, [itemKey]: items };
   const existingCounts = result.counts;
   if (itemKey === "entries" && existingCounts && typeof existingCounts === "object" && !Array.isArray(existingCounts)) {
@@ -171,12 +153,7 @@ function boundedValue(
   };
 }
 
-function minimalBudgetedProjection(
-  command: string,
-  omittedCount: number,
-  policy: ProjectionPolicy,
-  format: string,
-): JsonObject {
+function minimalBudgetedProjection(command: string, omittedCount: number, policy: ProjectionPolicy, format: string): JsonObject {
   const omission = projectionOmission(command, omittedCount, "projection_required_fields_exceed_budget", {
     forceOmitted: true,
     provenance: {
@@ -199,9 +176,7 @@ function minimalBudgetedProjection(
       message: "optional projection detail was omitted because required output fields exceeded the authority byte budget",
       syntax: `agentera state ${command}`,
       example: `agentera state ${command}`,
-      recovery: omission.retrieval.available === true
-        ? String(omission.retrieval.command ?? omission.retrieval.list)
-        : "No direct retrieval route is declared for this artifact; use its supported state command.",
+      recovery: omission.retrieval.available === true ? String(omission.retrieval.command ?? omission.retrieval.list) : "No direct retrieval route is declared for this artifact; use its supported state command.",
     },
   };
   if (serializedProjectionBytes(fallback, format) <= policy.maxUtf8Bytes) return fallback;
@@ -225,25 +200,14 @@ function minimalBudgetedProjection(
  * Entries are removed oldest-first by numeric identity; every removal is
  * declared in the response and points at the future direct-get surface.
  */
-export function boundStructuredProjection(
-  value: JsonObject,
-  command: string,
-  format: string,
-  policy: ProjectionPolicy = loadProjectionPolicy(),
-): JsonObject {
+export function boundStructuredProjection(value: JsonObject, command: string, format: string, policy: ProjectionPolicy = loadProjectionPolicy()): JsonObject {
   if (serializedProjectionBytes(value, format) <= policy.maxUtf8Bytes) return value;
 
-  const itemKey = Array.isArray(value.entries)
-    ? "entries"
-    : Array.isArray(value.operations)
-      ? "operations"
-      : null;
+  const itemKey = Array.isArray(value.entries) ? "entries" : Array.isArray(value.operations) ? "operations" : null;
   if (itemKey === null) return minimalBudgetedProjection(command, 0, policy, format);
 
   const items = value[itemKey] as JsonValue[];
-  const removalOrder = items
-    .map((item, index) => ({ index, key: entryNumber(item, index) }))
-    .sort((left, right) => left.key[0] - right.key[0] || left.key[1] - right.key[1]);
+  const removalOrder = items.map((item, index) => ({ index, key: entryNumber(item, index) })).sort((left, right) => left.key[0] - right.key[0] || left.key[1] - right.key[1]);
   let omitted = omissionCount(value);
   let retained = [...items];
   for (const candidate of removalOrder) {

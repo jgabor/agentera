@@ -1,46 +1,19 @@
 import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
-import {
-  printCommandHelp,
-  printStateHelp,
-  printTopLevelHelp,
-  splitHelpArgs,
-  stateCommandNames,
-} from "../help.js";
-import {
-  compactModeOf,
-  runCompact,
-  runDurability,
-  runLint,
-  runSchema,
-  runValidate,
-} from "./check.js";
+import { printCommandHelp, printStateHelp, printTopLevelHelp, splitHelpArgs, stateCommandNames } from "../help.js";
+import { compactModeOf, runCompact, runDurability, runLint, runSchema, runValidate } from "./check.js";
 import { runQuery, runState } from "./state.js";
 import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 import { ENTITY_LIST_RUNTIME_FAMILIES, runtimeEntityFamiliesForCommand, type EntityListRuntimeFamilyKey } from "../../state/entityListRuntimeRegistry.js";
 import { runCapability, runPrime } from "./prime.js";
-import {
-  runAppHome,
-  runDoctor,
-  runGate,
-  runReport,
-  runUpgrade,
-  runUsage,
-  runVerify,
-  runVersion,
-} from "./lifecycle.js";
+import { runAppHome, runDoctor, runGate, runReport, runUpgrade, runUsage, runVerify, runVersion } from "./lifecycle.js";
 import { detectTopLevelFormat, emitDeprecationAlias, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { applyOutputPolicy } from "../outputPolicy.js";
 import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
-import {
-  enforceCompletedEntityCutover,
-  migrationProject,
-  requestedMigrationFailureFormat,
-  requiresCompletedEntityCutover,
-} from "../migrationRequired.js";
+import { enforceCompletedEntityCutover, migrationProject, requestedMigrationFailureFormat, requiresCompletedEntityCutover } from "../migrationRequired.js";
 import { enforceProductV1Eol } from "../productV1Eol.js";
 
 function splitNestedSubcommand(argv: string[]): [string | undefined, string[]] {
@@ -96,13 +69,9 @@ export function main(argv: string[], io: Io = {}): number {
   if (command && REMOVED_TOP_LEVEL_CORRECTIONS[command]) {
     const canonical = REMOVED_TOP_LEVEL_CORRECTIONS[command];
     const canonicalTokens = canonical.split(" ");
-    const runtimeFamily = canonicalTokens[0] === "state"
-      ? ENTITY_LIST_RUNTIME_FAMILIES.find(({ commandTokens }) => commandTokens.join(" ") === canonicalTokens.slice(1).join(" "))
-      : undefined;
+    const runtimeFamily = canonicalTokens[0] === "state" ? ENTITY_LIST_RUNTIME_FAMILIES.find(({ commandTokens }) => commandTokens.join(" ") === canonicalTokens.slice(1).join(" ")) : undefined;
     const family = runtimeFamily ? entityListFamily(runtimeFamily.key as EntityListRuntimeFamilyKey) : undefined;
-    const example = family
-      ? family.bareRecovery ?? `agentera state ${family.commandTokens.join(" ")} list --limit ${family.bounds.default}`
-      : `agentera ${canonical}`;
+    const example = family ? (family.bareRecovery ?? `agentera state ${family.commandTokens.join(" ")} list --limit ${family.bounds.default}`) : `agentera ${canonical}`;
     return emitInvalidInput(io, {
       format: detectTopLevelFormat(rest),
       body: {
@@ -118,25 +87,15 @@ export function main(argv: string[], io: Io = {}): number {
 
   const productV1Reset = command === "upgrade" && rest.includes("--reset-product-v1");
   if (command !== "--version" && command !== "version" && !productV1Reset) {
-    const failure = enforceProductV1Eol(
-      migrationProject(args),
-      requestedMigrationFailureFormat(args),
-      io,
-    );
+    const failure = enforceProductV1Eol(migrationProject(args), requestedMigrationFailureFormat(args), io);
     if (failure !== null) return failure;
   }
 
   // Retained-reference validation audits package source, not project state. It
   // must report its source-checkout boundary before project migration checks.
-  const sourceOnlyReferenceValidation =
-    args[0] === "check" && args[1] === "validate" && ["retained-references", "activation-conjunction"].includes(args[2] ?? "");
+  const sourceOnlyReferenceValidation = args[0] === "check" && args[1] === "validate" && ["retained-references", "activation-conjunction"].includes(args[2] ?? "");
   if (!sourceOnlyReferenceValidation && requiresCompletedEntityCutover(args)) {
-    const failure = enforceCompletedEntityCutover(
-      migrationProject(args),
-      requestedMigrationFailureFormat(args),
-      io,
-      args,
-    );
+    const failure = enforceCompletedEntityCutover(migrationProject(args), requestedMigrationFailureFormat(args), io, args);
     if (failure !== null) return failure;
   }
 
@@ -179,8 +138,7 @@ export function main(argv: string[], io: Io = {}): number {
       }
       if (sub === "validate") return runValidate(subArgs, io, "agentera check validate");
       if (sub === "verify") return runVerify(subArgs, io, "agentera check verify");
-      if (sub === "durability")
-        return runDurability(subArgs, io, "agentera check durability");
+      if (sub === "durability") return runDurability(subArgs, io, "agentera check durability");
       if (sub === "lint") return runLint(subArgs, io, "agentera check lint");
       if (sub === "compact") {
         const mode = compactModeOf(subArgs);
@@ -216,8 +174,7 @@ export function main(argv: string[], io: Io = {}): number {
         });
       }
       if (sub === "query") return runQuery(subArgs, io, "agentera state query");
-      if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === subArgs[0]))
-        return runState(sub, subArgs, io, `agentera state ${sub}`);
+      if (runtimeEntityFamiliesForCommand(sub).length > 0 || verbsForArtifact(sub).some((verb) => verb === subArgs[0])) return runState(sub, subArgs, io, `agentera state ${sub}`);
       return emitInvalidInput(io, {
         format: detectTopLevelFormat(rest),
         body: {
@@ -241,15 +198,13 @@ export function main(argv: string[], io: Io = {}): number {
         body: {
           class: "unsupported_target",
           message: "route requires the request subcommand",
-            valid_values: ["request", "receipt", "evaluate"],
-            syntax: `${preCutoverCommand("route <request|receipt> --input PATH")} | ${preCutoverCommand("route evaluate")}`,
+          valid_values: ["request", "receipt", "evaluate"],
+          syntax: `${preCutoverCommand("route <request|receipt> --input PATH")} | ${preCutoverCommand("route evaluate")}`,
           example: preCutoverCommand("route receipt --input -"),
         },
       });
     case "compact":
-      return compactModeOf(rest) === "fix"
-        ? runCompact(rest, io, "agentera compact")
-        : runGate(rest, io, "agentera compact");
+      return compactModeOf(rest) === "fix" ? runCompact(rest, io, "agentera compact") : runGate(rest, io, "agentera compact");
     case "validate":
       return runValidate(rest, io, "agentera validate");
     default:

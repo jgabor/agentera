@@ -28,9 +28,7 @@ export function printTopLevelHelp(): string {
       "schema              Runtime CLI/schema introspection",
       "route               Privacy-safe request-to-capability routing",
       "state               Routine artifact reads, writes, and advanced artifact query",
-      ...CAPABILITY_ROUTING_NAMES.map(
-        (name) => `${name.padEnd(19)} Route to ${name} capability guidance`,
-      ),
+      ...CAPABILITY_ROUTING_NAMES.map((name) => `${name.padEnd(19)} Route to ${name} capability guidance`),
     ]),
     ...lines("User commands:", [
       "upgrade             Preview or apply app/project migration and explicit legacy cleanup",
@@ -39,19 +37,12 @@ export function printTopLevelHelp(): string {
       "report              Privacy-gated usage analytics",
       "--version           Print the installed Agentera CLI version",
     ]),
-    ...lines("Maintainer commands:", [
-      "check               Validation, verification, lint, and repository compaction gates",
-    ]),
+    ...lines("Maintainer commands:", ["check               Validation, verification, lint, and repository compaction gates"]),
     "options:",
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
     "",
-    [
-      `Examples: ${preCutoverCommand("prime --context status")}`,
-      `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`,
-      `  ${preCutoverCommand("check verify eval skills --dry-run")}`,
-      `  ${preCutoverCommand("report refresh --dry-run")}`,
-    ].join("\n"),
+    [`Examples: ${preCutoverCommand("prime --context status")}`, `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`, `  ${preCutoverCommand("check verify eval skills --dry-run")}`, `  ${preCutoverCommand("report refresh --dry-run")}`].join("\n"),
   ].join("\n");
 }
 
@@ -81,8 +72,8 @@ export function printUpgradeHelp(): string {
     "  --format {text,json}  Structured output format",
     "",
     "v2-to-v3 development upgrade (one-way):",
-    "  Optional preview: npx -y agentera@next upgrade --channel development --project \"$PWD\" --dry-run",
-    "  Full apply:       npx -y agentera@next upgrade --channel development --project \"$PWD\" --yes",
+    '  Optional preview: npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run',
+    '  Full apply:       npx -y agentera@next upgrade --channel development --project "$PWD" --yes',
     "  Apply requires a Git worktree whose complete v2 migration source is tracked and unchanged at HEAD.",
     "  Cross-major apply is always full: --only cannot be used; there is no rollback, restore, or non-Git workflow.",
     "",
@@ -143,11 +134,7 @@ function recordFamilyReadSection(command: string): string[] {
     ...families.flatMap((family) => [
       `  List: ${family.syntax}`,
       `  Get:  ${family.get}`,
-      ...(family.commandTokens.length === 1
-        ? [family.bareRead === "alias"
-            ? `  Bare: agentera state ${family.commandTokens.join(" ")} is a strict alias of List.`
-            : `  Bare: rejected with recovery to ${family.bareRecovery}.`]
-        : []),
+      ...(family.commandTokens.length === 1 ? [family.bareRead === "alias" ? `  Bare: agentera state ${family.commandTokens.join(" ")} is a strict alias of List.` : `  Bare: rejected with recovery to ${family.bareRecovery}.`] : []),
       `  Summary fields: ${family.summaryFields.join(", ")}`,
     ]),
     "",
@@ -163,17 +150,17 @@ export function printStateHelp(sub?: string): string {
       "",
       "Plan and task reads use bare canonical IDs from entity list results.",
       "Invalid historical archives remain non-fatal compatibility diagnostics unless selected.",
-       "Task list accepts an optional bare plan ID and otherwise defaults to the sole open plan; task get requires --id.",
-       "Only the displayed bare-ID selectors are accepted.",
-       "Plan create rejects an open predecessor unless --force can archive exactly one unchanged; create --force records that predecessor's bare ID in successor.previous_plan_archived.",
-       "Targeted replacement is explicit: state plan replace --predecessor ID --successor ID, or --predecessor ID --input PLAN.yaml to create the successor. It changes only the named predecessor lifecycle and derived successor lineage.",
-       "Competing open-plan diagnostics retain bounded bare IDs and require explicit roles: state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID. They never infer a role from list order.",
-       "Archive completed plans normally. Archive an unfinished selected plan with --force; an implicit archive with multiple open plans rejects without effects.",
-       "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
+      "Task list accepts an optional bare plan ID and otherwise defaults to the sole open plan; task get requires --id.",
+      "Only the displayed bare-ID selectors are accepted.",
+      "Plan create rejects an open predecessor unless --force can archive exactly one unchanged; create --force records that predecessor's bare ID in successor.previous_plan_archived.",
+      "Targeted replacement is explicit: state plan replace --predecessor ID --successor ID, or --predecessor ID --input PLAN.yaml to create the successor. It changes only the named predecessor lifecycle and derived successor lineage.",
+      "Competing open-plan diagnostics retain bounded bare IDs and require explicit roles: state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID. They never infer a role from list order.",
+      "Archive completed plans normally. Archive an unfinished selected plan with --force; an implicit archive with multiple open plans rejects without effects.",
+      "List limits are 1 through 100; structured pages are at most 32,768 UTF-8 bytes and omit whole entries only.",
       "Legacy plan identity collisions return a structured ambiguous error.",
       "",
-       "Discover writes: agentera state plan explain",
-       "All verbs:         agentera state plan explain --all",
+      "Discover writes: agentera state plan explain",
+      "All verbs:         agentera state plan explain --all",
     ].join("\n");
   }
   if (sub === "experiments") {
@@ -188,8 +175,8 @@ export function printStateHelp(sub?: string): string {
       "List and publish require one bare objective ID; get requires one bare experiment ID.",
       "Legacy objective/path collisions return a structured ambiguous error.",
       "",
-       "Discover writes: agentera state experiments explain --verb publish",
-       "All verbs:         agentera state experiments explain --all",
+      "Discover writes: agentera state experiments explain --verb publish",
+      "All verbs:         agentera state experiments explain --all",
     ].join("\n");
   }
   if (sub === "glossary") {
@@ -202,8 +189,8 @@ export function printStateHelp(sub?: string): string {
       "Confirmed project variants are enforced by `agentera check validate state`; profile and docs-mapping mutation remain outside publication.",
       "Audit and discuss remain mutation-free. Discuss, Plan, and Build use read-only glossary advice with project precedence, proven-gap personal fallback, and host review for inferred equivalence.",
       "",
-       "Discover writes: agentera state glossary explain --verb publish",
-       "All verbs:         agentera state glossary explain --all",
+      "Discover writes: agentera state glossary explain --verb publish",
+      "All verbs:         agentera state glossary explain --all",
     ].join("\n");
   }
   if (sub === "objective") {
@@ -215,35 +202,35 @@ export function printStateHelp(sub?: string): string {
       "Objective create publishes one independent entity; update replaces that entity through rollback-safe publication.",
       "Active-objective inference is not a public record-family read.",
       "",
-       "Discover writes: agentera state objective explain",
-       "All verbs:         agentera state objective explain --all",
+      "Discover writes: agentera state objective explain",
+      "All verbs:         agentera state objective explain --all",
     ].join("\n");
   }
   if (sub === "todo") {
     return [
       ...recordFamilyReadSection("todo"),
-       "       agentera state todo activate|repair --dry-run|--effect-sha256 SHA256 --yes",
-       "       agentera state todo correct-owners --input OWNER_MAPPING.yaml --dry-run|--effect-sha256 SHA256 --yes",
-       "       agentera state todo create --input TODO.yaml",
-       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run",
-       "       agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes",
-       "       agentera state todo update --id ID --input TODO-PATCH.yaml",
-       "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD",
-       "       agentera state todo set-severity --input TODO-SEVERITY-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
-       "       agentera state todo supersede --id ID --replacement ID --reason TEXT --date YYYY-MM-DD",
-       "       agentera state todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD",
-       "       agentera state todo resolve --input TODO-RESOLVE-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
+      "       agentera state todo activate|repair --dry-run|--effect-sha256 SHA256 --yes",
+      "       agentera state todo correct-owners --input OWNER_MAPPING.yaml --dry-run|--effect-sha256 SHA256 --yes",
+      "       agentera state todo create --input TODO.yaml",
+      "       agentera state todo create --input TODO-CREATE-BATCH.yaml --dry-run",
+      "       agentera state todo create --input TODO-CREATE-BATCH.yaml --effect-sha256 SHA256 --yes",
+      "       agentera state todo update --id ID --input TODO-PATCH.yaml",
+      "       agentera state todo set-severity --id ID --severity LEVEL --reason TEXT --date YYYY-MM-DD",
+      "       agentera state todo set-severity --input TODO-SEVERITY-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
+      "       agentera state todo supersede --id ID --replacement ID --reason TEXT --date YYYY-MM-DD",
+      "       agentera state todo resolve|reopen --id ID --reason TEXT --date YYYY-MM-DD",
+      "       agentera state todo resolve --input TODO-RESOLVE-BATCH.yaml --dry-run|--effect-sha256 SHA256 --yes",
       "",
       "Each TODO item is one independently mutable canonical entity. IDs are bare ten-letter project-wide identities.",
       "TODO views are bounded in severity/status and Markdown public order; exact get returns complete detail.",
-       "Singleton create accepts a full typed YAML/JSON record. Batch create accepts one strict agentera.todoCreateBatch.v1 envelope: preview it with --dry-run, then apply the same input with the returned --effect-sha256 and --yes.",
-       "Update is a patch, so omitted fields preserve state and null/empty-list clears apply only to declared clearable fields.",
-       "Readiness is Agentera-owned operational state; public fields are owned by TODO.md and divergent public values fail before effects.",
-       "Singleton lifecycle verbs remain flag-only. Set-severity and resolve also accept strict verb-specific batch envelopes that require preview and exact confirmed apply.",
-       "Marker-absent repositories must complete migration before ordinary TODO access.",
+      "Singleton create accepts a full typed YAML/JSON record. Batch create accepts one strict agentera.todoCreateBatch.v1 envelope: preview it with --dry-run, then apply the same input with the returned --effect-sha256 and --yes.",
+      "Update is a patch, so omitted fields preserve state and null/empty-list clears apply only to declared clearable fields.",
+      "Readiness is Agentera-owned operational state; public fields are owned by TODO.md and divergent public values fail before effects.",
+      "Singleton lifecycle verbs remain flag-only. Set-severity and resolve also accept strict verb-specific batch envelopes that require preview and exact confirmed apply.",
+      "Marker-absent repositories must complete migration before ordinary TODO access.",
       "",
-       "Discover writes: agentera state todo explain",
-       "All verbs:         agentera state todo explain --all",
+      "Discover writes: agentera state todo explain",
+      "All verbs:         agentera state todo explain --all",
     ].join("\n");
   }
   if (sub === "docs") {
@@ -256,8 +243,8 @@ export function printStateHelp(sub?: string): string {
       "Mappings, conventions, coverage, and editorial configuration retain whole-document authority in .agentera/docs.yaml.",
       "List views are bounded by path then ID; exact get returns complete detail.",
       "",
-        "Discover writes: agentera state docs explain",
-        "All verbs:         agentera state docs explain --all",
+      "Discover writes: agentera state docs explain",
+      "All verbs:         agentera state docs explain --all",
     ].join("\n");
   }
   if (sub) {
@@ -270,20 +257,9 @@ export function printStateHelp(sub?: string): string {
       ...(sub === "progress"
         ? ["       agentera state progress append --input <path|->"]
         : sub === "decisions"
-          ? [
-              "       agentera state decisions append --input <path|->",
-              "       agentera state decisions update --id ID --satisfaction-state STATE [transition flags]",
-              "       agentera state decisions amend --id ID --base-sha256 HASH --input <path|->",
-            ]
+          ? ["       agentera state decisions append --input <path|->", "       agentera state decisions update --id ID --satisfaction-state STATE [transition flags]", "       agentera state decisions amend --id ID --base-sha256 HASH --input <path|->"]
           : []),
-      ...(verbs.length
-        ? [
-            "",
-             `Discover writes: agentera state ${sub} explain`,
-             `All verbs:        agentera state ${sub} explain --all`,
-            `Per verb:        agentera state ${sub} explain --verb VERB`,
-          ]
-        : []),
+      ...(verbs.length ? ["", `Discover writes: agentera state ${sub} explain`, `All verbs:        agentera state ${sub} explain --all`, `Per verb:        agentera state ${sub} explain --verb VERB`] : []),
       ...(sub === "progress"
         ? ["Record content is one bounded YAML/JSON mapping; content flags are retired and the writer assigns id, artifact, and publication_order."]
         : sub === "decisions"
@@ -295,30 +271,13 @@ export function printStateHelp(sub?: string): string {
       "  --format FORMAT       Output format: text, json, or yaml",
     ].join("\n");
   }
-  return [
-    `usage: agentera state [-h] {${stateCommands.join(",")}} ...`,
-    "",
-    "Routine artifact reads, writes, and advanced artifact query.",
-    "Discover typed writes: agentera state <artifact> explain",
-    "Discover all verbs: agentera state <artifact> explain --all",
-  ].join("\n");
+  return [`usage: agentera state [-h] {${stateCommands.join(",")}} ...`, "", "Routine artifact reads, writes, and advanced artifact query.", "Discover typed writes: agentera state <artifact> explain", "Discover all verbs: agentera state <artifact> explain --all"].join("\n");
 }
 
 export function printStateListHelp(family: EntityListFamilyHelp): string {
-  const filterLines = family.filters.length
-    ? family.filters.map(({ flag, values }) => `  ${flag.padEnd(35)} Filter; values: ${Array.isArray(values) ? values.join(", ") : values}`)
-    : ["  (none)"];
-  const identifier = family.familyIdentifier
-    ? [
-        "Family identifier:",
-        `  ${family.familyIdentifier.syntax}${family.familyIdentifier.required ? " (required)" : " (optional)"}`,
-        `  ${family.familyIdentifier.description}`,
-        "",
-      ]
-    : [];
-  const notes = Object.entries(family.summaryFieldNotes).map(([field, note]) =>
-    `  ${field}: ${note.description} Ownership: ${note.ownership}; persisted: ${note.persisted}; ${note.filter ? `--${field.replaceAll("_", "-")} is a filter` : `--${field.replaceAll("_", "-")} is not a filter`}.`,
-  );
+  const filterLines = family.filters.length ? family.filters.map(({ flag, values }) => `  ${flag.padEnd(35)} Filter; values: ${Array.isArray(values) ? values.join(", ") : values}`) : ["  (none)"];
+  const identifier = family.familyIdentifier ? ["Family identifier:", `  ${family.familyIdentifier.syntax}${family.familyIdentifier.required ? " (required)" : " (optional)"}`, `  ${family.familyIdentifier.description}`, ""] : [];
+  const notes = Object.entries(family.summaryFieldNotes).map(([field, note]) => `  ${field}: ${note.description} Ownership: ${note.ownership}; persisted: ${note.persisted}; ${note.filter ? `--${field.replaceAll("_", "-")} is a filter` : `--${field.replaceAll("_", "-")} is not a filter`}.`);
   return [
     `usage: ${family.syntax}`,
     "",
@@ -366,21 +325,12 @@ export function printStateGetHelp(family: EntityListFamilyHelp): string {
 }
 
 export function stateCommandNames(): string[] {
-  return [...new Set([
-    ...entityListFamilies().map(({ commandTokens }) => commandTokens[0]),
-    ...WRITABLE_ARTIFACTS,
-    "query",
-  ])];
+  return [...new Set([...entityListFamilies().map(({ commandTokens }) => commandTokens[0]), ...WRITABLE_ARTIFACTS, "query"])];
 }
 
 export function printCheckHelp(sub?: string): string {
   if (sub === "verify") {
-    return [
-        "usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--format text|json] [options]",
-      "",
-      "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;",
-      "use the stable Python line for smoke maintainer harnesses.",
-    ].join("\n");
+    return ["usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--format text|json] [options]", "", "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;", "use the stable Python line for smoke maintainer harnesses."].join("\n");
   }
   if (sub === "validate") {
     return [
@@ -389,9 +339,7 @@ export function printCheckHelp(sub?: string): string {
       "Validate capabilities, state, and retained repository contracts.",
       "",
       "validate families:",
-      ...advertisedValidateFamilyNames().map((family) =>
-        ["retained-references", "activation-conjunction"].includes(family) ? `  ${family} (source checkout only)` : `  ${family}`,
-      ),
+      ...advertisedValidateFamilyNames().map((family) => (["retained-references", "activation-conjunction"].includes(family) ? `  ${family} (source checkout only)` : `  ${family}`)),
     ].join("\n");
   }
   if (sub === "durability") {
@@ -414,18 +362,9 @@ export function printCheckHelp(sub?: string): string {
     ].join("\n");
   }
   if (sub) {
-    return [
-      `usage: agentera check ${sub} [-h] [options]`,
-      "",
-      "options:",
-      "  -h, --help            show this help message and exit",
-    ].join("\n");
+    return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
   }
-  return [
-    "usage: agentera check [-h] {validate,verify,lint,compact,durability} ...",
-    "",
-    "Validation, verification, lint, and repository compaction gates.",
-  ].join("\n");
+  return ["usage: agentera check [-h] {validate,verify,lint,compact,durability} ...", "", "Validation, verification, lint, and repository compaction gates."].join("\n");
 }
 
 export function printReportHelp(): string {
@@ -438,7 +377,7 @@ export function printReportHelp(): string {
     "                       | agentera report refresh [--dry-run|--consent local-history]",
     "                         [--import-source claude]",
     "                         [--no-<runtime> ...] [--accept-coverage-gap]",
-     `                       | ${profileGlossary.command} --input <file|-> [--dry-run]`,
+    `                       | ${profileGlossary.command} --input <file|-> [--dry-run]`,
     "                       | agentera report glossary-advice --input <file|->",
     "                       | agentera report glossary-advice --term-input <file|->",
     "                       | agentera report profile-grounding",
@@ -446,49 +385,49 @@ export function printReportHelp(): string {
     "                         [--provenance-kind KIND] [--scope personal|ambiguous] [--limit N] [--cursor TOKEN]",
     `                       | ${candidateReads.candidateReadCommand} get --candidate-id ID --candidate-revision REVISION`,
     "                         --generation GENERATION --policy-version POLICY",
-     `                       | ${candidateDecision.command} --input <file|->`,
-     `                       | ${reviewRecords.command} queue --input <file|->`,
-     `                       | ${reviewRecords.command} disposition --input <file|->`,
-     `                       | ${reviewRecords.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN]`,
-     `                       | ${reviewRecords.command} get --review-id ID --candidate-id ID --candidate-revision REVISION`,
-     "                         --generation GENERATION --policy-version POLICY",
+    `                       | ${candidateDecision.command} --input <file|->`,
+    `                       | ${reviewRecords.command} queue --input <file|->`,
+    `                       | ${reviewRecords.command} disposition --input <file|->`,
+    `                       | ${reviewRecords.command} list [--status pending|terminal] [--limit N] [--cursor TOKEN]`,
+    `                       | ${reviewRecords.command} get --review-id ID --candidate-id ID --candidate-revision REVISION`,
+    "                         --generation GENERATION --policy-version POLICY",
     "",
     "Privacy-gated usage analytics over an existing corpus.",
     "Default analytics use --sources active and exclude historical imports.",
     "Use --sources all to include historical records with visible provenance.",
-     `Personal glossary publication accepts one ${profileGlossary.requestSchemaVersion} mapping with a prior CLI decision and its host receipt; this subcommand requires no project checkout.`,
+    `Personal glossary publication accepts one ${profileGlossary.requestSchemaVersion} mapping with a prior CLI decision and its host receipt; this subcommand requires no project checkout.`,
     "Profile grounding reports one bounded validity object (valid, absent, or repair_needed); only valid responses include non-glossary content.",
     "Build requests bounded glossary advice through structured input; the command is read-only and does not publish or refresh state.",
-     "Personal glossary candidate reads are private, user-local, non-interactive, and read-only. They require a readable current bounded",
-     "evidence-tier generation and a projection bound to it. They never read a project glossary, refresh evidence, acquire consent,",
-     "record review state, or alter the candidate projection. List emits only summaries and bounded",
+    "Personal glossary candidate reads are private, user-local, non-interactive, and read-only. They require a readable current bounded",
+    "evidence-tier generation and a projection bound to it. They never read a project glossary, refresh evidence, acquire consent,",
+    "record review state, or alter the candidate projection. List emits only summaries and bounded",
     "projection-local abstention and coverage counts. Safe context becomes unavailable at its 30-day expiry without changing projection bytes.",
     "Exact read returns only opaque validated occurrences and a currently available safe context.",
     "Both forms emit JSON on stdout. Exit 0 reports a current page or exact candidate, exit 1 reports unavailable/stale state, and exit 2",
     "reports malformed arguments. Copy a returned next_cursor exactly; it binds the collection, generation, policy, filters, limit, order,",
     "and expiry-aware safe-context availability snapshot.",
-       `Personal glossary decisions accept either a ${candidateDecision.requestSchemaVersion} host receipt or a ${candidateDecision.receiptConstructionRequestSchemaVersion}`,
-     "classification with exact candidate bindings. The CLI binds it to the current private projection, current evidence, and quality",
-     "gate, then emits automatic_admission, review_required, or abstain. The classification form constructs and returns its receipt.",
-     "It never writes a review, profile, project glossary, candidate projection, or project state. Host confidence cannot enable",
-      "inferred automatic admission.",
-      "Personal glossary publication consumes a current explicit automatic admission, or one current accepted/corrected review authorization.",
-      "Immediately before changing the owned PROFILE.md Glossary section, it revalidates the current candidate, projection, receipt,",
-      "decision, explicit user-authored evidence, policy, quality gate, scope, meaning, and revision. It never accepts a profile path,",
-      "reads a project glossary, or echoes candidate content. Accepted/corrected review publication revalidates the same current",
-      "projection, receipt, decision, evidence, policy, scope, meaning, and revision before the profile effect.",
-      "Personal glossary reviews queue only a current review_required decision. Disposition accepts only a fresh signed current-user",
-      "agentera-local-host IPC approval verified by the configured user-local Ed25519 public key. It records accept, correct, reject,",
-       "or defer without changing a profile entry, project state, candidate projection, or publication. Accept/correct returns only an",
-       "opaque authorization for the separate publish command. Exact approval replay is idempotent and conflicting nonce reuse fails.",
-       "Canonical v1 pending stores remain readable without mutation; only disposition revalidates and migrates one valid v1 record",
-       "to v2, deriving its missing scope from the current validated host receipt. Invalid or ambiguous v1 input has no effects.",
-       "Rejected and deferred records suppress a recurrence with the same stable identity, semantic fingerprint, scope, and policy.",
-      "Meaning, scope, or policy changes requeue with a visible reopening reason. List and exact reads emit only opaque bindings,",
-      "a stable reason, lifecycle dates, status, disposition, and reopening reason. They require the configured",
-     "current-user owner and current candidate-projection binding, use opaque snapshot cursors, and never return terms, meanings,",
-     "evidence, source, session, project, path, tool, or approval material. Terminal review metadata expires after 90 days through",
-     "separate authenticated owner maintenance; reads never perform maintenance.",
+    `Personal glossary decisions accept either a ${candidateDecision.requestSchemaVersion} host receipt or a ${candidateDecision.receiptConstructionRequestSchemaVersion}`,
+    "classification with exact candidate bindings. The CLI binds it to the current private projection, current evidence, and quality",
+    "gate, then emits automatic_admission, review_required, or abstain. The classification form constructs and returns its receipt.",
+    "It never writes a review, profile, project glossary, candidate projection, or project state. Host confidence cannot enable",
+    "inferred automatic admission.",
+    "Personal glossary publication consumes a current explicit automatic admission, or one current accepted/corrected review authorization.",
+    "Immediately before changing the owned PROFILE.md Glossary section, it revalidates the current candidate, projection, receipt,",
+    "decision, explicit user-authored evidence, policy, quality gate, scope, meaning, and revision. It never accepts a profile path,",
+    "reads a project glossary, or echoes candidate content. Accepted/corrected review publication revalidates the same current",
+    "projection, receipt, decision, evidence, policy, scope, meaning, and revision before the profile effect.",
+    "Personal glossary reviews queue only a current review_required decision. Disposition accepts only a fresh signed current-user",
+    "agentera-local-host IPC approval verified by the configured user-local Ed25519 public key. It records accept, correct, reject,",
+    "or defer without changing a profile entry, project state, candidate projection, or publication. Accept/correct returns only an",
+    "opaque authorization for the separate publish command. Exact approval replay is idempotent and conflicting nonce reuse fails.",
+    "Canonical v1 pending stores remain readable without mutation; only disposition revalidates and migrates one valid v1 record",
+    "to v2, deriving its missing scope from the current validated host receipt. Invalid or ambiguous v1 input has no effects.",
+    "Rejected and deferred records suppress a recurrence with the same stable identity, semantic fingerprint, scope, and policy.",
+    "Meaning, scope, or policy changes requeue with a visible reopening reason. List and exact reads emit only opaque bindings,",
+    "a stable reason, lifecycle dates, status, disposition, and reopening reason. They require the configured",
+    "current-user owner and current candidate-projection binding, use opaque snapshot cursors, and never return terms, meanings,",
+    "evidence, source, session, project, path, tool, or approval material. Terminal review metadata expires after 90 days through",
+    "separate authenticated owner maintenance; reads never perform maintenance.",
     "",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",
@@ -559,7 +498,10 @@ export function printCapabilityHelp(capability: string): string {
 export function printRouteHelp(): string {
   const receipt = describeRouteReceipt();
   const example = JSON.stringify(receipt.stdin_example.input);
-  const inspect = (value: unknown): string[] => JSON.stringify(value, null, 2).split("\n").map((line) => `  ${line}`);
+  const inspect = (value: unknown): string[] =>
+    JSON.stringify(value, null, 2)
+      .split("\n")
+      .map((line) => `  ${line}`);
   return [
     `usage: ${preCutoverCommand("route <request|receipt> --input PATH")}`,
     `       ${preCutoverCommand("route evaluate")}`,
@@ -605,9 +547,7 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printDoctorHelp();
     case "state": {
       const retrieval = entityRetrievalFamilyForHelpArgs(rest);
-      return retrieval
-        ? retrieval.verb === "list" ? printStateListHelp(retrieval.family) : printStateGetHelp(retrieval.family)
-        : sub && stateCommandNames().includes(sub) ? printStateHelp(sub) : printStateHelp();
+      return retrieval ? (retrieval.verb === "list" ? printStateListHelp(retrieval.family) : printStateGetHelp(retrieval.family)) : sub && stateCommandNames().includes(sub) ? printStateHelp(sub) : printStateHelp();
     }
     case "check":
       return printCheckHelp(sub);

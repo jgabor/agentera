@@ -2,23 +2,9 @@ import fs from "node:fs";
 import path from "node:path";
 
 import type { JsonObject } from "../../core/jsonValue.js";
-import {
-  compatibilityStates,
-  evidenceTierBounds,
-  type CompatibilityStateId,
-} from "../../registries/evidenceTierContract.js";
+import { compatibilityStates, evidenceTierBounds, type CompatibilityStateId } from "../../registries/evidenceTierContract.js";
 import { type Env } from "./core.js";
-import {
-  defaultTiersDir,
-  evidenceTierCompatibility,
-  iterTierRecords,
-  readSignalTier,
-  readTierCorpusMetadata,
-  type EvidenceTierCompatibilityState,
-  type EvidenceTierManifest,
-  type SignalRecord,
-  type TierCorpusMetadata,
-} from "./evidenceTiers.js";
+import { defaultTiersDir, evidenceTierCompatibility, iterTierRecords, readSignalTier, readTierCorpusMetadata, type EvidenceTierCompatibilityState, type EvidenceTierManifest, type SignalRecord, type TierCorpusMetadata } from "./evidenceTiers.js";
 
 /**
  * Bounded tier reader for analytics consumers (plan Task 3).

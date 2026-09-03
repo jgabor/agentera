@@ -4,21 +4,12 @@ import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
 
-import {
-  EVALUATOR_HANDOFF_REPORT_SCHEMA_VERSION,
-  isValidCitation,
-  loadEvaluatorHandoffContract,
-  validateEvaluationReport,
-  verifyWarnCitationAtLine,
-} from "../../src/registries/evaluatorHandoffContract.js";
+import { EVALUATOR_HANDOFF_REPORT_SCHEMA_VERSION, isValidCitation, loadEvaluatorHandoffContract, validateEvaluationReport, verifyWarnCitationAtLine } from "../../src/registries/evaluatorHandoffContract.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const CONTRACT_PATH = path.join(REPO_ROOT, "references", "cli", "capability-instruction-contract.yaml");
-const SAMPLE_REPORT_PATH = path.join(
-  REPO_ROOT,
-  "packages/cli/test/cli/fixtures/oracle/inspektera-evaluation-report.json",
-);
+const SAMPLE_REPORT_PATH = path.join(REPO_ROOT, "packages/cli/test/cli/fixtures/oracle/inspektera-evaluation-report.json");
 
 describe("evaluator handoff contract loader", () => {
   const contract = loadEvaluatorHandoffContract(CONTRACT_PATH);
@@ -49,10 +40,7 @@ describe("evaluator handoff contract loader", () => {
       },
       contract,
     );
-    expect(errors).toEqual([
-      "rows[0]: WARN/FAIL row missing citation",
-      "rows[1]: WARN/FAIL row missing citation",
-    ]);
+    expect(errors).toEqual(["rows[0]: WARN/FAIL row missing citation", "rows[1]: WARN/FAIL row missing citation"]);
   });
 
   it("fails validation when WARN row with file:line citation lacks verify_command", () => {
@@ -84,9 +72,7 @@ describe("inspektera evaluation report citation regression", () => {
   const report = JSON.parse(fs.readFileSync(SAMPLE_REPORT_PATH, "utf8"));
 
   it("every WARN/FAIL entry in the sample report carries a valid citation", () => {
-    const warnFailRows = report.rows.filter((row: { status: string }) =>
-      ["WARN", "FAIL"].includes(String(row.status).toUpperCase()),
-    );
+    const warnFailRows = report.rows.filter((row: { status: string }) => ["WARN", "FAIL"].includes(String(row.status).toUpperCase()));
     expect(warnFailRows.length).toBeGreaterThan(0);
     for (const row of warnFailRows) {
       expect(isValidCitation(String(row.citation), contract), JSON.stringify(row)).toBe(true);
@@ -94,9 +80,7 @@ describe("inspektera evaluation report citation regression", () => {
   });
 
   it("sample report does not cite volatile project TODO.md line numbers", () => {
-    const warnFailRows = report.rows.filter((row: { status: string; citation?: string }) =>
-      ["WARN", "FAIL"].includes(String(row.status).toUpperCase()),
-    );
+    const warnFailRows = report.rows.filter((row: { status: string; citation?: string }) => ["WARN", "FAIL"].includes(String(row.status).toUpperCase()));
     for (const row of warnFailRows) {
       const citation = String(row.citation ?? "");
       if (citation.includes(":")) {
@@ -106,15 +90,11 @@ describe("inspektera evaluation report citation regression", () => {
   });
 
   it("re-verifies WARN file:line citations with the fixture verify_command", () => {
-    const warnRows = report.rows.filter(
-      (row: { status: string; citation?: string; verify_command?: string }) =>
-        String(row.status).toUpperCase() === "WARN" && row.citation?.includes(":") && row.verify_command,
-    );
+    const warnRows = report.rows.filter((row: { status: string; citation?: string; verify_command?: string }) => String(row.status).toUpperCase() === "WARN" && row.citation?.includes(":") && row.verify_command);
     expect(warnRows.length).toBeGreaterThan(0);
     for (const row of warnRows) {
       const result = verifyWarnCitationAtLine(row, REPO_ROOT);
       expect(result.ok, result.message).toBe(true);
     }
   });
-
 });

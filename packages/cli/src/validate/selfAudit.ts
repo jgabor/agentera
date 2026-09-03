@@ -3,18 +3,13 @@
  * `scripts/self_audit.py`. Advisory only — report but do not block writes.
  */
 
-import {
-  inspectArtifactVerbosityBudget,
-  type VerbosityBudgetDimension,
-} from "../registries/verbosityBudgetContract.js";
+import { inspectArtifactVerbosityBudget, type VerbosityBudgetDimension } from "../registries/verbosityBudgetContract.js";
 
 const FILE_PATH_RE = /\b(?:[A-Za-z0-9_.-]+\/)+[A-Za-z0-9_.-]+\.[A-Za-z]{1,10}\b/;
-const REPO_PATH_RE =
-  /\b(?:internal|src|lib|pkg|cmd|app|test|tests|doc|docs|script|scripts|skill|skills|hook|hooks|fixture|fixtures|reference|references)(?:\/[A-Za-z0-9_.-]+)+\b/;
+const REPO_PATH_RE = /\b(?:internal|src|lib|pkg|cmd|app|test|tests|doc|docs|script|scripts|skill|skills|hook|hooks|fixture|fixtures|reference|references)(?:\/[A-Za-z0-9_.-]+)+\b/;
 const LINE_NUMBER_RE = /:\d{2,}\b/;
 const COMMIT_HASH_RE = /\b[0-9a-fA-F]{7,}\b/;
-const METRIC_VALUE_RE =
-  /\b\d+(?:\.\d+)?\s*(?:ms|s|MB|GB|KB|%|rps|rpm|ops|words|lines|files|items|cycles)\b/;
+const METRIC_VALUE_RE = /\b\d+(?:\.\d+)?\s*(?:ms|s|MB|GB|KB|%|rps|rpm|ops|words|lines|files|items|cycles)\b/;
 const BACKTICK_IDENTIFIER_RE = /`[^`]+`/;
 const QUOTED_TEXT_RE = /[^"]*"[^"]+"[^"]*/;
 
@@ -42,45 +37,23 @@ function wordCount(text: string): number {
   return (text.match(/\S+/g) ?? []).length;
 }
 
-export function checkVerbosity(
-  text: string,
-  artifact: string,
-  contractPath?: string,
-): [boolean, string] {
+export function checkVerbosity(text: string, artifact: string, contractPath?: string): [boolean, string] {
   return checkAuthoritativeWordBudget(text, artifact, false, contractPath);
 }
 
-export function checkFullFileVerbosity(
-  text: string,
-  artifact: string,
-  contractPath?: string,
-): [boolean, string] {
+export function checkFullFileVerbosity(text: string, artifact: string, contractPath?: string): [boolean, string] {
   return checkAuthoritativeWordBudget(text, artifact, true, contractPath);
 }
 
 function authorityError(artifact: string, detail: string): [false, string] {
-  return [
-    false,
-    `verbosity authority error for ${JSON.stringify(artifact)}: ${detail}; ` +
-      "repair the declared owner in references/artifacts/verbosity-budget-authority.yaml",
-  ];
+  return [false, `verbosity authority error for ${JSON.stringify(artifact)}: ${detail}; ` + "repair the declared owner in references/artifacts/verbosity-budget-authority.yaml"];
 }
 
-function applicableDimensions(
-  dimensions: VerbosityBudgetDimension[],
-  fullArtifact: boolean,
-): VerbosityBudgetDimension[] {
-  return dimensions.filter((dimension) =>
-    fullArtifact ? dimension.scope === "full_file" : dimension.scope !== "full_file",
-  );
+function applicableDimensions(dimensions: VerbosityBudgetDimension[], fullArtifact: boolean): VerbosityBudgetDimension[] {
+  return dimensions.filter((dimension) => (fullArtifact ? dimension.scope === "full_file" : dimension.scope !== "full_file"));
 }
 
-function checkAuthoritativeWordBudget(
-  text: string,
-  artifact: string,
-  fullArtifact: boolean,
-  contractPath?: string,
-): [boolean, string] {
+function checkAuthoritativeWordBudget(text: string, artifact: string, fullArtifact: boolean, contractPath?: string): [boolean, string] {
   let dimensions: VerbosityBudgetDimension[];
   try {
     dimensions = inspectArtifactVerbosityBudget(artifact, contractPath).dimensions;
@@ -89,10 +62,7 @@ function checkAuthoritativeWordBudget(
   }
   const invalid = dimensions.filter((dimension) => dimension.classification === "invalid_declaration");
   if (invalid.length > 0) {
-    return authorityError(
-      artifact,
-      invalid.map((dimension) => `${dimension.scope}: ${dimension.error ?? "invalid declaration"}`).join("; "),
-    );
+    return authorityError(artifact, invalid.map((dimension) => `${dimension.scope}: ${dimension.error ?? "invalid declaration"}`).join("; "));
   }
   const applicable = applicableDimensions(dimensions, fullArtifact);
   if (applicable.length > 1) {
@@ -112,15 +82,7 @@ function checkAuthoritativeWordBudget(
 }
 
 export function checkAbstraction(text: string): [boolean, string] {
-  for (const re of [
-    FILE_PATH_RE,
-    REPO_PATH_RE,
-    LINE_NUMBER_RE,
-    COMMIT_HASH_RE,
-    METRIC_VALUE_RE,
-    BACKTICK_IDENTIFIER_RE,
-    QUOTED_TEXT_RE,
-  ]) {
+  for (const re of [FILE_PATH_RE, REPO_PATH_RE, LINE_NUMBER_RE, COMMIT_HASH_RE, METRIC_VALUE_RE, BACKTICK_IDENTIFIER_RE, QUOTED_TEXT_RE]) {
     const match = re.exec(text);
     if (match) {
       return [true, match[0]];

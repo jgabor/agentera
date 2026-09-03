@@ -1,14 +1,7 @@
 import { PRIME_BLOB } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
-import {
-  buildOrientationJsonPayload,
-  buildStatusContextState,
-  emitPrime,
-  rejectRetiredPrimeFields,
-  PRIME_BRIEF_MAX_UTF8_BYTES,
-  PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
-} from "./prime/orientationOutput.js";
+import { buildOrientationJsonPayload, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, PRIME_BRIEF_MAX_UTF8_BYTES, PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 
@@ -22,11 +15,7 @@ export const PRIME_STRUCTURED_INPUT_SPECS = [
 const PRIME_INPUT_CONTEXTS = new Set<string>(PRIME_STRUCTURED_INPUT_SPECS.filter(({ option }) => option === "--input").map(({ context }) => context));
 const PRIME_TERM_INPUT_CONTEXTS = new Set<string>(PRIME_STRUCTURED_INPUT_SPECS.filter(({ option }) => option === "--term-input").map(({ context }) => context));
 import { emitInvalidInput } from "../errors.js";
-import {
-  BuildExecutionRequestError,
-  loadBuildExecutionRequest,
-  type BuildExecutionRequest,
-} from "./prime/buildExecutionRequest.js";
+import { BuildExecutionRequestError, loadBuildExecutionRequest, type BuildExecutionRequest } from "./prime/buildExecutionRequest.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { loadSelectedTermInput, SelectedTermInputError } from "./prime/selectedTermInput.js";
 import { acquireGlossaryInputs } from "../../analytics/glossaryInputAcquisition.js";
@@ -43,11 +32,7 @@ export function buildStatusCapabilityContextPayload(state: OrientationState, com
   return finalizeStatusCapabilityContextPayload(payload, state, command);
 }
 
-export function finalizeStatusCapabilityContextPayload(
-  payload: Record<string, unknown>,
-  state: OrientationState,
-  command = "prime",
-): Record<string, unknown> {
+export function finalizeStatusCapabilityContextPayload(payload: Record<string, unknown>, state: OrientationState, command = "prime"): Record<string, unknown> {
   const capabilityContext = payload.capability_context as Record<string, unknown>;
   const context = capabilityContext.context as Record<string, unknown>;
   // status_context carries the dashboard state. Startup availability remains
@@ -79,8 +64,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const termInput = args.termInput ?? null;
   const format = args.format ?? "json";
   const inputErrorFormat = "json";
-  const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number =>
-    emitInvalidInput(io, { format: inputErrorFormat, body });
+  const rejectInput = (body: Parameters<typeof emitInvalidInput>[1]["body"]): number => emitInvalidInput(io, { format: inputErrorFormat, body });
   if (format !== "json") {
     return rejectInput({
       class: "invalid_choice",
@@ -103,16 +87,28 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     });
   }
   if (input === "-" && termInput === "-") {
-    return rejectInput({ class: "conflicting_stdin", message: "--input and --term-input cannot both read stdin" });
+    return rejectInput({
+      class: "conflicting_stdin",
+      message: "--input and --term-input cannot both read stdin",
+    });
   }
   if (capability !== null && dashboard) {
-    return rejectInput({ class: "mutually_exclusive", message: "prime --context and prime --dashboard/--orientation are mutually exclusive" });
+    return rejectInput({
+      class: "mutually_exclusive",
+      message: "prime --context and prime --dashboard/--orientation are mutually exclusive",
+    });
   }
   if (capability !== null && guidance) {
-    return rejectInput({ class: "mutually_exclusive", message: "prime --context and prime --guidance are mutually exclusive" });
+    return rejectInput({
+      class: "mutually_exclusive",
+      message: "prime --context and prime --guidance are mutually exclusive",
+    });
   }
   if (dashboard && guidance) {
-    return rejectInput({ class: "mutually_exclusive", message: "prime --dashboard/--orientation and prime --guidance are mutually exclusive" });
+    return rejectInput({
+      class: "mutually_exclusive",
+      message: "prime --dashboard/--orientation and prime --guidance are mutually exclusive",
+    });
   }
   if (dashboard && args.fields !== undefined) {
     const migrationCommand = preCutoverCommand("prime --context status");
@@ -153,7 +149,10 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
         buildRequest = loadBuildExecutionRequest(input, io.stdin);
       } catch (error) {
         if (error instanceof BuildExecutionRequestError) return rejectInput(error.body);
-        return rejectInput({ class: "invalid_format", message: "Build execution request input could not be read" });
+        return rejectInput({
+          class: "invalid_format",
+          message: "Build execution request input could not be read",
+        });
       }
     }
     if (termInput !== null) {
@@ -161,9 +160,15 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
         selectedTerm = loadSelectedTermInput(termInput, io.stdin);
       } catch (error) {
         if (error instanceof SelectedTermInputError) {
-          return rejectInput({ class: "invalid_selected_term", message: "--term-input must be one non-empty bounded UTF-8 scalar" });
+          return rejectInput({
+            class: "invalid_selected_term",
+            message: "--term-input must be one non-empty bounded UTF-8 scalar",
+          });
         }
-        return rejectInput({ class: "invalid_selected_term", message: "--term-input could not be read" });
+        return rejectInput({
+          class: "invalid_selected_term",
+          message: "--term-input could not be read",
+        });
       }
     }
     const state = collectOrientationState(collectOpts);
@@ -178,18 +183,15 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     if (selectedTerm !== null) {
       try {
         const profilePath = registryArtifactPath("profile", discoverSchemasDir());
-        glossaryAdvice = resolveStartupGlossaryAdvice(
-          capability,
-          selectedTerm,
-          acquireGlossaryInputs(args.projectRoot ?? process.cwd(), profilePath),
-        );
+        glossaryAdvice = resolveStartupGlossaryAdvice(capability, selectedTerm, acquireGlossaryInputs(args.projectRoot ?? process.cwd(), profilePath));
       } catch {
-        return rejectInput({ class: "invalid_selected_term", message: "glossary advice could not be resolved" });
+        return rejectInput({
+          class: "invalid_selected_term",
+          message: "glossary advice could not be resolved",
+        });
       }
     }
-    const payload = capability === "status"
-      ? buildStatusCapabilityContextPayload(state, command)
-      : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest, glossaryAdvice);
+    const payload = capability === "status" ? buildStatusCapabilityContextPayload(state, command) : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest, glossaryAdvice);
     return emitPrime(command, payload, format, args.fields, out, err, {
       maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
     });

@@ -63,6 +63,9 @@ describe("reporting output contract", () => {
     const result = capture([command, "--format", "text"]);
     expect(result.rc).toBe(2);
     expect(result.err).toBe("");
-    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_choice", valid_values: ["json"] });
+    expect(JSON.parse(result.out).error).toMatchObject({
+      class: "invalid_choice",
+      valid_values: ["json"],
+    });
   });
 });

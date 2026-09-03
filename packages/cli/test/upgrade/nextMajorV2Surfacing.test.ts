@@ -9,10 +9,7 @@ import { collectOrientationState } from "../../src/cli/commands/prime.js";
 import { cmdDoctor } from "../../src/cli/commands/doctor.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { APP_UP_TO_DATE, buildDoctorStatus } from "../../src/upgrade/doctor.js";
-import {
-  NEXT_MAJOR_SECTION_HEADER,
-  resolveNextMajorDoctorLines,
-} from "../../src/upgrade/nextMajorDoctor.js";
+import { NEXT_MAJOR_SECTION_HEADER, resolveNextMajorDoctorLines } from "../../src/upgrade/nextMajorDoctor.js";
 import { resetUpdateChannelsAuthorityCache } from "../../src/upgrade/channels.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
@@ -44,10 +41,7 @@ function authorityRoot(stableAnnounced: boolean): string {
   const stableStart = channels.indexOf("  stable:");
   const devStart = channels.indexOf("  development:");
   const stableBlock = channels.slice(stableStart, devStart);
-  const patchedStable = stableBlock.replace(
-    /\n      announced: (true|false)/,
-    `\n      announced: ${stableAnnounced}`,
-  );
+  const patchedStable = stableBlock.replace(/\n      announced: (true|false)/, `\n      announced: ${stableAnnounced}`);
   channels = channels.slice(0, stableStart) + patchedStable + channels.slice(devStart);
   fs.writeFileSync(channelsPath, channels);
   return root;
@@ -59,27 +53,15 @@ function managedV2(appHome: string, marker = "2.7.7"): void {
   fs.writeFileSync(path.join(app, "scripts", "agentera"), "#!/usr/bin/env python3\n");
   fs.mkdirSync(path.join(app, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(app, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(app, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }),
-  );
-  fs.writeFileSync(
-    path.join(app, BUNDLE_MARKER),
-    JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }),
-  );
+  fs.writeFileSync(path.join(app, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "current" }] }));
+  fs.writeFileSync(path.join(app, BUNDLE_MARKER), JSON.stringify({ schemaVersion: "agentera.bundle.v1", version: marker }));
 }
 
 function npxV3Root(root: string, version = "3.0.0-next.4"): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
-  fs.writeFileSync(
-    path.join(root, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version }] }),
-  );
-  fs.writeFileSync(
-    path.join(root, NPX_BUNDLE_SENTINEL),
-    JSON.stringify({ schemaVersion: "agentera.npxBundle.v1" }),
-  );
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version }] }));
+  fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ schemaVersion: "agentera.npxBundle.v1" }));
 }
 
 describe("v2 install track successor surfacing (#32)", () => {
@@ -119,13 +101,16 @@ describe("v2 install track successor surfacing (#32)", () => {
 
     let doctorText = "";
     cmdDoctor(
-      { installRoot: appHome, home: path.join(tmp, "home-v2"), project: path.join(tmp, "proj-v2"), format: "text" },
+      {
+        installRoot: appHome,
+        home: path.join(tmp, "home-v2"),
+        project: path.join(tmp, "proj-v2"),
+        format: "text",
+      },
       { out: (t) => (doctorText += t) },
     );
     expect(doctorText).toContain(NEXT_MAJOR_SECTION_HEADER);
-    expect(doctorText.indexOf(NEXT_MAJOR_SECTION_HEADER)).toBeLessThan(
-      doctorText.indexOf("Agentera doctor"),
-    );
+    expect(doctorText.indexOf(NEXT_MAJOR_SECTION_HEADER)).toBeLessThan(doctorText.indexOf("Agentera doctor"));
     expect(doctorText).toContain('agentera@next upgrade --channel development --project "$PWD" --dry-run');
     expect(doctorText).toContain(V2_GUIDE_FRAGMENT);
   });
@@ -182,9 +167,7 @@ describe("v2 install track successor surfacing (#32)", () => {
       env: process.env,
     });
     expect(state.app.status).toBe(APP_UP_TO_DATE);
-    expect(
-      (state.attention as string[]).some((line) => line.includes("v2 while the CLI is on v3")),
-    ).toBe(false);
+    expect((state.attention as string[]).some((line) => line.includes("v2 while the CLI is on v3"))).toBe(false);
     delete process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT;
   });
 

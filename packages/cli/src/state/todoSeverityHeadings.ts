@@ -9,7 +9,7 @@ export const TODO_SEVERITY_HEADINGS = [
   { section: "resolved", name: "Resolved", heading: "## ✓ Resolved" },
 ] as const;
 
-export type TodoSeveritySection = typeof TODO_SEVERITY_HEADINGS[number]["section"];
+export type TodoSeveritySection = (typeof TODO_SEVERITY_HEADINGS)[number]["section"];
 export interface TodoSeverityHeadingDiagnostic {
   code: "todo_severity_heading_mismatch" | "todo_severity_heading_duplicate" | "todo_severity_heading_out_of_order";
   classification: "glyph_name_mismatch" | "duplicate" | "out_of_order";
@@ -21,11 +21,11 @@ export interface TodoSeverityHeadingDiagnostic {
 const DIAGNOSTIC_LIMIT = 20;
 const byName = new Map(TODO_SEVERITY_HEADINGS.map((entry) => [entry.name.toLowerCase(), entry]));
 
-function candidate(line: string): typeof TODO_SEVERITY_HEADINGS[number] | null {
+function candidate(line: string): (typeof TODO_SEVERITY_HEADINGS)[number] | null {
   const content = line.trim().match(/^##\s+(.+?)\s*$/)?.[1];
   if (!content) return null;
   const name = content.match(/^(?:[^\p{L}\p{N}\s]+\s+)?(Critical|Degraded|Normal|Annoying|Resolved)$/iu)?.[1];
-  return name ? byName.get(name.toLowerCase()) ?? null : null;
+  return name ? (byName.get(name.toLowerCase()) ?? null) : null;
 }
 
 export function todoSeveritySectionForHeading(line: string): TodoSeveritySection | null {
@@ -44,32 +44,40 @@ export function inspectTodoSeverityHeadings(markdown: string): {
     const entry = candidate(line);
     if (!entry) continue;
     const order = TODO_SEVERITY_HEADINGS.indexOf(entry);
-    const add = (diagnostic: TodoSeverityHeadingDiagnostic): void => { diagnostics.push(diagnostic); };
-    if (line.trim() !== entry.heading) add({
-      code: "todo_severity_heading_mismatch",
-      classification: "glyph_name_mismatch",
-      line: index + 1,
-      expected_heading: entry.heading,
-      recovery: `Replace TODO.md line ${index + 1} with '${entry.heading}'.`,
-    });
-    if (seen.has(entry.section)) add({
-      code: "todo_severity_heading_duplicate",
-      classification: "duplicate",
-      line: index + 1,
-      expected_heading: entry.heading,
-      recovery: `Keep exactly one '${entry.heading}' section and move its rows there.`,
-    });
-    if (order < greatestOrder) add({
-      code: "todo_severity_heading_out_of_order",
-      classification: "out_of_order",
-      line: index + 1,
-      expected_heading: entry.heading,
-      recovery: "Order managed TODO sections as Critical, Degraded, Normal, Annoying, then Resolved; missing sections are allowed.",
-    });
+    const add = (diagnostic: TodoSeverityHeadingDiagnostic): void => {
+      diagnostics.push(diagnostic);
+    };
+    if (line.trim() !== entry.heading)
+      add({
+        code: "todo_severity_heading_mismatch",
+        classification: "glyph_name_mismatch",
+        line: index + 1,
+        expected_heading: entry.heading,
+        recovery: `Replace TODO.md line ${index + 1} with '${entry.heading}'.`,
+      });
+    if (seen.has(entry.section))
+      add({
+        code: "todo_severity_heading_duplicate",
+        classification: "duplicate",
+        line: index + 1,
+        expected_heading: entry.heading,
+        recovery: `Keep exactly one '${entry.heading}' section and move its rows there.`,
+      });
+    if (order < greatestOrder)
+      add({
+        code: "todo_severity_heading_out_of_order",
+        classification: "out_of_order",
+        line: index + 1,
+        expected_heading: entry.heading,
+        recovery: "Order managed TODO sections as Critical, Degraded, Normal, Annoying, then Resolved; missing sections are allowed.",
+      });
     seen.add(entry.section);
     greatestOrder = Math.max(greatestOrder, order);
   }
-  return { diagnostics: diagnostics.slice(0, DIAGNOSTIC_LIMIT), omitted_count: Math.max(0, diagnostics.length - DIAGNOSTIC_LIMIT) };
+  return {
+    diagnostics: diagnostics.slice(0, DIAGNOSTIC_LIMIT),
+    omitted_count: Math.max(0, diagnostics.length - DIAGNOSTIC_LIMIT),
+  };
 }
 
 export function assertTodoSeverityHeadingStructure(markdown: string): void {
@@ -78,7 +86,10 @@ export function assertTodoSeverityHeadingStructure(markdown: string): void {
   reject({
     class: "conflict",
     message: "TODO.md managed severity section structure is malformed",
-    diagnosis: { classification: "todo_severity_heading_structure", ...diagnosis } as unknown as JsonObject,
+    diagnosis: {
+      classification: "todo_severity_heading_structure",
+      ...diagnosis,
+    } as unknown as JsonObject,
     recovery: "Apply every bounded TODO.md heading correction exactly as reported, then retry; no state was changed.",
   });
 }

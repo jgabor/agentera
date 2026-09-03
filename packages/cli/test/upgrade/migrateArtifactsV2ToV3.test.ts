@@ -5,15 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  applyCleanupPhase,
-  applyMigrationPhases,
-  applyRuntimeRetirementPhase,
-  dryRunMigration,
-  planArtifactsPhase,
-  planCleanupPhase,
-  planRuntimeRetirementPhase,
-} from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyCleanupPhase, applyMigrationPhases, applyRuntimeRetirementPhase, dryRunMigration, planArtifactsPhase, planCleanupPhase, planRuntimeRetirementPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { APP_CONTENT_REFRESH_ACTION } from "../../src/upgrade/appContentRefresh.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
@@ -51,15 +43,12 @@ describe("planArtifactsPhase", () => {
     );
     expect(phase.items.some((item) => item.source === ".agentera/progress.yaml")).toBe(true);
   });
-
 });
 
 describe("planRuntimeRetirementPhase", () => {
   it("dry-run reports pending retirement for whole-resource v2 hooks", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "home"));
-    const phase = planRuntimeRetirementPhase(
-      migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT),
-    );
+    const phase = planRuntimeRetirementPhase(migrationCtx(path.join(home, "agentera"), path.join(home, "project"), home, REPO_ROOT));
     expect(phase.status).toBe("pending");
     expect(phase.items.some((item) => item.runtime === "codex" && item.status === "pending")).toBe(true);
     expect(phase.items.some((item) => item.runtime === "cursor" && item.status === "pending")).toBe(true);
@@ -164,17 +153,24 @@ describe("dryRunMigration", () => {
     const home = copyFixture("v2-runtime-python", path.join(tmp, "full"));
     const appHome = copyFixture("v2-app-home", path.join(home, "agentera"));
     const project = copyFixture("v2-yaml-project", path.join(home, "project"));
-    const result = dryRunMigration({ appHome, project, home, env: sandboxMigrationEnv(home, REPO_ROOT) });
+    const result = dryRunMigration({
+      appHome,
+      project,
+      home,
+      env: sandboxMigrationEnv(home, REPO_ROOT),
+    });
     expect(result.artifacts.name).toBe("artifacts");
     expect(result.runtime.name).toBe("runtime");
     expect(result.cleanup.name).toBe("cleanup");
     expect(result.artifacts.status).toBe("pending");
     expect(result.runtime.status).toBe("pending");
     expect(result.cleanup.status).toBe("blocked");
-    expect(result.cleanup.items).toContainEqual(expect.objectContaining({
-      resourceId: "agentera.registration.restorer.codex",
-      status: "blocked",
-    }));
+    expect(result.cleanup.items).toContainEqual(
+      expect.objectContaining({
+        resourceId: "agentera.registration.restorer.codex",
+        status: "blocked",
+      }),
+    );
   });
 
   it("applyMigrationPhases honors --only phase limits", () => {

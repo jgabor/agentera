@@ -3,9 +3,7 @@ import { createHash, verify as verifySignature, type KeyLike } from "node:crypto
 type Mapping = Record<string, unknown>;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function strings(value: unknown): string[] {
@@ -83,16 +81,7 @@ function nullableReceiptField(receipt: Mapping, field: string): string | null {
 }
 
 function signedReviewReceiptPayload(receipt: Mapping): string {
-  return JSON.stringify(
-    Object.fromEntries(
-      REVIEW_RECEIPT_SIGNED_FIELDS.map((field) => [
-        field,
-        ["corrected_meaning", "corrected_scope"].includes(field)
-          ? nullableReceiptField(receipt, field)
-          : receiptField(receipt, field),
-      ]),
-    ),
-  );
+  return JSON.stringify(Object.fromEntries(REVIEW_RECEIPT_SIGNED_FIELDS.map((field) => [field, ["corrected_meaning", "corrected_scope"].includes(field) ? nullableReceiptField(receipt, field) : receiptField(receipt, field)])));
 }
 
 export function personalReviewApprovalReceiptDigest(receipt: Mapping): string {
@@ -105,11 +94,7 @@ export function personalReviewApprovalReceiptDigest(receipt: Mapping): string {
   );
 }
 
-export function personalReviewApprovalReplayStatus(
-  receipt: Mapping,
-  consumedReceiptDigests: ReadonlyMap<string, string> = new Map(),
-  replayNonceKey?: string,
-): "new" | "exact_replay" | "conflicting_replay" {
+export function personalReviewApprovalReplayStatus(receipt: Mapping, consumedReceiptDigests: ReadonlyMap<string, string> = new Map(), replayNonceKey?: string): "new" | "exact_replay" | "conflicting_replay" {
   const nonce = receiptField(receipt, "nonce");
   const key = replayNonceKey ?? nonce;
   if (typeof key !== "string" || key.length === 0) {
@@ -117,21 +102,13 @@ export function personalReviewApprovalReplayStatus(
   }
   const consumedDigest = consumedReceiptDigests.get(key);
   if (!consumedDigest) return "new";
-  return consumedDigest === personalReviewApprovalReceiptDigest(receipt)
-    ? "exact_replay"
-    : "conflicting_replay";
+  return consumedDigest === personalReviewApprovalReceiptDigest(receipt) ? "exact_replay" : "conflicting_replay";
 }
 
-export function validatePersonalReviewApprovalReceipt(
-  receipt: Mapping,
-  expected: PersonalReviewApprovalVerification,
-): string[] {
+export function validatePersonalReviewApprovalReceipt(receipt: Mapping, expected: PersonalReviewApprovalVerification): string[] {
   const errors: string[] = [];
-  const extraFields = Object.keys(receipt).filter(
-    (field) => !REVIEW_RECEIPT_FIELDS.includes(field as (typeof REVIEW_RECEIPT_FIELDS)[number]),
-  );
-  if (extraFields.length > 0)
-    errors.push(`review approval receipt has forbidden fields: ${extraFields.join(", ")}`);
+  const extraFields = Object.keys(receipt).filter((field) => !REVIEW_RECEIPT_FIELDS.includes(field as (typeof REVIEW_RECEIPT_FIELDS)[number]));
+  if (extraFields.length > 0) errors.push(`review approval receipt has forbidden fields: ${extraFields.join(", ")}`);
   let payload = "";
   let signature = "";
   try {
@@ -146,10 +123,7 @@ export function validatePersonalReviewApprovalReceipt(
   if (receipt.issuer !== "agentera-local-host") {
     errors.push("review approval receipt issuer is not trusted");
   }
-  if (
-    receipt.subject !== expected.currentUserSubject ||
-    ["agent", "model", "imported_record", "generic_consent"].includes(String(receipt.subject))
-  ) {
+  if (receipt.subject !== expected.currentUserSubject || ["agent", "model", "imported_record", "generic_consent"].includes(String(receipt.subject))) {
     errors.push("review approval receipt subject is not the trusted current user");
   }
   if (receipt.trusted_channel !== "agentera-local-host-ipc") {
@@ -180,11 +154,7 @@ export function validatePersonalReviewApprovalReceipt(
     errors.push("review approval receipt disposition is invalid");
   }
   if (receipt.disposition === "correct") {
-    if (
-      typeof receipt.corrected_meaning !== "string" ||
-      receipt.corrected_meaning.trim().length === 0 ||
-      Buffer.byteLength(receipt.corrected_meaning, "utf8") > 4_096
-    ) {
+    if (typeof receipt.corrected_meaning !== "string" || receipt.corrected_meaning.trim().length === 0 || Buffer.byteLength(receipt.corrected_meaning, "utf8") > 4_096) {
       errors.push("review approval receipt corrected_meaning is invalid");
     }
     if (receipt.corrected_scope !== "personal") {
@@ -212,14 +182,7 @@ export function validatePersonalReviewApprovalReceipt(
     errors.push("review approval receipt signature encoding is invalid");
   } else if (payload) {
     try {
-      if (
-        !verifySignature(
-          null,
-          Buffer.from(payload, "utf8"),
-          expected.trustedHostPublicKey,
-          Buffer.from(signature, "base64url"),
-        )
-      ) {
+      if (!verifySignature(null, Buffer.from(payload, "utf8"), expected.trustedHostPublicKey, Buffer.from(signature, "base64url"))) {
         errors.push("review approval receipt signature is not from the trusted host");
       }
     } catch {
@@ -227,13 +190,7 @@ export function validatePersonalReviewApprovalReceipt(
     }
   }
   try {
-    if (
-      personalReviewApprovalReplayStatus(
-        receipt,
-        expected.consumedReceiptDigests,
-        expected.replayNonceKey,
-      ) === "conflicting_replay"
-    ) {
+    if (personalReviewApprovalReplayStatus(receipt, expected.consumedReceiptDigests, expected.replayNonceKey) === "conflicting_replay") {
       errors.push("review approval receipt nonce was replayed with changed content");
     }
   } catch (error) {
@@ -242,9 +199,7 @@ export function validatePersonalReviewApprovalReceipt(
   return errors;
 }
 
-export function personalReviewDispositionLifecycle(
-  disposition: PersonalReviewDisposition,
-): "terminal" | "pending" {
+export function personalReviewDispositionLifecycle(disposition: PersonalReviewDisposition): "terminal" | "pending" {
   if (["accept", "correct", "reject"].includes(disposition)) return "terminal";
   if (disposition === "defer") return "pending";
   throw new TypeError("review disposition is invalid");
@@ -255,13 +210,8 @@ export interface PersonalReviewRetentionProjection {
   metadata: "retained" | "expired" | "purged";
 }
 
-export function projectPersonalReviewRetention(
-  disposition: PersonalReviewDisposition,
-  ageDays: number,
-  purgeRequested = false,
-): PersonalReviewRetentionProjection {
-  if (!Number.isFinite(ageDays) || ageDays < 0)
-    throw new TypeError("review age must be non-negative");
+export function projectPersonalReviewRetention(disposition: PersonalReviewDisposition, ageDays: number, purgeRequested = false): PersonalReviewRetentionProjection {
+  if (!Number.isFinite(ageDays) || ageDays < 0) throw new TypeError("review age must be non-negative");
   if (purgeRequested) return { excerpt: "purged", metadata: "purged" };
   if (personalReviewDispositionLifecycle(disposition) === "pending") {
     return {
@@ -302,8 +252,7 @@ export function validatePersonalGlossaryReviewRecordsAuthority(authority: Mappin
   if (
     records?.status !== "active" ||
     records?.owner !== "user_local_review_lifecycle" ||
-    records?.runtime !==
-      "packages/cli/src/analytics/personalGlossaryReviewRecords.ts#queuePersonalGlossaryReviewRecord" ||
+    records?.runtime !== "packages/cli/src/analytics/personalGlossaryReviewRecords.ts#queuePersonalGlossaryReviewRecord" ||
     records?.input !== "current_validated_review_required_cli_decision_and_host_receipt" ||
     persistence?.root !== "$AGENTERA_PROFILE_DIR/intermediate/personal-glossary" ||
     persistence?.file !== "review-records.json" ||
@@ -344,31 +293,13 @@ export function validatePersonalGlossaryReviewRecordsAuthority(authority: Mappin
     persistence?.order !== "review_id_asc" ||
     persistence?.replay !== "exact_current_binding_is_unchanged_replay_and_exact_receipt_is_idempotent" ||
     persistence?.conflict !== "changed_receipt_nonce_binding_or_signature_fails_before_effects" ||
-    !sameStrings(compatibility?.accepted_store_schema_versions, [
-      "agentera.personalGlossaryReviewStore.v1",
-      "agentera.personalGlossaryReviewStore.v2",
-    ]) ||
-    !sameStrings(compatibility?.accepted_record_schema_versions, [
-      "agentera.personalGlossaryPendingReviewRecord.v1",
-      "agentera.personalGlossaryReviewRecord.v2",
-    ]) ||
+    !sameStrings(compatibility?.accepted_store_schema_versions, ["agentera.personalGlossaryReviewStore.v1", "agentera.personalGlossaryReviewStore.v2"]) ||
+    !sameStrings(compatibility?.accepted_record_schema_versions, ["agentera.personalGlossaryPendingReviewRecord.v1", "agentera.personalGlossaryReviewRecord.v2"]) ||
     compatibility?.read_mutation !== "forbidden" ||
     compatibility?.migration_operation !== "disposition_only" ||
     compatibility?.scope_derivation !== "current_validated_host_receipt_only" ||
     compatibility?.invalid_behavior !== "fail_before_effects" ||
-    !sameStrings(compatibility?.preserved_bindings, [
-      "review_id",
-      "candidate_id",
-      "candidate_revision",
-      "candidate_capsule_sha256",
-      "candidate_projection_sha256",
-      "host_receipt_sha256",
-      "cli_decision_sha256",
-      "semantic_fingerprint",
-      "generation",
-      "policy_version",
-      "reason",
-    ]) ||
+    !sameStrings(compatibility?.preserved_bindings, ["review_id", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "reason"]) ||
     compatibility?.legacy_digest !== "validate_before_migration" ||
     compatibility?.migrated_digest !== "reseal_v2_lifecycle_record" ||
     !nonEmpty(compatibility?.rule) ||
@@ -376,21 +307,7 @@ export function validatePersonalGlossaryReviewRecordsAuthority(authority: Mappin
     !sameStrings(persistence?.suppression_dispositions, ["reject", "defer"]) ||
     !sameStrings(persistence?.reopen_reasons, ["policy_changed", "scope_changed", "meaning_changed"]) ||
     persistence?.project_storage !== "forbidden" ||
-    !sameStrings(persistence?.forbidden_fields, [
-      "term",
-      "meaning",
-      "excerpt",
-      "raw_evidence",
-      "source_id",
-      "evidence_anchor",
-      "session_id",
-      "project_id",
-      "source_path",
-      "tool_content",
-      "review_approval",
-      "signature",
-      "nonce",
-    ]) ||
+    !sameStrings(persistence?.forbidden_fields, ["term", "meaning", "excerpt", "raw_evidence", "source_id", "evidence_anchor", "session_id", "project_id", "source_path", "tool_content", "review_approval", "signature", "nonce"]) ||
     !nonEmpty(persistence?.rule) ||
     trustedHostKey?.root !== "$AGENTERA_PROFILE_DIR/intermediate/personal-glossary" ||
     trustedHostKey?.file !== "trusted-local-host.json" ||
@@ -411,18 +328,7 @@ export function validatePersonalGlossaryReviewRecordsAuthority(authority: Mappin
     request?.additional_fields !== "forbidden" ||
     request?.max_utf8_bytes !== 16_384 ||
     queue?.decision_outcome !== "review_required" ||
-    !sameStrings(queue?.current_bindings, [
-      "candidate_id",
-      "candidate_revision",
-      "candidate_capsule_sha256",
-      "candidate_projection_sha256",
-      "host_receipt_sha256",
-      "cli_decision_sha256",
-      "semantic_fingerprint",
-      "generation",
-      "policy_version",
-      "reason",
-    ]) ||
+    !sameStrings(queue?.current_bindings, ["candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "host_receipt_sha256", "cli_decision_sha256", "semantic_fingerprint", "generation", "policy_version", "reason"]) ||
     queueResult?.schema_version !== "agentera.personalGlossaryReviewQueueResult.v1" ||
     !sameStrings(queueResult?.statuses, ["queued", "unchanged_replay", "suppressed", "reopened"]) ||
     queueResult?.max_utf8_bytes !== 4_096 ||
@@ -455,42 +361,27 @@ export function validatePersonalGlossaryReviewRecordsAuthority(authority: Mappin
     list?.max_serialized_utf8_bytes !== 32_768 ||
     list?.order !== "queued_at_desc_then_review_id_asc" ||
     !sameStrings(filters?.status, ["pending", "terminal"]) ||
-    cursor?.authority !==
-      "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor" ||
+    cursor?.authority !== "references/artifacts/state-storage-authority.yaml#entity_target.public_retrieval.policy.cursor" ||
     cursor?.vocabulary !== "opaque_snapshot_cursor" ||
     !sameStrings(cursor?.binding, ["collection", "owner", "filters", "limit", "order", "snapshot"]) ||
     cursor?.invalid_behavior !== "cursor_invalid" ||
     cursor?.unavailable_behavior !== "cursor_snapshot_unavailable" ||
     !nonEmpty(list?.summaries) ||
-    !sameStrings(exact?.required_bindings, [
-      "review_id",
-      "candidate_id",
-      "candidate_revision",
-      "generation",
-      "policy_version",
-    ]) ||
+    !sameStrings(exact?.required_bindings, ["review_id", "candidate_id", "candidate_revision", "generation", "policy_version"]) ||
     exact?.current_binding_field !== "candidate_projection_sha256" ||
     exact?.max_serialized_utf8_bytes !== 8_192 ||
     !nonEmpty(exact?.rule) ||
     !nonEmpty(retrieval?.rule) ||
-    maintenance?.entrypoint !==
-      "packages/cli/src/analytics/personalGlossaryReviewRecords.ts#maintainPersonalGlossaryReviewRecords" ||
+    maintenance?.entrypoint !== "packages/cli/src/analytics/personalGlossaryReviewRecords.ts#maintainPersonalGlossaryReviewRecords" ||
     maintenance?.exposure !== "authenticated_review_owner_only" ||
     maintenance?.terminal_metadata_days !== 90 ||
     maintenance?.pending_metadata !== "retained_until_terminal_or_purge" ||
     maintenance?.cache !== "replay_index_until_receipt_expiry" ||
     maintenance?.purge !== "current_user_authorized_review_records_only" ||
-    !sameStrings(maintenance?.forbidden_effects, [
-      "profile_entry",
-      "project_state",
-      "candidate_projection",
-      "publication",
-    ]) ||
+    !sameStrings(maintenance?.forbidden_effects, ["profile_entry", "project_state", "candidate_projection", "publication"]) ||
     !nonEmpty(maintenance?.rule)
   ) {
-    return [
-      "personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained",
-    ];
+    return ["personal_mining_authority review records must remain bounded, current-user local, privacy-safe, replay-safe, and independently retained"];
   }
   return [];
 }

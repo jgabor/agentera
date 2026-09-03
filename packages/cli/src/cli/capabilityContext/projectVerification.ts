@@ -1,16 +1,8 @@
 import path from "node:path";
 
 import type { JsonObject, JsonValue } from "../../core/jsonValue.js";
-import {
-  assertValidatedProjectRoot,
-  validateRealProjectRoot,
-  type ValidatedProjectRoot,
-} from "../../state/projectRoot.js";
-import {
-  projectPathIsStable,
-  readProjectFileSnapshot,
-  snapshotProjectPath,
-} from "../../state/safeProjectFile.js";
+import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "../../state/projectRoot.js";
+import { projectPathIsStable, readProjectFileSnapshot, snapshotProjectPath } from "../../state/safeProjectFile.js";
 
 const MAX_SOURCE_BYTES = 64 * 1024;
 const MAX_RECIPE_ROWS = 40;
@@ -107,10 +99,7 @@ export function discoverProjectVerification(projectRoot: string): JsonObject {
     rowsByLabel.set(key, group);
   }
   for (const rows of rowsByLabel.values()) {
-    const canonicalSets = new Set(
-      rows.filter((row) => row.commands.length > 0)
-        .map((row) => JSON.stringify([...new Set(row.commands.map(({ command }) => command))].sort())),
-    );
+    const canonicalSets = new Set(rows.filter((row) => row.commands.length > 0).map((row) => JSON.stringify([...new Set(row.commands.map(({ command }) => command))].sort())));
     if (canonicalSets.size > 1) {
       const first = rows[0].candidate;
       reject(state, first.when, first.commands.join(" · "), "conflicting_recipe_label");
@@ -137,8 +126,7 @@ export function discoverProjectVerification(projectRoot: string): JsonObject {
     };
   });
   const provenanceOmitted = expectedCommands.some((entry) => (entry as JsonObject).provenance_omitted_count !== 0);
-  const hasOmissions = commandOmitted > 0 || provenanceOmitted
-    || state.rejectionOmitted > 0 || state.diagnosticOmitted > 0;
+  const hasOmissions = commandOmitted > 0 || provenanceOmitted || state.rejectionOmitted > 0 || state.diagnosticOmitted > 0;
   const hasProblems = state.rejections.length > 0 || state.diagnostics.length > 0 || hasOmissions;
   return {
     status: hasOmissions ? "partial" : expectedCommands.length === 0 ? "unavailable" : hasProblems ? "partial" : "available",
@@ -178,7 +166,11 @@ function readRecipeCandidates(state: ResolutionState): Candidate[] {
       diagnostic(state, `AGENTS.md recipe table exceeds ${MAX_RECIPE_ROWS} rows.`);
       break;
     }
-    const cells = lines[index].trim().slice(1, -1).split("|").map((cell) => cell.trim());
+    const cells = lines[index]
+      .trim()
+      .slice(1, -1)
+      .split("|")
+      .map((cell) => cell.trim());
     if (cells.length !== 2) {
       diagnostic(state, `AGENTS.md recipe row ${index + 1} is malformed.`);
       continue;
@@ -202,7 +194,10 @@ function readRecipeCandidates(state: ResolutionState): Candidate[] {
 function inlineCommands(cell: string): string[] | null {
   const matches = [...cell.matchAll(/`([^`\r\n]+)`/g)];
   if (matches.length === 0) return null;
-  const remainder = cell.replace(/`[^`\r\n]+`/g, "").replaceAll("·", "").trim();
+  const remainder = cell
+    .replace(/`[^`\r\n]+`/g, "")
+    .replaceAll("·", "")
+    .trim();
   return remainder === "" ? matches.map((match) => match[1].trim()) : null;
 }
 
@@ -217,13 +212,15 @@ function resolveCommand(state: ResolutionState, candidate: Candidate, command: s
   }
 
   const canonical: string[] = [];
-  const provenance: SourcePointer[] = [{
-    source_family: "project_guidance",
-    path: "AGENTS.md",
-    line: candidate.line,
-    recipe_label: when,
-    recipe_command: command,
-  }];
+  const provenance: SourcePointer[] = [
+    {
+      source_family: "project_guidance",
+      path: "AGENTS.md",
+      line: candidate.line,
+      recipe_label: when,
+      recipe_command: command,
+    },
+  ];
   for (const segment of segments) {
     const tokens = segment.trim().split(/\s+/);
     if (tokens.some((token) => !SAFE_TOKEN.test(token))) return rejected(state, when, command, "unsupported_syntax");
@@ -252,10 +249,12 @@ function resolveCommand(state: ResolutionState, candidate: Candidate, command: s
 function resolvePnpm(
   state: ResolutionState,
   tokens: string[],
-): {
-  command: string;
-  provenance: SourcePointer[];
-} | string {
+):
+  | {
+      command: string;
+      provenance: SourcePointer[];
+    }
+  | string {
   let directory = ".";
   let index = 1;
   if (tokens[index] === "-C") {
@@ -279,9 +278,7 @@ function resolvePnpm(
   let manifest: PackageManifest;
   try {
     const parsed = JSON.parse(manifestSource) as { scripts?: unknown };
-    const scripts = parsed.scripts && typeof parsed.scripts === "object" && !Array.isArray(parsed.scripts)
-      ? parsed.scripts as Record<string, unknown>
-      : {};
+    const scripts = parsed.scripts && typeof parsed.scripts === "object" && !Array.isArray(parsed.scripts) ? (parsed.scripts as Record<string, unknown>) : {};
     manifest = {
       scripts,
     };
@@ -305,10 +302,7 @@ function resolvePnpm(
   };
 }
 
-function resolveScriptAlias(
-  scripts: Record<string, unknown>,
-  requested: string,
-): { canonical: string; chain: string[] } | string {
+function resolveScriptAlias(scripts: Record<string, unknown>, requested: string): { canonical: string; chain: string[] } | string {
   const chain: string[] = [];
   let current = requested;
   for (let depth = 0; depth <= MAX_ALIAS_DEPTH; depth += 1) {
@@ -325,10 +319,7 @@ function resolveScriptAlias(
   return "package_script_alias_depth_exceeded";
 }
 
-function resolveNode(
-  state: ResolutionState,
-  tokens: string[],
-): { command: string; provenance: SourcePointer[] } | { reason: string } {
+function resolveNode(state: ResolutionState, tokens: string[]): { command: string; provenance: SourcePointer[] } | { reason: string } {
   if (tokens.length < 2) return { reason: "unsupported_node_syntax" };
   const target = resolveInsideRoot(state.projectRoot, tokens[1]);
   if (!target || path.isAbsolute(tokens[1])) return { reason: "node_target_outside_project" };
@@ -347,18 +338,11 @@ function nodeArgumentsAreSafe(args: string[]): boolean {
     const value = argument.includes("=") ? argument.slice(argument.indexOf("=") + 1) : argument;
     if (!value) return true;
     const normalized = value.replaceAll("\\", "/");
-    return !path.posix.isAbsolute(normalized)
-      && !path.win32.isAbsolute(value)
-      && !normalized.split("/").includes("..");
+    return !path.posix.isAbsolute(normalized) && !path.win32.isAbsolute(value) && !normalized.split("/").includes("..");
   });
 }
 
-function readBoundedText(
-  filePath: string,
-  state: ResolutionState,
-  label: string,
-  reportDiagnostic = true,
-): { text: string } | { reason: ProjectPathFailure } {
+function readBoundedText(filePath: string, state: ResolutionState, label: string, reportDiagnostic = true): { text: string } | { reason: ProjectPathFailure } {
   if (state.validatedRoot === null) return { reason: "unsafe" };
   const relative = relativeProjectPath(state.projectRoot, filePath);
   try {
@@ -380,9 +364,7 @@ function readBoundedText(
     if (!projectPathIsStable(pathSnapshot)) return { reason: "unsafe" };
     const fileSnapshot = readProjectFileSnapshot(state.validatedRoot, relative);
     if (fileSnapshot.kind !== "file" || fileSnapshot.bytes.byteLength > MAX_SOURCE_BYTES) {
-      const reason = fileSnapshot.kind === "missing"
-        ? "missing"
-        : fileSnapshot.kind === "unsafe" && fileSnapshot.reason === "symlink" ? "symlink" : "unsafe";
+      const reason = fileSnapshot.kind === "missing" ? "missing" : fileSnapshot.kind === "unsafe" && fileSnapshot.reason === "symlink" ? "symlink" : "unsafe";
       if (reportDiagnostic) diagnostic(state, `${label} is missing or rejected by bounded path safety (${reason}).`);
       return { reason };
     }
@@ -397,11 +379,7 @@ function projectFileStatus(state: ResolutionState, filePath: string): "file" | "
   if (state.validatedRoot === null) return "unsafe";
   try {
     assertValidatedProjectRoot(state.validatedRoot);
-    const snapshot = snapshotProjectPath(
-      state.validatedRoot.path,
-      relativeProjectPath(state.projectRoot, filePath),
-      "file",
-    );
+    const snapshot = snapshotProjectPath(state.validatedRoot.path, relativeProjectPath(state.projectRoot, filePath), "file");
     if (snapshot.kind === "missing") return "missing";
     if (snapshot.kind === "unsafe" || !projectPathIsStable(snapshot)) return "unsafe";
     assertValidatedProjectRoot(state.validatedRoot);

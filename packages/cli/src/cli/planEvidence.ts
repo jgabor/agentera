@@ -89,10 +89,7 @@ function progressEvidenceRecords(schemas: Record<string, SchemaInfo>): ProgressE
   return records;
 }
 
-function progressMatch(
-  task: JsonObject,
-  records: ProgressEvidenceRecord[],
-): { record: ProgressEvidenceRecord; phrase: string } | null {
+function progressMatch(task: JsonObject, records: ProgressEvidenceRecord[]): { record: ProgressEvidenceRecord; phrase: string } | null {
   const number = String(task.number ?? "");
   const phrase = LIFECYCLE_PROGRESS_MATCHES[number];
   if (!phrase) return null;
@@ -112,10 +109,7 @@ function supportsLifecycleProgressJoin(artifact: PlanArtifact): boolean {
   return title.includes("runtime lifecycle");
 }
 
-function progressProvenance(
-  match: { record: ProgressEvidenceRecord; phrase: string },
-  task: JsonObject,
-): JsonObject {
+function progressProvenance(match: { record: ProgressEvidenceRecord; phrase: string }, task: JsonObject): JsonObject {
   return {
     source_family: "progress",
     source_kind: match.record.field === "summary" ? "typed_writer_archive" : "typed_writer_cycle",
@@ -143,11 +137,7 @@ function planProvenance(planPath: string, task: JsonObject): JsonObject {
  * remains intact; missing evidence is resolved only through a deterministic
  * join to typed progress cycles or compacted writer summaries.
  */
-export function resolvePlanTaskEvidence(
-  artifact: PlanArtifact,
-  tasks: JsonObject[],
-  schemas: Record<string, SchemaInfo>,
-): PlanEvidenceResolution {
+export function resolvePlanTaskEvidence(artifact: PlanArtifact, tasks: JsonObject[], schemas: Record<string, SchemaInfo>): PlanEvidenceResolution {
   const records = supportsLifecycleProgressJoin(artifact) ? progressEvidenceRecords(schemas) : [];
   const sources = new Set<string>();
   let complete = true;
@@ -160,12 +150,14 @@ export function resolvePlanTaskEvidence(
       provenance.push(planProvenance(artifact.path, task));
       sources.add("plan");
     } else if (match) {
-      evidence = [{
-        source: "progress",
-        cycle_number: match.record.cycleNumber,
-        field: match.record.field,
-        detail: match.record.detail,
-      }];
+      evidence = [
+        {
+          source: "progress",
+          cycle_number: match.record.cycleNumber,
+          field: match.record.field,
+          detail: match.record.detail,
+        },
+      ];
       provenance.push(progressProvenance(match, task));
       sources.add("progress");
     } else {

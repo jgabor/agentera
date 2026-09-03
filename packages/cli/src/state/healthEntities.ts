@@ -4,14 +4,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import {
-  allocateAndPublishEntity,
-  allocateEntityId,
-  assertEntityDiscoveryOrigin,
-  discoverEntities,
-  publishEntity,
-  type DiscoveredEntity,
-} from "./entityStorage.js";
+import { allocateAndPublishEntity, allocateEntityId, assertEntityDiscoveryOrigin, discoverEntities, publishEntity, type DiscoveredEntity } from "./entityStorage.js";
 import type { EntityPublicationContext } from "./entityPublicationContext.js";
 import { healthEntityViolations } from "./healthEntityValidation.js";
 import { detailMetadata, detailProvenance, isSummaryEntity } from "./summaryEntityRead.js";
@@ -56,9 +49,7 @@ function positive(value: unknown, field: string): number {
 function contract(sourceRoot = resolveSourceRoot()): HealthContract {
   const { authorityPath, document: authority } = loadStateStorageAuthority(sourceRoot);
   const target = mapping(authority.entity_target) ? authority.entity_target : {};
-  const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives)
-    ? target.storage_boundary.shared_primitives
-    : {};
+  const storage = mapping(target.storage_boundary) && mapping(target.storage_boundary.shared_primitives) ? target.storage_boundary.shared_primitives : {};
   const entities = Array.isArray(target.entities) ? target.entities : [];
   const health = entities.find((value) => mapping(value) && value.boundary === BOUNDARY && value.artifact === ARTIFACT);
   const retrieval = mapping(health) && mapping(health.retrieval) ? health.retrieval : {};
@@ -73,19 +64,22 @@ function contract(sourceRoot = resolveSourceRoot()): HealthContract {
 }
 
 function failure(kind: StateFailureClass, message: string, recovery: string, id?: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
-  return new StateRetrievalFailure({
-    schemaVersion: "agentera.stateFailure.v1",
-    status: "fail",
-    error: {
-      class: kind,
-      message,
-      syntax: "agentera state health get --id ID",
-      example: `agentera state health get --id ${id ?? "qjtrmnpvka"}`,
-      recovery,
-      artifact: ARTIFACT,
-      ...(id ? { id } : {}),
+  return new StateRetrievalFailure(
+    {
+      schemaVersion: "agentera.stateFailure.v1",
+      status: "fail",
+      error: {
+        class: kind,
+        message,
+        syntax: "agentera state health get --id ID",
+        example: `agentera state health get --id ${id ?? "qjtrmnpvka"}`,
+        recovery,
+        artifact: ARTIFACT,
+        ...(id ? { id } : {}),
+      },
     },
-  }, exitCode);
+    exitCode,
+  );
 }
 
 function listFailure(kind: StateFailureClass, message: string, recovery: string, exitCode: 1 | 2 = 1): StateRetrievalFailure {
@@ -128,14 +122,7 @@ function withoutAppendTimestamp(record: JsonObject): JsonObject {
 }
 
 function existingReplay(root: string, sourceRoot: string, id: string, record: JsonObject): DiscoveredEntity | null {
-  const existing = discoverEntities(root, sourceRoot).entities.find((entity) =>
-    entity.id === id
-    && entity.artifact === ARTIFACT
-    && entity.boundary === BOUNDARY
-    && entity.classification === "valid"
-    && entity.record !== null
-    && healthEntityViolations(entity.record).length === 0,
-  );
+  const existing = discoverEntities(root, sourceRoot).entities.find((entity) => entity.id === id && entity.artifact === ARTIFACT && entity.boundary === BOUNDARY && entity.classification === "valid" && entity.record !== null && healthEntityViolations(entity.record).length === 0);
   if (!existing || canonicalRecordJson(withoutAppendTimestamp(existing.record!)) !== canonicalRecordJson(withoutAppendTimestamp(record))) return null;
   return existing;
 }
@@ -148,15 +135,42 @@ export function appendHealthEntity(req: StateWriteRequest, options: HealthEntity
     options.publicationContext?.assertValid();
     const id = options.id ?? allocateEntityId(options.publicationContext?.pinnedPath() ?? req.projectRoot, options.candidate, sourceRoot);
     options.publicationContext?.assertValid();
-    return envelope({ path: path.join(path.resolve(req.projectRoot), declared.entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`), id, artifact: ARTIFACT, replay: false }, record, true);
+    return envelope(
+      {
+        path: path.join(path.resolve(req.projectRoot), declared.entityRoot, ARTIFACT, BOUNDARY, `${id}.yaml`),
+        id,
+        artifact: ARTIFACT,
+        replay: false,
+      },
+      record,
+      true,
+    );
   }
   if (options.id) {
     const replay = existingReplay(req.projectRoot, sourceRoot, options.id, record);
     if (replay) return envelope({ path: replay.path, id: options.id, artifact: ARTIFACT, replay: true }, replay.record!, false);
   }
   const published = options.id
-    ? publishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: BOUNDARY, id: options.id, record })
-    : allocateAndPublishEntity({ projectRoot: req.projectRoot, sourceRoot, publicationContext: options.publicationContext, artifact: ARTIFACT, boundary: BOUNDARY, record }, options.candidate);
+    ? publishEntity({
+        projectRoot: req.projectRoot,
+        sourceRoot,
+        publicationContext: options.publicationContext,
+        artifact: ARTIFACT,
+        boundary: BOUNDARY,
+        id: options.id,
+        record,
+      })
+    : allocateAndPublishEntity(
+        {
+          projectRoot: req.projectRoot,
+          sourceRoot,
+          publicationContext: options.publicationContext,
+          artifact: ARTIFACT,
+          boundary: BOUNDARY,
+          record,
+        },
+        options.candidate,
+      );
   return envelope(published, record, false);
 }
 
@@ -169,11 +183,7 @@ function healthEntities(root: string, sourceRoot: string, supplied?: ReturnType<
   const discovery = supplied ?? discoverEntities(root, sourceRoot);
   const relevant = discovery.entities.filter((entity) => entity.artifact === ARTIFACT || entity.boundary === BOUNDARY);
   const bad = relevant.find((entity) => entity.classification !== "valid" || !entity.id || !entity.record || (entity.boundary === BOUNDARY && healthEntityViolations(entity.record).length > 0));
-  if (bad) throw listFailure(
-    bad.classification === "duplicate" ? "ambiguous" : "corrupt",
-    `health entity '${bad.relativePath}' is not canonical`,
-    "Run agentera check validate state, preserve conflicting evidence, and repair the canonical entity files.",
-  );
+  if (bad) throw listFailure(bad.classification === "duplicate" ? "ambiguous" : "corrupt", `health entity '${bad.relativePath}' is not canonical`, "Run agentera check validate state, preserve conflicting evidence, and repair the canonical entity files.");
   return relevant;
 }
 
@@ -199,14 +209,18 @@ export function getHealthEntity(root: string, id: string, sourceRoot = resolveSo
   const canonical = all.find((entity) => entity.path === expectedPath);
   if (!selected && canonical) throw failure("corrupt", `health entity '${canonical.relativePath}' does not match its canonical ID envelope`, "Run agentera check validate state and repair the canonical entity file.", id);
   if (!selected || selected.artifact !== ARTIFACT || ![BOUNDARY, SUMMARY].includes(selected.boundary ?? "")) throw failure("not_found", `no health entity exists with ID '${id}'`, "Copy an ID from agentera state health list and retry.", id);
-  if (selected.classification !== "valid" || !selected.record || (selected.boundary === BOUNDARY && healthEntityViolations(selected.record).length > 0)) throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
+  if (selected.classification !== "valid" || !selected.record || (selected.boundary === BOUNDARY && healthEntityViolations(selected.record).length > 0))
+    throw failure("corrupt", `health entity '${selected.relativePath}' is corrupt or violates the audit contract`, "Run agentera check validate state, preserve its evidence, and repair the canonical entity file.", id);
   return {
     schemaVersion: "agentera.stateRetrieval.v1",
     command: "state health get",
     status: isSummaryEntity(selected) ? "degraded" : "ok",
     entry: entry(root, selected),
     source: { artifact: ARTIFACT, authority: "canonical_entity_file" },
-    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: isSummaryEntity(selected) ? "summary" : "full" },
+    source_contract: {
+      authority: "references/artifacts/state-storage-authority.yaml",
+      detail: isSummaryEntity(selected) ? "summary" : "full",
+    },
   };
 }
 
@@ -235,7 +249,11 @@ function snapshot(root: string, entities: DiscoveredEntity[], dimension: string 
     order: ORDER,
     filters: { dimension: dimension ?? null },
     source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: entityRoot },
-    source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: entities.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
+    source_contract: {
+      authority: "references/artifacts/state-storage-authority.yaml",
+      detail: entities.some(isSummaryEntity) ? "mixed" : "full",
+      cursor: "opaque_snapshot_cursor",
+    },
     entries: entities.map((entity) => entry(root, entity)),
   });
 }
@@ -243,35 +261,119 @@ function encode(payload: JsonObject, root: string, authorityPath: string): strin
   return encodeListCursor(payload, root, authorityPath);
 }
 function decode(token: string, root: string, authorityPath: string): JsonObject {
-  try { return decodeListCursor(token, root, authorityPath); }
-  catch { throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart."); }
+  try {
+    return decodeListCursor(token, root, authorityPath);
+  } catch {
+    throw listFailure("cursor_invalid", "health cursor is malformed or belongs to another project", "Copy next_cursor exactly, or omit --cursor to restart.");
+  }
 }
-export function listHealthEntities(root: string, limit?: number, dimension?: string, cursor?: string, options: { sourceRoot?: string; format?: string; discovery?: ReturnType<typeof discoverEntities>; selector?: EntityListSelectorInput } = {}): JsonObject {
-  const sourceRoot = options.sourceRoot ?? resolveSourceRoot(); const declared = contract(sourceRoot); const effectiveLimit = limit ?? declared.defaultLimit;
+export function listHealthEntities(
+  root: string,
+  limit?: number,
+  dimension?: string,
+  cursor?: string,
+  options: {
+    sourceRoot?: string;
+    format?: string;
+    discovery?: ReturnType<typeof discoverEntities>;
+    selector?: EntityListSelectorInput;
+  } = {},
+): JsonObject {
+  const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
+  const declared = contract(sourceRoot);
+  const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw listFailure("invalid_request", `health list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", 2);
   const all = healthEntities(root, sourceRoot, options.discovery);
   let filtered = [...all].sort(compareHealthEntities);
-  if (dimension) { const needle = dimension.toLowerCase(); filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle)); }
-  const format = options.format ?? "json"; const projectionOptions = { family: "health" as const, artifact: ARTIFACT, boundary: BOUNDARY, format, maxUtf8Bytes: declared.maxUtf8Bytes, selector: options.selector };
-  const selector = resolveEntityListSelector(options.selector, filtered.map((entity) => entry(root, entity)), projectionOptions); const selectorKey = entityListSelectorKey(selector);
-  const snap = snapshot(root, filtered, dimension, declared.entityRoot); let start = 0;
+  if (dimension) {
+    const needle = dimension.toLowerCase();
+    filtered = filtered.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle));
+  }
+  const format = options.format ?? "json";
+  const projectionOptions = {
+    family: "health" as const,
+    artifact: ARTIFACT,
+    boundary: BOUNDARY,
+    format,
+    maxUtf8Bytes: declared.maxUtf8Bytes,
+    selector: options.selector,
+  };
+  const selector = resolveEntityListSelector(
+    options.selector,
+    filtered.map((entity) => entry(root, entity)),
+    projectionOptions,
+  );
+  const selectorKey = entityListSelectorKey(selector);
+  const snap = snapshot(root, filtered, dimension, declared.entityRoot);
+  let start = 0;
   if (cursor) {
     const value = decode(cursor, root, declared.authorityPath);
     if (value.selector !== selectorKey) throw listFailure("cursor_invalid", "health cursor selectors do not match this request", "Repeat the original selector, or omit --cursor to restart from the current snapshot.");
-    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null)) throw listFailure("cursor_snapshot_unavailable", "health state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot.");
-    const found = filtered.findIndex((entity) => key(entity) === value.after_key); if (found < 0) throw listFailure("cursor_snapshot_unavailable", "health cursor continuation is unavailable", "Omit --cursor to restart."); start = found + 1;
+    if (value.version !== 1 || value.artifact !== ARTIFACT || value.order !== ORDER || value.snapshot_id !== snap || value.dimension !== (dimension ?? null))
+      throw listFailure("cursor_snapshot_unavailable", "health state or filters changed after this cursor snapshot", "Repeat the original filters, or omit --cursor to restart from the current snapshot.");
+    const found = filtered.findIndex((entity) => key(entity) === value.after_key);
+    if (found < 0) throw listFailure("cursor_snapshot_unavailable", "health cursor continuation is unavailable", "Omit --cursor to restart.");
+    start = found + 1;
   }
   const selected = filtered.slice(start, start + effectiveLimit);
   const response = (): JsonObject => {
     const remaining = filtered.length - start - selected.length;
-    const next = remaining && selected.length ? encode({ version: 1, artifact: ARTIFACT, order: ORDER, snapshot_id: snap, selector: selectorKey, dimension: dimension ?? null, after_key: key(selected.at(-1)!) }, root, declared.authorityPath) : undefined;
+    const next =
+      remaining && selected.length
+        ? encode(
+            {
+              version: 1,
+              artifact: ARTIFACT,
+              order: ORDER,
+              snapshot_id: snap,
+              selector: selectorKey,
+              dimension: dimension ?? null,
+              after_key: key(selected.at(-1)!),
+            },
+            root,
+            declared.authorityPath,
+          )
+        : undefined;
     const selectorFlags = entityListSelectorFlags(selector);
     return {
-      schemaVersion: "agentera.stateList.v1", command: "state health list", status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok", entries: selected.map((entity) => entry(root, entity)),
-      counts: { total: filtered.length, returned: selected.length, remaining }, filters: { dimension: dimension ?? null }, snapshot: { id: snap, first_page: !cursor, order: ORDER, has_more: Boolean(remaining), candidate_count: filtered.length },
-      source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot }, source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: filtered.some(isSummaryEntity) ? "mixed" : "full", cursor: "opaque_snapshot_cursor" },
-      retrieval: { ...(next ? { continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}` } : {}) },
-      ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
+      schemaVersion: "agentera.stateList.v1",
+      command: "state health list",
+      status: remaining || filtered.some(isSummaryEntity) ? "degraded" : "ok",
+      entries: selected.map((entity) => entry(root, entity)),
+      counts: { total: filtered.length, returned: selected.length, remaining },
+      filters: { dimension: dimension ?? null },
+      snapshot: {
+        id: snap,
+        first_page: !cursor,
+        order: ORDER,
+        has_more: Boolean(remaining),
+        candidate_count: filtered.length,
+      },
+      source: {
+        artifact: ARTIFACT,
+        authority: "canonical_entity_files",
+        root: declared.entityRoot,
+      },
+      source_contract: {
+        authority: "references/artifacts/state-storage-authority.yaml",
+        detail: filtered.some(isSummaryEntity) ? "mixed" : "full",
+        cursor: "opaque_snapshot_cursor",
+      },
+      retrieval: {
+        ...(next
+          ? {
+              continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}`,
+            }
+          : {}),
+      },
+      ...(remaining
+        ? {
+            omitted: true,
+            omitted_count: remaining,
+            omission_reason: "page_limit",
+            next_cursor: next,
+          }
+        : {}),
     };
   };
   return projectEntityList(response(), selector, projectionOptions);

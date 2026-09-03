@@ -1,27 +1,12 @@
 import { cmdLint, LintArgs } from "../commands/lint.js";
 import { cmdCompact, cmdGate, CompactArgs } from "../commands/compact.js";
 import { cmdSchema } from "../commands/schema.js";
-import {
-  cmdValidate,
-  cmdValidateCapability,
-  cmdValidateCapabilityContract,
-  cmdValidateArtifact,
-  cmdValidateState,
-  isDelegatedValidateFamily,
-  VALIDATE_FAMILY_NAMES,
-  cmdValidateActivationConjunction,
-} from "../commands/validate.js";
+import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, cmdValidateArtifact, cmdValidateState, isDelegatedValidateFamily, VALIDATE_FAMILY_NAMES, cmdValidateActivationConjunction } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
-import {
-  cmdDurability,
-  entityDurabilityFailure,
-  emitDurabilityFailure,
-  requestedDurabilityFormat,
-  validateDurabilityArgs,
-} from "../commands/durability.js";
+import { cmdDurability, entityDurabilityFailure, emitDurabilityFailure, requestedDurabilityFormat, validateDurabilityArgs } from "../commands/durability.js";
 import { type DurabilityArgs } from "../../state/durability.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { StateRetrievalFailure } from "../../state/directRetrieval.js";
@@ -31,9 +16,13 @@ export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
   const args: LintArgs = { artifact: "", file: null, text: null, strict: false, format: "json" };
   let sawArtifact = false;
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -80,7 +69,6 @@ export function runLint(argv: string[], io: Io, prog = "agentera lint"): number 
   }
 }
 
-
 export function compactModeOf(argv: string[]): string {
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === "--apply") return "fix";
@@ -93,9 +81,13 @@ export function compactModeOf(argv: string[]): string {
 export function parseCompactArgs(argv: string[]): CompactArgs | { error: string } {
   const args: CompactArgs = { project: null, mode: "check", format: "json" };
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const a = argv[i];
     let v: string | null;
@@ -128,8 +120,7 @@ export function runCompact(argv: string[], io: Io, prog: string): number {
   try {
     return cmdCompact(parsed, io);
   } catch (exc) {
-    if (exc instanceof StateWriteInputError)
-      return emitInvalidInput(io, { format: asEnvelopeFormat(parsed.format), body: exc.body });
+    if (exc instanceof StateWriteInputError) return emitInvalidInput(io, { format: asEnvelopeFormat(parsed.format), body: exc.body });
     return emitInvalidInput(io, {
       format: asEnvelopeFormat(parsed.format),
       body: { class: "unsupported_target", message: (exc as Error).message },
@@ -140,9 +131,13 @@ export function runCompact(argv: string[], io: Io, prog: string): number {
 export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: string } {
   const args: DurabilityArgs = { project: null, artifact: null, format: "json" };
   let i = 0;
-  const value = makeArgvValueReader(argv, () => i, (n) => {
-    i = n;
-  });
+  const value = makeArgvValueReader(
+    argv,
+    () => i,
+    (n) => {
+      i = n;
+    },
+  );
   for (; i < argv.length; i++) {
     const token = argv[i];
     let parsed: string | null;
@@ -177,22 +172,14 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
   const sourceRoot = resolveSourceRoot();
   const parsed = parseDurabilityArgs(argv);
   if ("error" in parsed) {
-    return emitDurabilityFailure(
-      entityDurabilityFailure(parsed.error),
-      format,
-      io,
-    );
+    return emitDurabilityFailure(entityDurabilityFailure(parsed.error), format, io);
   }
   try {
     validateDurabilityArgs(parsed, sourceRoot);
     return cmdDurability(parsed, io);
   } catch (exc) {
     if (exc instanceof StateRetrievalFailure) return emitDurabilityFailure(exc, format, io);
-    return emitDurabilityFailure(
-      entityDurabilityFailure((exc as Error).message, parsed.artifact, parsed.id ?? undefined),
-      format,
-      io,
-    );
+    return emitDurabilityFailure(entityDurabilityFailure((exc as Error).message, parsed.artifact, parsed.id ?? undefined), format, io);
   }
 }
 

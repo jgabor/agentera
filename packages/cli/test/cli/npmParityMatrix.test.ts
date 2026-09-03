@@ -7,22 +7,11 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch.js";
 import { isParityFamilyClosed } from "../upgrade/gapRegistry.js";
-import {
-  classifyDrift,
-  DriftDirection,
-  effectiveDriftDirection,
-  expectedShapeLiteralPins,
-  expectedShapeRequiredKeys,
-  normalizeEnvelope,
-  NormalizeRules,
-  ParityRow,
-} from "./parityOracle.js";
+import { classifyDrift, DriftDirection, effectiveDriftDirection, expectedShapeLiteralPins, expectedShapeRequiredKeys, normalizeEnvelope, NormalizeRules, ParityRow } from "./parityOracle.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
-const ORACLE = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/npm-cli-surface.json"), "utf8"),
-) as {
+const ORACLE = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/npm-cli-surface.json"), "utf8")) as {
   commands: Record<
     string,
     {
@@ -34,9 +23,7 @@ const ORACLE = JSON.parse(
     }
   >;
 };
-const REMAINING_FAMILIES = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8"),
-) as {
+const REMAINING_FAMILIES = JSON.parse(fs.readFileSync(path.join(__dirname, "fixtures/oracle/parity-remaining-families.json"), "utf8")) as {
   python_commit: string;
   normalizeEnvelope: { rules: NormalizeRules };
   families: Record<
@@ -93,18 +80,16 @@ const ORIGINAL_ROWS: ParityRow[] = Object.entries(ORACLE.commands).map(([name, s
   version_break: false,
 }));
 
-const REMAINING_FAMILY_ROWS: ParityRow[] = Object.entries(REMAINING_FAMILIES.families).map(
-  ([family, spec]) => ({
-    family: `remaining:${family}`,
-    argv: spec.argv,
-    exitCode: spec.exitCode,
-    requiredKeys: expectedShapeRequiredKeys(spec.expectedShape),
-    literalPins: expectedShapeLiteralPins(spec.expectedShape),
-    forbiddenSubstrings: spec.forbiddenSubstrings,
-    python_commit: spec.python_commit,
-    version_break: !isParityFamilyClosed(family),
-  }),
-);
+const REMAINING_FAMILY_ROWS: ParityRow[] = Object.entries(REMAINING_FAMILIES.families).map(([family, spec]) => ({
+  family: `remaining:${family}`,
+  argv: spec.argv,
+  exitCode: spec.exitCode,
+  requiredKeys: expectedShapeRequiredKeys(spec.expectedShape),
+  literalPins: expectedShapeLiteralPins(spec.expectedShape),
+  forbiddenSubstrings: spec.forbiddenSubstrings,
+  python_commit: spec.python_commit,
+  version_break: !isParityFamilyClosed(family),
+}));
 
 describe("retained parity-family inventory", () => {
   it("contains only closed current families", () => {
@@ -125,14 +110,8 @@ interface MatrixResult {
 function seedDoctorParityBundle(root: string): void {
   fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
   fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "# Agentera\n");
-  fs.writeFileSync(
-    path.join(root, "registry.json"),
-    JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0" }] }),
-  );
-  fs.writeFileSync(
-    path.join(root, ".agentera-npx-bundle.json"),
-    JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0" }),
-  );
+  fs.writeFileSync(path.join(root, "registry.json"), JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0" }] }));
+  fs.writeFileSync(path.join(root, ".agentera-npx-bundle.json"), JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: "3.0.0" }));
   const references = path.join(REPO_ROOT, "references");
   if (fs.existsSync(references)) {
     fs.cpSync(references, path.join(root, "references"), { recursive: true });
@@ -141,8 +120,7 @@ function seedDoctorParityBundle(root: string): void {
 
 function runMatrixRow(row: ParityRow): MatrixResult {
   const familyId = row.family.replace(/^remaining:/, "");
-  const doctorParity =
-    row.argv[0] === "doctor" && !row.argv.includes("--smoke") && isParityFamilyClosed(familyId);
+  const doctorParity = row.argv[0] === "doctor" && !row.argv.includes("--smoke") && isParityFamilyClosed(familyId);
   const envRestore: Array<[string, string | undefined]> = [];
   let bundleTmp: string | null = null;
   let homeTmp: string | null = null;
@@ -217,29 +195,19 @@ function expectedMatrixExitCode(row: ParityRow, result: MatrixResult): number {
   return row.exitCode;
 }
 
-function assertRowPassesOrDocumentsBreak(
-  row: ParityRow,
-  classification: ReturnType<typeof classifyDrift>,
-  rc: number,
-): void {
+function assertRowPassesOrDocumentsBreak(row: ParityRow, classification: ReturnType<typeof classifyDrift>, rc: number): void {
   if (classification.direction === "equal") return;
   if (row.version_break) {
     // Intentional break: the row passes as long as it doesn't crash
     // catastrophically (rc 0 or rc 2 is acceptable for not-yet-ported
     // families that emit a text-mode Error envelope).
     if (rc !== 0 && rc !== 2) {
-      throw new Error(
-        `npmParityMatrix: row '${row.family}' (intentional_version_break) exited with rc=${rc}; expected 0 or 2.`,
-      );
+      throw new Error(`npmParityMatrix: row '${row.family}' (intentional_version_break) exited with rc=${rc}; expected 0 or 2.`);
     }
     return;
   }
   // Not equal, not version_break, not intentional: must fail.
-  const lines = [
-    `npmParityMatrix: row '${row.family}' reports drift_direction='${classification.direction}'.`,
-    `  pinned python_commit: ${row.python_commit}`,
-    `  argv: ${row.argv.join(" ")}`,
-  ];
+  const lines = [`npmParityMatrix: row '${row.family}' reports drift_direction='${classification.direction}'.`, `  pinned python_commit: ${row.python_commit}`, `  argv: ${row.argv.join(" ")}`];
   if (classification.missingKeys.length > 0) {
     lines.push(`  missing keys (ts_smaller): ${classification.missingKeys.join(", ")}`);
   }
@@ -252,9 +220,7 @@ function assertRowPassesOrDocumentsBreak(
   if (classification.literalMismatches.length > 0) {
     lines.push(`  literal mismatches: ${classification.literalMismatches.join("; ")}`);
   }
-  lines.push(
-    "  Set version_break: true on this row to mark as intentional_version_break, or update the live CLI to match the oracle pin.",
-  );
+  lines.push("  Set version_break: true on this row to mark as intentional_version_break, or update the live CLI to match the oracle pin.");
   throw new Error(lines.join("\n"));
 }
 
@@ -275,10 +241,7 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
         fs.mkdirSync(path.join(appHomeTmp, "app", "scripts"), { recursive: true });
         fs.writeFileSync(path.join(appHomeTmp, "app", "skills", "agentera", "SKILL.md"), "# Agentera\n");
         fs.writeFileSync(path.join(appHomeTmp, "app", "scripts", "agentera"), "#!/usr/bin/env node\n");
-        fs.writeFileSync(
-          path.join(appHomeTmp, "app", ".agentera-bundle.json"),
-          JSON.stringify({ kind: "agentera-bundle", version: "2.7.9" }),
-        );
+        fs.writeFileSync(path.join(appHomeTmp, "app", ".agentera-bundle.json"), JSON.stringify({ kind: "agentera-bundle", version: "2.7.9" }));
         envRestore.push(["AGENTERA_HOME", process.env.AGENTERA_HOME]);
         process.env.AGENTERA_HOME = appHomeTmp;
       }
@@ -322,48 +285,35 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
     });
   }
 
-  it.each(REMAINING_FAMILY_ROWS.map((row) => [row.family, row] as const))(
-    "remaining-family row '%s' is registered in the parity matrix (V5: one pass + one fail per testable unit)",
-    (_familyName, row) => {
-      const familyId = row.family.replace(/^remaining:/, "");
-      const result = runMatrixRow(row);
-      // ---- V5 pass case (per family) ----
-      //   - family is registered in the fixture
-      //   - python_commit is pinned to the current main HEAD
-      //   - version_break classifies an explicitly declared future migration
-      //     the gap; closed families must report drift_direction === 'equal'.
-      expect(row.python_commit, `row '${row.family}' python_commit`).toBe(REMAINING_FAMILIES.python_commit);
-      expect(row.version_break, `row '${row.family}' version_break`).toBe(!isParityFamilyClosed(familyId));
-      if (isParityFamilyClosed(familyId)) {
-        expect(result.rc, `row '${row.family}' exit code`).toBe(expectedMatrixExitCode(row, result));
-        assertRowPassesOrDocumentsBreak(row, result.classification!, result.rc);
-        expect(
-          result.drift_direction,
-          `row '${row.family}' drift_direction`,
-        ).toBe("equal");
-      } else {
-        expect(
-          result.drift_direction === "equal" || result.drift_direction === "intentional_version_break",
-          `row '${row.family}' drift_direction='${result.drift_direction}' must be equal or intentional_version_break until the gap closes`,
-        ).toBe(true);
-      }
-      // ---- V5 fail case (per family) ----
-      //   - the live envelope MUST NOT emit any of the forbidden
-      //     substrings (the per-family sentinels). If it does, the
-      //     matrix classifies the row as `python_smaller` and the test
-      //     fails with a clear error.
-      if (result.classification?.forbiddenHits && result.classification.forbiddenHits.length > 0) {
-        throw new Error(
-          `npmParityMatrix: row '${row.family}' emitted a forbidden-shape sentinel: ${result.classification.forbiddenHits.join(", ")}.`,
-        );
-      }
-    },
-  );
+  it.each(REMAINING_FAMILY_ROWS.map((row) => [row.family, row] as const))("remaining-family row '%s' is registered in the parity matrix (V5: one pass + one fail per testable unit)", (_familyName, row) => {
+    const familyId = row.family.replace(/^remaining:/, "");
+    const result = runMatrixRow(row);
+    // ---- V5 pass case (per family) ----
+    //   - family is registered in the fixture
+    //   - python_commit is pinned to the current main HEAD
+    //   - version_break classifies an explicitly declared future migration
+    //     the gap; closed families must report drift_direction === 'equal'.
+    expect(row.python_commit, `row '${row.family}' python_commit`).toBe(REMAINING_FAMILIES.python_commit);
+    expect(row.version_break, `row '${row.family}' version_break`).toBe(!isParityFamilyClosed(familyId));
+    if (isParityFamilyClosed(familyId)) {
+      expect(result.rc, `row '${row.family}' exit code`).toBe(expectedMatrixExitCode(row, result));
+      assertRowPassesOrDocumentsBreak(row, result.classification!, result.rc);
+      expect(result.drift_direction, `row '${row.family}' drift_direction`).toBe("equal");
+    } else {
+      expect(result.drift_direction === "equal" || result.drift_direction === "intentional_version_break", `row '${row.family}' drift_direction='${result.drift_direction}' must be equal or intentional_version_break until the gap closes`).toBe(true);
+    }
+    // ---- V5 fail case (per family) ----
+    //   - the live envelope MUST NOT emit any of the forbidden
+    //     substrings (the per-family sentinels). If it does, the
+    //     matrix classifies the row as `python_smaller` and the test
+    //     fails with a clear error.
+    if (result.classification?.forbiddenHits && result.classification.forbiddenHits.length > 0) {
+      throw new Error(`npmParityMatrix: row '${row.family}' emitted a forbidden-shape sentinel: ${result.classification.forbiddenHits.join(", ")}.`);
+    }
+  });
 
   it("does not treat uvx git feat/v3 as a development channel resolution", () => {
-    const { out } = capture((io) =>
-      main(["node", "agentera", "upgrade", "--channel", "development", "--dry-run", "--format", "json"], io),
-    );
+    const { out } = capture((io) => main(["node", "agentera", "upgrade", "--channel", "development", "--dry-run", "--format", "json"], io));
     const payload = JSON.parse(out);
     const planText = JSON.stringify(payload);
     expect(planText).not.toMatch(/uvx.*@feat\/v3/);

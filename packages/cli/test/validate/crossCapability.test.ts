@@ -6,10 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import {
-  loadCanonicalArtifacts,
-  validateGraph,
-} from "../../src/validate/crossCapability.js";
+import { loadCanonicalArtifacts, validateGraph } from "../../src/validate/crossCapability.js";
 import { EXPECTED_ARTIFACT_SCHEMA_VERSION } from "../../src/registries/artifactRegistry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -25,9 +22,7 @@ function writeYaml(p: string, data: any): void {
  *  under test. Synthetic tests pass this model into `validateGraph` so absent
  *  unrelated identities (e.g. the full production set) don't fan out
  *  "no matching schema file" warnings. */
-function minimalRegistryModel(
-  identities: { artifact_id: string; display_name: string; default_path: string }[],
-): any {
+function minimalRegistryModel(identities: { artifact_id: string; display_name: string; default_path: string }[]): any {
   return {
     interface: "ArtifactRegistry",
     status: "design_contract",
@@ -36,13 +31,7 @@ function minimalRegistryModel(
   };
 }
 
-function schemaMeta(
-  artifactId: string,
-  p: string,
-  producer: string,
-  consumers: string[],
-  implementationStatus?: string,
-): any {
+function schemaMeta(artifactId: string, p: string, producer: string, consumers: string[], implementationStatus?: string): any {
   return {
     meta: {
       name: artifactId,
@@ -85,9 +74,7 @@ describe("validateGraph", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
-    writeYaml(model, minimalRegistryModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-    ]));
+    writeYaml(model, minimalRegistryModel([{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }]));
     writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
     writeYaml(path.join(caps, "plan", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "produces"));
     writeYaml(path.join(caps, "build", "schemas", "artifacts.yaml"), capabilityArtifact("plan", "consumes"));
@@ -99,15 +86,10 @@ describe("validateGraph", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
-    writeYaml(model, minimalRegistryModel([
-      { artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" },
-    ]));
+    writeYaml(model, minimalRegistryModel([{ artifact_id: "health", display_name: "HEALTH.md", default_path: ".agentera/health.yaml" }]));
     writeYaml(path.join(schemas, "health.yaml"), schemaMeta("health", ".agentera/health.yaml", "audit", ["build"]));
     writeYaml(path.join(caps, "audit", "schemas", "artifacts.yaml"), capabilityArtifact("health", "consumes"));
-    writeYaml(
-      path.join(caps, "build", "schemas", "artifacts.yaml"),
-      capabilityArtifact("health", "produces_and_consumes"),
-    );
+    writeYaml(path.join(caps, "build", "schemas", "artifacts.yaml"), capabilityArtifact("health", "produces_and_consumes"));
 
     const errors = validateGraph(schemas, caps, model);
     expect(errors.some((e) => e.includes("producers"))).toBe(true);
@@ -117,35 +99,38 @@ describe("validateGraph", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
-    writeYaml(model, minimalRegistryModel([
-      { artifact_id: "glossary", display_name: "GLOSSARY.md", default_path: ".agentera/glossary.yaml" },
-    ]));
     writeYaml(
-      path.join(schemas, "glossary.yaml"),
-      schemaMeta("glossary", ".agentera/glossary.yaml", "build", ["build", "discuss"]),
+      model,
+      minimalRegistryModel([
+        {
+          artifact_id: "glossary",
+          display_name: "GLOSSARY.md",
+          default_path: ".agentera/glossary.yaml",
+        },
+      ]),
     );
-    writeYaml(
-      path.join(caps, "build", "schemas", "artifacts.yaml"),
-      capabilityArtifact("glossary", "produces_and_consumes"),
-    );
+    writeYaml(path.join(schemas, "glossary.yaml"), schemaMeta("glossary", ".agentera/glossary.yaml", "build", ["build", "discuss"]));
+    writeYaml(path.join(caps, "build", "schemas", "artifacts.yaml"), capabilityArtifact("glossary", "produces_and_consumes"));
     writeYaml(path.join(caps, "discuss", "schemas", "artifacts.yaml"), { ARTIFACTS: {} });
 
-    expect(validateGraph(schemas, caps, model)).toContain(
-      "GLOSSARY.md: registry consumers ['build', 'discuss'] do not match capability consumers ['build']",
-    );
+    expect(validateGraph(schemas, caps, model)).toContain("GLOSSARY.md: registry consumers ['build', 'discuss'] do not match capability consumers ['build']");
   });
 
   it("leaves declared-deferred relationships unimplemented", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
-    writeYaml(model, minimalRegistryModel([
-      { artifact_id: "glossary", display_name: "GLOSSARY.md", default_path: ".agentera/glossary.yaml" },
-    ]));
     writeYaml(
-      path.join(schemas, "glossary.yaml"),
-      schemaMeta("glossary", ".agentera/glossary.yaml", "audit", ["audit"], "declared_deferred"),
+      model,
+      minimalRegistryModel([
+        {
+          artifact_id: "glossary",
+          display_name: "GLOSSARY.md",
+          default_path: ".agentera/glossary.yaml",
+        },
+      ]),
     );
+    writeYaml(path.join(schemas, "glossary.yaml"), schemaMeta("glossary", ".agentera/glossary.yaml", "audit", ["audit"], "declared_deferred"));
 
     expect(validateGraph(schemas, caps, model)).toEqual([]);
   });
@@ -154,9 +139,7 @@ describe("validateGraph", () => {
     const schemas = path.join(tmp, "schemas");
     const caps = path.join(tmp, "capabilities");
     const model = path.join(tmp, "model.yaml");
-    writeYaml(model, minimalRegistryModel([
-      { artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" },
-    ]));
+    writeYaml(model, minimalRegistryModel([{ artifact_id: "plan", display_name: "PLAN.md", default_path: ".agentera/plan.yaml" }]));
     writeYaml(path.join(schemas, "plan.yaml"), schemaMeta("plan", ".agentera/plan.yaml", "plan", ["build"]));
     writeYaml(path.join(caps, "plan", "schemas", "artifacts.yaml"), capabilityArtifact("ghost", "produces"));
 
@@ -165,11 +148,7 @@ describe("validateGraph", () => {
 
   it("loads special cases from the registry not validator-local exceptions", () => {
     const model = YAML.parse(fs.readFileSync(REGISTRY_MODEL, "utf8"));
-    const specialCaseIds = new Set<string>(
-      (model.explicit_special_cases as any[])
-        .filter((record) => ["global_user_state", "archive", "local_harness"].includes(record.artifact_type))
-        .map((record) => record.artifact_id),
-    );
+    const specialCaseIds = new Set<string>((model.explicit_special_cases as any[]).filter((record) => ["global_user_state", "archive", "local_harness"].includes(record.artifact_type)).map((record) => record.artifact_id));
     const canonical = loadCanonicalArtifacts();
     for (const id of specialCaseIds) {
       expect(canonical.has(id), `canonical missing special case ${id}`).toBe(true);

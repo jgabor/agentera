@@ -1,21 +1,8 @@
 import crypto from "node:crypto";
 
 import type { JsonObject } from "../../core/jsonValue.js";
-import {
-  canonicalJson,
-  loadMutationGrammar,
-  type MutationOperationDeclaration,
-} from "./grammar.js";
-import {
-  RUNTIME_WRITABLE_ARTIFACTS,
-  RUNTIME_WRITE_VERBS,
-  runtimeOperationSpec,
-  runtimeOperationSpecs,
-  type RuntimeOperationField,
-  type RuntimeOperationSpec,
-  type RuntimeWritableArtifact,
-  type RuntimeWriteVerb,
-} from "./runtimeOperations.js";
+import { canonicalJson, loadMutationGrammar, type MutationOperationDeclaration } from "./grammar.js";
+import { RUNTIME_WRITABLE_ARTIFACTS, RUNTIME_WRITE_VERBS, runtimeOperationSpec, runtimeOperationSpecs, type RuntimeOperationField, type RuntimeOperationSpec, type RuntimeWritableArtifact, type RuntimeWriteVerb } from "./runtimeOperations.js";
 import { structuredInputDescriptor, structuredInputSchemaProjection } from "./input.js";
 
 export const WRITABLE_ARTIFACTS = RUNTIME_WRITABLE_ARTIFACTS;
@@ -65,7 +52,12 @@ export function operationSpec(artifact: string, verb: string): OperationSpec | n
 
 export function verbsForArtifact(artifact: string): WriteVerb[] {
   if (!isWritableArtifact(artifact)) return [];
-  return [...codeOwnedSpecs().filter((spec) => spec.artifact === artifact).map((spec) => spec.verb), "explain"];
+  return [
+    ...codeOwnedSpecs()
+      .filter((spec) => spec.artifact === artifact)
+      .map((spec) => spec.verb),
+    "explain",
+  ];
 }
 
 export function isWriteVerb(value: string | undefined): value is WriteVerb {
@@ -77,7 +69,13 @@ export function isWritableArtifact(value: string): value is WritableArtifact {
 }
 
 export function writerOwnedFields(artifact: string): string[] {
-  return [...new Set(codeOwnedSpecs().filter((spec) => spec.artifact === artifact).flatMap((spec) => spec.ownedFields))];
+  return [
+    ...new Set(
+      codeOwnedSpecs()
+        .filter((spec) => spec.artifact === artifact)
+        .flatMap((spec) => spec.ownedFields),
+    ),
+  ];
 }
 
 function declarationFor(grammar: ReturnType<typeof loadMutationGrammar>, artifact: string, verb: string): MutationOperationDeclaration {
@@ -142,8 +140,17 @@ export function mutationParityMatrix(targets: readonly string[] = WRITABLE_ARTIF
           schema: "agentera schema",
           help: `agentera state ${spec.artifact} --help`,
         },
-        success: { command: declaration.examples[0], expected: "pass", evidence: "class-level runtime regression" },
-        rejection: { command: `${declaration.examples[0]} --retired-content-flag`, expected: "fail", before_effects: true, evidence: "generic parser rejection regression" },
+        success: {
+          command: declaration.examples[0],
+          expected: "pass",
+          evidence: "class-level runtime regression",
+        },
+        rejection: {
+          command: `${declaration.examples[0]} --retired-content-flag`,
+          expected: "fail",
+          before_effects: true,
+          evidence: "generic parser rejection regression",
+        },
         compare: ["authority", "runtime", "explain", "schema", "help"],
       };
     });
@@ -167,10 +174,7 @@ function createSha256(value: string): string {
   return crypto.createHash("sha256").update(value).digest("hex");
 }
 
-export function stateWriterArtifactContract(
-  artifact: string,
-  mode: "full" | "compact" = "full",
-): JsonObject | null {
+export function stateWriterArtifactContract(artifact: string, mode: "full" | "compact" = "full"): JsonObject | null {
   if (!isWritableArtifact(artifact)) return null;
   const grammar = loadMutationGrammar();
   const specs = codeOwnedSpecs().filter((spec) => spec.artifact === artifact);
@@ -192,23 +196,21 @@ export function stateWriterArtifactContract(
   return result;
 }
 
-export function stateWriterContract(
-  targets: readonly string[] = WRITABLE_ARTIFACTS,
-  mode: "full" | "compact" = "full",
-): JsonObject {
+export function stateWriterContract(targets: readonly string[] = WRITABLE_ARTIFACTS, mode: "full" | "compact" = "full"): JsonObject {
   const uniqueTargets = [...new Set(targets)];
   const artifacts = uniqueTargets.map((target) => stateWriterArtifactContract(target, mode)).filter((entry): entry is JsonObject => entry !== null);
   const grammar = loadMutationGrammar();
   const fullParity = mutationParityMatrix(uniqueTargets) as Record<string, any>;
-  const parity = mode === "full"
-    ? fullParity
-    : {
-      schemaVersion: fullParity.schemaVersion,
-      contract_digest: fullParity.contract_digest,
-      counts: fullParity.counts,
-      row_count: (fullParity.rows as unknown[]).length,
-      detail: "agentera state <artifact> explain --all",
-    };
+  const parity =
+    mode === "full"
+      ? fullParity
+      : {
+          schemaVersion: fullParity.schemaVersion,
+          contract_digest: fullParity.contract_digest,
+          counts: fullParity.counts,
+          row_count: (fullParity.rows as unknown[]).length,
+          detail: "agentera state <artifact> explain --all",
+        };
   return {
     schemaVersion: "agentera.stateWriterDiscovery.v1",
     namespace: "agentera state",

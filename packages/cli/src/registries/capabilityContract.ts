@@ -9,14 +9,7 @@ import { loadYamlMapping } from "../core/yaml.js";
  * capability schema structure; protocol primitive values stay in protocol.yaml.
  */
 
-export const BOOTSTRAP_RULE_SECTIONS = [
-  "DIRECTORY_REQUIREMENTS",
-  "ENTRY_REQUIREMENTS",
-  "FIELD_RULES",
-  "PRIMITIVE_REFERENCE_FIELDS",
-  "ROUTE_ALIASES",
-  "TRIGGER_ENRICHMENT",
-] as const;
+export const BOOTSTRAP_RULE_SECTIONS = ["DIRECTORY_REQUIREMENTS", "ENTRY_REQUIREMENTS", "FIELD_RULES", "PRIMITIVE_REFERENCE_FIELDS", "ROUTE_ALIASES", "TRIGGER_ENRICHMENT"] as const;
 
 export class ContractBootstrapError extends Error {
   errors: string[];
@@ -128,9 +121,7 @@ export function loadCapabilitySchemaContract(contractPath: string): CapabilitySc
   try {
     data = loadYamlMapping(fs.readFileSync(contractPath, "utf8")) as JsonObject; // cast: YAML parse IO boundary
   } catch (exc) {
-    throw new ContractBootstrapError([
-      `contract root in ${contractPath} must be a mapping: ${(exc as Error).message}`,
-    ]);
+    throw new ContractBootstrapError([`contract root in ${contractPath} must be a mapping: ${(exc as Error).message}`]);
   }
   const errors = validateContractBootstrap(data, contractPath);
   if (errors.length > 0) {
@@ -149,10 +140,7 @@ export function validateContractBootstrap(data: JsonObject, sourceLabel: string)
   return errors;
 }
 
-export function buildCapabilitySchemaContract(
-  data: JsonObject,
-  contractPath: string,
-): CapabilitySchemaContract {
+export function buildCapabilitySchemaContract(data: JsonObject, contractPath: string): CapabilitySchemaContract {
   const directory = data.DIRECTORY_REQUIREMENTS as JsonObject;
   const schemaFiles = directory.schema_files as JsonObject;
   const entryRequirements = data.ENTRY_REQUIREMENTS as JsonObject;
@@ -187,7 +175,9 @@ export function buildCapabilitySchemaContract(
       schemaGlob: schemaFiles.glob as string,
       minimumSchemaFiles: schemaFiles.minimum_count as number,
     },
-    entrySchema: { fields: { ...((data.ENTRY_SCHEMA as JsonObject).fields as Record<string, JsonObject>) } },
+    entrySchema: {
+      fields: { ...((data.ENTRY_SCHEMA as JsonObject).fields as Record<string, JsonObject>) },
+    },
     entryRules,
     triggerPriorityRules: {
       required: Boolean(triggerPriority.required),
@@ -220,9 +210,7 @@ function buildTriggerEnrichmentRules(data: JsonObject): TriggerEnrichmentRules {
 
   return {
     spec: enrichment.spec as string,
-    fields: Object.fromEntries(
-      Object.entries(fields).map(([name, raw]) => [name, buildEnrichmentFieldRule(raw)]),
-    ),
+    fields: Object.fromEntries(Object.entries(fields).map(([name, raw]) => [name, buildEnrichmentFieldRule(raw)])),
     allowedCapabilityIds,
   };
 }
@@ -262,14 +250,8 @@ function buildEnrichmentFieldRule(raw: JsonObject): TriggerEnrichmentFieldRule {
 
 function requiredGroupsOf(data: JsonObject, sourceLabel: string, errors: string[]): string[] {
   const groups = data.REQUIRED_GROUPS;
-  if (
-    !Array.isArray(groups) ||
-    groups.length === 0 ||
-    !groups.every((group) => typeof group === "string" && group)
-  ) {
-    errors.push(
-      `bootstrap [error]: REQUIRED_GROUPS in ${sourceLabel} must be a non-empty list of strings`,
-    );
+  if (!Array.isArray(groups) || groups.length === 0 || !groups.every((group) => typeof group === "string" && group)) {
+    errors.push(`bootstrap [error]: REQUIRED_GROUPS in ${sourceLabel} must be a non-empty list of strings`);
     return [];
   }
   return [...(groups as string[])];
@@ -289,19 +271,12 @@ function checkEntrySchema(data: JsonObject, sourceLabel: string, errors: string[
   for (const fieldName of ["id", "description"]) {
     const fieldRule = fields[fieldName];
     if (!isMapping(fieldRule) || fieldRule.required !== true) {
-      errors.push(
-        `bootstrap [error]: ENTRY_SCHEMA.fields.${fieldName} in ${sourceLabel} must exist with required=true`,
-      );
+      errors.push(`bootstrap [error]: ENTRY_SCHEMA.fields.${fieldName} in ${sourceLabel} must exist with required=true`);
     }
   }
 }
 
-function checkGroupPrefixes(
-  data: JsonObject,
-  sourceLabel: string,
-  requiredGroups: string[],
-  errors: string[],
-): void {
+function checkGroupPrefixes(data: JsonObject, sourceLabel: string, requiredGroups: string[], errors: string[]): void {
   const prefixes = data.GROUP_PREFIXES;
   if (!isMapping(prefixes)) {
     errors.push(`bootstrap [error]: GROUP_PREFIXES in ${sourceLabel} must be a mapping`);
@@ -310,9 +285,7 @@ function checkGroupPrefixes(
   for (const groupName of requiredGroups) {
     const prefix = prefixes[groupName];
     if (typeof prefix !== "string" || !prefix) {
-      errors.push(
-        `bootstrap [error]: GROUP_PREFIXES.${groupName} in ${sourceLabel} must be a non-empty string`,
-      );
+      errors.push(`bootstrap [error]: GROUP_PREFIXES.${groupName} in ${sourceLabel} must be a non-empty string`);
     }
   }
 }
@@ -338,46 +311,32 @@ function checkDirectoryRules(data: JsonObject, sourceLabel: string, errors: stri
   }
   for (const section of ["instruction_module", "schemas_directory", "schema_files"]) {
     if (!isMapping(directory[section])) {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.${section} in ${sourceLabel} must be a mapping`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.${section} in ${sourceLabel} must be a mapping`);
     }
   }
   if ("required_files" in directory) {
-    errors.push(
-      `bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${sourceLabel} duplicates instruction_module and schemas_directory authority`,
-    );
+    errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.required_files in ${sourceLabel} duplicates instruction_module and schemas_directory authority`);
   }
   const instructionModule = directory.instruction_module;
   if (isMapping(instructionModule)) {
     if (instructionModule.path !== "packages/cli/src/capabilities/<name>/instructions.ts") {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${sourceLabel} must be packages/cli/src/capabilities/<name>/instructions.ts`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.path in ${sourceLabel} must be packages/cli/src/capabilities/<name>/instructions.ts`);
     }
     if (instructionModule.type !== "file") {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.type in ${sourceLabel} must be file`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.type in ${sourceLabel} must be file`);
     }
     if (instructionModule.required !== true) {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.required in ${sourceLabel} must be true`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.instruction_module.required in ${sourceLabel} must be true`);
     }
   }
   const schemaFiles = directory.schema_files;
   if (isMapping(schemaFiles)) {
     if (typeof schemaFiles.glob !== "string" || !schemaFiles.glob) {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.schema_files.glob in ${sourceLabel} must be a non-empty string`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.schema_files.glob in ${sourceLabel} must be a non-empty string`);
     }
     const minimumCount = schemaFiles.minimum_count;
     if (typeof minimumCount !== "number" || !Number.isInteger(minimumCount) || minimumCount < 1) {
-      errors.push(
-        `bootstrap [error]: DIRECTORY_REQUIREMENTS.schema_files.minimum_count in ${sourceLabel} must be a positive integer`,
-      );
+      errors.push(`bootstrap [error]: DIRECTORY_REQUIREMENTS.schema_files.minimum_count in ${sourceLabel} must be a positive integer`);
     }
   }
 }
@@ -388,17 +347,13 @@ function checkEntryRules(data: JsonObject, sourceLabel: string, errors: string[]
     return;
   }
   if (!Array.isArray(rules.default_required_fields)) {
-    errors.push(
-      `bootstrap [error]: ENTRY_REQUIREMENTS.default_required_fields in ${sourceLabel} must be a list`,
-    );
+    errors.push(`bootstrap [error]: ENTRY_REQUIREMENTS.default_required_fields in ${sourceLabel} must be a list`);
   }
   if (!isMapping(rules.groups)) {
     errors.push(`bootstrap [error]: ENTRY_REQUIREMENTS.groups in ${sourceLabel} must be a mapping`);
   }
   if (!isMapping(rules.deprecation)) {
-    errors.push(
-      `bootstrap [error]: ENTRY_REQUIREMENTS.deprecation in ${sourceLabel} must be a mapping`,
-    );
+    errors.push(`bootstrap [error]: ENTRY_REQUIREMENTS.deprecation in ${sourceLabel} must be a mapping`);
   }
 }
 
@@ -410,25 +365,15 @@ function checkTriggerPriorityRules(data: JsonObject, sourceLabel: string, errors
   const triggers = isMapping(fieldRules.TRIGGERS) ? fieldRules.TRIGGERS : {};
   const priority = (triggers as JsonObject).priority;
   if (!isMapping(priority)) {
-    errors.push(
-      `bootstrap [error]: FIELD_RULES.TRIGGERS.priority in ${sourceLabel} must be a mapping`,
-    );
+    errors.push(`bootstrap [error]: FIELD_RULES.TRIGGERS.priority in ${sourceLabel} must be a mapping`);
     return;
   }
   if (priority.required !== true) {
-    errors.push(
-      `bootstrap [error]: FIELD_RULES.TRIGGERS.priority.required in ${sourceLabel} must be true`,
-    );
+    errors.push(`bootstrap [error]: FIELD_RULES.TRIGGERS.priority.required in ${sourceLabel} must be true`);
   }
   const allowed = priority.allowed_values;
-  if (
-    !Array.isArray(allowed) ||
-    allowed.length === 0 ||
-    !allowed.every((v) => typeof v === "string")
-  ) {
-    errors.push(
-      `bootstrap [error]: FIELD_RULES.TRIGGERS.priority.allowed_values in ${sourceLabel} must be a non-empty list of strings`,
-    );
+  if (!Array.isArray(allowed) || allowed.length === 0 || !allowed.every((v) => typeof v === "string")) {
+    errors.push(`bootstrap [error]: FIELD_RULES.TRIGGERS.priority.allowed_values in ${sourceLabel} must be a non-empty list of strings`);
   }
 }
 
@@ -438,27 +383,17 @@ function checkPrimitiveReferenceRules(data: JsonObject, sourceLabel: string, err
     return;
   }
   if (primitiveRefs.protocol_values_authority !== "protocol.yaml") {
-    errors.push(
-      `bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.protocol_values_authority in ${sourceLabel} must be protocol.yaml`,
-    );
+    errors.push(`bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.protocol_values_authority in ${sourceLabel} must be protocol.yaml`);
   }
   const fields = primitiveRefs.fields;
   if (!isMapping(fields)) {
-    errors.push(
-      `bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.fields in ${sourceLabel} must be a mapping`,
-    );
+    errors.push(`bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.fields in ${sourceLabel} must be a mapping`);
     return;
   }
   for (const [fieldName, fieldRule] of Object.entries(fields)) {
     const protocolGroups = isMapping(fieldRule) ? fieldRule.protocol_groups : null;
-    if (
-      !Array.isArray(protocolGroups) ||
-      protocolGroups.length === 0 ||
-      !protocolGroups.every((group) => typeof group === "string" && group)
-    ) {
-      errors.push(
-        `bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.fields.${fieldName}.protocol_groups in ${sourceLabel} must be a non-empty list of strings`,
-      );
+    if (!Array.isArray(protocolGroups) || protocolGroups.length === 0 || !protocolGroups.every((group) => typeof group === "string" && group)) {
+      errors.push(`bootstrap [error]: PRIMITIVE_REFERENCE_FIELDS.fields.${fieldName}.protocol_groups in ${sourceLabel} must be a non-empty list of strings`);
     }
   }
 }
@@ -469,26 +404,18 @@ function checkRouteAliasRules(data: JsonObject, sourceLabel: string, errors: str
     return;
   }
   if (typeof aliases.route_prefix !== "string" || !aliases.route_prefix) {
-    errors.push(
-      `bootstrap [error]: ROUTE_ALIASES.route_prefix in ${sourceLabel} must be a non-empty string`,
-    );
+    errors.push(`bootstrap [error]: ROUTE_ALIASES.route_prefix in ${sourceLabel} must be a non-empty string`);
   }
   if (aliases.canonical_name_precedence !== true) {
-    errors.push(
-      `bootstrap [error]: ROUTE_ALIASES.canonical_name_precedence in ${sourceLabel} must be true`,
-    );
+    errors.push(`bootstrap [error]: ROUTE_ALIASES.canonical_name_precedence in ${sourceLabel} must be true`);
   }
   if (typeof aliases.cli_boundary !== "string" || !aliases.cli_boundary) {
-    errors.push(
-      `bootstrap [error]: ROUTE_ALIASES.cli_boundary in ${sourceLabel} must be a non-empty string`,
-    );
+    errors.push(`bootstrap [error]: ROUTE_ALIASES.cli_boundary in ${sourceLabel} must be a non-empty string`);
   }
 
   const primaryAliases = aliases.primary_aliases;
   if (!Array.isArray(primaryAliases) || primaryAliases.length === 0) {
-    errors.push(
-      `bootstrap [error]: ROUTE_ALIASES.primary_aliases in ${sourceLabel} must be a non-empty list`,
-    );
+    errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases in ${sourceLabel} must be a non-empty list`);
     return;
   }
 
@@ -497,44 +424,29 @@ function checkRouteAliasRules(data: JsonObject, sourceLabel: string, errors: str
   primaryAliases.forEach((entry, idx) => {
     const index = idx + 1;
     if (!isMapping(entry)) {
-      errors.push(
-        `bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}] in ${sourceLabel} must be a mapping`,
-      );
+      errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}] in ${sourceLabel} must be a mapping`);
       return;
     }
     const alias = entry.alias;
     const capability = entry.capability;
     if (typeof alias !== "string" || !alias) {
-      errors.push(
-        `bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}].alias in ${sourceLabel} must be a non-empty string`,
-      );
+      errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}].alias in ${sourceLabel} must be a non-empty string`);
     } else if (seenAliases.has(alias)) {
-      errors.push(
-        `bootstrap [error]: ROUTE_ALIASES.primary_aliases alias '${alias}' in ${sourceLabel} must be unique`,
-      );
+      errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases alias '${alias}' in ${sourceLabel} must be unique`);
     } else {
       seenAliases.add(alias);
     }
     if (typeof capability !== "string" || !capability) {
-      errors.push(
-        `bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}].capability in ${sourceLabel} must be a non-empty string`,
-      );
+      errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases[${index}].capability in ${sourceLabel} must be a non-empty string`);
     } else if (seenCapabilities.has(capability)) {
-      errors.push(
-        `bootstrap [error]: ROUTE_ALIASES.primary_aliases capability '${capability}' in ${sourceLabel} must be unique`,
-      );
+      errors.push(`bootstrap [error]: ROUTE_ALIASES.primary_aliases capability '${capability}' in ${sourceLabel} must be unique`);
     } else {
       seenCapabilities.add(capability);
     }
   });
 }
 
-function checkSelfGroups(
-  data: JsonObject,
-  sourceLabel: string,
-  requiredGroups: string[],
-  errors: string[],
-): void {
+function checkSelfGroups(data: JsonObject, sourceLabel: string, requiredGroups: string[], errors: string[]): void {
   for (const groupName of requiredGroups) {
     if (!(groupName in data)) {
       errors.push(`bootstrap [error]: self group ${groupName} missing in ${sourceLabel}`);
@@ -547,31 +459,20 @@ function checkSelfGroups(
 /**
  * Required integer range field inside TRIGGER_ENRICHMENT compatibility rules.
  */
-function checkEnrichmentIntegerField(
-  value: unknown,
-  label: string,
-  sourceLabel: string,
-  errors: string[],
-): void {
+function checkEnrichmentIntegerField(value: unknown, label: string, sourceLabel: string, errors: string[]): void {
   if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 100) {
-    errors.push(
-      `bootstrap [error]: ${label} in ${sourceLabel} must be an integer in range 0..100`,
-    );
+    errors.push(`bootstrap [error]: ${label} in ${sourceLabel} must be an integer in range 0..100`);
   }
 }
 
 function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const enrichment = data.TRIGGER_ENRICHMENT;
   if (!isMapping(enrichment)) {
-    errors.push(
-      `bootstrap [error]: TRIGGER_ENRICHMENT in ${sourceLabel} must be present as a mapping`,
-    );
+    errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT in ${sourceLabel} must be present as a mapping`);
     return;
   }
   if (typeof enrichment.spec !== "string" || !enrichment.spec) {
-    errors.push(
-      `bootstrap [error]: TRIGGER_ENRICHMENT.spec in ${sourceLabel} must be a non-empty string`,
-    );
+    errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.spec in ${sourceLabel} must be a non-empty string`);
   }
   const fields = enrichment.fields;
   if (!isMapping(fields)) {
@@ -589,39 +490,27 @@ function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, erro
   };
   for (const [fieldName, expectedType] of Object.entries(expected)) {
     if (!isMapping(fields[fieldName])) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName} in ${sourceLabel} must be a mapping`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName} in ${sourceLabel} must be a mapping`);
       continue;
     }
     if (fields[fieldName].type !== expectedType) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.type in ${sourceLabel} must be ${expectedType}`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.type in ${sourceLabel} must be ${expectedType}`);
     }
     if (fields[fieldName].required !== false) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.required in ${sourceLabel} must be false (enrichment is opt-in)`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.required in ${sourceLabel} must be false (enrichment is opt-in)`);
     }
     const min = fields[fieldName].min;
     const max = fields[fieldName].max;
     if (expectedType === "integer") {
       if (typeof min !== "number" || min !== 0) {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.min in ${sourceLabel} must be 0`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.min in ${sourceLabel} must be 0`);
       }
       if (typeof max !== "number" || max !== 100) {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.max in ${sourceLabel} must be 100`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.max in ${sourceLabel} must be 100`);
       }
     }
     if (fieldName === "patterns_regex" && fields[fieldName].each_must_be_valid_regex !== true) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.each_must_be_valid_regex in ${sourceLabel} must be true`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.${fieldName}.each_must_be_valid_regex in ${sourceLabel} must be true`);
     }
   }
 
@@ -629,41 +518,27 @@ function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, erro
   const disambig = isMapping(fields.disambiguates_against) ? fields.disambiguates_against : null;
   const entriesList = disambig && isMapping(disambig.entries) ? disambig.entries : null;
   if (disambig && !entriesList) {
-    errors.push(
-      `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries in ${sourceLabel} must be a mapping`,
-    );
+    errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries in ${sourceLabel} must be a mapping`);
   }
   if (entriesList) {
     if (!isMapping(entriesList.capability)) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability in ${sourceLabel} must be a mapping`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability in ${sourceLabel} must be a mapping`);
     } else {
       if (entriesList.capability.required !== true) {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.required in ${sourceLabel} must be true`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.required in ${sourceLabel} must be true`);
       }
       if (entriesList.capability.enum_source !== "ROUTE_ALIASES.primary_aliases.capability") {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in ${sourceLabel} must be ROUTE_ALIASES.primary_aliases.capability`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.capability.enum_source in ${sourceLabel} must be ROUTE_ALIASES.primary_aliases.capability`);
       }
     }
     if (!isMapping(entriesList.hint)) {
-      errors.push(
-        `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint in ${sourceLabel} must be a mapping`,
-      );
+      errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint in ${sourceLabel} must be a mapping`);
     } else {
       if (entriesList.hint.required !== true) {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.required in ${sourceLabel} must be true`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.required in ${sourceLabel} must be true`);
       }
       if (entriesList.hint.non_empty !== true) {
-        errors.push(
-          `bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.non_empty in ${sourceLabel} must be true`,
-        );
+        errors.push(`bootstrap [error]: TRIGGER_ENRICHMENT.fields.disambiguates_against.entries.hint.non_empty in ${sourceLabel} must be true`);
       }
     }
   }

@@ -53,19 +53,9 @@ function hash(value: unknown): string {
   return createHash("sha256").update(canonicalRecordJson(value), "utf8").digest("hex");
 }
 
-function fail(
-  exitCode: 1 | 2,
-  className: StateFailureBody["error"]["class"],
-  message: string,
-  verb: "list" | "get",
-  details: Partial<StateFailureBody["error"]> = {},
-): StateRetrievalFailure {
-  const syntax = verb === "list"
-    ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN]"
-    : "agentera state plan tasks get --id ID";
-  const example = verb === "list"
-    ? "agentera state plan tasks list --limit 20"
-    : "agentera state plan tasks get --id qjtrmnpvka";
+function fail(exitCode: 1 | 2, className: StateFailureBody["error"]["class"], message: string, verb: "list" | "get", details: Partial<StateFailureBody["error"]> = {}): StateRetrievalFailure {
+  const syntax = verb === "list" ? "agentera state plan tasks list [PLAN_ID] [--limit N] [--cursor TOKEN]" : "agentera state plan tasks get --id ID";
+  const example = verb === "list" ? "agentera state plan tasks list --limit 20" : "agentera state plan tasks get --id qjtrmnpvka";
   return new StateRetrievalFailure(
     {
       schemaVersion: "agentera.stateFailure.v1",
@@ -76,9 +66,7 @@ function fail(
         syntax,
         example,
         recovery: details.recovery ?? "Correct the command using one of the valid forms and retry; no state was changed.",
-        valid_values: verb === "list"
-          ? ["list", "[PLAN_ID]", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"]
-          : ["get", "--id ID", "--format text|json|yaml"],
+        valid_values: verb === "list" ? ["list", "[PLAN_ID]", "--limit 1..100", "--cursor TOKEN", "--format text|json|yaml"] : ["get", "--id ID", "--format text|json|yaml"],
         ...details,
       },
     },
@@ -131,20 +119,25 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
   }
   const seen = new Set<number>();
   const taskIds = new Set<string>();
-  const tasks = parts.tasks.map((record) => {
-    const number = record.number;
-    if (!Number.isSafeInteger(number) || Number(number) < 1 || seen.has(Number(number))) {
-      throw fail(1, "corrupt", "active plan tasks require unique positive integer numbers", verb, {
-        recovery: "Repair duplicate or invalid legacy task ordering metadata in the active plan, then retry.",
-        details: { path: artifact.path, source_ordinal: number ?? null },
-      });
-    }
-    seen.add(Number(number));
-    const id = legacyTaskId(planId, Number(number));
-    if (taskIds.has(id)) throw fail(1, "corrupt", "active plan tasks resolve to conflicting bare IDs", verb, { recovery: "Repair the active plan task identities, then retry." });
-    taskIds.add(id);
-    return { id, number: Number(number), record };
-  }).sort((left, right) => left.id.localeCompare(right.id));
+  const tasks = parts.tasks
+    .map((record) => {
+      const number = record.number;
+      if (!Number.isSafeInteger(number) || Number(number) < 1 || seen.has(Number(number))) {
+        throw fail(1, "corrupt", "active plan tasks require unique positive integer numbers", verb, {
+          recovery: "Repair duplicate or invalid legacy task ordering metadata in the active plan, then retry.",
+          details: { path: artifact.path, source_ordinal: number ?? null },
+        });
+      }
+      seen.add(Number(number));
+      const id = legacyTaskId(planId, Number(number));
+      if (taskIds.has(id))
+        throw fail(1, "corrupt", "active plan tasks resolve to conflicting bare IDs", verb, {
+          recovery: "Repair the active plan task identities, then retry.",
+        });
+      taskIds.add(id);
+      return { id, number: Number(number), record };
+    })
+    .sort((left, right) => left.id.localeCompare(right.id));
   return {
     artifact,
     planId,
@@ -156,7 +149,7 @@ function activePlan(activePath: string, selectedPlan: string | undefined, verb: 
 
 function legacyTaskId(planId: string, number: number): string {
   const bytes = createHash("sha256").update(`agentera.plan-task.v2\0${planId}\0${number}`, "utf8").digest();
-  return Array.from(bytes.subarray(0, 10), (byte) => String.fromCharCode(97 + byte % 26)).join("");
+  return Array.from(bytes.subarray(0, 10), (byte) => String.fromCharCode(97 + (byte % 26))).join("");
 }
 
 function snapshotId(planId: string, tasks: LoadedPlan["tasks"]): string {
@@ -164,7 +157,9 @@ function snapshotId(planId: string, tasks: LoadedPlan["tasks"]): string {
 }
 
 function cursorKey(projectRoot: string): Buffer {
-  return createHash("sha256").update(`agentera-plan-task-cursor\0${path.resolve(projectRoot)}`, "utf8").digest();
+  return createHash("sha256")
+    .update(`agentera-plan-task-cursor\0${path.resolve(projectRoot)}`, "utf8")
+    .digest();
 }
 
 function sign(payload: CursorPayload, projectRoot: string): string {
@@ -202,11 +197,17 @@ function parseCursor(token: string, projectRoot: string, selectedPlan?: string):
   if (!timingSafeEqual(Buffer.from(signatureString, "hex"), Buffer.from(expected, "hex"))) invalid("cursor signature is invalid");
   const parsed = payload as unknown as CursorPayload;
   if (
-    parsed.version !== CURSOR_VERSION || parsed.collection !== "plan.tasks" || !PLAN_ID.test(parsed.plan_id) ||
-    parsed.order !== ORDER || !/^[0-9a-f]{64}$/.test(parsed.snapshot_id) ||
-    !Number.isSafeInteger(parsed.candidate_count) || parsed.candidate_count < 1 ||
-    typeof parsed.after !== "string" || !/^[a-z]{10}$/.test(parsed.after)
-  ) invalid("cursor is bound to a different plan task list or has an invalid payload");
+    parsed.version !== CURSOR_VERSION ||
+    parsed.collection !== "plan.tasks" ||
+    !PLAN_ID.test(parsed.plan_id) ||
+    parsed.order !== ORDER ||
+    !/^[0-9a-f]{64}$/.test(parsed.snapshot_id) ||
+    !Number.isSafeInteger(parsed.candidate_count) ||
+    parsed.candidate_count < 1 ||
+    typeof parsed.after !== "string" ||
+    !/^[a-z]{10}$/.test(parsed.after)
+  )
+    invalid("cursor is bound to a different plan task list or has an invalid payload");
   if (selectedPlan !== undefined && parsed.plan_id !== selectedPlan) {
     invalid("cursor is bound to a different explicit plan selector");
   }
@@ -215,7 +216,8 @@ function parseCursor(token: string, projectRoot: string, selectedPlan?: string):
 
 function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObject {
   const get = `agentera state plan tasks get --id ${task.id}`;
-  const record = structuredClone(task.record); delete record.number;
+  const record = structuredClone(task.record);
+  delete record.number;
   return {
     id: task.id,
     artifact: "plan",
@@ -246,14 +248,20 @@ function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTask
     order: ORDER,
     filters: { plan: plan.planId },
     snapshot: { id: snapshot, candidate_count: snapshotTasks.length, has_more: false },
-    source: { artifact: "plan", active: true, path: plan.artifact.path, plan_id: plan.planId, storage: "active_plan_file" },
+    source: {
+      artifact: "plan",
+      active: true,
+      path: plan.artifact.path,
+      plan_id: plan.planId,
+      storage: "active_plan_file",
+    },
     source_contract: {
       authority: "references/artifacts/state-storage-authority.yaml",
       complete_for_plan_task_retrieval: true,
       storage_ownership: "owning_active_plan_file",
       cursor: "opaque_snapshot_cursor",
     },
-     retrieval: { get: "agentera state plan tasks get --id ID" },
+    retrieval: { get: "agentera state plan tasks get --id ID" },
   };
 }
 
@@ -261,19 +269,27 @@ function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidat
   const selected = candidates.slice(0, retained);
   const remaining = candidates.length - selected.length;
   const response = baseList(plan, snapshotTasks, selected, projectRoot);
-  response.counts = { total: snapshotTasks.length, returned: selected.length, remaining, omitted: remaining };
+  response.counts = {
+    total: snapshotTasks.length,
+    returned: selected.length,
+    remaining,
+    omitted: remaining,
+  };
   response.snapshot = { ...response.snapshot, has_more: remaining > 0 };
   if (remaining > 0 && selected.length > 0) {
     const last = selected.at(-1)!;
-    const token = encodeCursor({
-      version: CURSOR_VERSION,
-      collection: "plan.tasks",
-      plan_id: plan.planId,
-      order: ORDER,
-      snapshot_id: snapshotId(plan.planId, snapshotTasks),
-      candidate_count: snapshotTasks.length,
-      after: last.id,
-    }, projectRoot);
+    const token = encodeCursor(
+      {
+        version: CURSOR_VERSION,
+        collection: "plan.tasks",
+        plan_id: plan.planId,
+        order: ORDER,
+        snapshot_id: snapshotId(plan.planId, snapshotTasks),
+        candidate_count: snapshotTasks.length,
+        after: last.id,
+      },
+      projectRoot,
+    );
     response.next_cursor = token;
     response.omitted = true;
     response.omitted_count = remaining;
@@ -286,11 +302,7 @@ function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidat
   return response;
 }
 
-export function listPlanTasks(
-  projectRoot: string,
-  activePath: string,
-  options: { plan?: string; limit: number; cursor?: string; format: "text" | "json" | "yaml" },
-): PlanTaskListResponse {
+export function listPlanTasks(projectRoot: string, activePath: string, options: { plan?: string; limit: number; cursor?: string; format: "text" | "json" | "yaml" }): PlanTaskListResponse {
   if (!Number.isSafeInteger(options.limit) || options.limit < 1 || options.limit > 100) {
     throw fail(2, "invalid_request", "task list limit must be an integer from 1 through 100", "list", {
       valid_values: ["1..100"],
@@ -304,27 +316,27 @@ export function listPlanTasks(
       details: { cursor_plan_id: parsed.plan_id, current_plan_id: plan.planId },
     });
   }
-   const snapshotTasks = plan.tasks;
+  const snapshotTasks = plan.tasks;
   if (parsed && (snapshotTasks.length !== parsed.candidate_count || snapshotId(plan.planId, snapshotTasks) !== parsed.snapshot_id)) {
     throw fail(1, "cursor_snapshot_unavailable", "the active plan task snapshot changed and cannot be resumed exactly", "list", {
       recovery: "Start a new task listing without --cursor to establish the current active-plan snapshot.",
-      details: { snapshot_id: parsed.snapshot_id, current_snapshot_id: snapshotId(plan.planId, snapshotTasks) },
+      details: {
+        snapshot_id: parsed.snapshot_id,
+        current_snapshot_id: snapshotId(plan.planId, snapshotTasks),
+      },
     });
   }
-   const candidates = snapshotTasks.filter((task) => !parsed || task.id > parsed.after);
+  const candidates = snapshotTasks.filter((task) => !parsed || task.id > parsed.after);
   const requested = Math.min(options.limit, candidates.length);
   let response = withPage(plan, snapshotTasks, candidates, requested, projectRoot, "page_limit");
   if (options.format === "json" || options.format === "yaml") {
-    const serializedBytes = (value: PlanTaskListResponse): number => Buffer.byteLength(
-      options.format === "yaml" ? YAML.stringify(value) : JSON.stringify(value, null, 2) + "\n",
-      "utf8",
-    );
+    const serializedBytes = (value: PlanTaskListResponse): number => Buffer.byteLength(options.format === "yaml" ? YAML.stringify(value) : JSON.stringify(value, null, 2) + "\n", "utf8");
     for (let retained = requested; retained > 0 && serializedBytes(response) > MAX_LIST_BYTES; retained -= 1) {
       response = withPage(plan, snapshotTasks, candidates, retained - 1, projectRoot, "serialized_output_byte_budget");
     }
     if (serializedBytes(response) > MAX_LIST_BYTES || (candidates.length > 0 && response.entries.length === 0)) {
       throw fail(1, "unsupported_state", `one task cannot fit within the ${MAX_LIST_BYTES}-byte ${options.format.toUpperCase()} list budget`, "list", {
-       recovery: "Fetch the task directly with agentera state plan tasks get --id ID.",
+        recovery: "Fetch the task directly with agentera state plan tasks get --id ID.",
       });
     }
   }
@@ -333,7 +345,10 @@ export function listPlanTasks(
 
 export function getPlanTask(projectRoot: string, activePath: string, taskId: string, selectedPlan?: string): JsonObject {
   const plan = activePlan(activePath, selectedPlan, "get");
-  if (!/^[a-z]{10}$/.test(taskId)) throw fail(2, "invalid_request", `invalid task identity '${taskId}'`, "get", { valid_values: ["bare ten-letter task ID"] });
+  if (!/^[a-z]{10}$/.test(taskId))
+    throw fail(2, "invalid_request", `invalid task identity '${taskId}'`, "get", {
+      valid_values: ["bare ten-letter task ID"],
+    });
   const task = plan.tasks.find((candidate) => candidate.id === taskId);
   if (!task) {
     throw fail(1, "not_found", `task '${taskId}' was not found in active plan '${plan.planId}'`, "get", {
@@ -346,7 +361,13 @@ export function getPlanTask(projectRoot: string, activePath: string, taskId: str
     command: "state plan tasks get",
     status: "ok",
     entry: taskEntry(plan, task),
-    source: { artifact: "plan", active: true, path: plan.artifact.path, plan_id: plan.planId, storage: "active_plan_file" },
+    source: {
+      artifact: "plan",
+      active: true,
+      path: plan.artifact.path,
+      plan_id: plan.planId,
+      storage: "active_plan_file",
+    },
     source_contract: {
       authority: "references/artifacts/state-storage-authority.yaml",
       complete_for_plan_task_retrieval: true,

@@ -17,20 +17,7 @@ const FIXTURES = path.join(__dirname, "fixtures");
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const PROTOCOL_PATH = path.join(REPO_ROOT, "skills", "agentera", "protocol.yaml");
 
-const V2_SWEDISH_VERBS = [
-  "hej",
-  "visionera",
-  "resonera",
-  "inspirera",
-  "planera",
-  "realisera",
-  "optimera",
-  "inspektera",
-  "dokumentera",
-  "profilera",
-  "visualisera",
-  "orkestrera",
-] as const;
+const V2_SWEDISH_VERBS = ["hej", "visionera", "resonera", "inspirera", "planera", "realisera", "optimera", "inspektera", "dokumentera", "profilera", "visualisera", "orkestrera"] as const;
 
 const ENGLISH_TO_SWEDISH_CAPABILITY: Record<string, string> = {
   status: "hej",
@@ -106,23 +93,7 @@ function assertNoSwedishEraVerbs(labels: readonly string[]): void {
 function seedV2SkillMd(appBundleRoot: string): void {
   const skillPath = path.join(appBundleRoot, "skills", "agentera", "SKILL.md");
   fs.mkdirSync(path.dirname(skillPath), { recursive: true });
-  fs.writeFileSync(
-    skillPath,
-    [
-      "---",
-      "name: agentera",
-      "capabilities:",
-      "  - planera",
-      "  - inspektera",
-      "---",
-      "",
-      "# hej",
-      "",
-      "Route /agentera planera to the planera capability.",
-      "",
-    ].join("\n"),
-    "utf8",
-  );
+  fs.writeFileSync(skillPath, ["---", "name: agentera", "capabilities:", "  - planera", "  - inspektera", "---", "", "# hej", "", "Route /agentera planera to the planera capability.", ""].join("\n"), "utf8");
 }
 
 function seedV2ProtocolYaml(appBundleRoot: string): void {
@@ -135,32 +106,22 @@ function seedV2ProtocolYaml(appBundleRoot: string): void {
       entry.capability = ENGLISH_TO_SWEDISH_CAPABILITY[entry.capability];
     }
   }
-  const phases = protocol.PHASES as Record<
-    string,
-    { value?: string; capabilities?: string[]; valid_successors?: string[] }
-  >;
+  const phases = protocol.PHASES as Record<string, { value?: string; capabilities?: string[]; valid_successors?: string[] }>;
   for (const entry of Object.values(phases)) {
     if (entry?.value && ENGLISH_TO_SWEDISH_PHASE[entry.value]) {
       entry.value = ENGLISH_TO_SWEDISH_PHASE[entry.value];
     }
     if (entry?.capabilities) {
-      entry.capabilities = entry.capabilities.map(
-        (capability) => ENGLISH_TO_SWEDISH_CAPABILITY[capability] ?? capability,
-      );
+      entry.capabilities = entry.capabilities.map((capability) => ENGLISH_TO_SWEDISH_CAPABILITY[capability] ?? capability);
     }
     if (entry?.valid_successors) {
-      entry.valid_successors = entry.valid_successors.map(
-        (successor) => ENGLISH_TO_SWEDISH_PHASE[successor] ?? successor,
-      );
+      entry.valid_successors = entry.valid_successors.map((successor) => ENGLISH_TO_SWEDISH_PHASE[successor] ?? successor);
     }
   }
   fs.writeFileSync(protocolPath, YAML.stringify(protocol));
 }
 
-function capturePrime(
-  env: Record<string, string>,
-  opts: { context?: string } = {},
-): Record<string, unknown> {
+function capturePrime(env: Record<string, string>, opts: { context?: string } = {}): Record<string, unknown> {
   const saved: Record<string, string | undefined> = {};
   for (const key of Object.keys(env)) {
     saved[key] = process.env[key];

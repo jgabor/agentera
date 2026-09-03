@@ -6,14 +6,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { canonicalEntityEnvelopeBytes, entityExactGetMaxBytes } from "./entityStorage.js";
-import {
-  FILE_REPLACEMENT_METADATA_NAME,
-  FILE_REPLACEMENT_RECOVERY_VERSION,
-  validateEntityRecoveryDirectory,
-  type EntityRecoveryDirectoryIdentity,
-  type EntityPublicationContext,
-  type PublishedTargetIdentity,
-} from "./entityPublicationContext.js";
+import { FILE_REPLACEMENT_METADATA_NAME, FILE_REPLACEMENT_RECOVERY_VERSION, validateEntityRecoveryDirectory, type EntityRecoveryDirectoryIdentity, type EntityPublicationContext, type PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { ExactReplacementConflictError, FileReplacementError } from "./exactReplacementRecovery.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import { todoUpdateBatchEffectSha256 } from "./todoUpdateBatch.js";
@@ -50,7 +43,11 @@ export interface TodoReconciliationRecoveryReceipt {
   update_batch_effect_sha256?: string;
   create_batch?: TodoReconciliationCreateBatchReceipt;
 }
-export interface TodoReconciliationCreateBatchReceipt { effect_sha256: string; input_sha256: string; local_refs: Record<string, string> }
+export interface TodoReconciliationCreateBatchReceipt {
+  effect_sha256: string;
+  input_sha256: string;
+  local_refs: Record<string, string>;
+}
 
 export interface TodoReconciliationRecoveryOptions {
   createRequestSha256?: string;
@@ -128,14 +125,15 @@ function decode(bytes: string): Buffer {
 
 function exactBase64(value: unknown): value is string {
   if (typeof value !== "string") return false;
-  try { return encode(decode(value)) === value; } catch { return false; }
+  try {
+    return encode(decode(value)) === value;
+  } catch {
+    return false;
+  }
 }
 
 export function todoCreateRequestSha256(record: Record<string, unknown>): string {
-  return createHash("sha256")
-    .update("agentera.todoCreateRequest.v1\0")
-    .update(canonicalRecordJson(record))
-    .digest("hex");
+  return createHash("sha256").update("agentera.todoCreateRequest.v1\0").update(canonicalRecordJson(record)).digest("hex");
 }
 
 function bytesAt(root: string, relative: string): Buffer | null {
@@ -148,10 +146,7 @@ function same(left: Buffer | null, right: Buffer | null): boolean {
 }
 
 function validTarget(relative: string, publicPath: string): boolean {
-  return relative === publicPath
-    || relative === TODO_RECONCILIATION_ACTIVATION_PATH
-    || relative === ENTITY_MODE_MARKER
-    || /^\.agentera\/entities\/[a-z][a-z0-9_]*\/[a-z][a-z0-9_]*\/[a-z]{10}\.yaml$/.test(relative);
+  return relative === publicPath || relative === TODO_RECONCILIATION_ACTIVATION_PATH || relative === ENTITY_MODE_MARKER || /^\.agentera\/entities\/[a-z][a-z0-9_]*\/[a-z][a-z0-9_]*\/[a-z]{10}\.yaml$/.test(relative);
 }
 
 function createReceiptFromTargets(targets: JournalTarget[]): TodoReconciliationCreateReceipt | undefined {
@@ -161,8 +156,11 @@ function createReceiptFromTargets(targets: JournalTarget[]): TodoReconciliationC
   const target = created[0]!;
   const createdId = path.posix.basename(target.path, ".yaml");
   let envelope: Record<string, unknown>;
-  try { envelope = loadYamlMapping(decode(target.after).toString("utf8")); }
-  catch { invalidJournal("TODO reconciliation journal has an invalid created entity envelope"); }
+  try {
+    envelope = loadYamlMapping(decode(target.after).toString("utf8"));
+  } catch {
+    invalidJournal("TODO reconciliation journal has an invalid created entity envelope");
+  }
   if (envelope.id !== createdId || envelope.artifact !== "todo" || !envelope.record || typeof envelope.record !== "object" || Array.isArray(envelope.record)) {
     invalidJournal("TODO reconciliation journal create target does not match its canonical entity envelope");
   }
@@ -182,52 +180,85 @@ function invalidJournal(message: string): never {
 function parseJournal(bytes: Buffer, fileName?: string): Journal {
   if (bytes.length > MAX_JOURNAL_BYTES) invalidJournal("TODO reconciliation journal exceeds its byte bound");
   let parsed: unknown;
-  try { parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON"); }
+  try {
+    parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    invalidJournal("TODO reconciliation journal is not valid bounded UTF-8 JSON");
+  }
   if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) invalidJournal("TODO reconciliation journal is not a mapping");
   const value = parsed as Partial<Journal>;
-  const expectedKeys = ["schema_version", "id", "public_path", "mapping_sha256", "targets", ...(value.create === undefined ? [] : ["create"]), ...(value.create_batch === undefined ? [] : ["create_batch"]), ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"]), ...(value.owner_mapping_sha256 === undefined ? [] : ["owner_mapping_sha256"]), ...(value.update_batch_effect_sha256 === undefined ? [] : ["update_batch_effect_sha256"])].sort().join(",");
+  const expectedKeys = [
+    "schema_version",
+    "id",
+    "public_path",
+    "mapping_sha256",
+    "targets",
+    ...(value.create === undefined ? [] : ["create"]),
+    ...(value.create_batch === undefined ? [] : ["create_batch"]),
+    ...(value.activation_effect_sha256 === undefined ? [] : ["activation_effect_sha256"]),
+    ...(value.owner_mapping_sha256 === undefined ? [] : ["owner_mapping_sha256"]),
+    ...(value.update_batch_effect_sha256 === undefined ? [] : ["update_batch_effect_sha256"]),
+  ]
+    .sort()
+    .join(",");
   if (
-    Object.keys(value).sort().join(",") !== expectedKeys
-    || value.schema_version !== VERSION
-    || typeof value.id !== "string"
-    || !/^[a-f0-9]{24}$/.test(value.id)
-    || typeof value.public_path !== "string"
-    || typeof value.mapping_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(value.mapping_sha256)
-    || !Array.isArray(value.targets)
-    || value.targets.length < 1
-    || value.targets.length > MAX_TARGETS
-  ) invalidJournal("TODO reconciliation journal is malformed");
+    Object.keys(value).sort().join(",") !== expectedKeys ||
+    value.schema_version !== VERSION ||
+    typeof value.id !== "string" ||
+    !/^[a-f0-9]{24}$/.test(value.id) ||
+    typeof value.public_path !== "string" ||
+    typeof value.mapping_sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(value.mapping_sha256) ||
+    !Array.isArray(value.targets) ||
+    value.targets.length < 1 ||
+    value.targets.length > MAX_TARGETS
+  )
+    invalidJournal("TODO reconciliation journal is malformed");
   if (value.activation_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.activation_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid activation effect authorization");
   if (value.owner_mapping_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.owner_mapping_sha256)) invalidJournal("TODO reconciliation journal has an invalid owner-mapping authorization");
   if (value.update_batch_effect_sha256 !== undefined && !/^[a-f0-9]{64}$/.test(value.update_batch_effect_sha256)) invalidJournal("TODO reconciliation journal has an invalid update-batch effect authorization");
-  if (value.create_batch !== undefined && (!value.create_batch || typeof value.create_batch !== "object" || Array.isArray(value.create_batch) || Object.keys(value.create_batch).sort().join(",") !== "effect_sha256,input_sha256,local_refs" || !/^[a-f0-9]{64}$/.test(value.create_batch.effect_sha256) || !/^[a-f0-9]{64}$/.test(value.create_batch.input_sha256) || !value.create_batch.local_refs || typeof value.create_batch.local_refs !== "object" || Array.isArray(value.create_batch.local_refs) || Object.entries(value.create_batch.local_refs).some(([ref, id]) => !/^[a-z][a-z0-9_-]{0,63}$/.test(ref) || typeof id !== "string" || !/^[a-z]{10}$/.test(id)))) invalidJournal("TODO reconciliation journal has an invalid create-batch receipt");
-  if (value.create !== undefined && (
-    !value.create
-    || typeof value.create !== "object"
-    || Array.isArray(value.create)
-    || Object.keys(value.create).sort().join(",") !== "created_id,request_sha256"
-    || typeof value.create.created_id !== "string"
-    || !/^[a-z]{10}$/.test(value.create.created_id)
-    || typeof value.create.request_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(value.create.request_sha256)
-  )) invalidJournal("TODO reconciliation journal has an invalid create receipt");
+  if (
+    value.create_batch !== undefined &&
+    (!value.create_batch ||
+      typeof value.create_batch !== "object" ||
+      Array.isArray(value.create_batch) ||
+      Object.keys(value.create_batch).sort().join(",") !== "effect_sha256,input_sha256,local_refs" ||
+      !/^[a-f0-9]{64}$/.test(value.create_batch.effect_sha256) ||
+      !/^[a-f0-9]{64}$/.test(value.create_batch.input_sha256) ||
+      !value.create_batch.local_refs ||
+      typeof value.create_batch.local_refs !== "object" ||
+      Array.isArray(value.create_batch.local_refs) ||
+      Object.entries(value.create_batch.local_refs).some(([ref, id]) => !/^[a-z][a-z0-9_-]{0,63}$/.test(ref) || typeof id !== "string" || !/^[a-z]{10}$/.test(id)))
+  )
+    invalidJournal("TODO reconciliation journal has an invalid create-batch receipt");
+  if (
+    value.create !== undefined &&
+    (!value.create ||
+      typeof value.create !== "object" ||
+      Array.isArray(value.create) ||
+      Object.keys(value.create).sort().join(",") !== "created_id,request_sha256" ||
+      typeof value.create.created_id !== "string" ||
+      !/^[a-z]{10}$/.test(value.create.created_id) ||
+      typeof value.create.request_sha256 !== "string" ||
+      !/^[a-f0-9]{64}$/.test(value.create.request_sha256))
+  )
+    invalidJournal("TODO reconciliation journal has an invalid create receipt");
   const paths = new Set<string>();
   for (const target of value.targets) {
     if (
-      !target
-      || typeof target !== "object"
-      || Array.isArray(target)
-      || Object.keys(target).sort().join(",") !== "after,before,path"
-      || typeof target.path !== "string"
-      || !validTarget(target.path, value.public_path)
-      || paths.has(target.path)
-      || (target.before !== null && !exactBase64(target.before))
-      || !exactBase64(target.after)
-      || decode(target.after).length > MAX_TARGET_BYTES
-      || (target.before !== null && decode(target.before).length > MAX_TARGET_BYTES)
-    ) invalidJournal("TODO reconciliation journal has an invalid target");
+      !target ||
+      typeof target !== "object" ||
+      Array.isArray(target) ||
+      Object.keys(target).sort().join(",") !== "after,before,path" ||
+      typeof target.path !== "string" ||
+      !validTarget(target.path, value.public_path) ||
+      paths.has(target.path) ||
+      (target.before !== null && !exactBase64(target.before)) ||
+      !exactBase64(target.after) ||
+      decode(target.after).length > MAX_TARGET_BYTES ||
+      (target.before !== null && decode(target.before).length > MAX_TARGET_BYTES)
+    )
+      invalidJournal("TODO reconciliation journal has an invalid target");
     paths.add(target.path);
   }
   const body = value.targets as JournalTarget[];
@@ -235,14 +266,18 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   if (!activates && (value.activation_effect_sha256 !== undefined || value.owner_mapping_sha256 !== undefined)) invalidJournal("TODO reconciliation journal effect authorization has no activation target");
   if (value.owner_mapping_sha256 !== undefined && value.activation_effect_sha256 === undefined) invalidJournal("TODO reconciliation journal owner-mapping authorization has no effect authorization");
   const inferredCreate = createReceiptFromTargets(body);
-  if (value.create && (
-    !inferredCreate
-    || value.create.created_id !== inferredCreate.created_id
-    || value.create.request_sha256 !== inferredCreate.request_sha256
-  )) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
-  const identity = value.create || value.create_batch || value.activation_effect_sha256 || value.owner_mapping_sha256 || value.update_batch_effect_sha256
-    ? { ...(value.create ? { create: value.create } : {}), ...(value.create_batch ? { create_batch: value.create_batch } : {}), ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}), ...(value.owner_mapping_sha256 ? { owner_mapping_sha256: value.owner_mapping_sha256 } : {}), ...(value.update_batch_effect_sha256 ? { update_batch_effect_sha256: value.update_batch_effect_sha256 } : {}), targets: body }
-    : body;
+  if (value.create && (!inferredCreate || value.create.created_id !== inferredCreate.created_id || value.create.request_sha256 !== inferredCreate.request_sha256)) invalidJournal("TODO reconciliation create receipt does not match its canonical entity target");
+  const identity =
+    value.create || value.create_batch || value.activation_effect_sha256 || value.owner_mapping_sha256 || value.update_batch_effect_sha256
+      ? {
+          ...(value.create ? { create: value.create } : {}),
+          ...(value.create_batch ? { create_batch: value.create_batch } : {}),
+          ...(value.activation_effect_sha256 ? { activation_effect_sha256: value.activation_effect_sha256 } : {}),
+          ...(value.owner_mapping_sha256 ? { owner_mapping_sha256: value.owner_mapping_sha256 } : {}),
+          ...(value.update_batch_effect_sha256 ? { update_batch_effect_sha256: value.update_batch_effect_sha256 } : {}),
+          targets: body,
+        }
+      : body;
   const expectedId = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (value.id !== expectedId || (fileName !== undefined && fileName !== `${value.id}.json`)) {
     invalidJournal("TODO reconciliation journal identity does not match its canonical targets");
@@ -256,16 +291,22 @@ function targetLimit(target: JournalTarget, sourceRoot: string): number {
 }
 
 function assertBinding(journal: Journal, binding: TodoReconciliationBinding): void {
-  if (journal.public_path !== binding.publicPath || journal.mapping_sha256 !== binding.mappingSha256) reject({
-    class: "conflict",
-    message: "TODO reconciliation mapping changed while a transaction is pending",
-    recovery: `Restore the docs mapping that resolves TODO.md to '${journal.public_path}', then retry the exact non-dry-run mutation once; no state was changed.`,
-  });
+  if (journal.public_path !== binding.publicPath || journal.mapping_sha256 !== binding.mappingSha256)
+    reject({
+      class: "conflict",
+      message: "TODO reconciliation mapping changed while a transaction is pending",
+      recovery: `Restore the docs mapping that resolves TODO.md to '${journal.public_path}', then retry the exact non-dry-run mutation once; no state was changed.`,
+    });
 }
 
 function fsyncDirectory(directory: string): void {
   if (process.platform === "win32") return;
-  const fd = fs.openSync(directory, "r"); try { fs.fsyncSync(fd); } finally { fs.closeSync(fd); }
+  const fd = fs.openSync(directory, "r");
+  try {
+    fs.fsyncSync(fd);
+  } finally {
+    fs.closeSync(fd);
+  }
 }
 
 function removeExactRole(file: string, expected: Buffer): void {
@@ -294,14 +335,15 @@ function parseFileRecoveryMetadata(file: string): FileRecoveryMetadata {
   }
   const value = parsed as Partial<FileRecoveryMetadata>;
   if (
-    Object.keys(value).sort().join(",") !== "after_sha256,before_sha256,schema_version,target_path"
-    || value.schema_version !== FILE_REPLACEMENT_RECOVERY_VERSION
-    || typeof value.target_path !== "string"
-    || typeof value.before_sha256 !== "string"
-    || typeof value.after_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(value.before_sha256)
-    || !/^[a-f0-9]{64}$/.test(value.after_sha256)
-  ) invalidJournal(`file replacement recovery metadata '${file}' has an invalid canonical record`);
+    Object.keys(value).sort().join(",") !== "after_sha256,before_sha256,schema_version,target_path" ||
+    value.schema_version !== FILE_REPLACEMENT_RECOVERY_VERSION ||
+    typeof value.target_path !== "string" ||
+    typeof value.before_sha256 !== "string" ||
+    typeof value.after_sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(value.before_sha256) ||
+    !/^[a-f0-9]{64}$/.test(value.after_sha256)
+  )
+    invalidJournal(`file replacement recovery metadata '${file}' has an invalid canonical record`);
   return value as FileRecoveryMetadata;
 }
 
@@ -325,7 +367,12 @@ function recoverImmutablePublicationStage(root: string, target: JournalTarget): 
   const pattern = new RegExp(`^\\.${escaped}\\.\\d+\\.[a-f0-9-]+\\.tmp$`);
   const names = fs.readdirSync(directory).filter((candidate) => pattern.test(candidate));
   if (!names.length) return;
-  if (names.length > 1) recoveryConflict(target, names.map((candidate) => path.join(directory, candidate)), "multiple immutable publication stages claim the same target");
+  if (names.length > 1)
+    recoveryConflict(
+      target,
+      names.map((candidate) => path.join(directory, candidate)),
+      "multiple immutable publication stages claim the same target",
+    );
   const stage = path.join(directory, names[0]!);
   const stat = fs.lstatSync(stage);
   const after = decode(target.after);
@@ -340,38 +387,33 @@ function recoverImmutablePublicationStage(root: string, target: JournalTarget): 
   fsyncDirectory(directory);
 }
 
-function recoverFileReplacementRoles(
-  context: EntityPublicationContext,
-  target: JournalTarget,
-  entries: fs.Dirent[],
-  recoveryRoot: string,
-  recoveryRootIdentity: EntityRecoveryDirectoryIdentity,
-  targetDirectory: string,
-): boolean {
+function recoverFileReplacementRoles(context: EntityPublicationContext, target: JournalTarget, entries: fs.Dirent[], recoveryRoot: string, recoveryRootIdentity: EntityRecoveryDirectoryIdentity, targetDirectory: string): boolean {
   const before = target.before === null ? null : decode(target.before);
   if (before === null) return false;
   const after = decode(target.after);
-  const matches: Array<{ directory: string; identity: EntityRecoveryDirectoryIdentity; metadata: string; previous?: string; stage?: string }> = [];
+  const matches: Array<{
+    directory: string;
+    identity: EntityRecoveryDirectoryIdentity;
+    metadata: string;
+    previous?: string;
+    stage?: string;
+  }> = [];
   for (const entry of entries) {
     if (entry.name === ".gitignore") continue;
     const directory = path.join(recoveryRoot, entry.name);
-    const attemptIdentity = validateEntityRecoveryDirectory(
-      context.validatedRoot,
-      directory,
-      targetDirectory,
-      `private entity recovery attempt '${path.relative(context.pinnedPath(), directory).split(path.sep).join("/")}'`,
-    );
+    const attemptIdentity = validateEntityRecoveryDirectory(context.validatedRoot, directory, targetDirectory, `private entity recovery attempt '${path.relative(context.pinnedPath(), directory).split(path.sep).join("/")}'`);
     const metadata = path.join(directory, FILE_REPLACEMENT_METADATA_NAME);
     if (!fs.existsSync(metadata)) continue;
     const value = parseFileRecoveryMetadata(metadata);
     if (value.target_path !== target.path) continue;
-    if (
-      value.before_sha256 !== createHash("sha256").update(before).digest("hex")
-      || value.after_sha256 !== createHash("sha256").update(after).digest("hex")
-    ) recoveryConflict(target, [metadata], "the role digest does not match the pending journal");
+    if (value.before_sha256 !== createHash("sha256").update(before).digest("hex") || value.after_sha256 !== createHash("sha256").update(after).digest("hex")) recoveryConflict(target, [metadata], "the role digest does not match the pending journal");
     const roleNames = fs.readdirSync(directory).sort();
     if (roleNames.some((name) => !["original.previous", "replacement.tmp", FILE_REPLACEMENT_METADATA_NAME].includes(name))) {
-      recoveryConflict(target, roleNames.map((name) => path.join(directory, name)), "the recovery attempt contains an unknown role");
+      recoveryConflict(
+        target,
+        roleNames.map((name) => path.join(directory, name)),
+        "the recovery attempt contains an unknown role",
+      );
     }
     const previous = path.join(directory, "original.previous");
     const stage = path.join(directory, "replacement.tmp");
@@ -395,27 +437,20 @@ function recoverFileReplacementRoles(
       ...(fs.existsSync(stage) ? { stage } : {}),
     });
   }
-  if (matches.length > 1) recoveryConflict(target, matches.map(({ metadata }) => metadata), "multiple recovery attempts claim the same target");
+  if (matches.length > 1)
+    recoveryConflict(
+      target,
+      matches.map(({ metadata }) => metadata),
+      "multiple recovery attempts claim the same target",
+    );
   const match = matches[0];
   if (!match) return false;
   const current = bytesAt(context.pinnedPath(), target.path);
   if (!same(current, before) && !same(current, after)) {
     recoveryConflict(target, [match.metadata, ...(match.previous ? [match.previous] : []), ...(match.stage ? [match.stage] : [])], current === null ? "the canonical target is absent" : "the canonical target contains concurrent bytes");
   }
-  validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    recoveryRoot,
-    targetDirectory,
-    "private entity recovery root '.agentera/.entity-recovery'",
-    recoveryRootIdentity,
-  );
-  validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    match.directory,
-    targetDirectory,
-    `private entity recovery attempt '${path.relative(context.pinnedPath(), match.directory).split(path.sep).join("/")}'`,
-    match.identity,
-  );
+  validateEntityRecoveryDirectory(context.validatedRoot, recoveryRoot, targetDirectory, "private entity recovery root '.agentera/.entity-recovery'", recoveryRootIdentity);
+  validateEntityRecoveryDirectory(context.validatedRoot, match.directory, targetDirectory, `private entity recovery attempt '${path.relative(context.pinnedPath(), match.directory).split(path.sep).join("/")}'`, match.identity);
   if (match.stage) removeExactRole(match.stage, after);
   if (match.previous) removeExactRole(match.previous, before);
   removeExactRole(match.metadata, fs.readFileSync(match.metadata));
@@ -429,56 +464,40 @@ function recoverFileReplacement(context: EntityPublicationContext, target: Journ
   const recoveryRoot = path.join(context.pinnedPath(), ".agentera/.entity-recovery");
   if (!fs.existsSync(recoveryRoot)) return;
   const targetDirectory = path.dirname(context.pinnedPath(target.path));
-  const recoveryRootIdentity = validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    recoveryRoot,
-    targetDirectory,
-    "private entity recovery root '.agentera/.entity-recovery'",
-  );
+  const recoveryRootIdentity = validateEntityRecoveryDirectory(context.validatedRoot, recoveryRoot, targetDirectory, "private entity recovery root '.agentera/.entity-recovery'");
   const entries = fs.readdirSync(recoveryRoot, { withFileTypes: true });
   if (entries.length > 128) invalidJournal("file replacement recovery root exceeds its bounded entry count");
   recoverFileReplacementRoles(context, target, entries, recoveryRoot, recoveryRootIdentity, targetDirectory);
 }
 
-function applyTarget(
-  context: EntityPublicationContext,
-  root: string,
-  target: JournalTarget,
-  sourceRoot: string,
-  publicPath: string,
-): PublishedTargetIdentity | null {
+function applyTarget(context: EntityPublicationContext, root: string, target: JournalTarget, sourceRoot: string, publicPath: string): PublishedTargetIdentity | null {
   const before = target.before === null ? null : decode(target.before);
   const after = decode(target.after);
   recoverImmutablePublicationStage(root, target);
   recoverFileReplacement(context, target);
   const current = bytesAt(root, target.path);
   if (same(current, after)) return null;
-  if (!same(current, before)) reject({
-    class: "conflict",
-    message: `TODO reconciliation target '${target.path}' changed after transaction preparation`,
-    recovery: "Preserve the pending journal and both repository changes, restore every target to either the recorded before or after bytes, then retry once; no additional state was changed.",
-  });
+  if (!same(current, before))
+    reject({
+      class: "conflict",
+      message: `TODO reconciliation target '${target.path}' changed after transaction preparation`,
+      recovery: "Preserve the pending journal and both repository changes, restore every target to either the recorded before or after bytes, then retry once; no additional state was changed.",
+    });
   if (before === null) {
     const identity = context.publishImmutable(target.path, after.toString("utf8"));
-    if (!identity) reject({
-      class: "conflict",
-      message: `TODO reconciliation target '${target.path}' appeared during publication`,
-      recovery: `Preserve the competing target and retry the exact TODO mutation after reconciling it with the pending transaction; no competing bytes were overwritten.`,
-    });
+    if (!identity)
+      reject({
+        class: "conflict",
+        message: `TODO reconciliation target '${target.path}' appeared during publication`,
+        recovery: `Preserve the competing target and retry the exact TODO mutation after reconciling it with the pending transaction; no competing bytes were overwritten.`,
+      });
     return identity;
   }
-  const replacement = target.path === publicPath
-    ? context.replaceVisible(target.path, before, after.toString("utf8"), targetLimit(target, sourceRoot))
-    : context.replaceExisting(target.path, before, after.toString("utf8"), targetLimit(target, sourceRoot));
+  const replacement = target.path === publicPath ? context.replaceVisible(target.path, before, after.toString("utf8"), targetLimit(target, sourceRoot)) : context.replaceExisting(target.path, before, after.toString("utf8"), targetLimit(target, sourceRoot));
   return replacement.publishedIdentity;
 }
 
-function rollback(
-  context: EntityPublicationContext,
-  applied: AppliedTarget[],
-  sourceRoot: string,
-  publicPath: string,
-): RollbackIssue[] {
+function rollback(context: EntityPublicationContext, applied: AppliedTarget[], sourceRoot: string, publicPath: string): RollbackIssue[] {
   const issues: RollbackIssue[] = [];
   for (const { target, identity } of [...applied].reverse()) {
     try {
@@ -496,9 +515,7 @@ function rollback(
       issues.push({
         path: target.path,
         message: (error instanceof Error ? error.message : String(error)).slice(0, 512),
-        retainedPaths: error instanceof ExactReplacementConflictError
-          ? error.retainedPaths.slice(0, 8).map((retainedPath) => retainedPath.slice(0, 512))
-          : [],
+        retainedPaths: error instanceof ExactReplacementConflictError ? error.retainedPaths.slice(0, 8).map((retainedPath) => retainedPath.slice(0, 512)) : [],
       });
     }
   }
@@ -532,7 +549,8 @@ function rejectReplacementConflict(error: ExactReplacementConflictError): never 
     class: "conflict",
     message: `TODO reconciliation retained a concurrent target without overwriting it: ${error.message.slice(0, 1024)}`,
     violations: error.retainedPaths.slice(0, 4).map((role) => `preserved recovery role: ${role.slice(0, 512)}`),
-    recovery: "Preserve the pending journal, canonical competitor, and listed recovery roles. Choose the intended canonical bytes, restore the conflicted target to the journal's recorded before or after bytes without deleting the competitor copy, then retry the exact non-dry-run mutation once; no competitor bytes were overwritten.",
+    recovery:
+      "Preserve the pending journal, canonical competitor, and listed recovery roles. Choose the intended canonical bytes, restore the conflicted target to the journal's recorded before or after bytes without deleting the competitor copy, then retry the exact non-dry-run mutation once; no competitor bytes were overwritten.",
   });
 }
 
@@ -545,23 +563,39 @@ function finishJournal(context: EntityPublicationContext, relative: string, iden
 }
 
 export function inspectTodoReconciliation(root: string, binding: TodoReconciliationBinding): string[] {
-  const directory = path.join(root, DIRECTORY); if (!fs.existsSync(directory)) return [];
-  const names = fs.readdirSync(directory).filter((name) => name.endsWith(".json")).sort();
-  if (names.length > 1) reject({ class: "conflict", message: "multiple pending TODO reconciliation journals exist", recovery: "Preserve the journals and reconcile them to one transaction before retrying; no state was changed." });
-  return names.map((name) => { const journal = parseJournal(fs.readFileSync(path.join(directory, name)), name); assertBinding(journal, binding); return journal.id; });
+  const directory = path.join(root, DIRECTORY);
+  if (!fs.existsSync(directory)) return [];
+  const names = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".json"))
+    .sort();
+  if (names.length > 1)
+    reject({
+      class: "conflict",
+      message: "multiple pending TODO reconciliation journals exist",
+      recovery: "Preserve the journals and reconcile them to one transaction before retrying; no state was changed.",
+    });
+  return names.map((name) => {
+    const journal = parseJournal(fs.readFileSync(path.join(directory, name)), name);
+    assertBinding(journal, binding);
+    return journal.id;
+  });
 }
 
-export function recoverTodoReconciliation(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  binding: TodoReconciliationBinding,
-  options: TodoReconciliationRecoveryOptions = {},
-): TodoReconciliationRecoveryReceipt[] {
+export function recoverTodoReconciliation(context: EntityPublicationContext, sourceRoot: string, binding: TodoReconciliationBinding, options: TodoReconciliationRecoveryOptions = {}): TodoReconciliationRecoveryReceipt[] {
   const root = context.pinnedPath();
   const directory = path.join(root, DIRECTORY);
   if (!fs.existsSync(directory)) return [];
-  const names = fs.readdirSync(directory).filter((name) => name.endsWith(".json")).sort();
-  if (names.length > 1) reject({ class: "conflict", message: "multiple pending TODO reconciliation journals exist", recovery: "Preserve the journals and reconcile them to one transaction before retrying; no state was changed." });
+  const names = fs
+    .readdirSync(directory)
+    .filter((name) => name.endsWith(".json"))
+    .sort();
+  if (names.length > 1)
+    reject({
+      class: "conflict",
+      message: "multiple pending TODO reconciliation journals exist",
+      recovery: "Preserve the journals and reconcile them to one transaction before retrying; no state was changed.",
+    });
   const recovered: TodoReconciliationRecoveryReceipt[] = [];
   for (const name of names) {
     const relative = `${DIRECTORY}/${name}`;
@@ -570,43 +604,89 @@ export function recoverTodoReconciliation(
     assertBinding(journal, binding);
     if (journal.update_batch_effect_sha256) {
       const supplied = options.updateBatch;
-      const transition = supplied && /^agentera\.todo(?:SetSeverity|Resolve)Batch\.v1$/.test(String(supplied.input.schema_version)); const requestEffectSha256 = supplied ? todoUpdateBatchEffectSha256(supplied.input, journal.mapping_sha256, journal.targets.map((target) => ({
-        path: target.path,
-        before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"),
-        after_sha256: createHash("sha256").update(transition && target.path.includes("/todo_item/") ? (() => { const value = loadYamlMapping(decode(target.after).toString("utf8")); const record = value.record as JsonObject; if (record.reconciliation && typeof record.reconciliation === "object" && !Array.isArray(record.reconciliation)) delete (record.reconciliation as JsonObject).transition_batch; return canonicalEntityEnvelopeBytes({ id: String(value.id), artifact: "todo", record }); })() : decode(target.after)).digest("hex"),
-      }))) : null;
-      if (!supplied || supplied.effectSha256 !== journal.update_batch_effect_sha256 || requestEffectSha256 !== journal.update_batch_effect_sha256) reject({
-        class: "conflict",
-        message: "pending TODO update batch does not match this request and effect authorization",
-        recovery: "Retry the exact original TODO update batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed.",
-      });
+      const transition = supplied && /^agentera\.todo(?:SetSeverity|Resolve)Batch\.v1$/.test(String(supplied.input.schema_version));
+      const requestEffectSha256 = supplied
+        ? todoUpdateBatchEffectSha256(
+            supplied.input,
+            journal.mapping_sha256,
+            journal.targets.map((target) => ({
+              path: target.path,
+              before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"),
+              after_sha256: createHash("sha256")
+                .update(
+                  transition && target.path.includes("/todo_item/")
+                    ? (() => {
+                        const value = loadYamlMapping(decode(target.after).toString("utf8"));
+                        const record = value.record as JsonObject;
+                        if (record.reconciliation && typeof record.reconciliation === "object" && !Array.isArray(record.reconciliation)) delete (record.reconciliation as JsonObject).transition_batch;
+                        return canonicalEntityEnvelopeBytes({
+                          id: String(value.id),
+                          artifact: "todo",
+                          record,
+                        });
+                      })()
+                    : decode(target.after),
+                )
+                .digest("hex"),
+            })),
+          )
+        : null;
+      if (!supplied || supplied.effectSha256 !== journal.update_batch_effect_sha256 || requestEffectSha256 !== journal.update_batch_effect_sha256)
+        reject({
+          class: "conflict",
+          message: "pending TODO update batch does not match this request and effect authorization",
+          recovery: "Retry the exact original TODO update batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed.",
+        });
     }
     if (journal.create_batch) {
       const supplied = options.createBatch;
       const requestInputSha256 = supplied ? createHash("sha256").update(canonicalRecordJson(supplied.input)).digest("hex") : null;
-      const requestEffectSha256 = supplied ? todoCreateBatchEffectSha256(supplied.input, journal.mapping_sha256, journal.create_batch.local_refs, journal.targets.filter((target) => !(target.before === null && /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(target.path))).map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"), after_sha256: createHash("sha256").update(decode(target.after)).digest("hex") }))) : null;
-      if (!supplied || supplied.effectSha256 !== journal.create_batch.effect_sha256 || requestInputSha256 !== journal.create_batch.input_sha256 || requestEffectSha256 !== journal.create_batch.effect_sha256) reject({ class: "conflict", message: "pending TODO create batch does not match this request and effect authorization", recovery: "Retry the exact original TODO create batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed." });
+      const requestEffectSha256 = supplied
+        ? todoCreateBatchEffectSha256(
+            supplied.input,
+            journal.mapping_sha256,
+            journal.create_batch.local_refs,
+            journal.targets
+              .filter((target) => !(target.before === null && /^\.agentera\/entities\/todo\/todo_item\/[a-z]{10}\.yaml$/.test(target.path)))
+              .map((target) => ({
+                path: target.path,
+                before_sha256: target.before === null ? null : createHash("sha256").update(decode(target.before)).digest("hex"),
+                after_sha256: createHash("sha256").update(decode(target.after)).digest("hex"),
+              })),
+          )
+        : null;
+      if (!supplied || supplied.effectSha256 !== journal.create_batch.effect_sha256 || requestInputSha256 !== journal.create_batch.input_sha256 || requestEffectSha256 !== journal.create_batch.effect_sha256)
+        reject({
+          class: "conflict",
+          message: "pending TODO create batch does not match this request and effect authorization",
+          recovery: "Retry the exact original TODO create batch input with its preview effect SHA-256 and --yes; no transaction target bytes were changed.",
+        });
     }
-    if (journal.create && options.createRequestSha256 !== journal.create.request_sha256) reject({
-      class: "conflict",
-      message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
-      recovery: `Retry the exact original TODO create input to recover '${journal.create.created_id}'; no transaction target bytes were changed.`,
-    });
-    if (journal.activation_effect_sha256 && options.activationEffectSha256 !== journal.activation_effect_sha256) reject({
-      class: "conflict",
-      message: "pending TODO activation does not match the authorized preview effect",
-      recovery: "Retry the exact activation apply command returned by the original preview; no transaction target bytes were changed.",
-    });
-    if (journal.owner_mapping_sha256 && options.ownerMappingSha256 !== journal.owner_mapping_sha256) reject({
-      class: "conflict",
-      message: "pending TODO owner correction does not match the supplied owner mapping",
-      recovery: "Retry the exact correction input and apply command returned by the original preview; no transaction target bytes were changed.",
-    });
-    options.beforeRecovery?.(journal.targets.map((target) => ({
-      path: target.path,
-      before: target.before === null ? null : decode(target.before),
-      after: decode(target.after),
-    })));
+    if (journal.create && options.createRequestSha256 !== journal.create.request_sha256)
+      reject({
+        class: "conflict",
+        message: `pending TODO create for '${journal.create.created_id}' does not match this request`,
+        recovery: `Retry the exact original TODO create input to recover '${journal.create.created_id}'; no transaction target bytes were changed.`,
+      });
+    if (journal.activation_effect_sha256 && options.activationEffectSha256 !== journal.activation_effect_sha256)
+      reject({
+        class: "conflict",
+        message: "pending TODO activation does not match the authorized preview effect",
+        recovery: "Retry the exact activation apply command returned by the original preview; no transaction target bytes were changed.",
+      });
+    if (journal.owner_mapping_sha256 && options.ownerMappingSha256 !== journal.owner_mapping_sha256)
+      reject({
+        class: "conflict",
+        message: "pending TODO owner correction does not match the supplied owner mapping",
+        recovery: "Retry the exact correction input and apply command returned by the original preview; no transaction target bytes were changed.",
+      });
+    options.beforeRecovery?.(
+      journal.targets.map((target) => ({
+        path: target.path,
+        before: target.before === null ? null : decode(target.before),
+        after: decode(target.after),
+      })),
+    );
     const applied: AppliedTarget[] = [];
     try {
       for (const target of journal.targets) {
@@ -636,45 +716,59 @@ export function recoverTodoReconciliation(
   return recovered;
 }
 
-export function publishTodoReconciliation(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  binding: TodoReconciliationBinding,
-  targets: TodoReconciliationTarget[],
-  options: TodoReconciliationPublicationOptions = {},
-): { id: string; targetCount: number } {
+export function publishTodoReconciliation(context: EntityPublicationContext, sourceRoot: string, binding: TodoReconciliationBinding, targets: TodoReconciliationTarget[], options: TodoReconciliationPublicationOptions = {}): { id: string; targetCount: number } {
   const normalized = targets
     .filter((target) => options.retainUnchangedTargets || !same(target.before, Buffer.from(target.after)))
-    .sort((left, right) => Number(left.path === ENTITY_MODE_MARKER) - Number(right.path === ENTITY_MODE_MARKER)
-      || Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath)
-      || left.path.localeCompare(right.path));
-  const body = normalized.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
-  if ((options.activationEffectSha256 || options.ownerMappingSha256) && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH)) reject({ class: "schema_violation", message: "TODO activation authorization requires its activation target", recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed." });
-  if (options.ownerMappingSha256 && !options.activationEffectSha256) reject({ class: "schema_violation", message: "TODO owner-mapping authorization requires its effect authorization", recovery: "Recompute the complete owner correction target set from a fresh dry-run; no state was changed." });
-  const identity = options.create || options.createBatch || options.activationEffectSha256 || options.ownerMappingSha256 || options.updateBatchEffectSha256
-    ? { ...(options.create ? { create: options.create } : {}), ...(options.createBatch ? { create_batch: options.createBatch } : {}), ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}), ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}), ...(options.updateBatchEffectSha256 ? { update_batch_effect_sha256: options.updateBatchEffectSha256 } : {}), targets: body }
-    : body;
+    .sort((left, right) => Number(left.path === ENTITY_MODE_MARKER) - Number(right.path === ENTITY_MODE_MARKER) || Number(left.path === binding.publicPath) - Number(right.path === binding.publicPath) || left.path.localeCompare(right.path));
+  const body = normalized.map((target) => ({
+    path: target.path,
+    before: target.before === null ? null : encode(target.before),
+    after: encode(target.after),
+  }));
+  if ((options.activationEffectSha256 || options.ownerMappingSha256) && !normalized.some((target) => target.path === TODO_RECONCILIATION_ACTIVATION_PATH))
+    reject({
+      class: "schema_violation",
+      message: "TODO activation authorization requires its activation target",
+      recovery: "Recompute the complete activation target set from a fresh dry-run; no state was changed.",
+    });
+  if (options.ownerMappingSha256 && !options.activationEffectSha256)
+    reject({
+      class: "schema_violation",
+      message: "TODO owner-mapping authorization requires its effect authorization",
+      recovery: "Recompute the complete owner correction target set from a fresh dry-run; no state was changed.",
+    });
+  const identity =
+    options.create || options.createBatch || options.activationEffectSha256 || options.ownerMappingSha256 || options.updateBatchEffectSha256
+      ? {
+          ...(options.create ? { create: options.create } : {}),
+          ...(options.createBatch ? { create_batch: options.createBatch } : {}),
+          ...(options.activationEffectSha256 ? { activation_effect_sha256: options.activationEffectSha256 } : {}),
+          ...(options.ownerMappingSha256 ? { owner_mapping_sha256: options.ownerMappingSha256 } : {}),
+          ...(options.updateBatchEffectSha256 ? { update_batch_effect_sha256: options.updateBatchEffectSha256 } : {}),
+          targets: body,
+        }
+      : body;
   const id = createHash("sha256").update(canonicalRecordJson(identity)).digest("hex").slice(0, 24);
   if (!normalized.length) return { id, targetCount: 0 };
-  if (
-    body.length > MAX_TARGETS
-    || new Set(body.map(({ path: targetPath }) => targetPath)).size !== body.length
-    || body.some((target) => !validTarget(target.path, binding.publicPath))
-  ) reject({
-    class: "schema_violation",
-    message: "TODO reconciliation transaction has invalid or duplicate bounded targets",
-    recovery: "Reduce the managed TODO working set or cutover entity inventory below the declared journal bounds and retry; no state was changed.",
-  });
+  if (body.length > MAX_TARGETS || new Set(body.map(({ path: targetPath }) => targetPath)).size !== body.length || body.some((target) => !validTarget(target.path, binding.publicPath)))
+    reject({
+      class: "schema_violation",
+      message: "TODO reconciliation transaction has invalid or duplicate bounded targets",
+      recovery: "Reduce the managed TODO working set or cutover entity inventory below the declared journal bounds and retry; no state was changed.",
+    });
   const publicTarget = normalized.find((target) => target.path === binding.publicPath && target.before !== null);
   if (publicTarget) {
     const root = context.pinnedPath();
-    const publicDevice = fs.statSync(path.dirname(path.join(root, binding.publicPath)), { bigint: true }).dev;
+    const publicDevice = fs.statSync(path.dirname(path.join(root, binding.publicPath)), {
+      bigint: true,
+    }).dev;
     const recoveryDevice = fs.statSync(path.join(root, ".agentera"), { bigint: true }).dev;
-    if (publicDevice !== recoveryDevice) reject({
-      class: "unsupported_target",
-      message: `mapped TODO target '${binding.publicPath}' is on a different filesystem from its private recovery root`,
-      recovery: "Map TODO.md to a regular file on the project-state filesystem, then retry the exact mutation; no journal or target bytes were changed.",
-    });
+    if (publicDevice !== recoveryDevice)
+      reject({
+        class: "unsupported_target",
+        message: `mapped TODO target '${binding.publicPath}' is on a different filesystem from its private recovery root`,
+        recovery: "Map TODO.md to a regular file on the project-state filesystem, then retry the exact mutation; no journal or target bytes were changed.",
+      });
   }
   const journal: Journal = {
     schema_version: VERSION,
@@ -689,14 +783,20 @@ export function publishTodoReconciliation(
     targets: body,
   };
   const bytes = `${JSON.stringify(journal)}\n`;
-  if (Buffer.byteLength(bytes) > MAX_JOURNAL_BYTES) reject({ class: "schema_violation", message: "TODO reconciliation transaction exceeds its byte bound", recovery: "Reduce the managed TODO working set below the declared transaction bound and retry; no state was changed." });
+  if (Buffer.byteLength(bytes) > MAX_JOURNAL_BYTES)
+    reject({
+      class: "schema_violation",
+      message: "TODO reconciliation transaction exceeds its byte bound",
+      recovery: "Reduce the managed TODO working set below the declared transaction bound and retry; no state was changed.",
+    });
   const relativeJournal = journalPath(id);
   const journalIdentity = context.publishImmutable(relativeJournal, bytes);
-  if (!journalIdentity) reject({
-    class: "conflict",
-    message: `TODO reconciliation journal '${id}' already exists`,
-    recovery: "Retry the exact non-dry-run TODO mutation once so the existing journal is inspected and recovered before another transaction is prepared; no target bytes were changed.",
-  });
+  if (!journalIdentity)
+    reject({
+      class: "conflict",
+      message: `TODO reconciliation journal '${id}' already exists`,
+      recovery: "Retry the exact non-dry-run TODO mutation once so the existing journal is inspected and recovered before another transaction is prepared; no target bytes were changed.",
+    });
   if (options.interruptAfterTarget === 0) throw new InjectedTodoReconciliationInterruption(0);
   const applied: AppliedTarget[] = [];
   try {

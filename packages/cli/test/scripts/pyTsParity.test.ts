@@ -10,12 +10,13 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(__dirname, "..", "..");
 const REPO_ROOT = path.resolve(PKG_ROOT, "..", "..");
 const SCRIPT = path.join(PKG_ROOT, "scripts", "py_ts_parity.sh");
-const FIXTURE = path.join(
-  PKG_ROOT,
-  "test/cli/fixtures/oracle/parity-remaining-families.json",
-);
+const FIXTURE = path.join(PKG_ROOT, "test/cli/fixtures/oracle/parity-remaining-families.json");
 
-function runCheck(extraEnv: NodeJS.ProcessEnv = {}): { status: number | null; stdout: string; stderr: string } {
+function runCheck(extraEnv: NodeJS.ProcessEnv = {}): {
+  status: number | null;
+  stdout: string;
+  stderr: string;
+} {
   const result = spawnSync("bash", [SCRIPT, "--check"], {
     cwd: REPO_ROOT,
     env: { ...process.env, ...extraEnv },

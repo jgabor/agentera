@@ -5,14 +5,7 @@ import path from "node:path";
 import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { entityExactGetMaxBytes } from "./entityStorage.js";
-import {
-  FILE_REPLACEMENT_METADATA_NAME,
-  FILE_REPLACEMENT_RECOVERY_VERSION,
-  validateEntityRecoveryDirectory,
-  type EntityPublicationContext,
-  type EntityRecoveryDirectoryIdentity,
-  type PublishedTargetIdentity,
-} from "./entityPublicationContext.js";
+import { FILE_REPLACEMENT_METADATA_NAME, FILE_REPLACEMENT_RECOVERY_VERSION, validateEntityRecoveryDirectory, type EntityPublicationContext, type EntityRecoveryDirectoryIdentity, type PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { reject } from "./write/errors.js";
 
 const VERSION = "agentera.planReplacementTransaction.v1";
@@ -104,7 +97,11 @@ function decode(value: string): Buffer {
 
 function exactBase64(value: unknown): value is string {
   if (typeof value !== "string") return false;
-  try { return encode(decode(value)) === value; } catch { return false; }
+  try {
+    return encode(decode(value)) === value;
+  } catch {
+    return false;
+  }
 }
 
 function same(left: Buffer | null, right: Buffer | null): boolean {
@@ -144,45 +141,42 @@ function parseEnvelope(bytes: Buffer, label: string): Record<string, unknown> {
 function parseJournal(bytes: Buffer, fileName?: string): Journal {
   if (bytes.length > MAX_JOURNAL_BYTES) invalid("exceeds its byte bound");
   let parsed: unknown;
-  try { parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)); }
-  catch { invalid("is not valid bounded UTF-8 JSON"); }
+  try {
+    parsed = JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    invalid("is not valid bounded UTF-8 JSON");
+  }
   if (!mapping(parsed)) invalid("is not a mapping");
   const value = parsed as Partial<Journal>;
-  if (
-    Object.keys(value).sort().join(",") !== "id,operation,schema_version,targets"
-    || value.schema_version !== VERSION
-    || typeof value.id !== "string"
-    || !/^[a-f0-9]{24}$/.test(value.id)
-    || !mapping(value.operation)
-    || !Array.isArray(value.targets)
-    || value.targets.length < 2
-    || value.targets.length > MAX_TARGETS
-  ) invalid("is malformed");
+  if (Object.keys(value).sort().join(",") !== "id,operation,schema_version,targets" || value.schema_version !== VERSION || typeof value.id !== "string" || !/^[a-f0-9]{24}$/.test(value.id) || !mapping(value.operation) || !Array.isArray(value.targets) || value.targets.length < 2 || value.targets.length > MAX_TARGETS)
+    invalid("is malformed");
   const operation = value.operation as Partial<JournalOperation>;
   if (
-    Object.keys(operation).sort().join(",") !== "input_sha256,kind,predecessor,successor"
-    || !["existing", "create"].includes(String(operation.kind))
-    || typeof operation.predecessor !== "string"
-    || typeof operation.successor !== "string"
-    || !ID.test(operation.predecessor)
-    || !ID.test(operation.successor)
-    || operation.predecessor === operation.successor
-    || typeof operation.input_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(operation.input_sha256)
-  ) invalid("has an invalid operation identity");
+    Object.keys(operation).sort().join(",") !== "input_sha256,kind,predecessor,successor" ||
+    !["existing", "create"].includes(String(operation.kind)) ||
+    typeof operation.predecessor !== "string" ||
+    typeof operation.successor !== "string" ||
+    !ID.test(operation.predecessor) ||
+    !ID.test(operation.successor) ||
+    operation.predecessor === operation.successor ||
+    typeof operation.input_sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(operation.input_sha256)
+  )
+    invalid("has an invalid operation identity");
   const paths = new Set<string>();
   for (const target of value.targets) {
     if (
-      !mapping(target)
-      || Object.keys(target).sort().join(",") !== "after,before,path"
-      || typeof target.path !== "string"
-      || !TARGET.test(target.path)
-      || paths.has(target.path)
-      || (target.before !== null && !exactBase64(target.before))
-      || !exactBase64(target.after)
-      || decode(target.after).length > MAX_TARGET_BYTES
-      || (target.before !== null && decode(target.before).length > MAX_TARGET_BYTES)
-    ) invalid("has an invalid target");
+      !mapping(target) ||
+      Object.keys(target).sort().join(",") !== "after,before,path" ||
+      typeof target.path !== "string" ||
+      !TARGET.test(target.path) ||
+      paths.has(target.path) ||
+      (target.before !== null && !exactBase64(target.before)) ||
+      !exactBase64(target.after) ||
+      decode(target.after).length > MAX_TARGET_BYTES ||
+      (target.before !== null && decode(target.before).length > MAX_TARGET_BYTES)
+    )
+      invalid("has an invalid target");
     paths.add(target.path);
   }
   const body = value.targets as JournalTarget[];
@@ -198,19 +192,18 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
   if (operation.kind === "existing" && successor.before === null) invalid("existing successor target lacks a byte baseline");
   const predecessorEnvelope = parseEnvelope(decode(predecessor.after), "predecessor after target");
   const successorEnvelope = parseEnvelope(decode(successor.after), "successor after target");
-  const predecessorHeader = mapping((predecessorEnvelope.record as Record<string, unknown> | undefined)?.header)
-    ? (predecessorEnvelope.record as Record<string, unknown>).header as Record<string, unknown>
-    : {};
+  const predecessorHeader = mapping((predecessorEnvelope.record as Record<string, unknown> | undefined)?.header) ? ((predecessorEnvelope.record as Record<string, unknown>).header as Record<string, unknown>) : {};
   const successorRecord = mapping(successorEnvelope.record) ? successorEnvelope.record : {};
   if (
-    predecessorEnvelope.id !== operation.predecessor
-    || predecessorEnvelope.artifact !== "plan"
-    || predecessorHeader.status !== "archived"
-    || successorEnvelope.id !== operation.successor
-    || successorEnvelope.artifact !== "plan"
-    || successorRecord.previous_plan_archived !== operation.predecessor
-    || successorRecord.replacement_input_sha256 !== operation.input_sha256
-  ) invalid("does not encode the declared predecessor archive and immutable successor identity");
+    predecessorEnvelope.id !== operation.predecessor ||
+    predecessorEnvelope.artifact !== "plan" ||
+    predecessorHeader.status !== "archived" ||
+    successorEnvelope.id !== operation.successor ||
+    successorEnvelope.artifact !== "plan" ||
+    successorRecord.previous_plan_archived !== operation.predecessor ||
+    successorRecord.replacement_input_sha256 !== operation.input_sha256
+  )
+    invalid("does not encode the declared predecessor archive and immutable successor identity");
   const taskTargets = body.filter((target) => target.path.includes("/plan_task/"));
   if (operation.kind === "existing" && taskTargets.length) invalid("existing-successor operation includes unexpected task targets");
   if (operation.kind === "create") {
@@ -222,7 +215,12 @@ function parseJournal(bytes: Buffer, fileName?: string): Journal {
       }
     }
   }
-  return { schema_version: VERSION, id: value.id, operation: operation as JournalOperation, targets: body };
+  return {
+    schema_version: VERSION,
+    id: value.id,
+    operation: operation as JournalOperation,
+    targets: body,
+  };
 }
 
 function readJournal(root: string, name: string): Journal {
@@ -237,7 +235,8 @@ function pendingJournalNames(root: string): string[] {
   if (!fs.existsSync(directory)) return [];
   const stat = fs.lstatSync(directory);
   if (!stat.isDirectory() || stat.isSymbolicLink()) invalid("directory is not a safe real directory");
-  const names = fs.readdirSync(directory, { withFileTypes: true })
+  const names = fs
+    .readdirSync(directory, { withFileTypes: true })
     .filter((entry) => entry.name.endsWith(".json"))
     .map((entry) => {
       if (!entry.isFile() || entry.isSymbolicLink()) invalid("directory contains an unsafe journal entry");
@@ -263,16 +262,9 @@ export function inspectPendingPlanReplacement(root: string): PendingPlanReplacem
 
 function assertExactRetry(journal: Journal, retry: PlanReplacementRetry): void {
   const operation = journal.operation;
-  const matches = operation.predecessor === retry.predecessor
-    && (operation.kind === "existing"
-      ? retry.successor === operation.successor && retry.inputSha256 === undefined
-      : retry.successor === undefined && retry.inputSha256 === operation.input_sha256);
+  const matches = operation.predecessor === retry.predecessor && (operation.kind === "existing" ? retry.successor === operation.successor && retry.inputSha256 === undefined : retry.successor === undefined && retry.inputSha256 === operation.input_sha256);
   if (!matches) {
-    conflict(
-      operation.kind === "existing"
-        ? `pending plan replacement for predecessor '${operation.predecessor}' requires successor '${operation.successor}', not this request`
-        : `pending plan replacement for predecessor '${operation.predecessor}' requires the exact original successor input`,
-    );
+    conflict(operation.kind === "existing" ? `pending plan replacement for predecessor '${operation.predecessor}' requires successor '${operation.successor}', not this request` : `pending plan replacement for predecessor '${operation.predecessor}' requires the exact original successor input`);
   }
 }
 
@@ -291,7 +283,11 @@ function bytesAt(root: string, relative: string): Buffer | null {
 function fsyncDirectory(directory: string): void {
   if (process.platform === "win32") return;
   const descriptor = fs.openSync(directory, "r");
-  try { fs.fsyncSync(descriptor); } finally { fs.closeSync(descriptor); }
+  try {
+    fs.fsyncSync(descriptor);
+  } finally {
+    fs.closeSync(descriptor);
+  }
 }
 
 function parseFileRecoveryMetadata(file: string): FileRecoveryMetadata {
@@ -306,14 +302,15 @@ function parseFileRecoveryMetadata(file: string): FileRecoveryMetadata {
   if (!mapping(parsed)) conflict(`plan replacement retained recovery metadata '${file}' is not a mapping`);
   const value = parsed as Partial<FileRecoveryMetadata>;
   if (
-    Object.keys(value).sort().join(",") !== "after_sha256,before_sha256,schema_version,target_path"
-    || value.schema_version !== FILE_REPLACEMENT_RECOVERY_VERSION
-    || typeof value.target_path !== "string"
-    || typeof value.before_sha256 !== "string"
-    || typeof value.after_sha256 !== "string"
-    || !/^[a-f0-9]{64}$/.test(value.before_sha256)
-    || !/^[a-f0-9]{64}$/.test(value.after_sha256)
-  ) conflict(`plan replacement retained recovery metadata '${file}' has an invalid canonical record`);
+    Object.keys(value).sort().join(",") !== "after_sha256,before_sha256,schema_version,target_path" ||
+    value.schema_version !== FILE_REPLACEMENT_RECOVERY_VERSION ||
+    typeof value.target_path !== "string" ||
+    typeof value.before_sha256 !== "string" ||
+    typeof value.after_sha256 !== "string" ||
+    !/^[a-f0-9]{64}$/.test(value.before_sha256) ||
+    !/^[a-f0-9]{64}$/.test(value.after_sha256)
+  )
+    conflict(`plan replacement retained recovery metadata '${file}' has an invalid canonical record`);
   return value as FileRecoveryMetadata;
 }
 
@@ -358,26 +355,22 @@ function recoverReplacementRoles(context: EntityPublicationContext, target: Jour
   const recoveryRoot = path.join(root, ".agentera/.entity-recovery");
   if (!fs.existsSync(recoveryRoot)) return;
   const targetDirectory = path.dirname(context.pinnedPath(target.path));
-  const recoveryRootIdentity = validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    recoveryRoot,
-    targetDirectory,
-    "private entity recovery root '.agentera/.entity-recovery'",
-  );
+  const recoveryRootIdentity = validateEntityRecoveryDirectory(context.validatedRoot, recoveryRoot, targetDirectory, "private entity recovery root '.agentera/.entity-recovery'");
   const entries = fs.readdirSync(recoveryRoot, { withFileTypes: true });
   if (entries.length > 128) conflict("private entity recovery root exceeds its bounded entry count");
   const before = decode(target.before);
   const after = decode(target.after);
-  const matches: Array<{ directory: string; identity: EntityRecoveryDirectoryIdentity; metadata: string; previous?: string; stage?: string }> = [];
+  const matches: Array<{
+    directory: string;
+    identity: EntityRecoveryDirectoryIdentity;
+    metadata: string;
+    previous?: string;
+    stage?: string;
+  }> = [];
   for (const entry of entries) {
     if (entry.name === ".gitignore" || entry.name === "plan-replacement") continue;
     const directory = path.join(recoveryRoot, entry.name);
-    const identity = validateEntityRecoveryDirectory(
-      context.validatedRoot,
-      directory,
-      targetDirectory,
-      `private entity recovery attempt '${path.relative(root, directory).split(path.sep).join("/")}'`,
-    );
+    const identity = validateEntityRecoveryDirectory(context.validatedRoot, directory, targetDirectory, `private entity recovery attempt '${path.relative(root, directory).split(path.sep).join("/")}'`);
     const metadata = path.join(directory, FILE_REPLACEMENT_METADATA_NAME);
     if (!fs.existsSync(metadata)) continue;
     const value = parseFileRecoveryMetadata(metadata);
@@ -397,7 +390,13 @@ function recoverReplacementRoles(context: EntityPublicationContext, target: Jour
     if (fs.existsSync(stage) && !roleBytes(stage, "replacement stage").equals(after)) {
       conflict(`plan replacement target '${target.path}' retained replacement stage changed`);
     }
-    matches.push({ directory, identity, metadata, ...(fs.existsSync(previous) ? { previous } : {}), ...(fs.existsSync(stage) ? { stage } : {}) });
+    matches.push({
+      directory,
+      identity,
+      metadata,
+      ...(fs.existsSync(previous) ? { previous } : {}),
+      ...(fs.existsSync(stage) ? { stage } : {}),
+    });
   }
   if (matches.length > 1) conflict(`plan replacement target '${target.path}' has multiple retained recovery attempts`);
   const match = matches[0];
@@ -406,20 +405,8 @@ function recoverReplacementRoles(context: EntityPublicationContext, target: Jour
   if (!same(current, before) && !same(current, after)) {
     conflict(`plan replacement target '${target.path}' has concurrent canonical bytes beside retained recovery roles`);
   }
-  validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    recoveryRoot,
-    targetDirectory,
-    "private entity recovery root '.agentera/.entity-recovery'",
-    recoveryRootIdentity,
-  );
-  validateEntityRecoveryDirectory(
-    context.validatedRoot,
-    match.directory,
-    targetDirectory,
-    `private entity recovery attempt '${path.relative(root, match.directory).split(path.sep).join("/")}'`,
-    match.identity,
-  );
+  validateEntityRecoveryDirectory(context.validatedRoot, recoveryRoot, targetDirectory, "private entity recovery root '.agentera/.entity-recovery'", recoveryRootIdentity);
+  validateEntityRecoveryDirectory(context.validatedRoot, match.directory, targetDirectory, `private entity recovery attempt '${path.relative(root, match.directory).split(path.sep).join("/")}'`, match.identity);
   if (match.stage) removeExactRole(match.stage, after);
   if (match.previous) removeExactRole(match.previous, before);
   removeExactRole(match.metadata, roleBytes(match.metadata, "replacement metadata"));
@@ -427,11 +414,7 @@ function recoverReplacementRoles(context: EntityPublicationContext, target: Jour
   fsyncDirectory(recoveryRoot);
 }
 
-function applyTarget(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  target: JournalTarget,
-): PublishedTargetIdentity | null {
+function applyTarget(context: EntityPublicationContext, sourceRoot: string, target: JournalTarget): PublishedTargetIdentity | null {
   const root = context.pinnedPath();
   recoverImmutableStage(root, target);
   recoverReplacementRoles(context, target);
@@ -467,27 +450,14 @@ function rollback(context: EntityPublicationContext, sourceRoot: string, applied
   return failures;
 }
 
-function finishJournal(
-  context: EntityPublicationContext,
-  relative: string,
-  bytes: Buffer,
-  knownIdentity?: PublishedTargetIdentity,
-): void {
+function finishJournal(context: EntityPublicationContext, relative: string, bytes: Buffer, knownIdentity?: PublishedTargetIdentity): void {
   const identity = knownIdentity ?? context.replaceExisting(relative, bytes, bytes.toString("utf8"), MAX_JOURNAL_BYTES).publishedIdentity;
   if (context.removeExact(relative, identity) !== "removed") {
     throw new Error(`plan replacement journal '${relative}' changed before cleanup`);
   }
 }
 
-function completeJournal(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  journal: Journal,
-  bytes: Buffer,
-  relative: string,
-  options: PlanReplacementTransactionOptions,
-  knownIdentity?: PublishedTargetIdentity,
-): void {
+function completeJournal(context: EntityPublicationContext, sourceRoot: string, journal: Journal, bytes: Buffer, relative: string, options: PlanReplacementTransactionOptions, knownIdentity?: PublishedTargetIdentity): void {
   const applied: AppliedTarget[] = [];
   try {
     for (const target of journal.targets) {
@@ -506,16 +476,12 @@ function completeJournal(
   }
 }
 
-export function recoverPendingPlanReplacement(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  retry: PlanReplacementRetry,
-  options: PlanReplacementTransactionOptions,
-): PendingPlanReplacement | null {
+export function recoverPendingPlanReplacement(context: EntityPublicationContext, sourceRoot: string, retry: PlanReplacementRetry, options: PlanReplacementTransactionOptions): PendingPlanReplacement | null {
   const root = context.pinnedPath();
   let pending: PendingPlanReplacement | null;
-  try { pending = inspectPendingPlanReplacement(root); }
-  catch (error) {
+  try {
+    pending = inspectPendingPlanReplacement(root);
+  } catch (error) {
     reject({
       class: "conflict",
       message: `pending plan replacement journal is invalid: ${(error as Error).message}`,
@@ -532,26 +498,28 @@ export function recoverPendingPlanReplacement(
   return pending;
 }
 
-export function publishPlanReplacement(
-  context: EntityPublicationContext,
-  sourceRoot: string,
-  operation: PlanReplacementOperation,
-  targets: PlanReplacementTarget[],
-  options: PlanReplacementTransactionOptions,
-): void {
+export function publishPlanReplacement(context: EntityPublicationContext, sourceRoot: string, operation: PlanReplacementOperation, targets: PlanReplacementTarget[], options: PlanReplacementTransactionOptions): void {
   if (
-    !ID.test(operation.predecessor)
-    || !ID.test(operation.successor)
-    || operation.predecessor === operation.successor
-    || !/^[a-f0-9]{64}$/.test(operation.inputSha256)
-    || targets.length < 2
-    || targets.length > MAX_TARGETS
-    || new Set(targets.map((target) => target.path)).size !== targets.length
-    || targets.some((target) => !TARGET.test(target.path) || Buffer.byteLength(target.after) > MAX_TARGET_BYTES || (target.before !== null && target.before.length > MAX_TARGET_BYTES))
+    !ID.test(operation.predecessor) ||
+    !ID.test(operation.successor) ||
+    operation.predecessor === operation.successor ||
+    !/^[a-f0-9]{64}$/.test(operation.inputSha256) ||
+    targets.length < 2 ||
+    targets.length > MAX_TARGETS ||
+    new Set(targets.map((target) => target.path)).size !== targets.length ||
+    targets.some((target) => !TARGET.test(target.path) || Buffer.byteLength(target.after) > MAX_TARGET_BYTES || (target.before !== null && target.before.length > MAX_TARGET_BYTES))
   ) {
-    reject({ class: "schema_violation", message: "plan replacement transaction has invalid bounded targets", recovery: "Recompute the complete plan replacement target set from the locked canonical snapshot and retry; no state was changed." });
+    reject({
+      class: "schema_violation",
+      message: "plan replacement transaction has invalid bounded targets",
+      recovery: "Recompute the complete plan replacement target set from the locked canonical snapshot and retry; no state was changed.",
+    });
   }
-  const body = targets.map((target) => ({ path: target.path, before: target.before === null ? null : encode(target.before), after: encode(target.after) }));
+  const body = targets.map((target) => ({
+    path: target.path,
+    before: target.before === null ? null : encode(target.before),
+    after: encode(target.after),
+  }));
   const journalOperation: JournalOperation = {
     kind: operation.kind,
     predecessor: operation.predecessor,
@@ -559,11 +527,20 @@ export function publishPlanReplacement(
     input_sha256: operation.inputSha256,
   };
   const id = sha256(canonicalRecordJson({ operation: journalOperation, targets: body })).slice(0, 24);
-  const journal: Journal = { schema_version: VERSION, id, operation: journalOperation, targets: body };
+  const journal: Journal = {
+    schema_version: VERSION,
+    id,
+    operation: journalOperation,
+    targets: body,
+  };
   const bytes = Buffer.from(`${JSON.stringify(journal)}\n`);
   parseJournal(bytes, `${id}.json`);
   const relative = journalPath(id);
-  recoverImmutableStage(context.pinnedPath(), { path: relative, before: null, after: bytes.toString("base64") });
+  recoverImmutableStage(context.pinnedPath(), {
+    path: relative,
+    before: null,
+    after: bytes.toString("base64"),
+  });
   const identity = context.publishImmutable(relative, bytes.toString("utf8"));
   if (!identity) {
     conflict(`plan replacement journal '${id}' already exists; retry the exact operation once so it can be recovered before another target set is prepared`);

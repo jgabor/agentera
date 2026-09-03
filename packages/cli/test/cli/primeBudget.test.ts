@@ -6,23 +6,14 @@ import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import {
-  GPT5_TOKENIZER,
-  measurePrimeOutput,
-} from "../../scripts/measure-prime-budget.mjs";
+import { GPT5_TOKENIZER, measurePrimeOutput } from "../../scripts/measure-prime-budget.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
 describe("prime GPT-5 token budget", () => {
   it("pins the tokenizer package, version, model, and manifest method", () => {
-    const packageManifest = JSON.parse(fs.readFileSync(
-      path.join(REPO_ROOT, "packages/cli/package.json"),
-      "utf8",
-    ));
-    const manifest = YAML.parse(fs.readFileSync(
-      path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"),
-      "utf8",
-    ));
+    const packageManifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
+    const manifest = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8"));
 
     expect(packageManifest.devDependencies[GPT5_TOKENIZER.package]).toBe(GPT5_TOKENIZER.version);
     expect(manifest.measurement.tokens).toEqual({
@@ -57,12 +48,16 @@ describe("prime GPT-5 token budget", () => {
       let err = "";
       const rc = cmdPrime(
         { command: "prime" },
-        { out: (text) => { out += text; }, err: (text) => { err += text; } },
+        {
+          out: (text) => {
+            out += text;
+          },
+          err: (text) => {
+            err += text;
+          },
+        },
       );
-      const manifest = YAML.parse(fs.readFileSync(
-        path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"),
-        "utf8",
-      ));
+      const manifest = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8"));
       const surface = manifest.surfaces.find(({ id }: { id: string }) => id === "prime-briefing");
       const result = measurePrimeOutput(out, {
         bytes: surface.byte_budget,

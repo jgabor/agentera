@@ -7,14 +7,7 @@ import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
 import { doctorRoots, loadSuiteVersion } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
-import {
-  classifyInstall,
-  cliDistributionMajor,
-  crossMajorBoundaryApplies,
-  type InstallClassification,
-  isSourceCheckoutRoot,
-  projectInstallTrack,
-} from "./compatibility.js";
+import { classifyInstall, cliDistributionMajor, crossMajorBoundaryApplies, type InstallClassification, isSourceCheckoutRoot, projectInstallTrack } from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
@@ -24,10 +17,7 @@ import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
 export type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 
-function inferInvokingCliRuntime(
-  sourceRoot: string,
-  env: Record<string, string | undefined>,
-): "js" | "python" | "unknown" {
+function inferInvokingCliRuntime(sourceRoot: string, env: Record<string, string | undefined>): "js" | "python" | "unknown" {
   const explicit = (env.AGENTERA_CLI_RUNTIME ?? "").trim().toLowerCase();
   if (explicit === "js" || explicit === "node") {
     return "js";
@@ -48,12 +38,7 @@ function inferInvokingCliRuntime(
   return "unknown";
 }
 
-function buildInvokingCliRetryCommand(
-  sourceRoot: string,
-  channel: ResolvedUpdateChannel,
-  env: Record<string, string | undefined>,
-  expectedCommand: string,
-): string | null {
+function buildInvokingCliRetryCommand(sourceRoot: string, channel: ResolvedUpdateChannel, env: Record<string, string | undefined>, expectedCommand: string): string | null {
   const runtime = inferInvokingCliRuntime(sourceRoot, env);
   if (runtime !== "js") {
     return null;
@@ -91,29 +76,9 @@ export function appLifecycleActionNoun(status: string): string {
 export const BUNDLE_MARKER = ".agentera-bundle.json";
 
 /** Agentera user state preserved during v2→v3 managed app-home cleanup. */
-export const AGENTERA_USER_STATE_NAMES = new Set([
-  "progress.yaml",
-  "decisions.yaml",
-  "health.yaml",
-  "plan.yaml",
-  "docs.yaml",
-]);
-export const ROOT_USER_STATE_FILE_NAMES = new Set([
-  "PROFILE.md",
-  "USAGE.md",
-  "corpus.json",
-  "TODO.md",
-  "CHANGELOG.md",
-  "DESIGN.md",
-  "v3-handoff.json",
-]);
-export const ROOT_USER_STATE_DIR_NAMES = new Set([
-  "history",
-  "corpus",
-  "benchmarks",
-  "intermediate",
-  "sessions",
-]);
+export const AGENTERA_USER_STATE_NAMES = new Set(["progress.yaml", "decisions.yaml", "health.yaml", "plan.yaml", "docs.yaml"]);
+export const ROOT_USER_STATE_FILE_NAMES = new Set(["PROFILE.md", "USAGE.md", "corpus.json", "TODO.md", "CHANGELOG.md", "DESIGN.md", "v3-handoff.json"]);
+export const ROOT_USER_STATE_DIR_NAMES = new Set(["history", "corpus", "benchmarks", "intermediate", "sessions"]);
 
 function legacyDefaultAppHome(home: string): string {
   return resolvePath(path.join(expanduser(home), ".agents", "agentera"));
@@ -218,12 +183,14 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const project = opts.project;
   const expectedCommands = opts.expectedCommands ?? EXPECTED_STATE_COMMANDS;
   const env = { ...(opts.env ?? process.env), HOME: home };
-  const channel = opts.resolvedChannel ?? resolveInvokedUpdateChannel({
-    channel: opts.channel ?? null,
-    env,
-    home,
-    sourceRoot,
-  });
+  const channel =
+    opts.resolvedChannel ??
+    resolveInvokedUpdateChannel({
+      channel: opts.channel ?? null,
+      env,
+      home,
+      sourceRoot,
+    });
 
   // Fully self-contained npx bundle: the bundle IS the app and is always current
   // (its version is the package version), so there is no install/upgrade step.
@@ -252,10 +219,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       signals: [],
       dryRunCommand: null,
       applyCommand: null,
-      retryCommand: commandText([
-        ...channel.updateCommand.trim().split(/\s+/).slice(0, 3),
-        expectedCommands[0] ?? "prime",
-      ]),
+      retryCommand: commandText([...channel.updateCommand.trim().split(/\s+/).slice(0, 3), expectedCommands[0] ?? "prime"]),
       updateChannel: channel.channel,
     };
   }
@@ -302,12 +266,8 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   });
   const markerVersion = classification.current_version;
   const recoverableStaleDefault = isRecoverableStaleDefaultAppHome(installRoot, rootSource, home);
-  const legacyBundleRoot =
-    activeBundleRoot === installRoot &&
-    hasBundleRootEvidence(installRoot) &&
-    !pathExists(path.join(installRoot, ".git"));
-  const userDataOnly =
-    classification.kind === "unmanaged_directory" && appHomeIsUserDataOnly(installRoot);
+  const legacyBundleRoot = activeBundleRoot === installRoot && hasBundleRootEvidence(installRoot) && !pathExists(path.join(installRoot, ".git"));
+  const userDataOnly = classification.kind === "unmanaged_directory" && appHomeIsUserDataOnly(installRoot);
 
   const classified = classifyInstallRootStatus({
     installRoot,
@@ -393,23 +353,12 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     installKind: install.kind,
     markerVersion,
     signals,
-    dryRunCommand:
-      blocked || crossMajorPending || status === APP_UP_TO_DATE
-        ? null
-        : upgradeCommands.dryRunCommand,
-    applyCommand:
-      blocked || crossMajorPending || status === APP_UP_TO_DATE
-        ? null
-        : upgradeCommands.applyCommand,
+    dryRunCommand: blocked || crossMajorPending || status === APP_UP_TO_DATE ? null : upgradeCommands.dryRunCommand,
+    applyCommand: blocked || crossMajorPending || status === APP_UP_TO_DATE ? null : upgradeCommands.applyCommand,
     updateChannel: channel.channel,
     crossMajorBoundaryDetected: crossMajorDetected,
     crossMajorBoundary,
-    retryCommand: buildInvokingCliRetryCommand(
-      sourceRoot,
-      channel,
-      env,
-      expectedCommands[0] ?? "prime",
-    ),
+    retryCommand: buildInvokingCliRetryCommand(sourceRoot, channel, env, expectedCommands[0] ?? "prime"),
   };
 }
 
@@ -428,22 +377,15 @@ export function publicDoctorStatus(status: BundleStatus): PublicBundleStatus {
 }
 
 /** Oracle-pinned keys for `agentera doctor` (parity-remaining-families.json). */
-export const DOCTOR_PARITY_JSON_KEYS = [
-  "status",
-  "expectedVersion",
-  "appHome",
-  "managedAppRoot",
-  "userDataRoot",
-  "signals",
-  "dryRunCommand",
-  "applyCommand",
-  "retryCommand",
-] as const;
+export const DOCTOR_PARITY_JSON_KEYS = ["status", "expectedVersion", "appHome", "managedAppRoot", "userDataRoot", "signals", "dryRunCommand", "applyCommand", "retryCommand"] as const;
 
 /** Public doctor JSON envelope: command label plus oracle structural keys only. */
 export function doctorParityJsonEnvelope(status: BundleStatus): Record<string, unknown> {
   const pub = publicDoctorStatus(status);
-  const out: Record<string, unknown> = { command: "doctor", install_track: projectInstallTrack(status.installKind) };
+  const out: Record<string, unknown> = {
+    command: "doctor",
+    install_track: projectInstallTrack(status.installKind),
+  };
   for (const key of DOCTOR_PARITY_JSON_KEYS) {
     if (key in pub) out[key] = pub[key];
   }

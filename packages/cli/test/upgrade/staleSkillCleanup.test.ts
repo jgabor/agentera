@@ -7,12 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { opencodeConfigDir } from "../../src/setup/opencode.js";
 import type { MigrationPhaseItem } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
-import {
-  applyRuntimeMigrationItem,
-  applyRuntimeMigrationItems,
-  planRuntimeMigrationItems,
-  planStaleSkillCleanupItems,
-} from "../../src/upgrade/runtimeMigration.js";
+import { applyRuntimeMigrationItem, applyRuntimeMigrationItems, planRuntimeMigrationItems, planStaleSkillCleanupItems } from "../../src/upgrade/runtimeMigration.js";
 import { migrationCtx, sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -138,9 +133,7 @@ describe("planStaleSkillCleanupItems", () => {
     makeSymlink(skillsDir, "hej", path.join(agenteraApp, "hej"));
 
     const ctx = migrationCtx(path.join(home, "agentera"), path.join(tmp, "project"), home, REPO_ROOT);
-    const existing: MigrationPhaseItem[] = [
-      { status: "noop", action: "configure", runtime: "opencode", message: "prev" },
-    ];
+    const existing: MigrationPhaseItem[] = [{ status: "noop", action: "configure", runtime: "opencode", message: "prev" }];
     planStaleSkillCleanupItems(ctx, existing);
     expect(existing).toHaveLength(2);
     expect(existing[0]?.action).toBe("configure");

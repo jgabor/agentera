@@ -81,8 +81,7 @@ function hasSafeRange(value: unknown, textLength: number): value is { range: num
   if (value === null || typeof value !== "object") return false;
   const range = (value as { range?: unknown }).range;
   if (!Array.isArray(range) || range.length < 2 || range.some((offset) => !Number.isInteger(offset))) return false;
-  return range[0] >= 0 && range[0] <= range[1] && range[1] <= textLength &&
-    (range[2] === undefined || (range[1] <= range[2] && range[2] <= textLength));
+  return range[0] >= 0 && range[0] <= range[1] && range[1] <= textLength && (range[2] === undefined || (range[1] <= range[2] && range[2] <= textLength));
 }
 
 function hasPlainSequenceItemPrefix(text: string, itemStart: number): boolean {
@@ -129,9 +128,23 @@ function normalizePlanDocument(data: JsonObject, archived: boolean, blockScopeIt
   const normalizedStatus = normalizeLegacyStatus(status) === "complete" && incomplete ? "open" : normalizeLegacyStatus(status);
   const taskNormalizations: JsonObject[] = [];
   const tasks = sourceTasks.map((source, index) => {
-    const task = structuredClone(source); const legacy = typeof task.id === "string" ? /^T([1-9][0-9]*)$/.exec(task.id) : null;
+    const task = structuredClone(source);
+    const legacy = typeof task.id === "string" ? /^T([1-9][0-9]*)$/.exec(task.id) : null;
     const taskNormalization: JsonObject = { index };
-    if (legacy && task.number === undefined) { task.number = Number(legacy[1]); delete task.id; if (task.name === undefined && typeof task.title === "string") { task.name = task.title; delete task.title; } Object.assign(taskNormalization, { source_id: source.id, source_title: source.title, normalized_number: task.number, normalized_name: task.name }); }
+    if (legacy && task.number === undefined) {
+      task.number = Number(legacy[1]);
+      delete task.id;
+      if (task.name === undefined && typeof task.title === "string") {
+        task.name = task.title;
+        delete task.title;
+      }
+      Object.assign(taskNormalization, {
+        source_id: source.id,
+        source_title: source.title,
+        normalized_number: task.number,
+        normalized_name: task.name,
+      });
+    }
     const normalizedLists = ["depends_on", "acceptance"].filter((field) => source[field] === undefined || source[field] === null || typeof source[field] === "string");
     if (normalizedLists.length) {
       for (const field of normalizedLists) task[field] = typeof source[field] === "string" && source[field] !== "" ? [source[field]] : [];
@@ -150,17 +163,36 @@ function normalizePlanDocument(data: JsonObject, archived: boolean, blockScopeIt
       });
       if (acceptanceItems.length) taskNormalization.acceptance_mapping_items = acceptanceItems;
     }
-    if (task.status === "completed") { task.status = "complete"; taskNormalization.status = { original: "completed", normalized: "complete" }; }
+    if (task.status === "completed") {
+      task.status = "complete";
+      taskNormalization.status = { original: "completed", normalized: "complete" };
+    }
     if (Object.keys(taskNormalization).length > 1) taskNormalizations.push(taskNormalization);
-    if (Array.isArray(task.depends_on)) task.depends_on = task.depends_on.map((dependency) => { const match = /^Task ([1-9][0-9]*)$/.exec(String(dependency)); return match ? match[1] : dependency; });
+    if (Array.isArray(task.depends_on))
+      task.depends_on = task.depends_on.map((dependency) => {
+        const match = /^Task ([1-9][0-9]*)$/.exec(String(dependency));
+        return match ? match[1] : dependency;
+      });
     return task;
   });
-  const normalizedData: JsonObject = { ...data, header: { ...header, status: normalizedStatus }, ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }) };
+  const normalizedData: JsonObject = {
+    ...data,
+    header: { ...header, status: normalizedStatus },
+    ...(Array.isArray(data.entries) ? { entries: tasks } : { tasks }),
+  };
   const changes: JsonObject = {};
-  if (status !== normalizedStatus) changes.lifecycle = { original_status: status, normalized_status: normalizedStatus, rule: incomplete ? "completed_with_incomplete_tasks_to_open" : "legacy_status" };
+  if (status !== normalizedStatus)
+    changes.lifecycle = {
+      original_status: status,
+      normalized_status: normalizedStatus,
+      rule: incomplete ? "completed_with_incomplete_tasks_to_open" : "legacy_status",
+    };
   if (data.scope === undefined || data.scope === null || data.scope === "") {
     normalizedData.scope = { included: [], excluded: [] };
-    changes.scope = { source_form: data.scope === undefined ? "absent" : data.scope === null ? "null" : "empty_scalar", normalized: "explicit_empty_lists" };
+    changes.scope = {
+      source_form: data.scope === undefined ? "absent" : data.scope === null ? "null" : "empty_scalar",
+      normalized: "explicit_empty_lists",
+    };
   } else if (isMapping(data.scope)) {
     const scope = structuredClone(data.scope);
     const itemNormalizations: JsonObject[] = [];
@@ -168,7 +200,13 @@ function normalizePlanDocument(data: JsonObject, archived: boolean, blockScopeIt
       if (!Array.isArray(scope[field])) continue;
       scope[field] = scope[field].map((item, index) => {
         if (Array.isArray(item) && item.length === 1 && typeof item[0] === "string") {
-          itemNormalizations.push({ field, index, source_form: "singleton_sequence", source: item, normalized: item[0] });
+          itemNormalizations.push({
+            field,
+            index,
+            source_form: "singleton_sequence",
+            source: item,
+            normalized: item[0],
+          });
           return item[0];
         }
         if (isMapping(item)) {
@@ -187,7 +225,10 @@ function normalizePlanDocument(data: JsonObject, archived: boolean, blockScopeIt
     if (itemNormalizations.length) changes.scope_list_items = itemNormalizations;
   }
   if (taskNormalizations.length) changes.tasks = taskNormalizations;
-  return { data: normalizedData, ...(Object.keys(changes).length ? { provenance: { kind: "legacy_plan_normalization", archived, ...changes } } : {}) };
+  return {
+    data: normalizedData,
+    ...(Object.keys(changes).length ? { provenance: { kind: "legacy_plan_normalization", archived, ...changes } } : {}),
+  };
 }
 
 /**
@@ -209,11 +250,7 @@ function inspectionDiagnostic(path: string, category: PlanDiagnosticCategory, me
   return { path, category, message };
 }
 
-function inspectPlanArtifact(
-  artifactPath: string,
-  archived: boolean,
-  bytes?: Buffer,
-): { artifact: PlanArtifact | null; diagnostics: PlanArtifactDiagnostic[] } {
+function inspectPlanArtifact(artifactPath: string, archived: boolean, bytes?: Buffer): { artifact: PlanArtifact | null; diagnostics: PlanArtifactDiagnostic[] } {
   let data: unknown;
   let sourceText: string;
   try {
@@ -227,13 +264,7 @@ function inspectPlanArtifact(
   if (!isPlanDocument(data)) {
     return {
       artifact: null,
-      diagnostics: [
-        inspectionDiagnostic(
-          artifactPath,
-          "schema",
-          "plan requires a header mapping and a tasks or entries array of task mappings",
-        ),
-      ],
+      diagnostics: [inspectionDiagnostic(artifactPath, "schema", "plan requires a header mapping and a tasks or entries array of task mappings")],
     };
   }
 
@@ -241,21 +272,13 @@ function inspectPlanArtifact(
   if (!["open", "complete", "active", "completed"].includes(status)) {
     return {
       artifact: null,
-      diagnostics: [
-        inspectionDiagnostic(
-          artifactPath,
-          "lifecycle",
-          `plan header.status must be open or complete; received ${status || "missing"}`,
-        ),
-      ],
+      diagnostics: [inspectionDiagnostic(artifactPath, "lifecycle", `plan header.status must be open or complete; received ${status || "missing"}`)],
     };
   }
 
   const diagnostics: PlanArtifactDiagnostic[] = [];
   if (status === "active" || status === "completed") {
-    diagnostics.push(
-      inspectionDiagnostic(artifactPath, "legacy", `legacy plan status ${status} normalized to ${normalizeLegacyStatus(status)}`),
-    );
+    diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", `legacy plan status ${status} normalized to ${normalizeLegacyStatus(status)}`));
   }
   const sourceTasks = (Array.isArray(data.entries) ? data.entries : data.tasks) as JsonObject[];
   if (normalizeLegacyStatus(status) === "complete" && sourceTasks.some((task) => !taskIsComplete(task))) {
@@ -265,7 +288,15 @@ function inspectPlanArtifact(
     diagnostics.push(inspectionDiagnostic(artifactPath, "legacy", "legacy entries task shape is read compatibly"));
   }
   const normalized = normalizePlanDocument(data, archived, blockScopeItemSources(sourceText));
-  return { artifact: { path: artifactPath, data: normalized.data, archived, ...(normalized.provenance ? { migrationProvenance: normalized.provenance } : {}) }, diagnostics };
+  return {
+    artifact: {
+      path: artifactPath,
+      data: normalized.data,
+      archived,
+      ...(normalized.provenance ? { migrationProvenance: normalized.provenance } : {}),
+    },
+    diagnostics,
+  };
 }
 
 export function planDocumentParts(data: JsonObject): PlanDocumentParts {
@@ -289,18 +320,9 @@ export function planDocumentParts(data: JsonObject): PlanDocumentParts {
  * history location. Callers with inspected sources can pin active and archive
  * bytes, or pass null to exclude an unsafe active path without following it.
  */
-export function discoverPlanArtifacts(
-  activePath: string,
-  options?: { activeBytes: Buffer | null; archiveBytes?: ReadonlyMap<string, Buffer> },
-): PlanArtifactDiscovery {
+export function discoverPlanArtifacts(activePath: string, options?: { activeBytes: Buffer | null; archiveBytes?: ReadonlyMap<string, Buffer> }): PlanArtifactDiscovery {
   const archiveDirectory = path.join(path.dirname(activePath), "archive");
-  const activeInspection = options
-    ? options.activeBytes === null
-      ? { artifact: null, diagnostics: [] }
-      : inspectPlanArtifact(activePath, false, options.activeBytes)
-    : fs.existsSync(activePath)
-      ? inspectPlanArtifact(activePath, false)
-      : { artifact: null, diagnostics: [] };
+  const activeInspection = options ? (options.activeBytes === null ? { artifact: null, diagnostics: [] } : inspectPlanArtifact(activePath, false, options.activeBytes)) : fs.existsSync(activePath) ? inspectPlanArtifact(activePath, false) : { artifact: null, diagnostics: [] };
   const active = activeInspection.artifact;
   const archived: PlanArtifact[] = [];
   const invalidArchivePaths: string[] = [];
@@ -308,9 +330,7 @@ export function discoverPlanArtifacts(
 
   let archiveSources: Array<[string, Buffer | undefined]> = [];
   if (options?.archiveBytes) {
-    archiveSources = [...options.archiveBytes.entries()]
-      .filter(([archivePath]) => path.dirname(archivePath) === archiveDirectory && PLAN_ARCHIVE_FILE.test(path.basename(archivePath)))
-      .sort(([left], [right]) => left.localeCompare(right));
+    archiveSources = [...options.archiveBytes.entries()].filter(([archivePath]) => path.dirname(archivePath) === archiveDirectory && PLAN_ARCHIVE_FILE.test(path.basename(archivePath))).sort(([left], [right]) => left.localeCompare(right));
   } else {
     let names: string[] = [];
     try {
@@ -358,22 +378,22 @@ export function discoverPlanArtifacts(
     const provenancePaths = matching.map((candidate) => candidate.artifact.path).sort();
     const ambiguous = new Set(matching.map((candidate) => candidate.canonicalJson)).size > 1;
     if (ambiguous) {
-      diagnostics.push(inspectionDiagnostic(
-        identity.artifact.path,
-        "identity",
-        `plan identity ${identity.stableId} is ambiguous across ${provenancePaths.join(", ")}`,
-      ));
+      diagnostics.push(inspectionDiagnostic(identity.artifact.path, "identity", `plan identity ${identity.stableId} is ambiguous across ${provenancePaths.join(", ")}`));
     }
     return { ...identity, ambiguous, provenancePaths };
   });
-  return { activePath, archiveDirectory, active, archived, invalidArchivePaths, diagnostics, identities };
+  return {
+    activePath,
+    archiveDirectory,
+    active,
+    archived,
+    invalidArchivePaths,
+    diagnostics,
+    identities,
+  };
 }
 
-export function planCatalogEntry(
-  artifact: PlanArtifact,
-  activePath: string,
-  identity?: PlanArtifactIdentity,
-): JsonObject {
+export function planCatalogEntry(artifact: PlanArtifact, activePath: string, identity?: PlanArtifactIdentity): JsonObject {
   const parts = planDocumentParts(artifact.data);
   const active = artifact.path === activePath;
   return {

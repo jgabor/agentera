@@ -13,20 +13,7 @@ import YAML from "yaml";
  * themselves; this helper is for parse-time and run-time input rejection only.
  */
 
-export type InvalidInputErrorClass =
-  | "missing_argument"
-  | "invalid_choice"
-  | "unrecognized_argument"
-  | "mutually_exclusive"
-  | "invalid_int"
-  | "invalid_format"
-  | "invalid_request"
-  | "unsupported_target"
-  | "schema_violation"
-  | "conflict"
-  | "invalid_receipt"
-  | "invalid_selected_term"
-  | "conflicting_stdin";
+export type InvalidInputErrorClass = "missing_argument" | "invalid_choice" | "unrecognized_argument" | "mutually_exclusive" | "invalid_int" | "invalid_format" | "invalid_request" | "unsupported_target" | "schema_violation" | "conflict" | "invalid_receipt" | "invalid_selected_term" | "conflicting_stdin";
 
 export interface InvalidInputErrorBody {
   class: InvalidInputErrorClass;
@@ -58,17 +45,9 @@ const INVALID_INPUT_MAX_UTF8_BYTES = 32_768;
 
 const DEFAULT_RECOVERY = "Correct the input and retry; no state was changed.";
 
-const TEXT_GUIDANCE_LINES = [
-  "What happened: {message}",
-  "What the preview did: nothing; only the input was rejected.",
-  "What the recommended fix will do: take the corrected input and continue.",
-  "What it will not do: edit your project files, run live commands, or change unknown state.",
-] as const;
+const TEXT_GUIDANCE_LINES = ["What happened: {message}", "What the preview did: nothing; only the input was rejected.", "What the recommended fix will do: take the corrected input and continue.", "What it will not do: edit your project files, run live commands, or change unknown state."] as const;
 
-export function emitInvalidInput(
-  io: { out?: (t: string) => void; err?: (t: string) => void },
-  opts: EmitInvalidInputOptions,
-): number {
+export function emitInvalidInput(io: { out?: (t: string) => void; err?: (t: string) => void }, opts: EmitInvalidInputOptions): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
 
@@ -92,8 +71,7 @@ export function emitInvalidInput(
         serialized = JSON.stringify(envelope) + "\n";
       }
       out(serialized);
-    }
-    else out(YAML.stringify(envelope));
+    } else out(YAML.stringify(envelope));
     return opts.exitCode ?? INVALID_INPUT_EXIT_CODE;
   }
 

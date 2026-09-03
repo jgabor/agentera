@@ -2,9 +2,7 @@ import { createHash } from "node:crypto";
 
 import YAML from "yaml";
 
-export type BootstrapAuthorityLocation =
-  | { line: number; column: number }
-  | { structured_path: string; offset?: number };
+export type BootstrapAuthorityLocation = { line: number; column: number } | { structured_path: string; offset?: number };
 
 export interface BootstrapAuthorityDiagnostic {
   path: string;
@@ -21,14 +19,7 @@ export interface BootstrapAuthorityDiagnostic {
 }
 
 export type InvocationChannel = "bare" | "development" | "stable" | "other" | "malformed";
-export type InvocationCompositionKind =
-  | "background"
-  | "backtick_substitution"
-  | "command_substitution"
-  | "group"
-  | "operator"
-  | "process_substitution"
-  | "redirection";
+export type InvocationCompositionKind = "background" | "backtick_substitution" | "command_substitution" | "group" | "operator" | "process_substitution" | "redirection";
 
 export interface InvocationSpan {
   identity: string;
@@ -117,10 +108,7 @@ const STABLE_HEADING = "## Stable v2 line";
 const DEVELOPMENT_HEADING = "## Upgrading v2 to v3 development channel";
 const MAX_YAML_ALIAS_COUNT = 100;
 const PERSONAL_GLOSSARY_EVALUATION_CORPUS = "references/analysis/personal-glossary-evaluation-corpus.yaml";
-export const STABLE_COMMANDS = [
-  "npx -y agentera@latest upgrade --dry-run",
-  "npx -y agentera@latest upgrade --yes",
-] as const;
+export const STABLE_COMMANDS = ["npx -y agentera@latest upgrade --dry-run", "npx -y agentera@latest upgrade --yes"] as const;
 
 const INVOCATION_TOKEN = /(?<![\w@./-])agentera(?:@(?:\$\([^\r\n)]*\)|[A-Za-z0-9._${}-]|\\.|"[^"\r\n]*"|'[^'\r\n]*')+)?(?=(?:[\p{White_Space}`"';|&()<>\]}]|[.,!?:](?:[\p{White_Space}]|$)|$))/gu;
 const SHELL_WRAPPER = /^(?:env|command|exec|sudo|bash|sh|zsh|fish|timeout|xargs|nice|stdbuf|watch|time|eval)$/u;
@@ -144,7 +132,8 @@ const DESCRIPTIVE_PRODUCTIONS = [
 ] as const;
 
 function normalizeWhitespace(value: string): string {
-  return value.normalize("NFKC")
+  return value
+    .normalize("NFKC")
     .replace(/\\\r?\n[\p{White_Space}]*/gu, " ")
     .replace(/[\p{White_Space}]+/gu, " ")
     .trim();
@@ -161,12 +150,18 @@ function normalizeToken(raw: string, decodedStart: number): { value: string; off
   for (let index = 0; index < raw.length; index += 1) {
     const character = raw[index];
     if (character === "'" || character === '"') {
-      quote = quote === character ? null : quote ?? character;
+      quote = quote === character ? null : (quote ?? character);
       continue;
     }
     if (character === "\\" && index + 1 < raw.length) {
-      if (raw[index + 1] === "\r" && raw[index + 2] === "\n") { index += 2; continue; }
-      if (raw[index + 1] === "\n") { index += 1; continue; }
+      if (raw[index + 1] === "\r" && raw[index + 2] === "\n") {
+        index += 2;
+        continue;
+      }
+      if (raw[index + 1] === "\n") {
+        index += 1;
+        continue;
+      }
       index += 1;
     }
     const normalized = raw[index].normalize("NFKC");
@@ -214,14 +209,23 @@ function lexicalContainers(value: string, inlineRanges: readonly { start: number
   for (let index = 0; index < value.length; index += 1) {
     const inlineEnd = inlineStarts.get(index);
     if (inlineEnd !== undefined) {
-      containers.push({ kind: "inline_code", start: index, contentStart: index + 1, end: inlineEnd + 1, contentEnd: inlineEnd });
+      containers.push({
+        kind: "inline_code",
+        start: index,
+        contentStart: index + 1,
+        end: inlineEnd + 1,
+        contentEnd: inlineEnd,
+      });
       index = inlineEnd;
       continue;
     }
     const top = stack.at(-1);
     const character = value[index];
     if (top && (top.kind === "quote" || top.kind === "command_substitution") && top.closer !== ")" && top.closer !== "}") {
-      if (character === "\\") { index += 1; continue; }
+      if (character === "\\") {
+        index += 1;
+        continue;
+      }
       if (character === top.closer) {
         top.end = index + 1;
         top.contentEnd = index;
@@ -229,25 +233,56 @@ function lexicalContainers(value: string, inlineRanges: readonly { start: number
       }
       continue;
     }
-    if (character === "\\") { index += 1; continue; }
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
     if (character === "'" || character === '"') {
       if (character === "'" && /[\p{L}\p{N}]/u.test(value[index - 1] ?? "") && /[\p{L}\p{N}]/u.test(value[index + 1] ?? "")) continue;
-      stack.push({ kind: "quote", start: index, contentStart: index + 1, end: value.length, contentEnd: value.length, closer: character });
+      stack.push({
+        kind: "quote",
+        start: index,
+        contentStart: index + 1,
+        end: value.length,
+        contentEnd: value.length,
+        closer: character,
+      });
       continue;
     }
     if (character === "`") {
-      stack.push({ kind: "command_substitution", start: index, contentStart: index + 1, end: value.length, contentEnd: value.length, closer: "`" });
+      stack.push({
+        kind: "command_substitution",
+        start: index,
+        contentStart: index + 1,
+        end: value.length,
+        contentEnd: value.length,
+        closer: "`",
+      });
       continue;
     }
     const process = (character === "<" || character === ">") && value[index + 1] === "(";
     const command = character === "$" && value[index + 1] === "(";
     if (process || command) {
-      stack.push({ kind: process ? "process_substitution" : "command_substitution", start: index, contentStart: index + 2, end: value.length, contentEnd: value.length, closer: ")" });
+      stack.push({
+        kind: process ? "process_substitution" : "command_substitution",
+        start: index,
+        contentStart: index + 2,
+        end: value.length,
+        contentEnd: value.length,
+        closer: ")",
+      });
       index += 1;
       continue;
     }
     if (character === "(" || character === "{") {
-      stack.push({ kind: "group", start: index, contentStart: index + 1, end: value.length, contentEnd: value.length, closer: character === "(" ? ")" : "}" });
+      stack.push({
+        kind: "group",
+        start: index,
+        contentStart: index + 1,
+        end: value.length,
+        contentEnd: value.length,
+        closer: character === "(" ? ")" : "}",
+      });
       continue;
     }
     if (top && character === top.closer) {
@@ -284,7 +319,10 @@ interface ShellOperator {
   composed: boolean;
 }
 
-interface ShellRedirection { start: number; end: number }
+interface ShellRedirection {
+  start: number;
+  end: number;
+}
 
 interface ShellSegment {
   start: number;
@@ -293,7 +331,12 @@ interface ShellSegment {
   operatorAfter: ShellOperator | null;
 }
 
-function shellSegments(value: string, lower: number, upper: number, containers: readonly Container[]): {
+function shellSegments(
+  value: string,
+  lower: number,
+  upper: number,
+  containers: readonly Container[],
+): {
   segments: ShellSegment[];
   redirections: ShellRedirection[];
 } {
@@ -302,14 +345,28 @@ function shellSegments(value: string, lower: number, upper: number, containers: 
   let quote: "'" | '"' | null = null;
   let squareDepth = 0;
   for (let index = lower; index < upper; index += 1) {
-    if (containers.some((container) => container.start <= index && index < container.end
-      && container.kind !== "scalar" && container.contentStart > lower)) continue;
+    if (containers.some((container) => container.start <= index && index < container.end && container.kind !== "scalar" && container.contentStart > lower)) continue;
     const character = value[index];
-    if (character === "\\") { index += 1; continue; }
-    if (quote) { if (character === quote) quote = null; continue; }
-    if (character === "'" || character === '"') { quote = character; continue; }
-    if (character === "[") { squareDepth += 1; continue; }
-    if (character === "]" && squareDepth > 0) { squareDepth -= 1; continue; }
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) quote = null;
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+      continue;
+    }
+    if (character === "[") {
+      squareDepth += 1;
+      continue;
+    }
+    if (character === "]" && squareDepth > 0) {
+      squareDepth -= 1;
+      continue;
+    }
     if (character === "<" && /^[^>\s]+>/u.test(value.slice(index + 1))) {
       index = value.indexOf(">", index);
       continue;
@@ -333,7 +390,12 @@ function shellSegments(value: string, lower: number, upper: number, containers: 
     }
     if (squareDepth === 0 && (character === "\n" || character === ";" || character === "|" || character === "&")) {
       const width = value[index + 1] === character && (character === "|" || character === "&") ? 2 : 1;
-      operators.push({ start: index, end: index + width, raw: value.slice(index, index + width), composed: character !== "\n" });
+      operators.push({
+        start: index,
+        end: index + width,
+        raw: value.slice(index, index + width),
+        composed: character !== "\n",
+      });
       index += width - 1;
     }
   }
@@ -349,7 +411,13 @@ function shellSegments(value: string, lower: number, upper: number, containers: 
   return { segments, redirections };
 }
 
-function commandWindow(value: string, tokenStart: number, tokenEnd: number, containers: readonly Container[], markdown: boolean): {
+function commandWindow(
+  value: string,
+  tokenStart: number,
+  tokenEnd: number,
+  containers: readonly Container[],
+  markdown: boolean,
+): {
   start: number;
   end: number;
   container: Container;
@@ -367,12 +435,22 @@ function commandWindow(value: string, tokenStart: number, tokenEnd: number, cont
     const prefix = value.slice(container.contentStart, tokenStart).trim();
     return prefix === "" || /^(?:npx\s+-y|(?:env|command|exec|sudo|bash|sh|zsh|fish|timeout|time|eval)\b.*)$/u.test(prefix);
   });
-  const active = nested.at(-1) ?? { kind: "scalar" as const, start: 0, contentStart: 0, end: value.length, contentEnd: value.length };
+  const active = nested.at(-1) ?? {
+    kind: "scalar" as const,
+    start: 0,
+    contentStart: 0,
+    end: value.length,
+    contentEnd: value.length,
+  };
   const lower = active.contentStart;
   const upper = active.contentEnd;
   const shell = shellSegments(value, lower, upper, containers);
-  const segment = shell.segments.find(({ start, end }) => start <= tokenStart && tokenStart < end)
-    ?? { start: lower, end: upper, operatorBefore: null, operatorAfter: null };
+  const segment = shell.segments.find(({ start, end }) => start <= tokenStart && tokenStart < end) ?? {
+    start: lower,
+    end: upper,
+    operatorBefore: null,
+    operatorAfter: null,
+  };
   const before = value.slice(segment.start, tokenStart);
   const npx = /(?:^|[;&|\s(])npx[ \t]+-y[ \t]+$/u.exec(before);
   let start = npx ? segment.start + npx.index + (npx[0].startsWith("npx") ? 0 : 1) : tokenStart;
@@ -382,34 +460,59 @@ function commandWindow(value: string, tokenStart: number, tokenEnd: number, cont
   let quote: "'" | '"' | null = null;
   let angle = false;
   for (let index = tokenEnd; index < upper; index += 1) {
-    const redirection = shell.redirections.find(({ start: redirectionStart, end: redirectionEnd }) =>
-      redirectionStart <= index && index < redirectionEnd);
+    const redirection = shell.redirections.find(({ start: redirectionStart, end: redirectionEnd }) => redirectionStart <= index && index < redirectionEnd);
     if (redirection) {
       index = redirection.end - 1;
       continue;
     }
     const character = value[index];
-    if (character === "\\") { index += 1; continue; }
-    if (quote) { if (character === quote) quote = null; continue; }
-    if (character === "'" || character === '"') { quote = character; continue; }
-    if (character === "<") { angle = true; continue; }
-    if (character === ">" && angle) { angle = false; continue; }
+    if (character === "\\") {
+      index += 1;
+      continue;
+    }
+    if (quote) {
+      if (character === quote) quote = null;
+      continue;
+    }
+    if (character === "'" || character === '"') {
+      quote = character;
+      continue;
+    }
+    if (character === "<") {
+      angle = true;
+      continue;
+    }
+    if (character === ">" && angle) {
+      angle = false;
+      continue;
+    }
     if (angle) continue;
-    if (character === "#" && /\s/u.test(value[index - 1] ?? "")) { end = index; break; }
+    if (character === "#" && /\s/u.test(value[index - 1] ?? "")) {
+      end = index;
+      break;
+    }
     const shellPipe = character === "|" && (value[index + 1] === "|" || /\s/u.test(value[index - 1] ?? "") || /\s/u.test(value[index + 1] ?? ""));
-    if (character === "\n" || character === ";" || shellPipe || character === "&") { end = index; break; }
-    if (character === "," && /^,\s*(?:and\s+)?(?:then|finally|instead)\b/iu.test(value.slice(index))) { end = index; break; }
+    if (character === "\n" || character === ";" || shellPipe || character === "&") {
+      end = index;
+      break;
+    }
+    if (character === "," && /^,\s*(?:and\s+)?(?:then|finally|instead)\b/iu.test(value.slice(index))) {
+      end = index;
+      break;
+    }
   }
   while (end > tokenEnd && /[\s.!?:]/u.test(value[end - 1])) end -= 1;
 
-  const prefix = value.slice(segment.start, start).trim().replace(/^[-*+]\s+/u, "");
+  const prefix = value
+    .slice(segment.start, start)
+    .trim()
+    .replace(/^[-*+]\s+/u, "");
   const wrapperTokens = normalizeWhitespace(prefix).split(" ").filter(Boolean);
   const shellWrapper = wrapperTokens.some((token) => SHELL_WRAPPER.test(token) || /^[A-Za-z_][A-Za-z0-9_]*=/u.test(token) || token === "$" || token === ">");
   const structuralContainer = nested.some(({ kind }) => kind === "quote" || kind === "group" || kind === "command_substitution" || kind === "process_substitution");
   const tableRow = markdown && /^\s*\|/u.test(value);
   const suffixLexicalContainers = containers.filter((container) => container.start >= tokenEnd && container.start < end);
-  const suffixContainers = suffixLexicalContainers.filter((container) =>
-    ["command_substitution", "process_substitution", "group"].includes(container.kind));
+  const suffixContainers = suffixLexicalContainers.filter((container) => ["command_substitution", "process_substitution", "group"].includes(container.kind));
   const suffixRedirections = shell.redirections.filter((redirection) => tokenEnd <= redirection.start && redirection.start < end);
   const compositionKinds = new Set<InvocationCompositionKind>();
   for (const container of [...nested, ...suffixContainers]) {
@@ -424,7 +527,10 @@ function commandWindow(value: string, tokenStart: number, tokenEnd: number, cont
   }
   const suffixCompositionStarts = [
     ...suffixContainers.map(({ start: containerStart }) => ({ start: containerStart, word: true })),
-    ...suffixRedirections.map(({ start: redirectionStart }) => ({ start: redirectionStart, word: false })),
+    ...suffixRedirections.map(({ start: redirectionStart }) => ({
+      start: redirectionStart,
+      word: false,
+    })),
     ...(segment.operatorAfter?.composed && !tableRow ? [{ start: segment.operatorAfter.start, word: false }] : []),
   ].sort((left, right) => left.start - right.start);
   let commandEnd = Math.min(end, suffixCompositionStarts[0]?.start ?? end);
@@ -437,18 +543,15 @@ function commandWindow(value: string, tokenStart: number, tokenEnd: number, cont
     while (commandEnd > start && !/[\s;&|]/u.test(value[commandEnd - 1])) commandEnd -= 1;
   }
   while (commandEnd > tokenEnd && /\s/u.test(value[commandEnd - 1])) commandEnd -= 1;
-  const composed = suffixContainers.length > 0 || suffixRedirections.length > 0
-    || (!tableRow && Boolean(segment.operatorBefore?.composed || segment.operatorAfter?.composed));
+  const composed = suffixContainers.length > 0 || suffixRedirections.length > 0 || (!tableRow && Boolean(segment.operatorBefore?.composed || segment.operatorAfter?.composed));
   if (segment.operatorAfter?.composed && !tableRow) {
     const newline = value.indexOf("\n", segment.operatorAfter.end);
     const chainEnd = newline >= 0 && newline < upper ? newline : upper;
     const followingInvocations = [...value.slice(segment.operatorAfter.end, chainEnd).matchAll(INVOCATION_TOKEN)];
     if (followingInvocations.length === 0) end = chainEnd;
-    else if (value.slice(tokenStart, tokenEnd) === "agentera@next"
-      && /^\s*npx\s+-y\s+$/u.test(value.slice(start, tokenStart))) end = segment.operatorAfter.end;
+    else if (value.slice(tokenStart, tokenEnd) === "agentera@next" && /^\s*npx\s+-y\s+$/u.test(value.slice(start, tokenStart))) end = segment.operatorAfter.end;
   }
-  const malformed = [...nested, ...suffixLexicalContainers]
-    .some(({ end: containerEnd, contentEnd }) => containerEnd === value.length && contentEnd === value.length);
+  const malformed = [...nested, ...suffixLexicalContainers].some(({ end: containerEnd, contentEnd }) => containerEnd === value.length && contentEnd === value.length);
   const inlineOnly = nested.length > 0 && nested.every(({ kind }) => kind === "inline_code");
   return {
     start,
@@ -477,16 +580,14 @@ export function discoverInvocationSpans(surface: ScalarSurface): InvocationSpan[
     const end = start + match[0].length;
     const normalized = normalizeToken(match[0], start);
     const window = commandWindow(surface.value, start, end, containers, surface.markdown);
-    const shellQuoteStarts = [...surface.value.slice(0, start).matchAll(/\bbash -c\s+(?:\\+)?["']/gu)]
-      .map((entry) => entry.index! + entry[0].length - 1);
+    const shellQuoteStarts = [...surface.value.slice(0, start).matchAll(/\bbash -c\s+(?:\\+)?["']/gu)].map((entry) => entry.index! + entry[0].length - 1);
     const nestedClose = shellQuoteStarts.length === 0 ? -1 : surface.value.slice(end, window.end).search(/\\+["']/u);
     let boundaryStart = window.start;
     let boundaryEnd = nestedClose < 0 ? window.end : end + nestedClose;
-    const enclosingComposition = match[0] === "agentera@next" && /^\s*npx\s+-y\s+$/u.test(surface.value.slice(window.start, start))
-      ? window.nested.find((container) =>
-      ["command_substitution", "process_substitution", "group"].includes(container.kind)
-      && [...surface.value.slice(container.contentStart, container.contentEnd).matchAll(INVOCATION_TOKEN)].length === 1)
-      : undefined;
+    const enclosingComposition =
+      match[0] === "agentera@next" && /^\s*npx\s+-y\s+$/u.test(surface.value.slice(window.start, start))
+        ? window.nested.find((container) => ["command_substitution", "process_substitution", "group"].includes(container.kind) && [...surface.value.slice(container.contentStart, container.contentEnd).matchAll(INVOCATION_TOKEN)].length === 1)
+        : undefined;
     if (enclosingComposition) {
       boundaryStart = enclosingComposition.start;
       boundaryEnd = enclosingComposition.end;
@@ -496,13 +597,27 @@ export function discoverInvocationSpans(surface: ScalarSurface): InvocationSpan[
     const point = rawDocument ? lineColumn(surface.document, rawDocument.start) : null;
     const lexicalNested = window.nested
       .filter(({ kind }) => shellQuoteStarts.length === 0 || kind !== "quote")
-      .map(({ kind, start: containerStart, end: containerEnd }) => ({ kind, start: containerStart, end: containerEnd }));
-    const syntheticNested = shellQuoteStarts.map((containerStart) => ({ kind: "quote" as const, start: containerStart, end: window.container.end }));
+      .map(({ kind, start: containerStart, end: containerEnd }) => ({
+        kind,
+        start: containerStart,
+        end: containerEnd,
+      }));
+    const syntheticNested = shellQuoteStarts.map((containerStart) => ({
+      kind: "quote" as const,
+      start: containerStart,
+      end: window.container.end,
+    }));
     const nested = [...syntheticNested, ...lexicalNested].sort((left, right) => left.start - right.start || right.end - left.end);
     const primary = syntheticNested.at(-1);
-    const container = primary ?? (window.container.kind === "scalar"
-      ? { kind: "scalar" as const, start: 0, end: surface.value.length }
-      : { kind: window.container.kind, start: window.container.start, end: window.container.end });
+    const container =
+      primary ??
+      (window.container.kind === "scalar"
+        ? { kind: "scalar" as const, start: 0, end: surface.value.length }
+        : {
+            kind: window.container.kind,
+            start: window.container.start,
+            end: window.container.end,
+          });
     const normalizedCandidate = candidateNormalized(rawCandidate, match[0], normalized.value.replace("\u0000", ""));
     const commandPortionEnd = Math.min(window.commandEnd, boundaryEnd);
     const commandRaw = surface.value.slice(window.commandStart, commandPortionEnd).trim();
@@ -571,35 +686,23 @@ function boundedDescriptive(surface: ScalarSurface, span: InvocationSpan): boole
     const previousStop = Math.max(surface.value.lastIndexOf(";", opening - 1), surface.value.lastIndexOf(".", opening - 1));
     const prefix = normalizeWhitespace(surface.value.slice(previousStop + 1, opening));
     const tail = normalizeWhitespace(surface.value.slice(closing + 1, closing + 96));
-    return !/\b(?:run|invoke|execute|use|call|destroy)\b/iu.test(prefix)
-      && /^(?:CLI|labels?|names?|namespaces?|identities|packages?|schemas?|source(?: data)?|commands?|diagnostic\s+(?:name|label)|is\s+(?:a|the)\s+(?:diagnostic\s+)?(?:name|label|namespace))(?:\s|[.,;:]|$)/iu.test(tail);
+    return !/\b(?:run|invoke|execute|use|call|destroy)\b/iu.test(prefix) && /^(?:CLI|labels?|names?|namespaces?|identities|packages?|schemas?|source(?: data)?|commands?|diagnostic\s+(?:name|label)|is\s+(?:a|the)\s+(?:diagnostic\s+)?(?:name|label|namespace))(?:\s|[.,;:]|$)/iu.test(tail);
   }
   return false;
 }
 
 function whollyNegated(surface: ScalarSurface, span: InvocationSpan): boolean {
-  const previousBoundary = Math.max(
-    surface.value.lastIndexOf(";", span.command_boundary.start - 1),
-    surface.value.lastIndexOf(".", span.command_boundary.start - 1),
-  );
+  const previousBoundary = Math.max(surface.value.lastIndexOf(";", span.command_boundary.start - 1), surface.value.lastIndexOf(".", span.command_boundary.start - 1));
   const prefix = surface.value.slice(previousBoundary + 1, span.command_boundary.start);
   return NEGATION_PRODUCTIONS.some((production) => production.test(prefix));
 }
 
 function exactDevelopment(span: InvocationSpan): boolean {
-  return span.channel === "development"
-    && span.token.raw === "agentera@next"
-    && /^npx -y agentera@next [\x21-\x7e]+(?: [\x21-\x7e]+)*$/u.test(span.candidate.raw)
-    && !span.traits.composed
-    && !span.traits.wrapped
-    && !span.traits.malformed;
+  return span.channel === "development" && span.token.raw === "agentera@next" && /^npx -y agentera@next [\x21-\x7e]+(?: [\x21-\x7e]+)*$/u.test(span.candidate.raw) && !span.traits.composed && !span.traits.wrapped && !span.traits.malformed;
 }
 
 function developmentVocabulary(surface: ScalarSurface, span: InvocationSpan): boolean {
-  return span.channel === "development"
-    && span.token.raw === "agentera@next"
-    && span.candidate.raw === "npx -y agentera@next"
-    && span.container.kind === "inline_code";
+  return span.channel === "development" && span.token.raw === "agentera@next" && span.candidate.raw === "npx -y agentera@next" && span.container.kind === "inline_code";
 }
 
 function stableVocabulary(surface: ScalarSurface, span: InvocationSpan): boolean {
@@ -627,9 +730,7 @@ function correctionFor(span: InvocationSpan): string {
 }
 
 function diagnostic(surface: ScalarSurface, span: InvocationSpan, violation: string): BootstrapAuthorityDiagnostic {
-  const location: BootstrapAuthorityLocation = surface.structuredPath
-    ? { structured_path: surface.structuredPath, offset: span.decoded_offsets.start }
-    : span.line_column ?? { line: 1, column: span.decoded_offsets.start + 1 };
+  const location: BootstrapAuthorityLocation = surface.structuredPath ? { structured_path: surface.structuredPath, offset: span.decoded_offsets.start } : (span.line_column ?? { line: 1, column: span.decoded_offsets.start + 1 });
   return {
     path: surface.sourcePath,
     location,
@@ -665,18 +766,38 @@ function quotedOffsetMap(raw: string, base: number, quote: "'" | '"'): { decoded
   for (let index = 1; index < raw.length - 1; index += 1) {
     const at = base + index;
     if (quote === "'" && raw[index] === "'" && raw[index + 1] === "'") {
-      decoded += "'"; map.push(at); index += 1; continue;
+      decoded += "'";
+      map.push(at);
+      index += 1;
+      continue;
     }
     if (quote === '"' && raw[index] === "\\") {
       const escape = raw[index + 1];
-      const simple: Record<string, string> = { '"': '"', "\\": "\\", "/": "/", b: "\b", f: "\f", n: "\n", r: "\r", t: "\t" };
+      const simple: Record<string, string> = {
+        '"': '"',
+        "\\": "\\",
+        "/": "/",
+        b: "\b",
+        f: "\f",
+        n: "\n",
+        r: "\r",
+        t: "\t",
+      };
       if (escape === "u" && /^[a-f0-9]{4}$/iu.test(raw.slice(index + 2, index + 6))) {
         decoded += String.fromCharCode(Number.parseInt(raw.slice(index + 2, index + 6), 16));
-        map.push(at); index += 5; continue;
+        map.push(at);
+        index += 5;
+        continue;
       }
-      if (simple[escape] !== undefined) { decoded += simple[escape]; map.push(at); index += 1; continue; }
+      if (simple[escape] !== undefined) {
+        decoded += simple[escape];
+        map.push(at);
+        index += 1;
+        continue;
+      }
     }
-    decoded += raw[index]; map.push(at);
+    decoded += raw[index];
+    map.push(at);
   }
   return { decoded, map };
 }
@@ -713,16 +834,18 @@ function scalarDocumentOffsetMap(document: string, node: any, rawBase: number): 
   return map;
 }
 
-function structuredSurfaces(
-  sourcePath: string,
-  content: string,
-  format: "yaml" | "json",
-  rawBase = 0,
-  rootPath = "$",
-): { surfaces: ScalarSurface[]; diagnostics: BootstrapAuthorityDiagnostic[] } {
+function structuredSurfaces(sourcePath: string, content: string, format: "yaml" | "json", rawBase = 0, rootPath = "$"): { surfaces: ScalarSurface[]; diagnostics: BootstrapAuthorityDiagnostic[] } {
   try {
-    const document = YAML.parseDocument(content, { schema: format === "json" ? "json" : "core", uniqueKeys: true, keepSourceTokens: true });
-    if (document.errors.length > 0) return { surfaces: [], diagnostics: [malformedDiagnostic(sourcePath, format, document.errors[0].message)] };
+    const document = YAML.parseDocument(content, {
+      schema: format === "json" ? "json" : "core",
+      uniqueKeys: true,
+      keepSourceTokens: true,
+    });
+    if (document.errors.length > 0)
+      return {
+        surfaces: [],
+        diagnostics: [malformedDiagnostic(sourcePath, format, document.errors[0].message)],
+      };
     try {
       const resolved = document.toJS({
         maxAliasCount: sourcePath === PERSONAL_GLOSSARY_EVALUATION_CORPUS ? 256 : MAX_YAML_ALIAS_COUNT,
@@ -736,7 +859,11 @@ function structuredSurfaces(
         ancestry.delete(value);
         return cyclic;
       };
-      if (detectCycle(resolved)) return { surfaces: [], diagnostics: [malformedDiagnostic(sourcePath, "yaml_alias_cycle", "recursive alias value")] };
+      if (detectCycle(resolved))
+        return {
+          surfaces: [],
+          diagnostics: [malformedDiagnostic(sourcePath, "yaml_alias_cycle", "recursive alias value")],
+        };
     } catch (error) {
       const message = error instanceof Error ? error.message : String(error);
       const aliasFormat = /recursive|cycle/iu.test(message) ? "yaml_alias_cycle" : format;
@@ -773,7 +900,10 @@ function structuredSurfaces(
     walk(document.contents, rootPath, null);
     return { surfaces, diagnostics: [] };
   } catch (error) {
-    return { surfaces: [], diagnostics: [malformedDiagnostic(sourcePath, format, error instanceof Error ? error.message : String(error))] };
+    return {
+      surfaces: [],
+      diagnostics: [malformedDiagnostic(sourcePath, format, error instanceof Error ? error.message : String(error))],
+    };
   }
 }
 
@@ -789,8 +919,7 @@ function stableSequenceDiagnostic(sourcePath: string, line: number, violation: s
 
 function boundedNonInvocationMarkdown(value: string): boolean {
   const normalized = normalizeWhitespace(value);
-  return /^#{1,6}\s+(?:agentera(?: priming guide)?|Routing: agentera vs native tools)$/u.test(normalized)
-    || /^~\/\.agents\/skills\/agentera \+ agentera CLI$/u.test(normalized);
+  return /^#{1,6}\s+(?:agentera(?: priming guide)?|Routing: agentera vs native tools)$/u.test(normalized) || /^~\/\.agents\/skills\/agentera \+ agentera CLI$/u.test(normalized);
 }
 
 function markdownSurfaces(sourcePath: string, content: string): { surfaces: ScalarSurface[]; diagnostics: BootstrapAuthorityDiagnostic[] } {
@@ -799,11 +928,18 @@ function markdownSurfaces(sourcePath: string, content: string): { surfaces: Scal
   const lines = content.split(/\r?\n/u);
   const lineStarts: number[] = [];
   let cursor = 0;
-  for (const line of lines) { lineStarts.push(cursor); cursor += line.length + 1; }
+  for (const line of lines) {
+    lineStarts.push(cursor);
+    cursor += line.length + 1;
+  }
   let bodyStart = 0;
   if (lines[0] === "---") {
     const end = lines.findIndex((line, index) => index > 0 && line === "---");
-    if (end < 0) return { surfaces: [], diagnostics: [malformedDiagnostic(sourcePath, "markdown_frontmatter", "missing closing --- boundary")] };
+    if (end < 0)
+      return {
+        surfaces: [],
+        diagnostics: [malformedDiagnostic(sourcePath, "markdown_frontmatter", "missing closing --- boundary")],
+      };
     const startOffset = lineStarts[1] ?? 4;
     const frontmatter = lines.slice(1, end).join("\n");
     const parsed = structuredSurfaces(sourcePath, frontmatter, "yaml", startOffset, "#frontmatter");
@@ -812,8 +948,8 @@ function markdownSurfaces(sourcePath: string, content: string): { surfaces: Scal
     bodyStart = end + 1;
   }
 
-  const stableIndexes = lines.flatMap((line, index) => line === STABLE_HEADING ? [index] : []);
-  const developmentIndexes = lines.flatMap((line, index) => line === DEVELOPMENT_HEADING ? [index] : []);
+  const stableIndexes = lines.flatMap((line, index) => (line === STABLE_HEADING ? [index] : []));
+  const developmentIndexes = lines.flatMap((line, index) => (line === DEVELOPMENT_HEADING ? [index] : []));
   if (sourcePath === "UPGRADE.md" || sourcePath.endsWith("/UPGRADE.md")) {
     const nextSection = stableIndexes.length === 1 ? lines.findIndex((line, index) => index > stableIndexes[0] && /^##\s+/u.test(line)) : -1;
     const validBoundary = stableIndexes.length === 1 && developmentIndexes.length === 1 && nextSection === developmentIndexes[0];
@@ -824,13 +960,13 @@ function markdownSurfaces(sourcePath: string, content: string): { surfaces: Scal
   for (let index = bodyStart; index < lines.length; index += 1) {
     const line = lines[index];
     const fence = /^\s*```\s*([\w-]*)/u.exec(line);
-    if (fence) { fenceLanguage = fenceLanguage === null ? fence[1] : null; continue; }
+    if (fence) {
+      fenceLanguage = fenceLanguage === null ? fence[1] : null;
+      continue;
+    }
     if (!line.trim()) continue;
     const commandShaped = /^\s*(?:npx\s+-y\s+agentera|agentera(?:@\S+)?\s|(?:env|command|exec|sudo|bash|sh|zsh|fish|timeout|time|eval)\s)/u.test(line);
-    const fencedShell = fenceLanguage !== null && (
-      /^(?:bash|sh|shell|zsh|fish|console)$/u.test(fenceLanguage)
-      || commandShaped
-    );
+    const fencedShell = fenceLanguage !== null && (/^(?:bash|sh|shell|zsh|fish|console)$/u.test(fenceLanguage) || commandShaped);
     if (fenceLanguage !== null && !fencedShell && boundedNonInvocationMarkdown(line.trim())) continue;
     if (boundedNonInvocationMarkdown(line.trim())) continue;
     let endLine = index;
@@ -852,7 +988,11 @@ function markdownSurfaces(sourcePath: string, content: string): { surfaces: Scal
   return { surfaces, diagnostics };
 }
 
-function stableInvocationAuthority(sourcePath: string, content: string, spans: readonly InvocationSpan[]): {
+function stableInvocationAuthority(
+  sourcePath: string,
+  content: string,
+  spans: readonly InvocationSpan[],
+): {
   allowed: Set<string>;
   diagnostics: BootstrapAuthorityDiagnostic[];
 } {
@@ -861,55 +1001,71 @@ function stableInvocationAuthority(sourcePath: string, content: string, spans: r
   const lines = content.split(/\r?\n/u);
   const lineStarts: number[] = [];
   let cursor = 0;
-  for (const line of lines) { lineStarts.push(cursor); cursor += line.length + 1; }
-  const stable = lines.flatMap((line, index) => line === STABLE_HEADING ? [index] : []);
-  const development = lines.flatMap((line, index) => line === DEVELOPMENT_HEADING ? [index] : []);
+  for (const line of lines) {
+    lineStarts.push(cursor);
+    cursor += line.length + 1;
+  }
+  const stable = lines.flatMap((line, index) => (line === STABLE_HEADING ? [index] : []));
+  const development = lines.flatMap((line, index) => (line === DEVELOPMENT_HEADING ? [index] : []));
   const nextSection = stable.length === 1 ? lines.findIndex((line, index) => index > stable[0] && /^##\s+/u.test(line)) : -1;
   if (stable.length !== 1 || development.length !== 1 || nextSection !== development[0]) return { allowed, diagnostics: [] };
   const sectionStart = lineStarts[stable[0] + 1] ?? content.length;
   const sectionEnd = lineStarts[development[0]] ?? content.length;
-  const sectionSpans = spans.filter(({ raw_document_offsets }) => raw_document_offsets
-    && sectionStart <= raw_document_offsets.start && raw_document_offsets.end <= sectionEnd);
-  const exact = sectionSpans.length === 2
-    && sectionSpans.every((span, index) => span.candidate.raw === STABLE_COMMANDS[index]
-      && span.channel === "stable" && !span.traits.composed && !span.traits.wrapped && !span.traits.malformed)
-    && sectionSpans[0].line_column !== null && sectionSpans[1].line_column !== null
-    && sectionSpans[1].line_column.line === sectionSpans[0].line_column.line + 1;
-  if (!exact) return {
-    allowed,
-    diagnostics: [stableSequenceDiagnostic(sourcePath, stable[0] + 1, "stable_v2_sequence")],
-  };
+  const sectionSpans = spans.filter(({ raw_document_offsets }) => raw_document_offsets && sectionStart <= raw_document_offsets.start && raw_document_offsets.end <= sectionEnd);
+  const exact =
+    sectionSpans.length === 2 &&
+    sectionSpans.every((span, index) => span.candidate.raw === STABLE_COMMANDS[index] && span.channel === "stable" && !span.traits.composed && !span.traits.wrapped && !span.traits.malformed) &&
+    sectionSpans[0].line_column !== null &&
+    sectionSpans[1].line_column !== null &&
+    sectionSpans[1].line_column.line === sectionSpans[0].line_column.line + 1;
+  if (!exact)
+    return {
+      allowed,
+      diagnostics: [stableSequenceDiagnostic(sourcePath, stable[0] + 1, "stable_v2_sequence")],
+    };
   sectionSpans.forEach(({ identity }) => allowed.add(identity));
   return { allowed, diagnostics: [] };
 }
 
-export function scanBootstrapAuthority(
-  sourcePath: string,
-  content: string,
-  declarations: readonly ScalarClassificationDeclaration[] = [],
-  requireDeclarations = false,
-): AuthorityScanResult {
-  const extension = sourcePath.split("#", 1)[0].match(/\.[^.]+$/u)?.[0].toLowerCase() ?? ".md";
-  const parsed = extension === ".md"
-    ? markdownSurfaces(sourcePath, content)
-    : extension === ".yaml" || extension === ".yml"
-      ? structuredSurfaces(sourcePath, content, "yaml")
-      : extension === ".json"
-        ? structuredSurfaces(sourcePath, content, "json")
-        : { surfaces: [] as ScalarSurface[], diagnostics: [{
-          path: sourcePath,
-          location: { structured_path: "$" } as BootstrapAuthorityLocation,
-          candidate: null,
-          violation: "unclassified_format",
-          correction: "Declare an inspectable path exemption or add a parse-aware scanner.",
-        }] };
+export function scanBootstrapAuthority(sourcePath: string, content: string, declarations: readonly ScalarClassificationDeclaration[] = [], requireDeclarations = false): AuthorityScanResult {
+  const extension =
+    sourcePath
+      .split("#", 1)[0]
+      .match(/\.[^.]+$/u)?.[0]
+      .toLowerCase() ?? ".md";
+  const parsed =
+    extension === ".md"
+      ? markdownSurfaces(sourcePath, content)
+      : extension === ".yaml" || extension === ".yml"
+        ? structuredSurfaces(sourcePath, content, "yaml")
+        : extension === ".json"
+          ? structuredSurfaces(sourcePath, content, "json")
+          : {
+              surfaces: [] as ScalarSurface[],
+              diagnostics: [
+                {
+                  path: sourcePath,
+                  location: { structured_path: "$" } as BootstrapAuthorityLocation,
+                  candidate: null,
+                  violation: "unclassified_format",
+                  correction: "Declare an inspectable path exemption or add a parse-aware scanner.",
+                },
+              ],
+            };
   const diagnostics = [...parsed.diagnostics];
   const spans: InvocationSpan[] = [];
   const classifications: AuthorityScanResult["classifications"] = [];
   const usedDeclarations = new Set<string>();
   const byKey = new Map(declarations.filter(({ path }) => path === sourcePath).map((entry) => [declarationKey(entry.path, entry.region), entry]));
-  const discovered = parsed.surfaces.map((surface) => ({ surface, spans: discoverInvocationSpans(surface) }));
-  const stableAuthority = stableInvocationAuthority(sourcePath, content, discovered.flatMap(({ spans: entries }) => entries));
+  const discovered = parsed.surfaces.map((surface) => ({
+    surface,
+    spans: discoverInvocationSpans(surface),
+  }));
+  const stableAuthority = stableInvocationAuthority(
+    sourcePath,
+    content,
+    discovered.flatMap(({ spans: entries }) => entries),
+  );
   diagnostics.push(...stableAuthority.diagnostics);
 
   for (const { surface, spans: scalarSpans } of discovered) {
@@ -920,15 +1076,35 @@ export function scanBootstrapAuthority(
     const category = scalarCategory(surface, scalarSpans);
     const noncanonical = scalarSpans.filter((span) => !(exactDevelopment(span) || developmentVocabulary(surface, span)) && !stableAuthority.allowed.has(span.identity));
     const isMeasuredScalar = noncanonical.length > 0;
-    const intrinsicallyClassified = noncanonical.every((span) => whollyNegated(surface, span)
-      || boundedDescriptive(surface, span) || stableVocabulary(surface, span));
+    const intrinsicallyClassified = noncanonical.every((span) => whollyNegated(surface, span) || boundedDescriptive(surface, span) || stableVocabulary(surface, span));
     let declarationUsable = false;
     if (declaration) {
       const key = declarationKey(declaration.path, declaration.region);
       if (!isMeasuredScalar) declarationUsable = false;
-      else if (!declaration.reason.trim()) diagnostics.push({ path: sourcePath, location: surface.structuredPath ? { structured_path: surface.structuredPath } : scalarSpans[0].line_column ?? { line: 1, column: 1 }, candidate: null, violation: "scalar_classification_reason_missing", correction: "Add a non-empty reason to the exact scalar classification." });
-      else if (declaration.normalized_sha256 !== digest) diagnostics.push({ path: sourcePath, location: surface.structuredPath ? { structured_path: surface.structuredPath } : scalarSpans[0].line_column ?? { line: 1, column: 1 }, candidate: null, violation: "scalar_classification_stale", correction: `Update or remove the classification after reviewing normalized scalar digest ${digest}.` });
-      else if (declaration.category !== category) diagnostics.push({ path: sourcePath, location: surface.structuredPath ? { structured_path: surface.structuredPath } : scalarSpans[0].line_column ?? { line: 1, column: 1 }, candidate: null, violation: "scalar_classification_category_mismatch", correction: `Classify the scalar as ${category} after reviewing its complete value.` });
+      else if (!declaration.reason.trim())
+        diagnostics.push({
+          path: sourcePath,
+          location: surface.structuredPath ? { structured_path: surface.structuredPath } : (scalarSpans[0].line_column ?? { line: 1, column: 1 }),
+          candidate: null,
+          violation: "scalar_classification_reason_missing",
+          correction: "Add a non-empty reason to the exact scalar classification.",
+        });
+      else if (declaration.normalized_sha256 !== digest)
+        diagnostics.push({
+          path: sourcePath,
+          location: surface.structuredPath ? { structured_path: surface.structuredPath } : (scalarSpans[0].line_column ?? { line: 1, column: 1 }),
+          candidate: null,
+          violation: "scalar_classification_stale",
+          correction: `Update or remove the classification after reviewing normalized scalar digest ${digest}.`,
+        });
+      else if (declaration.category !== category)
+        diagnostics.push({
+          path: sourcePath,
+          location: surface.structuredPath ? { structured_path: surface.structuredPath } : (scalarSpans[0].line_column ?? { line: 1, column: 1 }),
+          candidate: null,
+          violation: "scalar_classification_category_mismatch",
+          correction: `Classify the scalar as ${category} after reviewing its complete value.`,
+        });
       else declarationUsable = true;
       if (declarationUsable) {
         usedDeclarations.add(key);
@@ -936,7 +1112,7 @@ export function scanBootstrapAuthority(
     } else if (requireDeclarations && isMeasuredScalar && !intrinsicallyClassified) {
       diagnostics.push({
         path: sourcePath,
-        location: surface.structuredPath ? { structured_path: surface.structuredPath } : scalarSpans[0].line_column ?? { line: 1, column: 1 },
+        location: surface.structuredPath ? { structured_path: surface.structuredPath } : (scalarSpans[0].line_column ?? { line: 1, column: 1 }),
         candidate: scalarSpans[0].candidate,
         violation: "scalar_classification_missing",
         correction: "Canonicalize the guidance or add one exact path, region, normalized digest, classification, and reason.",
@@ -969,8 +1145,7 @@ export function scanBootstrapAuthority(
         scalarClass = "wholly_negated";
         continue;
       }
-      if (declarationUsable && declaration?.classification === "bounded_descriptive"
-        && (declaration.category !== "argument_bearing" || boundedDescriptive(surface, span))) {
+      if (declarationUsable && declaration?.classification === "bounded_descriptive" && (declaration.category !== "argument_bearing" || boundedDescriptive(surface, span))) {
         scalarClass = "bounded_descriptive";
         continue;
       }

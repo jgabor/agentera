@@ -9,13 +9,7 @@ import { expect } from "vitest";
 import { preCutoverCommand } from "../../src/cli/preCutoverCommand.js";
 import { DEVELOPMENT_CHILD_PATH } from "../../src/core/developmentInvocation.js";
 import { commandText, fullEntityUpgradePreviewCommand } from "../../src/upgrade/upgradeCommands.js";
-import {
-  BOOTSTRAP_ACCEPTED_SPECS,
-  BOOTSTRAP_PROJECT_STATE_IDS,
-  BOOTSTRAP_REJECTION_SPECS,
-  BOOTSTRAP_RUNTIME_IDS,
-  bootstrapMatrixAuthority,
-} from "../../src/validate/bootstrapAuthority.js";
+import { BOOTSTRAP_ACCEPTED_SPECS, BOOTSTRAP_PROJECT_STATE_IDS, BOOTSTRAP_REJECTION_SPECS, BOOTSTRAP_RUNTIME_IDS, bootstrapMatrixAuthority } from "../../src/validate/bootstrapAuthority.js";
 import type { PackageFixture } from "../packaging/packageSetup.js";
 
 const DISPATCHER = path.resolve(import.meta.dirname, "preCutoverBootstrapDispatcher.mjs");
@@ -81,7 +75,13 @@ export interface RuntimeBootstrapMatrixSummary {
   stateCounts: Record<ProjectState, { accepted: number; rejected: number }>;
   preservationRootsPerRow: number;
   childStartRejections: number;
-  packageArtifact: { filename: string; integrity: string; shasum: string; tarballSha256: string; files: number };
+  packageArtifact: {
+    filename: string;
+    integrity: string;
+    shasum: string;
+    tarballSha256: string;
+    files: number;
+  };
   expectedCompositeRowIds: string[];
   runtimeObservationDigests: Record<RuntimeName, Record<ProjectState, string>>;
   timing: RuntimeBootstrapMatrixTiming;
@@ -135,9 +135,7 @@ export const RUNTIME_MATRIX_AUTHORITY_SHA256 = "d8af8891a8dfa27618ecd165989f635c
 export const RUNTIME_BOOTSTRAP_MATRIX_BUDGET_MS = 240_000;
 
 function errorCode(error: unknown): string | undefined {
-  return error && typeof error === "object" && "code" in error
-    ? String((error as NodeJS.ErrnoException).code)
-    : undefined;
+  return error && typeof error === "object" && "code" in error ? String((error as NodeJS.ErrnoException).code) : undefined;
 }
 
 function absoluteSpelling(target: string): string {
@@ -197,18 +195,19 @@ function pathKind(target: string): ProtectedRootKind | "other" {
 }
 
 function stableAuthorityDigest(): string {
-  return digest(JSON.stringify({
-    runtimes: RUNTIME_ID_AUTHORITY,
-    states: PROJECT_STATE_ID_AUTHORITY,
-    accepted: ACCEPTED_OPERATION_AUTHORITY,
-    rejections: REJECTION_SPEC_AUTHORITY,
-  }));
+  return digest(
+    JSON.stringify({
+      runtimes: RUNTIME_ID_AUTHORITY,
+      states: PROJECT_STATE_ID_AUTHORITY,
+      accepted: ACCEPTED_OPERATION_AUTHORITY,
+      rejections: REJECTION_SPEC_AUTHORITY,
+    }),
+  );
 }
 
 function assertStableAuthorities(): void {
   const protectedRootDigest = digest(JSON.stringify(PROTECTED_ROOT_AUTHORITY));
-  if (PROTECTED_ROOT_AUTHORITY.length !== PROTECTED_ROOT_AUTHORITY_COUNT
-    || protectedRootDigest !== PROTECTED_ROOT_AUTHORITY_SHA256) {
+  if (PROTECTED_ROOT_AUTHORITY.length !== PROTECTED_ROOT_AUTHORITY_COUNT || protectedRootDigest !== PROTECTED_ROOT_AUTHORITY_SHA256) {
     throw new Error("protected-root authority count or digest drifted");
   }
   if (stableAuthorityDigest() !== RUNTIME_MATRIX_AUTHORITY_SHA256) {
@@ -216,17 +215,13 @@ function assertStableAuthorities(): void {
   }
 }
 
-export function assertProtectedRootAuthority(
-  roots: ReadonlyArray<readonly [string, string]>,
-  paths: ProtectedRootPaths,
-): void {
+export function assertProtectedRootAuthority(roots: ReadonlyArray<readonly [string, string]>, paths: ProtectedRootPaths): void {
   assertStableAuthorities();
   const identifiers = roots.map(([identifier]) => identifier);
   if (new Set(identifiers).size !== identifiers.length) {
     throw new Error("protected-root identifiers must be unique");
   }
-  if (identifiers.length !== PROTECTED_ROOT_AUTHORITY.length
-    || PROTECTED_ROOT_AUTHORITY.some(({ id }) => !identifiers.includes(id))) {
+  if (identifiers.length !== PROTECTED_ROOT_AUTHORITY.length || PROTECTED_ROOT_AUTHORITY.some(({ id }) => !identifiers.includes(id))) {
     throw new Error("protected-root identifiers must match the exact nine-root authority");
   }
   const actualById = new Map(roots);
@@ -254,10 +249,7 @@ function compositeRowId(row: Pick<RowObservation, "runtime" | "projectState" | "
   return `${row.runtime}/${row.projectState}/${row.id}`;
 }
 
-export function assertCompleteCompositeRows(
-  rows: ReadonlyArray<Pick<RowObservation, "runtime" | "projectState" | "id">>,
-  expectedIds: readonly string[] = expectedCompositeRowAuthority().ids,
-): void {
+export function assertCompleteCompositeRows(rows: ReadonlyArray<Pick<RowObservation, "runtime" | "projectState" | "id">>, expectedIds: readonly string[] = expectedCompositeRowAuthority().ids): void {
   const actualIds = rows.map(compositeRowId);
   if (new Set(actualIds).size !== actualIds.length) throw new Error("composite runtime matrix row IDs must be unique");
   if (new Set(expectedIds).size !== expectedIds.length) throw new Error("expected composite runtime matrix row IDs must be unique");
@@ -265,9 +257,7 @@ export function assertCompleteCompositeRows(
   if (expectedIds.length !== EXPECTED_COMPOSITE_ROW_COUNT || expectedDigest !== EXPECTED_COMPOSITE_ROW_SHA256) {
     throw new Error("expected composite runtime matrix authority count or digest drifted");
   }
-  if (actualIds.length !== expectedIds.length
-    || [...actualIds].sort().some((id, index) => id !== [...expectedIds].sort()[index]))
-    throw new Error("composite runtime matrix rows are incomplete");
+  if (actualIds.length !== expectedIds.length || [...actualIds].sort().some((id, index) => id !== [...expectedIds].sort()[index])) throw new Error("composite runtime matrix rows are incomplete");
 }
 
 function digest(bytes: string | Buffer): string {
@@ -276,18 +266,17 @@ function digest(bytes: string | Buffer): string {
 
 function assertExactAxis(name: string, actual: readonly string[], expected: readonly string[]): void {
   if (new Set(actual).size !== actual.length) throw new Error(`${name} execution IDs must be unique`);
-  if (actual.length !== expected.length
-    || [...actual].sort().some((id, index) => id !== [...expected].sort()[index])) {
+  if (actual.length !== expected.length || [...actual].sort().some((id, index) => id !== [...expected].sort()[index])) {
     throw new Error(`${name} execution IDs must match fixed authority`);
   }
 }
 
-function assertExactSpecs(
-  name: string,
-  actual: ReadonlyArray<{ id: string; states: readonly string[]; classification: string }>,
-  expected: readonly MatrixSpecAuthority[],
-): void {
-  assertExactAxis(`${name} spec`, actual.map(({ id }) => id), expected.map(({ id }) => id));
+function assertExactSpecs(name: string, actual: ReadonlyArray<{ id: string; states: readonly string[]; classification: string }>, expected: readonly MatrixSpecAuthority[]): void {
+  assertExactAxis(
+    `${name} spec`,
+    actual.map(({ id }) => id),
+    expected.map(({ id }) => id),
+  );
   const byId = new Map(actual.map((spec) => [spec.id, spec]));
   for (const authority of expected) {
     const spec = byId.get(authority.id);
@@ -295,11 +284,7 @@ function assertExactSpecs(
     if (new Set(spec.states).size !== spec.states.length) {
       throw new Error(`${name} spec '${authority.id}' state applicability must be unique`);
     }
-    assertExactAxis(
-      `${name} spec '${authority.id}' state applicability`,
-      spec.states,
-      authority.states,
-    );
+    assertExactAxis(`${name} spec '${authority.id}' state applicability`, spec.states, authority.states);
     if (spec.classification !== authority.classification) {
       throw new Error(`${name} spec '${authority.id}' classification must match fixed authority`);
     }
@@ -388,10 +373,7 @@ function elapsedMs(started: number): number {
   return Math.max(0, performance.now() - started);
 }
 
-function finalizeTiming(
-  started: number,
-  accumulator: RuntimeBootstrapMatrixTimingAccumulator,
-): RuntimeBootstrapMatrixTiming {
+function finalizeTiming(started: number, accumulator: RuntimeBootstrapMatrixTimingAccumulator): RuntimeBootstrapMatrixTiming {
   const setupMs = Math.max(0, Math.round(accumulator.setupMs));
   const protectedRootSnapshotsMs = Math.max(0, Math.round(accumulator.protectedRootSnapshotsMs));
   const acceptedCommandMs = Math.max(0, Math.round(accumulator.acceptedCommandMs));
@@ -410,15 +392,8 @@ function finalizeTiming(
 }
 
 export function assertRuntimeBootstrapMatrixTiming(timing: RuntimeBootstrapMatrixTiming): void {
-  const componentTotal = timing.setupMs
-    + timing.protectedRootSnapshotsMs
-    + timing.acceptedCommandMs
-    + timing.rejectedCommandMs
-    + timing.otherMs;
-  if (
-    !Object.values(timing).every((value) => Number.isSafeInteger(value) && value >= 0)
-    || timing.totalMs !== componentTotal
-  ) {
+  const componentTotal = timing.setupMs + timing.protectedRootSnapshotsMs + timing.acceptedCommandMs + timing.rejectedCommandMs + timing.otherMs;
+  if (!Object.values(timing).every((value) => Number.isSafeInteger(value) && value >= 0) || timing.totalMs !== componentTotal) {
     throw new Error("runtime bootstrap matrix timing must be finite, non-negative, and reconciled");
   }
   if (timing.totalMs > RUNTIME_BOOTSTRAP_MATRIX_BUDGET_MS) {
@@ -453,9 +428,12 @@ function normalized(value: unknown, replacements: readonly string[]): unknown {
   const normalizedText = replacements.reduce((body, item, index) => {
     const placeholder = `<PATH_${index}>`;
     return body
-      .split(JSON.stringify(commandText([item])).slice(1, -1)).join(placeholder)
-      .split(JSON.stringify(item).slice(1, -1)).join(placeholder)
-      .split(item).join(placeholder);
+      .split(JSON.stringify(commandText([item])).slice(1, -1))
+      .join(placeholder)
+      .split(JSON.stringify(item).slice(1, -1))
+      .join(placeholder)
+      .split(item)
+      .join(placeholder);
   }, text);
   return JSON.parse(normalizedText);
 }
@@ -481,16 +459,7 @@ function normalizedProcessOutput(text: string): unknown {
   }
 }
 
-function isolatedEnvironment(paths: {
-  home: string;
-  data: string;
-  config: string;
-  cache: string;
-  state: string;
-  tmp: string;
-  appHome: string;
-  maliciousBin: string;
-}): NodeJS.ProcessEnv {
+function isolatedEnvironment(paths: { home: string; data: string; config: string; cache: string; state: string; tmp: string; appHome: string; maliciousBin: string }): NodeJS.ProcessEnv {
   return {
     ...process.env,
     HOME: paths.home,
@@ -509,11 +478,7 @@ function isolatedEnvironment(paths: {
   };
 }
 
-export function runRuntimeBootstrapMatrix(
-  fixture: PackageFixture,
-  checkoutRoot: string,
-  options: { bounded?: boolean } = {},
-): RuntimeBootstrapMatrixSummary {
+export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot: string, options: { bounded?: boolean } = {}): RuntimeBootstrapMatrixSummary {
   const started = performance.now();
   const timing: RuntimeBootstrapMatrixTimingAccumulator = {
     setupMs: 0,
@@ -536,7 +501,11 @@ export function runRuntimeBootstrapMatrix(
     { id: "source", root: fixture.constructionRoot },
     { id: "package", root: fixture.packageRoot },
   ];
-  assertExactAxis("runtime binding", runtimeBindings.map(({ id }) => id), RUNTIME_ID_AUTHORITY);
+  assertExactAxis(
+    "runtime binding",
+    runtimeBindings.map(({ id }) => id),
+    RUNTIME_ID_AUTHORITY,
+  );
   const matrixRoot = path.join(fixture.root, `runtime matrix ${DANGER}`);
   const evidenceRoot = path.join(fixture.root, "runtime-matrix-evidence");
   fs.mkdirSync(matrixRoot);
@@ -609,26 +578,18 @@ export function runRuntimeBootstrapMatrix(
       ] as const;
       assertProtectedRootAuthority(protectedRoots, protectedRootPaths);
 
-      const dispatch = (
-        id: string,
-        identity: { owner: string; source: string },
-        candidate: string,
-        expected: { accepted: boolean; classification: string; exit?: number; argv?: string[] },
-      ): SpawnSyncReturns<string> => {
+      const dispatch = (id: string, identity: { owner: string; source: string }, candidate: string, expected: { accepted: boolean; classification: string; exit?: number; argv?: string[] }): SpawnSyncReturns<string> => {
         const sentinel = path.join(evidenceRoot, `${evidenceSequence}-${runtime}-${projectState}-${id}.sentinel`);
         const environmentEvidence = `${sentinel}.environment.json`;
         evidenceSequence += 1;
         const before = snapshotsWithTiming(protectedRoots);
         const commandStarted = performance.now();
-        const result = spawnSync(process.execPath, [
-          DISPATCHER,
-          JSON.stringify(identity),
-          candidate,
-          runtimeRoot,
-          project,
-          sentinel,
-          environmentEvidence,
-        ], { cwd: project, env, encoding: "utf8", shell: false });
+        const result = spawnSync(process.execPath, [DISPATCHER, JSON.stringify(identity), candidate, runtimeRoot, project, sentinel, environmentEvidence], {
+          cwd: project,
+          env,
+          encoding: "utf8",
+          shell: false,
+        });
         timing.acceptedCommandMs += elapsedMs(commandStarted);
         const after = snapshotsWithTiming(protectedRoots);
         expect(after, `${runtime}/${projectState}/${id} preservation`).toEqual(before);
@@ -656,7 +617,8 @@ export function runRuntimeBootstrapMatrix(
             XDG_STATE_HOME: paths.state,
             TMPDIR: paths.tmp,
             AGENTERA_HOME: paths.appHome,
-          })) expect(evidence.isolated[key]).toBe(digest(value));
+          }))
+            expect(evidence.isolated[key]).toBe(digest(value));
         } else {
           expect(result.status, `${runtime}/${projectState}/${id}`).toBe(64);
           expect(fs.existsSync(environmentEvidence)).toBe(false);
@@ -689,11 +651,7 @@ export function runRuntimeBootstrapMatrix(
       });
       const primePayload = JSON.parse(prime.stdout);
       const expectedOutcome = projectState === "v3" ? "ok" : "blocked";
-      const expectedCutoverState = projectState === "clean"
-        ? "unknown"
-        : projectState === "v2"
-          ? "legacy"
-          : projectState;
+      const expectedCutoverState = projectState === "clean" ? "unknown" : projectState === "v2" ? "legacy" : projectState;
       expect(primePayload.capability_context.startup.outcome).toBe(expectedOutcome);
       expect(Buffer.byteLength(prime.stdout, "utf8")).toBeLessThanOrEqual(25_000);
       expect(primePayload.capability_context.startup.state_cutover).toMatchObject({
@@ -716,45 +674,43 @@ export function runRuntimeBootstrapMatrix(
         startupPayload = JSON.parse(startup.stdout);
         expect((startupPayload as any).capability_context.startup.outcome).toBe(expectedOutcome);
 
-        const doctorCommand = commandText([
-        "npx", "-y", "agentera@next", "doctor",
-        "--home", home, "--project", project, "--install-root", paths.appHome,
-      ]);
+        const doctorCommand = commandText(["npx", "-y", "agentera@next", "doctor", "--home", home, "--project", project, "--install-root", paths.appHome]);
         const doctorId = quotedPathKind ? `doctor-quoted-${quotedPathKind}` : "doctor";
-      assertAcceptedApplicability(doctorId, projectState);
+        assertAcceptedApplicability(doctorId, projectState);
         const doctor = dispatch(doctorId, { owner: "doctor.status", source: doctorCommand }, doctorCommand, {
-        accepted: true,
-        classification: "accepted",
-        argv: ["doctor", "--home", home, "--project", project, "--install-root", paths.appHome],
-      });
+          accepted: true,
+          classification: "accepted",
+          argv: ["doctor", "--home", home, "--project", project, "--install-root", paths.appHome],
+        });
         doctorPayload = JSON.parse(doctor.stdout);
-        expect(doctorPayload).toMatchObject({ status: "up_to_date", shared_skill: { status: "pass" } });
+        expect(doctorPayload).toMatchObject({
+          status: "up_to_date",
+          shared_skill: { status: "pass" },
+        });
 
         recoveries.push(...readOnlyRecoveries(primePayload, doctorPayload));
         if (projectState !== "v3") recoveries.unshift(fullEntityUpgradePreviewCommand(project));
         expect(recoveries.every((command) => !command.includes("--yes"))).toBe(true);
         recoveries.forEach((command, index) => {
-        const recoveryId = `recovery-${index}`;
-        assertAcceptedApplicability(recoveryId, projectState);
-        const recovery = dispatch(recoveryId, { owner: `recovery.${index}`, source: command }, command, {
-          accepted: true,
-          classification: "accepted",
-          exit: projectState === "v3" ? 0 : 1,
-        });
-        expect(recovery.status).toBe(projectState === "v3" ? 0 : 1);
-        const stdout = normalizedProcessOutput(recovery.stdout);
-        const stderr = normalizedProcessOutput(recovery.stderr);
-        const body = stdout && typeof stdout === "object" ? stdout : stderr;
-        recoveryObservations.push({
-          command,
-          status: recovery.status,
-          classification: "accepted",
-          outputClassification: body && typeof body === "object" && "error" in body
-            ? (body as { error?: { class?: unknown } }).error?.class ?? null
-            : null,
-          stdout,
-          stderr,
-        });
+          const recoveryId = `recovery-${index}`;
+          assertAcceptedApplicability(recoveryId, projectState);
+          const recovery = dispatch(recoveryId, { owner: `recovery.${index}`, source: command }, command, {
+            accepted: true,
+            classification: "accepted",
+            exit: projectState === "v3" ? 0 : 1,
+          });
+          expect(recovery.status).toBe(projectState === "v3" ? 0 : 1);
+          const stdout = normalizedProcessOutput(recovery.stdout);
+          const stderr = normalizedProcessOutput(recovery.stderr);
+          const body = stdout && typeof stdout === "object" ? stdout : stderr;
+          recoveryObservations.push({
+            command,
+            status: recovery.status,
+            classification: "accepted",
+            outputClassification: body && typeof body === "object" && "error" in body ? ((body as { error?: { class?: unknown } }).error?.class ?? null) : null,
+            stdout,
+            stderr,
+          });
         });
       }
       for (const row of rows.filter((row) => row.runtime === runtime && row.projectState === projectState && row.accepted)) {
@@ -762,28 +718,38 @@ export function runRuntimeBootstrapMatrix(
         row.recoveryCount = recoveries.length;
       }
 
-      const rejectionSpecs = REJECTION_EXECUTION_SPECS
-        .filter(({ states }) => states.includes(projectState))
-        .filter(({ id }) => !options.bounded || id === "reject-stable");
+      const rejectionSpecs = REJECTION_EXECUTION_SPECS.filter(({ states }) => states.includes(projectState)).filter(({ id }) => !options.bounded || id === "reject-stable");
       const rejectionBefore = snapshotsWithTiming(protectedRoots);
       const rejectionStarted = performance.now();
-      const rejectionResult = spawnSync(process.execPath, [
-        REJECTION_DISPATCHER,
-        runtimeRoot,
-        JSON.stringify(rejectionSpecs.map(({ id, candidate }) => ({
-          id,
-          identity: { owner: "prime.status", source: primeCommand },
-          candidate,
-        }))),
-      ], { cwd: project, env, encoding: "utf8", shell: false });
+      const rejectionResult = spawnSync(
+        process.execPath,
+        [
+          REJECTION_DISPATCHER,
+          runtimeRoot,
+          JSON.stringify(
+            rejectionSpecs.map(({ id, candidate }) => ({
+              id,
+              identity: { owner: "prime.status", source: primeCommand },
+              candidate,
+            })),
+          ),
+        ],
+        { cwd: project, env, encoding: "utf8", shell: false },
+      );
       timing.rejectedCommandMs += elapsedMs(rejectionStarted);
       const rejectionAfter = snapshotsWithTiming(protectedRoots);
       expect(rejectionAfter, `${runtime}/${projectState}/rejections preservation`).toEqual(rejectionBefore);
       expect(rejectionResult.status, `${runtime}/${projectState}/rejections\n${rejectionResult.stderr}\n${rejectionResult.stdout}`).toBe(0);
-      const rejectionObservations = JSON.parse(rejectionResult.stdout) as Array<{ id: string; classification: string }>;
+      const rejectionObservations = JSON.parse(rejectionResult.stdout) as Array<{
+        id: string;
+        classification: string;
+      }>;
       expect(rejectionObservations.map(({ id }) => id)).toEqual(rejectionSpecs.map(({ id }) => id));
       for (const [index, { id, classification }] of rejectionSpecs.entries()) {
-        expect(rejectionObservations[index], `${runtime}/${projectState}/${id}`).toEqual({ id, classification });
+        expect(rejectionObservations[index], `${runtime}/${projectState}/${id}`).toEqual({
+          id,
+          classification,
+        });
         rows.push({
           id,
           runtime,
@@ -798,13 +764,16 @@ export function runRuntimeBootstrapMatrix(
         });
       }
 
-      const normalizedObservation = normalized({
-        prime: primePayload,
-        startup: startupPayload,
-        doctor: doctorPayload,
-        recoveries,
-        recoveryObservations,
-      }, [runtimeRoot, project, home, ...Object.values(paths)]);
+      const normalizedObservation = normalized(
+        {
+          prime: primePayload,
+          startup: startupPayload,
+          doctor: doctorPayload,
+          recoveries,
+          recoveryObservations,
+        },
+        [runtimeRoot, project, home, ...Object.values(paths)],
+      );
       const parityKey = projectState;
       if (runtime === "source") parity.set(parityKey, normalizedObservation);
       else expect(normalizedObservation, `${projectState} source/package parity`).toEqual(parity.get(parityKey));
@@ -812,14 +781,24 @@ export function runRuntimeBootstrapMatrix(
     }
   }
 
-  const runtimeCounts = Object.fromEntries((["source", "package"] as const).map((runtime) => [runtime, {
-    accepted: rows.filter((row) => row.runtime === runtime && row.accepted).length,
-    rejected: rows.filter((row) => row.runtime === runtime && !row.accepted).length,
-  }])) as RuntimeBootstrapMatrixSummary["runtimeCounts"];
-  const stateCounts = Object.fromEntries(PROJECT_STATE_ID_AUTHORITY.map((state) => [state, {
-    accepted: rows.filter((row) => row.projectState === state && row.accepted).length,
-    rejected: rows.filter((row) => row.projectState === state && !row.accepted).length,
-  }])) as RuntimeBootstrapMatrixSummary["stateCounts"];
+  const runtimeCounts = Object.fromEntries(
+    (["source", "package"] as const).map((runtime) => [
+      runtime,
+      {
+        accepted: rows.filter((row) => row.runtime === runtime && row.accepted).length,
+        rejected: rows.filter((row) => row.runtime === runtime && !row.accepted).length,
+      },
+    ]),
+  ) as RuntimeBootstrapMatrixSummary["runtimeCounts"];
+  const stateCounts = Object.fromEntries(
+    PROJECT_STATE_ID_AUTHORITY.map((state) => [
+      state,
+      {
+        accepted: rows.filter((row) => row.projectState === state && row.accepted).length,
+        rejected: rows.filter((row) => row.projectState === state && !row.accepted).length,
+      },
+    ]),
+  ) as RuntimeBootstrapMatrixSummary["stateCounts"];
   if (!options.bounded) assertCompleteCompositeRows(rows, expectedAuthority.ids);
   const matrixTiming = finalizeTiming(started, timing);
   assertRuntimeBootstrapMatrixTiming(matrixTiming);

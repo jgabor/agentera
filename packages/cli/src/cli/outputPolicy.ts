@@ -12,8 +12,18 @@ export interface OutputPathPolicy {
 export const OUTPUT_PATH_POLICIES: Record<OutputPathClass, OutputPathPolicy> = {
   help: { class: "help", success: "text", error: "json", formatSelector: "reject" },
   version: { class: "version", success: "text", error: "json", formatSelector: "reject" },
-  prime_guidance: { class: "prime_guidance", success: "text", error: "json", formatSelector: "reject" },
-  operational: { class: "operational", success: "json", error: "json", formatSelector: "json_only" },
+  prime_guidance: {
+    class: "prime_guidance",
+    success: "text",
+    error: "json",
+    formatSelector: "reject",
+  },
+  operational: {
+    class: "operational",
+    success: "json",
+    error: "json",
+    formatSelector: "json_only",
+  },
 };
 
 const OPERATIONAL_ROUTE_PRODUCERS = {
@@ -60,12 +70,48 @@ export interface OutputRouteInventoryEntry {
  * checks prove parity with the switch, help, schema, and package surfaces.
  */
 export const LIVE_OUTPUT_ROUTE_INVENTORY: readonly OutputRouteInventoryEntry[] = [
-  { route: "<bare>", kind: "exception", producers: ["applyOutputPolicy", "printTopLevelHelp"], success: "text", error: "json" },
-  { route: "--help", kind: "exception", producers: ["applyOutputPolicy", "printTopLevelHelp"], success: "text", error: "json" },
-  { route: "<command> --help", kind: "exception", producers: ["applyOutputPolicy", "printCommandHelp", "emitInvalidInput"], success: "text", error: "json" },
-  { route: "--version", kind: "exception", producers: ["applyOutputPolicy", "runVersion"], success: "text", error: "json" },
-  { route: "prime --guidance", kind: "exception", producers: ["applyOutputPolicy", "runPrime", "cmdPrime"], success: "text", error: "json" },
-  { route: "version", kind: "operational", producers: ["applyOutputPolicy", "runVersion"], success: "json", error: "json" },
+  {
+    route: "<bare>",
+    kind: "exception",
+    producers: ["applyOutputPolicy", "printTopLevelHelp"],
+    success: "text",
+    error: "json",
+  },
+  {
+    route: "--help",
+    kind: "exception",
+    producers: ["applyOutputPolicy", "printTopLevelHelp"],
+    success: "text",
+    error: "json",
+  },
+  {
+    route: "<command> --help",
+    kind: "exception",
+    producers: ["applyOutputPolicy", "printCommandHelp", "emitInvalidInput"],
+    success: "text",
+    error: "json",
+  },
+  {
+    route: "--version",
+    kind: "exception",
+    producers: ["applyOutputPolicy", "runVersion"],
+    success: "text",
+    error: "json",
+  },
+  {
+    route: "prime --guidance",
+    kind: "exception",
+    producers: ["applyOutputPolicy", "runPrime", "cmdPrime"],
+    success: "text",
+    error: "json",
+  },
+  {
+    route: "version",
+    kind: "operational",
+    producers: ["applyOutputPolicy", "runVersion"],
+    success: "json",
+    error: "json",
+  },
   ...Object.entries(OPERATIONAL_ROUTE_PRODUCERS).map(([route, producers]) => ({
     route,
     kind: "operational" as const,
@@ -73,8 +119,20 @@ export const LIVE_OUTPUT_ROUTE_INVENTORY: readonly OutputRouteInventoryEntry[] =
     success: "json" as const,
     error: "json" as const,
   })),
-  { route: "<migration guard>", kind: "error", producers: ["enforceProductV1Eol", "enforceCompletedEntityCutover"], success: null, error: "json" },
-  { route: "<removed or unknown command>", kind: "error", producers: ["applyOutputPolicy", "emitInvalidInput"], success: null, error: "json" },
+  {
+    route: "<migration guard>",
+    kind: "error",
+    producers: ["enforceProductV1Eol", "enforceCompletedEntityCutover"],
+    success: null,
+    error: "json",
+  },
+  {
+    route: "<removed or unknown command>",
+    kind: "error",
+    producers: ["applyOutputPolicy", "emitInvalidInput"],
+    success: null,
+    error: "json",
+  },
 ];
 
 function hasHelp(args: readonly string[]): boolean {
@@ -151,7 +209,5 @@ export function applyOutputPolicy(args: readonly string[], io: { out?: (text: st
     });
   }
 
-  return selectors.length === 0 && policy.class === "operational"
-    ? [...args, "--format", "json"]
-    : [...args];
+  return selectors.length === 0 && policy.class === "operational" ? [...args, "--format", "json"] : [...args];
 }

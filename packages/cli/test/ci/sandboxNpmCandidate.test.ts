@@ -6,29 +6,20 @@ import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const benchmark = fs.readFileSync(
-  path.join(REPO_ROOT, "packages/cli/scripts/release-benchmark.mjs"),
-  "utf8",
-);
-const harness = fs.readFileSync(
-  path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"),
-  "utf8",
-);
-const assertions = fs.readFileSync(
-  path.join(REPO_ROOT, "scripts/sandbox/assert-v2v3-migration.sh"),
-  "utf8",
-);
+const benchmark = fs.readFileSync(path.join(REPO_ROOT, "packages/cli/scripts/release-benchmark.mjs"), "utf8");
+const harness = fs.readFileSync(path.join(REPO_ROOT, "scripts/sandbox/v2v3-upgrade-harness.sh"), "utf8");
+const assertions = fs.readFileSync(path.join(REPO_ROOT, "scripts/sandbox/assert-v2v3-migration.sh"), "utf8");
 const scannerPath = path.join(REPO_ROOT, "scripts/sandbox/scan-python-leftovers.sh");
 
 describe("staged package migration contract", () => {
   it("derives the exact package pin only after staging", () => {
     expect(benchmark).toContain("AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`");
-    expect(benchmark).toContain("const candidateMigrationSmoke = adapterName === \"development\"");
+    expect(benchmark).toMatch(/const candidateMigrationSmoke\s*=\s*adapterName === "development"/);
     expect(benchmark).toContain("candidateMigrationSmoke,");
   });
 
   it("keeps the staged package migration smoke in the publication coordinator", () => {
-    expect(benchmark).toContain("AGENTERA_SANDBOX_TIER: \"L2\"");
+    expect(benchmark).toContain('AGENTERA_SANDBOX_TIER: "L2"');
     expect(benchmark).toContain("candidateMigrationSmoke");
   });
 

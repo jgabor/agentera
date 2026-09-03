@@ -5,12 +5,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
 
-import {
-  loadStateRetrievalAuthority,
-  STATE_RETRIEVAL_AUTHORITY_PATH,
-  validateExperimentPublicationParity,
-  validateStateRetrievalAuthority,
-} from "../../src/state/retrievalAuthority.js";
+import { loadStateRetrievalAuthority, STATE_RETRIEVAL_AUTHORITY_PATH, validateExperimentPublicationParity, validateStateRetrievalAuthority } from "../../src/state/retrievalAuthority.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -49,13 +44,55 @@ describe("canonical state retrieval authority", () => {
   });
 
   it.each([
-    ["root duplicate", (value: any) => { value.retrieval = { commands: { plans: { list: "contradiction" } } }; }, "duplicate_active_map"],
-    ["historical commands", (value: any) => { value.historical_retrieval_evidence.commands = { plans: {} }; }, "historical_retrieval_evidence.commands"],
-    ["historical identity", (value: any) => { value.historical_retrieval_evidence.identity = { plan: {} }; }, "historical_retrieval_evidence.identity"],
-    ["plan filters", (value: any) => { value.entity_target.public_retrieval.list_help.families.plans.filters = []; }, "plans.filters.runtime_parity"],
-    ["plan command filter", (value: any) => { value.entity_target.public_retrieval.commands.plans.list = "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]"; }, "plans.list_command"],
-    ["experiment exact get", (value: any) => { value.entity_target.public_retrieval.commands.experiments.get = "agentera state experiments get --objective ID --id ID"; }, "experiments.get_command"],
-    ["composite IDs", (value: any) => { value.entity_target.identity.accepted_pattern = "^plan:[a-z]{10}$"; }, "identity.accepted_pattern"],
+    [
+      "root duplicate",
+      (value: any) => {
+        value.retrieval = { commands: { plans: { list: "contradiction" } } };
+      },
+      "duplicate_active_map",
+    ],
+    [
+      "historical commands",
+      (value: any) => {
+        value.historical_retrieval_evidence.commands = { plans: {} };
+      },
+      "historical_retrieval_evidence.commands",
+    ],
+    [
+      "historical identity",
+      (value: any) => {
+        value.historical_retrieval_evidence.identity = { plan: {} };
+      },
+      "historical_retrieval_evidence.identity",
+    ],
+    [
+      "plan filters",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.plans.filters = [];
+      },
+      "plans.filters.runtime_parity",
+    ],
+    [
+      "plan command filter",
+      (value: any) => {
+        value.entity_target.public_retrieval.commands.plans.list = "agentera state plan list [--limit N] [--cursor TOKEN] [--ids-only | --fields FIELDS]";
+      },
+      "plans.list_command",
+    ],
+    [
+      "experiment exact get",
+      (value: any) => {
+        value.entity_target.public_retrieval.commands.experiments.get = "agentera state experiments get --objective ID --id ID";
+      },
+      "experiments.get_command",
+    ],
+    [
+      "composite IDs",
+      (value: any) => {
+        value.entity_target.identity.accepted_pattern = "^plan:[a-z]{10}$";
+      },
+      "identity.accepted_pattern",
+    ],
   ])("fails closed when a second map or canonical grammar can contradict %s", (_name, mutate, expected) => {
     const value = authority();
     mutate(value);
@@ -63,13 +100,55 @@ describe("canonical state retrieval authority", () => {
   });
 
   it.each([
-    ["policy schema", (value: any) => { value.entity_target.public_retrieval.policy.schema_version = "wrong"; }, "policy.schema_version"],
-    ["minimum TODO identity", (value: any) => { value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields.todo = []; }, "family_minimum_fields.todo"],
-    ["degradation metadata", (value: any) => { value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.optional_detail_degradation.required_metadata = ["reason"]; }, "required_metadata.omitted_fields"],
-    ["row loss", (value: any) => { value.entity_target.public_retrieval.policy.output_bounds.row_omission_under_byte_pressure = "allowed"; }, "row_omission_under_byte_pressure"],
-    ["byte bound", (value: any) => { value.entity_target.public_retrieval.policy.output_bounds.max_serialized_utf8_bytes = 1; }, "max_serialized_utf8_bytes"],
-    ["failure class", (value: any) => { delete value.entity_target.public_retrieval.policy.failures.classes.unsupported_state; }, "failures.classes.unsupported_state"],
-    ["plan archive owner", (value: any) => { delete value.entity_target.public_retrieval.policy.archive_policy.plan.owner; }, "archive_policy.plan.owner"],
+    [
+      "policy schema",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.schema_version = "wrong";
+      },
+      "policy.schema_version",
+    ],
+    [
+      "minimum TODO identity",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields.todo = [];
+      },
+      "family_minimum_fields.todo",
+    ],
+    [
+      "degradation metadata",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.optional_detail_degradation.required_metadata = ["reason"];
+      },
+      "required_metadata.omitted_fields",
+    ],
+    [
+      "row loss",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.output_bounds.row_omission_under_byte_pressure = "allowed";
+      },
+      "row_omission_under_byte_pressure",
+    ],
+    [
+      "byte bound",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.output_bounds.max_serialized_utf8_bytes = 1;
+      },
+      "max_serialized_utf8_bytes",
+    ],
+    [
+      "failure class",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.policy.failures.classes.unsupported_state;
+      },
+      "failures.classes.unsupported_state",
+    ],
+    [
+      "plan archive owner",
+      (value: any) => {
+        delete value.entity_target.public_retrieval.policy.archive_policy.plan.owner;
+      },
+      "archive_policy.plan.owner",
+    ],
   ])("rejects malformed unique policy: %s", (_name, mutate, expected) => {
     const value = authority();
     mutate(value);
@@ -80,8 +159,6 @@ describe("canonical state retrieval authority", () => {
     const value = authority();
     expect(validateExperimentPublicationParity(value)).toEqual([]);
     value.entity_target.public_retrieval.policy.archive_policy.experiments.storage_scope = "project_archive";
-    expect(validateExperimentPublicationParity(value)).toContain(
-      "entity_target.public_retrieval.policy.archive_policy.experiments.storage_scope",
-    );
+    expect(validateExperimentPublicationParity(value)).toContain("entity_target.public_retrieval.policy.archive_policy.experiments.storage_scope");
   });
 });

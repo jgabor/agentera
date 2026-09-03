@@ -2,13 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
-import {
-  maxWorkersFor,
-  MEASURED_LOCAL_WORKER_POLICY,
-  testTimeoutFor,
-  UNMEASURED_WORKER_POLICY,
-  workerPolicyFor,
-} from "../../vitest.shared.ts";
+import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
@@ -22,9 +16,7 @@ describe("source worker policy", () => {
 
   it("wires the local source command to the measured runner policy", () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
-    expect(packageJson.scripts["test:source:local"]).toBe(
-      `AGENTERA_VITEST_RUNNER_POLICY=${MEASURED_LOCAL_WORKER_POLICY} node scripts/verify-lane.mjs source`,
-    );
+    expect(packageJson.scripts["test:source:local"]).toBe(`AGENTERA_VITEST_RUNNER_POLICY=${MEASURED_LOCAL_WORKER_POLICY} node scripts/verify-lane.mjs source`);
   });
 
   it("keeps unmeasured runners at the conservative fallback", () => {
@@ -36,10 +28,12 @@ describe("source worker policy", () => {
   });
 
   it("uses the explicit override before any runner policy", () => {
-    expect(workerPolicyFor({
-      VITEST_MAX_WORKERS: "6",
-      AGENTERA_VITEST_RUNNER_POLICY: MEASURED_LOCAL_WORKER_POLICY,
-    })).toEqual({ name: "explicit-override", workers: 6 });
+    expect(
+      workerPolicyFor({
+        VITEST_MAX_WORKERS: "6",
+        AGENTERA_VITEST_RUNNER_POLICY: MEASURED_LOCAL_WORKER_POLICY,
+      }),
+    ).toEqual({ name: "explicit-override", workers: 6 });
     expect(maxWorkersFor({ VITEST_MAX_WORKERS: "6" })).toBe(6);
   });
 
@@ -50,9 +44,7 @@ describe("source worker policy", () => {
 
   it("keeps GitHub Actions explicitly unmeasured", () => {
     const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
-    const sourceOwnerStep = workflow.jobs.cli.steps.find(
-      (step: { name?: string }) => step.name === "Run check-only release verification",
-    );
+    const sourceOwnerStep = workflow.jobs.cli.steps.find((step: { name?: string }) => step.name === "Run check-only release verification");
     expect(sourceOwnerStep.env).toMatchObject({
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
       VITEST_TEST_TIMEOUT_MS: "120000",

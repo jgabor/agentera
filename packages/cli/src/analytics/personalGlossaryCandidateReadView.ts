@@ -1,7 +1,4 @@
-import {
-  type PersonalGlossaryCandidateProjection,
-  type ProjectedPersonalGlossaryCandidate,
-} from "./personalGlossaryCandidateProjection.js";
+import { type PersonalGlossaryCandidateProjection, type ProjectedPersonalGlossaryCandidate } from "./personalGlossaryCandidateProjection.js";
 import { glossaryCanonicalSha256 } from "../registries/glossaryTermIdentity.js";
 
 export interface PersonalGlossaryCandidateReadView {
@@ -12,9 +9,7 @@ export interface PersonalGlossaryCandidateReadView {
 }
 
 /** Derive the expiry-aware candidate view without mutating its private projection. */
-export function currentPersonalGlossaryCandidateReadView(
-  projection: PersonalGlossaryCandidateProjection,
-): PersonalGlossaryCandidateReadView {
+export function currentPersonalGlossaryCandidateReadView(projection: PersonalGlossaryCandidateProjection): PersonalGlossaryCandidateReadView {
   const readTime = Date.now();
   let expiredSafeContexts = 0;
   const candidates = projection.candidates.map((candidate) => {

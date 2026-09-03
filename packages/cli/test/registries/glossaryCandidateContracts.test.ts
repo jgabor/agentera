@@ -19,34 +19,24 @@ import {
   type GlossaryEvidenceCapsule,
   type GlossaryHostClassificationReceipt,
 } from "../../src/registries/glossaryCandidateContracts.js";
-import {
-  validateGlossaryEntry,
-  validateGlossaryEntryContract,
-  type GlossaryAdmissionContext,
-} from "../../src/registries/glossaryEntryContract.js";
-import {
-  glossaryCanonicalSha256,
-  glossaryCandidateRevision,
-  stableGlossaryTermIdentity,
-} from "../../src/registries/glossaryTermIdentity.js";
+import { validateGlossaryEntry, validateGlossaryEntryContract, type GlossaryAdmissionContext } from "../../src/registries/glossaryEntryContract.js";
+import { glossaryCanonicalSha256, glossaryCandidateRevision, stableGlossaryTermIdentity } from "../../src/registries/glossaryTermIdentity.js";
 import { glossaryEvidenceSetDigest } from "../../src/registries/glossaryMiningAuthority.js";
-import {
-  GLOSSARY_ADMISSION_OUTCOMES,
-  GLOSSARY_ADMISSION_REASONS_BY_OUTCOME,
-  type GlossaryAdmissionOutcome,
-  type GlossaryAdmissionReason,
-} from "../../src/registries/glossaryCandidateDecisionAuthority.js";
+import { GLOSSARY_ADMISSION_OUTCOMES, GLOSSARY_ADMISSION_REASONS_BY_OUTCOME, type GlossaryAdmissionOutcome, type GlossaryAdmissionReason } from "../../src/registries/glossaryCandidateDecisionAuthority.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
 const PROJECTION_SHA256 = "a".repeat(64);
-const ADMISSION_REASON_PAIRS = GLOSSARY_ADMISSION_OUTCOMES.flatMap((outcome) =>
-  GLOSSARY_ADMISSION_REASONS_BY_OUTCOME[outcome].map((reason) => ({ outcome, reason })),
-) as Array<{ outcome: GlossaryAdmissionOutcome; reason: GlossaryAdmissionReason }>;
+const ADMISSION_REASON_PAIRS = GLOSSARY_ADMISSION_OUTCOMES.flatMap((outcome) => GLOSSARY_ADMISSION_REASONS_BY_OUTCOME[outcome].map((reason) => ({ outcome, reason }))) as Array<{
+  outcome: GlossaryAdmissionOutcome;
+  reason: GlossaryAdmissionReason;
+}>;
 const CONTRADICTORY_REASON_PAIRS = ADMISSION_REASON_PAIRS.flatMap(({ outcome, reason }) =>
-  GLOSSARY_ADMISSION_OUTCOMES
-    .filter((rejectedOutcome) => rejectedOutcome !== outcome)
-    .map((rejectedOutcome) => ({ outcome, reason, rejectedOutcome })),
+  GLOSSARY_ADMISSION_OUTCOMES.filter((rejectedOutcome) => rejectedOutcome !== outcome).map((rejectedOutcome) => ({
+    outcome,
+    reason,
+    rejectedOutcome,
+  })),
 );
 
 function authority(): Record<string, any> {
@@ -167,45 +157,55 @@ function personalEntry() {
 }
 
 const retainedHistory: GlossaryAdmissionContext = {
-  retainedHistory: new Map([
-    ["anchor-explicit", { sourceId: "source-explicit", sourceKind: "conversation_turn", signalType: "correction" }],
-  ]),
+  retainedHistory: new Map([["anchor-explicit", { sourceId: "source-explicit", sourceKind: "conversation_turn", signalType: "correction" }]]),
 };
 
 describe("layered personal glossary candidate contracts", () => {
   it("has five complete layers with distinct owners and passes the authority validator", () => {
     const model = authority();
     const layers = model.candidate_contracts.layers as Record<string, any>;
-    expect(Object.keys(layers)).toEqual([
-      "evidence_capsule",
-      "host_classification_receipt",
-      "cli_decision",
-      "review_record",
-      "publication_result",
-    ]);
+    expect(Object.keys(layers)).toEqual(["evidence_capsule", "host_classification_receipt", "cli_decision", "review_record", "publication_result"]);
     expect(new Set(Object.values(layers).map((layer) => layer.owner)).size).toBe(5);
     expect(validatePersonalCandidateContracts(model)).toEqual([]);
     expect(validateGlossaryEntryContract()).toEqual([]);
   });
 
   it.each([
-    ["duplicate owner", (model: Record<string, any>) => {
-      model.candidate_contracts.layers.host_classification_receipt.owner =
-        model.candidate_contracts.layers.evidence_capsule.owner;
-    }, "candidate contract layer owners must be distinct and authoritative"],
-    ["missing field", (model: Record<string, any>) => {
-      model.candidate_contracts.layers.review_record.required_fields =
-        model.candidate_contracts.layers.review_record.required_fields.filter((field: string) => field !== "policy_version");
-    }, "candidate_contracts.layers.review_record.required_fields must be exact and unique"],
-    ["unbounded evidence", (model: Record<string, any>) => {
-      model.candidate_contracts.bounds.evidence_records_max = 0;
-    }, "candidate_contracts.bounds must preserve the declared candidate limits"],
-    ["missing inferred distinctness", (model: Record<string, any>) => {
-      delete model.provenance_variants.personal_inferred_usage.distinctness;
-    }, "personal_inferred_usage must require two distinct source IDs and evidence anchors"],
-    ["contradictory outcome reason", (model: Record<string, any>) => {
-      model.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed");
-    }, "CLI decision reasons must declare the approved outcome/reason pairs"],
+    [
+      "duplicate owner",
+      (model: Record<string, any>) => {
+        model.candidate_contracts.layers.host_classification_receipt.owner = model.candidate_contracts.layers.evidence_capsule.owner;
+      },
+      "candidate contract layer owners must be distinct and authoritative",
+    ],
+    [
+      "missing field",
+      (model: Record<string, any>) => {
+        model.candidate_contracts.layers.review_record.required_fields = model.candidate_contracts.layers.review_record.required_fields.filter((field: string) => field !== "policy_version");
+      },
+      "candidate_contracts.layers.review_record.required_fields must be exact and unique",
+    ],
+    [
+      "unbounded evidence",
+      (model: Record<string, any>) => {
+        model.candidate_contracts.bounds.evidence_records_max = 0;
+      },
+      "candidate_contracts.bounds must preserve the declared candidate limits",
+    ],
+    [
+      "missing inferred distinctness",
+      (model: Record<string, any>) => {
+        delete model.provenance_variants.personal_inferred_usage.distinctness;
+      },
+      "personal_inferred_usage must require two distinct source IDs and evidence anchors",
+    ],
+    [
+      "contradictory outcome reason",
+      (model: Record<string, any>) => {
+        model.candidate_contracts.layers.cli_decision.reason_codes_by_outcome.abstain.push("classification_changed");
+      },
+      "CLI decision reasons must declare the approved outcome/reason pairs",
+    ],
   ])("rejects %s authority boundary", (_name, mutate, expected) => {
     const model = authority();
     mutate(model);
@@ -239,23 +239,29 @@ describe("layered personal glossary candidate contracts", () => {
 
   it("rejects exact duplicate canonical evidence records without weakening other provenance variants", () => {
     const stable = stableGlossaryTermIdentity("ship shape");
-    expect(() => glossaryCandidateRevision({
-      stable_term_identity: stable,
-      meaning: "meaning",
-      scope: "personal",
-      evidence: [
-        { source_id: "source-a", evidence_anchor: "anchor-a" },
-        { evidence_anchor: "anchor-a", source_id: "source-a" },
-      ],
-      policy_version: "policy",
-      generation: "generation",
-    })).toThrow("duplicate canonical evidence records");
+    expect(() =>
+      glossaryCandidateRevision({
+        stable_term_identity: stable,
+        meaning: "meaning",
+        scope: "personal",
+        evidence: [
+          { source_id: "source-a", evidence_anchor: "anchor-a" },
+          { evidence_anchor: "anchor-a", source_id: "source-a" },
+        ],
+        policy_version: "policy",
+        generation: "generation",
+      }),
+    ).toThrow("duplicate canonical evidence records");
 
     expect(validateGlossaryEvidenceCapsule(capsule())).toEqual([]);
-    expect(validateGlossaryEvidenceCapsule(capsule({
-      provenance_kind: "personal_inferred_conversation",
-      evidence: conversationEvidence(),
-    }))).toEqual([]);
+    expect(
+      validateGlossaryEvidenceCapsule(
+        capsule({
+          provenance_kind: "personal_inferred_conversation",
+          evidence: conversationEvidence(),
+        }),
+      ),
+    ).toEqual([]);
   });
 
   it("requires two independent source IDs and anchors for inferred usage", () => {
@@ -285,16 +291,22 @@ describe("layered personal glossary candidate contracts", () => {
     } as Record<string, unknown>;
     delete invalid.capsule_sha256;
     invalid.capsule_sha256 = glossaryCanonicalSha256(invalid);
-    expect(validateGlossaryEvidenceCapsule(invalid)).toContain(
-      "evidence_capsule.evidence requires 2 distinct source_id",
-    );
+    expect(validateGlossaryEvidenceCapsule(invalid)).toContain("evidence_capsule.evidence requires 2 distinct source_id");
   });
 
   it("keeps stable term identity while changing revision for meaning, evidence, policy, and generation", () => {
     const base = capsule();
     const variants = [
       capsule({ meaning: "a different deliverable form" }),
-      capsule({ evidence: [{ source_id: "source-explicit-2", evidence_anchor: "anchor-explicit-2", signal_type: "decision" }] }),
+      capsule({
+        evidence: [
+          {
+            source_id: "source-explicit-2",
+            evidence_anchor: "anchor-explicit-2",
+            signal_type: "decision",
+          },
+        ],
+      }),
       capsule({ policy_version: "agentera.personalGlossaryMiningPolicy.v2" }),
       capsule({ generation: "generation-b" }),
     ];
@@ -308,28 +320,20 @@ describe("layered personal glossary candidate contracts", () => {
   it("rejects stale capsule bindings, missing fields, extra fields, bad scope, and oversized meaning", () => {
     const candidate = capsule();
     const stale = { ...candidate, generation: "generation-stale" };
-    expect(validateGlossaryEvidenceCapsule(stale)).toContain(
-      "evidence_capsule.capsule_sha256 does not match canonical capsule bytes",
-    );
+    expect(validateGlossaryEvidenceCapsule(stale)).toContain("evidence_capsule.capsule_sha256 does not match canonical capsule bytes");
 
     const missing = { ...candidate } as Record<string, unknown>;
     delete missing.policy_version;
-    expect(validateGlossaryEvidenceCapsule(missing)).toContain(
-      "candidate_contracts.layers.evidence_capsule is missing fields: policy_version",
-    );
+    expect(validateGlossaryEvidenceCapsule(missing)).toContain("candidate_contracts.layers.evidence_capsule is missing fields: policy_version");
 
     const extra = { ...candidate, admission: "automatic_admission" };
-    expect(validateGlossaryEvidenceCapsule(extra)).toContain(
-      "candidate_contracts.layers.evidence_capsule contains fields outside its contract: admission",
-    );
+    expect(validateGlossaryEvidenceCapsule(extra)).toContain("candidate_contracts.layers.evidence_capsule contains fields outside its contract: admission");
 
     const badScope = { ...candidate, scope: "unknown" };
     expect(validateGlossaryEvidenceCapsule(badScope)).toContain("evidence_capsule.scope is invalid");
 
     const oversized = { ...candidate, meaning: "x".repeat(4097) };
-    expect(validateGlossaryEvidenceCapsule(oversized)).toContain(
-      "evidence_capsule.meaning is outside its bound",
-    );
+    expect(validateGlossaryEvidenceCapsule(oversized)).toContain("evidence_capsule.meaning is outside its bound");
   });
 
   it("keeps host classification semantic and rejects admission or mutation authority", () => {
@@ -339,43 +343,31 @@ describe("layered personal glossary candidate contracts", () => {
     expect(validateGlossaryHostClassificationReceipt(receipt, candidate, context)).toEqual([]);
 
     const forbidden = { ...receipt, admission: "automatic_admission" };
-    expect(validateGlossaryHostClassificationReceipt(forbidden, candidate, context)).toContain(
-      "candidate_contracts.layers.host_classification_receipt contains fields outside its contract: admission",
-    );
+    expect(validateGlossaryHostClassificationReceipt(forbidden, candidate, context)).toContain("candidate_contracts.layers.host_classification_receipt contains fields outside its contract: admission");
 
     const nested = {
       ...receipt,
       classification: { ...receipt.classification, mutation: "write" },
     };
-    expect(validateGlossaryHostClassificationReceipt(nested, candidate, context)).toContain(
-      "host_classification_receipt.classification contains fields outside its contract: mutation",
-    );
+    expect(validateGlossaryHostClassificationReceipt(nested, candidate, context)).toContain("host_classification_receipt.classification contains fields outside its contract: mutation");
 
     const badConfidence = {
       ...receipt,
       classification: { ...receipt.classification, confidence: 101 },
     };
-    expect(validateGlossaryHostClassificationReceipt(badConfidence, candidate, context)).toContain(
-      "host_classification_receipt.classification.confidence must be an integer from shared_primitive.fields.confidence",
-    );
+    expect(validateGlossaryHostClassificationReceipt(badConfidence, candidate, context)).toContain("host_classification_receipt.classification.confidence must be an integer from shared_primitive.fields.confidence");
 
     const badConsistency = {
       ...receipt,
       classification: { ...receipt.classification, consistency: "made-up" },
     };
-    expect(validateGlossaryHostClassificationReceipt(badConsistency, candidate, context)).toContain(
-      "host_classification_receipt.classification.consistency is invalid",
-    );
+    expect(validateGlossaryHostClassificationReceipt(badConsistency, candidate, context)).toContain("host_classification_receipt.classification.consistency is invalid");
 
     const mismatch = { ...receipt, candidate_revision: "f".repeat(64) };
-    expect(validateGlossaryHostClassificationReceipt(mismatch, candidate, context)).toContain(
-      "host_classification_receipt.candidate_revision does not match the capsule",
-    );
+    expect(validateGlossaryHostClassificationReceipt(mismatch, candidate, context)).toContain("host_classification_receipt.candidate_revision does not match the capsule");
 
     const staleProjection = { ...receipt, candidate_projection_sha256: "b".repeat(64) };
-    expect(validateGlossaryHostClassificationReceipt(staleProjection, candidate, context)).toContain(
-      "host_classification_receipt.candidate_projection_sha256 does not match the current projection",
-    );
+    expect(validateGlossaryHostClassificationReceipt(staleProjection, candidate, context)).toContain("host_classification_receipt.candidate_projection_sha256 does not match the current projection");
   });
 
   it("lets the CLI own admission outcomes and keeps inferred automatic admission disabled", () => {
@@ -428,36 +420,38 @@ describe("layered personal glossary candidate contracts", () => {
       policy_version: inferred.policy_version,
       decision_sha256: "0".repeat(64),
     };
-    expect(validateGlossaryAdmissionDecision(inferredDecision, inferred, inferredReceipt)).toContain(
-      "cli_decision automatic_admission is disabled for inferred provenance",
-    );
+    expect(validateGlossaryAdmissionDecision(inferredDecision, inferred, inferredReceipt)).toContain("cli_decision automatic_admission is disabled for inferred provenance");
 
     const extra = { ...decision, project_publication: true };
-    expect(validateGlossaryAdmissionDecision(extra, candidate, receipt)).toContain(
-      "candidate_contracts.layers.cli_decision contains fields outside its contract: project_publication",
-    );
+    expect(validateGlossaryAdmissionDecision(extra, candidate, receipt)).toContain("candidate_contracts.layers.cli_decision contains fields outside its contract: project_publication");
 
     const badOutcome = { ...decision, outcome: "publish" };
-    expect(validateGlossaryAdmissionDecision(badOutcome, candidate, receipt)).toContain(
-      "cli_decision.outcome is invalid",
-    );
+    expect(validateGlossaryAdmissionDecision(badOutcome, candidate, receipt)).toContain("cli_decision.outcome is invalid");
   });
 
   it.each(ADMISSION_REASON_PAIRS)("accepts the authority-owned $outcome/$reason pair", ({ outcome, reason }) => {
     const candidate = capsule();
     const receipt = receiptFor(candidate);
-    const decision = createGlossaryAdmissionDecision({ capsule: candidate, receipt, outcome, reason });
+    const decision = createGlossaryAdmissionDecision({
+      capsule: candidate,
+      receipt,
+      outcome,
+      reason,
+    });
     expect(validateGlossaryAdmissionDecision(decision, candidate, receipt)).toEqual([]);
   });
 
   it.each(CONTRADICTORY_REASON_PAIRS)("rejects digest-valid $rejectedOutcome/$reason for $outcome", ({ outcome, reason, rejectedOutcome }) => {
     const candidate = capsule();
     const receipt = receiptFor(candidate);
-    const valid = createGlossaryAdmissionDecision({ capsule: candidate, receipt, outcome, reason });
+    const valid = createGlossaryAdmissionDecision({
+      capsule: candidate,
+      receipt,
+      outcome,
+      reason,
+    });
     const contradictory = resealDecision({ ...valid, outcome: rejectedOutcome });
-    expect(validateGlossaryAdmissionDecision(contradictory, candidate, receipt)).toContain(
-      "cli_decision.reason is not allowed for cli_decision.outcome",
-    );
+    expect(validateGlossaryAdmissionDecision(contradictory, candidate, receipt)).toContain("cli_decision.reason is not allowed for cli_decision.outcome");
   });
 
   it("binds review lifecycle and personal publication without changing the shared entry contract", () => {
@@ -493,21 +487,13 @@ describe("layered personal glossary candidate contracts", () => {
     expect(validateGlossaryEntry(personalEntry(), "personal", retainedHistory)).toEqual([]);
 
     const invalidReview = { ...review, policy_version: "stale-policy" };
-    expect(validateGlossaryReviewRecord(invalidReview, candidate, receipt, decision)).toContain(
-      "review_record.policy_version does not match its source layer",
-    );
+    expect(validateGlossaryReviewRecord(invalidReview, candidate, receipt, decision)).toContain("review_record.policy_version does not match its source layer");
     const badDisposition = { ...review, disposition: "approve" };
-    expect(validateGlossaryReviewRecord(badDisposition, candidate, receipt, decision)).toContain(
-      "review_record.disposition is invalid",
-    );
+    expect(validateGlossaryReviewRecord(badDisposition, candidate, receipt, decision)).toContain("review_record.disposition is invalid");
     const invalidPublication = { ...publication, project_glossary: true };
-    expect(validateGlossaryPublicationResult(invalidPublication, candidate, receipt, decision, review)).toContain(
-      "candidate_contracts.layers.publication_result contains fields outside its contract: project_glossary",
-    );
+    expect(validateGlossaryPublicationResult(invalidPublication, candidate, receipt, decision, review)).toContain("candidate_contracts.layers.publication_result contains fields outside its contract: project_glossary");
     const badStatus = { ...publication, status: "published" };
-    expect(validateGlossaryPublicationResult(badStatus, candidate, receipt, decision, review)).toContain(
-      "publication_result.status is not an existing profile output status",
-    );
+    expect(validateGlossaryPublicationResult(badStatus, candidate, receipt, decision, review)).toContain("publication_result.status is not an existing profile output status");
   });
 
   it("preserves project precedence and publication references through the shared invariant", () => {

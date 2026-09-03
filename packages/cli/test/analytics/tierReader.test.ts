@@ -5,24 +5,9 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
-import {
-  evidenceTierAuthorityPath,
-  evidenceTierBounds,
-} from "../../src/registries/evidenceTierContract.js";
-import {
-  publishEvidenceTiers,
-  type PublicationResult,
-} from "../../src/analytics/extractCorpus/evidenceTiers.js";
-import {
-  assessTiers,
-  isAnalyzable,
-  iterBoundedRecords,
-  legacyCorpusReadable,
-  readBoundedMetadata,
-  recoveryForState,
-  tiersDirForCorpusPath,
-  type TierAssessment,
-} from "../../src/analytics/extractCorpus/tierReader.js";
+import { evidenceTierAuthorityPath, evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
+import { publishEvidenceTiers, type PublicationResult } from "../../src/analytics/extractCorpus/evidenceTiers.js";
+import { assessTiers, isAnalyzable, iterBoundedRecords, legacyCorpusReadable, readBoundedMetadata, recoveryForState, tiersDirForCorpusPath, type TierAssessment } from "../../src/analytics/extractCorpus/tierReader.js";
 
 type JsonObject = Record<string, unknown>;
 
@@ -32,14 +17,7 @@ beforeEach(() => {
 });
 afterEach(() => fs.rmSync(tmp, { recursive: true, force: true }));
 
-function fullRecord(opts: {
-  sourceId: string;
-  sourceKind?: string;
-  timestamp?: string;
-  sourceProduct?: string;
-  runtime?: string | null;
-  data?: JsonObject;
-}): JsonObject {
+function fullRecord(opts: { sourceId: string; sourceKind?: string; timestamp?: string; sourceProduct?: string; runtime?: string | null; data?: JsonObject }): JsonObject {
   const data = opts.data ?? { actor: "user", text: "hello" };
   const record: JsonObject = {
     source_id: opts.sourceId,
@@ -66,20 +44,39 @@ function fullRecord(opts: {
 
 function representativeRecords(): JsonObject[] {
   return [
-    fullRecord({ sourceId: "c1", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:00:00.000Z", data: { actor: "user", signal_type: "question", text: "why?" } }),
-    fullRecord({ sourceId: "c2", sourceProduct: "opencode", runtime: "opencode", timestamp: "2026-01-02T10:01:00.000Z", data: { actor: "assistant", text: "because" } }),
-    fullRecord({ sourceId: "c3", sourceProduct: "codex", runtime: "codex", timestamp: "2026-01-03T09:00:00.000Z", data: { actor: "user", signal_type: "decision", text: "decide" } }),
+    fullRecord({
+      sourceId: "c1",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:00:00.000Z",
+      data: { actor: "user", signal_type: "question", text: "why?" },
+    }),
+    fullRecord({
+      sourceId: "c2",
+      sourceProduct: "opencode",
+      runtime: "opencode",
+      timestamp: "2026-01-02T10:01:00.000Z",
+      data: { actor: "assistant", text: "because" },
+    }),
+    fullRecord({
+      sourceId: "c3",
+      sourceProduct: "codex",
+      runtime: "codex",
+      timestamp: "2026-01-03T09:00:00.000Z",
+      data: { actor: "user", signal_type: "decision", text: "decide" },
+    }),
   ];
 }
 
-function publish(records: JsonObject[], opts?: {
-  corpusPath?: string;
-  runtimeStatuses?: JsonObject[];
-  contractPath?: string;
-}): PublicationResult {
-  const tiersDir = opts?.corpusPath
-    ? tiersDirForCorpusPath(opts.corpusPath)
-    : path.join(tmp, "tiers");
+function publish(
+  records: JsonObject[],
+  opts?: {
+    corpusPath?: string;
+    runtimeStatuses?: JsonObject[];
+    contractPath?: string;
+  },
+): PublicationResult {
+  const tiersDir = opts?.corpusPath ? tiersDirForCorpusPath(opts.corpusPath) : path.join(tmp, "tiers");
   const corpusMetadata = opts?.corpusPath
     ? {
         extracted_at: "2026-01-15T00:00:00Z",
@@ -91,13 +88,17 @@ function publish(records: JsonObject[], opts?: {
         },
       }
     : undefined;
-  return publishEvidenceTiers(records, {
-    tiersDir,
-    adapterVersion: ADAPTER_VERSION,
-    runtimeStatuses: opts?.runtimeStatuses as JsonObject[] | undefined,
-    publishedAt: "2026-01-15T00:00:00.000Z",
-    corpusMetadata,
-  }, opts?.contractPath);
+  return publishEvidenceTiers(
+    records,
+    {
+      tiersDir,
+      adapterVersion: ADAPTER_VERSION,
+      runtimeStatuses: opts?.runtimeStatuses as JsonObject[] | undefined,
+      publishedAt: "2026-01-15T00:00:00.000Z",
+      corpusMetadata,
+    },
+    opts?.contractPath,
+  );
 }
 
 const PROPORTIONAL_SHARD_BYTE_CAP = 8 * 1024;
@@ -106,10 +107,7 @@ function proportionalContractPath(): string {
   const contractPath = path.join(tmp, "proportional-evidence-tier-authority.yaml");
   const productionCap = evidenceTierBounds().shardByteCap;
   const authority = fs.readFileSync(evidenceTierAuthorityPath(), "utf8");
-  fs.writeFileSync(
-    contractPath,
-    authority.replaceAll(`byte_cap: ${productionCap}`, `byte_cap: ${PROPORTIONAL_SHARD_BYTE_CAP}`),
-  );
+  fs.writeFileSync(contractPath, authority.replaceAll(`byte_cap: ${productionCap}`, `byte_cap: ${PROPORTIONAL_SHARD_BYTE_CAP}`));
   return contractPath;
 }
 
@@ -119,9 +117,7 @@ function proportionalContractPath(): string {
 
 describe("tiersDirForCorpusPath", () => {
   it("resolves to <dirname>/tiers", () => {
-    expect(tiersDirForCorpusPath("/p/intermediate/corpus.json")).toBe(
-      path.join("/p/intermediate", "tiers"),
-    );
+    expect(tiersDirForCorpusPath("/p/intermediate/corpus.json")).toBe(path.join("/p/intermediate", "tiers"));
   });
 });
 
@@ -198,8 +194,23 @@ describe("assessTiers", () => {
     const records = representativeRecords();
     const corpusPath = path.join(tmp, "corpus.json");
     const runtimeStatuses: JsonObject[] = [
-      { runtime: "codex", source_product: "codex", source_class: "active_runtime", active_runtime: true, status: "sparse", reason: "no_candidate_files", store_path: "/codex" },
-      { runtime: "opencode", source_product: "opencode", source_class: "active_runtime", active_runtime: true, status: "available", reason: "candidate_files_found" },
+      {
+        runtime: "codex",
+        source_product: "codex",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "sparse",
+        reason: "no_candidate_files",
+        store_path: "/codex",
+      },
+      {
+        runtime: "opencode",
+        source_product: "opencode",
+        source_class: "active_runtime",
+        active_runtime: true,
+        status: "available",
+        reason: "candidate_files_found",
+      },
     ];
     publish(records, { corpusPath, runtimeStatuses });
     const a = assessTiers(tiersDirForCorpusPath(corpusPath), corpusPath);
@@ -281,13 +292,15 @@ describe("iterBoundedRecords", () => {
     // Build records spanning at least one shard; verify all are yielded.
     const records: JsonObject[] = [];
     for (let i = 0; i < 30; i++) {
-      records.push(fullRecord({
-        sourceId: `s${i}`,
-        sourceProduct: "opencode",
-        runtime: "opencode",
-        timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
-        data: { idx: i, text: "x".repeat(2048) },
-      }));
+      records.push(
+        fullRecord({
+          sourceId: `s${i}`,
+          sourceProduct: "opencode",
+          runtime: "opencode",
+          timestamp: `2026-01-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+          data: { idx: i, text: "x".repeat(2048) },
+        }),
+      );
     }
     const corpusPath = path.join(tmp, "corpus.json");
     publish(records, { corpusPath });
@@ -362,15 +375,11 @@ describe("oversized single-record retention (Task 2 audit gap)", () => {
 
     // The oversized record IS on disk in its own shard — not silently dropped.
     const gen = JSON.parse(fs.readFileSync(path.join(tiersDir, "current.json"), "utf8"));
-    const manifest = JSON.parse(
-      fs.readFileSync(path.join(tiersDir, "generations", gen.generation, "manifest.json"), "utf8"),
-    );
+    const manifest = JSON.parse(fs.readFileSync(path.join(tiersDir, "generations", gen.generation, "manifest.json"), "utf8"));
     expect(manifest.total_records).toBe(2);
 
     // Find the oversized shard (its declared bytes exceed the cap).
-    const oversizedShards = manifest.shards.filter(
-      (s: { bytes: number }) => s.bytes > PROPORTIONAL_SHARD_BYTE_CAP,
-    );
+    const oversizedShards = manifest.shards.filter((s: { bytes: number }) => s.bytes > PROPORTIONAL_SHARD_BYTE_CAP);
     expect(oversizedShards.length).toBeGreaterThan(0);
     expect(a.artifact).toBe(oversizedShards[0].path);
 

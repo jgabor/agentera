@@ -7,11 +7,7 @@ import { dumpYamlMapping } from "../core/yaml.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { ArtifactSchemaValidator } from "../hooks/validateArtifact/index.js";
 import { assertRealpathBoundary } from "../registries/artifactRegistry.js";
-import {
-  canonicalRecordJson,
-  discoverNumberedArchives,
-  numberedArchiveContract,
-} from "./archiveDiscovery.js";
+import { canonicalRecordJson, discoverNumberedArchives, numberedArchiveContract } from "./archiveDiscovery.js";
 import { reject } from "./write/errors.js";
 
 export interface ArchivePublicationResult {
@@ -69,10 +65,7 @@ const nodeFileSystem: ArchivePublicationFileSystem = {
   },
 };
 
-function nearestExistingDirectory(
-  directory: string,
-  fileSystem: ArchivePublicationFileSystem,
-): string {
+function nearestExistingDirectory(directory: string, fileSystem: ArchivePublicationFileSystem): string {
   let cursor = path.resolve(directory);
   while (!fileSystem.exists(cursor)) {
     const parent = path.dirname(cursor);
@@ -82,17 +75,10 @@ function nearestExistingDirectory(
   return cursor;
 }
 
-function ensureDurableDirectory(
-  directory: string,
-  fileSystem: ArchivePublicationFileSystem,
-  options: ImmutableFilePublicationOptions,
-): void {
-  const root = path.resolve(
-    options.directoryDurabilityRoot ?? nearestExistingDirectory(directory, fileSystem),
-  );
+function ensureDurableDirectory(directory: string, fileSystem: ArchivePublicationFileSystem, options: ImmutableFilePublicationOptions): void {
+  const root = path.resolve(options.directoryDurabilityRoot ?? nearestExistingDirectory(directory, fileSystem));
   const relative = path.relative(root, path.resolve(directory));
-  if (relative.startsWith("..") || path.isAbsolute(relative))
-    throw new Error(`directory durability root '${root}' does not contain '${directory}'`);
+  if (relative.startsWith("..") || path.isAbsolute(relative)) throw new Error(`directory durability root '${root}' does not contain '${directory}'`);
   let parent = root;
   for (const segment of relative.split(path.sep).filter(Boolean)) {
     const child = path.join(parent, segment);
@@ -113,11 +99,7 @@ function ensureDurableDirectory(
 
 let stageSequence = 0;
 
-export function publishImmutableFile(
-  target: string,
-  bytes: string,
-  options: ImmutableFilePublicationOptions = {},
-): boolean {
+export function publishImmutableFile(target: string, bytes: string, options: ImmutableFilePublicationOptions = {}): boolean {
   const fileSystem = options.fileSystem ?? nodeFileSystem;
   const directory = path.dirname(target);
   ensureDurableDirectory(directory, fileSystem, options);
@@ -187,12 +169,7 @@ function assertNoSymlinkPath(projectRoot: string, candidate: string): void {
   }
 }
 
-function archivePath(
-  projectRoot: string,
-  artifactId: string,
-  entryNumber: number,
-  sourceRoot: string,
-): { target: string; stableId: string; contract: ReturnType<typeof numberedArchiveContract> } {
+function archivePath(projectRoot: string, artifactId: string, entryNumber: number, sourceRoot: string): { target: string; stableId: string; contract: ReturnType<typeof numberedArchiveContract> } {
   if (!Number.isSafeInteger(entryNumber) || entryNumber <= 0)
     reject({
       class: "invalid_int",
@@ -201,12 +178,7 @@ function archivePath(
       example: "use the number assigned by the state writer",
     });
   const contract = numberedArchiveContract(artifactId, sourceRoot);
-  const target = path.join(
-    path.resolve(projectRoot),
-    contract.archiveRoot,
-    contract.artifactId,
-    `${entryNumber}${contract.archiveExtension}`,
-  );
+  const target = path.join(path.resolve(projectRoot), contract.archiveRoot, contract.artifactId, `${entryNumber}${contract.archiveExtension}`);
   try {
     assertRealpathBoundary(projectRoot, target, "numbered archive");
   } catch (error) {
@@ -221,33 +193,15 @@ function archivePath(
   return { target, stableId: `${artifactId}:${entryNumber}`, contract };
 }
 
-function validateRecord(
-  sourceRoot: string,
-  contract: ReturnType<typeof numberedArchiveContract>,
-  entryNumber: number,
-  record: JsonObject,
-): string {
-  if (
-    typeof record[contract.entryNumberField] !== "number" ||
-    !Number.isSafeInteger(record[contract.entryNumberField]) ||
-    record[contract.entryNumberField] !== entryNumber
-  ) {
-    throw new Error(
-      `archive record ${contract.entryNumberField} must equal its positive entry number ${entryNumber}`,
-    );
+function validateRecord(sourceRoot: string, contract: ReturnType<typeof numberedArchiveContract>, entryNumber: number, record: JsonObject): string {
+  if (typeof record[contract.entryNumberField] !== "number" || !Number.isSafeInteger(record[contract.entryNumberField]) || record[contract.entryNumberField] !== entryNumber) {
+    throw new Error(`archive record ${contract.entryNumberField} must equal its positive entry number ${entryNumber}`);
   }
-  const validator = new ArtifactSchemaValidator(
-    path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts"),
-  );
+  const validator = new ArtifactSchemaValidator(path.join(sourceRoot, "skills", "agentera", "schemas", "artifacts"));
   const schema = validator.loadSchema(contract.artifactId);
   if (!schema) throw new Error(`archive artifact '${contract.artifactId}' schema is unavailable`);
-  const violations = validator.validateYaml(
-    dumpYamlMapping({ [contract.entryCollection]: [record] }),
-    schema,
-    contract.artifactId,
-  );
-  if (violations.length > 0)
-    throw new Error(`archive record failed ${contract.artifactId} schema validation: ${violations.join("; ")}`);
+  const violations = validator.validateYaml(dumpYamlMapping({ [contract.entryCollection]: [record] }), schema, contract.artifactId);
+  if (violations.length > 0) throw new Error(`archive record failed ${contract.artifactId} schema validation: ${violations.join("; ")}`);
   return canonicalRecordJson(record);
 }
 
@@ -256,20 +210,11 @@ function stagePath(directory: string, filename: string): string {
   return path.join(directory, `.${filename}.writer.${process.pid}.${stageSequence}.tmp`);
 }
 
-function existingArchiveMatches(
-  projectRoot: string,
-  target: string,
-  stableId: string,
-  record: JsonObject,
-  sourceRoot: string,
-): boolean {
+function existingArchiveMatches(projectRoot: string, target: string, stableId: string, record: JsonObject, sourceRoot: string): boolean {
   const discovered = discoverNumberedArchives(projectRoot, { sourceRoot });
   const existing = discovered.entries.find((entry) => entry.path === target);
   if (existing && canonicalRecordJson(existing.record) === canonicalRecordJson(record)) return true;
-  rejectConflict(
-    stableId,
-    `immutable archive '${target}' already exists with different or invalid canonical content; existing bytes were preserved`,
-  );
+  rejectConflict(stableId, `immutable archive '${target}' already exists with different or invalid canonical content; existing bytes were preserved`);
 }
 
 export function publishNumberedArchive(
@@ -293,13 +238,7 @@ export function publishNumberedArchive(
     directoryDurabilityRoot: projectRoot,
     afterDirectorySync: options.afterDirectorySync,
     onExisting: () => {
-      existingArchiveMatches(
-        projectRoot,
-        location.target,
-        location.stableId,
-        record,
-        sourceRoot,
-      );
+      existingArchiveMatches(projectRoot, location.target, location.stableId, record, sourceRoot);
     },
   });
   return {
@@ -310,13 +249,7 @@ export function publishNumberedArchive(
   };
 }
 
-export function serializeNumberedArchive(
-  artifactId: string,
-  entryNumber: number,
-  record: JsonObject,
-  sourceRoot: string = resolveSourceRoot(),
-  options: NumberedArchiveEnvelopeOptions = {},
-): NumberedArchiveBytes {
+export function serializeNumberedArchive(artifactId: string, entryNumber: number, record: JsonObject, sourceRoot: string = resolveSourceRoot(), options: NumberedArchiveEnvelopeOptions = {}): NumberedArchiveBytes {
   const contract = numberedArchiveContract(artifactId, sourceRoot);
   const canonical = validateRecord(sourceRoot, contract, entryNumber, record);
   const recordSha256 = createHash("sha256").update(canonical, "utf8").digest("hex");

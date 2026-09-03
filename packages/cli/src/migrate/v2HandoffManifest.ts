@@ -2,38 +2,22 @@ import fs from "node:fs";
 import path from "node:path";
 import { isLifecycleOwnershipStateDirectory } from "../runtime/lifecycleOwnershipJournal.js";
 
-import {
-  AGENTERA_PROFILE_DIR_ENV,
-  PROFILERA_PROFILE_DIR_ENV,
-  resolveProfileDirOverride,
-} from "../core/envPaths.js";
+import { AGENTERA_PROFILE_DIR_ENV, PROFILERA_PROFILE_DIR_ENV, resolveProfileDirOverride } from "../core/envPaths.js";
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { opencodeConfigDir } from "../setup/opencode.js";
 import { doctorRoots, loadSuiteVersion } from "../upgrade/appModel.js";
 import { MANAGED_APP_CONTENT_ROOT_ENTRIES } from "../upgrade/appContentRefresh.js";
-import {
-  AGENTERA_USER_STATE_NAMES,
-  ROOT_USER_STATE_DIR_NAMES,
-  ROOT_USER_STATE_FILE_NAMES,
-} from "../upgrade/doctor.js";
+import { AGENTERA_USER_STATE_NAMES, ROOT_USER_STATE_DIR_NAMES, ROOT_USER_STATE_FILE_NAMES } from "../upgrade/doctor.js";
 
 export const V2_HANDOFF_MANIFEST_FILENAME = "v3-handoff.json";
 export const V2_HANDOFF_SCHEMA_VERSION = "agentera.v3_handoff_manifest.v1";
 export const READER_PREFLIGHT_BUDGET_MS = 100;
 
-export const USER_DATA_CATALOG_DIRS = [
-  "benchmarks",
-  "intermediate",
-  "sessions",
-  "history",
-  "corpus",
-] as const;
+export const USER_DATA_CATALOG_DIRS = ["benchmarks", "intermediate", "sessions", "history", "corpus"] as const;
 
 export const PROFILE_FILE_MEMBERS = ["PROFILE.md", "USAGE.md"] as const;
 
-export type UserDataCatalogId =
-  | (typeof USER_DATA_CATALOG_DIRS)[number]
-  | "profile_files";
+export type UserDataCatalogId = (typeof USER_DATA_CATALOG_DIRS)[number] | "profile_files";
 
 export interface UserDataDirectoryEntry {
   id: (typeof USER_DATA_CATALOG_DIRS)[number];
@@ -141,10 +125,7 @@ function parseProfileFilesEntry(raw: Record<string, unknown>): UserDataProfileFi
       throw new Error(`profile_files.members[${index}] must have boolean exists`);
     }
     return {
-      relative_path: asNonEmptyString(
-        member.relative_path,
-        `profile_files.members[${index}].relative_path`,
-      ),
+      relative_path: asNonEmptyString(member.relative_path, `profile_files.members[${index}].relative_path`),
       kind: "file",
       exists: member.exists,
     };
@@ -189,9 +170,7 @@ export function parseV2HandoffManifest(raw: unknown): V2HandoffManifest {
   if (!Array.isArray(raw.runtime_adapters)) {
     throw new Error("runtime_adapters must be an array");
   }
-  const runtimeAdapters = raw.runtime_adapters.map((adapter, index) =>
-    asNonEmptyString(adapter, `runtime_adapters[${index}]`),
-  );
+  const runtimeAdapters = raw.runtime_adapters.map((adapter, index) => asNonEmptyString(adapter, `runtime_adapters[${index}]`));
   return {
     schema_version: V2_HANDOFF_SCHEMA_VERSION,
     written_at: writtenAt,
@@ -206,9 +185,7 @@ export function v2HandoffManifestPath(appHome: string): string {
   return path.join(resolvePath(appHome), V2_HANDOFF_MANIFEST_FILENAME);
 }
 
-export function readV2HandoffManifestFile(
-  appHome: string,
-): { manifest: V2HandoffManifest; elapsedMs: number } | null {
+export function readV2HandoffManifestFile(appHome: string): { manifest: V2HandoffManifest; elapsedMs: number } | null {
   const manifestPath = v2HandoffManifestPath(appHome);
   if (!isFile(manifestPath)) {
     return null;
@@ -263,10 +240,7 @@ function isPreservedUserStateEntry(appHome: string, entry: string): boolean {
   if (entry === ".agentera" && agenteraUserStateDirIsRecognized(full)) {
     return true;
   }
-  if (
-    (USER_DATA_CATALOG_DIRS as readonly string[]).includes(entry) &&
-    st.isDirectory()
-  ) {
+  if ((USER_DATA_CATALOG_DIRS as readonly string[]).includes(entry) && st.isDirectory()) {
     return true;
   }
   return false;
@@ -322,10 +296,7 @@ function listPreservedTopLevelFromManifest(manifest: V2HandoffManifest): string[
   return [...preserved].sort();
 }
 
-function listPreservedAbsolutePathsFromManifest(
-  manifest: V2HandoffManifest,
-  appHome: string,
-): string[] {
+function listPreservedAbsolutePathsFromManifest(manifest: V2HandoffManifest, appHome: string): string[] {
   const root = resolvePath(appHome);
   const preserved: string[] = [];
   for (const rel of listPreservedTopLevelFromManifest(manifest)) {
@@ -344,10 +315,7 @@ function listPreservedAbsolutePathsFromManifest(
   return preserved.sort();
 }
 
-export function isManifestCatalogEntryPreserved(
-  manifest: V2HandoffManifest,
-  entry: string,
-): boolean {
+export function isManifestCatalogEntryPreserved(manifest: V2HandoffManifest, entry: string): boolean {
   for (const item of manifest.user_data_inventory) {
     if (item.kind === "directory" && item.relative_path === entry) {
       return item.exists;
@@ -428,10 +396,7 @@ function listOpencodeConfigCatalog(configDir: string): string[] {
   return [...preserved].sort();
 }
 
-export function buildExternalHandoffCatalog(
-  appHome: string,
-  opts?: MigrationUserStatePreflightOpts,
-): HandoffCatalogEntry[] {
+export function buildExternalHandoffCatalog(appHome: string, opts?: MigrationUserStatePreflightOpts): HandoffCatalogEntry[] {
   if (!opts?.env) {
     return [];
   }
@@ -471,10 +436,7 @@ export function buildExternalHandoffCatalog(
   return catalog;
 }
 
-function mergePreservedAbsolutePaths(
-  base: string[],
-  handoffCatalog: HandoffCatalogEntry[],
-): string[] {
+function mergePreservedAbsolutePaths(base: string[], handoffCatalog: HandoffCatalogEntry[]): string[] {
   const merged = new Set(base);
   for (const entry of handoffCatalog) {
     for (const absolutePath of entry.entries) {
@@ -491,10 +453,7 @@ export function handoffCatalogMessage(entry: HandoffCatalogEntry): string {
   return `opencode runtime config dir (${entry.envVar} → ${entry.root}) cataloged for v2→v3 handoff`;
 }
 
-export function resolveMigrationUserStatePreflight(
-  appHome: string,
-  opts?: MigrationUserStatePreflightOpts,
-): MigrationUserStatePreflight {
+export function resolveMigrationUserStatePreflight(appHome: string, opts?: MigrationUserStatePreflightOpts): MigrationUserStatePreflight {
   const resolvedHome = resolvePath(appHome);
   const handoffCatalog = buildExternalHandoffCatalog(resolvedHome, opts);
   const manifestRead = readV2HandoffManifestFile(resolvedHome);
@@ -504,19 +463,13 @@ export function resolveMigrationUserStatePreflight(
       elapsedMs: manifestRead.elapsedMs,
       manifest: manifestRead.manifest,
       preservedTopLevel: listPreservedTopLevelFromManifest(manifestRead.manifest),
-      preservedAbsolutePaths: mergePreservedAbsolutePaths(
-        listPreservedAbsolutePathsFromManifest(manifestRead.manifest, resolvedHome),
-        handoffCatalog,
-      ),
+      preservedAbsolutePaths: mergePreservedAbsolutePaths(listPreservedAbsolutePathsFromManifest(manifestRead.manifest, resolvedHome), handoffCatalog),
       handoffCatalog,
     };
   }
   const started = performance.now();
   const preservedTopLevel = listPreservedTopLevelFromScan(resolvedHome);
-  const preservedAbsolutePaths = mergePreservedAbsolutePaths(
-    listPreservedAbsolutePathsFromScan(resolvedHome),
-    handoffCatalog,
-  );
+  const preservedAbsolutePaths = mergePreservedAbsolutePaths(listPreservedAbsolutePathsFromScan(resolvedHome), handoffCatalog);
   return {
     source: "scan",
     elapsedMs: performance.now() - started,
@@ -527,10 +480,7 @@ export function resolveMigrationUserStatePreflight(
   };
 }
 
-export function appHomeHasUnrecognizedEntriesWithPreflight(
-  appHome: string,
-  preflight: MigrationUserStatePreflight,
-): string[] {
+export function appHomeHasUnrecognizedEntriesWithPreflight(appHome: string, preflight: MigrationUserStatePreflight): string[] {
   if (!pathExists(appHome)) {
     return [];
   }
@@ -560,10 +510,7 @@ export interface ManifestFreshnessContext {
   bundleMarkerMtimeMs: number;
 }
 
-export function isV2HandoffManifestStale(
-  manifest: V2HandoffManifest,
-  ctx: ManifestFreshnessContext,
-): boolean {
+export function isV2HandoffManifestStale(manifest: V2HandoffManifest, ctx: ManifestFreshnessContext): boolean {
   if (resolvePath(manifest.app_home_path) !== resolvePath(ctx.appHome)) {
     return true;
   }
@@ -578,17 +525,13 @@ export function isV2HandoffManifestStale(
   return false;
 }
 
-export function bundleMarkerFreshnessContext(
-  appHome: string,
-  sourceRoot: string,
-): ManifestFreshnessContext | null {
+export function bundleMarkerFreshnessContext(appHome: string, sourceRoot: string): ManifestFreshnessContext | null {
   const roots = doctorRoots(appHome);
   const markerPath = path.join(roots.activeBundleRoot, ".agentera-bundle.json");
   if (!isFile(markerPath)) {
     return null;
   }
-  const installedVersion =
-    loadSuiteVersion(roots.activeBundleRoot) ?? loadSuiteVersion(sourceRoot) ?? "unknown";
+  const installedVersion = loadSuiteVersion(roots.activeBundleRoot) ?? loadSuiteVersion(sourceRoot) ?? "unknown";
   return {
     appHome: resolvePath(appHome),
     installedVersion,

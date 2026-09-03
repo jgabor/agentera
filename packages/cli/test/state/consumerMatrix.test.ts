@@ -57,9 +57,7 @@ describe("state consumer matrix", () => {
       expect(bundleSource, bundlePath).not.toMatch(staleCommandPattern);
       expect(instruction, entry.name).not.toMatch(rawReadPattern);
       expect(bundleSource, bundlePath).not.toMatch(rawReadPattern);
-      expect(instruction, entry.name).toContain(
-        `npx -y agentera@next prime --context ${entry.name}`,
-      );
+      expect(instruction, entry.name).toContain(`npx -y agentera@next prime --context ${entry.name}`);
     }
   });
 
@@ -69,11 +67,22 @@ describe("state consumer matrix", () => {
       [{ number: 53, satisfaction: { state: "open" } }, true],
       [{ number: 53, satisfaction: { state: "provisionally_satisfied", evidence: "verified" } }, true],
       [{ number: 53, satisfaction: { state: "user_confirmed_satisfied" } }, true],
-      [{ number: 53, satisfaction: { state: "user_confirmed_satisfied", user_confirmation: { confirmed_by: "user", confirmed_at: "2026-07-14T00:00:00Z" } } }, false],
+      [
+        {
+          number: 53,
+          satisfaction: {
+            state: "user_confirmed_satisfied",
+            user_confirmation: { confirmed_by: "user", confirmed_at: "2026-07-14T00:00:00Z" },
+          },
+        },
+        false,
+      ],
     ] as const;
 
     for (const [entry, reviewNeeded] of cases) {
-      expect(decisionSatisfactionContext(entry), JSON.stringify(entry)).toMatchObject({ review_needed: reviewNeeded });
+      expect(decisionSatisfactionContext(entry), JSON.stringify(entry)).toMatchObject({
+        review_needed: reviewNeeded,
+      });
     }
   });
 

@@ -21,9 +21,7 @@ const IDENTIFIER_RE = /^[A-Za-z][A-Za-z0-9_-]*$/;
 export function validateIdentifier(value: string, label: string): void {
   validateAgentString(value, label);
   if (!IDENTIFIER_RE.test(value)) {
-    throw new Error(
-      `unsupported ${label} ${value.includes("'") ? `"${value}"` : `'${value}'`}; use letters, digits, '_' or '-'`,
-    );
+    throw new Error(`unsupported ${label} ${value.includes("'") ? `"${value}"` : `'${value}'`}; use letters, digits, '_' or '-'`);
   }
 }
 

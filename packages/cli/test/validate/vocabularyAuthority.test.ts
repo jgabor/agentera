@@ -6,13 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import { loadYamlMappingFile } from "../../src/core/yaml.js";
-import {
-  APP_MANUAL_REVIEW_NEEDED,
-  APP_MIGRATION_NEEDED,
-  APP_OUTDATED,
-  APP_REPAIR_NEEDED,
-  APP_UP_TO_DATE,
-} from "../../src/upgrade/doctor.js";
+import { APP_MANUAL_REVIEW_NEEDED, APP_MIGRATION_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE } from "../../src/upgrade/doctor.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -22,16 +16,7 @@ const UPDATE_CHANNELS_AUTHORITY = path.join(REPO_ROOT, "references/cli/update-ch
 const VOCABULARY_INDEX = path.join(REPO_ROOT, "references/cli/vocabulary-index.yaml");
 const VOCABULARY_MD = path.join(REPO_ROOT, "references/cli/vocabulary.md");
 
-const EXPECTED_STATUSES = [
-  "up_to_date",
-  "outdated",
-  "repair_needed",
-  "migration_needed",
-  "manual_review_needed",
-  "ready_to_apply",
-  "applied",
-  "no_changes_needed",
-] as const;
+const EXPECTED_STATUSES = ["up_to_date", "outdated", "repair_needed", "migration_needed", "manual_review_needed", "ready_to_apply", "applied", "no_changes_needed"] as const;
 
 const EXPECTED_VERBS = ["install", "repair", "update", "migrate", "upgrade", "refresh"] as const;
 const EXPECTED_LIFECYCLE_CONSUMERS = ["doctor", "status", "upgrade", "docs", "tests"] as const;
@@ -89,9 +74,7 @@ describe("app lifecycle vocabulary authority", () => {
     expect(aliasToStatus.get("refresh_required")).toBe("repair_needed");
     expect(aliasToStatus.get("fixed")).toBe("applied");
     expect(aliasToStatus.get("noop")).toBe("no_changes_needed");
-    expect([...aliasToStatus.keys()].some((alias) => EXPECTED_STATUSES.includes(alias as (typeof EXPECTED_STATUSES)[number]))).toBe(
-      false,
-    );
+    expect([...aliasToStatus.keys()].some((alias) => EXPECTED_STATUSES.includes(alias as (typeof EXPECTED_STATUSES)[number]))).toBe(false);
   });
 
   it("defines major_boundary_crossing without adding a canonical status", () => {
@@ -99,9 +82,7 @@ describe("app lifecycle vocabulary authority", () => {
     expect(authority.status_concept_order).toEqual(["major_boundary_crossing"]);
     const concept = (authority.status_concepts as JsonObject).major_boundary_crossing as JsonObject;
     expect(String(concept.definition)).toContain("v2→v3");
-    expect((concept.requires_forward_major_confirmation as JsonObject).mechanism).toBe(
-      "semver_compare_running_to_latest_on_selected_channel",
-    );
+    expect((concept.requires_forward_major_confirmation as JsonObject).mechanism).toBe("semver_compare_running_to_latest_on_selected_channel");
     expect(concept.irreversible_exit_lines).toEqual(["v2_python_managed_app_home"]);
     expect(concept.item_tag).toBe("requires_explicit_major_opt_in");
     expect(concept.never_implicit_on_channels).toEqual(["stable"]);
@@ -147,9 +128,7 @@ describe("app lifecycle vocabulary authority", () => {
 
   it("keeps doctor constants within canonical statuses and consumer allow-list", () => {
     const authority = lifecycleAuthority();
-    const doctorAllowed = new Set(
-      ((authority.consumers as JsonObject).doctor as JsonObject).may_emit_statuses as string[],
-    );
+    const doctorAllowed = new Set(((authority.consumers as JsonObject).doctor as JsonObject).may_emit_statuses as string[]);
     const observed = [APP_UP_TO_DATE, APP_OUTDATED, APP_REPAIR_NEEDED, APP_MIGRATION_NEEDED, APP_MANUAL_REVIEW_NEEDED];
     for (const status of observed) {
       expect(canonicalStatuses(authority).has(status)).toBe(true);

@@ -20,8 +20,12 @@ const cwd = process.cwd();
 process.chdir(root);
 try {
   const rc = main(["node", "agentera", "state", "plan", "append", "--plan", plan, "--input", input, "--format", "json"], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
   });
   fs.writeFileSync(result, JSON.stringify({ rc, output: out.trim(), error: err }));
 } finally {

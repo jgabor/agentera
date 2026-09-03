@@ -33,8 +33,7 @@ describe("root release script argument forwarding", () => {
     fs.writeFileSync(npmConfig, "");
     fs.writeFileSync(npmGlobalConfig, "");
 
-    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) =>
-      !/^(?:npm_config_|npm_token$|npm_auth_token$|node_auth_token$|git_|agentera_)/i.test(key)));
+    const env = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(?:npm_config_|npm_token$|npm_auth_token$|node_auth_token$|git_|agentera_)/i.test(key)));
     Object.assign(env, {
       HOME: home,
       XDG_CONFIG_HOME: config,
@@ -57,20 +56,17 @@ describe("root release script argument forwarding", () => {
       ["release-benchmark.mjs", "publication", "--adapter", "development", "--candidate-dir", candidate, "--receipt-file", receipt, "--unexpected"],
     ];
 
-    const protectedFiles = [
-      path.join(REPO_ROOT, "packages/cli/package.json"),
-      path.join(REPO_ROOT, "packages/cli/shim/package.json"),
-      npmConfig,
-      npmGlobalConfig,
-    ];
+    const protectedFiles = [path.join(REPO_ROOT, "packages/cli/package.json"), path.join(REPO_ROOT, "packages/cli/shim/package.json"), npmConfig, npmGlobalConfig];
     const before = new Map(protectedFiles.map((file) => [file, fs.readFileSync(file)]));
-    const isolatedFiles = () => fs.readdirSync(isolated, { recursive: true })
-      .map(String)
-      .sort()
-      .map((relative) => {
-        const file = path.join(isolated, relative);
-        return [relative, fs.statSync(file).isFile() ? fs.readFileSync(file).toString("base64") : null];
-      });
+    const isolatedFiles = () =>
+      fs
+        .readdirSync(isolated, { recursive: true })
+        .map(String)
+        .sort()
+        .map((relative) => {
+          const file = path.join(isolated, relative);
+          return [relative, fs.statSync(file).isFile() ? fs.readFileSync(file).toString("base64") : null];
+        });
     const isolatedBefore = isolatedFiles();
     const git = (args: string[]) => {
       const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8", env });
@@ -113,24 +109,31 @@ describe("root release script argument forwarding", () => {
         ["common/refs", path.join(gitCommonDirectory, "refs")],
         ["common/logs/refs", path.join(gitCommonDirectory, "logs/refs")],
         ["common/reftable", path.join(gitCommonDirectory, "reftable")],
-      ]) visit(label, target);
+      ])
+        visit(label, target);
       return records;
     };
     const logicalGitRefs = () => {
-      const refs = git(["for-each-ref", "--count=10001", "--format=%(refname)%00%(objectname)%00%(symref)"])
-        .split("\n")
-        .filter(Boolean);
+      const refs = git(["for-each-ref", "--count=10001", "--format=%(refname)%00%(objectname)%00%(symref)"]).split("\n").filter(Boolean);
       if (refs.length > 10_000) throw new Error("logical Git ref snapshot exceeded its bound");
       const symbolic = spawnSync("git", ["symbolic-ref", "--quiet", "HEAD"], {
-        cwd: REPO_ROOT, encoding: "utf8", env,
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+        env,
       });
       expect([0, 1]).toContain(symbolic.status);
-      return { head: git(["rev-parse", "--verify", "HEAD"]), symbolic: symbolic.stdout.trim(), refs };
+      return {
+        head: git(["rev-parse", "--verify", "HEAD"]),
+        symbolic: symbolic.stdout.trim(),
+        refs,
+      };
     };
     const gitStorageBefore = gitStorage();
     const logicalGitRefsBefore = logicalGitRefs();
     const gitBefore = spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
-      cwd: REPO_ROOT, encoding: "utf8", env,
+      cwd: REPO_ROOT,
+      encoding: "utf8",
+      env,
     }).stdout;
 
     try {
@@ -151,9 +154,13 @@ describe("root release script argument forwarding", () => {
       expect(isolatedFiles()).toEqual(isolatedBefore);
       expect(gitStorage()).toEqual(gitStorageBefore);
       expect(logicalGitRefs()).toEqual(logicalGitRefsBefore);
-      expect(spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
-        cwd: REPO_ROOT, encoding: "utf8", env,
-      }).stdout).toBe(gitBefore);
+      expect(
+        spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
+          cwd: REPO_ROOT,
+          encoding: "utf8",
+          env,
+        }).stdout,
+      ).toBe(gitBefore);
     } finally {
       fs.rmSync(isolated, { recursive: true, force: true });
     }
@@ -197,17 +204,10 @@ describe("root release script argument forwarding", () => {
     const development = JSON.parse(developmentBytes.toString("utf8"));
     const candidate = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-prepare-readiness-"));
     try {
-      const developmentCheck = spawnSync(process.execPath, [
-        script,
-        "prepare",
-        "development",
-        "--candidate-dir",
-        candidate,
-        "--source-commit",
-        development.agentera.gitRef,
-        "--check",
-        "--json",
-      ], { cwd: REPO_ROOT, encoding: "utf8" });
+      const developmentCheck = spawnSync(process.execPath, [script, "prepare", "development", "--candidate-dir", candidate, "--source-commit", development.agentera.gitRef, "--check", "--json"], {
+        cwd: REPO_ROOT,
+        encoding: "utf8",
+      });
       expect(developmentCheck.status).toBe(1);
       expect(developmentCheck.stderr).toContain("source receipt is missing");
       expect(fs.readFileSync(developmentPath)).toEqual(developmentBytes);
@@ -217,23 +217,25 @@ describe("root release script argument forwarding", () => {
   });
 
   it("accepts each documented pnpm argv shape and rejects extra separators or unknown flags", () => {
-    expect(parseReleaseFlags([
-      "--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--json",
-    ], {
-      boolean: ["--json"],
-      value: ["--adapter", "--candidate-dir"],
-    })).toEqual(new Map([
-      ["--adapter", "development"],
-      ["--candidate-dir", "/external/candidate"],
-      ["--json", true],
-    ]));
-    expect(() => parseReleaseFlags(["--", "--", "--json"], { boolean: ["--json"] }))
-      .toThrow("duplicate pnpm argument separator");
-    expect(() => parseReleaseFlags(["--", "--unknown"], { boolean: ["--json"] }))
-      .toThrow("unexpected argument '--unknown'");
-    expect(() => parseReleaseFlags(["--candidate-dir", "--", "/external"], {
-      value: ["--candidate-dir"],
-    })).toThrow("--candidate-dir requires a value");
+    expect(
+      parseReleaseFlags(["--adapter", "development", "--", "--candidate-dir", "/external/candidate", "--json"], {
+        boolean: ["--json"],
+        value: ["--adapter", "--candidate-dir"],
+      }),
+    ).toEqual(
+      new Map([
+        ["--adapter", "development"],
+        ["--candidate-dir", "/external/candidate"],
+        ["--json", true],
+      ]),
+    );
+    expect(() => parseReleaseFlags(["--", "--", "--json"], { boolean: ["--json"] })).toThrow("duplicate pnpm argument separator");
+    expect(() => parseReleaseFlags(["--", "--unknown"], { boolean: ["--json"] })).toThrow("unexpected argument '--unknown'");
+    expect(() =>
+      parseReleaseFlags(["--candidate-dir", "--", "/external"], {
+        value: ["--candidate-dir"],
+      }),
+    ).toThrow("--candidate-dir requires a value");
   });
 
   it("accepts the exact separator and JSON shape forwarded by every root release recipe", () => {
@@ -292,10 +294,6 @@ describe("root release script argument forwarding", () => {
       expect(flags.get("--json"), script).toBe(true);
       expect([...flags.keys()], script).not.toContain("--");
     }
-    expect(() => parseReleaseFlags([
-      "--candidate-dir", "/external/candidate",
-      "--target-version", "next",
-      "--source-commit", "commit",
-    ], prepareStable)).toThrow("unexpected argument '--candidate-dir'");
+    expect(() => parseReleaseFlags(["--candidate-dir", "/external/candidate", "--target-version", "next", "--source-commit", "commit"], prepareStable)).toThrow("unexpected argument '--candidate-dir'");
   });
 });

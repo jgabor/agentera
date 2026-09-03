@@ -1,19 +1,5 @@
-import {
-  buildUpgradePlan,
-  renderUpgradePlan,
-  sortKeysDeep,
-  upgradeExitCode,
-  validateUpgradeApply,
-  type UpgradeOrchestratorArgs,
-  type UpgradeOnlyPhase,
-} from "../../upgrade/upgradeOrchestrator.js";
-import {
-  renderVerifySummary,
-  verifyOneWayUpgrade,
-  verifyUpgrade,
-  type OneWayUpgradeVerification,
-  type VerifyContext,
-} from "./upgradeVerify.js";
+import { buildUpgradePlan, renderUpgradePlan, sortKeysDeep, upgradeExitCode, validateUpgradeApply, type UpgradeOrchestratorArgs, type UpgradeOnlyPhase } from "../../upgrade/upgradeOrchestrator.js";
+import { renderVerifySummary, verifyOneWayUpgrade, verifyUpgrade, type OneWayUpgradeVerification, type VerifyContext } from "./upgradeVerify.js";
 import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
@@ -69,13 +55,8 @@ function toVerifyContext(args: UpgradeArgs): VerifyContext {
   };
 }
 
-function renderOneWayResult(
-  verification: OneWayUpgradeVerification,
-  applyPassed: boolean,
-  json: boolean,
-): string {
-  const verificationPassed = verification.state_validation.status === "passed"
-    && verification.startup_validation.status === "passed";
+function renderOneWayResult(verification: OneWayUpgradeVerification, applyPassed: boolean, json: boolean): string {
+  const verificationPassed = verification.state_validation.status === "passed" && verification.startup_validation.status === "passed";
   const result = {
     phase: applyPassed ? (verificationPassed ? "complete" : "verification") : "apply",
     startup_validation: verification.startup_validation,
@@ -83,9 +64,7 @@ function renderOneWayResult(
     status: applyPassed && verificationPassed ? "success" : "failed",
   };
   if (json) return JSON.stringify(result, null, 2) + "\n";
-  return result.status === "success"
-    ? "Agentera upgraded this project from v2 to v3; state and startup validation passed.\n"
-    : "Agentera could not verify the v2-to-v3 upgrade.\n";
+  return result.status === "success" ? "Agentera upgraded this project from v2 to v3; state and startup validation passed.\n" : "Agentera could not verify the v2-to-v3 upgrade.\n";
 }
 
 function entityAuthorityConfirmedActive(project: string): boolean {
@@ -103,18 +82,17 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
 
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
-    const result = args.yes
-      ? applyProductV1Reset(options, args.authorization ?? "")
-      : previewProductV1Reset(options);
+    const result = args.yes ? applyProductV1Reset(options, args.authorization ?? "") : previewProductV1Reset(options);
     if (args.format === "json") out(JSON.stringify(result, null, 2) + "\n");
     else if ("deletions" in result) {
       const lines = ["Product-v1 reset preview (no mutation)", `Authorization: ${result.authorization}`, "Roots:"];
       for (const [name, root] of Object.entries(result.roots)) lines.push(`  ${name}: ${root}`);
       lines.push("Deletions:");
-      for (const item of result.deletions) for (const target of item.targets) {
-        lines.push(`  ${item.id}: ${target.path ?? target.declared}${target.selector ? ` (${target.selector.kind}:${target.selector.value})` : ""}`);
-        for (const entry of target.entries ?? []) lines.push(`    ${entry.type}: ${entry.path}`);
-      }
+      for (const item of result.deletions)
+        for (const target of item.targets) {
+          lines.push(`  ${item.id}: ${target.path ?? target.declared}${target.selector ? ` (${target.selector.kind}:${target.selector.value})` : ""}`);
+          for (const entry of target.entries ?? []) lines.push(`    ${entry.type}: ${entry.path}`);
+        }
       lines.push("Recreations:");
       for (const item of result.recreations) for (const target of item.targets) lines.push(`  ${item.id}: ${target.declared} under ${item.root}`);
       lines.push("Irreversible loss:", ...result.irreversible_loss.map((loss) => `  ${loss}`));
@@ -124,11 +102,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   if (orchestratorArgs.runtime) {
-    err(
-      `upgrade error: --runtime ${orchestratorArgs.runtime} is retired; Agentera now uses the shared skill at ` +
-      "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun. " +
-      "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.\n",
-    );
+    err(`upgrade error: --runtime ${orchestratorArgs.runtime} is retired; Agentera now uses the shared skill at ` + "~/.agents/skills/agentera plus the CLI. Remove --runtime and rerun. " + "For explicit Agentera-owned native resource cleanup, use --legacy-cleanup RESOURCE_ID.\n");
     return 2;
   }
 
@@ -142,11 +116,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     return 2;
   }
 
-  if (
-    orchestratorArgs.legacyCleanup
-    && orchestratorArgs.only
-    && orchestratorArgs.only.length > 0
-  ) {
+  if (orchestratorArgs.legacyCleanup && orchestratorArgs.only && orchestratorArgs.only.length > 0) {
     err("upgrade error: --only cannot be combined with --legacy-cleanup; cleanup preview must include the complete app phase\n");
     return 2;
   }
@@ -156,9 +126,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     return 2;
   }
 
-  if (args.verify && !orchestratorArgs.yes && (
-    orchestratorArgs.legacyCleanup
-  )) {
+  if (args.verify && !orchestratorArgs.yes && orchestratorArgs.legacyCleanup) {
     err("upgrade error: legacy cleanup with --verify requires --yes; preview cleanup with --dry-run instead\n");
     return 2;
   }
@@ -180,9 +148,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   try {
     if (orchestratorArgs.yes) {
       const preview = buildUpgradePlan({ ...orchestratorArgs, yes: false });
-      fullEntityCutoverApply = !orchestratorArgs.only && (preview.crossMajorBoundary || preview.phases.some((phase) =>
-        phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending"),
-      ));
+      fullEntityCutoverApply = !orchestratorArgs.only && (preview.crossMajorBoundary || preview.phases.some((phase) => phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending")));
       const applyError = validateUpgradeApply(orchestratorArgs, preview);
       if (applyError) {
         if (preview.crossMajorBoundary) {
@@ -217,8 +183,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     const applyExit = upgradeExitCode(plan);
     const verification = (dependencies.verifyOneWayUpgrade ?? verifyOneWayUpgrade)(toVerifyContext(args));
     const authorityActive = entityAuthorityConfirmedActive(plan.project);
-    const verificationPassed = verification.state_validation.status === "passed"
-      && verification.startup_validation.status === "passed";
+    const verificationPassed = verification.state_validation.status === "passed" && verification.startup_validation.status === "passed";
     out(renderOneWayResult(verification, applyExit === 0 && authorityActive, (args.format ?? "text") === "json"));
     if (applyExit !== 0 || !authorityActive || !verificationPassed) {
       if (!authorityActive) {

@@ -11,12 +11,7 @@ import { parseReleaseFlags } from "./release-arguments.mjs";
 import { classifyDevelopmentPublication } from "./development-publication-state.mjs";
 
 const CLASSIFICATION_SCHEMA = "agentera.developmentPublicationClassification.v1";
-const PUBLICATION_OUTCOMES = new Set([
-  "exact-replay",
-  "superseded-replay",
-  "forward-publish",
-  "forward-retag",
-]);
+const PUBLICATION_OUTCOMES = new Set(["exact-replay", "superseded-replay", "forward-publish", "forward-retag"]);
 
 function run(command, args, options = {}) {
   const result = spawnSync(command, args, {
@@ -37,18 +32,12 @@ function run(command, args, options = {}) {
 function requireCredentialFreeCoordinatorEnvironment(environment) {
   const hasCredentials = Object.keys(environment).some((key) => {
     const normalized = key.toUpperCase();
-    return normalized === "NPM_TOKEN"
-      || normalized === "NODE_AUTH_TOKEN"
-      || (normalized.startsWith("NPM_CONFIG_") && /(?:AUTH|USERCONFIG|GLOBALCONFIG)/.test(normalized));
+    return normalized === "NPM_TOKEN" || normalized === "NODE_AUTH_TOKEN" || (normalized.startsWith("NPM_CONFIG_") && /(?:AUTH|USERCONFIG|GLOBALCONFIG)/.test(normalized));
   });
   if (hasCredentials) throw new Error("development publication coordinator environment contains npm credentials or auth configuration");
 }
 
-const OIDC_ENVIRONMENT_KEYS = [
-  "ACTIONS_ID_TOKEN_REQUEST_URL",
-  "ACTIONS_ID_TOKEN_REQUEST_TOKEN",
-  "GITHUB_ACTIONS",
-];
+const OIDC_ENVIRONMENT_KEYS = ["ACTIONS_ID_TOKEN_REQUEST_URL", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "GITHUB_ACTIONS"];
 
 function isolatedNpmEnvironment(root, environment = process.env, preserveOidc = false) {
   fs.mkdirSync(root, { recursive: true, mode: 0o700 });
@@ -73,9 +62,7 @@ function isolatedNpmEnvironment(root, environment = process.env, preserveOidc = 
 }
 
 function requireTrustedPublishingEnvironment(environment) {
-  if (environment.GITHUB_ACTIONS !== "true"
-    || !environment.ACTIONS_ID_TOKEN_REQUEST_URL?.trim()
-    || !environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()) {
+  if (environment.GITHUB_ACTIONS !== "true" || !environment.ACTIONS_ID_TOKEN_REQUEST_URL?.trim() || !environment.ACTIONS_ID_TOKEN_REQUEST_TOKEN?.trim()) {
     throw new Error("forward npm publish requires GitHub Actions Trusted Publishing: GITHUB_ACTIONS=true and non-empty ACTIONS_ID_TOKEN_REQUEST_URL and ACTIONS_ID_TOKEN_REQUEST_TOKEN");
   }
 }
@@ -113,15 +100,10 @@ function inspectDevelopmentRegistry(candidate, view, root, environment) {
 
 function requireDevelopmentClassification(value) {
   const expectedKeys = ["gitRef", "integrity", "outcome", "package", "schemaVersion", "version"];
-  if (!value || typeof value !== "object" || Array.isArray(value)
-    || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(expectedKeys)) {
+  if (!value || typeof value !== "object" || Array.isArray(value) || JSON.stringify(Object.keys(value).sort()) !== JSON.stringify(expectedKeys)) {
     throw new Error("invalid development publication classification");
   }
-  if (value.schemaVersion !== CLASSIFICATION_SCHEMA || value.package !== "agentera"
-    || !PUBLICATION_OUTCOMES.has(value.outcome)
-    || !/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(value.version)
-    || !/^[0-9a-f]{40}$/.test(value.gitRef)
-    || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(value.integrity)) {
+  if (value.schemaVersion !== CLASSIFICATION_SCHEMA || value.package !== "agentera" || !PUBLICATION_OUTCOMES.has(value.outcome) || !/^3\.0\.0-dev\.(?:0|[1-9]\d*)$/.test(value.version) || !/^[0-9a-f]{40}$/.test(value.gitRef) || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(value.integrity)) {
     throw new Error("invalid development publication classification");
   }
   return value;
@@ -129,7 +111,11 @@ function requireDevelopmentClassification(value) {
 
 export function writeDevelopmentClassification(file, classification) {
   const value = requireDevelopmentClassification(classification);
-  fs.writeFileSync(file, `${JSON.stringify(value)}\n`, { encoding: "utf8", mode: 0o600, flag: "wx" });
+  fs.writeFileSync(file, `${JSON.stringify(value)}\n`, {
+    encoding: "utf8",
+    mode: 0o600,
+    flag: "wx",
+  });
 }
 
 export function readDevelopmentClassification(file) {
@@ -199,8 +185,7 @@ export function mutateDevelopmentTarball(options, classification, dependencies =
     requireCredentialFreeCoordinatorEnvironment(environment);
     const value = requireDevelopmentClassification(classification);
     if (!value.outcome.startsWith("forward-")) throw new Error("classification does not authorize npm mutation");
-    if (value.version !== options.packageVersion || value.gitRef !== options.gitRef
-      || value.integrity !== tarballIntegrity(options.tarball)) {
+    if (value.version !== options.packageVersion || value.gitRef !== options.gitRef || value.integrity !== tarballIntegrity(options.tarball)) {
       throw new Error("classification does not match the exact tarball, version, and git ref");
     }
     const view = dependencies.view ?? npmView;
@@ -215,12 +200,10 @@ export function mutateDevelopmentTarball(options, classification, dependencies =
       throw new Error("Trusted Publishing OIDC does not authorize npm dist-tag. Recover with interactive npm 2FA or publish a later forward version");
     }
     requireTrustedPublishingEnvironment(environment);
-    const mutationEnv = isolatedNpmEnvironment(
-      fs.mkdtempSync(path.join(root, "mutation-")),
-      environment,
-      true,
-    );
-    execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], { env: mutationEnv });
+    const mutationEnv = isolatedNpmEnvironment(fs.mkdtempSync(path.join(root, "mutation-")), environment, true);
+    execute("npm", ["publish", options.tarball, "--access", "public", "--tag", "next", "--ignore-scripts"], {
+      env: mutationEnv,
+    });
     return state;
   } finally {
     if (root) fs.rmSync(root, { recursive: true, force: true });
@@ -230,7 +213,9 @@ export function mutateDevelopmentTarball(options, classification, dependencies =
 if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) {
   const [command] = process.argv.slice(2);
   if (!["validate", "classify", "mutate"].includes(command)) throw new Error("usage: publish-development.mjs <validate|classify|mutate> --tarball FILE --package-version VERSION --git-ref SHA [--classification FILE]");
-  const flags = parseReleaseFlags(process.argv.slice(3), { value: ["--tarball", "--package-version", "--git-ref", "--classification"] });
+  const flags = parseReleaseFlags(process.argv.slice(3), {
+    value: ["--tarball", "--package-version", "--git-ref", "--classification"],
+  });
   const options = {
     tarball: path.resolve(flags.get("--tarball") ?? ""),
     packageVersion: flags.get("--package-version"),

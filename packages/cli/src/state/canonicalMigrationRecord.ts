@@ -5,12 +5,7 @@ function mapping(value: unknown): value is JsonObject {
 }
 
 /** Apply the authority-owned legacy-to-canonical field removal and relationship mapping. */
-export function canonicalMigrationRecord(
-  boundary: string,
-  source: JsonObject,
-  forbiddenAliases: readonly string[],
-  relationships: Array<{ field: string; target_id: string | null }> = [],
-): JsonObject {
+export function canonicalMigrationRecord(boundary: string, source: JsonObject, forbiddenAliases: readonly string[], relationships: Array<{ field: string; target_id: string | null }> = []): JsonObject {
   const record = structuredClone(source);
   for (const field of ["id", "artifact", "number", ...forbiddenAliases]) delete record[field];
   if (boundary === "decision") delete record.satisfaction;

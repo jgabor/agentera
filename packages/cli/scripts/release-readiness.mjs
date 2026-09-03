@@ -6,14 +6,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { parseReleaseFlags } from "./release-arguments.mjs";
-import {
-  checkSourceReceipt,
-  issueCandidateReceipt,
-  issueSourceReceipt,
-  RELEASE_CONTRACT,
-  RELEASE_MODEL,
-  validateCandidateReceipt,
-} from "./release-qualification.mjs";
+import { checkSourceReceipt, issueCandidateReceipt, issueSourceReceipt, RELEASE_CONTRACT, RELEASE_MODEL, validateCandidateReceipt } from "./release-qualification.mjs";
 
 const scriptDirectory = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(scriptDirectory, "../../..");
@@ -38,11 +31,13 @@ function git(repo, args) {
 }
 
 function commitExists(repo, commit) {
-  return spawnSync("git", ["cat-file", "-e", `${commit}^{commit}`], {
-    cwd: repo,
-    env: process.env,
-    stdio: "ignore",
-  }).status === 0;
+  return (
+    spawnSync("git", ["cat-file", "-e", `${commit}^{commit}`], {
+      cwd: repo,
+      env: process.env,
+      stdio: "ignore",
+    }).status === 0
+  );
 }
 
 function readDevelopmentManifest(repo) {
@@ -81,10 +76,7 @@ function validateRequest(request, repo) {
   if (!commitExists(repo, request.sourceCommit)) {
     throw new Error("source commit does not name an existing immutable commit");
   }
-  if (
-    request.metadataCommit !== undefined
-    && (typeof request.metadataCommit !== "string" || !/^[0-9a-f]{40}$/.test(request.metadataCommit))
-  ) {
+  if (request.metadataCommit !== undefined && (typeof request.metadataCommit !== "string" || !/^[0-9a-f]{40}$/.test(request.metadataCommit))) {
     throw new Error("--metadata-commit must be an explicit 40-character commit SHA");
   }
   if (request.metadataCommit !== undefined && !commitExists(repo, request.metadataCommit)) {
@@ -97,9 +89,7 @@ function redact(value, request, repo) {
   for (const privatePath of [repo, request?.candidateDirectory, os.homedir()].filter(Boolean)) {
     diagnostic = diagnostic.replaceAll(String(privatePath), privatePath === repo ? "<repository>" : "<private>");
   }
-  return diagnostic
-    .replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>")
-    .slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  return diagnostic.replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>").slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
 }
 
 function initialExecution() {
@@ -125,13 +115,8 @@ function result(request, values = {}) {
     executed: "none",
     reused: false,
   };
-  const executed = execution.sourceQualificationInvocations > 0
-    ? "source-qualification"
-    : execution.candidateQualificationInvocations > 0
-      ? "candidate-qualification"
-      : "none";
-  const reused = source.reused === true
-    && (candidate.status.startsWith("blocked") || candidate.reused === true);
+  const executed = execution.sourceQualificationInvocations > 0 ? "source-qualification" : execution.candidateQualificationInvocations > 0 ? "candidate-qualification" : "none";
+  const reused = source.reused === true && (candidate.status.startsWith("blocked") || candidate.reused === true);
   return {
     schemaVersion: READINESS_CONTRACT.schemaVersion,
     package: READINESS_CONTRACT.adapter,
@@ -259,12 +244,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
       if (candidatePresent) {
         throw new Error("package evidence requires an explicit reviewed metadata commit");
       }
-      return metadataPause(
-        request,
-        source,
-        execution,
-        clock() - started,
-      );
+      return metadataPause(request, source, execution, clock() - started);
     }
 
     if (git(repo, ["rev-parse", "HEAD"]) !== request.metadataCommit) {
@@ -374,13 +354,16 @@ async function main() {
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     const json = process.argv.includes("--json");
-    const value = result({}, {
-      outcome: "rejected",
-      state: "rejected",
-      phase: "usage",
-      detail: redact(error instanceof Error ? error.message : error, {}, REPO_ROOT),
-      nextAction: USAGE,
-    });
+    const value = result(
+      {},
+      {
+        outcome: "rejected",
+        state: "rejected",
+        phase: "usage",
+        detail: redact(error instanceof Error ? error.message : error, {}, REPO_ROOT),
+        nextAction: USAGE,
+      },
+    );
     emitReadinessResult(value, json);
     process.stderr.write(`release-readiness: ${value.detail}\n`);
     process.exitCode = READINESS_CONTRACT.exitCodes.rejected;

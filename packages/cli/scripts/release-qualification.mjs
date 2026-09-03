@@ -14,12 +14,7 @@ import { parseReleaseFlags } from "./release-arguments.mjs";
 import "./source-loader-register.mjs";
 
 const { loadPackagePublicationModel } = await import("../src/registries/packagePublication.ts");
-const {
-  PACKAGE_SNAPSHOT_DIRECTORY,
-  PACKAGE_SNAPSHOT_SCHEMA,
-  activationPackageIdentityViolations,
-  removeRetainedPackageSnapshot,
-} = await import("../src/validate/activationArtifactEvidence.ts");
+const { PACKAGE_SNAPSHOT_DIRECTORY, PACKAGE_SNAPSHOT_SCHEMA, activationPackageIdentityViolations, removeRetainedPackageSnapshot } = await import("../src/validate/activationArtifactEvidence.ts");
 
 const scriptDir = path.dirname(fileURLToPath(import.meta.url));
 export const REPO_ROOT = path.resolve(scriptDir, "../../..");
@@ -32,10 +27,7 @@ const ARTIFACT_MODE = Number.parseInt(RELEASE_CONTRACT.qualification.candidate.r
 export function validateDevelopmentCiCandidateBinding(options = {}) {
   const environment = options.environment ?? process.env;
   const expected = publicationWorkflowIdentity("development");
-  const contractedCi = environment.GITHUB_ACTIONS === "true"
-    && environment.GITHUB_REPOSITORY === expected.repository
-    && environment.GITHUB_WORKFLOW === expected.workflow
-    && environment.GITHUB_WORKFLOW_REF === expected.workflowRef;
+  const contractedCi = environment.GITHUB_ACTIONS === "true" && environment.GITHUB_REPOSITORY === expected.repository && environment.GITHUB_WORKFLOW === expected.workflow && environment.GITHUB_WORKFLOW_REF === expected.workflowRef;
   if (options.adapterName !== "development" || !contractedCi) return;
   assertQualificationWorkflowEnvironment(environment, "development");
   if (options.sourceCommit !== environment.GITHUB_SHA) {
@@ -49,7 +41,11 @@ export function validateDevelopmentCiCandidateBinding(options = {}) {
 function canonical(value) {
   if (Array.isArray(value)) return value.map(canonical);
   if (value && typeof value === "object") {
-    return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonical(value[key])]));
+    return Object.fromEntries(
+      Object.keys(value)
+        .sort()
+        .map((key) => [key, canonical(value[key])]),
+    );
   }
   return value;
 }
@@ -92,9 +88,7 @@ function redact(value, candidateDirectory) {
   for (const privatePath of [REPO_ROOT, candidateDirectory, os.homedir()].filter(Boolean)) {
     text = text.replaceAll(privatePath, privatePath === REPO_ROOT ? "<repository>" : "<private>");
   }
-  return text
-    .replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>")
-    .slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  return text.replace(/(?:NPM_TOKEN|NODE_AUTH_TOKEN)=\S+/g, "$1=<redacted>").slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters);
 }
 
 function requireArgument(argumentsMap, name) {
@@ -137,9 +131,7 @@ function readManifest(adapterName, repo = REPO_ROOT) {
 }
 
 function packageManifestSourceBytes(repo = REPO_ROOT, bytes) {
-  const manifest = bytes
-    ? JSON.parse(bytes.toString("utf8"))
-    : readManifest("development", repo);
+  const manifest = bytes ? JSON.parse(bytes.toString("utf8")) : readManifest("development", repo);
   delete manifest.version;
   if (manifest.agentera) delete manifest.agentera.gitRef;
   return Buffer.from(canonicalJson(manifest));
@@ -161,16 +153,12 @@ function trackedSourceHash(repo = REPO_ROOT) {
   return gitSourceTreeDigest(repo, {
     source: "index",
     label: "release source identity",
-    transformBytes: (relative, bytes) => relative === "packages/cli/package.json"
-      ? packageManifestSourceBytes(repo, bytes)
-      : bytes,
+    transformBytes: (relative, bytes) => (relative === "packages/cli/package.json" ? packageManifestSourceBytes(repo, bytes) : bytes),
   }).sha256;
 }
 
 function assertStagedSourceMatchesWorking(repo) {
-  const transformBytes = (relative, bytes) => relative === "packages/cli/package.json"
-    ? packageManifestSourceBytes(repo, bytes)
-    : bytes;
+  const transformBytes = (relative, bytes) => (relative === "packages/cli/package.json" ? packageManifestSourceBytes(repo, bytes) : bytes);
   const staged = gitSourceTreeDigest(repo, {
     source: "index",
     label: "release staged source identity",
@@ -181,21 +169,18 @@ function assertStagedSourceMatchesWorking(repo) {
     transformBytes,
   });
   if (staged.sha256 === working.sha256) return;
-  if (
-    !packageManifestSourceBytes(repo).equals(
-      packageManifestSourceBytes(repo, stagedSourceBytes(repo, "packages/cli/package.json")),
-    )
-  ) {
+  if (!packageManifestSourceBytes(repo).equals(packageManifestSourceBytes(repo, stagedSourceBytes(repo, "packages/cli/package.json")))) {
     throw new Error("staged and working package inputs differ outside version and agentera.gitRef");
   }
   throw new Error("staged and working source inputs differ");
 }
 
 export function toolVersion(command, args = ["--version"], repo = REPO_ROOT, options = {}) {
-  const state = isolatedNpmState("agentera-release-tool-version-", { environment: options.environment });
+  const state = isolatedNpmState("agentera-release-tool-version-", {
+    environment: options.environment,
+  });
   try {
-    return (options.run ?? run)(command, args, { cwd: repo, env: state.environment })
-      .split(/\s+/)[0];
+    return (options.run ?? run)(command, args, { cwd: repo, env: state.environment }).split(/\s+/)[0];
   } finally {
     fs.rmSync(state.root, { recursive: true, force: true });
   }
@@ -220,9 +205,18 @@ export function sourceComponentIdentity(options = {}) {
   const lockPath = path.join(repo, "pnpm-lock.yaml");
   const probeToolVersion = options.probeToolVersion ?? toolVersion;
   const toolchain = options.toolchain ?? {
-    node: probeToolVersion(process.execPath, ["--version"], repo, { run: options.probeRun, environment: options.environment }),
-    npm: probeToolVersion("npm", ["--version"], repo, { run: options.probeRun, environment: options.environment }),
-    pnpm: probeToolVersion("pnpm", ["--version"], repo, { run: options.probeRun, environment: options.environment }),
+    node: probeToolVersion(process.execPath, ["--version"], repo, {
+      run: options.probeRun,
+      environment: options.environment,
+    }),
+    npm: probeToolVersion("npm", ["--version"], repo, {
+      run: options.probeRun,
+      environment: options.environment,
+    }),
+    pnpm: probeToolVersion("pnpm", ["--version"], repo, {
+      run: options.probeRun,
+      environment: options.environment,
+    }),
   };
   const inputs = {
     component: RELEASE_CONTRACT.qualification.source.component,
@@ -359,12 +353,7 @@ function isGovernedParticipantCommand(name, command, governed, buildRoot) {
   if (name !== "build") return canonicalJson(command) === canonicalJson(governed);
   if (!Array.isArray(command) || canonicalJson(command.slice(0, governed.length)) !== canonicalJson(governed)) return false;
   const suffix = command.slice(governed.length);
-  return suffix.length === 3
-    && suffix[0] === "--"
-    && suffix[1] === "--output-root"
-    && typeof suffix[2] === "string"
-    && suffix[2].length > 0
-    && (buildRoot === undefined || suffix[2] === buildRoot);
+  return suffix.length === 3 && suffix[0] === "--" && suffix[1] === "--output-root" && typeof suffix[2] === "string" && suffix[2].length > 0 && (buildRoot === undefined || suffix[2] === buildRoot);
 }
 
 function sourceProcessFailure(name, detail, status) {
@@ -375,12 +364,7 @@ function sourceProcessFailure(name, detail, status) {
 }
 
 function sourceDiagnostic(value) {
-  return String(value)
-    .replaceAll(REPO_ROOT, "<repository>")
-    .replaceAll(os.homedir(), "<home>")
-    .replaceAll(os.tmpdir(), "<tmp>")
-    .trim()
-    .slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  return String(value).replaceAll(REPO_ROOT, "<repository>").replaceAll(os.homedir(), "<home>").replaceAll(os.tmpdir(), "<tmp>").trim().slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
 }
 
 function killProcessGroup(child, signal) {
@@ -436,11 +420,14 @@ function defaultStartSourceOwner(specification) {
       if (!closed) killProcessGroup(child, "SIGKILL");
     }, 2000);
   };
-  const timeout = setTimeout(() => {
-    timedOut = true;
-    if (specification.cancellable) cancel();
-    else if (specification.cooperativeStop) requestCooperativeStop(child);
-  }, Math.max(1, specification.timeoutMs));
+  const timeout = setTimeout(
+    () => {
+      timedOut = true;
+      if (specification.cancellable) cancel();
+      else if (specification.cooperativeStop) requestCooperativeStop(child);
+    },
+    Math.max(1, specification.timeoutMs),
+  );
   const promise = new Promise((resolve, reject) => {
     child.on("error", (error) => {
       reject(sourceProcessFailure(specification.name, error.message, cancelled ? "cancelled" : "failed"));
@@ -452,19 +439,11 @@ function defaultStartSourceOwner(specification) {
       stream.end();
       const elapsedMs = Math.max(0, Math.round(performance.now() - started));
       if (timedOut) {
-        reject(sourceProcessFailure(
-          specification.name,
-          `${specification.name} exceeded the source verification deadline`,
-          "failed",
-        ));
+        reject(sourceProcessFailure(specification.name, `${specification.name} exceeded the source verification deadline`, "failed"));
       } else if (cancelled) {
         reject(sourceProcessFailure(specification.name, `${specification.name} cancelled after peer failure`, "cancelled"));
       } else if (code !== 0) {
-        reject(sourceProcessFailure(
-          specification.name,
-          sourceDiagnostic(stderr || stdout || `exit ${code ?? signal ?? "unknown"}`),
-          "failed",
-        ));
+        reject(sourceProcessFailure(specification.name, sourceDiagnostic(stderr || stdout || `exit ${code ?? signal ?? "unknown"}`), "failed"));
       } else {
         resolve({ name: specification.name, elapsedMs, stdout, stderr });
       }
@@ -482,44 +461,48 @@ function normalizedOwnerFailure(handle, error) {
 }
 
 async function runConcurrentSourceOwners(specifications, options = {}) {
-  const createState = options.createState ?? ((name) => {
-    const state = isolatedNpmState(`agentera-release-${name}-`, {
-      environment: options.environment,
-      ignoreScripts: false,
+  const createState =
+    options.createState ??
+    ((name) => {
+      const state = isolatedNpmState(`agentera-release-${name}-`, {
+        environment: options.environment,
+        ignoreScripts: false,
+      });
+      return { ...state, cleanup: () => fs.rmSync(state.root, { recursive: true, force: true }) };
     });
-    return { ...state, cleanup: () => fs.rmSync(state.root, { recursive: true, force: true }) };
-  });
   const startOwner = options.startOwner ?? defaultStartSourceOwner;
   const states = specifications.map((specification) => createState(specification.name));
-  const handles = specifications.map((specification, index) => startOwner({
-    ...specification,
-    environment: { ...states[index].environment, ...specification.environment },
-    reportFile: path.join(states[index].root, "owner-report.log"),
-  }));
+  const handles = specifications.map((specification, index) =>
+    startOwner({
+      ...specification,
+      environment: { ...states[index].environment, ...specification.environment },
+      reportFile: path.join(states[index].root, "owner-report.log"),
+    }),
+  );
   let firstFailure;
   try {
-    const settled = await Promise.all(handles.map((handle) => handle.promise.then(
-      (value) => ({ status: "passed", value }),
-      (error) => {
-        const failure = normalizedOwnerFailure(handle, error);
-        if (!firstFailure) {
-          firstFailure = failure;
-          for (const peer of handles) {
-            if (peer !== handle && peer.cancellable) peer.cancel();
-          }
-        }
-        return { status: "failed", failure };
-      },
-    )));
+    const settled = await Promise.all(
+      handles.map((handle) =>
+        handle.promise.then(
+          (value) => ({ status: "passed", value }),
+          (error) => {
+            const failure = normalizedOwnerFailure(handle, error);
+            if (!firstFailure) {
+              firstFailure = failure;
+              for (const peer of handles) {
+                if (peer !== handle && peer.cancellable) peer.cancel();
+              }
+            }
+            return { status: "failed", failure };
+          },
+        ),
+      ),
+    );
     if (firstFailure) {
       const failures = settled.filter((entry) => entry.status === "failed").map((entry) => entry.failure);
       const completed = settled.filter((entry) => entry.status === "passed").map((entry) => entry.value.name);
       const summary = failures.map((failure) => `${failure.name}:${failure.status}`).join(", ");
-      const error = sourceProcessFailure(
-        firstFailure.name,
-        `${firstFailure.name}: ${firstFailure.detail}; settled failures: ${summary}; completed: ${completed.join(", ") || "none"}`,
-        firstFailure.status,
-      );
+      const error = sourceProcessFailure(firstFailure.name, `${firstFailure.name}: ${firstFailure.detail}; settled failures: ${summary}; completed: ${completed.join(", ") || "none"}`, firstFailure.status);
       error.firstFailure = firstFailure;
       error.failures = failures;
       error.completed = completed;
@@ -539,54 +522,48 @@ function validateOverlapEvidence(evidence, gates) {
     throw sourceProcessFailure("generated-overlap", "generated-overlap source identity is incomplete", "failed");
   }
   if (
-    evidence.schemaVersion !== schema
-    || evidence.status !== "pass"
-    || evidence.reader?.observed !== true
-    || evidence.reader?.all_observations_complete !== true
-    || evidence.reader?.identity_mismatches !== 0
-    || evidence.reader?.surface_validation_failures !== 0
-    || typeof evidence.generation !== "string"
-    || typeof evidence.build_root !== "string"
-    || evidence.activation_evidence?.checks !== RELEASE_MODEL.activationConjunction.checkIds.length
-    || !/^[0-9a-f]{64}$/.test(evidence.activation_evidence?.digest ?? "")
-    || evidence.activation_evidence?.path !== `private-build/${evidence.generation}/activation-evidence.json`
-    || activationPackageIdentityViolations(evidence.activation_evidence?.package_identity).length !== 0
-    || evidence.activation_evidence?.package_snapshot?.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA
-    || evidence.activation_evidence?.package_snapshot?.path !== PACKAGE_SNAPSHOT_DIRECTORY
-    || evidence.activation_evidence?.package_snapshot?.identityDigest !== evidence.activation_evidence?.package_identity?.identityDigest
-    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.source?.digest ?? "")
-    || !/^source-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.source?.path ?? "")
-    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.package?.digest ?? "")
-    || !/^package-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.package?.path ?? "")
-    || evidence.activation_evidence?.child_evidence?.package?.digest !== evidence.activation_evidence?.package_identity?.packageEvidenceDigest
-    || evidence.activation_evidence?.child_evidence?.packageIdentity?.digest !== evidence.activation_evidence?.package_identity?.identityDigest
-    || !/^package-identity-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.packageIdentity?.path ?? "")
-    || !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.generated?.digest ?? "")
-    || evidence.activation_evidence?.child_evidence?.generated?.path !== "embedded:generated-owner"
-    || !["source", "package", "stress", "performance", "capacity"].every(
-      (name) => Number.isInteger(evidence.inventory?.[name]) && evidence.inventory[name] >= 0,
-    )
+    evidence.schemaVersion !== schema ||
+    evidence.status !== "pass" ||
+    evidence.reader?.observed !== true ||
+    evidence.reader?.all_observations_complete !== true ||
+    evidence.reader?.identity_mismatches !== 0 ||
+    evidence.reader?.surface_validation_failures !== 0 ||
+    typeof evidence.generation !== "string" ||
+    typeof evidence.build_root !== "string" ||
+    evidence.activation_evidence?.checks !== RELEASE_MODEL.activationConjunction.checkIds.length ||
+    !/^[0-9a-f]{64}$/.test(evidence.activation_evidence?.digest ?? "") ||
+    evidence.activation_evidence?.path !== `private-build/${evidence.generation}/activation-evidence.json` ||
+    activationPackageIdentityViolations(evidence.activation_evidence?.package_identity).length !== 0 ||
+    evidence.activation_evidence?.package_snapshot?.schemaVersion !== PACKAGE_SNAPSHOT_SCHEMA ||
+    evidence.activation_evidence?.package_snapshot?.path !== PACKAGE_SNAPSHOT_DIRECTORY ||
+    evidence.activation_evidence?.package_snapshot?.identityDigest !== evidence.activation_evidence?.package_identity?.identityDigest ||
+    !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.source?.digest ?? "") ||
+    !/^source-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.source?.path ?? "") ||
+    !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.package?.digest ?? "") ||
+    !/^package-owner-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.package?.path ?? "") ||
+    evidence.activation_evidence?.child_evidence?.package?.digest !== evidence.activation_evidence?.package_identity?.packageEvidenceDigest ||
+    evidence.activation_evidence?.child_evidence?.packageIdentity?.digest !== evidence.activation_evidence?.package_identity?.identityDigest ||
+    !/^package-identity-[a-f0-9]{64}\.json$/.test(evidence.activation_evidence?.child_evidence?.packageIdentity?.path ?? "") ||
+    !/^[a-f0-9]{64}$/.test(evidence.activation_evidence?.child_evidence?.generated?.digest ?? "") ||
+    evidence.activation_evidence?.child_evidence?.generated?.path !== "embedded:generated-owner" ||
+    !["source", "package", "stress", "performance", "capacity"].every((name) => Number.isInteger(evidence.inventory?.[name]) && evidence.inventory[name] >= 0)
   ) {
     throw sourceProcessFailure("generated-overlap", "generated-overlap evidence is incomplete", "failed");
   }
   for (const name of OVERLAP_PARTICIPANTS) {
     const participant = evidence.participants?.[name];
-    if (
-      !isGovernedParticipantCommand(name, participant?.command, gates.get(name).command, evidence.build_root)
-      || !Number.isFinite(participant?.elapsedMs)
-      || participant.elapsedMs < 0
-    ) {
+    if (!isGovernedParticipantCommand(name, participant?.command, gates.get(name).command, evidence.build_root) || !Number.isFinite(participant?.elapsedMs) || participant.elapsedMs < 0) {
       throw sourceProcessFailure("generated-overlap", `generated-overlap did not execute the exact ${name} command`, "failed");
     }
   }
   if (
-    evidence.participants.source.files !== evidence.inventory.source
-    || evidence.participants.package.files !== evidence.inventory.package
-    || !Number.isInteger(evidence.participants.source.tests)
-    || !Number.isInteger(evidence.participants.package.tests)
-    || !Array.isArray(evidence.participants.source.pending)
-    || !Array.isArray(evidence.participants.package.pending)
-    || evidence.participants.build.status !== "pass"
+    evidence.participants.source.files !== evidence.inventory.source ||
+    evidence.participants.package.files !== evidence.inventory.package ||
+    !Number.isInteger(evidence.participants.source.tests) ||
+    !Number.isInteger(evidence.participants.package.tests) ||
+    !Array.isArray(evidence.participants.source.pending) ||
+    !Array.isArray(evidence.participants.package.pending) ||
+    evidence.participants.build.status !== "pass"
   ) {
     throw sourceProcessFailure("generated-overlap", "generated-overlap inventory or build evidence does not reconcile", "failed");
   }
@@ -632,12 +609,7 @@ function outputObservation(result) {
 }
 
 function isOutputObservation(observation) {
-  return /^[0-9a-f]{64}$/.test(observation?.stdoutSha256 ?? "")
-    && Number.isInteger(observation?.stdoutBytes)
-    && observation.stdoutBytes >= 0
-    && /^[0-9a-f]{64}$/.test(observation?.stderrSha256 ?? "")
-    && Number.isInteger(observation?.stderrBytes)
-    && observation.stderrBytes >= 0;
+  return /^[0-9a-f]{64}$/.test(observation?.stdoutSha256 ?? "") && Number.isInteger(observation?.stdoutBytes) && observation.stdoutBytes >= 0 && /^[0-9a-f]{64}$/.test(observation?.stderrSha256 ?? "") && Number.isInteger(observation?.stderrBytes) && observation.stderrBytes >= 0;
 }
 
 function validateSourceGateRecords(records) {
@@ -652,27 +624,19 @@ function validateSourceGateRecords(records) {
   const capacityOwners = new Set(SOURCE_CAPACITY_BARRIER);
   for (const record of records) {
     const expectedOrigin = overlapOrigins.has(record.name) ? "generated-overlap" : record.name;
-    const expectedPhase = barrierOwners.has(record.name)
-      ? "barrier-b"
-      : performanceOwners.has(record.name)
-        ? "performance-barrier"
-        : capacityOwners.has(record.name)
-          ? "capacity-barrier"
-        : "batch-a";
-    const expectedExecuted = OVERLAP_PARTICIPANTS.includes(record.name)
-      ? "generated-overlap participant"
-      : "command";
+    const expectedPhase = barrierOwners.has(record.name) ? "barrier-b" : performanceOwners.has(record.name) ? "performance-barrier" : capacityOwners.has(record.name) ? "capacity-barrier" : "batch-a";
+    const expectedExecuted = OVERLAP_PARTICIPANTS.includes(record.name) ? "generated-overlap participant" : "command";
     if (
-      record.origin !== expectedOrigin
-      || record.phase !== expectedPhase
-      || record.outcome !== "passed"
-      || !Number.isFinite(record.elapsedMs)
-      || record.elapsedMs < 0
-      || record.executed !== expectedExecuted
-      || record.reused !== false
-      || !record.observation
-      || typeof record.observation !== "object"
-      || Array.isArray(record.observation)
+      record.origin !== expectedOrigin ||
+      record.phase !== expectedPhase ||
+      record.outcome !== "passed" ||
+      !Number.isFinite(record.elapsedMs) ||
+      record.elapsedMs < 0 ||
+      record.executed !== expectedExecuted ||
+      record.reused !== false ||
+      !record.observation ||
+      typeof record.observation !== "object" ||
+      Array.isArray(record.observation)
     ) {
       throw new Error(`source receipt gate '${record.name}' has invalid execution evidence`);
     }
@@ -685,33 +649,27 @@ function validateSourceGateRecords(records) {
         if (observation.status !== "pass" || typeof observation.generation !== "string" || observation.generation.length === 0) {
           throw new Error("source receipt build observation is incomplete");
         }
-      } else if (
-        !Number.isInteger(observation.files)
-        || observation.files < 0
-        || !Number.isInteger(observation.tests)
-        || observation.tests < 0
-        || !Array.isArray(observation.pending)
-      ) {
+      } else if (!Number.isInteger(observation.files) || observation.files < 0 || !Number.isInteger(observation.tests) || observation.tests < 0 || !Array.isArray(observation.pending)) {
         throw new Error(`source receipt gate '${record.name}' inventory observation is incomplete`);
       }
     } else if (record.name === "generated-overlap") {
       validateOverlapEvidence(observation, gateContracts);
     } else if (record.name === "performance") {
       if (
-        !Number.isInteger(observation.inventoryFiles)
-        || observation.inventoryFiles < 0
-        || observation.evidence?.schemaVersion !== RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema
-        || observation.evidence?.status !== "pass"
-        || !/^[0-9a-f]{64}$/.test(observation.evidence?.sha256 ?? "")
-        || !Number.isInteger(observation.evidence?.bytes)
-        || observation.evidence.bytes < 0
-        || !Number.isInteger(observation.evidence?.samples)
-        || observation.evidence.samples < 0
-        || !observation.evidence?.maxima
-        || !observation.evidence?.runner
-        || observation.evidence.runner.authority?.authoritative !== true
-        || typeof observation.evidence.runner.authority?.identity !== "string"
-        || observation.evidence.runner.authority.identity.length === 0
+        !Number.isInteger(observation.inventoryFiles) ||
+        observation.inventoryFiles < 0 ||
+        observation.evidence?.schemaVersion !== RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema ||
+        observation.evidence?.status !== "pass" ||
+        !/^[0-9a-f]{64}$/.test(observation.evidence?.sha256 ?? "") ||
+        !Number.isInteger(observation.evidence?.bytes) ||
+        observation.evidence.bytes < 0 ||
+        !Number.isInteger(observation.evidence?.samples) ||
+        observation.evidence.samples < 0 ||
+        !observation.evidence?.maxima ||
+        !observation.evidence?.runner ||
+        observation.evidence.runner.authority?.authoritative !== true ||
+        typeof observation.evidence.runner.authority?.identity !== "string" ||
+        observation.evidence.runner.authority.identity.length === 0
       ) {
         throw new Error("source receipt performance observation is incomplete");
       }
@@ -746,11 +704,7 @@ function performanceObservation(result, inventoryFiles, requireAuthoritative) {
   }
   const record = records[0];
   if (requireAuthoritative && record.runner?.authority?.authoritative !== true) {
-    throw sourceProcessFailure(
-      "performance",
-      "authoritative performance evidence requires the pinned remote runner identity declared by verification policy",
-      "failed",
-    );
+    throw sourceProcessFailure("performance", "authoritative performance evidence requires the pinned remote runner identity declared by verification policy", "failed");
   }
   return {
     inventoryFiles,
@@ -790,19 +744,25 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   if (batchTimeout <= cleanupMarginMs) {
     throw sourceProcessFailure("full-qualification", "source verification has no safe overlap execution window before its cleanup margin", "failed");
   }
-  const batch = await runConcurrent(SOURCE_BATCH_A.map((name) => ({
-    name,
-    command: gates.get(name).command,
-    repo,
-    timeoutMs: batchTimeout - (name === "generated-overlap" ? cleanupMarginMs : reconciliationMarginMs),
-    cancellable: name !== "generated-overlap",
-    cooperativeStop: name === "generated-overlap",
-    environment: name === "generated-overlap" ? {
-      AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs),
-      AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
-      AGENTERA_GENERATED_OVERLAP_ROOT: overlapRoot,
-    } : undefined,
-  })), common);
+  const batch = await runConcurrent(
+    SOURCE_BATCH_A.map((name) => ({
+      name,
+      command: gates.get(name).command,
+      repo,
+      timeoutMs: batchTimeout - (name === "generated-overlap" ? cleanupMarginMs : reconciliationMarginMs),
+      cancellable: name !== "generated-overlap",
+      cooperativeStop: name === "generated-overlap",
+      environment:
+        name === "generated-overlap"
+          ? {
+              AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs),
+              AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
+              AGENTERA_GENERATED_OVERLAP_ROOT: overlapRoot,
+            }
+          : undefined,
+    })),
+    common,
+  );
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
   const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
   const expectedBuildRoot = path.join(overlapRoot, "private-build", overlap.generation);
@@ -819,20 +779,21 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   if (performanceRemaining <= reconciliationMarginMs) {
     throw sourceProcessFailure("performance", "source verification has no safe performance execution window before reconciliation", "failed");
   }
-  const performanceResult = (await runConcurrent(SOURCE_PERFORMANCE_BARRIER.map((name) => ({
-    name,
-    command: gates.get(name).command,
-    repo,
-    timeoutMs: performanceRemaining - reconciliationMarginMs,
-    cancellable: true,
-    environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
-  })), common)).performance;
+  const performanceResult = (
+    await runConcurrent(
+      SOURCE_PERFORMANCE_BARRIER.map((name) => ({
+        name,
+        command: gates.get(name).command,
+        repo,
+        timeoutMs: performanceRemaining - reconciliationMarginMs,
+        cancellable: true,
+        environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+      })),
+      common,
+    )
+  ).performance;
   const performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
-  const performanceEvidence = performanceObservation(
-    performanceResult,
-    overlap.inventory.performance,
-    options.requireAuthoritativePerformance === true,
-  );
+  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance, options.requireAuthoritativePerformance === true);
   const afterPerformance = readState(repo);
   if (afterPerformance.generation !== afterBatch.generation || afterPerformance.leases.length !== 0) {
     throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
@@ -842,14 +803,19 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   if (capacityRemaining <= reconciliationMarginMs) {
     throw sourceProcessFailure("capacity", "source verification has no safe capacity execution window before reconciliation", "failed");
   }
-  const capacityResult = (await runConcurrent(SOURCE_CAPACITY_BARRIER.map((name) => ({
-    name,
-    command: gates.get(name).command,
-    repo,
-    timeoutMs: capacityRemaining - reconciliationMarginMs,
-    cancellable: true,
-    environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
-  })), common)).capacity;
+  const capacityResult = (
+    await runConcurrent(
+      SOURCE_CAPACITY_BARRIER.map((name) => ({
+        name,
+        command: gates.get(name).command,
+        repo,
+        timeoutMs: capacityRemaining - reconciliationMarginMs,
+        cancellable: true,
+        environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+      })),
+      common,
+    )
+  ).capacity;
   const capacityElapsedMs = Math.max(0, Math.round(clock() - capacityStarted));
   const beforeBarrier = readState(repo);
   if (beforeBarrier.generation !== afterPerformance.generation || beforeBarrier.leases.length !== 0) {
@@ -859,33 +825,30 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   const barrierTimeout = remaining();
   const requiredBarrierWindowMs = Math.max(...SOURCE_BARRIER_B.map((name) => SOURCE_DAG.minimumExecutionWindowMs[name]));
   if (barrierTimeout < requiredBarrierWindowMs + reconciliationMarginMs) {
-    throw sourceProcessFailure(
-      "reader-barrier",
-      `source verification requires ${requiredBarrierWindowMs}ms for barrier B plus ${reconciliationMarginMs}ms reconciliation; ${barrierTimeout}ms remain`,
-      "failed",
-    );
+    throw sourceProcessFailure("reader-barrier", `source verification requires ${requiredBarrierWindowMs}ms for barrier B plus ${reconciliationMarginMs}ms reconciliation; ${barrierTimeout}ms remain`, "failed");
   }
   const freshGenerationRoot = beforeBarrier.root ?? overlap.build_root;
   const freshCli = path.join(freshGenerationRoot, "dist/bin/agentera.js");
   let barrier;
   let barrierFailure;
   try {
-    barrier = await runConcurrent(SOURCE_BARRIER_B.map((name) => ({
-      name,
-      command: gates.get(name).command[0] === "node"
-        ? ["node", freshCli, ...gates.get(name).command.slice(2)]
-        : gates.get(name).command,
-      repo,
-      timeoutMs: Math.max(SOURCE_DAG.minimumExecutionWindowMs[name], barrierTimeout - reconciliationMarginMs),
-      cancellable: true,
-      environment: {
-        AGENTERA_BOOTSTRAP_SOURCE_ROOT: repo,
-        AGENTERA_ACTIVATION_GENERATION_ID: beforeBarrier.generation,
-        AGENTERA_ACTIVATION_GENERATION_ROOT: freshGenerationRoot,
-        AGENTERA_ACTIVATION_EVIDENCE_DIGEST: overlap.activation_evidence.digest,
-        AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(overlap.activation_evidence.package_identity),
-      },
-    })), common);
+    barrier = await runConcurrent(
+      SOURCE_BARRIER_B.map((name) => ({
+        name,
+        command: gates.get(name).command[0] === "node" ? ["node", freshCli, ...gates.get(name).command.slice(2)] : gates.get(name).command,
+        repo,
+        timeoutMs: Math.max(SOURCE_DAG.minimumExecutionWindowMs[name], barrierTimeout - reconciliationMarginMs),
+        cancellable: true,
+        environment: {
+          AGENTERA_BOOTSTRAP_SOURCE_ROOT: repo,
+          AGENTERA_ACTIVATION_GENERATION_ID: beforeBarrier.generation,
+          AGENTERA_ACTIVATION_GENERATION_ROOT: freshGenerationRoot,
+          AGENTERA_ACTIVATION_EVIDENCE_DIGEST: overlap.activation_evidence.digest,
+          AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(overlap.activation_evidence.package_identity),
+        },
+      })),
+      common,
+    );
   } catch (error) {
     barrierFailure = error;
   }
@@ -908,27 +871,33 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   if (unattributedElapsedMs < 0) {
     throw sourceProcessFailure("full-qualification", "source verification phase timings do not reconcile", "failed");
   }
-  const originEntries = Object.fromEntries(OVERLAP_PARTICIPANTS.map((name) => [name, {
-    name,
-    origin: "generated-overlap",
-    phase: "batch-a",
-    outcome: "passed",
-    elapsedMs: Math.round(overlap.participants[name].elapsedMs),
-    executed: "generated-overlap participant",
-    reused: false,
-    observation: name === "build"
-      ? {
-          command: overlap.participants.build.command,
-          status: overlap.participants.build.status,
-          generation: overlap.generation,
-        }
-      : {
-          command: overlap.participants[name].command,
-          files: overlap.participants[name].files,
-          tests: overlap.participants[name].tests,
-          pending: overlap.participants[name].pending,
-        },
-  }]));
+  const originEntries = Object.fromEntries(
+    OVERLAP_PARTICIPANTS.map((name) => [
+      name,
+      {
+        name,
+        origin: "generated-overlap",
+        phase: "batch-a",
+        outcome: "passed",
+        elapsedMs: Math.round(overlap.participants[name].elapsedMs),
+        executed: "generated-overlap participant",
+        reused: false,
+        observation:
+          name === "build"
+            ? {
+                command: overlap.participants.build.command,
+                status: overlap.participants.build.status,
+                generation: overlap.generation,
+              }
+            : {
+                command: overlap.participants[name].command,
+                files: overlap.participants[name].files,
+                tests: overlap.participants[name].tests,
+                pending: overlap.participants[name].pending,
+              },
+      },
+    ]),
+  );
   const entries = {
     ...originEntries,
     "generated-overlap": {
@@ -969,7 +938,10 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       elapsedMs: capacityResult.elapsedMs,
       executed: "command",
       reused: false,
-      observation: { inventoryFiles: overlap.inventory.capacity, ...outputObservation(capacityResult) },
+      observation: {
+        inventoryFiles: overlap.inventory.capacity,
+        ...outputObservation(capacityResult),
+      },
     },
     typecheck: {
       name: "typecheck",
@@ -999,7 +971,10 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       elapsedMs: barrier["capability-contract"].elapsedMs,
       executed: "command",
       reused: false,
-      observation: { generation: afterBarrier.generation, ...outputObservation(barrier["capability-contract"]) },
+      observation: {
+        generation: afterBarrier.generation,
+        ...outputObservation(barrier["capability-contract"]),
+      },
     },
     "activation-conjunction": {
       name: "activation-conjunction",
@@ -1009,7 +984,10 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       elapsedMs: barrier["activation-conjunction"].elapsedMs,
       executed: "command",
       reused: false,
-      observation: { generation: afterBarrier.generation, ...outputObservation(barrier["activation-conjunction"]) },
+      observation: {
+        generation: afterBarrier.generation,
+        ...outputObservation(barrier["activation-conjunction"]),
+      },
     },
   };
   return {
@@ -1086,17 +1064,19 @@ export async function issueSourceReceipt(options = {}) {
 }
 
 export function sourceQualificationGateIdentity() {
-  return sha256(canonicalJson({
-    gates: sourceGateSet(),
-    dag: {
-      batchA: SOURCE_BATCH_A,
-      performanceBarrier: SOURCE_PERFORMANCE_BARRIER,
-      capacityBarrier: SOURCE_CAPACITY_BARRIER,
-      barrierB: SOURCE_BARRIER_B,
-      generatedOverlapOrigins: GENERATED_OVERLAP_ORIGINS,
-    },
-    activation: RELEASE_CONTRACT.qualification.source.activationConjunction.gateIdentity,
-  }));
+  return sha256(
+    canonicalJson({
+      gates: sourceGateSet(),
+      dag: {
+        batchA: SOURCE_BATCH_A,
+        performanceBarrier: SOURCE_PERFORMANCE_BARRIER,
+        capacityBarrier: SOURCE_CAPACITY_BARRIER,
+        barrierB: SOURCE_BARRIER_B,
+        generatedOverlapOrigins: GENERATED_OVERLAP_ORIGINS,
+      },
+      activation: RELEASE_CONTRACT.qualification.source.activationConjunction.gateIdentity,
+    }),
+  );
 }
 
 /** Run the receipt-qualified DAG against the current tree without issuing authority. */
@@ -1122,7 +1102,13 @@ export async function runSourceConjunction(options = {}) {
       gate_identity: sourceQualificationGateIdentity(),
       status: "pass",
       gate_count: gates.length,
-      gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({ name, phase, outcome, elapsedMs, origin })),
+      gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({
+        name,
+        phase,
+        outcome,
+        elapsedMs,
+        origin,
+      })),
       execution: result.execution,
       first_failure: null,
       owner: null,
@@ -1131,7 +1117,13 @@ export async function runSourceConjunction(options = {}) {
         generation: result.execution.generation,
         path: `private-build/${result.execution.generation}/dist/bin/agentera.js`,
       },
-      side_effects: { receipt: false, candidate: false, registry: false, activation: false, publication: false },
+      side_effects: {
+        receipt: false,
+        candidate: false,
+        registry: false,
+        activation: false,
+        publication: false,
+      },
     };
   } catch (error) {
     const owner = error?.owner ?? "full-qualification";
@@ -1148,7 +1140,13 @@ export async function runSourceConjunction(options = {}) {
       violation: sourceDiagnostic(error instanceof Error ? error.message : error),
       correction: gate?.correction ?? (gate ? gate.command.join(" ") : "pnpm -C packages/cli run verify:release"),
       generated_artifact: null,
-      side_effects: { receipt: false, candidate: false, registry: false, activation: false, publication: false },
+      side_effects: {
+        receipt: false,
+        candidate: false,
+        registry: false,
+        activation: false,
+        publication: false,
+      },
     };
   }
 }
@@ -1202,17 +1200,17 @@ function candidateManifest(adapterName, repo = REPO_ROOT, sourceCommit) {
   }
   const adapter = RELEASE_CONTRACT.packages[adapterName];
   const expectedDevelopment = adapterName === "development";
-  const validVersion = expectedDevelopment
-    ? /^\d+\.\d+\.\d+-dev\.(?:0|[1-9]\d*)$/.test(manifest.version)
-    : /^\d+\.\d+\.\d+$/.test(manifest.version);
+  const validVersion = expectedDevelopment ? /^\d+\.\d+\.\d+-dev\.(?:0|[1-9]\d*)$/.test(manifest.version) : /^\d+\.\d+\.\d+$/.test(manifest.version);
   if (!validVersion) throw new Error(`${adapterName} manifest version is outside its release policy`);
   if (!/^[0-9a-f]{40}$/.test(manifest.agentera?.gitRef ?? "")) {
     throw new Error("package manifest has no immutable 40-character agentera.gitRef");
   }
-  if (spawnSync("git", ["cat-file", "-e", `${manifest.agentera.gitRef}^{commit}`], {
-    cwd: repo,
-    env: npmChildEnvironment(process.env),
-  }).status !== 0) {
+  if (
+    spawnSync("git", ["cat-file", "-e", `${manifest.agentera.gitRef}^{commit}`], {
+      cwd: repo,
+      env: npmChildEnvironment(process.env),
+    }).status !== 0
+  ) {
     throw new Error("package manifest agentera.gitRef does not name an existing commit");
   }
   validateAdapterSourceProvenance({ repo, adapter, manifest });
@@ -1243,9 +1241,7 @@ export function validateAdapterSourceProvenance(options = {}) {
     env: npmChildEnvironment(process.env),
   });
   if (diff.status === 1) {
-    throw new Error(
-      `${label}: agentera.gitRef does not match the stable shim packaged inputs; select the last substantive shim-source commit`,
-    );
+    throw new Error(`${label}: agentera.gitRef does not match the stable shim packaged inputs; select the last substantive shim-source commit`);
   }
   if (diff.status !== 0) {
     throw new Error(`${label}: unable to compare agentera.gitRef with stable shim packaged inputs`);
@@ -1256,17 +1252,11 @@ export function validateAdapterSourceProvenance(options = {}) {
     env: npmChildEnvironment(process.env),
   });
   try {
-    if (
-      selected.status !== 0
-      || canonicalJson(normalizedPreparedManifest(JSON.parse(selected.stdout)))
-        !== canonicalJson(normalizedPreparedManifest(manifest))
-    ) {
+    if (selected.status !== 0 || canonicalJson(normalizedPreparedManifest(JSON.parse(selected.stdout))) !== canonicalJson(normalizedPreparedManifest(manifest))) {
       throw new Error("mismatch");
     }
   } catch {
-    throw new Error(
-      `${label}: package contract differs from agentera.gitRef outside approved version and agentera.gitRef preparation metadata`,
-    );
+    throw new Error(`${label}: package contract differs from agentera.gitRef outside approved version and agentera.gitRef preparation metadata`);
   }
 }
 
@@ -1291,11 +1281,10 @@ export function isolatedNpmState(prefix = "agentera-release-smoke-", options = {
   }
   const registry = offline ? `file://${path.join(root, "registry")}` : "https://registry.npmjs.org/";
   fs.writeFileSync(npmrc, `registry=${registry}\n${offline ? "offline=true\n" : ""}${ignoreScripts ? "ignore-scripts=true\n" : ""}`, { mode: 0o600, flag: "wx" });
-  fs.writeFileSync(
-    globalNpmrc,
-    options.registryInGlobalConfig ? `registry=${registry}\n` : "",
-    { mode: 0o600, flag: "wx" },
-  );
+  fs.writeFileSync(globalNpmrc, options.registryInGlobalConfig ? `registry=${registry}\n` : "", {
+    mode: 0o600,
+    flag: "wx",
+  });
   return {
     root,
     environment: {
@@ -1381,10 +1370,12 @@ function releaseMetadataGate(repo, adapterName, manifest, execute = run) {
     env: {
       ...npmChildEnvironment(process.env),
       AGENTERA_RELEASE_ADAPTER: adapterName,
-      ...(adapterName === "development" ? {
-        AGENTERA_RELEASE_PACKAGE_VERSION: manifest.version,
-        AGENTERA_RELEASE_GIT_REF: manifest.agentera.gitRef,
-      } : {}),
+      ...(adapterName === "development"
+        ? {
+            AGENTERA_RELEASE_PACKAGE_VERSION: manifest.version,
+            AGENTERA_RELEASE_GIT_REF: manifest.agentera.gitRef,
+          }
+        : {}),
     },
     timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
   });
@@ -1408,29 +1399,36 @@ function firstPackEntry(value) {
 function constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute }) {
   const packageRoot = path.join(repo, adapter.packagePath);
   if (adapter.construction === "isolatedTypeScriptPackage") {
-    return executeJson(
-      process.execPath,
-      [
-        "scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json",
-        "--git-ref", manifest.agentera.gitRef,
-      ],
-      { cwd: packageRoot, run: execute },
-    );
+    return executeJson(process.execPath, ["scripts/pack-package.mjs", "--output-dir", candidateDirectory, "--with-dry-run", "--json", "--git-ref", manifest.agentera.gitRef], {
+      cwd: packageRoot,
+      run: execute,
+    });
   }
   const state = isolatedNpmState("agentera-shim-candidate-", { ignoreScripts: false });
   try {
-    execute("pnpm", ["test"], { cwd: packageRoot, env: state.environment, timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs });
-    const dry = firstPackEntry(executeJson("npm", ["pack", "--ignore-scripts", "--dry-run", "--json"], {
+    execute("pnpm", ["test"], {
       cwd: packageRoot,
       env: state.environment,
-      run: execute,
-    }));
-    const packed = firstPackEntry(executeJson("npm", ["pack", "--ignore-scripts", "--pack-destination", candidateDirectory, "--json"], {
-      cwd: packageRoot,
-      env: state.environment,
-      run: execute,
-    }));
-    return { dry: { ...dry, warnings: [] }, packed: { ...packed, artifact: path.join(candidateDirectory, packed.filename), warnings: [] } };
+      timeout: RELEASE_CONTRACT.benchmark.timeouts.sourceQualificationMs,
+    });
+    const dry = firstPackEntry(
+      executeJson("npm", ["pack", "--ignore-scripts", "--dry-run", "--json"], {
+        cwd: packageRoot,
+        env: state.environment,
+        run: execute,
+      }),
+    );
+    const packed = firstPackEntry(
+      executeJson("npm", ["pack", "--ignore-scripts", "--pack-destination", candidateDirectory, "--json"], {
+        cwd: packageRoot,
+        env: state.environment,
+        run: execute,
+      }),
+    );
+    return {
+      dry: { ...dry, warnings: [] },
+      packed: { ...packed, artifact: path.join(candidateDirectory, packed.filename), warnings: [] },
+    };
   } finally {
     fs.rmSync(state.root, { recursive: true, force: true });
   }
@@ -1440,52 +1438,41 @@ function validateCandidateReceiptSemantics(receipt) {
   if (receipt.schemaVersion !== RECEIPT_SCHEMA) throw new Error("package receipt schema is invalid");
   if (receipt.kind !== "candidate") throw new Error("package receipt kind must be 'candidate'");
   const expectedGates = RELEASE_CONTRACT.qualification.candidate.gates;
-  if (
-    !Array.isArray(receipt.gates)
-    || canonicalJson(receipt.gates.map((gate) => gate?.name)) !== canonicalJson(expectedGates)
-  ) {
+  if (!Array.isArray(receipt.gates) || canonicalJson(receipt.gates.map((gate) => gate?.name)) !== canonicalJson(expectedGates)) {
     throw new Error("package receipt gates must contain the exact governed gate set in order");
   }
   for (const gate of receipt.gates) {
-    if (
-      gate.outcome !== "passed"
-      || !Number.isSafeInteger(gate.elapsedMs)
-      || gate.elapsedMs < 0
-      || gate.executed !== "ordered"
-      || gate.reused !== false
-      || (gate.name === "local-exact-artifact-smoke"
-        && (typeof gate.output !== "string" || !gate.output.includes(receipt.version)))
-    ) {
+    if (gate.outcome !== "passed" || !Number.isSafeInteger(gate.elapsedMs) || gate.elapsedMs < 0 || gate.executed !== "ordered" || gate.reused !== false || (gate.name === "local-exact-artifact-smoke" && (typeof gate.output !== "string" || !gate.output.includes(receipt.version)))) {
       throw new Error(`package receipt gate '${gate.name}' has invalid execution evidence`);
     }
   }
   const ownerElapsedMs = receipt.gates.reduce((total, gate) => total + gate.elapsedMs, 0);
   const execution = receipt.execution;
   if (
-    execution?.strategy !== "ordered-non-overlapping"
-    || !Number.isSafeInteger(execution.elapsedMs)
-    || execution.elapsedMs < 0
-    || !Number.isSafeInteger(execution.ownerElapsedMs)
-    || execution.ownerElapsedMs !== ownerElapsedMs
-    || !Number.isSafeInteger(execution.unattributedElapsedMs)
-    || execution.unattributedElapsedMs < 0
-    || execution.reconciled !== true
-    || execution.ownerElapsedMs + execution.unattributedElapsedMs !== execution.elapsedMs
+    execution?.strategy !== "ordered-non-overlapping" ||
+    !Number.isSafeInteger(execution.elapsedMs) ||
+    execution.elapsedMs < 0 ||
+    !Number.isSafeInteger(execution.ownerElapsedMs) ||
+    execution.ownerElapsedMs !== ownerElapsedMs ||
+    !Number.isSafeInteger(execution.unattributedElapsedMs) ||
+    execution.unattributedElapsedMs < 0 ||
+    execution.reconciled !== true ||
+    execution.ownerElapsedMs + execution.unattributedElapsedMs !== execution.elapsedMs
   ) {
     throw new Error("package receipt execution timing does not reconcile");
   }
   const construction = receipt.artifact?.construction;
   if (
-    construction?.name !== receipt.package
-    || construction?.version !== receipt.version
-    || !Number.isSafeInteger(construction.fileCount)
-    || construction.fileCount < 1
-    || !Number.isSafeInteger(construction.packedSize)
-    || construction.packedSize !== receipt.artifact?.bytes
-    || !Number.isSafeInteger(construction.unpackedSize)
-    || construction.unpackedSize < 0
-    || typeof construction.shasum !== "string"
-    || construction.shasum.length === 0
+    construction?.name !== receipt.package ||
+    construction?.version !== receipt.version ||
+    !Number.isSafeInteger(construction.fileCount) ||
+    construction.fileCount < 1 ||
+    !Number.isSafeInteger(construction.packedSize) ||
+    construction.packedSize !== receipt.artifact?.bytes ||
+    !Number.isSafeInteger(construction.unpackedSize) ||
+    construction.unpackedSize < 0 ||
+    typeof construction.shasum !== "string" ||
+    construction.shasum.length === 0
   ) {
     throw new Error("package receipt construction observation is incomplete");
   }
@@ -1518,11 +1505,12 @@ export function issueCandidateReceipt(options = {}) {
   const metadataCommit = git(["rev-parse", "HEAD"], repo);
   const candidateFile = receiptPath(candidateDirectory, "candidate-receipt.json");
   if (fs.existsSync(candidateFile)) {
-    const existing = validateCandidateReceipt({ candidateDirectory, adapterName: options.adapterName, repo });
-    if (
-      options.sourceCommit
-      && existing.receipt.sourceCommit !== options.sourceCommit
-    ) {
+    const existing = validateCandidateReceipt({
+      candidateDirectory,
+      adapterName: options.adapterName,
+      repo,
+    });
+    if (options.sourceCommit && existing.receipt.sourceCommit !== options.sourceCommit) {
       throw new Error("existing package receipt does not match the requested development metadata");
     }
     return { receipt: existing.receipt, reused: true };
@@ -1547,7 +1535,13 @@ export function issueCandidateReceipt(options = {}) {
   const constructionStarted = clock();
   let constructed;
   try {
-    constructed = constructCandidatePackage({ repo, adapter, manifest, candidateDirectory, execute });
+    constructed = constructCandidatePackage({
+      repo,
+      adapter,
+      manifest,
+      candidateDirectory,
+      execute,
+    });
   } catch (error) {
     if (error && typeof error === "object") error.owner ??= "dry-pack-observation-equivalence";
     throw error;
@@ -1588,7 +1582,12 @@ export function issueCandidateReceipt(options = {}) {
   const smokeStarted = clock();
   let smokeOutput;
   try {
-    smokeOutput = smokeExactArtifact({ artifact: retainedArtifact.artifact, manifest, adapter, run: options.smokeRun });
+    smokeOutput = smokeExactArtifact({
+      artifact: retainedArtifact.artifact,
+      manifest,
+      adapter,
+      run: options.smokeRun,
+    });
   } catch (error) {
     if (error && typeof error === "object") error.owner ??= "local-exact-artifact-smoke";
     throw error;
@@ -1652,46 +1651,32 @@ export function issueCandidateReceipt(options = {}) {
 export function validateCandidateReceipt(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const candidateDirectory = assertExternalDirectory(options.candidateDirectory, repo, false);
-  const receipt = validReceiptDigest(
-    options.receipt ?? readJson(
-      containedRegularReceipt(candidateDirectory, "candidate-receipt.json", "package receipt"),
-      "package receipt",
-    ),
-    "package receipt",
-  );
+  const receipt = validReceiptDigest(options.receipt ?? readJson(containedRegularReceipt(candidateDirectory, "candidate-receipt.json", "package receipt"), "package receipt"), "package receipt");
   validateCandidateReceiptSemantics(receipt);
   const adapterName = options.adapterName ?? receipt.adapter;
   const sourceCommit = adapterName === "development" ? receipt.sourceCommit : undefined;
   const { manifest, adapter } = candidateManifest(adapterName, repo, sourceCommit);
   const source = checkSourceReceipt({ repo, candidateDirectory });
   if (
-    receipt.sourceReceiptSha256 !== source.receiptSha256
-    || receipt.adapter !== adapterName
-    || receipt.metadataCommit !== git(["rev-parse", "HEAD"], repo)
-    || receipt.package !== manifest.name
-    || receipt.version !== manifest.version
-    || receipt.sourceCommit !== manifest.agentera.gitRef
-    || receipt.expectedTag !== adapter.expectedTag
-    || receipt.candidateTag !== `candidate-${manifest.version}`
-    || receipt.registry !== "https://registry.npmjs.org/"
-    || receipt.artifact?.dryPackEquivalent !== true
+    receipt.sourceReceiptSha256 !== source.receiptSha256 ||
+    receipt.adapter !== adapterName ||
+    receipt.metadataCommit !== git(["rev-parse", "HEAD"], repo) ||
+    receipt.package !== manifest.name ||
+    receipt.version !== manifest.version ||
+    receipt.sourceCommit !== manifest.agentera.gitRef ||
+    receipt.expectedTag !== adapter.expectedTag ||
+    receipt.candidateTag !== `candidate-${manifest.version}` ||
+    receipt.registry !== "https://registry.npmjs.org/" ||
+    receipt.artifact?.dryPackEquivalent !== true
   ) {
     throw new Error("package receipt no longer matches the selected package metadata or source receipt");
   }
   const artifactState = ensureRegularArtifact(candidateDirectory, receipt.artifact?.filename);
   const bytes = fs.readFileSync(artifactState.artifact);
-  if (
-    receipt.artifact.sha256 !== sha256(bytes)
-    || receipt.artifact.integrity !== sha512Integrity(bytes)
-    || receipt.artifact.bytes !== bytes.byteLength
-    || receipt.artifact.construction.shasum !== createHash("sha1").update(bytes).digest("hex")
-  ) {
+  if (receipt.artifact.sha256 !== sha256(bytes) || receipt.artifact.integrity !== sha512Integrity(bytes) || receipt.artifact.bytes !== bytes.byteLength || receipt.artifact.construction.shasum !== createHash("sha1").update(bytes).digest("hex")) {
     throw new Error("package artifact changed after verification");
   }
-  if (
-    receipt.artifact.mode !== ARTIFACT_MODE
-    || (artifactState.stat.mode & 0o777) !== receipt.artifact.mode
-  ) {
+  if (receipt.artifact.mode !== ARTIFACT_MODE || (artifactState.stat.mode & 0o777) !== receipt.artifact.mode) {
     throw new Error("package artifact permissions changed after verification");
   }
   return { receipt, artifact: artifactState.artifact, manifest, adapter };
@@ -1731,21 +1716,18 @@ export function issueCandidateApproval(options = {}) {
 
 export function validateCandidateApproval(options = {}) {
   const candidate = options.candidate ?? validateCandidateReceipt(options);
-  const approval = validReceiptDigest(
-    options.approval ?? readJson(receiptPath(options.candidateDirectory, "approval.json"), "candidate approval"),
-    "candidate approval",
-  );
+  const approval = validReceiptDigest(options.approval ?? readJson(receiptPath(options.candidateDirectory, "approval.json"), "candidate approval"), "candidate approval");
   if (
-    approval.kind !== "approval"
-    || approval.scope !== "registry-mutation"
-    || typeof approval.approvedBy !== "string"
-    || !/^[A-Za-z0-9_.@/-]{1,120}$/.test(approval.approvedBy)
-    || approval.candidateReceiptSha256 !== candidate.receipt.receiptSha256
-    || approval.package !== candidate.receipt.package
-    || approval.version !== candidate.receipt.version
-    || approval.integrity !== candidate.receipt.artifact.integrity
-    || approval.registry !== candidate.receipt.registry
-    || approval.expectedTag !== candidate.receipt.expectedTag
+    approval.kind !== "approval" ||
+    approval.scope !== "registry-mutation" ||
+    typeof approval.approvedBy !== "string" ||
+    !/^[A-Za-z0-9_.@/-]{1,120}$/.test(approval.approvedBy) ||
+    approval.candidateReceiptSha256 !== candidate.receipt.receiptSha256 ||
+    approval.package !== candidate.receipt.package ||
+    approval.version !== candidate.receipt.version ||
+    approval.integrity !== candidate.receipt.artifact.integrity ||
+    approval.registry !== candidate.receipt.registry ||
+    approval.expectedTag !== candidate.receipt.expectedTag
   ) {
     throw new Error("artifact approval is not bound to this exact package artifact");
   }
@@ -1758,22 +1740,9 @@ function validRunId(value) {
 
 export function publicationWorkflowIdentity(kind = "development") {
   const ci = RELEASE_CONTRACT.ci;
-  const workflow = kind === "stable"
-    ? ci?.stablePublicationWorkflow
-    : ci?.developmentPublicationWorkflow;
-  const ref = kind === "stable"
-    ? workflow?.ref
-    : workflow?.refAuthority === "ci.developmentPush.ref"
-      ? ci?.developmentPush?.ref
-      : undefined;
-  if (
-    !ci?.repository
-    || !workflow?.name
-    || !workflow?.path
-    || typeof ref !== "string"
-    || !ref.startsWith("refs/heads/")
-    || ref.length === "refs/heads/".length
-  ) {
+  const workflow = kind === "stable" ? ci?.stablePublicationWorkflow : ci?.developmentPublicationWorkflow;
+  const ref = kind === "stable" ? workflow?.ref : workflow?.refAuthority === "ci.developmentPush.ref" ? ci?.developmentPush?.ref : undefined;
+  if (!ci?.repository || !workflow?.name || !workflow?.path || typeof ref !== "string" || !ref.startsWith("refs/heads/") || ref.length === "refs/heads/".length) {
     throw new Error("release publication contract has no publication workflow identity");
   }
   return {
@@ -1788,12 +1757,7 @@ export function publicationWorkflowIdentity(kind = "development") {
 
 function assertQualificationWorkflowEnvironment(environment, adapterName = "development") {
   const expected = publicationWorkflowIdentity(adapterName === "stable" ? "stable" : "development");
-  if (
-    environment.GITHUB_REPOSITORY !== expected.repository
-    || environment.GITHUB_WORKFLOW !== expected.workflow
-    || environment.GITHUB_WORKFLOW_REF !== expected.workflowRef
-    || !validRunId(environment.GITHUB_RUN_ID)
-  ) {
+  if (environment.GITHUB_REPOSITORY !== expected.repository || environment.GITHUB_WORKFLOW !== expected.workflow || environment.GITHUB_WORKFLOW_REF !== expected.workflowRef || !validRunId(environment.GITHUB_RUN_ID)) {
     throw new Error("CI attestation must originate from the contracted verification repository, workflow, workflow ref, and run identity");
   }
   return expected;
@@ -1817,11 +1781,7 @@ export function issueCiAttestation(options = {}) {
   const expected = assertQualificationWorkflowEnvironment(environment, options.adapterName);
   const candidate = options.candidate ?? validateCandidateReceipt(options);
   const checkoutHead = git(["rev-parse", "HEAD"], options.repo ?? REPO_ROOT);
-  if (
-    environment.GITHUB_SHA !== checkoutHead
-    || environment.GITHUB_SHA !== candidate.receipt.metadataCommit
-    || (options.adapterName === "development" && environment.GITHUB_SHA !== candidate.receipt.sourceCommit)
-  ) {
+  if (environment.GITHUB_SHA !== checkoutHead || environment.GITHUB_SHA !== candidate.receipt.metadataCommit || (options.adapterName === "development" && environment.GITHUB_SHA !== candidate.receipt.sourceCommit)) {
     throw new Error("CI checkout SHA does not match the package receipt commits");
   }
   const attestation = {
@@ -1854,20 +1814,17 @@ export function validateCiAttestation(options = {}) {
     throw new Error("CI registry mutation requires the contracted repository and a source verification run identity");
   }
   const candidate = options.candidate ?? validateCandidateReceipt(options);
-  const attestation = validReceiptDigest(
-    options.attestation ?? readJson(receiptPath(options.candidateDirectory, "ci-attestation.json"), "CI attestation"),
-    "CI attestation",
-  );
+  const attestation = validReceiptDigest(options.attestation ?? readJson(receiptPath(options.candidateDirectory, "ci-attestation.json"), "CI attestation"), "CI attestation");
   if (
-    attestation.kind !== "ci-attestation"
-    || attestation.candidateReceiptSha256 !== candidate.receipt.receiptSha256
-    || attestation.sourceCommit !== candidate.receipt.sourceCommit
-    || attestation.metadataCommit !== candidate.receipt.metadataCommit
-    || attestation.repository !== expected.repository
-    || attestation.workflow !== expected.workflow
-    || attestation.workflowRef !== expected.workflowRef
-    || !validRunId(attestation.runId)
-    || attestation.runId !== options.sourceRunId
+    attestation.kind !== "ci-attestation" ||
+    attestation.candidateReceiptSha256 !== candidate.receipt.receiptSha256 ||
+    attestation.sourceCommit !== candidate.receipt.sourceCommit ||
+    attestation.metadataCommit !== candidate.receipt.metadataCommit ||
+    attestation.repository !== expected.repository ||
+    attestation.workflow !== expected.workflow ||
+    attestation.workflowRef !== expected.workflowRef ||
+    !validRunId(attestation.runId) ||
+    attestation.runId !== options.sourceRunId
   ) {
     throw new Error("CI attestation is not bound to this package and source run");
   }
@@ -1878,25 +1835,27 @@ async function runCommand(command, flags) {
   const candidateDirectory = requireArgument(flags, "--candidate-dir");
   const adapterName = flags.get("--adapter") ?? "development";
   const sourceCommit = flags.get("--source-commit");
-  const manifest = adapterName === "development" && sourceCommit
-    ? candidateManifest(adapterName, REPO_ROOT, sourceCommit).manifest
-    : readManifest(adapterName);
+  const manifest = adapterName === "development" && sourceCommit ? candidateManifest(adapterName, REPO_ROOT, sourceCommit).manifest : readManifest(adapterName);
   const json = Boolean(flags.get("--json"));
   const started = performance.now();
   const phase = command === "source" ? "source-qualification" : command === "candidate" ? "candidate-qualification" : command;
-  emit(phaseResult({
-    packageName: adapterName,
-    version: manifest.version,
-    phase,
-    outcome: "started",
-    executed: "pending",
-    reused: false,
-    nextAction: command === "source" ? "run source verification" : "verify the package from the source receipt",
-  }), json);
+  emit(
+    phaseResult({
+      packageName: adapterName,
+      version: manifest.version,
+      phase,
+      outcome: "started",
+      executed: "pending",
+      reused: false,
+      nextAction: command === "source" ? "run source verification" : "verify the package from the source receipt",
+    }),
+    json,
+  );
   try {
-    const issued = command === "source"
-      ? await issueSourceReceipt({ candidateDirectory, adapterName })
-      : command === "candidate"
+    const issued =
+      command === "source"
+        ? await issueSourceReceipt({ candidateDirectory, adapterName })
+        : command === "candidate"
           ? issueCandidateReceipt({
               candidateDirectory,
               adapterName,
@@ -1904,44 +1863,44 @@ async function runCommand(command, flags) {
               environment: process.env,
             })
           : command === "approval"
-          ? {
-              receipt: issueCandidateApproval({
-                candidateDirectory,
-                adapterName,
-                approvedBy: requireArgument(flags, "--approved-by"),
-                sourceRunId: flags.get("--source-run-id"),
-              }),
-              reused: false,
-            }
-          : { receipt: issueCiAttestation({ candidateDirectory, adapterName }), reused: false };
-    emit(phaseResult({
-      packageName: adapterName,
-      version: manifest.version,
-      phase,
-      outcome: "passed",
-      elapsedMs: performance.now() - started,
-      executed: issued.reused ? "none" : "ordered gates",
-      reused: issued.reused,
-      nextAction: command === "source"
-        ? "build and verify the package from this receipt"
-        : command === "candidate"
-          ? "record explicit artifact approval before staging"
-          : command === "approval"
-            ? "stage the approved package"
-            : "transfer the verified package to the publication workflow",
-    }), json);
+            ? {
+                receipt: issueCandidateApproval({
+                  candidateDirectory,
+                  adapterName,
+                  approvedBy: requireArgument(flags, "--approved-by"),
+                  sourceRunId: flags.get("--source-run-id"),
+                }),
+                reused: false,
+              }
+            : { receipt: issueCiAttestation({ candidateDirectory, adapterName }), reused: false };
+    emit(
+      phaseResult({
+        packageName: adapterName,
+        version: manifest.version,
+        phase,
+        outcome: "passed",
+        elapsedMs: performance.now() - started,
+        executed: issued.reused ? "none" : "ordered gates",
+        reused: issued.reused,
+        nextAction: command === "source" ? "build and verify the package from this receipt" : command === "candidate" ? "record explicit artifact approval before staging" : command === "approval" ? "stage the approved package" : "transfer the verified package to the publication workflow",
+      }),
+      json,
+    );
   } catch (error) {
-    emit(phaseResult({
-      packageName: adapterName,
-      version: manifest.version,
-      phase,
-      outcome: "failed",
-      elapsedMs: performance.now() - started,
-      executed: "failed",
-      reused: false,
-      nextAction: "Correct the reported failure and retry without repairing source automatically.",
-      detail: redact(error instanceof Error ? error.message : error, candidateDirectory),
-    }), json);
+    emit(
+      phaseResult({
+        packageName: adapterName,
+        version: manifest.version,
+        phase,
+        outcome: "failed",
+        elapsedMs: performance.now() - started,
+        executed: "failed",
+        reused: false,
+        nextAction: "Correct the reported failure and retry without repairing source automatically.",
+        detail: redact(error instanceof Error ? error.message : error, candidateDirectory),
+      }),
+      json,
+    );
     throw error;
   }
 }
@@ -1973,17 +1932,20 @@ export function runSourceReceiptCheckCommand(flags, options = {}) {
     output(result, json);
     return result;
   } catch (error) {
-    output(phaseResult({
-      packageName: manifest.name,
-      version: manifest.version,
-      phase: "source-receipt-check",
-      outcome: "failed",
-      elapsedMs: performance.now() - started,
-      executed: "none",
-      reused: false,
-      nextAction: "run the existing broader pre-commit test policy",
-      detail: redact(error instanceof Error ? error.message : error, candidateDirectory),
-    }), json);
+    output(
+      phaseResult({
+        packageName: manifest.name,
+        version: manifest.version,
+        phase: "source-receipt-check",
+        outcome: "failed",
+        elapsedMs: performance.now() - started,
+        executed: "none",
+        reused: false,
+        nextAction: "run the existing broader pre-commit test policy",
+        detail: redact(error instanceof Error ? error.message : error, candidateDirectory),
+      }),
+      json,
+    );
     throw error;
   }
 }

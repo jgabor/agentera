@@ -40,10 +40,15 @@ export function applyCausalBlockers(entries: CausalMigrationEntry[], recoveryFor
     if (["duplicate", "conflict", "corrupt", "unsupported"].includes(entry.classification) && !rootReasons.has(entry.source_identity)) rootReasons.set(entry.source_identity, `${entry.classification} source requires explicit recovery`);
   }
 
-  const adjacency = new Map(entries.map((entry) => [entry.source_identity, entry.relationships
-    .filter((relationship) => relationship.status === "resolved" && relationship.target_source_identity && byIdentity.has(relationship.target_source_identity))
-    .map((relationship) => relationship.target_source_identity as string)
-    .sort()]));
+  const adjacency = new Map(
+    entries.map((entry) => [
+      entry.source_identity,
+      entry.relationships
+        .filter((relationship) => relationship.status === "resolved" && relationship.target_source_identity && byIdentity.has(relationship.target_source_identity))
+        .map((relationship) => relationship.target_source_identity as string)
+        .sort(),
+    ]),
+  );
   const index = new Map<string, number>();
   const lowlink = new Map<string, number>();
   const stack: string[] = [];

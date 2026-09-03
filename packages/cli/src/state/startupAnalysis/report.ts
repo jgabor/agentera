@@ -18,10 +18,7 @@ function pyJsonIndent(value: unknown, level = 0, indent = "  "): string {
 }
 
 function markdownTable(headers: string[], rows: Array<Array<unknown>>): string[] {
-  const lines = [
-    "| " + headers.join(" | ") + " |",
-    "| " + headers.map(() => "---").join(" | ") + " |",
-  ];
+  const lines = ["| " + headers.join(" | ") + " |", "| " + headers.map(() => "---").join(" | ") + " |"];
   if (rows.length === 0) {
     return [...lines, "| " + headers.map(() => "none").join(" | ") + " |"];
   }
@@ -29,31 +26,14 @@ function markdownTable(headers: string[], rows: Array<Array<unknown>>): string[]
 }
 
 export function renderStartupReport(metrics: JsonObject): string {
-  const thresholdDerivation =
-    metrics.threshold_derivation && typeof metrics.threshold_derivation === "object" && !Array.isArray(metrics.threshold_derivation)
-      ? metrics.threshold_derivation
-      : {};
-  const threshold =
-    thresholdDerivation.action_thresholds && typeof thresholdDerivation.action_thresholds === "object" && !Array.isArray(thresholdDerivation.action_thresholds)
-      ? thresholdDerivation.action_thresholds
-      : {};
-  const envelopeThreshold =
-    threshold.startup_envelope && typeof threshold.startup_envelope === "object" && !Array.isArray(threshold.startup_envelope) ? threshold.startup_envelope : {};
-  const guidanceThreshold =
-    threshold.targeted_guidance && typeof threshold.targeted_guidance === "object" && !Array.isArray(threshold.targeted_guidance) ? threshold.targeted_guidance : {};
-  const recommendation =
-    metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation)
-      ? metrics.startup_recommendation
-      : {};
-  const measuredDistribution =
-    thresholdDerivation.measured_distribution && typeof thresholdDerivation.measured_distribution === "object" && !Array.isArray(thresholdDerivation.measured_distribution)
-      ? thresholdDerivation.measured_distribution
-      : {};
+  const thresholdDerivation = metrics.threshold_derivation && typeof metrics.threshold_derivation === "object" && !Array.isArray(metrics.threshold_derivation) ? metrics.threshold_derivation : {};
+  const threshold = thresholdDerivation.action_thresholds && typeof thresholdDerivation.action_thresholds === "object" && !Array.isArray(thresholdDerivation.action_thresholds) ? thresholdDerivation.action_thresholds : {};
+  const envelopeThreshold = threshold.startup_envelope && typeof threshold.startup_envelope === "object" && !Array.isArray(threshold.startup_envelope) ? threshold.startup_envelope : {};
+  const guidanceThreshold = threshold.targeted_guidance && typeof threshold.targeted_guidance === "object" && !Array.isArray(threshold.targeted_guidance) ? threshold.targeted_guidance : {};
+  const recommendation = metrics.startup_recommendation && typeof metrics.startup_recommendation === "object" && !Array.isArray(metrics.startup_recommendation) ? metrics.startup_recommendation : {};
+  const measuredDistribution = thresholdDerivation.measured_distribution && typeof thresholdDerivation.measured_distribution === "object" && !Array.isArray(thresholdDerivation.measured_distribution) ? thresholdDerivation.measured_distribution : {};
   const runtimeCoverage = Array.isArray(metrics.runtime_coverage) ? metrics.runtime_coverage : [];
-  const capabilityCounts =
-    metrics.per_capability_state_counts && typeof metrics.per_capability_state_counts === "object" && !Array.isArray(metrics.per_capability_state_counts)
-      ? metrics.per_capability_state_counts
-      : {};
+  const capabilityCounts = metrics.per_capability_state_counts && typeof metrics.per_capability_state_counts === "object" && !Array.isArray(metrics.per_capability_state_counts) ? metrics.per_capability_state_counts : {};
 
   const lines: string[] = [
     "# Agentera Startup State-Access Analysis",
@@ -81,14 +61,7 @@ export function renderStartupReport(metrics: JsonObject): string {
   const runtimeRows: Array<Array<unknown>> = [];
   for (const status of runtimeCoverage) {
     if (status && typeof status === "object" && !Array.isArray(status)) {
-      runtimeRows.push([
-        status.runtime ?? "unknown",
-        status.status ?? "unknown",
-        status.reason ?? "unknown",
-        status.record_count ?? 0,
-        status.file_count ?? 0,
-        status.error_count ?? 0,
-      ]);
+      runtimeRows.push([status.runtime ?? "unknown", status.status ?? "unknown", status.reason ?? "unknown", status.record_count ?? 0, status.file_count ?? 0, status.error_count ?? 0]);
     }
   }
   lines.push(...markdownTable(["Runtime", "Status", "Reason", "Records", "Files", "Errors"], runtimeRows));
@@ -120,22 +93,10 @@ export function renderStartupReport(metrics: JsonObject): string {
   for (const capability of Object.keys(capabilityCounts).sort()) {
     const counts = capabilityCounts[capability];
     if (counts && typeof counts === "object" && !Array.isArray(counts)) {
-      capabilityRows.push([
-        capability,
-        counts.state_sequences ?? 0,
-        counts.cli_state_call ?? 0,
-        counts.raw_artifact_access_after_cli ?? 0,
-        counts.redundant_raw_artifact_access ?? 0,
-        counts.capability_prose_read ?? 0,
-      ]);
+      capabilityRows.push([capability, counts.state_sequences ?? 0, counts.cli_state_call ?? 0, counts.raw_artifact_access_after_cli ?? 0, counts.redundant_raw_artifact_access ?? 0, counts.capability_prose_read ?? 0]);
     }
   }
-  lines.push(
-    ...markdownTable(
-      ["Capability", "Sequences", "CLI Calls", "Raw After CLI", "Redundant Raw", "Prose Reads"],
-      capabilityRows,
-    ),
-  );
+  lines.push(...markdownTable(["Capability", "Sequences", "CLI Calls", "Raw After CLI", "Redundant Raw", "Prose Reads"], capabilityRows));
   lines.push(
     "",
     "## Threshold Rationale",

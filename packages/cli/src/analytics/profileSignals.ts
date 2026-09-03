@@ -1,24 +1,10 @@
 import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
-import {
-  PROFILE_SIGNAL_TYPES,
-  profileSufficiency,
-} from "../registries/evidenceTierContract.js";
+import { PROFILE_SIGNAL_TYPES, profileSufficiency } from "../registries/evidenceTierContract.js";
 import type { Env } from "./extractCorpus/core.js";
-import {
-  defaultTiersDir,
-  readCurrentPointer,
-  readSignalTier,
-  resolveEvidenceAnchor,
-  type SignalRecord,
-} from "./extractCorpus/evidenceTiers.js";
-import {
-  assessTiers,
-  recoveryForState,
-  resolveTiersDir,
-  type TierAssessment,
-} from "./extractCorpus/tierReader.js";
+import { defaultTiersDir, readCurrentPointer, readSignalTier, resolveEvidenceAnchor, type SignalRecord } from "./extractCorpus/evidenceTiers.js";
+import { assessTiers, recoveryForState, resolveTiersDir, type TierAssessment } from "./extractCorpus/tierReader.js";
 
 /**
  * Bounded profile-synthesis input and sufficiency assessment (plan Task 4).
@@ -109,7 +95,12 @@ function corpusPathFromTiersDir(tiersDir: string): string | undefined {
  * retained profile-relevant count by the family's overall retention ratio.
  */
 export function assessProfileSufficiency(
-  selection: { total: number; retained: number; capped: boolean; per_family: Array<{ family: string; total: number; retained: number }> },
+  selection: {
+    total: number;
+    retained: number;
+    capped: boolean;
+    per_family: Array<{ family: string; total: number; retained: number }>;
+  },
   signals: SignalRecord[],
   contractPath?: string,
 ): ProfileSufficiencyAssessment {
@@ -184,11 +175,7 @@ export function assessProfileSufficiency(
  * evidence shards. Each signal's `evidence_anchor` resolves to retained full
  * evidence via resolveProfileEvidence.
  */
-export function readProfileSignals(
-  tiersDir: string,
-  corpusPath?: string,
-  contractPath?: string,
-): ProfileSignalsRead {
+export function readProfileSignals(tiersDir: string, corpusPath?: string, contractPath?: string): ProfileSignalsRead {
   const assessment = assessTiers(tiersDir, corpusPath);
   const recovery = recoveryForState(assessment.state);
   const threshold = profileSufficiency(contractPath).minimumFamilyRetention;
@@ -202,11 +189,7 @@ export function readProfileSignals(
       profile_signal_count: 0,
       sufficiency: {
         sufficient: false,
-        reason: assessment.state === "missing"
-          ? "no evidence tiers published"
-          : assessment.state === "legacy"
-            ? "legacy monolithic state; refresh required"
-            : `tier state ${assessment.state}; ${recovery ?? "recovery unavailable"}`,
+        reason: assessment.state === "missing" ? "no evidence tiers published" : assessment.state === "legacy" ? "legacy monolithic state; refresh required" : `tier state ${assessment.state}; ${recovery ?? "recovery unavailable"}`,
         threshold,
         capped: false,
         per_family: [],
@@ -264,11 +247,7 @@ export function resolveProfileEvidence(anchor: string, tiersDir: string): JsonOb
  * readProfileSignals or the signal_path). This status tells the agent
  * whether synthesis can proceed and where to read.
  */
-export function profileSignalsStatus(
-  env: Env = process.env,
-  platform: NodeJS.Platform = process.platform,
-  contractPath?: string,
-): ProfileSignalsStatus {
+export function profileSignalsStatus(env: Env = process.env, platform: NodeJS.Platform = process.platform, contractPath?: string): ProfileSignalsStatus {
   const tiersDir = resolveTiersDir(env, platform);
   const corpusPath = corpusPathFromTiersDir(tiersDir);
   const assessment = assessTiers(tiersDir, corpusPath);

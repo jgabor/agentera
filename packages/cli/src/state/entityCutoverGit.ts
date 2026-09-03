@@ -34,9 +34,16 @@ function gitEnvironment(): NodeJS.ProcessEnv {
 }
 
 function git(project: string, args: string[], encoding: BufferEncoding | null = "utf8"): { status: number; stdout: string | Buffer } {
-  const result = spawnSync("git", args, { cwd: project, env: gitEnvironment(), encoding: encoding ?? "buffer" });
+  const result = spawnSync("git", args, {
+    cwd: project,
+    env: gitEnvironment(),
+    encoding: encoding ?? "buffer",
+  });
   if (result.error) throw new EntityCutoverGitError(`Git preflight failed: ${result.error.message}`);
-  return { status: result.status ?? 2, stdout: result.stdout ?? (encoding === null ? Buffer.alloc(0) : "") };
+  return {
+    status: result.status ?? 2,
+    stdout: result.stdout ?? (encoding === null ? Buffer.alloc(0) : ""),
+  };
 }
 
 function gitText(project: string, args: string[]): string {
@@ -46,11 +53,7 @@ function gitText(project: string, args: string[]): string {
 }
 
 function safeRelative(value: string): boolean {
-  return value.length > 0
-    && !value.includes("\0")
-    && !value.includes("\\")
-    && !path.isAbsolute(value)
-    && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  return value.length > 0 && !value.includes("\0") && !value.includes("\\") && !path.isAbsolute(value) && value.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 }
 
 function assertCleanTrackedState(project: string): void {
@@ -66,12 +69,18 @@ function assertNoUnapprovedUntracked(project: string, allowlist: EntityCutoverGi
   const result = git(project, ["ls-files", "--others", "--exclude-standard", "-z"]);
   if (result.status !== 0) throw new EntityCutoverGitError("Git could not inventory untracked paths before v2-to-v3 upgrade");
   const paths = new Set(allowlist.paths ?? []);
-  const prefixes = [...(allowlist.prefixes ?? [])].map((prefix) => prefix.endsWith("/") ? prefix : `${prefix}/`);
-  const unexpected = String(result.stdout).split("\0").filter(Boolean).find((candidate) => !paths.has(candidate) && !prefixes.some((prefix) => candidate.startsWith(prefix)));
+  const prefixes = [...(allowlist.prefixes ?? [])].map((prefix) => (prefix.endsWith("/") ? prefix : `${prefix}/`));
+  const unexpected = String(result.stdout)
+    .split("\0")
+    .filter(Boolean)
+    .find((candidate) => !paths.has(candidate) && !prefixes.some((prefix) => candidate.startsWith(prefix)));
   if (unexpected) throw new EntityCutoverGitError(`Git worktree has untracked path '${unexpected}'; commit, ignore, or remove it before v2-to-v3 upgrade`);
 }
 
-interface HeadEntry { mode: "100644" | "100755"; oid: string }
+interface HeadEntry {
+  mode: "100644" | "100755";
+  oid: string;
+}
 
 function headEntry(project: string, relativePath: string): HeadEntry | null {
   const result = git(project, ["ls-tree", "-z", "HEAD", "--", relativePath]);
@@ -90,9 +99,7 @@ function assertSourceMatchesHead(project: string, source: DurableEntityMigration
   const lookupPath = source.path.endsWith("/") ? source.path.slice(0, -1) : source.path;
   if (!safeRelative(lookupPath)) throw new EntityCutoverGitError(`migration input path '${source.path}' is unsafe`);
   if (source.presence === "missing") {
-    const tracked = source.path.endsWith("/")
-      ? gitText(project, ["ls-tree", "-r", "--name-only", "HEAD", "--", `${lookupPath}/`]) !== ""
-      : headEntry(project, lookupPath) !== null;
+    const tracked = source.path.endsWith("/") ? gitText(project, ["ls-tree", "-r", "--name-only", "HEAD", "--", `${lookupPath}/`]) !== "" : headEntry(project, lookupPath) !== null;
     if (tracked) throw new EntityCutoverGitError(`migration input '${source.path}' is tracked in HEAD but absent from the worktree`);
     const observed = readProjectFileSnapshot(validateRealProjectRoot(project), lookupPath);
     if (observed.kind !== "missing") throw new EntityCutoverGitError(`migration input '${source.path}' is absent from HEAD but present or unsafe in the worktree`);
@@ -106,20 +113,12 @@ function assertSourceMatchesHead(project: string, source: DurableEntityMigration
   if (blob.status !== 0 || !Buffer.isBuffer(blob.stdout)) throw new EntityCutoverGitError(`Git could not read HEAD bytes for migration input '${source.path}'`);
   const executable = (observed.mode & 0o111) !== 0;
   const expectedMode = executable ? "100755" : "100644";
-  if (tracked.mode !== expectedMode
-    || source.mode !== observed.mode
-    || source.type !== "file"
-    || source.sha256 !== hash(observed.bytes)
-    || !observed.bytes.equals(blob.stdout)) {
+  if (tracked.mode !== expectedMode || source.mode !== observed.mode || source.type !== "file" || source.sha256 !== hash(observed.bytes) || !observed.bytes.equals(blob.stdout)) {
     throw new EntityCutoverGitError(`migration input '${source.path}' differs from HEAD in bytes, type, mode, or symlink form`);
   }
 }
 
-export function verifyEntityCutoverGitSource(
-  projectRoot: string,
-  plan: Pick<DurableEntityMigrationPlan, "sources">,
-  allowlist: EntityCutoverGitAllowlist = {},
-): EntityCutoverGitBinding {
+export function verifyEntityCutoverGitSource(projectRoot: string, plan: Pick<DurableEntityMigrationPlan, "sources">, allowlist: EntityCutoverGitAllowlist = {}): EntityCutoverGitBinding {
   const project = validateRealProjectRoot(projectRoot).path;
   const top = fs.realpathSync(gitText(project, ["rev-parse", "--show-toplevel"]));
   if (top !== project) throw new EntityCutoverGitError(`project '${project}' must be the Git worktree root for v2-to-v3 upgrade`);

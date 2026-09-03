@@ -2,16 +2,7 @@ import crypto from "node:crypto";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 
-export const TRANSCRIPT_KEYS = new Set([
-  "content",
-  "text",
-  "prompt",
-  "message",
-  "preceding_context",
-  "input_text",
-  "output_text",
-  "transcript",
-]);
+export const TRANSCRIPT_KEYS = new Set(["content", "text", "prompt", "message", "preceding_context", "input_text", "output_text", "transcript"]);
 export const SESSION_KEYS = new Set(["session_id", "sessionID", "sessionId", "conversation_id"]);
 export const PATH_KEYS = new Set(["path", "project_path", "store_path", "file_path", "cwd", "report_path"]);
 
@@ -22,14 +13,7 @@ const DEFAULT_CONTRACT: JsonObject = {
     commit: "b18e3dc7d768d4ad2726880916e7cfe6bd8617d3",
     committed_at: "2026-05-12T17:50:13+02:00",
   },
-  degradation_reasons: [
-    "pre_boundary_record",
-    "missing_timestamp",
-    "malformed_record",
-    "missing_conversation_key",
-    "no_agentera_state_sequence",
-    "privacy_redaction_required",
-  ],
+  degradation_reasons: ["pre_boundary_record", "missing_timestamp", "malformed_record", "missing_conversation_key", "no_agentera_state_sequence", "privacy_redaction_required"],
   privacy_boundary: {
     canonical_artifact_labels: {
       ".agentera/plan.yaml": "plan",
@@ -99,10 +83,7 @@ const FALLBACK_ARTIFACT_LABELS: Array<[string, string]> = [
 export function canonicalArtifactLabel(value: unknown, contract: JsonObject | null = null): string | null {
   const text = String(value).replace(/\\/g, "/");
   const loaded = contract ?? loadContract();
-  const privacyBoundary =
-    loaded.privacy_boundary && typeof loaded.privacy_boundary === "object" && !Array.isArray(loaded.privacy_boundary)
-      ? loaded.privacy_boundary
-      : {};
+  const privacyBoundary = loaded.privacy_boundary && typeof loaded.privacy_boundary === "object" && !Array.isArray(loaded.privacy_boundary) ? loaded.privacy_boundary : {};
   const labels = privacyBoundary.canonical_artifact_labels;
   if (labels && typeof labels === "object" && !Array.isArray(labels)) {
     for (const [suffix, label] of Object.entries(labels)) {

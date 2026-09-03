@@ -36,16 +36,32 @@ afterEach(() => {
 function run(root: string, args: string[], stdin = ""): Captured {
   if (!stdin && args.includes("--input") && args[args.indexOf("--input") + 1] === "-") {
     if (args[0] === "progress" && args[1] === "append")
-      stdin = JSON.stringify({ type: "test", phase: "build", what: "Entity writer", context: { intent: "Verify entity publication" } });
+      stdin = JSON.stringify({
+        type: "test",
+        phase: "build",
+        what: "Entity writer",
+        context: { intent: "Verify entity publication" },
+      });
     else if (args[0] === "decisions" && args[1] === "append")
-      stdin = JSON.stringify({ question: "Where should state live?", context: "Parallel writes", alternatives: { chosen: "Entities", rejected: ["Aggregates"] }, choice: "Entities", reasoning: "Independent ownership", confidence: "firm" });
+      stdin = JSON.stringify({
+        question: "Where should state live?",
+        context: "Parallel writes",
+        alternatives: { chosen: "Entities", rejected: ["Aggregates"] },
+        choice: "Entities",
+        reasoning: "Independent ownership",
+        confidence: "firm",
+      });
     else if (args[0] === "decisions" && args[1] === "amend") stdin = JSON.stringify({ choice: "Canonical entities" });
   }
   let out = "";
   let err = "";
   const rc = main(["node", "agentera", "state", ...args, "--project", root], {
-    out: (text) => { out += text; },
-    err: (text) => { err += text; },
+    out: (text) => {
+      out += text;
+    },
+    err: (text) => {
+      err += text;
+    },
     stdin: () => stdin,
   });
   return { rc, out, err, json: out.trim().startsWith("{") ? JSON.parse(out) : null };
@@ -75,7 +91,12 @@ function decisionArgs(confidence = "firm"): string[] {
 describe("typed state writer on active entity authority", () => {
   it("discovers entity paths, bare selectors, budgets, and examples", () => {
     const root = project();
-    for (const [artifact, verb] of [["progress", "append"], ["decisions", "amend"], ["health", "append"], ["plan", "set-status"]]) {
+    for (const [artifact, verb] of [
+      ["progress", "append"],
+      ["decisions", "amend"],
+      ["health", "append"],
+      ["plan", "set-status"],
+    ]) {
       const explained = run(root, [artifact, "explain", "--verb", verb, "--format", "json"]);
       expect(explained.rc, explained.err).toBe(0);
       expect(explained.json?.path).toContain(`.agentera/entities/${artifact}/`);
@@ -93,7 +114,10 @@ describe("typed state writer on active entity authority", () => {
     for (const args of [progressArgs(), ["backfill", "--apply", "--force", "--format", "json"], ["unknown-repair", "--apply", "--format", "json"]]) {
       const rejected = run(root, args);
       expect(rejected.rc).toBe(1);
-      expect(rejected.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+      expect(rejected.json?.error).toMatchObject({
+        class: "migration_required",
+        recovery: expect.stringContaining("upgrade --channel development"),
+      });
       expect(rejected.json?.error.recovery).toContain("--dry-run");
       expect(rejected.json?.error.recovery).not.toContain("--yes");
       expect(fs.readdirSync(root)).toEqual([]);
@@ -109,7 +133,11 @@ describe("typed state writer on active entity authority", () => {
     expect(files(root)).toEqual(before);
     const applied = run(root, progressArgs());
     expect(applied.rc, applied.err).toBe(0);
-    expect(applied.json).toMatchObject({ artifact: "progress", id: expect.stringMatching(/^[a-z]{10}$/), record: { what: "Entity writer" } });
+    expect(applied.json).toMatchObject({
+      artifact: "progress",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { what: "Entity writer" },
+    });
     expect(fs.existsSync(path.join(root, ".agentera/progress.yaml"))).toBe(false);
     expect(fs.existsSync(path.join(root, ".agentera/archive"))).toBe(false);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
@@ -118,7 +146,14 @@ describe("typed state writer on active entity authority", () => {
   it("converges exact public progress and decision appends without consuming IDs or order", () => {
     const root = project();
     const progressPath = path.join(root, "progress-replay.yaml");
-    const progressInput = { timestamp: "2026-07-31 08:00", type: "fix", phase: "build", what: "exact progress replay", context: { intent: "prove logical replay" }, verified: "same record converges" };
+    const progressInput = {
+      timestamp: "2026-07-31 08:00",
+      type: "fix",
+      phase: "build",
+      what: "exact progress replay",
+      context: { intent: "prove logical replay" },
+      verified: "same record converges",
+    };
     fs.writeFileSync(progressPath, dumpYamlMapping(progressInput));
     const progressDry = run(root, ["progress", "append", "--input", progressPath, "--dry-run", "--format", "json"]);
     expect(progressDry.rc).toBe(0);
@@ -129,13 +164,31 @@ describe("typed state writer on active entity authority", () => {
     const progressDryReplay = run(root, ["progress", "append", "--input", progressPath, "--dry-run", "--format", "json"]);
     const progressDifferent = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ ...progressInput, what: "different progress record" }));
     expect(progressFirst.rc).toBe(0);
-    expect(progressRetry).toMatchObject({ rc: 0, json: { id: progressFirst.json?.id, record: { publication_order: progressFirst.json?.record.publication_order }, operation: { idempotent_replay: true } } });
-    expect(progressDryReplay.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: true });
+    expect(progressRetry).toMatchObject({
+      rc: 0,
+      json: {
+        id: progressFirst.json?.id,
+        record: { publication_order: progressFirst.json?.record.publication_order },
+        operation: { idempotent_replay: true },
+      },
+    });
+    expect(progressDryReplay.json?.operation).toMatchObject({
+      dry_run: true,
+      idempotent_replay: true,
+    });
     expect(progressDifferent.rc).toBe(0);
     expect(progressDifferent.json?.id).not.toBe(progressFirst.json?.id);
     expect(progressDifferent.json?.record.publication_order).toBe(progressFirst.json?.record.publication_order + 1);
 
-    const decisionInput = { date: "2026-07-31", question: "What is the replay boundary?", context: "Public append retries must converge.", alternatives: { chosen: "Logical content", rejected: ["Generated identity"] }, choice: "Logical content", reasoning: "IDs are writer-owned metadata.", confidence: "firm" };
+    const decisionInput = {
+      date: "2026-07-31",
+      question: "What is the replay boundary?",
+      context: "Public append retries must converge.",
+      alternatives: { chosen: "Logical content", rejected: ["Generated identity"] },
+      choice: "Logical content",
+      reasoning: "IDs are writer-owned metadata.",
+      confidence: "firm",
+    };
     const decisionDry = run(root, ["decisions", "append", "--input", "-", "--dry-run", "--format", "json"], JSON.stringify(decisionInput));
     expect(decisionDry.rc).toBe(0);
     expect(decisionDry.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: false });
@@ -143,17 +196,44 @@ describe("typed state writer on active entity authority", () => {
     fs.writeFileSync(path.join(root, "decision-replay.json"), JSON.stringify(decisionInput));
     const decisionRetry = run(root, ["decisions", "append", "--input", path.join(root, "decision-replay.json"), "--format", "json"]);
     const decisionDryReplay = run(root, ["decisions", "append", "--input", path.join(root, "decision-replay.json"), "--dry-run", "--format", "json"]);
-    const decisionDifferent = run(root, ["decisions", "append", "--input", "-", "--format", "json"], JSON.stringify({ ...decisionInput, alternatives: { chosen: "Logical content", rejected: ["Generated identity", "Different order"] } }));
+    const decisionDifferent = run(
+      root,
+      ["decisions", "append", "--input", "-", "--format", "json"],
+      JSON.stringify({
+        ...decisionInput,
+        alternatives: {
+          chosen: "Logical content",
+          rejected: ["Generated identity", "Different order"],
+        },
+      }),
+    );
     expect(decisionFirst.rc).toBe(0);
-    expect(decisionRetry).toMatchObject({ rc: 0, json: { id: decisionFirst.json?.id, operation: { idempotent_replay: true } } });
-    expect(decisionDryReplay.json?.operation).toMatchObject({ dry_run: true, idempotent_replay: true });
+    expect(decisionRetry).toMatchObject({
+      rc: 0,
+      json: { id: decisionFirst.json?.id, operation: { idempotent_replay: true } },
+    });
+    expect(decisionDryReplay.json?.operation).toMatchObject({
+      dry_run: true,
+      idempotent_replay: true,
+    });
     expect(decisionDifferent.rc).toBe(0);
     expect(decisionDifferent.json?.id).not.toBe(decisionFirst.json?.id);
   });
 
   it("validates decision input before effects and composes satisfaction and amendments", () => {
     const root = project();
-    const invalid = run(root, decisionArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence: "high" }));
+    const invalid = run(
+      root,
+      decisionArgs(),
+      JSON.stringify({
+        question: "q",
+        context: "c",
+        alternatives: { chosen: "a" },
+        choice: "a",
+        reasoning: "r",
+        confidence: "high",
+      }),
+    );
     expect(invalid.rc).toBe(2);
     expect(invalid.json?.error.class).toBe("schema_violation");
     expect(validateEntityState(root).entityCount).toBe(0);
@@ -170,13 +250,22 @@ describe("typed state writer on active entity authority", () => {
     expect(fs.existsSync(path.join(root, ".agentera/entities/decisions/decision_revision"))).toBe(false);
     expect(run(root, ["decisions", "amend", "--id", id, "--base-sha256", base, "--input", "-", "--format", "json"], JSON.stringify({ choice: "Canonical entities" })).rc).toBe(0);
     const effective = (getDecisionEntity(root, id) as any).entry;
-    expect(effective.record).toMatchObject({ choice: "Canonical entities", satisfaction: { state: "provisionally_satisfied", evidence: "focused tests" } });
+    expect(effective.record).toMatchObject({
+      choice: "Canonical entities",
+      satisfaction: { state: "provisionally_satisfied", evidence: "focused tests" },
+    });
     expect(effective.provenance.revisions).toHaveLength(1);
   });
 
   it("parses health input from stdin, rejects CLI-owned identity, and publishes atomically", () => {
     const root = project();
-    const audit = { date: "2026-07-19", dimensions: ["architecture_alignment"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { architecture_alignment: "A" } };
+    const audit = {
+      date: "2026-07-19",
+      dimensions: ["architecture_alignment"],
+      findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+      trajectory: "stable",
+      grades: { architecture_alignment: "A" },
+    };
     const dry = run(root, ["health", "append", "--input", "-", "--dry-run", "--format", "json"], JSON.stringify(audit));
     expect(dry.rc).toBe(0);
     expect(validateEntityState(root).entityCount).toBe(0);
@@ -185,23 +274,35 @@ describe("typed state writer on active entity authority", () => {
     expect(validateEntityState(root).entityCount).toBe(0);
     const applied = run(root, ["health", "append", "--input", "-", "--format", "json"], JSON.stringify(audit));
     expect(applied.rc, applied.err).toBe(0);
-    expect(applied.json).toMatchObject({ artifact: "health", id: expect.stringMatching(/^[a-z]{10}$/) });
+    expect(applied.json).toMatchObject({
+      artifact: "health",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+    });
     expect(validateEntityState(root).valid).toBe(true);
   });
 
   it("publishes plan and task entities with dependencies and isolated statuses", () => {
     const root = project();
     const input = path.join(root, "plan.yaml");
-    fs.writeFileSync(input, dumpYamlMapping({
-      header: { level: "light", created: "2026-07-19", status: "open", title: "Entity writer plan" },
-      what: "Verify plan publication.", why: "Dependencies must remain valid.",
-      scope: { included: ["writer"], excluded: ["legacy aggregate"] },
-      tasks: [
-        { number: 1, name: "First", status: "complete", depends_on: [] },
-        { number: 2, name: "Second", status: "pending", depends_on: ["1"] },
-        { number: 3, name: "Third", status: "pending", depends_on: ["2"] },
-      ],
-    }));
+    fs.writeFileSync(
+      input,
+      dumpYamlMapping({
+        header: {
+          level: "light",
+          created: "2026-07-19",
+          status: "open",
+          title: "Entity writer plan",
+        },
+        what: "Verify plan publication.",
+        why: "Dependencies must remain valid.",
+        scope: { included: ["writer"], excluded: ["legacy aggregate"] },
+        tasks: [
+          { number: 1, name: "First", status: "complete", depends_on: [] },
+          { number: 2, name: "Second", status: "pending", depends_on: ["1"] },
+          { number: 3, name: "Third", status: "pending", depends_on: ["2"] },
+        ],
+      }),
+    );
     const before = files(root);
     expect(run(root, ["plan", "create", "--input", input, "--dry-run", "--format", "json"]).rc).toBe(0);
     expect(files(root)).toEqual(before);
@@ -237,8 +338,14 @@ describe("typed state writer on active entity authority", () => {
 
 describe("retained entity writer contract matrix", () => {
   it.each([
-    ["progress", "append"], ["decisions", "append"], ["health", "append"], ["plan", "create"],
-    ["objective", "create"], ["experiments", "publish"], ["todo", "create"], ["docs", "create"],
+    ["progress", "append"],
+    ["decisions", "append"],
+    ["health", "append"],
+    ["plan", "create"],
+    ["objective", "create"],
+    ["experiments", "publish"],
+    ["todo", "create"],
+    ["docs", "create"],
   ])("discovers %s %s through canonical entity paths", (artifact, verb) => {
     const explained = run(project(), [artifact, "explain", "--verb", verb, "--format", "json"]);
     expect(explained.rc, explained.err).toBe(0);
@@ -254,16 +361,9 @@ describe("retained entity writer contract matrix", () => {
       schemaVersion: "agentera.progressWritePolicy.v1",
       append: {
         mode: "conditional",
-        allowed_when: [
-          "durable_project_truth_needed_by_future_work",
-          "required_glossary_caveat",
-          "plan_completion_sweep",
-        ],
+        allowed_when: ["durable_project_truth_needed_by_future_work", "required_glossary_caveat", "plan_completion_sweep"],
         required_when: ["required_glossary_caveat", "plan_completion_sweep"],
-        no_append_required_when: [
-          "ordinary_build_or_release_attempt_without_durable_project_truth_change",
-          "durable_outcome_not_needed_by_future_work",
-        ],
+        no_append_required_when: ["ordinary_build_or_release_attempt_without_durable_project_truth_change", "durable_outcome_not_needed_by_future_work"],
         guidance: expect.stringContaining("require no progress append"),
       },
       receipt_detail: {
@@ -272,24 +372,45 @@ describe("retained entity writer contract matrix", () => {
         guidance: expect.stringContaining("do not duplicate receipt detail in progress"),
       },
     });
-    expect(explained.json?.guidance).toEqual(expect.arrayContaining([
-      expect.stringContaining("durable project truth that future work needs"),
-      expect.stringContaining("Qualification and publication receipts own timings, integrity, digests, retries, and replay"),
-    ]));
+    expect(explained.json?.guidance).toEqual(expect.arrayContaining([expect.stringContaining("durable project truth that future work needs"), expect.stringContaining("Qualification and publication receipts own timings, integrity, digests, retries, and replay")]));
     expect(explained.json?.input_schema.owned_fields).toEqual(["id", "artifact", "publication_order"]);
   });
 
   it.each(["feat", "fix", "docs", "refactor", "chore", "test"])("publishes progress type %s as one canonical entity", (type) => {
     const root = project();
-    const result = run(root, ["progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ type, phase: "build", what: `Published ${type}`, context: { intent: "Exercise allowed type" } }));
+    const result = run(
+      root,
+      ["progress", "append", "--input", "-", "--format", "json"],
+      JSON.stringify({
+        type,
+        phase: "build",
+        what: `Published ${type}`,
+        context: { intent: "Exercise allowed type" },
+      }),
+    );
     expect(result.rc, result.err).toBe(0);
-    expect(result.json).toMatchObject({ artifact: "progress", id: expect.stringMatching(/^[a-z]{10}$/), record: { type, what: `Published ${type}` } });
+    expect(result.json).toMatchObject({
+      artifact: "progress",
+      id: expect.stringMatching(/^[a-z]{10}$/),
+      record: { type, what: `Published ${type}` },
+    });
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 1 });
   });
 
   it.each(["firm", "provisional", "exploratory"])("publishes current decision confidence %s", (confidence) => {
     const root = project();
-    const result = run(root, decisionArgs(confidence), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence }));
+    const result = run(
+      root,
+      decisionArgs(confidence),
+      JSON.stringify({
+        question: "q",
+        context: "c",
+        alternatives: { chosen: "a" },
+        choice: "a",
+        reasoning: "r",
+        confidence,
+      }),
+    );
     expect(result.rc, result.err).toBe(0);
     expect(result.json?.record.confidence).toBe(confidence);
     expect(validateEntityState(root).valid).toBe(true);
@@ -297,7 +418,18 @@ describe("retained entity writer contract matrix", () => {
 
   it.each(["high", "medium", "low", "certain"])("rejects retired decision confidence %s before publication", (confidence) => {
     const root = project();
-    const result = run(root, decisionArgs(), JSON.stringify({ question: "q", context: "c", alternatives: { chosen: "a" }, choice: "a", reasoning: "r", confidence }));
+    const result = run(
+      root,
+      decisionArgs(),
+      JSON.stringify({
+        question: "q",
+        context: "c",
+        alternatives: { chosen: "a" },
+        choice: "a",
+        reasoning: "r",
+        confidence,
+      }),
+    );
     expect(result.rc).toBe(2);
     expect(result.json?.error.class).toBe("schema_violation");
     expect(validateEntityState(root).entityCount).toBe(0);
@@ -306,7 +438,21 @@ describe("retained entity writer contract matrix", () => {
   it.each(["pending", "in_progress", "blocked", "complete"])("sets plan task status %s without changing plan lifecycle", (status) => {
     const root = project();
     const input = path.join(root, "single-plan.yaml");
-    fs.writeFileSync(input, dumpYamlMapping({ header: { level: "light", created: "2026-07-19", status: "open", title: `Status ${status}` }, what: "Verify typed task status publication in packages/cli/src/state/planEntities.ts.", why: "Plan and task lifecycle statuses must remain isolated while preserving validated dependencies.", scope: { included: ["entity writer"], excluded: ["legacy aggregate authority"] }, tasks: [{ number: 1, name: "Publish one task status", status: "pending", depends_on: [] }] }));
+    fs.writeFileSync(
+      input,
+      dumpYamlMapping({
+        header: {
+          level: "light",
+          created: "2026-07-19",
+          status: "open",
+          title: `Status ${status}`,
+        },
+        what: "Verify typed task status publication in packages/cli/src/state/planEntities.ts.",
+        why: "Plan and task lifecycle statuses must remain isolated while preserving validated dependencies.",
+        scope: { included: ["entity writer"], excluded: ["legacy aggregate authority"] },
+        tasks: [{ number: 1, name: "Publish one task status", status: "pending", depends_on: [] }],
+      }),
+    );
     const created = run(root, ["plan", "create", "--input", input, "--format", "json"]);
     expect(created.rc, created.err).toBe(0);
     const changed = run(root, ["plan", "set-status", "--id", created.json?.tasks[0].id, "--status", status, "--format", "json"]);
@@ -330,7 +476,10 @@ describe("retained entity writer contract matrix", () => {
     const root = project(false);
     const result = run(root, args as string[], "{}");
     expect(result.rc).toBe(1);
-    expect(result.json?.error).toMatchObject({ class: "migration_required", recovery: expect.stringContaining("upgrade --channel development") });
+    expect(result.json?.error).toMatchObject({
+      class: "migration_required",
+      recovery: expect.stringContaining("upgrade --channel development"),
+    });
     expect(result.json?.error.recovery).toContain("--dry-run");
     expect(result.json?.error.recovery).not.toContain("--yes");
     expect(fs.readdirSync(root)).toEqual([]);
@@ -360,9 +509,7 @@ describe("retained entity writer contract matrix", () => {
     ["unknown decision field", "question: q\ncontext: c\nalternatives:\n  chosen: a\nchoice: a\nreasoning: r\nconfidence: firm\nnumber: 4\n", "schema_violation"],
   ])("rejects structured %s before publication", (_label, stdin, classification) => {
     const root = project();
-    const args = _label === "unknown decision field"
-      ? ["decisions", "append", "--input", "-", "--format", "json"]
-      : ["progress", "append", "--input", "-", "--format", "json"];
+    const args = _label === "unknown decision field" ? ["decisions", "append", "--input", "-", "--format", "json"] : ["progress", "append", "--input", "-", "--format", "json"];
     const result = run(root, args, stdin);
     expect(result.rc).not.toBe(0);
     expect(result.json?.error.class).toBe(classification);
@@ -391,8 +538,41 @@ describe("retained entity writer contract matrix", () => {
     let stdin = "";
     if (artifact === "progress") args = [...progressArgs("dry"), "--dry-run"];
     else if (artifact === "decisions") args = [...decisionArgs(), "--dry-run"];
-    else if (artifact === "health") { args = ["health", "append", "--input", "-", "--dry-run", "--format", "json"]; stdin = JSON.stringify({ date: "2026-07-19", dimensions: ["test_health"], findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 }, trajectory: "stable", grades: { test_health: "A" } }); }
-    else { const input = path.join(root, "dry-plan.yaml"); fs.writeFileSync(input, dumpYamlMapping({ header: { level: "light", created: "2026-07-19", status: "open", title: "Dry-run plan" }, what: "Verify packages/cli/src/state/planEntities.ts without creating entity files.", why: "Dry-run must validate production-shaped input while retaining the exact filesystem snapshot.", scope: { included: ["entity writer"], excluded: ["legacy aggregate authority"] }, tasks: [{ number: 1, name: "Validate dry-run publication", status: "pending", depends_on: [] }] })); args = ["plan", "create", "--input", input, "--dry-run", "--format", "json"]; }
+    else if (artifact === "health") {
+      args = ["health", "append", "--input", "-", "--dry-run", "--format", "json"];
+      stdin = JSON.stringify({
+        date: "2026-07-19",
+        dimensions: ["test_health"],
+        findings_summary: { critical: 0, warning: 0, info: 0, filtered_by_confidence: 0 },
+        trajectory: "stable",
+        grades: { test_health: "A" },
+      });
+    } else {
+      const input = path.join(root, "dry-plan.yaml");
+      fs.writeFileSync(
+        input,
+        dumpYamlMapping({
+          header: {
+            level: "light",
+            created: "2026-07-19",
+            status: "open",
+            title: "Dry-run plan",
+          },
+          what: "Verify packages/cli/src/state/planEntities.ts without creating entity files.",
+          why: "Dry-run must validate production-shaped input while retaining the exact filesystem snapshot.",
+          scope: { included: ["entity writer"], excluded: ["legacy aggregate authority"] },
+          tasks: [
+            {
+              number: 1,
+              name: "Validate dry-run publication",
+              status: "pending",
+              depends_on: [],
+            },
+          ],
+        }),
+      );
+      args = ["plan", "create", "--input", input, "--dry-run", "--format", "json"];
+    }
     const before = files(root);
     const result = run(root, args, stdin);
     expect(result.rc, result.err || result.out).toBe(0);

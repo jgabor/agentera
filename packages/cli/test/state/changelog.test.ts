@@ -8,17 +8,7 @@ import { closeoutChangelogBoundary } from "../../src/cli/capabilityContext/planS
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import { documentCloseoutContext } from "../../src/cli/capabilityContext/closeout.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
-import {
-  CHANGELOG_DOCS_MAX_READ_BYTES,
-  CHANGELOG_MAX_HEADING_BYTES,
-  CHANGELOG_MAX_OUTPUT_BYTES,
-  CHANGELOG_MAX_READ_BYTES,
-  CHANGELOG_MAX_SOURCE_PATH_BYTES,
-  CHANGELOG_QUERY_COMMAND,
-  CHANGELOG_SCANNER_ID,
-  readChangelog,
-  scanChangelogHeadings,
-} from "../../src/state/changelog.js";
+import { CHANGELOG_DOCS_MAX_READ_BYTES, CHANGELOG_MAX_HEADING_BYTES, CHANGELOG_MAX_OUTPUT_BYTES, CHANGELOG_MAX_READ_BYTES, CHANGELOG_MAX_SOURCE_PATH_BYTES, CHANGELOG_QUERY_COMMAND, CHANGELOG_SCANNER_ID, readChangelog, scanChangelogHeadings } from "../../src/state/changelog.js";
 
 let project: string;
 
@@ -53,14 +43,7 @@ function projectionBytes(value: unknown): number {
 
 describe("changelog heading scanner", () => {
   it.each(["\n", "\r\n"])("recognizes canonical headings with %j line endings", (newline) => {
-    const scan = scanChangelogHeadings([
-      "# Changelog",
-      "",
-      "## [Unreleased]",
-      "",
-      "## [2.1.0] · 2026-07-01",
-      "## [2.0.0] - 2026-06-01",
-    ].join(newline));
+    const scan = scanChangelogHeadings(["# Changelog", "", "## [Unreleased]", "", "## [2.1.0] · 2026-07-01", "## [2.0.0] - 2026-06-01"].join(newline));
     expect(scan).toMatchObject({
       status: "available",
       recognizedHeadings: ["## [Unreleased]", "## [2.1.0] · 2026-07-01"],
@@ -132,12 +115,7 @@ describe("project changelog reader", () => {
   it("uses the registry-owned docs path mapping without exposing an absolute path", () => {
     fs.mkdirSync(path.join(project, ".agentera"));
     fs.mkdirSync(path.join(project, "docs"));
-    fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), [
-      "mapping:",
-      "  - artifact: CHANGELOG.md",
-      "    path: docs/HISTORY.md",
-      "",
-    ].join("\n"));
+    fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), ["mapping:", "  - artifact: CHANGELOG.md", "    path: docs/HISTORY.md", ""].join("\n"));
     fs.writeFileSync(path.join(project, "docs/HISTORY.md"), "## [1.0.0] - 2026-07-30\n");
     expect(readChangelog(project).projection).toMatchObject({
       status: "available",
@@ -187,10 +165,7 @@ describe("project changelog reader", () => {
 
   it("fails closed when present docs authority exceeds its read bound", () => {
     fs.mkdirSync(path.join(project, ".agentera"));
-    fs.writeFileSync(
-      path.join(project, ".agentera/docs.yaml"),
-      Buffer.alloc(CHANGELOG_DOCS_MAX_READ_BYTES + 1, 0x78),
-    );
+    fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), Buffer.alloc(CHANGELOG_DOCS_MAX_READ_BYTES + 1, 0x78));
     const projection = readChangelog(project).projection;
     expect(projection).toMatchObject({ status: "unavailable", source: { path: null } });
     expect(projectionBytes(projection)).toBeLessThanOrEqual(CHANGELOG_MAX_OUTPUT_BYTES);
@@ -200,14 +175,7 @@ describe("project changelog reader", () => {
     fs.mkdirSync(path.join(project, ".agentera"));
     fs.writeFileSync(path.join(project, "CHANGELOG.md"), "## [8.8.8-default] - 2026-07-30\n");
     fs.writeFileSync(path.join(project, "private.md"), "## [9.9.9-private] - 2026-07-30\n");
-    fs.writeFileSync(
-      path.join(project, ".agentera/docs.yaml"),
-      Buffer.concat([
-        Buffer.from("# "),
-        Buffer.from([0xff]),
-        Buffer.from("\nmapping:\n  - artifact: CHANGELOG.md\n    path: private.md\n"),
-      ]),
-    );
+    fs.writeFileSync(path.join(project, ".agentera/docs.yaml"), Buffer.concat([Buffer.from("# "), Buffer.from([0xff]), Buffer.from("\nmapping:\n  - artifact: CHANGELOG.md\n    path: private.md\n")]));
     const serialized = JSON.stringify(readChangelog(project).projection);
     expect(JSON.parse(serialized)).toMatchObject({ status: "unavailable", source: { path: null } });
     expect(serialized).not.toContain("8.8.8-default");
@@ -233,7 +201,11 @@ describe("project changelog reader", () => {
     expect(readChangelog(project).projection).toMatchObject({
       status: "unavailable",
       boundary: null,
-      recovery: { strategy: "repair_validate_retry_once", retry: CHANGELOG_QUERY_COMMAND, retry_limit: 1 },
+      recovery: {
+        strategy: "repair_validate_retry_once",
+        retry: CHANGELOG_QUERY_COMMAND,
+        retry_limit: 1,
+      },
     });
   });
 
@@ -292,23 +264,23 @@ describe("project changelog reader", () => {
     let queryOutput = "";
     process.chdir(project);
     try {
-      expect(cmdQuery(
-        { query: "changelog", format: "json" },
-        { out: (text) => { queryOutput += text; } },
-      )).toBe(0);
+      expect(
+        cmdQuery(
+          { query: "changelog", format: "json" },
+          {
+            out: (text) => {
+              queryOutput += text;
+            },
+          },
+        ),
+      ).toBe(0);
     } finally {
       process.chdir(previousCwd);
     }
     const query = JSON.parse(queryOutput) as Record<string, unknown>;
 
-    const build = buildExecutionContext(
-      "build", {}, plan, { exists: true }, { exists: true }, [], { exists: true },
-      { status: "loaded" }, { status: "up_to_date" }, project,
-    )!.changelog_boundary as Record<string, unknown>;
-    const document = documentCloseoutContext(
-      "document", {}, plan, { exists: true }, [], { exists: true }, { status: "loaded" },
-      { status: "up_to_date" }, {}, project,
-    )!.changelog_boundary as Record<string, unknown>;
+    const build = buildExecutionContext("build", {}, plan, { exists: true }, { exists: true }, [], { exists: true }, { status: "loaded" }, { status: "up_to_date" }, project)!.changelog_boundary as Record<string, unknown>;
+    const document = documentCloseoutContext("document", {}, plan, { exists: true }, [], { exists: true }, { status: "loaded" }, { status: "up_to_date" }, {}, project)!.changelog_boundary as Record<string, unknown>;
 
     for (const boundary of [build, document]) {
       const serialized = JSON.stringify(boundary);

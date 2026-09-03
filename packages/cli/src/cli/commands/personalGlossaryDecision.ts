@@ -1,20 +1,10 @@
 import fs from "node:fs";
 
-import {
-  readCurrentPersonalGlossaryCandidateProjection,
-  type PersonalGlossaryCurrentGenerationResult,
-} from "../../analytics/personalGlossaryCurrentGeneration.js";
-import {
-  decidePersonalGlossaryCandidate,
-  evaluatePersonalGlossaryCandidate,
-  type PersonalGlossaryDecisionOptions,
-} from "../../analytics/personalGlossaryDecision.js";
+import { readCurrentPersonalGlossaryCandidateProjection, type PersonalGlossaryCurrentGenerationResult } from "../../analytics/personalGlossaryCurrentGeneration.js";
+import { decidePersonalGlossaryCandidate, evaluatePersonalGlossaryCandidate, type PersonalGlossaryDecisionOptions } from "../../analytics/personalGlossaryDecision.js";
 import { mineExplicitGlossaryCandidates } from "../../analytics/personalGlossaryExplicitMining.js";
 import { loadYamlMapping, withReadOnlyYamlMappingCache } from "../../core/yaml.js";
-import {
-  createGlossaryHostClassificationReceipt,
-  type GlossaryHostClassification,
-} from "../../registries/glossaryCandidateContracts.js";
+import { createGlossaryHostClassificationReceipt, type GlossaryHostClassification } from "../../registries/glossaryCandidateContracts.js";
 import { personalGlossaryCandidateDecisionContract } from "../../registries/glossaryCandidateDecisionContract.js";
 import type { PersonalGlossaryCandidateDecisionContract } from "../../registries/personalGlossaryContracts.js";
 import type { Io } from "../dispatch/shared.js";
@@ -22,8 +12,7 @@ import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 
 type Mapping = Record<string, unknown>;
 
-export interface PersonalGlossaryEvaluationDecisionOptions
-  extends PersonalGlossaryDecisionOptions {
+export interface PersonalGlossaryEvaluationDecisionOptions extends PersonalGlossaryDecisionOptions {
   /** Precomputed from the same frozen generation only by the evaluator. */
   precomputedExplicitMining?: ReturnType<typeof mineExplicitGlossaryCandidates>;
   /** Current-tier binding prevalidated for one evaluator-owned projection batch. */
@@ -34,19 +23,19 @@ export interface PersonalGlossaryEvaluationDecisionOptions
 
 const COMMAND = "agentera report personal-glossary-decision --input <file|->";
 export const PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS = ["--input"] as const;
-const RECOVERY =
-  "Correct the bounded decision request and retry; no projection, review, profile, or project bytes were changed.";
+const RECOVERY = "Correct the bounded decision request and retry; no projection, review, profile, or project bytes were changed.";
 const SHA256 = /^[a-f0-9]{64}$/u;
 const MAX_BINDING_UTF8_BYTES = 256;
 
 function mapping(value: unknown): Mapping | null {
-  return value !== null && typeof value === "object" && !Array.isArray(value)
-    ? (value as Mapping)
-    : null;
+  return value !== null && typeof value === "object" && !Array.isArray(value) ? (value as Mapping) : null;
 }
 
 function invalid(io: Io, body: InvalidInputErrorBody): number {
-  return emitInvalidInput(io, { format: "json", body: { ...body, recovery: body.recovery ?? RECOVERY } });
+  return emitInvalidInput(io, {
+    format: "json",
+    body: { ...body, recovery: body.recovery ?? RECOVERY },
+  });
 }
 
 function validContract(value: PersonalGlossaryCandidateDecisionContract): boolean {
@@ -56,29 +45,15 @@ function validContract(value: PersonalGlossaryCandidateDecisionContract): boolea
     JSON.stringify(value.requestFields) !== JSON.stringify(["schema_version", "receipt"]) ||
     value.maxRequestUtf8Bytes !== 16_384 ||
     value.resultSchemaVersion !== "agentera.personalGlossaryAdmissionResult.v1" ||
-    JSON.stringify(value.resultFields) !==
-      JSON.stringify(["schemaVersion", "command", "status", "decision", "reason", "effects"]) ||
-    JSON.stringify(value.resultStatuses) !==
-      JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
+    JSON.stringify(value.resultFields) !== JSON.stringify(["schemaVersion", "command", "status", "decision", "reason", "effects"]) ||
+    JSON.stringify(value.resultStatuses) !== JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
     value.maxResultUtf8Bytes !== 4_096 ||
     value.receiptConstructionRequestSchemaVersion !== "agentera.personalGlossaryAdmissionRequest.v2" ||
-    JSON.stringify(value.receiptConstructionRequestFields) !==
-      JSON.stringify([
-        "schema_version",
-        "candidate_id",
-        "candidate_revision",
-        "candidate_capsule_sha256",
-        "candidate_projection_sha256",
-        "generation",
-        "policy_version",
-        "classification",
-      ]) ||
+    JSON.stringify(value.receiptConstructionRequestFields) !== JSON.stringify(["schema_version", "candidate_id", "candidate_revision", "candidate_capsule_sha256", "candidate_projection_sha256", "generation", "policy_version", "classification"]) ||
     value.receiptConstructionMaxRequestUtf8Bytes !== 16_384 ||
     value.receiptConstructionResultSchemaVersion !== "agentera.personalGlossaryAdmissionResult.v2" ||
-    JSON.stringify(value.receiptConstructionResultFields) !==
-      JSON.stringify(["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"]) ||
-    JSON.stringify(value.receiptConstructionResultStatuses) !==
-      JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
+    JSON.stringify(value.receiptConstructionResultFields) !== JSON.stringify(["schemaVersion", "command", "status", "receipt", "decision", "reason", "effects"]) ||
+    JSON.stringify(value.receiptConstructionResultStatuses) !== JSON.stringify(["automatic_admission", "review_required", "abstain"]) ||
     value.receiptConstructionMaxResultUtf8Bytes !== 16_384 ||
     value.automaticProvenance !== "provenance_variants.personal_explicit_definition" ||
     value.inferredAutomaticAdmission !== "disabled" ||
@@ -86,13 +61,9 @@ function validContract(value: PersonalGlossaryCandidateDecisionContract): boolea
   );
 }
 
-function contract(
-  precomputed?: PersonalGlossaryCandidateDecisionContract,
-): PersonalGlossaryCandidateDecisionContract {
+function contract(precomputed?: PersonalGlossaryCandidateDecisionContract): PersonalGlossaryCandidateDecisionContract {
   const value = precomputed ?? personalGlossaryCandidateDecisionContract();
-  if (
-    !validContract(value)
-  ) {
+  if (!validContract(value)) {
     throw new Error("personal glossary decision contract is unavailable");
   }
   return value;
@@ -103,11 +74,19 @@ function parseArgs(argv: string[]): { input: string } | InvalidInputErrorBody {
   for (let index = 0; index < argv.length; index += 1) {
     const [name, inline] = argv[index]!.split("=", 2);
     if (!(PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS as readonly string[]).includes(name) && name !== "--format") {
-      return { class: "unrecognized_argument", message: `unrecognized arguments: ${name}`, syntax: COMMAND };
+      return {
+        class: "unrecognized_argument",
+        message: `unrecognized arguments: ${name}`,
+        syntax: COMMAND,
+      };
     }
     const value = inline ?? argv[++index];
     if (!value || value.startsWith("--")) {
-      return { class: "missing_argument", message: `${name} requires a value`, syntax: `${name} VALUE` };
+      return {
+        class: "missing_argument",
+        message: `${name} requires a value`,
+        syntax: `${name} VALUE`,
+      };
     }
     if (name === "--format") {
       if (value !== "json") {
@@ -189,26 +168,18 @@ interface ReceiptConstructionRequest {
   classification: Mapping;
 }
 
-type ValidatedRequest =
-  | { kind: "receipt"; receipt: Mapping }
-  | { kind: "receipt_construction"; request: ReceiptConstructionRequest };
+type ValidatedRequest = { kind: "receipt"; receipt: Mapping } | { kind: "receipt_construction"; request: ReceiptConstructionRequest };
 
 function exactFields(request: Mapping, fields: readonly string[]): boolean {
   const keys = Object.keys(request);
-  return keys.length === fields.length &&
-    keys.every((key) => fields.includes(key)) &&
-    fields.every((field) => field in request);
+  return keys.length === fields.length && keys.every((key) => fields.includes(key)) && fields.every((field) => field in request);
 }
 
 function boundedBinding(value: unknown): value is string {
-  return typeof value === "string" && value.length > 0 &&
-    Buffer.byteLength(value, "utf8") <= MAX_BINDING_UTF8_BYTES;
+  return typeof value === "string" && value.length > 0 && Buffer.byteLength(value, "utf8") <= MAX_BINDING_UTF8_BYTES;
 }
 
-function validateRequest(
-  request: Mapping,
-  value: PersonalGlossaryCandidateDecisionContract,
-): ValidatedRequest | { error: InvalidInputErrorBody } {
+function validateRequest(request: Mapping, value: PersonalGlossaryCandidateDecisionContract): ValidatedRequest | { error: InvalidInputErrorBody } {
   if (request.schema_version === value.requestSchemaVersion) {
     if (!exactFields(request, value.requestFields)) {
       return {
@@ -236,10 +207,7 @@ function validateRequest(
       error: {
         class: "schema_violation",
         message: "personal glossary decision request schema is invalid",
-        valid_values: [
-          value.requestSchemaVersion,
-          value.receiptConstructionRequestSchemaVersion,
-        ],
+        valid_values: [value.requestSchemaVersion, value.receiptConstructionRequestSchemaVersion],
       },
     };
   }
@@ -283,11 +251,7 @@ function validateRequest(
   };
 }
 
-function emitResult(
-  value: unknown,
-  maxResultUtf8Bytes: number,
-  io: Io,
-): number {
+function emitResult(value: unknown, maxResultUtf8Bytes: number, io: Io): number {
   const text = `${JSON.stringify(value, null, 2)}\n`;
   if (Buffer.byteLength(text, "utf8") > maxResultUtf8Bytes) {
     return invalid(io, {
@@ -299,16 +263,9 @@ function emitResult(
   return 0;
 }
 
-type ReceiptConstruction =
-  | { kind: "created"; receipt: Mapping }
-  | { kind: "unavailable"; reason: string }
-  | { kind: "invalid"; error: InvalidInputErrorBody };
+type ReceiptConstruction = { kind: "created"; receipt: Mapping } | { kind: "unavailable"; reason: string } | { kind: "invalid"; error: InvalidInputErrorBody };
 
-function constructReceipt(
-  request: ReceiptConstructionRequest,
-  options: PersonalGlossaryDecisionOptions,
-  precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult,
-): ReceiptConstruction {
+function constructReceipt(request: ReceiptConstructionRequest, options: PersonalGlossaryDecisionOptions, precomputedCurrentProjection?: PersonalGlossaryCurrentGenerationResult): ReceiptConstruction {
   let current = precomputedCurrentProjection;
   if (current === undefined) {
     try {
@@ -320,20 +277,17 @@ function constructReceipt(
   if (current.status !== "current" || current.projection === null) {
     return {
       kind: "unavailable",
-      reason: current.status === "projection_stale"
-        ? "projection_stale"
-        : current.status === "current_generation_unavailable"
-          ? "current_generation_unavailable"
-          : "projection_unavailable",
+      reason: current.status === "projection_stale" ? "projection_stale" : current.status === "current_generation_unavailable" ? "current_generation_unavailable" : "projection_unavailable",
     };
   }
-  const candidate = current.projection.candidates.find(({ capsule }) =>
-    capsule.candidate_id === request.candidateId &&
-    capsule.candidate_revision === request.candidateRevision &&
-    capsule.capsule_sha256 === request.candidateCapsuleSha256 &&
-    capsule.generation === request.generation &&
-    capsule.policy_version === request.policyVersion &&
-    current.projection!.projection_sha256 === request.candidateProjectionSha256,
+  const candidate = current.projection.candidates.find(
+    ({ capsule }) =>
+      capsule.candidate_id === request.candidateId &&
+      capsule.candidate_revision === request.candidateRevision &&
+      capsule.capsule_sha256 === request.candidateCapsuleSha256 &&
+      capsule.generation === request.generation &&
+      capsule.policy_version === request.policyVersion &&
+      current.projection!.projection_sha256 === request.candidateProjectionSha256,
   );
   if (!candidate) return { kind: "unavailable", reason: "candidate_unavailable" };
   try {
@@ -356,12 +310,7 @@ function constructReceipt(
   }
 }
 
-function receiptConstructionResult(
-  receipt: Mapping | null,
-  decision: ReturnType<typeof decidePersonalGlossaryCandidate> | null,
-  reason: string | null,
-  contractValue: PersonalGlossaryCandidateDecisionContract,
-): Mapping {
+function receiptConstructionResult(receipt: Mapping | null, decision: ReturnType<typeof decidePersonalGlossaryCandidate> | null, reason: string | null, contractValue: PersonalGlossaryCandidateDecisionContract): Mapping {
   return {
     schemaVersion: contractValue.receiptConstructionResultSchemaVersion,
     command: "report personal-glossary-decision",
@@ -405,44 +354,23 @@ function runPersonalGlossaryDecisionCommandInternal(
   }
   const validated = validateRequest(request, contractValue);
   if ("error" in validated) return invalid(io, validated.error);
-  const decide = (receipt: Mapping) => evaluation
-    ? evaluatePersonalGlossaryCandidate(
-      receipt,
-      options,
-      precomputedExplicitMining,
-      precomputedCurrentProjection,
-    )
-    : decidePersonalGlossaryCandidate(receipt, options);
+  const decide = (receipt: Mapping) => (evaluation ? evaluatePersonalGlossaryCandidate(receipt, options, precomputedExplicitMining, precomputedCurrentProjection) : decidePersonalGlossaryCandidate(receipt, options));
   if (validated.kind === "receipt") {
-    return emitResult(
-      decide(validated.receipt),
-      contractValue.maxResultUtf8Bytes,
-      io,
-    );
+    return emitResult(decide(validated.receipt), contractValue.maxResultUtf8Bytes, io);
   }
   const constructed = constructReceipt(validated.request, options, precomputedCurrentProjection);
   if (constructed.kind === "invalid") return invalid(io, constructed.error);
   if (constructed.kind === "unavailable") {
-    return emitResult(
-      receiptConstructionResult(null, null, constructed.reason, contractValue),
-      contractValue.receiptConstructionMaxResultUtf8Bytes,
-      io,
-    );
+    return emitResult(receiptConstructionResult(null, null, constructed.reason, contractValue), contractValue.receiptConstructionMaxResultUtf8Bytes, io);
   }
   const decision = decide(constructed.receipt);
-  return emitResult(
-    receiptConstructionResult(constructed.receipt, decision, null, contractValue),
-    contractValue.receiptConstructionMaxResultUtf8Bytes,
-    io,
-  );
+  return emitResult(receiptConstructionResult(constructed.receipt, decision, null, contractValue), contractValue.receiptConstructionMaxResultUtf8Bytes, io);
 }
 
 /** Run the read-only host-receipt validation and deterministic decision boundary. */
 export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): number {
   // The cache is scoped to one V2 request, not CLI startup or persistent state.
-  return withReadOnlyYamlMappingCache(() =>
-    runPersonalGlossaryDecisionCommandInternal(argv, io, {}, false),
-  );
+  return withReadOnlyYamlMappingCache(() => runPersonalGlossaryDecisionCommandInternal(argv, io, {}, false));
 }
 
 /**
@@ -450,18 +378,6 @@ export function runPersonalGlossaryDecisionCommand(argv: string[], io: Io): numb
  * construction path while measuring explicit admission before its own gate.
  * CLI dispatch never invokes this function.
  */
-export function runPersonalGlossaryEvaluationDecisionCommand(
-  argv: string[],
-  io: Io,
-  options: PersonalGlossaryEvaluationDecisionOptions,
-): number {
-  return runPersonalGlossaryDecisionCommandInternal(
-    argv,
-    io,
-    options,
-    true,
-    options.precomputedExplicitMining,
-    options.precomputedCurrentProjection,
-    options.precomputedDecisionContract,
-  );
+export function runPersonalGlossaryEvaluationDecisionCommand(argv: string[], io: Io, options: PersonalGlossaryEvaluationDecisionOptions): number {
+  return runPersonalGlossaryDecisionCommandInternal(argv, io, options, true, options.precomputedExplicitMining, options.precomputedCurrentProjection, options.precomputedDecisionContract);
 }
