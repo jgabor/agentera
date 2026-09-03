@@ -1,0 +1,15 @@
+id: lgdednndfj
+artifact: progress
+record:
+  timestamp: 2026-09-03 22:32
+  type: test
+  phase: build
+  what: Classified exact Vite+ 0.3.0 all-test type-check viability and retained the source-only outcome.
+  context:
+    intent: Measure test typing only after resolving exact Vitest 4.1.11 types, before root Vite+ migration.
+    constraints: Keep manifests and source typecheck unchanged, distinguish intentional invalid fixtures from genuine defects, and leave ruxzeprhpv in progress for independent audit.
+    scope: Temporary all-test compiler boundary, reproducible evidence, and its focused verifier.
+  discovered: With Vitest imports resolved, compiler diagnostics fell to 419 across 92 test files and zero source files. Findings include expected negative shapes such as releaseMetadata.test.ts deliberately adding an unexpected dependency, plus genuine debt such as unchecked JsonValue access in startupAnalysisThreshold.test.ts. The residual cost is not bounded enough for bare-check admission.
+  verified: Exact Vite+ 0.3.0 bundled Vite 8.2.2, Vitest 4.1.11, Oxlint 1.79.0, and Oxfmt 0.64.0 completed the isolated measurement in 2.005 seconds. The focused evidence verifier passed; broader source and package gates are recorded in the same commit after execution.
+  next: Task hyemdltspp must retain source-only typecheck. Keep ruxzeprhpv in progress for independent audit.
+  publication_order: 321

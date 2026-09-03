@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: seltbrpsin
   name: Decompose blocked monoliths and complete formatter normalization
-  status: in_progress
+  status: blocked
   depends_on:
     - gwedzsstko
   acceptance:
@@ -12,12 +12,12 @@ record:
     - GIVEN behavioral and package verification WHEN the replacement settles THEN no new failure remains beyond independently proven baseline issues.
     - GIVEN the staged delivery WHEN committed THEN required hooks pass through supported parity ownership and clean/drift regression remains covered.
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: planEntities extraction was threshold padding; the new emitted producer left activation census stale; progress misstated formatter-policy changes and lacked sufficient mechanical-diff evidence.
+    last_failure_evidence: Owner-required parity re-pin changed a fixture the task required unchanged, and exact Vite+ 0.3 formatter-equivalence evidence was not retained as a replayable artifact.
     provenance:
-      attempt_id: orchestrate-audit-cninkdteua-1
-      source: "Independent audit: criteria 2 and 4 pass; criteria 1 and 3 plus evidence audit fail."
-      recorded_at: 2026-09-03 21:38
+      attempt_id: orchestrate-audit-cninkdteua-2
+      source: "Independent correction audit: criteria 1, 3, and 4 pass; criterion 2 and evidence retention fail."
+      recorded_at: 2026-09-03 22:26
       writer_command: agentera state plan record-evaluation

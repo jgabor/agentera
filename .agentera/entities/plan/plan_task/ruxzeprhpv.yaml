@@ -4,7 +4,7 @@ record:
   name: Classify all-test type-checking viability
   depends_on:
     - ogzqmopftv
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN Vitest types are resolvable WHEN diagnostics run THEN residual findings are retained by code and file without changing test behavior.
     - GIVEN intentionally invalid fixtures WHEN findings are classified THEN expected negative shapes are distinguished from genuine type defects with one valid and one intentional-invalid case.

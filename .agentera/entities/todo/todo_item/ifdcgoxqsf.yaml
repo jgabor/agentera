@@ -1,0 +1,24 @@
+id: ifdcgoxqsf
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Retain replayable Vite+ formatter equivalence evidence
+  requirements:
+    - Track an independently reproducible proof for the selected Vite+ 0.3.0 formatter normalization.
+    - Distinguish formatter-protected fixtures from separately owner-authorized parity compatibility updates.
+    - Use a complete audited replacement before superseding the blocked formatter tasks.
+  acceptance:
+    - The selected formatter version and equivalence digest are reproducible from tracked evidence.
+    - Formatter preservation passes without falsely claiming the parity owner update was unchanged.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Retain replayable Vite+ formatter equivalence evidence"
+      severity: normal
+      status: open
+      order: 32
