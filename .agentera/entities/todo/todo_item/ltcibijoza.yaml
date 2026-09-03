@@ -1,0 +1,24 @@
+id: ltcibijoza
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Make Vite+ orchestration evidence independently replayable
+  requirements:
+    - Replan failed formatter and type-check tasks so acceptance distinguishes formatter effects, owner-authorized compatibility updates, and known baseline failures.
+    - Retain exact transient toolchain configuration, source binding, output, and integrity needed to replay measurements independently.
+    - Require focused verifiers to execute representative valid and intentional-invalid cases rather than validate self-declared totals.
+  acceptance:
+    - Replacement tasks for obhhyoadbq, cninkdteua, and ruxzeprhpv have evidence that an independent audit can reproduce.
+    - Orchestration resumes only after the active plan is revised with truthful behavioral acceptance.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Make Vite+ orchestration evidence independently replayable"
+      severity: normal
+      status: open
+      order: 33

@@ -47,6 +47,7 @@
 - [ ] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
 - [ ] [id:bhwgdxohmy] [refactor:3.0.0] Decompose formatter-expanded CLI monoliths
 - [ ] [id:ifdcgoxqsf] [test:3.0.0] Retain replayable Vite+ formatter equivalence evidence
+- [ ] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
 
 ## ⇢ Annoying
 
