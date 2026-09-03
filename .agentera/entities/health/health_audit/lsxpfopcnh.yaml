@@ -1,0 +1,27 @@
+id: lsxpfopcnh
+artifact: health
+record:
+  date: 2026-09-03
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: secure development publication and closure artifacts are current."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: Limited terminal closure for plan kmguevcmrp, not a codebase-wide audit. All tasks are complete or validly superseded with latest PASS evaluations. Build-owned TODO, changelog, progress, and plan artifacts are fresh. npm @next dev.93 is integrity- and SLSA-bound to its feat/v3 source; @latest remains 0.0.2.
+      findings:
+        []
+  trends:
+    improved: Unified configuration-as-code publication now routes safely and publishes @next through bounded GitHub OIDC provenance.
+    degraded: None in this limited terminal-task scope.
+    new_findings: None.
+    resolved: Artifact redirect credential forwarding and incomplete npm provenance identity are resolved; dev.93 converged with signed provenance.
+    carried_forward: Stable @latest cutover TODOs remain open; decision, vision, and profile detail remain deferred; two push authorizations were unused.
+  appended_at: 2026-09-03T14:15:12.610Z
