@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: kmguevcmrp
   name: Pass bounded GitHub provenance metadata
-  status: in_progress
+  status: complete
   depends_on:
     - ghfialnrge
   acceptance:
@@ -12,3 +12,13 @@ record:
     - GIVEN npm 11.17 provenance construction WHEN exercised locally THEN workflow, repository, source SHA, event, repository IDs, runner, run, and attempt fields are complete and valid.
     - GIVEN publication regressions and broad gates WHEN run THEN redirect, hostile input, registry, replay, package, source, compact, and prime-budget checks pass.
   evidence: Replacement prerequisite for blocked task pbpptjlpza after npm rejected dev.92 with an incomplete GitHub Actions SLSA predicate.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-lddrupjrkm-1
+      source: orchestrate evidence evaluation for task lddrupjrkm
+      recorded_at: 2026-09-03 15:28
+      writer_command: agentera state plan record-evaluation
