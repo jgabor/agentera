@@ -22,10 +22,3 @@ record:
       severity: normal
       status: open
       order: 28
-    create_batch:
-      effect_sha256: 5961383bd2632386818cc94df83c1129055326d1419fef8604ff85f2673dfe50
-      input_sha256: 488f6977b84d840503faccc38b5805add2753d91ce09d4d73e12abe96f1e6a26
-      local_refs:
-        typed-tests: oeadkhtqub
-        root-vite: qefxkkmyyw
-        vite-ci: dzrruetyod

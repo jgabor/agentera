@@ -4,19 +4,19 @@ record:
   name: Select and prove the unified toolchain baseline
   depends_on:
     []
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN current supported runtimes and package policy WHEN versions are selected THEN one exact Vite+ and setup-vp pair has retained provenance and compatibility evidence.
     - GIVEN fresh and installed environments WHEN ownership is probed THEN bootstrap hands off to the exact root toolchain and stale global tooling cannot own project commands.
     - GIVEN accepted and rejected install cases WHEN tested THEN the pnpm pin, frozen-lock failure, script restrictions, and current timing baseline are demonstrated with one pass and one fail per new contract.
   plan: seltbrpsin
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: No acceptable exact setup-vp pair was selected; stale global ownership did not hand off to a root toolchain; install-script pass/fail coverage was not exercised.
+    last_failure_evidence: Vite+ 0.3.0 is acceptable, but exhaustive setup-vp release review found no integrity-verified fail-closed release; criteria 2 and 3 pass, criterion 1 fails.
     provenance:
-      attempt_id: orchestrate-audit-ogzqmopftv-1
-      source: "Independent task audit: criteria 0/3 pass; progress evidence was concrete but substantiated the blocked partial outcome."
-      recorded_at: 2026-09-03 19:14
+      attempt_id: orchestrate-audit-ogzqmopftv-2
+      source: "Independent correction audit: criteria 2/3 pass; evidence audit pass; overall fail because no acceptable exact setup pair exists."
+      recorded_at: 2026-09-03 19:45
       writer_command: agentera state plan record-evaluation
