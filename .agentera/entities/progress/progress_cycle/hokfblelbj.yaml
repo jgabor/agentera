@@ -1,0 +1,14 @@
+id: hokfblelbj
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:56
+  type: fix
+  phase: build
+  what: Captured the final authorized publication failure.
+  context:
+    intent: Preserve the exhausted publication attempt for Audit.
+    constraints: No rerun, push, manual publish, token, dist-tag, or setting change; zero push authorizations remain.
+    scope: Plan task pbpptjlpza.
+  discovered: The live artifact redirect and registry guard passed. npm rejected Trusted Publishing with E422 because the isolated publish child omitted GitHub metadata required to verify its provenance predicate.
+  verified: Publish Agentera run 33746838768 (#3) allocated dev.92. Route, build, classification, artifact download, and pre-publish guard passed; publish failed and convergence skipped. Registry checks retained @next dev.89 and @latest 0.0.2, with dev.92 absent.
+  publication_order: 309
