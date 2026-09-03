@@ -11,6 +11,8 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const REQUIRED_PNPM = "10.30.3";
 const REQUIRED_PACKAGE_MANAGER = `pnpm@${REQUIRED_PNPM}`;
 const REQUIRED_VP = "0.3.0";
+const REQUIRED_SETUP_VP = "1.18.0";
+const REQUIRED_SETUP_VP_COMMIT = "1b32467adbe183473499fd9d5d372c3ed9641754";
 const REQUIRED_NODE = fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim();
 const SCRIPT_PACKAGE_VERSION = `1.0.0-${Date.now()}`;
 const COREPACK = process.platform === "win32" ? "corepack.cmd" : "corepack";
@@ -106,7 +108,16 @@ try {
   assert.equal(process.version, `v${REQUIRED_NODE}`, "integration must use the pinned Node.js");
   const retainedBaseline = loadToolchainBaseline();
   assert.equal(retainedBaseline.selection.vite_plus.version, REQUIRED_VP);
-  assert.equal(retainedBaseline.selection.setup_vp.selected, null);
+  assert.equal(retainedBaseline.selection.setup_vp.selected.version, REQUIRED_SETUP_VP);
+  assert.equal(
+    retainedBaseline.selection.setup_vp.selected.action_commit,
+    REQUIRED_SETUP_VP_COMMIT,
+  );
+  assert.equal(retainedBaseline.selection.setup_vp.selected.classification, "accepted_risk");
+  assert.equal(
+    retainedBaseline.selection.setup_vp.selected.boundary,
+    "non_oidc_install_or_build_jobs_only",
+  );
 
   const fixture = path.join(sandbox, "project");
   const sources = path.join(sandbox, "package-sources");

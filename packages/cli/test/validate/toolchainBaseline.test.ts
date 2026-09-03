@@ -10,6 +10,9 @@ const baseline = YAML.parse(
 );
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
+const publicationWorkflow = YAML.parse(
+  fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"),
+);
 const cliPackage = JSON.parse(
   fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"),
 );
@@ -39,7 +42,7 @@ const setupVpReleases = [
 ];
 
 describe("toolchain baseline", () => {
-  it("retains every exact setup-vp release and the current rejected implementation", () => {
+  it("retains every exact setup-vp release and the accepted risk boundary", () => {
     expect(Object.entries(baseline.selection.setup_vp.release_inventory)).toEqual(setupVpReleases);
     expect(Object.values(baseline.selection.setup_vp.implementations)).toSatisfy(
       (implementations: any[]) =>
@@ -48,10 +51,23 @@ describe("toolchain baseline", () => {
             implementation.integrity_verified === false && implementation.fail_closed === false,
         ),
     );
-    expect(baseline.selection.setup_vp.selected).toBeNull();
+    expect(baseline.selection.setup_vp.selected).toEqual({
+      version: "1.18.0",
+      action_commit: "1b32467adbe183473499fd9d5d372c3ed9641754",
+      classification: "accepted_risk",
+      boundary: "non_oidc_install_or_build_jobs_only",
+      compatibility: "requests the exact Vite+ 0.3.0 release before fallback",
+    });
     expect(baseline.selection.setup_vp.upstream_head.commit).toBe(
       "5af416ede120848958d85c9720e61b921ac7bca6",
     );
+  });
+
+  it("keeps setup actions out of the OIDC publisher", () => {
+    const publisher = publicationWorkflow.jobs["publish-development"];
+    expect(publisher.permissions["id-token"]).toBe("write");
+    expect(publisher.steps.every((step: { uses?: string }) => step.uses === undefined)).toBe(true);
+    expect(JSON.stringify(publisher)).not.toContain("setup-vp");
   });
 
   it("binds the executable integration proof to live project policy", () => {

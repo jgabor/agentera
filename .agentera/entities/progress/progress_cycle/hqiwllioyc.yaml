@@ -1,0 +1,16 @@
+id: hqiwllioyc
+artifact: progress
+record:
+  timestamp: 2026-09-03 19:52
+  type: chore
+  phase: build
+  what: Selected the exact Vite+ and setup-vp baseline under the user-accepted non-OIDC risk boundary.
+  context:
+    intent: Retain the accepted toolchain baseline and executable evidence for plan task gwedzsstko.
+    constraints: Keep pnpm 10.30.3, lockfile and script policy, root-local ownership, and the setup-free OIDC publisher unchanged.
+    unknowns: Independent audit and blocker disposition remain with the orchestrator.
+    scope: Baseline evidence and narrow structural tests only; no root, CI setup, or publication migration.
+  discovered: setup-vp 1.18.0 remains compatible with requesting Vite+ 0.3.0 but executes unverified installer content and can use mutable fallback content.
+  verified: Pinned-Node integration proved root Vite+ 0.3.0 ownership over stale vp 0.1.19, pnpm 10.30.3 pin rejection, frozen-lock acceptance and failure, lifecycle-script allowlisting, and observational timing. Targeted structural tests, typecheck, build, compact, capability-contract, and retained-reference checks passed; the OIDC publisher has no setup action.
+  next: Keep task gwedzsstko in progress for independent orchestrator audit; do not resolve blocker rtfizoqaxt here.
+  publication_order: 316

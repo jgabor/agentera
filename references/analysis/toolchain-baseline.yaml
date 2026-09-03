@@ -1,5 +1,5 @@
 schema_version: agentera.toolchainBaseline.v2
-status: blocked
+status: selected_with_accepted_risk
 recorded: 2026-09-03
 purpose: >-
   Retain the exact Vite+ candidate, exhaustive setup-vp trust review, isolated
@@ -19,8 +19,15 @@ selection:
       oxfmt: 0.64.0
     conclusion: compatible with the pinned Node 24.19.0 runtime
   setup_vp:
-    selected: null
-    conclusion: no exact release satisfies Agentera's setup trust boundary
+    selected:
+      version: 1.18.0
+      action_commit: 1b32467adbe183473499fd9d5d372c3ed9641754
+      classification: accepted_risk
+      boundary: non_oidc_install_or_build_jobs_only
+      compatibility: requests the exact Vite+ 0.3.0 release before fallback
+    conclusion: >-
+      Selected by explicit user acceptance for non-OIDC install or build jobs
+      despite unverified installer execution and mutable fallback
     required_properties:
       - integrity verification before installer execution
       - fail-closed behavior with no mutable installer fallback
@@ -91,6 +98,11 @@ project_contract:
     allow_only:
       - esbuild
   no_task_result_cache: true
+  oidc_publisher:
+    workflow: .github/workflows/publish.yml
+    job: publish-development
+    setup_vp_allowed: false
+    setup_actions_allowed: false
 
 executable_proof:
   command: pnpm -C packages/cli run test:toolchain-baseline
@@ -119,8 +131,8 @@ executable_proof:
       allowed_executed: esbuild
       rejected_suppressed: blocked-build
     elapsed_seconds:
-      fresh_frozen_install: 0.287
-      installed_vp_frozen_install: 0.470
+      fresh_frozen_install: 0.340
+      installed_vp_frozen_install: 0.495
     timing_interpretation: observational only; not a budget
 
 sources:
@@ -135,10 +147,8 @@ sources:
   - https://registry.npmjs.org/vite-plus/0.3.0
   - https://pnpm.io/cli/install#--frozen-lockfile
 
-blocker: >-
-  Every official exact setup-vp v1 release and current upstream source executes
-  installer bytes without prior integrity verification, and none fails closed
-  without a mutable installer path. No acceptable exact Vite+ 0.3.0/setup-vp
-  pair exists. A fork, vendor, or wrapper would change the approved architecture,
-  so the orchestrator must keep task ogzqmopftv in progress while replanning or
-  awaiting an upstream release.
+caveat: >-
+  setup-vp 1.18.0 executes installer bytes without prior integrity verification
+  and can fall back to mutable viteplus.dev or vite-plus main-branch content.
+  This accepted risk is limited to non-OIDC jobs that install or build; the
+  checkout-free, action-free, setup-free OIDC publisher remains excluded.

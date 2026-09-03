@@ -1,0 +1,13 @@
+id: gwedzsstko
+artifact: plan
+record:
+  plan: seltbrpsin
+  name: Select the accepted toolchain baseline with explicit setup risk
+  status: in_progress
+  depends_on:
+    []
+  acceptance:
+    - GIVEN the user accepted mutable installer fallback in non-OIDC setup jobs WHEN versions are selected THEN exact Vite+ and setup-vp releases have retained provenance, compatibility, and risk evidence.
+    - GIVEN fresh and installed environments WHEN ownership is probed THEN bootstrap hands off to the exact root toolchain and stale global tooling cannot own project commands.
+    - GIVEN accepted and rejected install cases WHEN tested THEN pnpm pinning, frozen-lock failure, script restrictions, and observational timing remain proven.
+    - GIVEN publication credentials WHEN boundaries are inspected THEN setup-vp remains absent from the setup-free OIDC publisher.
