@@ -1,0 +1,12 @@
+id: yabujtdinh
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:52
+  type: chore
+  phase: audit
+  what: Completed the missing verification record for task zmorpkcxrj.
+  context:
+    intent: Preserve concise recovery acceptance evidence.
+    constraints: State-only append; no product, bootstrap, Git configuration, external state, task status, push, or broad-gate change.
+  verified: "Fresh worktree /tmp/opencode/agentera-feat-v3-recovery-20260903 had ordinary status clean on feat/v3 at f717962bb077fe9ee311bc8de516de8262c3164c, with origin/feat/v3 an ancestor (0 behind, 9 ahead). Clean bootstrap /tmp/opencode/agentera-main-publication-bootstrap-recovery-20260903 is adcf6c04a8885c00fc1e104e55e65cd3ef208a8d and exactly D .github/workflows/publish-stable.yml old blob 19f0ef654bf333030988bf7159747b5dd80b8787, A .github/workflows/publish.yml blob e02ed805f22d12e8783b8787e1a9462565d49c65, and A references/adapters/package-publication.json blob 714b2a26b3c880473c9b79ef01d448c32d59e097. Main simulation: selected=false, build=false, publish=false. Prior broad gates: progress popxmdtvhx. After the main bootstrap consumes run 1 without publication, the first selected run is >=2, so offset 89 allocates >=3.0.0-dev.91. Recovery push count: 0."
+  publication_order: 303
