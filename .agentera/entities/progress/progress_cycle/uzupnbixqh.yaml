@@ -1,0 +1,15 @@
+id: uzupnbixqh
+artifact: progress
+record:
+  timestamp: 2026-09-03 22:09
+  type: fix
+  phase: build
+  what: Corrected the formatter decomposition boundary, activation census closure, and retained verification evidence after independent audit.
+  context:
+    intent: Satisfy task cninkdteua without weakening the monolith or formatter gates.
+    constraints: Keep the task in progress for final audit; preserve the first FAIL evaluation, protected formatter exclusions, pre-migration manifest, parity ownership, package behavior, and publication boundaries.
+    scope: Plan replacement identity ownership, activation census and canonical tuples, formatter evidence, and exact affected tests only.
+  discovered: "The formatter policy in 0afd2133 did change: global printWidth became 320 and six overrides add objectWrap collapse. That commit changed 678 paths (667 modified, 11 added): 656 formatting-only paths are parse/AST equivalent under formatter-owned parenthesis and associative grouping normalization, with Markdown table-layout equivalence (manifest SHA-256 f1f838c3fc5a0686f83a43a8aa58e45bc0f57f287290c70c444f3b18c6714512); one source assertion changed only to tolerate formatted whitespace. The remaining 21 paths are the declared decomposition, state, formatter-policy, parity, and registry changes. This correction changes nine such paths plus this progress entity, ten paths total."
+  verified: "Selected write invocation: `mise x node@24.19.0 -- corepack pnpm --package=vite-plus@0.3.0 dlx vp fmt packages/cli --write`; the exact `--check` form passed all 735 current files. The three governed modules are 999, 915, and 963 wc lines. Focused migration-preview, plan, discovery-reuse, TODO/docs, activation-conjunction, monolith, clean/drift, publication-model, and retained-reference tests passed. Parity matched origin/main 149e0595. Typecheck, build, package verification (25/25), compact, capability contract, retained-reference validation, and activation validation passed. Full source ran 261 files: 4286 passed, 2 skipped, and exactly one independently pre-existing failure remained, primeBudget gpt5_tokens. Manual pre-commit passed agentera-state, configs, and tests; no hook was skipped. Manifest remains vite-plus 0.2.9."
+  next: Keep cninkdteua in progress for independent final audit; do not close or block it.
+  publication_order: 320

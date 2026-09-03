@@ -11,3 +11,13 @@ record:
     - GIVEN the complete declared surface WHEN formatting validation runs THEN every included file is clean and protected fixtures and generated outputs remain unchanged.
     - GIVEN behavioral and package verification WHEN the replacement settles THEN no new failure remains beyond independently proven baseline issues.
     - GIVEN the staged delivery WHEN committed THEN required hooks pass through supported parity ownership and clean/drift regression remains covered.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: planEntities extraction was threshold padding; the new emitted producer left activation census stale; progress misstated formatter-policy changes and lacked sufficient mechanical-diff evidence.
+    provenance:
+      attempt_id: orchestrate-audit-cninkdteua-1
+      source: "Independent audit: criteria 2 and 4 pass; criteria 1 and 3 plus evidence audit fail."
+      recorded_at: 2026-09-03 21:38
+      writer_command: agentera state plan record-evaluation

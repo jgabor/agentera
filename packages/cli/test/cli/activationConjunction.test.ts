@@ -66,7 +66,7 @@ describe("activation conjunction", () => {
     });
     const result = validate();
     expect(result.status).toBe("pass");
-    expect(result.counts as any).toMatchObject({ classes: 7, surfaces: 304, dimensions: 6 });
+    expect(result.counts as any).toMatchObject({ classes: 7, surfaces: 306, dimensions: 6 });
   });
 
   it("recomputes every immutable canonical tuple count and digest independently", () => {
@@ -465,7 +465,7 @@ describe("activation conjunction", () => {
     omitUsage(inputs);
     const result = validate(inputs);
     authorityFailure(result, "cli", "census closure failed");
-    expect((result.counts as any).surfaces).toBe(303);
+    expect((result.counts as any).surfaces).toBe(305);
   });
 
   it("fails the exact coordinated design omission instead of shrinking capabilities", () => {

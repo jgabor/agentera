@@ -2,9 +2,10 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
+import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
-import { entityExactGetMaxBytes } from "./entityStorage.js";
+import { entityExactGetMaxBytes, type DiscoveredEntity } from "./entityStorage.js";
 import { FILE_REPLACEMENT_METADATA_NAME, FILE_REPLACEMENT_RECOVERY_VERSION, validateEntityRecoveryDirectory, type EntityPublicationContext, type EntityRecoveryDirectoryIdentity, type PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { reject } from "./write/errors.js";
 
@@ -79,12 +80,97 @@ interface FileRecoveryMetadata {
   after_sha256: string;
 }
 
-function mapping(value: unknown): value is Record<string, unknown> {
+function mapping(value: unknown): value is JsonObject {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
 function sha256(value: Buffer | string): string {
   return createHash("sha256").update(value).digest("hex");
+}
+
+function replacementPlanRecord(input: Record<string, unknown>): JsonObject {
+  const record = structuredClone(input) as JsonObject;
+  delete record.tasks;
+  delete record.previous_plan_archived;
+  delete record.replacement_input_sha256;
+  const header = mapping(record.header) ? record.header : {};
+  delete header.id;
+  if (header.status === "active") header.status = "open";
+  if (header.status === "completed") header.status = "complete";
+  record.header = header;
+  return record;
+}
+
+function uniqueReplacementTaskNames(tasks: JsonObject[], context: string, failureClass: "schema_violation" | "conflict"): Map<string, JsonObject> {
+  const names = new Map<string, JsonObject>();
+  for (const task of tasks) {
+    const name = task.name;
+    if (typeof name !== "string" || name.length === 0) {
+      reject({ class: failureClass, message: `${context} contains a task without a non-empty name` });
+    }
+    if (names.has(name)) {
+      reject({ class: failureClass, message: `${context} contains duplicate task name '${name}', so replacement replay cannot identify a task` });
+    }
+    names.set(name, task);
+  }
+  return names;
+}
+
+function logicalReplacementTask(record: JsonObject, dependencies: unknown[], resolveDependency: (dependency: unknown) => string): JsonObject {
+  const logical = structuredClone(record);
+  for (const field of ["number", "plan", "status", "evaluation", "superseded_by", "superseded_reason"]) delete logical[field];
+  logical.depends_on = dependencies.map(resolveDependency);
+  if (!Array.isArray(logical.acceptance)) logical.acceptance = [];
+  return logical;
+}
+
+function replacementInputFingerprint(input: Record<string, unknown>): JsonObject {
+  const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
+  const names = uniqueReplacementTaskNames(tasks, "replacement input", "schema_violation");
+  const byOrdinal = new Map(tasks.map((task, index) => [String(index + 1), String(task.name)]));
+  const logicalTasks = [...names.entries()].map(([name, task]) => {
+    const dependencies = Array.isArray(task.depends_on) ? task.depends_on : [];
+    const record = logicalReplacementTask(task, dependencies, (dependency) => {
+      const target = byOrdinal.get(String(dependency));
+      if (!target) throw new Error(`replacement input dependency '${String(dependency)}' was not normalized before replay comparison`);
+      return target;
+    });
+    return [name, record] as const;
+  });
+  return { plan: replacementPlanRecord(input), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) };
+}
+
+export function replacementInputSha256(input: Record<string, unknown>): string {
+  return createHash("sha256")
+    .update("agentera.planReplacementInput.v1\0")
+    .update(canonicalRecordJson(replacementInputFingerprint(input)))
+    .digest("hex");
+}
+
+export function replacementSuccessorInputSha256(entities: DiscoveredEntity[], successor: DiscoveredEntity): string {
+  const tasks = entities.filter((entity) => entity.boundary === "plan_task" && entity.record?.plan === successor.id);
+  const records = tasks.map((task) => structuredClone(task.record!));
+  const names = uniqueReplacementTaskNames(records, `successor '${successor.id}'`, "conflict");
+  const namesById = new Map(tasks.map((task) => [task.id!, String(task.record!.name)]));
+  const logicalTasks = [...names.entries()].map(([name, task]) => {
+    const dependencies = Array.isArray(task.depends_on) ? task.depends_on : [];
+    const record = logicalReplacementTask(task, dependencies, (dependency) => {
+      const target = typeof dependency === "string" ? namesById.get(dependency) : undefined;
+      if (!target) throw new Error(`successor '${successor.id}' has a task dependency outside its canonical task graph`);
+      return target;
+    });
+    return [name, record] as const;
+  });
+  return createHash("sha256")
+    .update("agentera.planReplacementInput.v1\0")
+    .update(canonicalRecordJson({ plan: replacementPlanRecord(successor.record!), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) }))
+    .digest("hex");
+}
+
+export function assertReplacementInputReplay(input: Record<string, unknown>, successor: DiscoveredEntity): void {
+  if (successor.record?.replacement_input_sha256 !== replacementInputSha256(input)) {
+    reject({ class: "conflict", message: `replacement input diverges from immutable successor identity '${successor.id}'`, recovery: "Retry the exact logical successor plan input, or start a new targeted replacement from an open predecessor; no state was changed." });
+  }
 }
 
 function encode(value: Buffer | string): string {

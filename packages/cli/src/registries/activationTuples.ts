@@ -171,6 +171,21 @@ const addedTuples: ActivationCanonicalTuple[] = [
   },
   {
     class: "package",
+    surface_id: "emitted:packages/cli/src/state/todoDocsReconciliation.ts",
+    owner_path: "packages/cli/src/registries/packageRegistry.ts",
+    owner_symbol_or_selector: "loadRegistry",
+    owner_selector: "packages/cli/src/state/todoDocsReconciliation.ts",
+    semantic_selector_if_any: JSON.stringify({
+      path: "packages/cli/src/state/todoDocsReconciliation.ts",
+      selector: null,
+      format: null,
+      classification: null,
+      reason: "TODO reconciliation reads publish guarded recovery and authority guidance.",
+    }),
+    canonical_correction: "pnpm -C packages/cli run verify:package",
+  },
+  {
+    class: "package",
     surface_id: "generated:build-source-identity",
     owner_path: "packages/cli/src/registries/packageRegistry.ts",
     owner_symbol_or_selector: "loadRegistry",
@@ -229,6 +244,15 @@ const addedTuples: ActivationCanonicalTuple[] = [
     semantic_selector_if_any: null,
     canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
   },
+  {
+    class: "reference",
+    surface_id: "references/analysis/toolchain-baseline.yaml",
+    owner_path: "packages/cli/scripts/verify-toolchain-baseline.mjs",
+    owner_symbol_or_selector: "loadToolchainBaseline",
+    owner_selector: "references/analysis/toolchain-baseline.yaml",
+    semantic_selector_if_any: null,
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
+  },
   ...["dokumentera", "hej", "inspektera", "inspirera", "optimera", "orkestrera", "planera", "profilera", "realisera", "resonera", "visionera", "visualisera"].map((name): ActivationCanonicalTuple => ({
     class: "runtime",
     surface_id: `retired:codex.agent-descriptor.${name}`,
@@ -272,23 +296,23 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "089cf633c18625404ed7e19730a0c609f29f8f3f89bb89e184033e84ae9bba74",
     },
     reference: {
-      count: 27,
-      sha256: "1a808828a89be6373712f4bd98889d3665e147c9661dde6c67d0bb564ee047f5",
+      count: 28,
+      sha256: "45e2bbf90fee4480244129d8c21f593317d20c5d46a0aa276330e8bbf028bfbd",
     },
     state: {
       count: 38,
       sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777",
     },
     package: {
-      count: 68,
-      sha256: "068465a0fbfd1ee189961eb7fbd4cf52309e3d9a1d0672bbfca43adb2740b6a7",
+      count: 69,
+      sha256: "896bb31a16d3ee2c089ab93ed8b61ae9b571ec908be75aebc478eedf626c5e9c",
     },
     bootstrap: {
       count: 34,
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 304, sha256: "22611a72d0f8038699a8cfb9533c92666477a876d7b11734917c32ff8cfe5707" },
+  total: { count: 306, sha256: "6fcb5c6e30c85ab0baaa34bffd60b84674f03f75642e20511a0a15936d676617" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

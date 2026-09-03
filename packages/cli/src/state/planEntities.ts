@@ -9,7 +9,7 @@ import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
 import { allocateEntityId, canonicalEntityEnvelopeBytes, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntity, replaceEntity, replaceEntityUnderLock, validateEntityDiscovery, validateEntityState, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
 import { EntityPublicationContext, type PublishedTargetIdentity } from "./entityPublicationContext.js";
-import { inspectPendingPlanReplacement, publishPlanReplacement, recoverPendingPlanReplacement } from "./planReplacementTransaction.js";
+import { assertReplacementInputReplay, inspectPendingPlanReplacement, publishPlanReplacement, recoverPendingPlanReplacement, replacementInputSha256, replacementSuccessorInputSha256 } from "./planReplacementTransaction.js";
 import { detectStateModeBinding, freshEntityStateMarker, freshPlanInitialization } from "./stateMode.js";
 import { normalizeAndValidatePlanCreateInput, validatePlanPublicationCandidate } from "./write/planPublication.js";
 import { reject } from "./write/errors.js";
@@ -20,7 +20,22 @@ import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, reso
 import { shellQuoteArgument } from "../core/shell.js";
 import { preCutoverCommand } from "../cli/preCutoverCommand.js";
 
-import { ARTIFACT, ID, OPEN, ORDER, PLAN, TASK, TASK_ORDER, type PlanEntityContract as Contract } from "./planEntityContract.js";
+const ARTIFACT = "plan";
+const PLAN = "plan";
+const TASK = "plan_task";
+const ID = /^[a-z]{10}$/;
+const OPEN = new Set(["open"]);
+const ORDER = "created_desc_then_id_asc";
+const TASK_ORDER = "id_asc";
+
+interface Contract {
+  authorityPath: string;
+  entityRoot: string;
+  defaultLimit: number;
+  maximumLimit: number;
+  maxUtf8Bytes: number;
+  openPlanConflictLimit: number;
+}
 
 interface Options {
   sourceRoot?: string;
@@ -438,91 +453,6 @@ function existingReplacementDecision(entities: DiscoveredEntity[], predecessor: 
   successorRecord.previous_plan_archived = predecessor.id!;
   successorRecord.replacement_input_sha256 = inputSha256;
   return { predecessor, successor, archivedRecord: archivedPlanRecord(predecessor), successorRecord, inputSha256, replay: false, effects: replacementEffects(predecessor, successor) };
-}
-
-function replacementPlanRecord(input: Record<string, unknown>): JsonObject {
-  const record = structuredClone(input) as JsonObject;
-  delete record.tasks;
-  delete record.previous_plan_archived;
-  delete record.replacement_input_sha256;
-  const header = mapping(record.header) ? record.header : {};
-  delete header.id;
-  if (header.status === "active") header.status = "open";
-  if (header.status === "completed") header.status = "complete";
-  record.header = header;
-  return record;
-}
-
-function uniqueReplacementTaskNames(tasks: JsonObject[], context: string, failureClass: "schema_violation" | "conflict"): Map<string, JsonObject> {
-  const names = new Map<string, JsonObject>();
-  for (const task of tasks) {
-    const name = task.name;
-    if (typeof name !== "string" || name.length === 0) {
-      reject({ class: failureClass, message: `${context} contains a task without a non-empty name` });
-    }
-    if (names.has(name)) {
-      reject({ class: failureClass, message: `${context} contains duplicate task name '${name}', so replacement replay cannot identify a task` });
-    }
-    names.set(name, task);
-  }
-  return names;
-}
-
-function logicalReplacementTask(record: JsonObject, dependencies: unknown[], resolveDependency: (dependency: unknown) => string): JsonObject {
-  const logical = structuredClone(record);
-  for (const field of ["number", "plan", "status", "evaluation", "superseded_by", "superseded_reason"]) delete logical[field];
-  logical.depends_on = dependencies.map(resolveDependency);
-  if (!Array.isArray(logical.acceptance)) logical.acceptance = [];
-  return logical;
-}
-
-function replacementInputFingerprint(input: Record<string, unknown>): JsonObject {
-  const tasks = Array.isArray(input.tasks) ? input.tasks.filter(mapping) : [];
-  const names = uniqueReplacementTaskNames(tasks, "replacement input", "schema_violation");
-  const byOrdinal = new Map(tasks.map((task, index) => [String(index + 1), String(task.name)]));
-  const logicalTasks = [...names.entries()].map(([name, task]) => {
-    const dependencies = Array.isArray(task.depends_on) ? task.depends_on : [];
-    const record = logicalReplacementTask(task, dependencies, (dependency) => {
-      const target = byOrdinal.get(String(dependency));
-      if (!target) throw new Error(`replacement input dependency '${String(dependency)}' was not normalized before replay comparison`);
-      return target;
-    });
-    return [name, record] as const;
-  });
-  return { plan: replacementPlanRecord(input), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) };
-}
-
-function replacementInputSha256(input: Record<string, unknown>): string {
-  return createHash("sha256")
-    .update("agentera.planReplacementInput.v1\0")
-    .update(canonicalRecordJson(replacementInputFingerprint(input)))
-    .digest("hex");
-}
-
-function replacementSuccessorInputSha256(entities: DiscoveredEntity[], successor: DiscoveredEntity): string {
-  const tasks = entities.filter((entity) => entity.boundary === TASK && entity.record?.plan === successor.id);
-  const records = tasks.map((task) => structuredClone(task.record!));
-  const names = uniqueReplacementTaskNames(records, `successor '${successor.id}'`, "conflict");
-  const namesById = new Map(tasks.map((task) => [task.id!, String(task.record!.name)]));
-  const logicalTasks = [...names.entries()].map(([name, task]) => {
-    const dependencies = Array.isArray(task.depends_on) ? task.depends_on : [];
-    const record = logicalReplacementTask(task, dependencies, (dependency) => {
-      const target = typeof dependency === "string" ? namesById.get(dependency) : undefined;
-      if (!target) throw new Error(`successor '${successor.id}' has a task dependency outside its canonical task graph`);
-      return target;
-    });
-    return [name, record] as const;
-  });
-  return createHash("sha256")
-    .update("agentera.planReplacementInput.v1\0")
-    .update(canonicalRecordJson({ plan: replacementPlanRecord(successor.record!), tasks: Object.fromEntries(logicalTasks.sort(([left], [right]) => left.localeCompare(right))) }))
-    .digest("hex");
-}
-
-function assertReplacementInputReplay(input: Record<string, unknown>, successor: DiscoveredEntity): void {
-  if (successor.record?.replacement_input_sha256 !== replacementInputSha256(input)) {
-    reject({ class: "conflict", message: `replacement input diverges from immutable successor identity '${successor.id}'`, recovery: "Retry the exact logical successor plan input, or start a new targeted replacement from an open predecessor; no state was changed." });
-  }
 }
 
 function createReplacementLifecycle(entities: DiscoveredEntity[], predecessor: DiscoveredEntity, inputSha256: string, sourceRoot: string): { lifecycle?: PlanLifecycleDecision; replaySuccessor?: DiscoveredEntity } {
