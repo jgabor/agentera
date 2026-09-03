@@ -1,0 +1,573 @@
+name: Publish Agentera
+
+on:
+  push:
+
+concurrency:
+  group: publish-agentera
+  queue: max
+
+jobs:
+  route-development:
+    name: Route development publication
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      contents: read
+    outputs:
+      selected: ${{ steps.route.outputs.selected }}
+      ref: ${{ steps.route.outputs.ref }}
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          path: publication-authority
+          sparse-checkout: references/adapters/package-publication.json
+          sparse-checkout-cone-mode: false
+      - name: Read checked-in development ref authority
+        id: route
+        timeout-minutes: 1
+        env:
+          AUTHORITY_PATH: publication-authority/references/adapters/package-publication.json
+        run: |
+          node --input-type=module <<'NODE'
+          import { spawnSync } from 'node:child_process';
+          import fs from 'node:fs';
+
+          const raw = fs.readFileSync(process.env.AUTHORITY_PATH, 'utf8');
+          const authority = JSON.parse(raw);
+          const configuredRef = authority?.ci?.developmentPush?.ref;
+          const workflow = authority?.ci?.developmentPublicationWorkflow;
+          const countStringValues = (value) => {
+            if (typeof value === 'string') return value === configuredRef ? 1 : 0;
+            if (!value || typeof value !== 'object') return 0;
+            return Object.values(value).reduce((count, child) => count + countStringValues(child), 0);
+          };
+          if (authority?.ci?.repository !== process.env.GITHUB_REPOSITORY
+            || workflow?.path !== '.github/workflows/publish.yml'
+            || workflow?.refAuthority !== 'ci.developmentPush.ref'
+            || typeof configuredRef !== 'string'
+            || !configuredRef.startsWith('refs/heads/')
+            || spawnSync('git', ['check-ref-format', configuredRef]).status !== 0
+            || configuredRef === 'refs/heads/main'
+            || countStringValues(authority) !== 1) {
+            throw new Error('Invalid development publication ref authority');
+          }
+          const selected = configuredRef === process.env.GITHUB_REF;
+          fs.appendFileSync(process.env.GITHUB_OUTPUT, `selected=${selected}\nref=${configuredRef}\n`);
+          NODE
+
+  build-development:
+    if: needs.route-development.outputs.selected == 'true'
+    needs: route-development
+    name: Build and classify development candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    outputs:
+      version: ${{ steps.version.outputs.value }}
+      outcome: ${{ steps.classification.outputs.outcome }}
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@v5
+        timeout-minutes: 1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Install dependencies
+        timeout-minutes: 3
+        env:
+          COREPACK_HOME: ${{ runner.temp }}/corepack
+        run: |
+          corepack enable
+          pnpm install --frozen-lockfile --ignore-scripts
+      - name: Allocate candidate development version
+        id: version
+        timeout-minutes: 1
+        run: |
+          version="$(node --input-type=module -e "
+            import fs from 'node:fs';
+            import { allocateDevelopmentVersion } from './packages/cli/scripts/development-publication-state.mjs';
+            const manifest = JSON.parse(fs.readFileSync('./packages/cli/package.json', 'utf8'));
+            process.stdout.write(allocateDevelopmentVersion(manifest.version, process.env.GITHUB_RUN_NUMBER));
+          ")"
+          printf 'value=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
+          printf 'Preparing %s from %s\n' "${version}" "${GITHUB_SHA}"
+      - name: Build one isolated package tarball
+        timeout-minutes: 2
+        run: |
+          node packages/cli/scripts/pack-package.mjs \
+            --output-dir "${RUNNER_TEMP}/agentera-development" \
+            --package-version "${{ steps.version.outputs.value }}" \
+            --git-ref "${GITHUB_SHA}" --json
+      - name: Validate, smoke, and classify the exact tarball
+        id: classification
+        timeout-minutes: 1
+        run: |
+          outcome="$(env -i PATH="${PATH}" node packages/cli/scripts/publish-development.mjs classify \
+            --tarball "${RUNNER_TEMP}/agentera-development/agentera-${{ steps.version.outputs.value }}.tgz" \
+            --package-version "${{ steps.version.outputs.value }}" \
+            --git-ref "${GITHUB_SHA}" \
+            --classification "${RUNNER_TEMP}/agentera-development/publication-classification.json")"
+          case "${outcome}" in
+            exact-replay|superseded-replay|forward-publish|forward-retag) ;;
+            *) printf 'Invalid publication classification\n' >&2; exit 1 ;;
+          esac
+          printf 'outcome=%s\n' "${outcome}" >> "${GITHUB_OUTPUT}"
+      - name: Upload immutable development candidate
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 1
+        with:
+          name: agentera-development-candidate
+          path: |
+            ${{ runner.temp }}/agentera-development/agentera-${{ steps.version.outputs.value }}.tgz
+            ${{ runner.temp }}/agentera-development/publication-classification.json
+          if-no-files-found: error
+          retention-days: 1
+
+  publish-development:
+    if: needs.build-development.outputs.outcome == 'forward-publish' || needs.build-development.outputs.outcome == 'forward-retag'
+    needs: build-development
+    name: Publish development candidate to @next
+    runs-on: ubuntu-24.04
+    timeout-minutes: 4
+    permissions:
+      actions: read
+      id-token: write
+    steps:
+      - name: Select fixed runner toolchain
+        timeout-minutes: 1
+        run: |
+          python_version="$(/usr/bin/python3 -c 'import platform; print(platform.python_version())')"
+          case "${python_version}" in 3.12.*) ;; *) printf 'Python 3.12 is required, found %s\n' "${python_version}" >&2; exit 1 ;; esac
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [ ! -x "${node_bins[0]}/node" ] || [ ! -x "${node_bins[0]}/npm" ]; then
+            printf 'Exactly one preinstalled Node.js 24 toolchain is required\n' >&2
+            exit 1
+          fi
+          node_version="$("${node_bins[0]}/node" --version)"
+          npm_version="$("${node_bins[0]}/npm" --version)"
+          case "${node_version}" in v24.*) ;; *) printf 'Node.js 24 is required, found %s\n' "${node_version}" >&2; exit 1 ;; esac
+          if ! "${node_bins[0]}/node" -e '
+            const [major, minor, patch] = process.argv[1].split(".").map(Number);
+            process.exit(Number.isSafeInteger(major) && Number.isSafeInteger(minor) && Number.isSafeInteger(patch)
+              && (major > 11 || (major === 11 && (minor > 5 || (minor === 5 && patch >= 1)))) ? 0 : 1);
+          ' "${npm_version}"; then
+            printf 'npm 11.5.1 or later is required, found %s\n' "${npm_version}" >&2
+            exit 1
+          fi
+      - name: Download and validate current-run candidate
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          API_URL_VALUE: ${{ github.api_url }}
+          REPOSITORY_VALUE: ${{ github.repository }}
+          RUN_ID_VALUE: ${{ github.run_id }}
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+        run: |
+          /usr/bin/python3 - <<'PYTHON'
+          import json, os, pathlib, re, stat, urllib.request, zipfile
+
+          def fail(message):
+              raise SystemExit(message)
+          def required(name):
+              value = os.environ.get(name, "")
+              return value or fail(f"missing {name}")
+
+          repository = required("REPOSITORY_VALUE")
+          run_id = required("RUN_ID_VALUE")
+          api = required("API_URL_VALUE")
+          runner_temp_value = required("RUNNER_TEMP_VALUE")
+          version = required("EXPECTED_VERSION_VALUE")
+          git_ref = required("EXPECTED_GIT_REF_VALUE")
+          outcome = required("EXPECTED_OUTCOME_VALUE")
+          if repository != "jgabor/agentera":
+              fail("invalid repository binding")
+          if not re.fullmatch(r"[1-9][0-9]{0,19}", run_id):
+              fail("invalid run ID binding")
+          if api != "https://api.github.com":
+              fail("invalid API binding")
+          if (not re.fullmatch(r"/[A-Za-z0-9._/-]{0,1022}", runner_temp_value)
+                  or ".." in pathlib.PurePosixPath(runner_temp_value).parts):
+              fail("invalid runner temp binding")
+          if not re.fullmatch(r"3\.0\.0-dev\.(?:0|[1-9][0-9]{0,9})", version):
+              fail("invalid version binding")
+          if not re.fullmatch(r"[0-9a-f]{40}", git_ref):
+              fail("invalid source binding")
+          if outcome not in {"forward-publish", "forward-retag"}:
+              fail("invalid outcome binding")
+          token = required("GH_TOKEN")
+          if not re.fullmatch(r"[A-Za-z0-9_.-]{1,4096}", token):
+              fail("invalid token binding")
+          artifact_name = "agentera-development-candidate"
+          headers = {"Accept": "application/vnd.github+json", "Authorization": f"Bearer {token}",
+                     "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "agentera-publication"}
+          def request(url):
+              return urllib.request.urlopen(urllib.request.Request(url, headers=headers), timeout=20)
+          list_url = f"{api}/repos/{repository}/actions/runs/{run_id}/artifacts?name={artifact_name}&per_page=100"
+          with request(list_url) as response:
+              if response.status != 200:
+                  fail("artifact API lookup failed")
+              body = response.read(1_048_577)
+          if len(body) > 1_048_576:
+              fail("artifact API response is too large")
+          document = json.loads(body)
+          artifacts = document.get("artifacts") if isinstance(document, dict) else None
+          if document.get("total_count") != 1 or not isinstance(artifacts, list) or len(artifacts) != 1:
+              fail("expected exactly one current-run candidate artifact")
+          artifact = artifacts[0]
+          artifact_id = artifact.get("id")
+          if type(artifact_id) is not int or artifact_id <= 0 or artifact_id > 9_007_199_254_740_991:
+              fail("artifact ID is invalid or unbounded")
+          expected_download = f"{api}/repos/{repository}/actions/artifacts/{artifact_id}/zip"
+          if (artifact.get("name") != artifact_name
+                  or artifact.get("expired") is not False or artifact.get("workflow_run", {}).get("id") != int(run_id)
+                  or artifact.get("archive_download_url") != expected_download
+                  or not isinstance(artifact.get("size_in_bytes"), int)
+                  or artifact["size_in_bytes"] <= 0 or artifact["size_in_bytes"] > 26_214_400):
+              fail("artifact identity or size does not match the current run")
+
+          root = pathlib.Path(runner_temp_value) / "agentera-development"
+          root.mkdir(mode=0o700)
+          archive = root / "candidate.zip"
+          with request(expected_download) as response, archive.open("wb") as output:
+              if response.status != 200:
+                  fail("artifact download failed")
+              total = 0
+              while chunk := response.read(65_536):
+                  total += len(chunk)
+                  if total > 26_214_400:
+                      fail("artifact archive is too large")
+                  output.write(chunk)
+          if total != artifact["size_in_bytes"]:
+              fail("artifact archive size does not match API metadata")
+
+          expected = {f"agentera-{version}.tgz": 25_000_000, "publication-classification.json": 1_024}
+          with zipfile.ZipFile(archive) as candidate:
+              entries = candidate.infolist()
+              if len(entries) != 2 or {entry.filename for entry in entries} != set(expected):
+                  fail("artifact archive entries do not match the candidate contract")
+              for entry in entries:
+                  path = pathlib.PurePosixPath(entry.filename)
+                  mode = entry.external_attr >> 16
+                  if (path.is_absolute() or ".." in path.parts or len(path.parts) != 1
+                          or entry.is_dir() or entry.file_size <= 0 or entry.file_size > expected[entry.filename]
+                          or entry.compress_size > 25_000_000 or (mode and not stat.S_ISREG(mode))
+                          or mode & 0o111):
+                      fail("artifact archive contains unsafe or unbounded content")
+                  target = root / entry.filename
+                  with candidate.open(entry) as source, target.open("xb") as output:
+                      copied = 0
+                      while chunk := source.read(65_536):
+                          copied += len(chunk)
+                          if copied > expected[entry.filename]:
+                              fail("artifact entry exceeds its size bound")
+                          output.write(chunk)
+                  target.chmod(0o600)
+          archive.unlink()
+          PYTHON
+      - name: Write fixed registry guard
+        timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+        run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]]; then
+            printf 'Invalid runner temp binding\n' >&2
+            exit 1
+          fi
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
+          cat > "${guard_file}" <<'AGENTERA_GUARD'
+          import { spawnSync } from "node:child_process";
+          import crypto from "node:crypto";
+          import fs from "node:fs";
+          import path from "node:path";
+
+          const fail = (message) => { throw new Error(message); };
+          const registry = "https://registry.npmjs.org/";
+          const required = (name) => process.env[name]?.trim() || fail(`missing ${name}`);
+          const mode = required("GUARD_MODE");
+          const artifactDir = required("ARTIFACT_DIR");
+          const tarball = required("TARBALL");
+          const classificationFile = required("CLASSIFICATION");
+          const expectedVersion = required("EXPECTED_VERSION");
+          const expectedGitRef = required("EXPECTED_GIT_REF");
+          const expectedOutcome = required("EXPECTED_OUTCOME");
+          const expectedFiles = [path.basename(tarball), path.basename(classificationFile)].sort();
+
+          for (const key of ["ACTIONS_ID_TOKEN_REQUEST_URL", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "GITHUB_ACTIONS"]) {
+            if (Object.hasOwn(process.env, key)) fail(`guard environment contains ${key}`);
+          }
+          for (const key of Object.keys(process.env)) {
+            const normalized = key.toUpperCase();
+            if (normalized === "NPM_TOKEN" || normalized === "NODE_AUTH_TOKEN" || normalized.startsWith("NPM_CONFIG_")) {
+              fail(`guard environment contains npm credentials or config: ${key}`);
+            }
+          }
+          if (!/^[0-9]+\.[0-9]+\.[0-9]+-dev\.(?:0|[1-9][0-9]*)$/.test(expectedVersion)
+            || !/^[0-9a-f]{40}$/.test(expectedGitRef)
+            || !["forward-publish", "forward-retag"].includes(expectedOutcome)
+            || !["pre", "post"].includes(mode)) fail("invalid guard inputs");
+
+          const files = fs.readdirSync(artifactDir).sort();
+          if (JSON.stringify(files) !== JSON.stringify(expectedFiles)) fail("downloaded artifact contains unexpected files");
+          for (const file of [tarball, classificationFile]) {
+            const stat = fs.lstatSync(file);
+            if (!stat.isFile() || (stat.mode & 0o111) !== 0) fail("downloaded artifact content must be regular and non-executable");
+          }
+
+          const classificationBytes = fs.readFileSync(classificationFile);
+          if (classificationBytes.length > 1024) fail("publication classification is too large");
+          const classification = JSON.parse(classificationBytes.toString("utf8"));
+          const classificationKeys = ["gitRef", "integrity", "outcome", "package", "schemaVersion", "version"];
+          if (!classification || Array.isArray(classification)
+            || JSON.stringify(Object.keys(classification).sort()) !== JSON.stringify(classificationKeys)
+            || classification.schemaVersion !== "agentera.developmentPublicationClassification.v1"
+            || classification.package !== "agentera"
+            || classification.version !== expectedVersion
+            || classification.gitRef !== expectedGitRef
+            || classification.outcome !== expectedOutcome
+            || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(classification.integrity)) {
+            fail("publication classification does not match the workflow candidate");
+          }
+
+          const integrity = `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}`;
+          if (integrity !== classification.integrity) fail("tarball integrity does not match the classification");
+          const inspected = spawnSync("tar", ["-xOzf", tarball, "package/package.json"], {
+            encoding: "utf8", env: process.env, stdio: ["ignore", "pipe", "pipe"], timeout: 10_000,
+          });
+          if (inspected.error) throw inspected.error;
+          if (inspected.status !== 0 || Buffer.byteLength(inspected.stdout) > 65_536) fail("cannot inspect bounded tarball package metadata");
+          const manifest = JSON.parse(inspected.stdout);
+          if (manifest.name !== "agentera" || manifest.version !== expectedVersion || manifest.agentera?.gitRef !== expectedGitRef) {
+            fail("tarball package metadata does not match the workflow candidate");
+          }
+          if (manifest.publishConfig !== undefined) {
+            const compatible = new Map([
+              ["access", "public"], ["tag", "next"], ["registry", registry],
+              ["provenance", true], ["ignore-scripts", true],
+            ]);
+            if (!manifest.publishConfig || typeof manifest.publishConfig !== "object" || Array.isArray(manifest.publishConfig)
+              || Object.entries(manifest.publishConfig).some(([key, value]) => !compatible.has(key) || compatible.get(key) !== value)) {
+              fail("tarball publishConfig conflicts with fixed publication policy");
+            }
+          }
+
+          const guardRoot = path.join(required("RUNNER_TEMP"), "agentera-publication-guard");
+          const home = path.join(guardRoot, "home");
+          const cache = path.join(guardRoot, "cache");
+          const userconfig = path.join(guardRoot, "npmrc");
+          const globalconfig = path.join(guardRoot, "global-npmrc");
+          fs.mkdirSync(home, { recursive: true, mode: 0o700 });
+          fs.mkdirSync(cache, { recursive: true, mode: 0o700 });
+          fs.writeFileSync(userconfig, "registry=https://registry.npmjs.org/\n", { mode: 0o600 });
+          fs.writeFileSync(globalconfig, "", { mode: 0o600 });
+          const npmEnvironment = {
+            PATH: required("PATH"), HOME: home,
+            NPM_CONFIG_USERCONFIG: userconfig, NPM_CONFIG_GLOBALCONFIG: globalconfig,
+            NPM_CONFIG_CACHE: cache, NPM_CONFIG_AUDIT: "false", NPM_CONFIG_FUND: "false",
+            NPM_CONFIG_IGNORE_SCRIPTS: "true",
+          };
+
+          function runNpm(args) {
+            const result = spawnSync("npm", args, {
+              encoding: "utf8", env: npmEnvironment, stdio: ["ignore", "pipe", "pipe"], timeout: 10_000,
+            });
+            if (result.error) throw result.error;
+            return result;
+          }
+          const npmVersion = runNpm(["--version"]);
+          if (npmVersion.status !== 0) fail("cannot identify fixed npm CLI");
+          const [npmMajor, npmMinor, npmPatch] = npmVersion.stdout.trim().split(".").map(Number);
+          if (![npmMajor, npmMinor, npmPatch].every(Number.isSafeInteger)
+            || npmMajor < 11 || (npmMajor === 11 && npmMinor < 5) || (npmMajor === 11 && npmMinor === 5 && npmPatch < 1)) {
+            fail("npm Trusted Publishing requires npm 11.5.1 or later");
+          }
+
+          function view(args) {
+            const result = runNpm(["view", ...args, "--json", `--registry=${registry}`]);
+            const diagnostic = `${result.stderr}\n${result.stdout}`;
+            if (result.status !== 0 && /(?:E404|404 Not Found|No match found)/i.test(diagnostic)) return null;
+            if (result.status !== 0) fail(`npm view failed: ${result.stderr.trim()}`);
+            return JSON.parse(result.stdout);
+          }
+          function scalar(value, label) {
+            if (value == null) return null;
+            if (typeof value !== "string") fail(`${label} must be a string or absent`);
+            return value;
+          }
+          function parseVersion(value, label) {
+            const match = typeof value === "string" && /^(\d+)\.(\d+)\.(\d+)-dev\.(0|[1-9]\d*)$/.exec(value);
+            if (!match) fail(`${label} is not a development version`);
+            return match.slice(1).map(Number);
+          }
+          function compare(left, right) {
+            for (let index = 0; index < left.length; index += 1) {
+              if (left[index] !== right[index]) return left[index] > right[index] ? 1 : -1;
+            }
+            return 0;
+          }
+          function inspectRegistry() {
+            const tags = view(["agentera", "dist-tags"]);
+            if (!tags || typeof tags !== "object" || Array.isArray(tags)) fail("npm dist-tags must be an object");
+            const currentNext = scalar(tags.next, "npm next tag");
+            const publishedIntegrity = scalar(view([`agentera@${expectedVersion}`, "dist.integrity"]), "published integrity");
+            const publishedGitRef = scalar(view([`agentera@${expectedVersion}`, "agentera.gitRef"]), "published git ref");
+            const order = compare(parseVersion(expectedVersion, "candidate version"), parseVersion(currentNext, "npm next tag"));
+            const exists = publishedIntegrity !== null || publishedGitRef !== null;
+            const matches = publishedIntegrity === integrity && publishedGitRef === expectedGitRef;
+            if (order === 0) {
+              if (!matches) fail("npm next does not match candidate integrity and source");
+              return "exact-replay";
+            }
+            if (order < 0) {
+              if (!matches) fail(`older candidate is ${exists ? "conflicting" : "absent"} on npm`);
+              return "superseded-replay";
+            }
+            if (exists && !matches) fail("forward version conflicts with candidate integrity or source");
+            return exists ? "forward-retag" : "forward-publish";
+          }
+
+          if (mode === "pre") {
+            const outcome = inspectRegistry();
+            if (outcome === "forward-retag") {
+              fail("Trusted Publishing cannot run npm dist-tag; recover with interactive npm 2FA or a later forward version");
+            }
+            fs.appendFileSync(required("GITHUB_OUTPUT"), `outcome=${outcome}\n`);
+            console.log(`${classification.package}@${expectedVersion}: ${outcome}`);
+          } else {
+            let lastOutcome = "not observed";
+            for (let attempt = 1; attempt <= 6; attempt += 1) {
+              try {
+                lastOutcome = inspectRegistry();
+                if (["exact-replay", "superseded-replay"].includes(lastOutcome)) {
+                  console.log(`${classification.package}@${expectedVersion}: registry converged as ${lastOutcome}`);
+                  process.exit(0);
+                }
+              } catch (error) {
+                if (/conflict|does not match/i.test(error.message)) throw error;
+                lastOutcome = error.message;
+              }
+              if (attempt < 6) await new Promise((resolve) => setTimeout(resolve, 3000));
+            }
+            fail(`registry did not converge after npm publish: ${lastOutcome}`);
+          }
+          AGENTERA_GUARD
+      - name: Recheck exact candidate and registry without OIDC
+        id: registry-guard
+        timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+        run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ ! "${EXPECTED_GIT_REF_VALUE}" =~ ^[0-9a-f]{40}$ ]] \
+            || [[ ! "${GITHUB_OUTPUT}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${GITHUB_OUTPUT}/" == *"/../"* ]]; then
+            printf 'Invalid publication binding\n' >&2
+            exit 1
+          fi
+          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          artifact_dir="${RUNNER_TEMP_VALUE}/agentera-development"
+          tarball="${artifact_dir}/agentera-${EXPECTED_VERSION_VALUE}.tgz"
+          classification="${artifact_dir}/publication-classification.json"
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
+          env -i \
+            -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u GITHUB_ACTIONS \
+            -u NPM_TOKEN -u NODE_AUTH_TOKEN -u NPM_CONFIG_USERCONFIG -u npm_config_userconfig \
+            -u NPM_CONFIG_GLOBALCONFIG -u npm_config_globalconfig -u NPM_CONFIG__AUTH -u npm_config__auth \
+            -u NPM_CONFIG__AUTHTOKEN -u npm_config__authToken -u NPM_CONFIG__AUTH_TOKEN -u npm_config__auth_token \
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${RUNNER_TEMP_VALUE}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP_VALUE}" \
+            GUARD_MODE=pre ARTIFACT_DIR="${artifact_dir}" TARBALL="${tarball}" CLASSIFICATION="${classification}" \
+            EXPECTED_VERSION="${EXPECTED_VERSION_VALUE}" EXPECTED_GIT_REF="${EXPECTED_GIT_REF_VALUE}" \
+            EXPECTED_OUTCOME="${EXPECTED_OUTCOME_VALUE}" GITHUB_OUTPUT="${GITHUB_OUTPUT}" \
+            node "${guard_file}"
+      - name: Publish exact tarball with Trusted Publishing
+        if: steps.registry-guard.outputs.outcome == 'forward-publish'
+        timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
+        run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ "${GUARD_OUTCOME_VALUE}" != "forward-publish" ]] \
+            || [[ "${GITHUB_ACTIONS}" != "true" ]] \
+            || [[ ! "${ACTIONS_ID_TOKEN_REQUEST_URL}" =~ ^https://[A-Za-z0-9._/?\&=%:+-]{1,2040}$ ]] \
+            || [[ ! "${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" =~ ^[A-Za-z0-9._-]{1,8192}$ ]]; then
+            printf 'Invalid publish binding\n' >&2
+            exit 1
+          fi
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          guard_root="${RUNNER_TEMP_VALUE}/agentera-publication-guard"
+          tarball="${RUNNER_TEMP_VALUE}/agentera-development/agentera-${EXPECTED_VERSION_VALUE}.tgz"
+          env -i \
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${guard_root}/home" \
+            GITHUB_ACTIONS="${GITHUB_ACTIONS}" \
+            ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}" \
+            ACTIONS_ID_TOKEN_REQUEST_TOKEN="${ACTIONS_ID_TOKEN_REQUEST_TOKEN}" \
+            NPM_CONFIG_USERCONFIG="${guard_root}/npmrc" \
+            NPM_CONFIG_GLOBALCONFIG="${guard_root}/global-npmrc" \
+            NPM_CONFIG_CACHE="${guard_root}/cache" \
+            NPM_CONFIG_AUDIT=false NPM_CONFIG_FUND=false NPM_CONFIG_IGNORE_SCRIPTS=true \
+            npm publish "${tarball}" --access public --tag next --ignore-scripts --registry=https://registry.npmjs.org/
+      - name: Verify registry convergence without OIDC
+        if: steps.registry-guard.outputs.outcome == 'forward-publish'
+        timeout-minutes: 1
+        env:
+          RUNNER_TEMP_VALUE: ${{ runner.temp }}
+          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+          GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
+        run: |
+          if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
+            || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
+            || [[ ! "${EXPECTED_GIT_REF_VALUE}" =~ ^[0-9a-f]{40}$ ]] \
+            || [[ "${GUARD_OUTCOME_VALUE}" != "forward-publish" ]]; then
+            printf 'Invalid convergence binding\n' >&2
+            exit 1
+          fi
+          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          shopt -s nullglob
+          node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
+          if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
+            printf 'Invalid fixed Node.js toolchain\n' >&2
+            exit 1
+          fi
+          artifact_dir="${RUNNER_TEMP_VALUE}/agentera-development"
+          tarball="${artifact_dir}/agentera-${EXPECTED_VERSION_VALUE}.tgz"
+          classification="${artifact_dir}/publication-classification.json"
+          guard_file="${RUNNER_TEMP_VALUE}/agentera-publication-guard.mjs"
+          env -i \
+            -u ACTIONS_ID_TOKEN_REQUEST_URL -u ACTIONS_ID_TOKEN_REQUEST_TOKEN -u GITHUB_ACTIONS \
+            -u NPM_TOKEN -u NODE_AUTH_TOKEN -u NPM_CONFIG_USERCONFIG -u npm_config_userconfig \
+            -u NPM_CONFIG_GLOBALCONFIG -u npm_config_globalconfig -u NPM_CONFIG__AUTH -u npm_config__auth \
+            -u NPM_CONFIG__AUTHTOKEN -u npm_config__authToken -u NPM_CONFIG__AUTH_TOKEN -u npm_config__auth_token \
+            PATH="${node_bins[0]}:/usr/bin:/bin" HOME="${RUNNER_TEMP_VALUE}/agentera-publication-guard/home" RUNNER_TEMP="${RUNNER_TEMP_VALUE}" \
+            GUARD_MODE=post ARTIFACT_DIR="${artifact_dir}" TARBALL="${tarball}" CLASSIFICATION="${classification}" \
+            EXPECTED_VERSION="${EXPECTED_VERSION_VALUE}" EXPECTED_GIT_REF="${EXPECTED_GIT_REF_VALUE}" \
+            EXPECTED_OUTCOME="${EXPECTED_OUTCOME_VALUE}" \
+            node "${guard_file}"

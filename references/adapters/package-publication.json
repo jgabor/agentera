@@ -1,0 +1,493 @@
+{
+  "schemaVersion": "agentera.packagePublication.v2",
+  "owner": "repository/package scripts",
+  "invariants": {
+    "preparation": "Preparation is pure and registry-independent. CI derives the development base release line from the checked-in manifest, allocates a candidate version from GITHUB_RUN_NUMBER plus 89, and changes only version and agentera.gitRef in an isolated construction manifest without changing the checkout. The fixed offset makes publish.yml run 1 follow the prior workflow's dev.89 publication as dev.90. The manual readiness preparation path first validates a current normalized source receipt, then uses the committed manifest version and an explicit source commit. Stable preparation retains its separate source-provenance contract.",
+    "sourceQualification": "Source verification never repairs source. It issues a content-addressed receipt only after every declared source gate succeeds against a clean committed tree. A matching receipt is a deterministic local cache, not an authorization boundary.",
+    "candidateQualification": "Package verification validates a current source receipt, constructs one retained immutable tarball with the contract-required retained mode, proves dry-pack observation equivalence, and runs a local exact-artifact smoke in an empty isolated npm state before any registry effect.",
+    "publication": "Registry publication consumes the retained package artifact through one measured stage, independent staged package migration smoke, and promote envelope. Stage and promotion include their required registry convergence and observational checks. The envelope never reconstructs an artifact, reruns source verification, or rolls a tag back.",
+    "approval": "Manual development and stable release machinery requires artifact-bound approval. The routine configured development ref push path derives its immutable candidate version from the manifest base line and GITHUB_RUN_NUMBER, and its git ref from the push SHA, validates and smokes the exact isolated tarball, and publishes those bytes directly to next. Stable publication retains explicit protected-environment review on main after the stable workflows land on the default branch.",
+    "replay": "A matching exact version, integrity, and required tag state is a successful no-upload replay. Development classification emits one bounded outcome bound to the exact tarball integrity, version, and git ref. Exact and superseded replay outcomes skip the mutation step. Conflicting integrity, an escaped artifact, a stale tag, or any unrecognized registry state fails before mutation.",
+    "credentials": "Routine development registry classification runs in a separate job without npm credentials or OIDC. The entire checkout-free, action-free publication job has OIDC capability and runs only fixed reviewed workflow logic, with no candidate-controlled script or package code. That logic verifies the bounded classification, tarball metadata, integrity, version, source SHA, and immediate registry state with OIDC and inherited npm credentials/config removed from guard and convergence child processes. Exact or superseded replay ends without upload, and forward retag fails closed because OIDC does not authorize npm dist-tag. Only the fixed npm publish exact-tarball child is intentionally passed the OIDC request variables, through an isolated registry-only user config and with lifecycle scripts disabled. A fixed credential-free guard then verifies registry convergence without dist-tag mutation. Manual development recovery and stable publication retain their token-bearing contracts. Tool probes and every npm, pnpm, and npx child, including receipt validation during stage and promotion, use isolated user/global config, home, cache, and sanitized npm/pnpm environments.",
+    "output": "Every transaction phase emits a bounded start and end result with package, version, phase, outcome, elapsedMs, executed, reused, and nextAction. The publication coordinator emits one content-bound timing receipt in JSON or equivalent human output with measured component and total durations, strict budget status, first failure, reconciliation, and replay state. Diagnostics redact credentials and private absolute paths."
+  },
+  "packages": {
+    "development": {
+      "label": "development TypeScript package",
+      "packagePath": "packages/cli",
+      "manifestPath": "packages/cli/package.json",
+      "expectedTag": "next",
+      "preparation": "useManifestVersion",
+      "construction": "isolatedTypeScriptPackage",
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"],
+      "localSmoke": ["agentera", "--version"],
+      "versionAuthority": "GITHUB_RUN_NUMBER plus governed offset on packages/cli/package.json base line",
+      "suiteVersionAuthority": "packages/cli/package.json#agentera.suiteVersion"
+    },
+    "stable": {
+      "label": "transitional stable shim",
+      "packagePath": "packages/cli/shim",
+      "manifestPath": "packages/cli/shim/package.json",
+      "expectedTag": "latest",
+      "preparation": "incrementPatch",
+      "construction": "stableShim",
+      "smoke": ["npx", "-y", "agentera@{version}", "--version"],
+      "localSmoke": ["agentera", "--version"],
+      "sourceProvenance": {
+        "rule": "agentera.gitRef must name a commit with exactly the current shim packaged inputs. Only package.json version and agentera.gitRef may differ because preparation owns those fields.",
+        "packagedInputs": [
+          "packages/cli/shim/bin",
+          "packages/cli/shim/lib",
+          "packages/cli/shim/README.md",
+          "packages/cli/shim/LICENSE"
+        ],
+        "permittedManifestDifferences": ["version", "agentera.gitRef"]
+      }
+    }
+  },
+  "versionCallerInventory": {
+    "development": {
+      "authority": "CI candidate from GITHUB_RUN_NUMBER plus 89 on checked-in manifest base line",
+      "currentExplicitTargetCallers": [
+        "packages/cli/scripts/pack-package.mjs#--package-version with --git-ref"
+      ],
+      "task2Boundary": "Routine push construction accepts the allocated candidate only with source-commit binding; ordinary local construction retains manifest-version behavior."
+    },
+    "stable": {
+      "authority": "explicit target-version",
+      "preservedCallers": ["packages/cli/scripts/publication-transaction.mjs#prepare stable"]
+    },
+    "suite": {
+      "authority": "packages/cli/package.json#agentera.suiteVersion",
+      "requiredVersion": "3.0.0"
+    }
+  },
+  "ci": {
+    "repository": "jgabor/agentera",
+    "developmentPublicationWorkflow": {
+      "name": "Publish Agentera",
+      "path": ".github/workflows/publish.yml",
+      "refAuthority": "ci.developmentPush.ref"
+    },
+    "developmentPush": {
+      "ref": "refs/heads/feat/v3",
+      "trigger": "push when GITHUB_REF exactly matches the checked-in development ref read from the repository default branch",
+      "versionAuthority": "GITHUB_RUN_NUMBER plus runNumberOffset on packages/cli/package.json base line",
+      "runNumberOffset": 89,
+      "rules": [
+        "candidate version is the checked-in manifest base line with ordinal GITHUB_RUN_NUMBER plus 89; publish.yml run 1 is dev.90",
+        "agentera.gitRef equals GITHUB_SHA",
+        "the checkout manifest is not modified",
+        "a contents-read build job without OIDC builds one isolated tarball, validates version and git ref, executable-smokes it, and credential-free classifies it as exact-replay, superseded-replay, forward-publish, or forward-retag",
+        "the tarball and bounded classification cross into the dependent OIDC job as one immutable same-run Actions artifact; the publication job checks out no source, downloads no executable helper, and does not rebuild or execute package code",
+        "a fixed workflow-owned guard runs without OIDC or inherited npm credentials/config and revalidates the bounded classification, tarball metadata, integrity, version, git ref, and immediate registry state without extracting or executing package code",
+        "exact and superseded replay remain successful no-upload outcomes; only a rechecked forward-publish outcome reaches one fixed npm publish exact-tarball command with GITHUB_ACTIONS and the two OIDC request variables, an isolated registry-only npm config, and lifecycle scripts disabled",
+        "forward-retag fails closed because Trusted Publishing does not authorize npm dist-tag; recovery requires interactive npm 2FA or a later forward version",
+        "a fixed credential-free post-publish guard verifies exact package integrity, source SHA, and next-tag convergence without dist-tag mutation",
+        "the immediate pre-publish check minimizes but cannot eliminate the external npm registry race because npm offers no compare-and-publish operation; an npm publish conflict fails closed, and package-global concurrency prevents Agentera workflow runs from racing each other",
+        "reruns reuse the same run number, candidate version, SHA, and bytes; identical already-published bytes succeed without another upload",
+        "all pushes allocate workflow run numbers before routing, so nonselected and main pushes may leave permitted version gaps; later selected runs have higher candidates and cannot move next backward",
+        "landing fails closed until the authority and publish.yml exist on default main; land both there first, then ensure the selected development branch contains publish.yml before its publishing push"
+      ],
+      "approval": "The routine push workflow publishes the locally validated exact tarball to next without the manual qualification, receipt, attestation, benchmark, approval, or artifact-handoff framework.",
+      "concurrency": "The package-global publish-agentera group uses queue: max, which keeps up to 100 pending runs and serializes future next and latest mutations."
+    },
+    "stablePublicationWorkflow": {
+      "name": "Future protected stable jobs in Publish Agentera",
+      "path": ".github/workflows/publish.yml",
+      "ref": "refs/heads/main",
+      "status": "not implemented",
+      "environment": "npm-publish",
+      "permissions": "no OIDC in build; id-token: write only in the dependent publication job"
+    }
+  },
+  "qualification": {
+    "source": {
+      "component": "release-source",
+      "issuanceAuthority": "A new source receipt can be issued only by the contracted GitHub Actions source verification workflow at the committed checkout SHA. Existing valid receipts remain reusable through the read-only source check.",
+      "inputs": [
+        "tracked_tree_except_package_version_gitRef",
+        "verification_policy",
+        "lockfile",
+        "node",
+        "npm",
+        "pnpm",
+        "gate_set"
+      ],
+      "gates": [
+        {
+          "name": "source",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:source"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#source",
+          "correction": "pnpm -C packages/cli run test:source"
+        },
+        {
+          "name": "stress",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:stress"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#stress",
+          "correction": "pnpm -C packages/cli run test:stress"
+        },
+        {
+          "name": "performance",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:performance"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#performance",
+          "correction": "pnpm -C packages/cli run test:performance"
+        },
+        {
+          "name": "capacity",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:capacity"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#capacity",
+          "correction": "pnpm -C packages/cli run test:capacity"
+        },
+        {
+          "name": "package",
+          "command": ["pnpm", "-C", "packages/cli", "run", "verify:package"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#package",
+          "correction": "pnpm -C packages/cli run verify:package"
+        },
+        {
+          "name": "generated-overlap",
+          "command": ["pnpm", "-C", "packages/cli", "run", "verify:generated-overlap"],
+          "owner": "packages/cli/scripts/verify-generated-overlap.mjs#runGeneratedOverlap",
+          "correction": "pnpm -C packages/cli run verify:generated-overlap"
+        },
+        {
+          "name": "typecheck",
+          "command": ["pnpm", "-C", "packages/cli", "run", "typecheck"],
+          "owner": "packages/cli/package.json#scripts.typecheck",
+          "correction": "pnpm -C packages/cli run typecheck"
+        },
+        {
+          "name": "build",
+          "command": ["pnpm", "-C", "packages/cli", "build"],
+          "owner": "packages/cli/scripts/build-package.mjs#main",
+          "correction": "pnpm -C packages/cli build"
+        },
+        {
+          "name": "compact",
+          "command": ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"],
+          "owner": "packages/cli/src/cli/commands/compact.ts#cmdGate",
+          "correction": "node packages/cli/dist/bin/agentera.js check compact"
+        },
+        {
+          "name": "capability-contract",
+          "command": [
+            "node",
+            "packages/cli/dist/bin/agentera.js",
+            "check",
+            "validate",
+            "capability-contract"
+          ],
+          "owner": "packages/cli/src/cli/commands/validate.ts#cmdValidateCapabilityContract",
+          "correction": "node packages/cli/dist/bin/agentera.js check validate capability-contract"
+        },
+        {
+          "name": "activation-conjunction",
+          "command": [
+            "node",
+            "packages/cli/dist/bin/agentera.js",
+            "check",
+            "validate",
+            "activation-conjunction"
+          ],
+          "owner": "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
+          "correction": "node packages/cli/dist/bin/agentera.js check validate activation-conjunction"
+        }
+      ],
+      "performanceEvidenceSchema": "agentera.entityAuthorityPerformanceEvidence.v1",
+      "overlapEvidenceSchema": "agentera.generatedOverlapEvidence.v1",
+      "gateEvidence": "A source receipt contains the exact eleven governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
+      "activationConjunction": {
+        "gateIdentity": "agentera.activationConjunction.v1",
+        "classes": ["cli", "capability", "runtime", "reference", "state", "package", "bootstrap"],
+        "dimensions": [
+          "discovery",
+          "behavior",
+          "diagnostics",
+          "package_projection",
+          "instructions",
+          "adversarial"
+        ],
+        "checkIds": [
+          "cli.discovery",
+          "cli.behavior",
+          "cli.diagnostics",
+          "cli.package_projection",
+          "cli.instructions",
+          "cli.adversarial",
+          "capability.discovery",
+          "capability.behavior",
+          "capability.diagnostics",
+          "capability.package_projection",
+          "capability.instructions",
+          "capability.adversarial",
+          "runtime.discovery",
+          "runtime.behavior",
+          "runtime.diagnostics",
+          "runtime.package_projection",
+          "runtime.instructions",
+          "runtime.adversarial",
+          "reference.discovery",
+          "reference.behavior",
+          "reference.diagnostics",
+          "reference.package_projection",
+          "reference.instructions",
+          "reference.adversarial",
+          "state.discovery",
+          "state.behavior",
+          "state.diagnostics",
+          "state.package_projection",
+          "state.instructions",
+          "state.adversarial",
+          "package.discovery",
+          "package.behavior",
+          "package.diagnostics",
+          "package.package_projection",
+          "package.instructions",
+          "package.adversarial",
+          "bootstrap.discovery",
+          "bootstrap.behavior",
+          "bootstrap.diagnostics",
+          "bootstrap.package_projection",
+          "bootstrap.instructions",
+          "bootstrap.adversarial"
+        ],
+        "bounds": {
+          "maxRows": 320,
+          "maxViolations": 40,
+          "maxDiagnosticCharacters": 500,
+          "maxOutputBytes": 196608,
+          "maxGenerationIdCharacters": 64,
+          "maxPathCharacters": 240,
+          "maxSymbolCharacters": 120,
+          "maxSelectorCharacters": 240,
+          "maxCorrectionCharacters": 320,
+          "maxCheckIdCharacters": 80,
+          "maxSurfaceIdCharacters": 240
+        },
+        "owners": {
+          "cli": {
+            "path": "packages/cli/src/cli/dispatch/commands.ts",
+            "symbol": "DISPATCHER_TOP_LEVEL_COMMANDS",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts"
+          },
+          "capability": {
+            "path": "packages/cli/src/capabilities/index.ts",
+            "symbol": "CAPABILITY_INSTRUCTIONS",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts"
+          },
+          "runtime": {
+            "path": "packages/cli/src/runtime/lifecycleAuthority.ts",
+            "symbol": "loadLifecycleAuthority",
+            "correction": "pnpm -C packages/cli test:source -- test/runtime/runtimeLifecycle.test.ts"
+          },
+          "reference": {
+            "path": "packages/cli/src/validate/retainedReferenceAuthority.ts",
+            "symbol": "validateRetainedReferenceAuthority",
+            "correction": "node packages/cli/dist/bin/agentera.js check validate retained-references"
+          },
+          "state": {
+            "path": "packages/cli/src/state/write/runtimeOperations.ts",
+            "symbol": "runtimeOperationSpecs",
+            "correction": "node packages/cli/dist/bin/agentera.js check validate state"
+          },
+          "package": {
+            "path": "packages/cli/src/registries/packageRegistry.ts",
+            "symbol": "loadRegistry",
+            "correction": "pnpm -C packages/cli run verify:package"
+          },
+          "bootstrap": {
+            "path": "packages/cli/src/validate/bootstrapAuthority.ts",
+            "symbol": "bootstrapMatrixAuthority",
+            "correction": "pnpm -C packages/cli test:source -- test/cli/runtimeBootstrapMatrix.test.ts"
+          }
+        },
+        "census": {
+          "algorithm": "sha256(sorted_utf8_ids_joined_by_lf)",
+          "classes": {
+            "cli": {
+              "count": 27,
+              "sha256": "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4"
+            },
+            "capability": {
+              "count": 12,
+              "sha256": "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867"
+            },
+            "runtime": {
+              "count": 98,
+              "sha256": "9986cd87660308dc8fe6574768f14aec80f8b7eb55dffcdf1dfe7fc1c80f0251"
+            },
+            "reference": {
+              "count": 27,
+              "sha256": "9992ecb8fd560b18f2858daab9208acda068ed6e7779954e12539b748e80aa57"
+            },
+            "state": {
+              "count": 38,
+              "sha256": "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681"
+            },
+            "package": {
+              "count": 68,
+              "sha256": "b237db48078d6f00e1418c43e1df9fbafb7dc86f950cb544e5866f5079ad8995"
+            },
+            "bootstrap": {
+              "count": 34,
+              "sha256": "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e"
+            }
+          },
+          "total": {
+            "count": 304,
+            "sha256": "472adb93e4fbbc35172846684dc1cb2aa9f07ed90ef0f85cfd103b4ad2ec9839"
+          }
+        }
+      },
+      "reuseCheck": {
+        "command": "node packages/cli/scripts/release-qualification.mjs source-check --candidate-dir DIR [--json]",
+        "authority": "The external path is input only. Reuse requires digest, full receipt semantics, exact governed gates, current toolchain, and matching current staged and working tracked-tree identities under the same package version and agentera.gitRef normalization used at source verification.",
+        "effects": "Runs no verification gate and writes no repository, package artifact, receipt, or registry state. Success emits executed none and reused true without receipt content or private paths.",
+        "fallback": "A missing, invalid, ambiguous, or stale receipt fails before manual readiness metadata effects. Serialized integration preparation and the local staged verification lane do not consume release receipts.",
+        "scope": "Manual readiness preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, package verification, release metadata, approval, and publication remain mandatory at their owning stages."
+      },
+      "dag": {
+        "batchA": ["generated-overlap", "stress", "typecheck"],
+        "performanceBarrier": ["performance"],
+        "capacityBarrier": ["capacity"],
+        "generatedOverlapOrigins": ["source", "package", "build", "generated-overlap"],
+        "barrierB": ["compact", "capability-contract", "activation-conjunction"],
+        "generatedOutputWriter": "generated-overlap",
+        "overlapCleanupMarginMs": 10000,
+        "overlapParentReconciliationMarginMs": 4000,
+        "minimumExecutionWindowMs": {
+          "compact": 3000,
+          "capability-contract": 3000,
+          "activation-conjunction": 6000
+        },
+        "failure": "The coordinator passes generated-overlap, the solo performance barrier, and the serial capacity barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles its children, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, capacity, barrier B, and receipt issuance remain blocked after any batch failure, capacity, barrier B, and receipt issuance remain blocked after any performance failure, and barrier B and receipt issuance remain blocked after any capacity failure.",
+        "isolation": "Every child receives a distinct HOME, cache, user config, global config, and report output. Batch A provides output isolation. Performance runs alone with one worker on the policy-declared authoritative runner after batch A settles. Capacity then runs serially before the reader barrier."
+      },
+      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap owns one private immutable build root and is the sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state with one worker. Capacity runs alone after performance. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of that private build."
+    },
+    "readiness": {
+      "schemaVersion": "agentera.releaseReadiness.v1",
+      "component": "release-readiness",
+      "adapter": "development",
+      "command": "node packages/cli/scripts/release-readiness.mjs development --candidate-dir DIR --source-commit COMMIT [--metadata-commit COMMIT] [--json]",
+      "phases": ["source-readiness", "metadata-review", "candidate-readiness"],
+      "receipts": {
+        "source": "source-receipt.json",
+        "candidate": "candidate-receipt.json"
+      },
+      "reuse": "A present source receipt is validated with the source reuse check instead of invoking source verification. A present package artifact receipt and retained artifact are validated instead of invoking package verification. Invalid, stale, incomplete, or mismatched evidence rejects the run before an issuance owner starts.",
+      "metadataReview": "A successful source verification or source-receipt reuse pauses before package artifact construction until the caller supplies the reviewed commit for the committed manifest version and source identity. The coordinator never prepares metadata, changes a version, commits, approves, rebuilds a valid package artifact, stages bytes, or mutates registry state.",
+      "outcomes": ["paused", "ready", "rejected"],
+      "exitCodes": {
+        "paused": 0,
+        "ready": 0,
+        "rejected": 1
+      }
+    },
+    "candidate": {
+      "component": "release-candidate",
+      "inputs": [
+        "source_receipt",
+        "metadata_commit",
+        "source_commit",
+        "adapter",
+        "package",
+        "registry",
+        "expected_tag",
+        "artifact_bytes",
+        "artifact_mode"
+      ],
+      "retainedArtifactMode": "0444",
+      "timing": "Package verification records monotonic, non-overlapping release-metadata, construction/equivalence, and exact-artifact-smoke intervals at their true boundaries. Their sum cannot exceed measured package verification time; explicit unattributed overhead completes an exact reconciliation.",
+      "gates": [
+        "release-metadata",
+        "dry-pack-observation-equivalence",
+        "local-exact-artifact-smoke"
+      ],
+      "artifact": {
+        "receipt": "candidate-receipt.json",
+        "sourceReceipt": "source-receipt.json",
+        "mode": "0444",
+        "mustRemainWithinCandidateDirectory": true
+      }
+    }
+  },
+  "trust": {
+    "local": "A same-principal source receipt is a deterministic cache only. It cannot authorize registry mutation.",
+    "ci": "Manual CI publication requires transferred artifacts, receipts, attestation, and artifact-bound approval. The routine configured development ref push workflow is separate: it validates and smokes one local isolated tarball, then uses GitHub Actions Trusted Publishing OIDC for an actual forward npm publish. Stable main publication remains token-bearing, requires protected-environment review, and does not yet use OIDC."
+  },
+  "registryStateTable": [
+    {
+      "state": "absent",
+      "exactVersion": "absent",
+      "candidateTag": "absent",
+      "expectedTag": "older-or-absent",
+      "stage": "upload exact artifact once",
+      "promote": "blocked"
+    },
+    {
+      "state": "staged",
+      "exactVersion": "matching integrity",
+      "candidateTag": "target version",
+      "expectedTag": "older",
+      "stage": "replay without upload and run observational smoke",
+      "promote": "move expected tag forward after staged package migration smoke"
+    },
+    {
+      "state": "promoted",
+      "exactVersion": "matching integrity",
+      "candidateTag": "target version or retained history",
+      "expectedTag": "target version",
+      "stage": "replay without upload",
+      "promote": "replay without tag mutation"
+    },
+    {
+      "state": "conflict",
+      "exactVersion": "missing, changed, conflicting, or tag ahead",
+      "candidateTag": "any",
+      "expectedTag": "any",
+      "stage": "fail before mutation",
+      "promote": "fail before mutation"
+    }
+  ],
+  "benchmark": {
+    "environment": "Ubuntu runner or clean local Node 24 LTS, npm 11, and pnpm 10.30.3; record exact tool versions in receipts.",
+    "fixture": "clean committed checkout and an empty external artifact directory; no tracked or checkout-local generated package artifacts.",
+    "cacheNetwork": "Preflight uses no registry call. Every verification DAG child and each smoke use a distinct empty HOME, npm cache, user config, global config, and report output; public npm dependency network access is allowed and recorded as cold-cache. Publication reads the registry before credentials.",
+    "repetitions": 3,
+    "statistic": "Package verification reports median wall milliseconds over exactly three cold-cache repetitions. Concurrent owner-duration totals are reported separately; only owners in the same parallel phase overlap, while the solo performance and serial capacity barriers contribute ordered wall time. Phase timing reconciles through measured DAG wall time rather than by summing nested owner durations. Publication reports one actual approved transaction because registry mutation is not a benchmark repetition; replays run the same measured envelope and report reused registry phases.",
+    "coordinator": "packages/cli/scripts/release-benchmark.mjs has separate verification and publication commands. verification runs only preflight and source-plus-package verification and never receives npm credentials. publication runs only the approved stage, independent staged package migration smoke, and promote commands, measures them with one monotonic deadline, and never runs source verification.",
+    "qualifiedPublication": {
+      "command": "node packages/cli/scripts/release-benchmark.mjs publication --adapter ADAPTER --candidate-dir DIR --receipt-file FILE",
+      "sequence": [
+        "stage the retained package artifact on the staging tag, wait for exact integrity convergence, and observe an isolated exact-version registry smoke",
+        "run an independent staged package migration smoke while the public tag is unchanged",
+        "promote the expected tag forward, wait for tag and integrity convergence, and observe the final exact-version registry smoke"
+      ],
+      "receiptBindings": [
+        "candidate_receipt_sha256",
+        "metadata_commit",
+        "package",
+        "version",
+        "artifact_sha256",
+        "artifact_integrity",
+        "source_run_id"
+      ],
+      "timing": "The coordinator measures commands with a monotonic clock. Caller-supplied elapsed data is not accepted. Component floors plus unattributed elapsed time must equal the measured total, and total elapsed time must be strictly less than qualifiedPublicationMs.",
+      "failure": "The first child failure label or timeout owner is retained, later phases do not start, and no rollback is attempted. A retry uses the same exact package artifact; stage and promote replay matching registry state without upload or backward tag movement."
+    },
+    "timeouts": {
+      "preflightMs": 30000,
+      "sourceQualificationMs": 2400000,
+      "qualifiedPublicationMs": 120000
+    },
+    "failureRule": "The first observed failing owner remains the reported label. Cancellable peers are stopped, generated-overlap is allowed to settle without forced termination, barrier B and receipt issuance are blocked, and completed/cancelled failures are reported. No timeout or failure authorizes repair, package construction, or registry mutation."
+  },
+  "bounds": {
+    "registryAttempts": 6,
+    "registryDelayMs": 5000,
+    "commandTimeoutMs": 120000,
+    "diagnosticCharacters": 1000
+  }
+}
