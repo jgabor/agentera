@@ -45,25 +45,41 @@ machine-readable authority is
 It defines the development and stable adapters, component inputs, state table,
 benchmark, and failure labels. This guide explains how maintainers use it.
 
-Every passing queued push to `feat/v3` publishes through
-`.github/workflows/publish-next.yml` to npm `@next`. CI derives the base release
-line from the valid checked-in `packages/cli/package.json#version` and allocates
-the candidate ordinal as `GITHUB_RUN_NUMBER + 80`. Runs 4, 5, and 6 map to
-`3.0.0-dev.84`, `.85`, and `.86`. It builds once from `GITHUB_SHA`, and sets the
+Every passing queued push whose full ref exactly matches
+`references/adapters/package-publication.json#ci.developmentPush.ref`
+publishes through `.github/workflows/publish.yml` to npm `@next`. A first
+no-OIDC routing job checks out default `main` into a dedicated authority path,
+reads only that checked-in publication authority, and excludes `main`. CI
+derives the base release line from the valid checked-in
+`packages/cli/package.json#version` and allocates the candidate ordinal as
+`GITHUB_RUN_NUMBER + 89`. The new workflow's runs 1, 2, and 3 map to
+`3.0.0-dev.90`, `.91`, and `.92`; the fixed offset follows the prior workflow's
+`dev.89` publication. It builds once from `GITHUB_SHA`, and sets the
 candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
 construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
-version smoke, then publishes the same tarball to `@next`. This routine path does
+version smoke, then uploads the tarball and bounded classification as one
+same-run Actions artifact. The entire dependent checkout-free, action-free job has OIDC
+    capability and runs only fixed reviewed workflow logic. It downloads and
+    publishes that exact tarball to `@next`; it does not rebuild. This routine path does
 not run the manual qualification, receipt, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
-commit. The `publish-next-${{ github.ref }}` group uses
+commit. The package-global `publish-agentera` group uses
 `queue: max`, which keeps up to 100 pending pushes.
 A rerun keeps the same run number, candidate version, pushed SHA, and bytes. If identical bytes
 already exist at that version on `@next`, publication succeeds without another
 upload. Failed runs leave gaps. Later queued runs receive higher versions, and
-classification prevents them from moving `@next` backward.
+classification prevents them from moving `@next` backward. All pushes allocate
+run numbers before routing, so nonselected and `main` pushes can also create
+permitted gaps. Candidate allocation never reads npm.
 
-Ordinary `feat/v3` pushes require no pre-push development version bump or
+Change the selected development ref only by changing `ci.developmentPush.ref`
+through a reviewed commit on default `main`. Land the authority and
+`publish.yml` on `main` first. Then ensure the selected development branch
+contains `publish.yml` before its publishing push. Routing fails closed until
+that order is complete; it has no runtime bootstrap fallback.
+
+Ordinary pushes to the configured development ref require no pre-push development version bump or
 metadata-only release commit. Rerun the existing workflow when the run and
 source are unchanged, because that is an exact replay. If npm already contains
 different bytes at the candidate version, treat it as a conflict: do not
@@ -129,11 +145,9 @@ Stable shim preparation retains its separate source-provenance check and does
 not use the development receipt. `cli:qualify:source` and `cli:qualify:dev`
 remain the exact low-level receipt owners.
 
-The stable publication workflow is a cutover prerequisite, not a currently
-operational dispatch path. GitHub does not expose its `workflow_dispatch`
-trigger until `.github/workflows/publish-stable.yml` exists on the default
-`main` branch. Land and review that workflow on `main` before the v3 `@latest`
-cutover.
+Stable publication is not implemented. The cutover must add a no-OIDC stable
+    build job and a dependent OIDC-enabled publication job with the protected
+`npm-publish` environment inside the same `.github/workflows/publish.yml`.
 
 Source verification runs one evidence DAG. Batch A starts generated-overlap,
 stress, and typecheck together with separate HOME, cache, npm configs, and
@@ -298,30 +312,44 @@ and receipts plus a CI attestation from the source verification run. Stable
 publication from `main` retains explicit protected-environment review. Its
 migration to OIDC remains deferred.
 
-The manual CI attestation binds `jgabor/agentera`, the
-`Publish development package (@next)` workflow,
-`.github/workflows/publish-next.yml@refs/heads/feat/v3`, and
+The manual CI attestation binds `jgabor/agentera`, the unified publication
+workflow, `.github/workflows/publish.yml` on the configured development branch,
+and
 the numeric source run ID. The full `refs/heads/...` contract is the branch
-authority. This attestation and approval flow is not part of routine `feat/v3`
-push publication.
+authority. This attestation and approval flow is not part of routine push
+publication from the configured development ref.
 
-Routine `feat/v3` publication grants `contents: read` and `id-token: write` to
-the GitHub-hosted workflow. Classification has no credentials or OIDC. After a
-forward outcome, mutation rechecks the registry without OIDC. An actual forward
-publish then requires `GITHUB_ACTIONS=true` and non-empty
+Routine development publication gives the build job only `contents: read`.
+Classification has no credentials or OIDC. The dependent publication job has
+job-level `id-token: write`, checks out no repository source, downloads only the
+immutable same-run candidate artifact, and does not rebuild or execute package
+code. Its fixed workflow-owned guard runs with the OIDC request variables,
+`GITHUB_ACTIONS`, inherited npm credentials, and npm configuration removed. It
+rechecks the bounded classification, exact tarball metadata and integrity,
+source SHA, and registry state. An actual forward publish then requires
+`GITHUB_ACTIONS=true` and non-empty
 `ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, and passes
-them only to `npm publish` with an isolated registry-only npm config. It rejects
-traditional npm tokens and auth-config variables. Exact and superseded replay
-need neither credentials nor OIDC. A `forward-retag` fails closed because npm
-Trusted Publishing does not authorize `npm dist-tag`; recover with interactive
-npm 2FA or a later forward version.
+them only to the fixed `npm publish <exact tarball> --access public --tag next
+--ignore-scripts` command with an isolated registry-only npm config. Exact and
+superseded replay need neither credentials nor OIDC. A `forward-retag` fails
+closed because npm Trusted Publishing does not authorize `npm dist-tag`;
+recover with interactive npm 2FA or a later forward version. After a successful
+publish, the fixed credential-free guard waits for exact integrity, source SHA,
+and `@next` convergence without mutating a dist-tag.
 
-After `.github/workflows/publish-stable.yml` lands on default `main`, its manual
-dispatch prepares, attests, and uploads one immutable candidate. The dependent
-publication job downloads the candidate from the same workflow run and waits
-for `npm-publish` environment approval. It revalidates the receipt, artifact,
-and same-run CI attestation before registry credentials are used. Stable
-publication from `main` uses this protected review. The local publication
+The immediate guard-to-publish sequence minimizes the registry race, and the
+package-global concurrency group prevents Agentera publication runs from racing
+one another. npm does not provide an atomic compare-and-publish operation, so an
+external registry actor can still change the version or tag in that short
+window. A version conflict from `npm publish` fails closed. Post-publish
+verification detects non-convergence and never moves a tag backward.
+
+Future stable jobs in `publish.yml` will prepare, attest, and upload one
+immutable candidate from `main`. The dependent publication job will download
+the candidate from the same workflow run and wait for `npm-publish` environment
+approval. Only that stable publication job will have OIDC permission. The npm
+Trusted Publisher environment claim remains blank because development has no
+GitHub environment. The local publication
 command is emergency recovery only, after the same artifact-bound approval and
 retained package artifact are established:
 
@@ -463,8 +491,8 @@ run only their relevant compact, schema, lint, or format checks within a
 10-second budget. Conservative authority and verification surfaces route to `ci_owned`; the hook runs source-owned route guards and does not execute a
 local release lane. Specialized test files retain their exact owner in the
 route result. Routine CI invokes the check-only `release` verification once on
-pull requests and `main` pushes. Direct `feat/v3` pushes run the package verification
-workflow instead of routine CI.
+pull requests and `main` pushes. Direct pushes to the configured development ref
+run the package verification workflow instead of routine CI.
 Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,

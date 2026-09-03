@@ -1,0 +1,15 @@
+id: llyqndlaxf
+artifact: progress
+record:
+  timestamp: 2026-09-01 20:07
+  type: fix
+  phase: build
+  what: Corrected development publication routing to use the single checked-in ci.developmentPush.ref authority on default main, with no repository variable or fallback.
+  context:
+    intent: Make development branch selection configuration as code while preserving the checkout-free, fixed-command OIDC publication boundary.
+    constraints: No commit, push, publication, or GitHub or npm setting change.
+    unknowns: Live behavior remains unverified until the authority and publish.yml land on default main in the documented order.
+    scope: Publication workflow, authority, tests, maintainer guidance, changelog, and stable-cutover TODO chain.
+  verified: Focused workflow and publication model tests cover default-branch routing, canonical full-ref validation, fail-closed authority handling, route-only build selection, and the existing artifact and OIDC guard contract.
+  next: Land the authority and publish.yml on main first, then ensure the selected development branch contains publish.yml before an authorized publishing push.
+  publication_order: 290

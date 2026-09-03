@@ -106,18 +106,27 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
 
 ### Development push contract
 
-- Every passing queued push to `feat/v3` publishes one rolling development
-  package to npm `@next`. CI allocates `3.0.0-dev.(GITHUB_RUN_NUMBER plus 80)`
+- Every passing queued push whose full ref matches
+  `references/adapters/package-publication.json#ci.developmentPush.ref`
+  publishes one rolling development package to npm `@next`. The routing job
+  reads that authority from default `main` and excludes `main`.
+  CI allocates `3.0.0-dev.(GITHUB_RUN_NUMBER plus 89)`
   on the valid checked-in manifest base line, builds once from `GITHUB_SHA`,
   and sets the candidate version and package `agentera.gitRef` only in isolated
   package construction. It
   validates and smokes that exact tarball before publishing the same bytes. It
   does not edit the checkout or require a final metadata commit.
 - The routine development workflow uses npm Trusted Publishing with GitHub
-  OIDC. Only an actual forward `npm publish` receives the OIDC request
-  environment. Replay needs no OIDC, and `forward-retag` fails closed because
-  OIDC does not authorize `npm dist-tag`. Stable publication remains unchanged.
-- The `publish-next-${{ github.ref }}` concurrency group uses `queue: max`, which
+  OIDC. The entire checkout-free, action-free publication job has OIDC
+  capability and runs only fixed reviewed workflow logic. That logic strips
+  OIDC and npm credentials/config from guard and convergence children; only
+  the fixed forward `npm publish` child is intentionally passed the OIDC
+  request variables. A fixed credential-free post-check verifies
+  convergence. Replay needs no OIDC, and `forward-retag` fails closed because
+  OIDC does not authorize `npm dist-tag`. An external npm race remains possible
+  because the registry has no atomic compare-and-publish operation; publish
+  conflicts fail closed. Stable publication remains unchanged.
+- The package-global `publish-agentera` concurrency group uses `queue: max`, which
   keeps up to 100 pending pushes. A rerun keeps the same run number, candidate
   version, pushed SHA, and bytes. Failed runs leave gaps; later queued runs get
   higher versions and cannot move `@next` backward.
@@ -127,12 +136,17 @@ and `.agentera/docs.yaml` mappings rather than assuming paths.
   worktree branch and obtain fresh explicit authorization before integrating it.
 - Development preparation rejects `--target-version`; stable preparation
   continues to require explicit `--target-version`.
-- Ordinary `feat/v3` pushes require no pre-push development version bump or
-  metadata-only release commit.
-- Publication from `main` remains the stable path and requires protected
-  environment review before npm mutation. The stable `workflow_dispatch`
-  path is not operational until `publish-stable.yml` exists on the default
-  `main` branch. Landing it there is a v3 cutover prerequisite.
+- Ordinary pushes to the configured development ref require no pre-push
+  development version bump or metadata-only release commit.
+- All pushes allocate workflow run numbers before routing. Nonselected and
+  `main` pushes can therefore leave permitted development version gaps.
+- To change the development branch, change `ci.developmentPush.ref` through a
+  reviewed commit on default `main`. Land that authority and `publish.yml` on
+  `main` first, then ensure the selected branch contains `publish.yml` before
+  its publishing push. There is no bootstrap fallback.
+- Publication from `main` remains the future stable path in `publish.yml` and
+  requires protected `npm-publish` environment review before npm mutation.
+  That stable job is not implemented yet and remains governed TODO work.
 
 Until `3.0.0` is on npm `@latest`, do not bump suite or release metadata beyond
 `3.0.0`. Any version or publication task must load `agentera-release` before
@@ -172,13 +186,14 @@ or touching generated and packaged output.
 ## Always-on boundaries
 
 - Never publish, tag, or push without explicit user authorization. The automatic
-  `feat/v3` workflow is standing policy after an authorized push; it does not
-  authorize an agent to make that push.
+  configured development ref workflow is standing policy after an authorized
+  push; it does not authorize an agent to make that push.
 - Never infer missing npm credentials from inherited `NPM_TOKEN` alone. Load
   `agentera-release` and complete its credential preflight.
 - Never use `.env`, `.npmrc`, a source receipt, or CI success as registry
-  mutation approval. A serialized `feat/v3` push runs the direct development
-  publication workflow. Stable publication always requires explicit protected review.
+  mutation approval. A serialized push to the configured development ref runs
+  the direct development publication workflow. Stable publication always
+  requires explicit protected review.
 - Never use direct `npm pack` or `npm publish` for Agentera packages outside the
   repository package construction and publication helpers.
 - Never push during ordinary capability execution.

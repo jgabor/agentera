@@ -1,0 +1,15 @@
+id: hyxaikcbcc
+artifact: progress
+record:
+  timestamp: 2026-09-01 18:57
+  type: feat
+  phase: build
+  what: Unified development publication under publish.yml with configurable branch routing, deterministic dev.90 rename offset, immutable artifact handoff, and OIDC-only npm mutation.
+  context:
+    intent: Keep npm's sole Trusted Publisher on publish.yml while supporting configurable @next publication and the future protected main to latest path.
+    constraints: No commit, push, publication, npm or GitHub setting change, repository-variable mutation, or vision change.
+    unknowns: AGENTERA_NEXT_BRANCH is currently absent, so feat/v3 remains the fallback until the governed hardening task sets it.
+    scope: Release workflow, publication authority, tests, maintainer guidance, changelog, and typed TODO state.
+  verified: Focused release and workflow tests, full source tests, typecheck, build, capability contract, compact, package verification, and package dry run passed.
+  next: An authorized push must prove the live publish.yml OIDC claim and first dev.90 allocation. Stable jobs remain governed by the critical cutover TODO chain.
+  publication_order: 289

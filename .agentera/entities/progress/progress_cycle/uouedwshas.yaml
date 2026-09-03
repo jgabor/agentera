@@ -1,0 +1,15 @@
+id: uouedwshas
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:05
+  type: docs
+  phase: build
+  what: Aligned active publication guidance and regressions with the job-level OIDC boundary.
+  context:
+    intent: Keep publication authority, guidance, tests, and stable-cutover readiness accurate.
+    constraints: Preserve history and prior task changes; do not push, publish, or alter external settings.
+    scope: Active release authorities, documentation, publication regressions, TODO state, and plan state.
+  discovered: GitHub id-token permission applies to the complete job, while fixed workflow logic controls which child receives request variables.
+  verified: Publication and authority regressions passed 49 tests; typecheck, build, package verification, retained-reference validation, state validation, and compact passed. Source verification exposed only the task-owned prime budget and a pre-existing release-metadata gitRef mismatch; the progress update resolves the prime overage before rerun.
+  next: Orchestrate evaluates task ybvvkpnsue; stable publication remains deferred.
+  publication_order: 294

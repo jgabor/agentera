@@ -72,6 +72,18 @@ describe("package publication orchestration", () => {
     expect(packagingGuide).toContain("obtain fresh authorization");
   });
 
+  it("documents the job-level OIDC boundary without stale publication guidance", () => {
+    for (const surface of [agentsGuide, releaseSkill, packagingGuide, publicationContract.invariants.credentials]) {
+      const prose = surface.replace(/\s+/g, " ");
+      expect(prose).toMatch(/entire (?:dependent )?checkout-free, action-free (?:publication )?job has OIDC capability/);
+      expect(prose).toContain("fixed reviewed workflow logic");
+      expect(prose).not.toMatch(/OIDC-only job|only (?:the )?(?:npm publish|publish step) has OIDC/i);
+    }
+    for (const surface of [agentsGuide, releaseSkill, verificationSkill, packagingGuide, changelog]) {
+      expect(surface).not.toMatch(/publish-(?:next|stable)\.yml|GITHUB_RUN_NUMBER (?:\+|plus) 80|AGENTERA_NEXT_BRANCH/);
+    }
+  });
+
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
     expect(rootPackage.scripts).toMatchObject({
       "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
@@ -679,7 +691,7 @@ describe("package publication orchestration", () => {
       status: "not implemented", environment: "npm-publish",
     });
     expect(packagingGuide).toMatch(/no-OIDC stable\s+build job/);
-    expect(packagingGuide).toContain("OIDC-only publication job");
+    expect(packagingGuide).toContain("OIDC-enabled publication job");
     expect(packagingGuide).toContain("environment claim remains blank");
   });
 

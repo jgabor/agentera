@@ -3,9 +3,10 @@
 ## ⇶ Critical
 
 - [ ] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint.
-- [ ] [id:pqpzmhdpsj] [fix:3.0.0] Prepare the stable TypeScript publication contract on main.
+- [ ] [id:pqpzmhdpsj] [fix:3.0.0] Prepare the stable TypeScript Trusted Publishing contract on main.
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
-- [ ] [id:huiepnrwav] [fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest.
+- [ ] [id:qrgwnmqcdl] [fix:3.0.0] Harden the unified npm Trusted Publisher for both channels.
+- [ ] [id:huiepnrwav] [fix:3.0.0] Publish the verified TypeScript cutover candidate to npm @latest through Trusted Publishing.
 
 ## ⇉ Degraded
 

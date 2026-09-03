@@ -5,36 +5,39 @@ record:
   status: open
   readiness:
     capability: build
-    reason: The final irreversible transaction must publish the exact approved TypeScript cutover candidate and verify @latest convergence.
+    reason: The final irreversible transaction must use the exact approved candidate after the existing publish.yml Trusted Publisher trust is verified and hardened.
     dependencies:
       - artifact: todo
-        id: lqqmlchlyr
+        id: qrgwnmqcdl
     blocked: null
     gate:
       state: pending
-      reason: npm @latest promotion requires the exact verified candidate and explicit final release approval.
-      recovery: Complete TODO lqqmlchlyr, obtain explicit final release approval, and run the documented stable publication transaction.
+      reason: npm @latest publication requires the verified candidate, hardened existing publish.yml trust, and explicit final release approval.
+      recovery: Complete TODO qrgwnmqcdl, verify the hardened existing publish.yml trust, obtain explicit final release approval, and run the documented protected stable publication transaction.
     queue_rank: 200
-    order_reason: Execute last, after the stable path and approved immutable candidate are complete.
+    order_reason: Execute last, after immutable candidate preparation and verified unified Trusted Publisher hardening.
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Promote the verified TypeScript cutover candidate to npm @latest."
+      description: "[fix:3.0.0] Publish the verified TypeScript cutover candidate to npm @latest through Trusted Publishing."
       severity: critical
       status: open
-      order: 4
+      order: 5
   kind: fix
   target_version: 3.0.0
   requirements:
-    - Require the completed immutable candidate-preparation dependency and explicit final release approval.
-    - Publish or promote the exact verified TypeScript candidate without rebuilding it or rolling tags back.
-    - Wait for package and dist-tag convergence, then run the clean, v2, partial, and v3 bootstrap matrix against @latest.
-    - Close only when channel authority, bare agentera bootstrap, Python deprecation, and compatibility-removal boundaries agree.
+    - Require completion of unified Trusted Publisher hardening, the unchanged verified TypeScript candidate, and explicit final release approval.
+    - Run the protected main publication job in unified publish.yml and publish the exact candidate once with npm Trusted Publishing and tag latest, without rebuilding it or invoking npm dist-tag.
+    - Recheck candidate identity, integrity, source SHA, trusted workflow claims, and registry state immediately before the OIDC publish.
+    - Treat exact publication and @latest convergence as replay success; fail closed with interactive 2FA recovery if an existing version requires retagging or registry state conflicts.
+    - Wait for package, dist-tag, and signed provenance convergence, then run the clean, v2, partial, and v3 bootstrap matrix against @latest.
+    - Close only when stable state agrees and future @next publication remains available from the checked-in ci.developmentPush.ref.
   acceptance:
-    - The exact approved candidate is available on npm @latest with matching identity and integrity.
-    - Stable package and dist-tag checks converge without reconstruction or rollback.
-    - The documented bootstrap matrix passes against @latest.
-    - Final source, package, channel, and deprecation state agree before closeout.
+    - The exact approved candidate is available on npm @latest with matching version, identity, integrity, source SHA, and signed provenance.
+    - The protected main job in publish.yml used the configured OIDC trust and no traditional npm credential or dist-tag mutation.
+    - Stable package and @latest checks converge without reconstruction, rollback, or a second version publish.
+    - The documented bootstrap matrix passes against @latest, and future @next publication from the checked-in ref remains uninterrupted.
+    - Final source, package, channel, deprecation, trusted-publisher, and token-retirement state agree before closeout.
   release_blocker: true
-  title: Promote the verified TypeScript cutover candidate to npm @latest.
+  title: Publish the verified TypeScript cutover candidate to npm @latest through Trusted Publishing.

@@ -101,8 +101,9 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
 For a normal development push, CI allocates
-`3.0.0-dev.(GITHUB_RUN_NUMBER + 80)`: runs 4, 5, and 6 map to
-`3.0.0-dev.84`, `3.0.0-dev.85`, and `3.0.0-dev.86`. Only copied manifest
+`3.0.0-dev.(GITHUB_RUN_NUMBER + 89)`: runs 1, 2, and 3 map to
+`3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`. This fixed offset preserves
+allocation after the workflow rename. Only copied manifest
 `version` and `agentera.gitRef` change. Ordinary pushes require no pre-push
 development version bump or metadata-only release commit. Failed runs can
 leave gaps; a rerun reuses the same run number, `GITHUB_SHA`, and candidate

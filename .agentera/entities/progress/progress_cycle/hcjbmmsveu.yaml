@@ -1,0 +1,16 @@
+id: hcjbmmsveu
+artifact: progress
+record:
+  timestamp: 2026-09-01 20:48
+  type: fix
+  phase: audit
+  what: Corrected the configuration-as-code publication audit blocker by counting semantic development ref values and removing duplicate active branch declarations.
+  context:
+    intent: Keep ci.developmentPush.ref as the sole generic development publication branch authority.
+    constraints: Preserved existing workflow, OIDC, state, and TODO work; made no commit, push, publication, or external setting change.
+    unknowns: Live GitHub Actions routing and npm Trusted Publishing remain unverified until the checked-in changes land in the required order.
+    scope: Unified publication routing, package publication loader and model tests, and active maintainer guidance.
+  discovered: The prior route guard counted JSON byte spellings, so an escaped-slash duplicate parsed to the same ref but bypassed the single-authority check. Active publication prose and tests also repeated the configured branch.
+  verified: Escaped-slash and cross-tree duplicate routing cases fail closed without outputs. Focused publication tests, 4,273 full source tests, 25 package tests, typecheck, build, state validation, compact, capability contract, package verification, and package dry run passed.
+  next: Land the authority and publish.yml on main first, then ensure the selected development branch contains publish.yml before an authorized publishing push.
+  publication_order: 291

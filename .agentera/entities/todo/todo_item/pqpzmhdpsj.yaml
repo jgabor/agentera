@@ -3,16 +3,20 @@ artifact: todo
 record:
   kind: fix
   target_version: 3.0.0
-  title: Prepare the stable TypeScript publication contract on main.
+  title: Prepare the stable TypeScript Trusted Publishing contract on main.
   requirements:
     - Change the stable publication authority from the Python-delegating shim to the self-contained TypeScript package and one immutable candidate artifact.
-    - Land and review the stable verification and publication workflows on the default main branch.
-    - "Keep this preparation non-publishing: do not change dist-tags, bootstrap resolution, compatibility files, or installed state."
+    - "Add protected stable jobs inside unified publish.yml: a build job without OIDC and a dependent OIDC-enabled publication job using the npm-publish environment and only fixed reviewed logic."
+    - Keep the checked-in ci.developmentPush.ref unchanged while adding the stable jobs to unified publish.yml.
+    - Publish the exact approved tarball directly to @latest through npm Trusted Publishing; remove staging-tag and npm dist-tag promotion from the normal stable path because OIDC does not authorize dist-tag mutation.
+    - Preserve exact replay and registry race checks, and fail closed with interactive 2FA recovery when an already-published version would require retagging.
+    - "Keep this preparation non-publishing: do not change npm trust, dist-tags, bootstrap resolution, compatibility files, or installed state."
   acceptance:
     - The stable adapter selects the TypeScript package and exact retained artifact instead of the shim.
-    - Stable verification and publication workflows are present and reviewable on main.
-    - Release tests and documentation agree on the stable TypeScript path.
-    - No registry, tag, bootstrap, compatibility, or installation state changes during this task.
+    - "Unified publish.yml contains a protected main build job without OIDC and a dependent npm-publish job with job-level id-token: write, no actions or candidate execution, and no traditional credential path."
+    - Stable publication consumes the verified tarball once with --tag latest, while replay and retag-required states converge or fail closed without reconstruction or rollback.
+    - Release tests, package authority, maintainer guidance, and the existing unified Trusted Publisher agree on the cutover contract.
+    - No registry, trusted-publisher, tag, bootstrap, compatibility, or installation state changes during this task.
   release_blocker: true
   severity: critical
   readiness:
@@ -90,7 +94,7 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Prepare the stable TypeScript publication contract on main."
+      description: "[fix:3.0.0] Prepare the stable TypeScript Trusted Publishing contract on main."
       severity: critical
       status: open
       order: 2

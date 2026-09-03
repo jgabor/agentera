@@ -1,0 +1,43 @@
+id: qrgwnmqcdl
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Harden the unified npm Trusted Publisher for both channels.
+  requirements:
+    - Require the verified stable candidate and explicit final security-change approval before changing npm or GitHub settings.
+    - Verify and harden the existing jgabor/agentera publish.yml trust with no environment claim and npm publish permission; do not rebind the Trusted Publisher.
+    - Verify main maps only to latest and the full ref in ci.developmentPush.ref maps only to next, with no repository variable.
+    - Disable or remove obsolete publication mutation paths while retaining both channels through unified publish.yml.
+    - Set package publishing access to disallow traditional tokens, remove the GitHub NPM_TOKEN secret after no active workflow references it, and revoke obsolete automation tokens.
+    - Record the exact trusted claims and runnable 2FA recovery for claim mismatch or retag-required state without publishing a package.
+  acceptance:
+    - npm trusts exactly jgabor/agentera, publish.yml, no environment claim, with npm publish permission.
+    - main can publish only latest and ci.developmentPush.ref can publish only next, with no repository variable or trust rebind.
+    - No obsolete publication path can mutate npm, and unified publish.yml retains both channels.
+    - Traditional publish tokens are disallowed, the repository NPM_TOKEN secret is absent, and obsolete automation tokens are revoked.
+    - The verified candidate remains unchanged and unpublished; the final @latest transaction remains separately gated.
+  release_blocker: true
+  severity: critical
+  readiness:
+    capability: build
+    reason: The existing unified Trusted Publisher must be verified and hardened for both channels after candidate verification and before final publication.
+    dependencies:
+      - artifact: todo
+        id: lqqmlchlyr
+    blocked: null
+    gate:
+      state: pending
+      reason: The hardening changes npm and GitHub security settings and requires explicit final approval.
+      recovery: Complete TODO lqqmlchlyr, obtain final security-change approval, then verify and harden the existing publish.yml trust, checked-in ref routing, token state, and obsolete workflow paths without publishing.
+    queue_rank: 195
+    order_reason: Run after immutable candidate preparation and immediately before the final @latest publication transaction.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Harden the unified npm Trusted Publisher for both channels."
+      severity: critical
+      status: open
+      order: 4

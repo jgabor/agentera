@@ -1,0 +1,15 @@
+id: zchhgkrpit
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:09
+  type: docs
+  phase: build
+  what: Verified aligned publication contracts.
+  context:
+    intent: Record authoritative task evidence.
+    constraints: Preserve prior records and external state.
+    scope: Task ybvvkpnsue.
+  discovered: Concise latest progress keeps prime within its enforced budget.
+  verified: Publication regressions passed 49 tests; source passed 4,277 tests with 2 skipped; package passed 25 tests. Typecheck, build, dry pack, state, references, capability contract, compact, and prime passed; prime measured 2,990 GPT-5 tokens before this shorter summary. Release metadata still reports the pre-existing package gitRef mismatch.
+  next: Await Orchestrate evaluation.
+  publication_order: 296

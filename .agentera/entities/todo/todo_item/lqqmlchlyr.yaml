@@ -7,18 +7,20 @@ record:
   requirements:
     - Require explicit stable-cutover approval before changing channel authority, bootstrap resolution, Python delivery, compatibility files, or native runtime hooks.
     - Apply the approved bootstrap, Python-deprecation, and compatibility deletions from the completed cutover inventory.
-    - Build and verify one immutable TypeScript candidate without publishing it or mutating npm state.
-    - Preserve the exact candidate identity and evidence for the final publication transaction.
+    - Build and verify one immutable TypeScript candidate through the stable workflow contract without publishing it or mutating npm state.
+    - Preserve the exact candidate identity, integrity, source SHA, receipts, and protected-environment handoff for the final publication transaction.
+    - Keep publish.yml as npm's trusted workflow and leave the checked-in ci.developmentPush.ref unchanged during candidate preparation.
   acceptance:
     - The approved source removes the retained v2 and native-runtime surfaces named by the cutover inventory.
     - Bare agentera bootstrap, channel authority, and the Python deprecation response agree in source, docs, tests, and package output.
-    - Release gates pass against one retained immutable TypeScript candidate.
-    - No npm package or dist-tag changes during candidate preparation.
+    - Release gates pass against one retained immutable TypeScript candidate whose identity can be consumed without rebuilding.
+    - The stable jobs are ready within publish.yml, but npm Trusted Publisher settings, ci.developmentPush.ref, and registry state remain unchanged.
+    - No npm package, dist-tag, trusted-publisher, or publishing-access changes occur during candidate preparation.
   release_blocker: true
   severity: critical
   readiness:
     capability: build
-    reason: Cutover source changes must occur only after explicit approval and after the stable TypeScript publication path is ready.
+    reason: Cutover source changes must occur only after explicit approval and after the stable TypeScript OIDC publication contract is ready.
     dependencies:
       - artifact: todo
         id: pqpzmhdpsj
@@ -28,9 +30,9 @@ record:
     gate:
       state: pending
       reason: Bootstrap changes and compatibility deletion require explicit stable-cutover approval.
-      recovery: Obtain explicit stable-cutover approval after the stable TypeScript publication contract is ready.
+      recovery: Obtain explicit stable-cutover approval after TODO pqpzmhdpsj is complete, then prepare the immutable candidate before unified Trusted Publisher hardening without changing existing npm trust or registry state.
     queue_rank: 190
-    order_reason: Prepare the exact candidate after approval and before the irreversible @latest publication transaction.
+    order_reason: Prepare the exact candidate after approval, before unified Trusted Publisher hardening qrgwnmqcdl and final @latest publication.
   status: open
   reconciliation:
     schema_version: agentera.todoReconciliation.v1

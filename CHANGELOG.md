@@ -25,7 +25,7 @@
 ### Changed
 
 - Retired external integrations now use a complete, authority-backed ownership inventory. Exact managed markers declare ownership for declared Codex descriptors, OpenCode agents, and OpenCode commands; removing the marker opts out, and marker text in unrelated resources does not qualify. Full and focused cleanup remain preview- and approval-gated, preserve unsafe or unowned resources, and prune declared empty directories without removing host namespaces.
-- The `feat/v3` publication workflow now deterministically allocates development versions from `GITHUB_RUN_NUMBER + 80`, injects the candidate version and pushed SHA only into isolated package construction, and requires no pre-push version bump or metadata-only release commit. Reruns reuse the same identity and failed runs leave harmless version gaps.
+- The unified Trusted Publisher workflow now routes `@next` from the single checked-in `ci.developmentPush.ref` authority on default `main`, separates candidate construction from a checkout-free OIDC publication job through an immutable artifact, confines OIDC to the fixed lifecycle-disabled publish command between credential-free registry guards, and preserves deterministic allocation after the workflow rename with `GITHUB_RUN_NUMBER + 89`.
 - Structured-input inventory now derives active writer, report, and startup identities from parser-consumed specifications,
   validates its envelope, routes, ownership, and closure counts, and returns bounded diagnostics for unreadable or malformed
   input without claiming recent-host usage.
@@ -48,8 +48,8 @@
   privacy-safe fixed-key aggregate candidate and abstention counts, while Profile
   Full preserves an existing Glossary when mining returns no candidates. Inferred
   candidates remain review-only and are not automatically admitted.
-- Every passing `feat/v3` push now publishes the checked-in development version
-  to npm `@next`. The bounded workflow builds, validates, and smokes one exact
+- Every passing push selected by checked-in `ci.developmentPush.ref` now publishes
+  an allocated development version to npm `@next`. The bounded workflow builds, validates, and smokes one exact
   isolated tarball, safely replays it without moving `@next` backward, and gives
   temporary npm authentication only to forward mutation. Suite authority is unchanged.
 - Fixed the `@next` workflow startup so `actions/setup-node` does not require
