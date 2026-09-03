@@ -1,0 +1,18 @@
+id: rzdbopmghp
+artifact: plan
+record:
+  name: Validate delivery and synchronize state
+  depends_on:
+    - ogzqmopftv
+    - ruxzeprhpv
+    - obhhyoadbq
+    - hyemdltspp
+    - wkvwubympb
+    - styzmzhmko
+    - pcrgtvlwgo
+  status: pending
+  acceptance:
+    - GIVEN fresh explicit push authorization WHEN one hosted run executes THEN uncontended phase timing and projected queue cost are recorded without claiming contention evidence.
+    - GIVEN authorization is absent WHEN validation reaches the remote boundary THEN no remote effect occurs and the task remains blocked.
+    - GIVEN local and hosted acceptance is complete WHEN state closes THEN the requested TODOs resolve through typed writers, existing lint debt remains accurate, full gates pass, and compact state is clean.
+  plan: seltbrpsin

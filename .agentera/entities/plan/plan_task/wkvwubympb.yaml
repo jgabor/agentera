@@ -1,0 +1,12 @@
+id: wkvwubympb
+artifact: plan
+record:
+  name: Align hooks and contributor guidance
+  depends_on:
+    - hyemdltspp
+  status: pending
+  acceptance:
+    - GIVEN any global vp state WHEN hooks run THEN project-local tooling is selected while staged-file behavior and time budgets remain unchanged.
+    - GIVEN contributor and maintainer guidance WHEN reviewed THEN one daily Vite+ vocabulary is canonical while underlying recovery forms remain available.
+    - GIVEN published and changed local CLI checks WHEN documented and tested THEN agentera@next and local-build authority cannot be confused, with accepted and missing-bootstrap cases covered.
+  plan: seltbrpsin

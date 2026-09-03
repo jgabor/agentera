@@ -1,0 +1,32 @@
+id: dzrruetyod
+artifact: todo
+record:
+  kind: chore
+  target_version: 3.0.0
+  title: Unify setup-requiring CI behind Vite+
+  requirements:
+    - Pin setup-vp exactly in every CI job that installs or builds.
+    - Preserve explicit frozen installs and current lifecycle-script restrictions.
+    - Serialize same-SHA verification, candidate construction, and @next publication while retaining the setup-free OIDC publisher.
+  acceptance:
+    - One uniform non-cached verification path gates each selected feat/v3 push before publication.
+    - The OIDC publication job remains checkout-free, action-free, and setup-free.
+    - Hosted wall time and queue cost are recorded after rollout.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore:3.0.0] Unify setup-requiring CI behind Vite+"
+      severity: normal
+      status: open
+      order: 27
+    create_batch:
+      effect_sha256: 5961383bd2632386818cc94df83c1129055326d1419fef8604ff85f2673dfe50
+      input_sha256: 488f6977b84d840503faccc38b5805add2753d91ce09d4d73e12abe96f1e6a26
+      local_refs:
+        typed-tests: oeadkhtqub
+        root-vite: qefxkkmyyw
+        vite-ci: dzrruetyod

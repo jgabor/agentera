@@ -1,0 +1,12 @@
+id: styzmzhmko
+artifact: plan
+record:
+  name: Standardize setup-requiring verification CI
+  depends_on:
+    - hyemdltspp
+  status: pending
+  acceptance:
+    - GIVEN a CI job that installs or builds WHEN structure is validated THEN it uses the exact action ref, disables automatic install and caches, and performs the required explicit frozen install.
+    - GIVEN jobs with stricter script policy WHEN dependencies install THEN their existing restrictions remain enforced.
+    - GIVEN the uniform workflow WHEN it runs THEN static checks precede existing verification, migration evidence remains present, and structural pass/fail tests exclude all setup actions from the OIDC publisher.
+  plan: seltbrpsin

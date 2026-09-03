@@ -1,0 +1,16 @@
+id: ymuewuzanx
+artifact: progress
+record:
+  timestamp: 2026-09-03 19:09
+  type: chore
+  phase: build
+  what: Selected Vite+ 0.3.0 but blocked setup-vp adoption on mutable installer execution.
+  context:
+    intent: Prove an exact unified toolchain baseline before root and CI migration.
+    constraints: Preserve pnpm-lock.yaml authority, package boundaries, non-cached evidence, and the setup-free OIDC publisher.
+    unknowns: No acceptable exact setup-vp pair exists under the current trust requirement.
+    scope: Plan task ogzqmopftv only.
+  discovered: setup-vp 1.18.0 at 1b32467adbe183473499fd9d5d372c3ed9641754 falls back from release-tag installer URLs to viteplus.dev/install.sh and the vite-plus main branch without integrity verification.
+  verified: Retained release commits, npm integrity and Node compatibility; observed pnpm 10.30.3 frozen install passing at 0.686s fresh-local and 0.435s warm, deliberate lockfile mismatch failing, and stale global vp 0.1.19 yielding to package-local vp 0.2.9 only after install.
+  next: Task 6 must not adopt setup-vp until upstream provides integrity verification and fail-closed no-fallback behavior, or the plan explicitly selects another trusted bootstrap.
+  publication_order: 313

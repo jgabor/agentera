@@ -1,0 +1,12 @@
+id: ruxzeprhpv
+artifact: plan
+record:
+  name: Classify all-test type-checking viability
+  depends_on:
+    - ogzqmopftv
+  status: pending
+  acceptance:
+    - GIVEN Vitest types are resolvable WHEN diagnostics run THEN residual findings are retained by code and file without changing test behavior.
+    - GIVEN intentionally invalid fixtures WHEN findings are classified THEN expected negative shapes are distinguished from genuine type defects with one valid and one intentional-invalid case.
+    - GIVEN comparison completes WHEN Task 4 begins THEN it has an explicit all-test-admit or source-only-retain outcome, with source typecheck and behavioral tests still passing.
+  plan: seltbrpsin

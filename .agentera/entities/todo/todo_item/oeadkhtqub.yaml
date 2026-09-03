@@ -1,0 +1,31 @@
+id: oeadkhtqub
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Measure all-test Vite+ type-check viability
+  requirements:
+    - Resolve Vitest types without changing test behavior.
+    - Classify residual tsgolint diagnostics after cascading resolution errors are removed.
+    - Compare the resulting scope and diagnostics with the source-only tsc contract.
+  acceptance:
+    - A retained measurement reports residual diagnostics by code and affected file.
+    - All-test type checking joins bare vp check only if its intended contract and maintenance cost are explicitly accepted.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Measure all-test Vite+ type-check viability"
+      severity: normal
+      status: open
+      order: 28
+    create_batch:
+      effect_sha256: 5961383bd2632386818cc94df83c1129055326d1419fef8604ff85f2673dfe50
+      input_sha256: 488f6977b84d840503faccc38b5805add2753d91ce09d4d73e12abe96f1e6a26
+      local_refs:
+        typed-tests: oeadkhtqub
+        root-vite: qefxkkmyyw
+        vite-ci: dzrruetyod

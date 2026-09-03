@@ -1,0 +1,79 @@
+schema_version: agentera.toolchainBaseline.v1
+status: blocked
+recorded: 2026-09-03
+purpose: >-
+  Retain the exact Vite+ candidate, setup-vp provenance, local ownership and
+  install observations needed before the workspace-root and CI migrations.
+
+selection:
+  vite_plus:
+    version: 0.3.0
+    release_commit: b2d15e3899dcc8adedfd45d98de9d30046a624f4
+    npm_integrity: sha512-GNWbWuWD37frCSFrz6MLzUo62bTv5IOJozHEgZYOkxsLkuQtTwm4TowzpfoGrSsfwhAAtfPd/sK1Y0+v1SwhZA==
+    node_range: ^20.19.0 || ^22.18.0 || >=24.11.0
+    bundled:
+      vite: 8.2.2
+      vitest: 4.1.11
+      oxlint: 1.79.0
+      oxfmt: 0.64.0
+    conclusion: compatible with the pinned Node 24.19.0 runtime
+  setup_vp:
+    version: 1.18.0
+    action_commit: 1b32467adbe183473499fd9d5d372c3ed9641754
+    action_blob: 3727fcb74cf6df24f3f2827665eced2b4da63672
+    conclusion: rejected for Agentera's exact setup boundary
+    reason: >-
+      Even when the action and Vite+ version are exact, install-viteplus.ts
+      executes an unverified remote installer and, after pinned URL failures,
+      executes https://viteplus.dev/install.sh or the vite-plus main-branch
+      installer. A post-install version check cannot make already-executed
+      mutable code trustworthy.
+
+project_contract:
+  node: 24.19.0
+  package_manager: pnpm@10.30.3
+  lockfile: pnpm-lock.yaml
+  frozen_install_args:
+    - --frozen-lockfile
+  dependency_script_policy:
+    allow_only:
+      - esbuild
+  no_task_result_cache: true
+
+observations:
+  - environment: local checkout without node_modules
+    command: corepack pnpm install --frozen-lockfile
+    elapsed_seconds: 0.686
+    result: pass
+    interpretation: observational only; not a budget
+  - environment: temporary manifest deliberately inconsistent with the retained lockfile
+    command: corepack pnpm install --frozen-lockfile
+    result: fail with ERR_PNPM_OUTDATED_LOCKFILE
+  - environment: installed checkout before pnpm install
+    result: >-
+      Global vp 0.1.19 owned the command and reported no local Vite+ from the
+      workspace root or packages/cli.
+  - environment: installed checkout after pnpm install
+    result: >-
+      pnpm -C packages/cli exec vp resolved local Vite+ 0.2.9 while bare vp
+      remained global 0.1.19. This proves package-local handoff today, not the
+      future root 0.3.0 bootstrap.
+  - environment: local warm install
+    command: corepack pnpm install --frozen-lockfile
+    elapsed_seconds: 0.435
+    result: pass
+    interpretation: observational only; not a budget
+
+sources:
+  - https://github.com/voidzero-dev/vite-plus/releases/tag/v0.3.0
+  - https://registry.npmjs.org/vite-plus/0.3.0
+  - https://github.com/voidzero-dev/setup-vp/commit/1b32467adbe183473499fd9d5d372c3ed9641754
+  - https://github.com/voidzero-dev/setup-vp/blob/1b32467adbe183473499fd9d5d372c3ed9641754/src/install-viteplus.ts
+  - https://github.com/voidzero-dev/setup-vp/blob/1b32467adbe183473499fd9d5d372c3ed9641754/src/ci/install-script-urls.ts
+  - https://pnpm.io/cli/install#--frozen-lockfile
+
+blocker: >-
+  No setup-vp release currently supplies an integrity-pinned installer or a
+  fail-closed mode that disables mutable fallback. Therefore no acceptable
+  exact Vite+ and setup-vp pair exists, fresh root ownership cannot be proved,
+  and plan task ogzqmopftv must remain blocked.

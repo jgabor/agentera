@@ -1,0 +1,12 @@
+id: obhhyoadbq
+artifact: plan
+record:
+  name: Normalize the formatter-owned surface
+  depends_on:
+    - ogzqmopftv
+  status: pending
+  acceptance:
+    - GIVEN the declared static-quality surface WHEN normalization runs THEN included files are formatter-clean and excluded fixtures and generated outputs remain unchanged.
+    - GIVEN the mechanical change WHEN behavioral verification runs THEN runtime, fixture, and package behavior remain unchanged.
+    - GIVEN clean and deliberately drifted samples WHEN checked THEN the clean surface passes and a formatting regression fails.
+  plan: seltbrpsin

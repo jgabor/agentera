@@ -1,0 +1,13 @@
+id: pcrgtvlwgo
+artifact: plan
+record:
+  name: Gate serialized @next publication on exact-SHA verification
+  depends_on:
+    - styzmzhmko
+  status: pending
+  acceptance:
+    - GIVEN a selected-branch push WHEN publication starts THEN complete governed source qualification for that SHA finishes before construction under a sufficient authority-derived deadline.
+    - GIVEN verification failure WHEN the pipeline settles THEN candidate and registry effects do not occur.
+    - GIVEN success or replay WHEN publication settles THEN version allocation, bytes, ordering, forward-only movement, and convergence remain unchanged.
+    - GIVEN the credential-bearing job WHEN inspected THEN it remains checkout-free, action-free, setup-free, and exposes OIDC only to the fixed publish child, with success, failure, replay, and forbidden-boundary cases covered.
+  plan: seltbrpsin

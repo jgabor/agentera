@@ -1,0 +1,12 @@
+id: ogzqmopftv
+artifact: plan
+record:
+  name: Select and prove the unified toolchain baseline
+  depends_on:
+    []
+  status: blocked
+  acceptance:
+    - GIVEN current supported runtimes and package policy WHEN versions are selected THEN one exact Vite+ and setup-vp pair has retained provenance and compatibility evidence.
+    - GIVEN fresh and installed environments WHEN ownership is probed THEN bootstrap hands off to the exact root toolchain and stale global tooling cannot own project commands.
+    - GIVEN accepted and rejected install cases WHEN tested THEN the pnpm pin, frozen-lock failure, script restrictions, and current timing baseline are demonstrated with one pass and one fail per new contract.
+  plan: seltbrpsin

@@ -1,0 +1,17 @@
+id: udusuvfkcj
+artifact: decisions
+record:
+  date: 2026-09-03
+  question: How should Agentera v3 consolidate Vite+, pnpm, Vitest, Oxfmt, and CI workflows?
+  context: Agentera is a single-package pnpm workspace with a custom verification and publication DAG. The checkout uses package-local Vite+ 0.2.9 for Vitest, Oxlint, and Oxfmt, while a stale global vp can leak into root hooks. Vite+ 0.3 remains beta; task-cache reuse across CI is experimental. Dependency installation is only seconds, source verification is the dominant cost, and the OIDC publisher intentionally runs fixed action-free code. The user prioritized one direct root Vite+ experience and configuration simplicity over minimum CI latency or compute.
+  alternatives:
+    - name: Workspace-root Vite+ control plane with preserved Agentera authorities
+      status: chosen
+    - name: Keep Vite+ package-local behind pnpm-only contributor commands
+      status: rejected
+    - name: Replace custom verification, packaging, caching, and the OIDC publisher with Vite+ defaults
+      status: rejected
+  choice: Make exact-pinned Vite+ the workspace-root contributor control plane. Use Vite+-first bootstrap and vp install while retaining pnpm@10.30.3 and pnpm-lock.yaml as dependency authority. Make bare vp check the blocking local and CI static-quality gate, and expose existing behavioral and release orchestration through non-cached vp run scripts. Use exact-pinned setup-vp in every CI job that installs or builds, but keep the setup-free, action-free OIDC publish job unchanged. For selected feat/v3 pushes, serialize same-SHA verification, candidate construction, and @next publication in one uniform pipeline. Do not use Vite Task result caching for authoritative evidence. Admit all-test type checking only after resolving Vitest types and measuring the genuine residual diagnostics.
+  reasoning: This gives contributors one Vite+ vocabulary without discarding the pnpm lockfile, test-owner policy, isolated package construction, or publication trust boundary. A uniform serialized workflow matches the chosen simplicity objective. Excluding cached evidence and third-party setup from the OIDC publisher preserves freshness and credential isolation. The remaining test-type and hosted-duration questions are measurable implementation gates rather than unresolved architecture choices.
+  confidence: provisional
+  feeds_into: workspace package and Vite+ configuration, contributor commands, verification CI, development publication ordering, maintainer documentation, and follow-up planning

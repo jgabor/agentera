@@ -41,6 +41,9 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
+- [ ] [id:dzrruetyod] [chore:3.0.0] Unify setup-requiring CI behind Vite+
+- [ ] [id:oeadkhtqub] [test:3.0.0] Measure all-test Vite+ type-check viability
+- [ ] [id:qefxkkmyyw] [refactor:3.0.0] Establish workspace-root Vite+ authority
 
 ## ⇢ Annoying
 

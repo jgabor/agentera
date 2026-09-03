@@ -1,0 +1,50 @@
+id: seltbrpsin
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-03
+    status: open
+    reviewed: 2026-09-03
+    critic_issues: 6 found, 4 addressed, 2 dismissed
+    title: "Plan: Consolidate Agentera development and CI under Vite+"
+  what: Implement TODOs oeadkhtqub, qefxkkmyyw, and dzrruetyod by establishing one workspace-root Vite+ workflow for contributor bootstrap, static checks, existing behavioral verification, and setup-requiring CI while preserving pnpm lockfile authority and Agentera's package and publication contracts.
+  why: Remove global and local tool drift and command fragmentation while giving Agentera's solo-developer audience one opinionated workflow. Every development candidate should be constructed only after complete verification of that exact source SHA.
+  constraints: Preserve pnpm@10.30.3, pnpm-lock.yaml, and packages/cli as the only product package. Preserve verification owners, package construction, exact-byte publication, monotonic queueing, replay, convergence, and OIDC isolation. Never cache authoritative evidence. Keep the credential-bearing publisher checkout-free, action-free, and setup-free. Never push or publish without fresh explicit authorization. Do not perform stable cutover, raise suite metadata beyond 3.0.0, replace packaging with vp pack, or add a version-bump task.
+  overall_acceptance: GIVEN a fresh checkout WHEN Vite+-first setup runs THEN the exact root toolchain delegates to pinned pnpm without lockfile drift. GIVEN local or CI static validation WHEN bare vp check runs THEN the same approved format, lint, and measured type contract blocks regressions. GIVEN behavioral verification WHEN root vp run commands execute THEN existing owners and package behavior remain intact without cached evidence. GIVEN any setup-requiring CI job WHEN inspected THEN exact setup and install semantics are enforced while the OIDC publisher remains untouched. GIVEN a selected push WHEN the serialized pipeline runs THEN exact-SHA qualification precedes construction and any failure prevents publication. GIVEN all work completes WHEN project state reconciles THEN oeadkhtqub, qefxkkmyyw, and dzrruetyod close with verified evidence.
+  scope:
+    included:
+      - Exact workspace-root Vite+ and setup-vp pins, Vite and Vitest alignment, and Vite+-first bootstrap.
+      - vp install, bare vp check, root vp run test/build/verify, and conditional all-test typing.
+      - Formatter normalization required by the blocking check without duplicating existing lint cleanup.
+      - Deterministic hook resolution, contributor guidance, and Vite+ setup for every CI job that installs or builds.
+      - Uniform serialized same-SHA verification and @next publication, contract tests, and typed state closeout.
+    excluded:
+      - vp pack replacement, Vite Task result caching, and changes to fixed OIDC publication behavior.
+      - Package-manager or lockfile-format changes and sharded, path-aware, or tiered CI.
+      - Stable publication, unrelated cross-platform expansion, and broad lint cleanup beyond gate needs.
+    deferred:
+      - All-test typing if measurement rejects it.
+      - Remote task caching and contended queue measurement without separately authorized pushes.
+      - Stable cutover.
+  design: First freeze compatible tool versions and prove their ownership handoff. In parallel, classify the test-type contract and normalize the formatter-owned surface. Then activate the root developer control plane, route existing local semantics through it, and replace setup only in unprivileged jobs. Finally place complete source verification before candidate construction in the ordered publication lifecycle, then close state only after local and explicitly authorized hosted evidence.
+  unknowns:
+    - question: How many genuine test diagnostics remain after Vitest type resolution?
+      affects_task: 4
+      resolve_by: Task 2 classifies residual diagnostics and selects or rejects all-test admission before Task 4.
+    - question: Can the selected exact setup releases preserve runtime, package-manager, frozen-install, and script restrictions without unsafe fallback?
+      affects_task: 6
+      resolve_by: Task 1 proves the selected setup behavior before any CI migration.
+    - question: What uncontended service time does the serialized hosted pipeline produce?
+      affects_task: 8
+      resolve_by: One authorized hosted run records phase timing and projected per-item queue cost without claiming contention evidence.
+    - question: Will fresh push authorization be granted for hosted validation?
+      affects_task: 8
+      resolve_by: Only explicit user consent resolves this boundary; otherwise Task 8 remains blocked without remote effects.
+  rejected:
+    - issue: Treat setup in the candidate-build job as violating the setup-free publisher boundary.
+      rationale: They are separate jobs; only the credential-bearing publisher must remain setup-free.
+    - issue: Require all-test type checking regardless of measurement.
+      rationale: TODO oeadkhtqub explicitly makes admission conditional on measured diagnostics and accepted maintenance cost.
+  surprises:
+    []

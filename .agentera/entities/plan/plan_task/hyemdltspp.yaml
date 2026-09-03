@@ -1,0 +1,14 @@
+id: hyemdltspp
+artifact: plan
+record:
+  name: Establish workspace-root Vite+ authority
+  depends_on:
+    - ogzqmopftv
+    - ruxzeprhpv
+    - obhhyoadbq
+  status: pending
+  acceptance:
+    - GIVEN a fresh contributor environment WHEN bootstrap and install complete THEN the exact root toolchain and pinned pnpm are active without lockfile mutation.
+    - GIVEN the accepted static baseline WHEN bare vp check runs THEN format and lint pass, added regressions fail, and type scope matches Task 2.
+    - GIVEN root test, build, and verification commands WHEN invoked through vp run THEN existing authorities execute without cached-success replay and shipped package behavior remains unchanged.
+  plan: seltbrpsin
