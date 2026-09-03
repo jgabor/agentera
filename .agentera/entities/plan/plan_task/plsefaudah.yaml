@@ -8,7 +8,7 @@ record:
     - zmorpkcxrj
     - ghfialnrge
     - pbpptjlpza
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN live publication evidence WHEN state closes THEN plan tasks, progress, changelog, release TODOs, and health evidence agree.
     - GIVEN final verification WHEN rerun after state writes THEN compact and bounded startup budgets pass.

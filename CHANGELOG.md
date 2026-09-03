@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Development `@next` publication now uses npm Trusted Publishing through GitHub OIDC, rejects traditional npm credentials, and fails closed when recovery would require `npm dist-tag`.
+- Unified configuration-as-code `@next` publication is live through `3.0.0-dev.93` using npm Trusted Publishing through GitHub OIDC; it rejects traditional npm credentials and fails closed when recovery would require `npm dist-tag`.
 - Operational commands now emit JSON by default; explicit `--format json` remains compatible, while operational text and YAML selectors are rejected.
 - Added private selected-term input for glossary advice. `prime --context <discuss|plan|build> --term-input <file|->` now returns initial advice in
   `capability_context.glossary_advice`, and later no-review refreshes use `report glossary-advice --term-input <file|->`. Structured `--input` remains
