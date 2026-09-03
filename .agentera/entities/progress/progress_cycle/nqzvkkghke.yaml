@@ -1,0 +1,16 @@
+id: nqzvkkghke
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:05
+  type: chore
+  phase: build
+  what: Stopped the default-main publication bootstrap before push after the prepared bootstrap worktree failed repository-safety checks.
+  context:
+    intent: Land and verify the default-main publication bootstrap without risking an invalid main push.
+    constraints: Do not touch unsafe primary or old corrupt worktrees, change shared Git configuration, or consume more than one authorized push. Keep the plan task in progress for Audit.
+    unknowns: The source of the prepared bootstrap worktree index and history inconsistency remains unresolved.
+    scope: Plan kmguevcmrp task ghfialnrge.
+  discovered: "Current origin/main is not the parent of the prepared bootstrap commit. Recreating the bootstrap in the prepared worktree exposed the tracked legacy-main hook defect and left that worktree inconsistent: the commit omitted publish.yml, showed broad tracked/untracked divergence, and reported shared core.bare=true. No remote mutation occurred."
+  verified: The intended workflow and authority blobs match the verified feat/v3 blobs. Static checks parsed YAML and JSON, found one canonical refs/heads/feat/v3 authority, rejected main routing, found no token secret binding, and found no stable job. The ordinary commit hook failed in legacy-main tests before LEFTHOOK=0 was used under tracked defect znfwaksueb; the resulting local commit is not pushable.
+  next: Audit and repair or replace the unsafe bootstrap environment before any authorized main push. Reverify an exact origin/main child, npm baselines, and workflow routing before consuming a push.
+  publication_order: 304
