@@ -1,7 +1,7 @@
 {
   "schemaVersion": "agentera.parityRemainingFamilies.v1",
   "notes": "Frozen contract for the current v3 CLI surface families retained for parity with the Python `agentera` stable CLI. The fixture is the contract reference for `packages/cli/test/cli/npmParityMatrix.test.ts` — every row in the parity matrix reads its expected shape and forbidden-shape sentinel from here. The `python_commit` field pins the Python CLI source (commit on the agentera `main` branch) the structural contract is locked to. The `normalizeEnvelope` block is the canonical normalization spec applied to live envelopes before drift classification (timestamp → ISO date, hash → 0x + 8 hex, path → forward-slash). Per-family `python_commit` mirrors the top-level pin. The `expectedShape` block is structural (required keys + value types + literal pins); the `forbiddenSubstrings` block is the per-family sentinel — a substring the TS side MUST NOT emit because the Python side does not. Current rows are closed and require `drift_direction === 'equal'`.",
-  "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+  "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
   "normalizeEnvelope": {
     "description": "Canonical normalization applied to live TS envelopes before they are compared to the Python oracle pin. The helper lives in `packages/cli/test/cli/npmParityMatrix.test.ts` and reads these rules verbatim; do not duplicate the rules in test code.",
     "rules": {
@@ -46,7 +46,7 @@
   "families": {
     "artifact_validation": {
       "description": "The current `check validate <family> --format json` subcommands. The retired repository-native lifecycle-adapters family is not a current product surface.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+      "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
       "argv": ["check", "validate", "capability-contract", "--format", "json"],
       "exitCode": 0,
       "expectedShape": {
@@ -65,7 +65,7 @@
     },
     "compaction": {
       "description": "`check compact` apply + check-only + retention caps (10/40/50 from hooks/common). The npm 3.x namespace command reports its canonical command identity.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+      "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
       "argv": ["check", "compact", "--format", "json"],
       "exitCode": 0,
       "expectedShape": {
@@ -93,7 +93,7 @@
     },
     "verify_eval": {
       "description": "`check verify eval` family (eval semantic + eval skills, with --dry-run and --run paths; smoke family is retired on npm). T5 ports the safety wrappers and parity pins; gap `gap-verify-eval-family` closes when drift_direction === 'equal'.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+      "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
       "argv": ["check", "verify", "eval", "skills", "--dry-run", "--format", "json"],
       "exitCode": 0,
       "expectedShape": {
@@ -121,7 +121,7 @@
     },
     "doctor_upgrade_safety": {
       "description": "`doctor` and `upgrade --dry-run` with the canonical Decision 54 lifecycle vocabulary (up_to_date, outdated, repair_needed, manual_review_needed, ready_to_apply, applied, no_changes_needed); smoke checks; next-major doctor for the npm channel. T4 ports the safety rails; T1 pins the structural contract and marks the row as `intentional_version_break`.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+      "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
       "argv": ["doctor", "--format", "json"],
       "exitCode": 0,
       "expectedShape": {
@@ -155,7 +155,7 @@
     },
     "usage_stats_consent": {
       "description": "`stats` + `stats refresh --dry-run` + `stats refresh --consent local-history`; explicit consent enforcement; size-bounded corpus reads; no top-level `agentera corpus` (per resolved-ledger TODOs L84, L85). T6 closes this row; plain `stats` missing-corpus JSON matches the Python oracle pin.",
-      "python_commit": "b54a10a6bf4dfca5097101e60e18d5eaec7e5026",
+      "python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
       "argv": ["stats", "--format", "json"],
       "exitCode": 2,
       "expectedShape": {
