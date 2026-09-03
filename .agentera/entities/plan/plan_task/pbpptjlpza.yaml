@@ -4,7 +4,7 @@ record:
   name: Publish and verify the selected development commit
   depends_on:
     - ghfialnrge
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN fresh explicit feat/v3 push authorization WHEN the selected branch containing publish.yml is pushed THEN one deterministic candidate newer than dev.89 is built from that SHA.
     - GIVEN npm accepts the OIDC publish WHEN registry state converges THEN @next identifies the exact candidate version, SHA, integrity, and signed provenance.

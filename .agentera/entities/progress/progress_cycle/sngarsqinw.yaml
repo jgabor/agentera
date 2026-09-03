@@ -1,0 +1,15 @@
+id: sngarsqinw
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:28
+  type: fix
+  phase: build
+  what: Captured the failed dev.91 publication attempt for correction.
+  context:
+    intent: Preserve failed publication evidence for Audit.
+    constraints: No rerun, second feat/v3 push, manual publication, npm token, dist-tag, setting change, or task completion.
+    unknowns: Artifact download must avoid forwarding GitHub authorization across the signed-storage redirect.
+    scope: Plan task pbpptjlpza.
+  discovered: Python urllib preserved Authorization on the artifact API 302 redirect; the redirected download returned HTTP 401.
+  verified: Preflight passed at 2,974/3,000 prime tokens with compact, build, and publication tests 20/20 green. Authorized feat/v3 push 2 started Publish Agentera run 33744225546 (run number 2), allocated dev.91, and classified forward-publish. Route and build passed; publish failed at Download and validate current-run candidate. Publish and convergence steps skipped. Registry remained @next dev.89 and @latest 0.0.2; dev.91 remained absent. One authorization remains.
+  publication_order: 307
