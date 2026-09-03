@@ -12,3 +12,13 @@ record:
     - GIVEN the workflow run sequence WHEN calculated THEN skipped main or nonselected runs are allowed gaps and the selected candidate remains deterministically newer than dev.89.
     - GIVEN the worktree WHEN ready THEN intended changes are coherent and unrelated user state is preserved.
   plan: kmguevcmrp
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The primary feat/v3 checkout is configured as bare and normal git status fails, so the selected-branch landing cannot proceed safely from that checkout despite the verified bootstrap commit.
+    provenance:
+      attempt_id: audit-zmorpkcxrj-1
+      source: orchestrate audit evaluation for task zmorpkcxrj
+      recorded_at: 2026-09-03 11:47
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,11 @@
+id: eibevyxuvq
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:47
+  type: chore
+  phase: audit
+  what: Recovered Task 4/5 state in safe linked worktrees.
+  context:
+    intent: Preserve the failed evaluation and safe landing paths.
+    constraints: No Git configuration was changed. Future Task 4/5 operations must use /tmp/opencode/agentera-feat-v3-recovery-20260903 for feat/v3 and /tmp/opencode/agentera-main-publication-bootstrap-recovery-20260903 for the clean main bootstrap. The primary and corrupt bootstrap worktrees remain untouched.
+  publication_order: 302
