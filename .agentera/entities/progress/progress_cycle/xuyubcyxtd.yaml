@@ -1,0 +1,12 @@
+id: xuyubcyxtd
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:23
+  type: fix
+  phase: build
+  what: Shortened the latest prime progress projection for preflight.
+  context:
+    intent: Clear the prime budget without changing its contract.
+    scope: Plan task pbpptjlpza publication preflight.
+  verified: Reproduced 3,015/3,000 tokens; bare prime projects the latest progress what/next fields.
+  publication_order: 306
