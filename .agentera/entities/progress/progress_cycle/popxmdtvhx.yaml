@@ -1,0 +1,15 @@
+id: popxmdtvhx
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:32
+  type: chore
+  phase: build
+  what: Verified the corrected release boundary and separated the default-main bootstrap from feat/v3 state and implementation.
+  context:
+    intent: Prepare coherent local landing boundaries for secure unified development publication.
+    constraints: Do not push, publish, mutate npm or GitHub settings, run live Task 4 or 5 actions, weaken gates, or mark task zmorpkcxrj complete.
+    scope: Local feat/v3 verification, isolated main bootstrap preparation, route simulation, and durable handoff evidence.
+  discovered: The checked-in package gitRef predates the current release changes and differs from current packaged inputs; routine CI replaces it only in isolated construction. The current local main pre-commit hook runs obsolete broad v2 tests, so the three-file bootstrap remains staged after the required hook failed on unrelated main incompatibilities.
+  verified: Focused publication and security tests passed 85 tests. Full source passed 4,279 tests with 2 skipped. Typecheck, build, capability contract, state validation, compact, prime budget, package verification, and package dry run passed. The staged main bootstrap workflow and authority blobs exactly match feat/v3, parse, reject main routing, and leave build and publish ineligible.
+  next: Land the staged bootstrap from chore/main-publication-bootstrap without changing its three-file boundary, then run the separately authorized live main verification before any selected-branch push.
+  publication_order: 299
