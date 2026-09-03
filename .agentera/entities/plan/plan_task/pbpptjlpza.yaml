@@ -11,3 +11,13 @@ record:
     - GIVEN the published package WHEN smoked THEN npx agentera@next reports the candidate version and package behavior passes.
     - GIVEN publication completes WHEN channel state is checked THEN @latest is unchanged and no traditional credential or dist-tag mutation occurred.
   plan: kmguevcmrp
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The authenticated GitHub artifact request followed a cross-host 302 while retaining Authorization, causing Azure signed-storage HTTP 401 and disclosing the job token; npm publish was skipped and dev.91 remained absent.
+    provenance:
+      attempt_id: audit-pbpptjlpza-1
+      source: orchestrate audit evaluation for task pbpptjlpza
+      recorded_at: 2026-09-03 12:34
+      writer_command: agentera state plan record-evaluation

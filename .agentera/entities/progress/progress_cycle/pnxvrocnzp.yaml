@@ -1,0 +1,14 @@
+id: pnxvrocnzp
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:41
+  type: fix
+  phase: build
+  what: Secured the live artifact redirect for the final publication attempt.
+  context:
+    intent: Prevent GitHub credentials from crossing the signed-storage boundary.
+    constraints: One authorized feat/v3 push remains; task stays in progress for Audit.
+    scope: Plan task pbpptjlpza.
+  discovered: The prior downloader relied on urllib automatic cross-host redirects, which retained Authorization.
+  verified: Focused publication tests pass 20/20. Two local servers prove GitHub API requests receive the bearer while signed storage receives no authorization, GitHub API, token, or npm headers; invalid redirects and archives stop before publish.
+  publication_order: 308

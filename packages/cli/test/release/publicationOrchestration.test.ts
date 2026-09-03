@@ -67,7 +67,7 @@ const reviewedOidcPublicationSteps = [
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
       EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
     },
-    run: "sha256:4ec9cbe34b298bcfd2cce4e83e4afa2db1563d90f07a02659024628a3c2306a9",
+    run: "sha256:216d65323f86b2a9422ba4beeda4bb08eed4a09430918e1e9f15779306f3452f",
   },
   {
     name: "Write fixed registry guard",
@@ -596,7 +596,7 @@ describe("package publication orchestration", () => {
     }
   });
 
-  it("selects and bounds the exact current-run artifact through the fixed API downloader", async () => {
+  it("downloads the exact current-run artifact without forwarding GitHub credentials", async () => {
     const workflow = YAML.parse(qualificationYaml);
     const step = workflow.jobs["publish-development"].steps.find(
       (candidate: { name?: string }) => candidate.name === "Download and validate current-run candidate",
@@ -604,7 +604,6 @@ describe("package publication orchestration", () => {
     const source = step.run.match(/<<'PYTHON'\n([\s\S]*?)\n\s*PYTHON/)?.[1];
     expect(source).toBeTruthy();
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-artifact-api-test-"));
-    const script = path.join(root, "download.py");
     const zip = path.join(root, "candidate.zip");
     const makeZip = (entry = "agentera-3.0.0-dev.90.tgz") => {
       const result = spawnSync("python3", ["-c", [
@@ -619,20 +618,49 @@ describe("package publication orchestration", () => {
     };
     let archive = makeZip();
     let response: unknown;
-    const server = http.createServer((request, reply) => {
+    let apiStatus = 302;
+    let apiLocations: string | string[] | undefined;
+    let storageStatus = 200;
+    const apiRequests: http.IncomingMessage[] = [];
+    const storageRequests: http.IncomingMessage[] = [];
+    const apiServer = http.createServer((request, reply) => {
+      apiRequests.push(request);
       if (request.url?.endsWith("/zip")) {
-        reply.writeHead(200, { "content-type": "application/zip" }).end(archive);
+        reply.writeHead(apiStatus, apiLocations === undefined ? {} : { location: apiLocations }).end(
+          apiStatus === 200 ? archive : undefined,
+        );
       } else {
         reply.writeHead(200, { "content-type": "application/json" }).end(
           typeof response === "string" ? response : JSON.stringify(response),
         );
       }
     });
-    await new Promise<void>((resolve) => server.listen(0, "127.0.0.1", resolve));
-    const address = server.address();
-    if (!address || typeof address === "string") throw new Error("test server did not bind");
-    const api = `http://127.0.0.1:${address.port}`;
-    fs.writeFileSync(script, source!.replace('"https://api.github.com"', JSON.stringify(api)));
+    const storageServer = http.createServer((request, reply) => {
+      storageRequests.push(request);
+      reply.writeHead(storageStatus, storageStatus === 302
+        ? { location: "https://untrusted.example/next?sig=private-redirect" }
+        : { "content-type": "application/zip" }).end(storageStatus === 200 ? archive : undefined);
+    });
+    await Promise.all([
+      new Promise<void>((resolve) => apiServer.listen(0, "127.0.0.1", resolve)),
+      new Promise<void>((resolve) => storageServer.listen(0, "127.0.0.1", resolve)),
+    ]);
+    const apiAddress = apiServer.address();
+    const storageAddress = storageServer.address();
+    if (!apiAddress || typeof apiAddress === "string" || !storageAddress || typeof storageAddress === "string") {
+      throw new Error("test servers did not bind");
+    }
+    const api = `http://127.0.0.1:${apiAddress.port}`;
+    const storage = `http://127.0.0.1:${storageAddress.port}`;
+    const storageHost = "https://artifact.blob.core.windows.net";
+    const exactStorageHost = "https://blob.core.windows.net";
+    const run = step.run
+      .replace('"https://api.github.com"', JSON.stringify(api))
+      .replace(
+        "urllib.request.Request(location)",
+        `urllib.request.Request(location.replace(${JSON.stringify(storageHost)}, ${JSON.stringify(storage)})`
+          + `.replace(${JSON.stringify(exactStorageHost)}, ${JSON.stringify(storage)}))`,
+      );
     const artifact = (overrides: Record<string, unknown> = {}) => ({
       id: 7,
       name: "agentera-development-candidate",
@@ -642,10 +670,25 @@ describe("package publication orchestration", () => {
       size_in_bytes: archive.length,
       ...overrides,
     });
-    const execute = () => new Promise<{ code: number | null; stderr: string }>((resolve) => {
+    const fakeBin = path.join(root, "bin");
+    fs.mkdirSync(fakeBin);
+    fs.writeFileSync(path.join(fakeBin, "npm"), "#!/bin/sh\n: > \"$NPM_MUTATION_MARKER\"\n", { mode: 0o755 });
+    const execute = (appendPublish = false) => new Promise<{
+      code: number | null;
+      stderr: string;
+      marker: string;
+      temp: string;
+      apiRequests: http.IncomingMessage[];
+      storageRequests: http.IncomingMessage[];
+    }>((resolve) => {
       const temp = fs.mkdtempSync(path.join(root, "run-"));
-      const child = spawn("python3", [script], {
+      const marker = path.join(temp, "npm-invoked");
+      const apiRequestStart = apiRequests.length;
+      const storageRequestStart = storageRequests.length;
+      const child = spawn("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c",
+        `${run}${appendPublish ? "\nnpm publish ignored" : ""}`], {
         env: {
+          PATH: `${fakeBin}:/usr/bin:/bin`,
           API_URL_VALUE: api,
           REPOSITORY_VALUE: "jgabor/agentera",
           RUN_ID_VALUE: "42",
@@ -654,16 +697,46 @@ describe("package publication orchestration", () => {
           EXPECTED_GIT_REF_VALUE: "a".repeat(40),
           EXPECTED_OUTCOME_VALUE: "forward-publish",
           RUNNER_TEMP_VALUE: temp,
+          NPM_MUTATION_MARKER: marker,
         },
       });
       let stderr = "";
       child.stderr.on("data", (chunk) => { stderr += chunk; });
-      child.on("close", (code) => resolve({ code, stderr }));
+      child.on("close", (code) => resolve({
+        code,
+        stderr,
+        marker,
+        temp,
+        apiRequests: apiRequests.slice(apiRequestStart),
+        storageRequests: storageRequests.slice(storageRequestStart),
+      }));
     });
+    const signedUrl = `${storageHost}/candidate.zip?sig=private-query`;
+    const expectRejected = async () => {
+      const result = await execute(true);
+      expect(result.code).not.toBe(0);
+      expect(fs.existsSync(result.marker)).toBe(false);
+      expect(result.stderr).not.toContain("test-token");
+      expect(result.stderr).not.toContain("private-query");
+      expect(Buffer.byteLength(result.stderr)).toBeLessThanOrEqual(1_024);
+    };
     try {
       response = { total_count: 1, artifacts: [artifact()] };
-      const valid = await execute();
-      expect(valid.code, valid.stderr).toBe(0);
+      apiLocations = signedUrl;
+      for (const validLocation of [signedUrl, `${exactStorageHost}/candidate.zip?sig=private-query`]) {
+        apiLocations = validLocation;
+        const valid = await execute();
+        expect(valid.code, valid.stderr).toBe(0);
+        expect(valid.apiRequests).toHaveLength(2);
+        expect(valid.apiRequests.every((request) => request.headers.authorization === "Bearer test-token")).toBe(true);
+        expect(valid.storageRequests).toHaveLength(1);
+        expect(valid.storageRequests[0].headers.authorization).toBeUndefined();
+        expect(valid.storageRequests[0].headers.accept).toBeUndefined();
+        expect(valid.storageRequests[0].headers["x-github-api-version"]).toBeUndefined();
+        expect(Object.keys(valid.storageRequests[0].headers).some((name) => name.startsWith("npm"))).toBe(false);
+        expect(fs.existsSync(path.join(valid.temp, "agentera-development", "agentera-3.0.0-dev.90.tgz"))).toBe(true);
+      }
+
       for (const invalid of [
         "not json",
         { total_count: 2, artifacts: [artifact(), artifact({ id: 8 })] },
@@ -671,13 +744,45 @@ describe("package publication orchestration", () => {
         { total_count: 1, artifacts: [artifact({ size_in_bytes: 26_214_401 })] },
       ]) {
         response = invalid;
-        expect((await execute()).code).not.toBe(0);
+        await expectRejected();
       }
+
+      response = { total_count: 1, artifacts: [artifact()] };
+      for (const location of [
+        "http://artifact.blob.core.windows.net/candidate.zip?sig=private-query",
+        "https://artifact.blob.core.windows.net.evil.example/candidate.zip?sig=private-query",
+        "https://evilblob.core.windows.net/candidate.zip?sig=private-query",
+        "https://artifact.blob.core.windows.net:444/candidate.zip?sig=private-query",
+        "https://user:pass@artifact.blob.core.windows.net/candidate.zip?sig=private-query",
+        "https://artifact.blob.core.windows.net/candidate.zip?sig=private-query#fragment",
+      ]) {
+        apiStatus = 302;
+        apiLocations = location;
+        await expectRejected();
+      }
+      apiStatus = 200;
+      apiLocations = signedUrl;
+      await expectRejected();
+      apiStatus = 302;
+      for (const location of [undefined, "", [signedUrl, signedUrl], `${storageHost}/${"x".repeat(2_049)}`]) {
+        apiLocations = location;
+        await expectRejected();
+      }
+      apiLocations = signedUrl;
+      storageStatus = 302;
+      await expectRejected();
+      storageStatus = 200;
+
       archive = makeZip("../agentera-3.0.0-dev.90.tgz");
       response = { total_count: 1, artifacts: [artifact()] };
-      expect((await execute()).stderr).toContain("entries do not match");
+      apiLocations = signedUrl;
+      const unsafeArchive = await execute(true);
+      expect(unsafeArchive.stderr).toContain("entries do not match");
+      expect(fs.existsSync(unsafeArchive.marker)).toBe(false);
     } finally {
-      await new Promise<void>((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+      await Promise.all([apiServer, storageServer].map((server) => new Promise<void>((resolve, reject) => {
+        server.close((error) => error ? reject(error) : resolve());
+      })));
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
