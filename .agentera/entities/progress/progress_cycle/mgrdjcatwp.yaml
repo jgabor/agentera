@@ -1,0 +1,16 @@
+id: mgrdjcatwp
+artifact: progress
+record:
+  timestamp: 2026-09-03 12:13
+  type: fix
+  phase: build
+  what: Landed the default-main publication bootstrap from a fresh independent clone and verified that the main push performed no npm mutation.
+  context:
+    intent: Recover task ghfialnrge without using the corrupted shared repository or consuming more than one authorized main push.
+    constraints: Use only the verified feat/v3 workflow and authority blobs, push HEAD to main once, leave ghfialnrge in progress for Audit, and do not push feat/v3.
+    unknowns: Audit still must accept the bootstrap before the separately authorized selected feat/v3 publication task can start.
+    scope: Plan kmguevcmrp task ghfialnrge.
+  discovered: The freshly fetched main parent did not track publish-stable.yml, so enforcing its absence produced no third tree change; the bootstrap commit adds only publish.yml and package-publication.json.
+  verified: The independent clone had its own non-bare Git directory, clean current main, no linked worktrees, no active hooks, and no shared-repository config. Exact source blob identities matched. YAML and JSON parsed; refs/heads/feat/v3 was the sole authority; main selected no development work; no stable job or NPM_TOKEN secret binding existed; and the OIDC job retained the verified fixed-code shape. One ordinary main push started Publish Agentera run 33742966771, whose route job succeeded while build and publish skipped. Registry checks before and after held @next at 3.0.0-dev.89 with identical gitRef and integrity, and @latest at 0.0.2.
+  next: Audit ghfialnrge while it remains in progress. If accepted, obtain separate authorization before any feat/v3 push for task pbpptjlpza.
+  publication_order: 305
