@@ -4,7 +4,7 @@ record:
   name: Secure the complete OIDC publication job
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the OIDC-enabled job WHEN inspected THEN it contains no checkout, third-party action, candidate script, downloaded executable, or package lifecycle execution.
     - GIVEN a candidate artifact WHEN publication begins THEN fixed reviewed logic downloads only the current-run artifact and validates its bounded entries, metadata, SHA, version, integrity, and classification.
@@ -12,12 +12,12 @@ record:
     - GIVEN replay, conflict, or retag-required registry state WHEN observed THEN it converges without upload or fails closed without backward tag movement.
   plan: kmguevcmrp
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Candidate-controlled version output is interpolated directly into OIDC-job shell source, allowing pre-sanitization command expansion; candidate publishConfig.registry is unchecked and the fixed npm publish command lacks an explicit official registry binding.
     provenance:
-      attempt_id: audit-liejxtiwcp-1
-      source: orchestrate audit evaluation for task liejxtiwcp
-      recorded_at: 2026-09-02 21:04
+      attempt_id: audit-liejxtiwcp-2
+      source: orchestrate audit re-evaluation for task liejxtiwcp
+      recorded_at: 2026-09-03 10:54
       writer_command: agentera state plan record-evaluation
