@@ -38,6 +38,7 @@
     "test:performance": "node scripts/verify-lane.mjs performance",
     "test:performance:integration": "node test/integration/performanceOwner.integration.mjs",
     "test:capacity": "node scripts/verify-lane.mjs capacity",
+    "test:toolchain-baseline": "node scripts/verify-toolchain-baseline.mjs",
     "test:watch": "vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:prime-budget": "node scripts/measure-prime-budget.mjs",

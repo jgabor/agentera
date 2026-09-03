@@ -1,0 +1,16 @@
+id: tcebbwuucc
+artifact: progress
+record:
+  timestamp: 2026-09-03 19:32
+  type: chore
+  phase: build
+  what: Proved root handoff and install policy; setup-vp still has no acceptable release.
+  context:
+    intent: Correct plan task ogzqmopftv after its failed audit.
+    constraints: Preserve pnpm 10.30.3, lockfile authority, script restrictions, package boundaries, and the setup trust requirement.
+    unknowns: No official setup-vp release verifies installer integrity and fails closed without a mutable fallback.
+    scope: Plan task ogzqmopftv only; no workspace-root or CI migration.
+  discovered: Every official exact setup-vp tag from 1.0.0 through 1.18.0 and current main executes installer bytes without prior integrity verification; 1.18.0 and main try version-tag URLs before mutable latest fallbacks.
+  verified: The isolated Node 24.19.0 integration passed exact pnpm activation, live onlyBuiltDependencies reading, stale vp 0.1.19 exclusion, root-local Vite+ 0.3.0 handoff, matching and outdated frozen-lock cases, and allowed and suppressed dependency scripts. Targeted tests, typecheck, build, package verification, compact, capability-contract, and retained-reference validation passed.
+  next: Await integrity-verified, fail-closed setup-vp or replan.
+  publication_order: 314
