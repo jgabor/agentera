@@ -1,0 +1,25 @@
+id: znfwaksueb
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Isolate legacy v2 pre-commit tests from contributor worktrees.
+  requirements:
+    - Reproduce only in a disposable repository fixture by staging the three main publication-bootstrap effects and invoking pre-commit; never use an active shared worktree because the current repository-coupled lane creates unintended commits and corrupts caller state.
+    - Replace or reroute the broad legacy v2 pre-commit lane so it uses hermetic temporary repositories and cannot write through the caller's worktree or shared Git directory.
+    - Keep narrow infrastructure commits on focused hook owners instead of unrelated broad v2 tests.
+  acceptance:
+    - A three-path publication-bootstrap commit leaves its parent, unstaged tree, and unrelated paths unchanged while hooks run.
+    - Legacy v2 tests create commits only inside disposable fixtures and cannot alter the caller's worktree, branch, or shared Git configuration.
+    - Focused pre-commit verification covers the staged infrastructure paths without the unrelated broad v2 lane.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees."
+      severity: degraded
+      status: open
+      order: 2

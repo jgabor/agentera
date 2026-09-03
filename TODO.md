@@ -11,6 +11,7 @@
 ## ⇉ Degraded
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
 
 ## → Normal
 

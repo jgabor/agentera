@@ -1,0 +1,14 @@
+id: gjhapzeqvw
+artifact: progress
+record:
+  timestamp: 2026-09-03 11:39
+  type: chore
+  phase: build
+  what: Recovered the default-main publication bootstrap on a fresh main-based branch after the prior isolated worktree was corrupted.
+  context:
+    intent: Recover the verified main bootstrap commit without reusing or destructively changing the corrupted worktree.
+    constraints: No push, publication, npm or GitHub settings mutation, destructive Git operation, or full-gate rerun; preserve the intentional package gitRef boundary.
+  discovered: The legacy main pre-commit configuration runs unrelated repository-coupled v2 tests that can create unintended commits and corrupt the caller worktree. TODO znfwaksueb now tracks hermetic isolation and focused routing; the old branch and worktree remain untouched.
+  verified: Only publish.yml, package-publication.json, and deletion of publish-stable.yml differ from main. The added blobs match verified feat/v3 bytes; YAML and JSON parse; the sole canonical non-main ref selects false on main, so build and publish are ineligible; no active NPM_TOKEN binding or npm mutation occurs. The bootstrap commit used LEFTHOOK=0 only after this focused verification and typed defect tracking because the reproduced hook configuration is unsafe for this commit.
+  next: Keep task zmorpkcxrj in progress for Audit, then request separate authorization before any push.
+  publication_order: 301
