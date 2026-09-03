@@ -1,0 +1,14 @@
+id: lddrupjrkm
+artifact: plan
+record:
+  plan: kmguevcmrp
+  name: Pass bounded GitHub provenance metadata
+  status: in_progress
+  depends_on:
+    - ghfialnrge
+  acceptance:
+    - GIVEN the fixed npm publish child WHEN its environment is inspected THEN it receives only required OIDC, isolated npm settings, and the bounded GitHub metadata consumed by npm provenance.
+    - GIVEN forbidden credential or control-plane variables WHEN publication is prepared THEN they remain absent from the publish child and every guard remains credential-free.
+    - GIVEN npm 11.17 provenance construction WHEN exercised locally THEN workflow, repository, source SHA, event, repository IDs, runner, run, and attempt fields are complete and valid.
+    - GIVEN publication regressions and broad gates WHEN run THEN redirect, hostile input, registry, replay, package, source, compact, and prime-budget checks pass.
+  evidence: Replacement prerequisite for blocked task pbpptjlpza after npm rejected dev.92 with an incomplete GitHub Actions SLSA predicate.

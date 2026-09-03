@@ -327,10 +327,12 @@ code. Its fixed workflow-owned guard runs with the OIDC request variables,
 `GITHUB_ACTIONS`, inherited npm credentials, and npm configuration removed. It
 rechecks the bounded classification, exact tarball metadata and integrity,
 source SHA, and registry state. An actual forward publish then requires
-`GITHUB_ACTIONS=true` and non-empty
-`ACTIONS_ID_TOKEN_REQUEST_URL` and `ACTIONS_ID_TOKEN_REQUEST_TOKEN`, and passes
-them only to the fixed `npm publish <exact tarball> --access public --tag next
---ignore-scripts` command with an isolated registry-only npm config. Exact and
+`GITHUB_ACTIONS=true`, non-empty `ACTIONS_ID_TOKEN_REQUEST_URL` and
+`ACTIONS_ID_TOKEN_REQUEST_TOKEN`, and strictly validated GitHub workflow,
+repository, ref, SHA, event, repository/owner IDs, runner, run, and attempt
+metadata. It passes only those values to the fixed `npm publish <exact tarball>
+--access public --tag next --ignore-scripts` command with an isolated
+registry-only npm config. Exact and
 superseded replay need neither credentials nor OIDC. A `forward-retag` fails
 closed because npm Trusted Publishing does not authorize `npm dist-tag`;
 recover with interactive npm 2FA or a later forward version. After a successful

@@ -1,0 +1,14 @@
+id: ixoxawhoug
+artifact: plan
+record:
+  plan: kmguevcmrp
+  name: Publish corrected development candidate
+  status: pending
+  depends_on:
+    - lddrupjrkm
+  acceptance:
+    - GIVEN fresh explicit feat/v3 push authorization WHEN the corrected selected commit is pushed THEN one deterministic candidate newer than dev.92 is built from that exact SHA.
+    - GIVEN npm Trusted Publishing WHEN the fixed child receives complete bounded provenance identity THEN @next converges to the candidate with matching gitRef, integrity, and signed provenance.
+    - GIVEN the published package WHEN invoked through npx THEN its version and representative default JSON behavior pass.
+    - GIVEN publication completes WHEN channel and logs are checked THEN @latest remains unchanged and no traditional token or npm dist-tag mutation occurred.
+  evidence: Live replacement for blocked task pbpptjlpza after local provenance-environment correction passes independent evaluation.

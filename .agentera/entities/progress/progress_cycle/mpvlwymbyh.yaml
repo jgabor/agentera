@@ -1,0 +1,15 @@
+id: mpvlwymbyh
+artifact: progress
+record:
+  timestamp: 2026-09-03 15:19
+  type: fix
+  phase: build
+  what: Bounded the Trusted Publishing child to npm provenance metadata validated before mutation.
+  context:
+    intent: Repair the live E422 provenance predicate failure without widening the credentialed environment.
+    constraints: Keep env -i, guards credential-free, fixed official registry, no traditional credentials, and no push or publication.
+    scope: Workflow publish child, active publication authority/guidance, npm 11.17 fixture, and regression tests.
+  discovered: npm 11.17 constructs GitHub SLSA fields directly from eleven runner metadata variables; GITHUB_WORKFLOW_SHA is not consumed.
+  verified: npm 11.17 fixture produced complete workflow, repository, ref, SHA, event, repository IDs, runner, run, and attempt fields; 23 focused publication tests, 300 release tests, 4282 source tests, typecheck, build, state/capability/compact, 2968-token prime budget, 25 package tests, and dry-pack passed.
+  next: Audit task lddrupjrkm before any separately authorized publication attempt.
+  publication_order: 310

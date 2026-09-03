@@ -4,6 +4,7 @@ import fs from "node:fs";
 import http from "node:http";
 import os from "node:os";
 import path from "node:path";
+import { createRequire } from "node:module";
 
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
@@ -47,6 +48,22 @@ const verificationSkill = fs.readFileSync(
 );
 const agentsGuide = fs.readFileSync(path.join(REPO_ROOT, "AGENTS.md"), "utf8");
 const changelog = fs.readFileSync(path.join(REPO_ROOT, "CHANGELOG.md"), "utf8");
+const require = createRequire(import.meta.url);
+const npm1117GithubProvenance = require("../fixtures/release/npm-11.17-github-provenance.cjs");
+
+const githubProvenance = {
+  GITHUB_WORKFLOW_REF: "jgabor/agentera/.github/workflows/publish.yml@refs/heads/feat/v3",
+  GITHUB_REPOSITORY: "jgabor/agentera",
+  GITHUB_SERVER_URL: "https://github.com",
+  GITHUB_REF: "refs/heads/feat/v3",
+  GITHUB_SHA: "a".repeat(40),
+  GITHUB_EVENT_NAME: "push",
+  GITHUB_REPOSITORY_ID: "123456789",
+  GITHUB_REPOSITORY_OWNER_ID: "987654321",
+  RUNNER_ENVIRONMENT: "github-hosted",
+  GITHUB_RUN_ID: "33746838768",
+  GITHUB_RUN_ATTEMPT: "1",
+};
 
 const reviewedOidcPublicationSteps = [
   {
@@ -94,9 +111,21 @@ const reviewedOidcPublicationSteps = [
     env: {
       RUNNER_TEMP_VALUE: "${{ runner.temp }}",
       EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
       GUARD_OUTCOME_VALUE: "${{ steps.registry-guard.outputs.outcome }}",
+      GITHUB_WORKFLOW_REF_VALUE: "${{ github.workflow_ref }}",
+      GITHUB_REPOSITORY_VALUE: "${{ github.repository }}",
+      GITHUB_SERVER_URL_VALUE: "${{ github.server_url }}",
+      GITHUB_REF_VALUE: "${{ github.ref }}",
+      GITHUB_SHA_VALUE: "${{ github.sha }}",
+      GITHUB_EVENT_NAME_VALUE: "${{ github.event_name }}",
+      GITHUB_REPOSITORY_ID_VALUE: "${{ github.repository_id }}",
+      GITHUB_REPOSITORY_OWNER_ID_VALUE: "${{ github.repository_owner_id }}",
+      RUNNER_ENVIRONMENT_VALUE: "${{ runner.environment }}",
+      GITHUB_RUN_ID_VALUE: "${{ github.run_id }}",
+      GITHUB_RUN_ATTEMPT_VALUE: "${{ github.run_attempt }}",
     },
-    run: "sha256:7b93babec67d4368442418d3b8fcfa217039d9b3ae9dd54a08a6f55279bb4891",
+    run: "sha256:6efc8b29ff3a86b880675b7fffbe9e0c1317110a4a58c427e03194a9093c169f",
   },
   {
     name: "Verify registry convergence without OIDC",
@@ -500,6 +529,112 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml.match(/GITHUB_ACTIONS="\$\{GITHUB_ACTIONS\}"/g)).toHaveLength(1);
     expect(qualificationYaml).not.toContain("NPM_TOKEN:");
     expect(qualificationYaml).not.toContain("environment: npm-publish");
+  });
+
+  it("constructs complete npm 11.17 GitHub provenance from the bounded publish environment", () => {
+    const statement = npm1117GithubProvenance(
+      [{ name: "pkg:npm/agentera@3.0.0-dev.93", digest: { sha512: "digest" } }],
+      githubProvenance,
+    );
+    expect(statement.predicate).toEqual({
+      buildDefinition: {
+        buildType: "https://slsa-framework.github.io/github-actions-buildtypes/workflow/v1",
+        externalParameters: { workflow: {
+          ref: "refs/heads/feat/v3",
+          repository: "https://github.com/jgabor/agentera",
+          path: ".github/workflows/publish.yml",
+        } },
+        internalParameters: { github: {
+          event_name: "push",
+          repository_id: "123456789",
+          repository_owner_id: "987654321",
+        } },
+        resolvedDependencies: [{
+          uri: "git+https://github.com/jgabor/agentera@refs/heads/feat/v3",
+          digest: { gitCommit: "a".repeat(40) },
+        }],
+      },
+      runDetails: {
+        builder: { id: "https://github.com/actions/runner/github-hosted" },
+        metadata: {
+          invocationId: "https://github.com/jgabor/agentera/actions/runs/33746838768/attempts/1",
+        },
+      },
+    });
+  });
+
+  it("rejects every missing or malformed provenance binding before npm publish", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const publish = workflow.jobs["publish-development"].steps.find(
+      (step: { name?: string }) => step.name === "Publish exact tarball with Trusted Publishing",
+    );
+    const validation = publish.run.slice(0, publish.run.indexOf("shopt -s nullglob"));
+    const environment = {
+      RUNNER_TEMP_VALUE: "/tmp/runner",
+      EXPECTED_VERSION_VALUE: "3.0.0-dev.93",
+      EXPECTED_GIT_REF_VALUE: githubProvenance.GITHUB_SHA,
+      GUARD_OUTCOME_VALUE: "forward-publish",
+      GITHUB_ACTIONS: "true",
+      ACTIONS_ID_TOKEN_REQUEST_URL: "https://token.actions.githubusercontent.com/request?id=1",
+      ACTIONS_ID_TOKEN_REQUEST_TOKEN: "oidc.token-value",
+      ...Object.fromEntries(Object.entries(githubProvenance).map(([key, value]) => [`${key}_VALUE`, value])),
+    };
+    const malformed = {
+      GITHUB_WORKFLOW_REF_VALUE: "jgabor/agentera/.github/workflows/other.yml@refs/heads/feat/v3",
+      GITHUB_REPOSITORY_VALUE: "other/repository",
+      GITHUB_SERVER_URL_VALUE: "https://example.com",
+      GITHUB_REF_VALUE: "refs/pull/1/merge",
+      GITHUB_SHA_VALUE: "b".repeat(40),
+      GITHUB_EVENT_NAME_VALUE: "pull_request",
+      GITHUB_REPOSITORY_ID_VALUE: "0",
+      GITHUB_REPOSITORY_OWNER_ID_VALUE: "owner",
+      RUNNER_ENVIRONMENT_VALUE: "self-hosted",
+      GITHUB_RUN_ID_VALUE: "0",
+      GITHUB_RUN_ATTEMPT_VALUE: "0",
+    };
+    for (const [key, value] of Object.entries(malformed)) {
+      for (const replacement of ["", value]) {
+        const result = spawnSync("bash", ["--noprofile", "--norc"], {
+          encoding: "utf8",
+          input: validation,
+          env: { ...environment, [key]: replacement },
+        });
+        expect(result.status, `${key}=${JSON.stringify(replacement)}`).not.toBe(0);
+        expect(result.stderr).toContain("Invalid publish binding");
+      }
+    }
+  });
+
+  it("passes only the reviewed OIDC, npm, and provenance variables to the publish child", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const publish = workflow.jobs["publish-development"].steps.find(
+      (step: { name?: string }) => step.name === "Publish exact tarball with Trusted Publishing",
+    );
+    const child = publish.run.slice(publish.run.indexOf("env -i \\"), publish.run.indexOf("npm publish"));
+    const passed = [...child.matchAll(/\b([A-Z][A-Z0-9_]*)=/g)].map((match) => match[1]);
+    expect(passed).toEqual([
+      "PATH", "HOME", "GITHUB_ACTIONS", "ACTIONS_ID_TOKEN_REQUEST_URL",
+      "ACTIONS_ID_TOKEN_REQUEST_TOKEN", ...Object.keys(githubProvenance),
+      "NPM_CONFIG_USERCONFIG", "NPM_CONFIG_GLOBALCONFIG", "NPM_CONFIG_CACHE",
+      "NPM_CONFIG_AUDIT", "NPM_CONFIG_FUND", "NPM_CONFIG_IGNORE_SCRIPTS",
+    ]);
+    for (const prohibited of [
+      "GITHUB_TOKEN", "GH_TOKEN", "NPM_TOKEN", "NODE_AUTH_TOKEN", "GITHUB_EVENT_PATH",
+      "GITHUB_ENV", "GITHUB_OUTPUT", "GITHUB_PATH", "GITHUB_STEP_SUMMARY",
+      "HTTP_PROXY", "HTTPS_PROXY", "NO_PROXY", "NODE_OPTIONS", "npm_config_registry",
+      "npm_config_userconfig",
+    ]) {
+      expect(passed, prohibited).not.toContain(prohibited);
+      const isolated = spawnSync("env", [
+        "-i", ...passed.map((key) => `${key}=fixture`), "/usr/bin/env",
+      ], {
+        encoding: "utf8",
+        env: { ...process.env, [prohibited]: "injected-secret" },
+      });
+      expect(isolated.status).toBe(0);
+      expect(isolated.stdout).not.toContain(`${prohibited}=`);
+    }
+    expect(passed).not.toContain("GITHUB_WORKFLOW_SHA");
   });
 
   it("rejects repository-controlled commands added to the OIDC job", () => {

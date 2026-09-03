@@ -106,7 +106,8 @@ candidate-controlled helper or package code. That logic strips OIDC and
 inherited npm credentials/config from guard and convergence children. Exact
 and superseded replay need no upload. Only the fixed `npm publish <exact
 tarball> --access public --tag next --ignore-scripts` child is intentionally
-passed the OIDC request variables and an isolated registry-only npm config.
+passed the OIDC request variables, validated bounded GitHub metadata consumed
+by npm provenance, and an isolated registry-only npm config.
 `forward-retag` fails closed because OIDC does not
 authorize `npm dist-tag`; use interactive npm 2FA or a later forward version. A
 fixed credential-free post-check verifies registry convergence without moving a
