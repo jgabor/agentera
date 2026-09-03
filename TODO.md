@@ -12,7 +12,6 @@
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
-- [ ] [id:klhxdhzlth] [fix:3.0.0] Pass the bounded GitHub provenance identity to npm Trusted Publishing.
 
 ## → Normal
 
@@ -176,3 +175,4 @@
 - [x] [id:ilohqcvysj] [fix:3.0.0] Stabilize usage JSON parity verification
 - [x] [id:wknsemowih] [fix:3.0.0] Restore output history and prime token compliance
 - [x] [id:yfpppnyyzm] [feat:3.0.0] Make JSON the sole operational CLI output protocol
+- [x] [id:klhxdhzlth] [fix:3.0.0] Pass the bounded GitHub provenance identity to npm Trusted Publishing.

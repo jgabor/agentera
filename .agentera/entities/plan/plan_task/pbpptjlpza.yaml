@@ -4,7 +4,7 @@ record:
   name: Publish and verify the selected development commit
   depends_on:
     - ghfialnrge
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN fresh explicit feat/v3 push authorization WHEN the selected branch containing publish.yml is pushed THEN one deterministic candidate newer than dev.89 is built from that SHA.
     - GIVEN npm accepts the OIDC publish WHEN registry state converges THEN @next identifies the exact candidate version, SHA, integrity, and signed provenance.
@@ -21,3 +21,6 @@ record:
       source: orchestrate audit re-evaluation for task pbpptjlpza
       recorded_at: 2026-09-03 14:15
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ixoxawhoug
+  superseded_reason: Replacement task published dev.93 through corrected Trusted Publishing and passed independent registry, provenance, runtime, and channel evaluation.

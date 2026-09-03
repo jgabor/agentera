@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: kmguevcmrp
   name: Publish corrected development candidate
-  status: in_progress
+  status: complete
   depends_on:
     - lddrupjrkm
   acceptance:
@@ -12,3 +12,13 @@ record:
     - GIVEN the published package WHEN invoked through npx THEN its version and representative default JSON behavior pass.
     - GIVEN publication completes WHEN channel and logs are checked THEN @latest remains unchanged and no traditional token or npm dist-tag mutation occurred.
   evidence: Live replacement for blocked task pbpptjlpza after local provenance-environment correction passes independent evaluation.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ixoxawhoug-1
+      source: orchestrate evidence evaluation for task ixoxawhoug
+      recorded_at: 2026-09-03 15:52
+      writer_command: agentera state plan record-evaluation
