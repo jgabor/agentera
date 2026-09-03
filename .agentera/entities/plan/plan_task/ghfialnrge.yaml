@@ -4,7 +4,7 @@ record:
   name: Land and verify the default-main publication bootstrap
   depends_on:
     - zmorpkcxrj
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN fresh explicit main-push authorization WHEN the bootstrap lands THEN default main contains publish.yml and the sole checked-in development ref authority.
     - GIVEN that main workflow run WHEN it completes THEN development jobs are skipped and neither @next nor @latest changes.
