@@ -12,6 +12,7 @@
 
 - [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
+- [ ] [id:klhxdhzlth] [fix:3.0.0] Pass the bounded GitHub provenance identity to npm Trusted Publishing.
 
 ## → Normal
 

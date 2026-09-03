@@ -1,0 +1,40 @@
+id: klhxdhzlth
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Pass the bounded GitHub provenance identity to npm Trusted Publishing.
+  requirements:
+    - "Keep the isolated env -i npm publish child and explicitly pass only the GitHub metadata consumed by npm 11.17 provenance: workflow ref, repository, server URL, ref, SHA, event name, repository and owner IDs, runner environment, run ID, and run attempt."
+    - Continue passing the existing OIDC request variables while excluding GITHUB_TOKEN, GH_TOKEN, npm tokens, event payload paths, workflow command files, proxy variables, NODE_OPTIONS, and inherited npm configuration.
+    - Validate and quote every forwarded value before publication; keep candidate code, package scripts, checkout code, and downloaded executables outside the OIDC-enabled job.
+    - Add executable provenance-environment tests and update the reviewed publication-step hash without weakening artifact, redirect, registry, replay, or retag guards.
+    - Obtain fresh explicit push authorization before a new feat/v3 workflow run; do not rerun the SHA-bound failed dev.92 workflow.
+  acceptance:
+    - The fixed npm publish child receives exactly the required GitHub provenance metadata, OIDC variables, and isolated npm settings, with no additional credential or control-plane environment.
+    - A local npm 11.17 provenance fixture contains the expected workflow, repository, source SHA, event, repository IDs, and run invocation fields rather than empty or undefined values.
+    - Publication security, redirect, hostile input, replay, registry, package, source, and prime-budget gates pass.
+    - A newly authorized feat/v3 push publishes a deterministic candidate newer than dev.92 to @next with matching gitRef, integrity, signed provenance, and runtime smoke while @latest remains unchanged.
+  release_blocker: true
+  severity: degraded
+  readiness:
+    capability: build
+    reason: The final Trusted Publishing boundary needs npm's bounded GitHub provenance identity before @next can publish.
+    dependencies:
+      []
+    blocked: null
+    gate:
+      state: pending
+      reason: All three current push authorizations are exhausted; live verification requires a fresh explicit feat/v3 push authorization.
+      recovery: Implement and audit the bounded provenance metadata allowlist locally, then obtain fresh explicit authorization for one new feat/v3 push.
+    queue_rank: 1
+    order_reason: Repair the active @next publication blocker before any further development release push.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Pass the bounded GitHub provenance identity to npm Trusted Publishing."
+      severity: degraded
+      status: open
+      order: 3

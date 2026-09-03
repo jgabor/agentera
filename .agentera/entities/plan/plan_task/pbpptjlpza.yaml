@@ -4,7 +4,7 @@ record:
   name: Publish and verify the selected development commit
   depends_on:
     - ghfialnrge
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN fresh explicit feat/v3 push authorization WHEN the selected branch containing publish.yml is pushed THEN one deterministic candidate newer than dev.89 is built from that SHA.
     - GIVEN npm accepts the OIDC publish WHEN registry state converges THEN @next identifies the exact candidate version, SHA, integrity, and signed provenance.
@@ -12,12 +12,12 @@ record:
     - GIVEN publication completes WHEN channel state is checked THEN @latest is unchanged and no traditional credential or dist-tag mutation occurred.
   plan: kmguevcmrp
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: The authenticated GitHub artifact request followed a cross-host 302 while retaining Authorization, causing Azure signed-storage HTTP 401 and disclosing the job token; npm publish was skipped and dev.91 remained absent.
+    last_failure_evidence: npm Trusted Publishing reached the registry but returned E422 because the isolated publish child omitted the explicit GitHub run metadata required to construct a valid SLSA provenance predicate; dev.92 remained absent and push authorization is exhausted.
     provenance:
-      attempt_id: audit-pbpptjlpza-1
-      source: orchestrate audit evaluation for task pbpptjlpza
-      recorded_at: 2026-09-03 12:34
+      attempt_id: audit-pbpptjlpza-2
+      source: orchestrate audit re-evaluation for task pbpptjlpza
+      recorded_at: 2026-09-03 14:15
       writer_command: agentera state plan record-evaluation
