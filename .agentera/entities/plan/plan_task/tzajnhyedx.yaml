@@ -1,0 +1,13 @@
+id: tzajnhyedx
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Re-certify the source-only type outcome under hermetic verification
+  status: pending
+  depends_on:
+    - wdvzacjvbs
+  acceptance:
+    - GIVEN tracked integrity-bound inputs WHEN replay runs THEN the exact 451-diagnostic source-only measurement and raw-to-normalized relationship reproduce.
+    - GIVEN valid, intentional-invalid, and genuine-defect fixtures WHEN compiled THEN their classifications and all tamper failures remain exact.
+    - GIVEN standard and disposable user-root environments WHEN full source runs THEN both are green and source-only-retain remains explicit.
+    - GIVEN replay cleanup WHEN inspected THEN checkout and user caches remain unchanged.

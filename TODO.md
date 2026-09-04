@@ -48,6 +48,7 @@
 - [ ] [id:bhwgdxohmy] [refactor:3.0.0] Decompose formatter-expanded CLI monoliths
 - [ ] [id:ifdcgoxqsf] [test:3.0.0] Retain replayable Vite+ formatter equivalence evidence
 - [ ] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
+- [ ] [id:jrwiznhelw] [test:3.0.0] Make source verification hermetic under disposable user roots
 
 ## ⇢ Annoying
 

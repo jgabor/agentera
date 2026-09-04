@@ -1,0 +1,24 @@
+id: jrwiznhelw
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Make source verification hermetic under disposable user roots
+  requirements:
+    - Remove source-test dependence on inherited app, HOME, XDG, npm, pnpm, Corepack, or Vite cache state.
+    - Preserve intended bundle, lifecycle, Prime, and TODO routing assertions using explicit test-owned fixtures.
+    - Keep normal and fully isolated source verification behavior equivalent.
+  acceptance:
+    - The complete source suite passes with all user and package-manager cache roots redirected to disposable locations.
+    - The standard source suite remains green and the exact typecheck replay result is unchanged.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Make source verification hermetic under disposable user roots"
+      severity: normal
+      status: open
+      order: 34

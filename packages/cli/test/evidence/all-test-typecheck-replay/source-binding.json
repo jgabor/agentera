@@ -25,7 +25,7 @@
   },
   {
     "path": "packages/cli/scripts/measure-prime-budget.mjs",
-    "sha256": "ce70109af604279e12958924b73662e503c9c5c5f0a4368e7fb0033f750a1e5f"
+    "sha256": "689a41e012abc24871eac5f06b3e1f5fa3a5f23664c3f57f44fa63499e815879"
   },
   {
     "path": "packages/cli/scripts/observe-capability-source.mjs",
@@ -1921,7 +1921,7 @@
   },
   {
     "path": "packages/cli/test/cli/primeBudget.test.ts",
-    "sha256": "61a74b82542a0d772238e9e512448ff585464baa251154d4f7eebf03bbefbe41"
+    "sha256": "24cafa8e327df374b6d405e28c662b8f6bef1c4b4602ab453b886ca98236a712"
   },
   {
     "path": "packages/cli/test/cli/primeChannels.test.ts",
@@ -2369,7 +2369,7 @@
   },
   {
     "path": "packages/cli/test/release/rootReleaseScripts.test.ts",
-    "sha256": "309856e326ed6d5569b60bab00d10309a1efabedd89b9faee44555ee56ab1154"
+    "sha256": "1407b15cfc3531a42728a90a617a1821a5c201c7927e5baae1499d6bdc4189af"
   },
   {
     "path": "packages/cli/test/release/routineCiOwnership.test.ts",

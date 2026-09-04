@@ -34,9 +34,9 @@ describe("prime GPT-5 token budget", () => {
     };
     try {
       const home = path.join(temporaryRoot, "home");
-      const appHome = path.join(temporaryRoot, "app");
+      const appHome = path.join(REPO_ROOT, "packages/cli/bundle");
       const profile = path.join(temporaryRoot, "profile");
-      for (const directory of [home, appHome, profile]) fs.mkdirSync(directory, { recursive: true });
+      for (const directory of [home, profile]) fs.mkdirSync(directory, { recursive: true });
       process.env.HOME = home;
       process.env.AGENTERA_HOME = appHome;
       process.env.AGENTERA_PROFILE_DIR = profile;

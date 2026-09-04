@@ -1,0 +1,13 @@
+id: wdvzacjvbs
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Make source verification hermetic under disposable user roots
+  status: in_progress
+  depends_on:
+    - fljunuxiyj
+  acceptance:
+    - GIVEN disposable HOME, XDG, app, npm, pnpm, Corepack, and Vite cache roots WHEN full source runs THEN the complete suite passes.
+    - GIVEN the standard source environment WHEN the same suite runs THEN outcomes remain equivalent and green.
+    - GIVEN bundle, lifecycle, Prime, and TODO routing assertions WHEN exercised THEN test-owned fixtures determine behavior rather than inherited user state.
+    - GIVEN accepted and rejected environment cases WHEN tested THEN intended fallback and isolation failures remain explicit without changing production behavior.

@@ -60,9 +60,9 @@ export function runPrimeBudget(repoRoot = defaultRepoRoot) {
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-prime-budget-"));
   try {
     const home = path.join(temporaryRoot, "home");
-    const appHome = path.join(temporaryRoot, "app");
+    const appHome = path.join(repoRoot, "packages/cli/bundle");
     const profile = path.join(temporaryRoot, "profile");
-    for (const directory of [home, appHome, profile]) fs.mkdirSync(directory, { recursive: true });
+    for (const directory of [home, profile]) fs.mkdirSync(directory, { recursive: true });
 
     const result = spawnSync(process.execPath, [path.join(repoRoot, "packages/cli/dist/bin/agentera.js"), "prime"], {
       cwd: repoRoot,

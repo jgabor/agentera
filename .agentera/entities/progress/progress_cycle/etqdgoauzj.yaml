@@ -1,0 +1,15 @@
+id: etqdgoauzj
+artifact: progress
+record:
+  timestamp: 2026-09-04 23:27
+  type: test
+  phase: build
+  what: Made source verification deterministic under disposable user and tool-cache roots.
+  context:
+    intent: Make source verification hermetic without production behavior changes.
+    constraints: Test fixtures and verification harness only; no remote, registry, release, or production CLI mutation.
+    scope: Disposable HOME/XDG/app/npm/pnpm/Corepack/Vite+ roots, Prime bundle fixture, release test index fixture, and replay bindings.
+  discovered: Prime budget depended on a real XDG-installed app after rejecting an empty AGENTERA_HOME; a release-script safety test also observed the shared checkout index while other source tests exercised hooks.
+  verified: Standard and hermetic source runs each passed 263 files and 4,306 tests with 2 skips. Inventory counts matched. Type replay remained 451 diagnostics across 103 files; focused tests, typecheck, build, package, Prime budget, compact, capability contract, retained references, and activation conjunction passed.
+  next: Leave wdvzacjvbs in progress for independent audit; tzajnhyedx can re-certify the replay afterward.
+  publication_order: 332

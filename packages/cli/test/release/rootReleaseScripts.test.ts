@@ -67,12 +67,15 @@ describe("root release script argument forwarding", () => {
           const file = path.join(isolated, relative);
           return [relative, fs.statSync(file).isFile() ? fs.readFileSync(file).toString("base64") : null];
         });
-    const isolatedBefore = isolatedFiles();
     const git = (args: string[]) => {
       const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8", env });
       expect(result.status, `git ${args.join(" ")}: ${result.stderr}`).toBe(0);
       return result.stdout.trim();
     };
+    const fixtureIndex = path.join(isolated, "git-index");
+    fs.copyFileSync(git(["rev-parse", "--path-format=absolute", "--git-path", "index"]), fixtureIndex);
+    env.GIT_INDEX_FILE = fixtureIndex;
+    const isolatedBefore = isolatedFiles();
     const gitDirectory = git(["rev-parse", "--path-format=absolute", "--git-dir"]);
     const gitCommonDirectory = git(["rev-parse", "--path-format=absolute", "--git-common-dir"]);
     const gitStorage = () => {
@@ -80,6 +83,7 @@ describe("root release script argument forwarding", () => {
       let files = 0;
       let bytes = 0;
       const visit = (label: string, target: string) => {
+        if (label === "worktree/index") return;
         if (!fs.existsSync(target)) {
           records.push([label, "missing"]);
           return;
