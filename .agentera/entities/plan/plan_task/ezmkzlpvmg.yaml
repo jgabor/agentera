@@ -11,3 +11,13 @@ record:
     - GIVEN the parity re-pin WHEN classified THEN it is owner-authorized outside formatter changes and every other protected path is unchanged.
     - GIVEN altered input, output, or digest WHEN verified THEN replay fails; formatter, monolith, behavior, package, and source gates pass.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Parity re-pin lacked owner-backed authorization; substantive paths were inferred rather than explicitly authorized; equivalence used path exceptions; replay did not execute claimed monolith, behavior, package, and source gates.
+    provenance:
+      attempt_id: orchestrate-audit-ezmkzlpvmg-1
+      source: "Independent audit: integrity and isolated replay pass; criteria 3 and 4 plus evidence authorization fail."
+      recorded_at: 2026-09-04 16:04
+      writer_command: agentera state plan record-evaluation

@@ -13,7 +13,8 @@
 #   bash packages/cli/scripts/py_ts_parity.sh --check --json # machine-readable
 #
 # Exit codes:
-#   0   drift: none (`python_commit` equals `origin/main` HEAD)
+#   0   drift: none (`python_commit` equals `origin/main` HEAD and any
+#       recorded re-pin has owner-valid source-equivalence evidence)
 #   1   drift: detected (`python_commit` differs from `origin/main` HEAD;
 #              diff_paths lists Python CLI paths that changed between the
 #              pinned commit and main)
@@ -55,15 +56,11 @@ CLI_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 REPO_ROOT="$(cd "$CLI_ROOT/../.." && pwd)"
 FIXTURE="${PY_TS_PARITY_FIXTURE:-$CLI_ROOT/test/cli/fixtures/oracle/parity-remaining-families.json}"
 
-# Path arguments to `git diff` for the Python CLI source. The Python CLI
-# canonical layout (per the install-root contract) places the executable
-# at `scripts/agentera` and the package source at `agentera/`. When those
-# paths are present in the agentera `main` tree, --check is meaningful;
-# when they are absent, --check reports `drift: none` (no tree to
-# compare) which is the correct baseline for the v3 development cycle.
+# Path arguments to `git diff` for the Python CLI source.
 PYTHON_CLI_PATHS=(
   "scripts/agentera"
-  "agentera"
+  "scripts"
+  "src/agentera"
 )
 
 # JSON output mode (set by --json).
@@ -72,16 +69,16 @@ CHECK_MODE=0
 
 for arg in "$@"; do
   case "$arg" in
-    --check) CHECK_MODE=1 ;;
-    --json) JSON_MODE=1 ;;
-    -h|--help)
-      sed -n '2,46p' "$0"
-      exit 0
-      ;;
-    *)
-      echo "py_ts_parity.sh: unknown argument '$arg'" >&2
-      exit 2
-      ;;
+  --check) CHECK_MODE=1 ;;
+  --json) JSON_MODE=1 ;;
+  -h | --help)
+    sed -n '2,46p' "$0"
+    exit 0
+    ;;
+  *)
+    echo "py_ts_parity.sh: unknown argument '$arg'" >&2
+    exit 2
+    ;;
   esac
 done
 
@@ -100,10 +97,8 @@ if [ ! -f "$FIXTURE" ]; then
   exit 2
 fi
 
-# Extract the top-level python_commit from the fixture. We use a tiny
-# awk one-liner to avoid pulling in jq (the script must run on a clean
-# CI box that may not have jq installed).
-PINNED="$(awk -F'"' '/"python_commit"[[:space:]]*:[[:space:]]*"/ { gsub(/^ +| +$/, "", $4); print $4; exit }' "$FIXTURE" || true)"
+# Extract the top-level pin without depending on fixture line layout or jq.
+PINNED="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1], encoding="utf-8")).get("python_commit", ""))' "$FIXTURE" 2>/dev/null || true)"
 
 if [ -z "$PINNED" ] || [ "${#PINNED}" -ne 40 ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
@@ -168,6 +163,90 @@ if [ -z "$MAIN_HEAD" ]; then
   exit 2
 fi
 
+# A re-pin is valid only when the canonical fixture records the exact old and
+# target commits and the full tracked source trees hash to the recorded SHA-256.
+# Hashing framed, sorted archive members ignores commit timestamps while binding
+# every tracked path, mode, type, link target, and byte.
+mapfile -t PIN_EVIDENCE < <(
+  python3 - "$FIXTURE" <<'PY'
+import json
+import sys
+
+try:
+    evidence = json.load(open(sys.argv[1], encoding="utf-8"))["pinEvidence"]
+    source = evidence["sourceEquivalence"]
+    fields = [
+        evidence["schemaVersion"],
+        evidence["owner"],
+        evidence["ownerTest"],
+        evidence["previous_python_commit"],
+        evidence["target_python_commit"],
+        evidence["target_ref"],
+        source["method"],
+        source["scope"],
+        source["previousSha256"],
+        source["targetSha256"],
+    ]
+    print("\n".join(fields))
+except (KeyError, TypeError, ValueError, OSError):
+    pass
+PY
+)
+
+source_tree_sha256() {
+  python3 - "$REPO_ROOT" "$1" <<'PY'
+import hashlib
+import io
+import subprocess
+import sys
+import tarfile
+
+root, commit = sys.argv[1:]
+archive = subprocess.check_output(["git", "-C", root, "archive", "--format=tar", commit])
+digest = hashlib.sha256()
+with tarfile.open(fileobj=io.BytesIO(archive), mode="r:") as handle:
+    for member in sorted(handle.getmembers(), key=lambda entry: entry.name):
+        body = handle.extractfile(member).read() if member.isfile() else member.linkname.encode()
+        for field in (member.name.encode(), str(member.mode).encode(), member.type, body):
+            digest.update(str(len(field)).encode() + b":" + field)
+print(digest.hexdigest())
+PY
+}
+
+if [ "$PINNED" = "$MAIN_HEAD" ]; then
+  if [ "${#PIN_EVIDENCE[@]}" -ne 10 ]; then
+    REASON="pin_evidence_missing"
+  elif [ "${PIN_EVIDENCE[0]}" != "agentera.pythonTypescriptParityPin.v1" ] ||
+    [ "${PIN_EVIDENCE[1]}" != "packages/cli/scripts/py_ts_parity.sh" ] ||
+    [ "${PIN_EVIDENCE[2]}" != "packages/cli/test/scripts/pyTsParity.test.ts" ] ||
+    [ "${PIN_EVIDENCE[4]}" != "$PINNED" ] ||
+    [ "${PIN_EVIDENCE[5]}" != "origin/main" ] ||
+    [ "${PIN_EVIDENCE[6]}" != "sha256-framed-sorted-git-archive-members-v1" ] ||
+    [ "${PIN_EVIDENCE[7]}" != "full tracked tree" ]; then
+    REASON="pin_evidence_contract"
+  else
+    PREVIOUS_SHA="$(source_tree_sha256 "${PIN_EVIDENCE[3]}" 2>/dev/null || true)"
+    TARGET_SHA="$(source_tree_sha256 "${PIN_EVIDENCE[4]}" 2>/dev/null || true)"
+    PREVIOUS_TREE="$(git -C "$REPO_ROOT" rev-parse "${PIN_EVIDENCE[3]}^{tree}" 2>/dev/null || true)"
+    TARGET_TREE="$(git -C "$REPO_ROOT" rev-parse "${PIN_EVIDENCE[4]}^{tree}" 2>/dev/null || true)"
+    if [ -z "$PREVIOUS_SHA" ] || [ "$PREVIOUS_SHA" != "${PIN_EVIDENCE[8]}" ] ||
+      [ "$TARGET_SHA" != "${PIN_EVIDENCE[9]}" ] || [ "$PREVIOUS_SHA" != "$TARGET_SHA" ] ||
+      [ -z "$PREVIOUS_TREE" ] || [ "$PREVIOUS_TREE" != "$TARGET_TREE" ]; then
+      REASON="pin_evidence_source_mismatch"
+    else
+      REASON=""
+    fi
+  fi
+  if [ -n "$REASON" ]; then
+    if [ "$JSON_MODE" -eq 1 ]; then
+      printf '{"drift":"error","reason":"%s","pinned":"%s","main":"%s"}\n' "$REASON" "$PINNED" "$MAIN_HEAD"
+    else
+      log "py_ts_parity.sh: owner evidence failed: $REASON"
+    fi
+    exit 2
+  fi
+fi
+
 # Primary drift check: the oracle pin must equal `origin/main` HEAD so the
 # fixture cannot silently lag behind main (#34).
 PATHS_CSV=""
@@ -186,7 +265,7 @@ if [ "$PINNED" != "$MAIN_HEAD" ]; then
     rc=$?
     set -e
     case "$rc" in
-      1) DIFF_PATHS+=("$p") ;;
+    1) DIFF_PATHS+=("$p") ;;
     esac
   done
 fi
@@ -202,13 +281,31 @@ print_rebase_procedure() {
 
 if [ "$DRIFT" -eq 0 ]; then
   if [ "$JSON_MODE" -eq 1 ]; then
-    printf '{"drift":"none","pinned":"%s","main":"%s","paths":%s}\n' \
-      "$PINNED" "$MAIN_HEAD" "$(printf '%s\n' "${PYTHON_CLI_PATHS[@]}" | python3 -c 'import json,sys;print(json.dumps(sys.stdin.read().splitlines()))' 2>/dev/null || printf '[]')"
+    python3 - "$PINNED" "$MAIN_HEAD" "${PIN_EVIDENCE[3]}" "$PREVIOUS_SHA" "$TARGET_SHA" "${PYTHON_CLI_PATHS[@]}" <<'PY'
+import json
+import sys
+
+pinned, main, previous, previous_sha, target_sha, *paths = sys.argv[1:]
+print(json.dumps({
+    "drift": "none",
+    "pinned": pinned,
+    "main": main,
+    "paths": paths,
+    "owner_evidence": {
+        "previous": previous,
+        "target": pinned,
+        "source_equivalent": previous_sha == target_sha,
+        "previous_sha256": previous_sha,
+        "target_sha256": target_sha,
+    },
+}, separators=(",", ":")))
+PY
   else
     log "drift: none"
     log "  pinned: $PINNED"
     log "  main:   $MAIN_HEAD"
     log "  paths:  $PATHS_CSV"
+    log "  owner evidence: ${PIN_EVIDENCE[3]} -> $PINNED; full tracked source SHA-256 $TARGET_SHA"
   fi
   exit 0
 else

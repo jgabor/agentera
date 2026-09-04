@@ -1,0 +1,14 @@
+id: saftisdtye
+artifact: progress
+record:
+  timestamp: 2026-09-04 16:38
+  type: test
+  phase: build
+  what: Formatter replay correction verified.
+  context:
+    intent: Keep final replay status compact for Prime.
+    constraints: Preserve the detailed preceding correction record.
+    scope: Closeout status only.
+  verified: Manifest 9fcf82c1c4d5a7f436ea468cf1a09b0a518f314fa7397e1e83d33ba14d05fcd2 and owner parity evidence replay; full closeout passed before state append.
+  next: Independent audit.
+  publication_order: 327

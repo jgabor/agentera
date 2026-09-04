@@ -1,0 +1,15 @@
+id: kzgpejcykw
+artifact: progress
+record:
+  timestamp: 2026-09-04 16:32
+  type: test
+  phase: build
+  what: Corrected the formatter replay proof after independent audit.
+  context:
+    intent: Make formatter normalization independently replayable with owner-backed parity and executable closeout evidence.
+    constraints: Preserve formatter output, product behavior, protected paths, root toolchain, versions, CI, hooks, publication, and the prior failed evaluation.
+    scope: Formatter replay verifier, canonical parity evidence, explicit substantive allowlist, tamper tests, and progress only.
+  discovered: The prior verifier inferred every non-equivalent path as authorized, used path-specific equivalence exceptions, treated the parity re-pin as self-authorizing, and asserted rather than ran closeout gates.
+  verified: Manifest 9fcf82c1c4d5a7f436ea468cf1a09b0a518f314fa7397e1e83d33ba14d05fcd2 binds 736 inputs, 656 structurally equivalent paths, 22 explicitly owner-authorized substantive paths, exact tools/config/source/output, and owner parity source SHA-256 48f91dd7be9675b55d03bdac8b86ba740bea36fb191d98bea632bedcef8d217d. Input, output, digest, allowlist, and closeout tampering fail. Full replay ran formatter, monolith, parity, focused behavior, typecheck, build, package, source, compact, capability, retained-reference, and activation gates successfully with source unchanged.
+  next: Leave task ezmkzlpvmg in progress for independent final audit; systemic TODOs remain open.
+  publication_order: 326

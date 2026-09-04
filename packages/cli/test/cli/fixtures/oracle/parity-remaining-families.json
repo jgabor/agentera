@@ -2,6 +2,21 @@
   "schemaVersion": "agentera.parityRemainingFamilies.v1",
   "notes": "Frozen contract for the current v3 CLI surface families retained for parity with the Python `agentera` stable CLI. The fixture is the contract reference for `packages/cli/test/cli/npmParityMatrix.test.ts` — every row in the parity matrix reads its expected shape and forbidden-shape sentinel from here. The `python_commit` field pins the Python CLI source (commit on the agentera `main` branch) the structural contract is locked to. The `normalizeEnvelope` block is the canonical normalization spec applied to live envelopes before drift classification (timestamp → ISO date, hash → 0x + 8 hex, path → forward-slash). Per-family `python_commit` mirrors the top-level pin. The `expectedShape` block is structural (required keys + value types + literal pins); the `forbiddenSubstrings` block is the per-family sentinel — a substring the TS side MUST NOT emit because the Python side does not. Current rows are closed and require `drift_direction === 'equal'`.",
   "python_commit": "149e059547a847b136c4783c6f418330a5398b2c",
+  "pinEvidence": {
+    "schemaVersion": "agentera.pythonTypescriptParityPin.v1",
+    "owner": "packages/cli/scripts/py_ts_parity.sh",
+    "ownerTest": "packages/cli/test/scripts/pyTsParity.test.ts",
+    "previous_python_commit": "9b36f93fbeaa391550db3e8dedf015ff54b5ce69",
+    "target_python_commit": "149e059547a847b136c4783c6f418330a5398b2c",
+    "target_ref": "origin/main",
+    "rationale": "The parity owner requires the fixture to name current origin/main. The old and target commits have byte-equivalent full tracked trees, so this re-pin changes provenance only and was not formatter output.",
+    "sourceEquivalence": {
+      "method": "sha256-framed-sorted-git-archive-members-v1",
+      "scope": "full tracked tree",
+      "previousSha256": "48f91dd7be9675b55d03bdac8b86ba740bea36fb191d98bea632bedcef8d217d",
+      "targetSha256": "48f91dd7be9675b55d03bdac8b86ba740bea36fb191d98bea632bedcef8d217d"
+    }
+  },
   "normalizeEnvelope": {
     "description": "Canonical normalization applied to live TS envelopes before they are compared to the Python oracle pin. The helper lives in `packages/cli/test/cli/npmParityMatrix.test.ts` and reads these rules verbatim; do not duplicate the rules in test code.",
     "rules": {

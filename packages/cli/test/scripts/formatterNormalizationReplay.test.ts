@@ -26,12 +26,20 @@ describe("formatter normalization replay", () => {
     expect(verify().status).toBe(0);
   }, 120_000);
 
-  it.each(["input", "output", "digest"])("rejects altered %s evidence", (kind) => {
+  it("tracks every substantive path with an owner and rationale", () => {
+    const manifest = JSON.parse(fs.readFileSync(authority, "utf8"));
+    expect(manifest.equivalence.authorizedSubstantive).toHaveLength(22);
+    expect(manifest.equivalence.authorizedSubstantive.every((entry: any) => entry.path && entry.owner && entry.rationale)).toBe(true);
+  });
+
+  it.each(["input", "output", "digest", "allowlist", "closeout"])("rejects altered %s evidence", (kind) => {
     const directory = fs.mkdtempSync(path.join(os.tmpdir(), "formatter-replay-tamper-"));
     const manifest = JSON.parse(fs.readFileSync(authority, "utf8"));
     if (kind === "input") manifest.inputs[0].sha256 = "0".repeat(64);
     if (kind === "output") manifest.inputs[0].outputSha256 = "0".repeat(64);
     if (kind === "digest") manifest.manifestSha256 = "0".repeat(64);
+    if (kind === "allowlist") manifest.equivalence.authorizedSubstantive[0].owner = "self-declared";
+    if (kind === "closeout") manifest.closeout.gates[0].command = ["true"];
     if (kind !== "digest") resign(manifest);
     const target = path.join(directory, "manifest.json");
     fs.writeFileSync(target, JSON.stringify(manifest));

@@ -39,7 +39,7 @@ function runCheckJson(extraEnv: NodeJS.ProcessEnv = {}): {
 }
 
 describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
-  it("exits 0 when python_commit matches origin/main HEAD", () => {
+  it("replays owner evidence when python_commit matches origin/main HEAD", () => {
     const mainRef = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "origin/main"], {
       encoding: "utf8",
     });
@@ -49,12 +49,44 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as {
       python_commit: string;
       families: Record<string, { python_commit: string }>;
+      pinEvidence: {
+        owner: string;
+        previous_python_commit: string;
+        target_python_commit: string;
+        sourceEquivalence: { previousSha256: string; targetSha256: string };
+      };
     };
     expect(fixture.python_commit).toBe(mainHead);
+    expect(fixture.pinEvidence.owner).toBe("packages/cli/scripts/py_ts_parity.sh");
+    expect(fixture.pinEvidence.target_python_commit).toBe(mainHead);
+    expect(fixture.pinEvidence.sourceEquivalence.previousSha256).toBe(fixture.pinEvidence.sourceEquivalence.targetSha256);
 
-    const { status, stdout } = runCheck();
+    const { status, payload } = runCheckJson();
     expect(status).toBe(0);
-    expect(stdout).toContain("drift: none");
+    expect(payload).toMatchObject({
+      drift: "none",
+      pinned: mainHead,
+      main: mainHead,
+      owner_evidence: {
+        previous: fixture.pinEvidence.previous_python_commit,
+        target: mainHead,
+        source_equivalent: true,
+        previous_sha256: fixture.pinEvidence.sourceEquivalence.previousSha256,
+        target_sha256: fixture.pinEvidence.sourceEquivalence.targetSha256,
+      },
+    });
+  });
+
+  it("rejects altered owner source-equivalence evidence", () => {
+    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-owner-"));
+    const alteredFixture = path.join(tmpDir, "parity-remaining-families.json");
+    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as any;
+    fixture.pinEvidence.sourceEquivalence.targetSha256 = "0".repeat(64);
+    fs.writeFileSync(alteredFixture, JSON.stringify(fixture));
+
+    const { status, payload } = runCheckJson({ PY_TS_PARITY_FIXTURE: alteredFixture });
+    expect(status).toBe(2);
+    expect(payload.reason).toBe("pin_evidence_source_mismatch");
   });
 
   it("exits 1 with drift:detected and rebase procedure for a divergent pin", () => {
