@@ -288,9 +288,6 @@ function briefHistory(history: unknown, projection: SourceContractProjection = "
     if (caveats !== undefined) projected.caveats = caveats;
     if (isObject(entryObj.degraded_history)) {
       const degraded = pick(entryObj.degraded_history, ["summary_count", "returned_count", "omitted_count"]);
-      // Compact routing already retains the same exact list/get commands on the
-      // parent history entry. Keep the nested copy only in the normal brief.
-      if (projection === "normal") degraded.retrieval = briefHistoryRetrieval(entryObj.degraded_history.retrieval);
       const degradedCaveats = briefHistoryCaveats(entryObj.degraded_history.caveats, maxChars);
       if (degradedCaveats !== undefined) degraded.caveats = degradedCaveats;
       projected.degraded_history = degraded;

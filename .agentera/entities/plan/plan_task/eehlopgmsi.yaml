@@ -1,0 +1,12 @@
+id: eehlopgmsi
+artifact: plan
+record:
+  name: Align hooks and contributor guidance
+  depends_on:
+    - pseiddctar
+  status: pending
+  acceptance:
+    - GIVEN any global vp state WHEN hooks run THEN project-local tools resolve while routes and budgets remain unchanged.
+    - GIVEN guidance WHEN reviewed THEN one daily Vite+ vocabulary is canonical and recovery commands remain available.
+    - GIVEN published and local CLI checks WHEN used THEN their authority is unambiguous, including missing-bootstrap failure.
+  plan: vtqzlztjsk

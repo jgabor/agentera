@@ -1,0 +1,14 @@
+id: mbkcbjyhhr
+artifact: progress
+record:
+  timestamp: 2026-09-04 15:17
+  type: fix
+  phase: build
+  what: Prime budget baseline restored without changing its threshold or required startup contract.
+  context:
+    intent: Complete the scoped correction while leaving fljunuxiyj in_progress for independent audit.
+    constraints: Preserved required fields, task summaries, commands, caveats, startup semantics, and the 3,000-token budget.
+  discovered: The normal brief repeated degraded-history retrieval commands already present on each parent history entry; only that nested duplicate was removed.
+  verified: Focused Prime tests passed 40/40; full source passed 4289 with 2 skipped.
+  next: Independent audit fljunuxiyj; continue successor plan only after audit.
+  publication_order: 323

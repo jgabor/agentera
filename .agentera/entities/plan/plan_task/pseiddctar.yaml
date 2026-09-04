@@ -1,0 +1,14 @@
+id: pseiddctar
+artifact: plan
+record:
+  name: Establish workspace-root Vite+ authority
+  depends_on:
+    - ezmkzlpvmg
+    - xxprntajxz
+  status: pending
+  acceptance:
+    - GIVEN fresh setup WHEN bootstrap and install run THEN the exact root toolchain wins and pnpm lock authority is unchanged.
+    - GIVEN bare vp check WHEN validation runs THEN formatter, accepted lint ceiling, and separate source-only tsc block regressions.
+    - GIVEN root vp run commands WHEN test, build, and verify execute THEN existing owners run without cached-success replay.
+    - GIVEN package validation WHEN complete THEN shipped CLI behavior and package boundaries remain unchanged.
+  plan: vtqzlztjsk

@@ -1,0 +1,13 @@
+id: lbsqhpmbnw
+artifact: plan
+record:
+  name: Gate serialized @next publication
+  depends_on:
+    - irvnacpcby
+  status: pending
+  acceptance:
+    - GIVEN a selected push WHEN root vp run verify delegates to verify:release THEN no-receipt exact-SHA verification precedes construction.
+    - GIVEN workflow deadlines WHEN inspected THEN verification receives at least 2,400,000 milliseconds plus setup and construction allowance.
+    - GIVEN verification failure WHEN jobs settle THEN package construction, artifact upload, and registry effects never start.
+    - GIVEN success or replay WHEN publication settles THEN allocation, bytes, ordering, forward-only tags, convergence, and publisher isolation remain unchanged.
+  plan: vtqzlztjsk

@@ -108,7 +108,7 @@ function docsRichFixture(): Record<string, unknown> {
       id: `${String.fromCharCode(97 + index)}ddddddddd`,
       artifact: "docs",
       record: {
-        document: `Documentation inventory entry ${index + 1}: ${"bounded orientation ".repeat(4).trim()}`,
+        document: `Documentation inventory entry ${index + 1}: ${"bounded orientation ".repeat(14).trim()}`,
         path: `.agentera/archive/documentation-inventory-${String(index + 1).padStart(2, "0")}.md`,
         last_updated: "2026-08-12",
         status: index === 0 ? "stale" : index === 1 ? "intent" : "current",

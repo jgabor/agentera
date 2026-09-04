@@ -1,0 +1,13 @@
+id: ezmkzlpvmg
+artifact: plan
+record:
+  name: Certify formatter normalization replayably
+  depends_on:
+    - fljunuxiyj
+  status: pending
+  acceptance:
+    - GIVEN tracked replay inputs WHEN verified THEN SHA-256 binds exact tools, source, configuration, outputs, and equivalence results.
+    - GIVEN disposable isolation WHEN replay runs THEN Vite+ 0.3.0 and Oxfmt 0.64.0 reproduce the clean formatter result without checkout or user-cache mutation.
+    - GIVEN the parity re-pin WHEN classified THEN it is owner-authorized outside formatter changes and every other protected path is unchanged.
+    - GIVEN altered input, output, or digest WHEN verified THEN replay fails; formatter, monolith, behavior, package, and source gates pass.
+  plan: vtqzlztjsk

@@ -1,0 +1,51 @@
+id: vtqzlztjsk
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-03
+    status: open
+    reviewed: 2026-09-03
+    critic_issues: 8 found, 4 addressed, 4 dismissed
+    title: "Plan: Finish replayable Vite+ consolidation"
+  what: Preserve the implemented toolchain baseline, formatter normalization, parity repair, and source decomposition. Repair their evidence contracts, restore the Prime budget, then complete workspace-root Vite+ and serialized CI and publication rollout for TODOs oeadkhtqub, qefxkkmyyw, and dzrruetyod.
+  why: The implementation largely works, but independent audits cannot reproduce transient-tool measurements or truthfully classify one owner-authorized parity change. The successor makes evidence replayable before expanding the toolchain boundary.
+  constraints: Preserve exact Vite+ 0.3.0 and setup-vp 1.18.0 at reviewed commit 1b32467adbe183473499fd9d5d372c3ed9641754. Accept its mutable installer risk only in non-OIDC install and build jobs. Preserve pnpm 10.30.3, its lockfile, one product package, source-only tsc, formatter and monolith gates, package construction, and publication guarantees. Never cache authoritative evidence. Keep the publisher checkout-free, action-free, and setup-free. Never push or publish without fresh authorization. Do not add a version bump or stable cutover.
+  overall_acceptance: GIVEN the completed successor WHEN evidence is audited THEN exact formatter and type measurements replay from tracked integrity-bound inputs. GIVEN source verification WHEN all local gates run THEN the suite is green. GIVEN contributor workflows WHEN root Vite+ commands run THEN installation, static checks, tests, builds, and no-receipt verification are deterministic and uncached. GIVEN setup-requiring CI WHEN inspected THEN every applicable job uses the reviewed action commit while the OIDC publisher remains untouched. GIVEN a selected push WHEN publication runs THEN exact-SHA no-receipt verification succeeds before construction. GIVEN closeout WHEN state reconciles THEN only satisfied TODOs close.
+  scope:
+    included:
+      - Prime budget repair and replayable formatter and all-test evidence in disposable isolation.
+      - Workspace-root Vite+ migration, vp install/check/run, and lint non-regression.
+      - Hooks and guidance, setup-requiring CI, and no-receipt exact-SHA verification before serialized publication.
+      - Typed plan, progress, and TODO closeout.
+    excluded:
+      - Broad lint cleanup, all-test debt cleanup, and another mass-format pass.
+      - vp pack, Vite Task result caching, stable release, and unrelated cross-platform expansion.
+    deferred:
+      - All-test typing, remote task caching, and contended queue measurement.
+  design: Restore a clean verification baseline first. Certify the already-built formatter and type evidence using tracked isolated replay boundaries. Activate the root control plane only after both certifications pass. Then align local integrations, setup jobs, and ordered publication. Close only after local evidence and an explicitly authorized hosted run.
+  unknowns:
+    - question: Can Prime return below 3,000 tokens without weakening required context?
+      affects_task: 1
+      resolve_by: Task 1 preserves the contract while restoring the existing budget.
+    - question: Can exact transient Vite+ measurements replay from tracked inputs without touching checkout or user caches?
+      affects_task: 4
+      resolve_by: Tasks 2 and 3 must pass independent replay and tamper tests before Task 4.
+    - question: What uncontended service time will the serialized pipeline produce?
+      affects_task: 8
+      resolve_by: One authorized hosted run records phase timing and projected queue cost.
+    - question: Will fresh push authorization be granted?
+      affects_task: 8
+      resolve_by: Only explicit user consent resolves this boundary; otherwise Task 8 remains blocked without effects.
+  rejected:
+    - issue: An incomplete predecessor cannot be archived safely.
+      rationale: The typed force-create path archives exactly one predecessor unchanged after explicit approval.
+    - issue: The predecessor implementation commits are unavailable.
+      rationale: Eight local commits are present and the worktree is clean.
+    - issue: The successor requires a release-version bump.
+      rationale: The docs policy exposes no versioning block and development candidate versions remain CI-derived.
+    - issue: setup-vp in a non-OIDC build job violates the publisher boundary.
+      rationale: The jobs are separate; the credential-bearing publisher remains setup-free.
+  surprises:
+    []
+  previous_plan_archived: seltbrpsin

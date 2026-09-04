@@ -1,0 +1,12 @@
+id: fljunuxiyj
+artifact: plan
+record:
+  name: Restore the clean verification baseline
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN required Prime context WHEN measured THEN it stays below the existing 3,000-token budget without lost behavior.
+    - GIVEN normal and deliberately oversized fixtures WHEN checked THEN the normal case passes and the oversized case fails.
+    - GIVEN the correction WHEN verification runs THEN full source, compact, and capability contracts are green.
+  plan: vtqzlztjsk

@@ -1,0 +1,13 @@
+id: xxprntajxz
+artifact: plan
+record:
+  name: Certify the source-only test-type outcome replayably
+  depends_on:
+    - fljunuxiyj
+  status: pending
+  acceptance:
+    - GIVEN tracked temporary inputs WHEN verified THEN SHA-256 binds manifest, lockfile, tsconfig, source, output, exact command, and tool versions.
+    - GIVEN disposable isolation WHEN replay runs THEN the exact Vite+ 0.3.0 and Vitest 4.1.11 measurement reproduces without checkout or user-cache mutation.
+    - GIVEN representative cases WHEN compiled THEN valid, intentional-invalid, and genuine-defect classifications are proven.
+    - GIVEN tamper tests and green source verification WHEN complete THEN source-only-retain is the explicit downstream outcome.
+  plan: vtqzlztjsk

@@ -77,4 +77,10 @@ describe("prime GPT-5 token budget", () => {
       fs.rmSync(temporaryRoot, { recursive: true, force: true });
     }
   });
+
+  it("rejects a deliberately oversized briefing", () => {
+    const result = measurePrimeOutput("x ".repeat(3_001), { bytes: 12_000, gpt5_tokens: 3_000 });
+
+    expect(result.violations).toEqual(["gpt5_tokens"]);
+  });
 });

@@ -1,0 +1,13 @@
+id: ztdxdcxrzv
+artifact: progress
+record:
+  timestamp: 2026-09-04 15:07
+  type: fix
+  phase: build
+  what: Started successor task fljunuxiyj to restore the required Prime startup context below its existing 3,000-token budget.
+  context:
+    intent: Execute only fljunuxiyj and preserve the approved successor plan state.
+    constraints: Keep required startup semantics, fields, commands, caveats, task summaries, and the 3,000-token threshold.
+  discovered: The known source failure is isolated to GPT-5 token measurement; the budget authority remains unchanged.
+  next: Measure the bounded payload, remove only proven duplication, and run focused through package verification.
+  publication_order: 322

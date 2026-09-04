@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-09-03
-    status: open
+    status: archived
     reviewed: 2026-09-03
     critic_issues: 6 found, 4 addressed, 2 dismissed
     title: "Plan: Consolidate Agentera development and CI under Vite+"
