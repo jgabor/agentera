@@ -1,0 +1,2851 @@
+{
+  "total": 451,
+  "files": 103,
+  "source": 0,
+  "test": 451,
+  "byCode": {
+    "TS18046": 12,
+    "TS18047": 75,
+    "TS18048": 4,
+    "TS18049": 2,
+    "TS2304": 1,
+    "TS2305": 3,
+    "TS2307": 3,
+    "TS2322": 20,
+    "TS2339": 105,
+    "TS2345": 87,
+    "TS2349": 1,
+    "TS2352": 2,
+    "TS2353": 3,
+    "TS2366": 1,
+    "TS2367": 2,
+    "TS2488": 1,
+    "TS2531": 9,
+    "TS2532": 4,
+    "TS2538": 2,
+    "TS2571": 3,
+    "TS2683": 1,
+    "TS2739": 4,
+    "TS2740": 6,
+    "TS2741": 8,
+    "TS2769": 11,
+    "TS7006": 9,
+    "TS7016": 29,
+    "TS7024": 21,
+    "TS7031": 8,
+    "TS7053": 14
+  },
+  "byFile": {
+    "test/analytics/evidenceTiers.test.ts": 10,
+    "test/analytics/extractCorpus.test.ts": 55,
+    "test/analytics/extractCorpusTruncation.test.ts": 1,
+    "test/analytics/personalGlossaryAdmission.test.ts": 1,
+    "test/analytics/personalGlossaryCandidateProjection.test.ts": 4,
+    "test/analytics/personalGlossaryExplicit.test.ts": 2,
+    "test/analytics/personalGlossaryRecurrence.test.ts": 1,
+    "test/analytics/personalGlossaryReviewRecords.test.ts": 2,
+    "test/analytics/profileSignals.test.ts": 1,
+    "test/analytics/tierReader.test.ts": 1,
+    "test/analytics/usageStats.test.ts": 4,
+    "test/audit/terminologyDrift.test.ts": 1,
+    "test/build/generatedOutputPublication.test.ts": 1,
+    "test/cli/buildExecutionRequest.test.ts": 1,
+    "test/cli/doctor.test.ts": 4,
+    "test/cli/freshPlanInitialization.test.ts": 1,
+    "test/cli/glossaryAdviceWorkflow.test.ts": 5,
+    "test/cli/invalidInputEnvelope.test.ts": 1,
+    "test/cli/npmParityMatrix.test.ts": 1,
+    "test/cli/npxBundle.test.ts": 1,
+    "test/cli/orientation.test.ts": 7,
+    "test/cli/orientationCorpusCoverage.test.ts": 10,
+    "test/cli/parityOracle.test.ts": 7,
+    "test/cli/personalGlossaryCandidateReads.test.ts": 1,
+    "test/cli/personalGlossaryDecision.test.ts": 1,
+    "test/cli/personalGlossaryPublish.test.ts": 1,
+    "test/cli/prime.test.ts": 6,
+    "test/cli/primeBudget.test.ts": 1,
+    "test/cli/primeGlossaryCaveatAttention.test.ts": 2,
+    "test/cli/primeProjectIntegration.test.ts": 2,
+    "test/cli/primeTask3Brief.test.ts": 3,
+    "test/cli/profileAcquisition.test.ts": 4,
+    "test/cli/schema.test.ts": 16,
+    "test/cli/sourceContractOracles.test.ts": 2,
+    "test/cli/splitBrain.test.ts": 1,
+    "test/cli/statusContextStartup.test.ts": 2,
+    "test/cli/statusDashboardBudget.test.ts": 1,
+    "test/config/formatterSurface.test.ts": 1,
+    "test/config/vitestShared.test.ts": 1,
+    "test/eval/semanticEval.test.ts": 6,
+    "test/helpers/coldCliMeasurement.test.ts": 1,
+    "test/helpers/coldProcessScheduler.ts": 1,
+    "test/helpers/entityAuthorityFixture.ts": 1,
+    "test/helpers/entityPublicationRace.ts": 1,
+    "test/helpers/producerReadinessWorkflow.ts": 3,
+    "test/helpers/profileFullGlossaryWorkflow.ts": 14,
+    "test/helpers/retiredStartupGuidance.ts": 2,
+    "test/helpers/runtimeBootstrapMatrix.ts": 1,
+    "test/hooks/compaction.test.ts": 5,
+    "test/migrate/v2HandoffManifest.test.ts": 2,
+    "test/packaging/packageSetup.ts": 3,
+    "test/performance/entityAuthorityPerformance.test.ts": 1,
+    "test/registries/artifactRegistry.test.ts": 45,
+    "test/registries/explicitSegmentGrammarContract.test.ts": 18,
+    "test/registries/glossaryCandidateContracts.test.ts": 3,
+    "test/registries/glossaryMiningAuthority.test.ts": 4,
+    "test/registries/hybridRouteContract.test.ts": 4,
+    "test/registries/hybridRouteResolver.test.ts": 3,
+    "test/registries/packageRegistry.test.ts": 18,
+    "test/registries/structuredInputInventory.test.ts": 1,
+    "test/registries/todoReadinessContract.test.ts": 4,
+    "test/release/developmentPublicationState.test.ts": 1,
+    "test/release/publicationOrchestration.test.ts": 2,
+    "test/release/publicationTransaction.test.ts": 8,
+    "test/release/publishDevelopment.test.ts": 3,
+    "test/release/releaseBenchmark.test.ts": 7,
+    "test/release/releaseConjunction.test.ts": 1,
+    "test/release/releaseMetadata.test.ts": 6,
+    "test/release/releaseQualification.test.ts": 5,
+    "test/release/releaseReadiness.test.ts": 1,
+    "test/release/rootReleaseScripts.test.ts": 3,
+    "test/release/sourceQualificationDag.test.ts": 4,
+    "test/runtime/lifecycleOperations.test.ts": 6,
+    "test/runtime/retiredRuntimeSurfacePolicy.test.ts": 3,
+    "test/scripts/sourceTestBreakdown.test.ts": 1,
+    "test/shim/runBackend.test.ts": 1,
+    "test/sourceSetup.ts": 2,
+    "test/state/archiveRecovery.test.ts": 9,
+    "test/state/decisionAmendmentContract.test.ts": 2,
+    "test/state/directRetrieval.test.ts": 1,
+    "test/state/entityAuthority.test.ts": 2,
+    "test/state/entityReaderDiscoveryReuse.test.ts": 1,
+    "test/state/listRetrieval.test.ts": 4,
+    "test/state/planEntities.test.ts": 1,
+    "test/state/planLifecycleContract.test.ts": 2,
+    "test/state/progressEntities.test.ts": 2,
+    "test/state/projectionPolicy.test.ts": 1,
+    "test/state/startupAnalysisBenchmark.test.ts": 9,
+    "test/state/startupAnalysisMetrics.test.ts": 2,
+    "test/state/startupAnalysisRecords.test.ts": 8,
+    "test/state/startupAnalysisReport.test.ts": 1,
+    "test/state/startupAnalysisThreshold.test.ts": 20,
+    "test/state/v2CompactionEvidence.test.ts": 2,
+    "test/upgrade/nextMajorDoctor.test.ts": 2,
+    "test/upgrade/parityOracle.test.ts": 1,
+    "test/upgrade/retiredResourceDiagnostics.test.ts": 1,
+    "test/upgrade/staleCommandCleanup.test.ts": 5,
+    "test/upgrade/staleSkillCleanup.test.ts": 7,
+    "test/upgrade/upgradeEntityCutover.test.ts": 1,
+    "test/upgrade/upgradeOrchestrator.test.ts": 1,
+    "test/validate/allTestTypecheckViability.test.ts": 1,
+    "test/validate/vocabularyAuthority.test.ts": 2,
+    "test/verification/overlapPending.test.ts": 1
+  },
+  "diagnostics": [
+    {
+      "code": "TS2339",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 51,
+      "column": 91
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 132,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 201,
+      "column": 38
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 283,
+      "column": 37
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 317,
+      "column": 41
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 331,
+      "column": 41
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 415,
+      "column": 38
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 418,
+      "column": 21
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 479,
+      "column": 28
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/evidenceTiers.test.ts",
+      "line": 480,
+      "column": 28
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 81,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 81,
+      "column": 25
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 83,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 83,
+      "column": 24
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 84,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 84,
+      "column": 24
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 85,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 85,
+      "column": 24
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 128,
+      "column": 39
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 128,
+      "column": 46
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 129,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 129,
+      "column": 27
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 147,
+      "column": 76
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 147,
+      "column": 83
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 217,
+      "column": 43
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 217,
+      "column": 55
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 218,
+      "column": 44
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 218,
+      "column": 56
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 302,
+      "column": 51
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 302,
+      "column": 63
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 303,
+      "column": 54
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 303,
+      "column": 66
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 388,
+      "column": 37
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 388,
+      "column": 49
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 392,
+      "column": 37
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 392,
+      "column": 49
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 504,
+      "column": 63
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 504,
+      "column": 75
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 602,
+      "column": 49
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 602,
+      "column": 61
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 603,
+      "column": 52
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 603,
+      "column": 64
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 604,
+      "column": 59
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 604,
+      "column": 71
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 605,
+      "column": 56
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 605,
+      "column": 68
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 609,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 609,
+      "column": 31
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 614,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 614,
+      "column": 35
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 629,
+      "column": 44
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 629,
+      "column": 56
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 683,
+      "column": 23
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 713,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 713,
+      "column": 36
+    },
+    {
+      "code": "TS2322",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 727,
+      "column": 7
+    },
+    {
+      "code": "TS2322",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 728,
+      "column": 7
+    },
+    {
+      "code": "TS2322",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 729,
+      "column": 7
+    },
+    {
+      "code": "TS2741",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 776,
+      "column": 7
+    },
+    {
+      "code": "TS2769",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 831,
+      "column": 66
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 834,
+      "column": 58
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 851,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 851,
+      "column": 58
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 852,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/extractCorpus.test.ts",
+      "line": 852,
+      "column": 55
+    },
+    {
+      "code": "TS2769",
+      "file": "test/analytics/extractCorpusTruncation.test.ts",
+      "line": 29,
+      "column": 66
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryAdmission.test.ts",
+      "line": 47,
+      "column": 24
+    },
+    {
+      "code": "TS2352",
+      "file": "test/analytics/personalGlossaryCandidateProjection.test.ts",
+      "line": 108,
+      "column": 10
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryCandidateProjection.test.ts",
+      "line": 115,
+      "column": 27
+    },
+    {
+      "code": "TS2740",
+      "file": "test/analytics/personalGlossaryCandidateProjection.test.ts",
+      "line": 210,
+      "column": 50
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryCandidateProjection.test.ts",
+      "line": 348,
+      "column": 39
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryExplicit.test.ts",
+      "line": 158,
+      "column": 28
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryExplicit.test.ts",
+      "line": 200,
+      "column": 52
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/personalGlossaryRecurrence.test.ts",
+      "line": 64,
+      "column": 24
+    },
+    {
+      "code": "TS7024",
+      "file": "test/analytics/personalGlossaryReviewRecords.test.ts",
+      "line": 346,
+      "column": 7
+    },
+    {
+      "code": "TS7024",
+      "file": "test/analytics/personalGlossaryReviewRecords.test.ts",
+      "line": 350,
+      "column": 30
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/profileSignals.test.ts",
+      "line": 110,
+      "column": 39
+    },
+    {
+      "code": "TS2345",
+      "file": "test/analytics/tierReader.test.ts",
+      "line": 92,
+      "column": 5
+    },
+    {
+      "code": "TS18047",
+      "file": "test/analytics/usageStats.test.ts",
+      "line": 131,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/usageStats.test.ts",
+      "line": 131,
+      "column": 32
+    },
+    {
+      "code": "TS2531",
+      "file": "test/analytics/usageStats.test.ts",
+      "line": 200,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/analytics/usageStats.test.ts",
+      "line": 200,
+      "column": 42
+    },
+    {
+      "code": "TS2345",
+      "file": "test/audit/terminologyDrift.test.ts",
+      "line": 144,
+      "column": 68
+    },
+    {
+      "code": "TS7016",
+      "file": "test/build/generatedOutputPublication.test.ts",
+      "line": 7,
+      "column": 33
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/buildExecutionRequest.test.ts",
+      "line": 282,
+      "column": 70
+    },
+    {
+      "code": "TS2740",
+      "file": "test/cli/doctor.test.ts",
+      "line": 35,
+      "column": 37
+    },
+    {
+      "code": "TS2740",
+      "file": "test/cli/doctor.test.ts",
+      "line": 52,
+      "column": 37
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/doctor.test.ts",
+      "line": 106,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/doctor.test.ts",
+      "line": 106,
+      "column": 27
+    },
+    {
+      "code": "TS2683",
+      "file": "test/cli/freshPlanInitialization.test.ts",
+      "line": 187,
+      "column": 28
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/glossaryAdviceWorkflow.test.ts",
+      "line": 968,
+      "column": 32
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/glossaryAdviceWorkflow.test.ts",
+      "line": 969,
+      "column": 53
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/glossaryAdviceWorkflow.test.ts",
+      "line": 970,
+      "column": 54
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/glossaryAdviceWorkflow.test.ts",
+      "line": 978,
+      "column": 23
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/glossaryAdviceWorkflow.test.ts",
+      "line": 978,
+      "column": 55
+    },
+    {
+      "code": "TS2739",
+      "file": "test/cli/invalidInputEnvelope.test.ts",
+      "line": 173,
+      "column": 9
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/npmParityMatrix.test.ts",
+      "line": 90,
+      "column": 23
+    },
+    {
+      "code": "TS2322",
+      "file": "test/cli/npxBundle.test.ts",
+      "line": 143,
+      "column": 18
+    },
+    {
+      "code": "TS2739",
+      "file": "test/cli/orientation.test.ts",
+      "line": 40,
+      "column": 43
+    },
+    {
+      "code": "TS2739",
+      "file": "test/cli/orientation.test.ts",
+      "line": 57,
+      "column": 35
+    },
+    {
+      "code": "TS2739",
+      "file": "test/cli/orientation.test.ts",
+      "line": 58,
+      "column": 35
+    },
+    {
+      "code": "TS2741",
+      "file": "test/cli/orientation.test.ts",
+      "line": 62,
+      "column": 36
+    },
+    {
+      "code": "TS18049",
+      "file": "test/cli/orientation.test.ts",
+      "line": 77,
+      "column": 12
+    },
+    {
+      "code": "TS18048",
+      "file": "test/cli/orientation.test.ts",
+      "line": 361,
+      "column": 12
+    },
+    {
+      "code": "TS18049",
+      "file": "test/cli/orientation.test.ts",
+      "line": 372,
+      "column": 12
+    },
+    {
+      "code": "TS2740",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 25,
+      "column": 5
+    },
+    {
+      "code": "TS2322",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 33,
+      "column": 21
+    },
+    {
+      "code": "TS2322",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 37,
+      "column": 7
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 218,
+      "column": 26
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 271,
+      "column": 11
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 304,
+      "column": 11
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 322,
+      "column": 11
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 339,
+      "column": 11
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 354,
+      "column": 11
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/orientationCorpusCoverage.test.ts",
+      "line": 357,
+      "column": 18
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 26,
+      "column": 43
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 39,
+      "column": 43
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 45,
+      "column": 70
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 49,
+      "column": 97
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 60,
+      "column": 68
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 76,
+      "column": 48
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/parityOracle.test.ts",
+      "line": 82,
+      "column": 43
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/personalGlossaryCandidateReads.test.ts",
+      "line": 427,
+      "column": 26
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/personalGlossaryDecision.test.ts",
+      "line": 82,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/personalGlossaryPublish.test.ts",
+      "line": 89,
+      "column": 31
+    },
+    {
+      "code": "TS18048",
+      "file": "test/cli/prime.test.ts",
+      "line": 582,
+      "column": 12
+    },
+    {
+      "code": "TS18048",
+      "file": "test/cli/prime.test.ts",
+      "line": 583,
+      "column": 12
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/prime.test.ts",
+      "line": 587,
+      "column": 18
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/prime.test.ts",
+      "line": 587,
+      "column": 45
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/prime.test.ts",
+      "line": 679,
+      "column": 26
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/prime.test.ts",
+      "line": 681,
+      "column": 26
+    },
+    {
+      "code": "TS7016",
+      "file": "test/cli/primeBudget.test.ts",
+      "line": 9,
+      "column": 52
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/primeGlossaryCaveatAttention.test.ts",
+      "line": 235,
+      "column": 42
+    },
+    {
+      "code": "TS2322",
+      "file": "test/cli/primeGlossaryCaveatAttention.test.ts",
+      "line": 251,
+      "column": 13
+    },
+    {
+      "code": "TS2352",
+      "file": "test/cli/primeProjectIntegration.test.ts",
+      "line": 74,
+      "column": 25
+    },
+    {
+      "code": "TS2353",
+      "file": "test/cli/primeProjectIntegration.test.ts",
+      "line": 118,
+      "column": 9
+    },
+    {
+      "code": "TS18046",
+      "file": "test/cli/primeTask3Brief.test.ts",
+      "line": 283,
+      "column": 12
+    },
+    {
+      "code": "TS18046",
+      "file": "test/cli/primeTask3Brief.test.ts",
+      "line": 283,
+      "column": 86
+    },
+    {
+      "code": "TS18046",
+      "file": "test/cli/primeTask3Brief.test.ts",
+      "line": 291,
+      "column": 12
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/profileAcquisition.test.ts",
+      "line": 273,
+      "column": 16
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/profileAcquisition.test.ts",
+      "line": 273,
+      "column": 43
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/profileAcquisition.test.ts",
+      "line": 274,
+      "column": 16
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/profileAcquisition.test.ts",
+      "line": 274,
+      "column": 43
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 28,
+      "column": 23
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 28,
+      "column": 44
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 84,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 84,
+      "column": 27
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 85,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 85,
+      "column": 27
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 86,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 86,
+      "column": 27
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 98,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 98,
+      "column": 32
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 100,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 100,
+      "column": 39
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 106,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 106,
+      "column": 33
+    },
+    {
+      "code": "TS18047",
+      "file": "test/cli/schema.test.ts",
+      "line": 150,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/schema.test.ts",
+      "line": 150,
+      "column": 32
+    },
+    {
+      "code": "TS2305",
+      "file": "test/cli/sourceContractOracles.test.ts",
+      "line": 8,
+      "column": 10
+    },
+    {
+      "code": "TS2339",
+      "file": "test/cli/sourceContractOracles.test.ts",
+      "line": 244,
+      "column": 31
+    },
+    {
+      "code": "TS2741",
+      "file": "test/cli/splitBrain.test.ts",
+      "line": 18,
+      "column": 3
+    },
+    {
+      "code": "TS7024",
+      "file": "test/cli/statusContextStartup.test.ts",
+      "line": 265,
+      "column": 15
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/statusContextStartup.test.ts",
+      "line": 413,
+      "column": 40
+    },
+    {
+      "code": "TS2345",
+      "file": "test/cli/statusDashboardBudget.test.ts",
+      "line": 86,
+      "column": 57
+    },
+    {
+      "code": "TS2307",
+      "file": "test/config/formatterSurface.test.ts",
+      "line": 7,
+      "column": 20
+    },
+    {
+      "code": "TS2307",
+      "file": "test/config/vitestShared.test.ts",
+      "line": 5,
+      "column": 120
+    },
+    {
+      "code": "TS18047",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 52,
+      "column": 22
+    },
+    {
+      "code": "TS2488",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 52,
+      "column": 22
+    },
+    {
+      "code": "TS18047",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 212,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 212,
+      "column": 33
+    },
+    {
+      "code": "TS18047",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 217,
+      "column": 20
+    },
+    {
+      "code": "TS2339",
+      "file": "test/eval/semanticEval.test.ts",
+      "line": 217,
+      "column": 41
+    },
+    {
+      "code": "TS7016",
+      "file": "test/helpers/coldCliMeasurement.test.ts",
+      "line": 9,
+      "column": 142
+    },
+    {
+      "code": "TS2322",
+      "file": "test/helpers/coldProcessScheduler.ts",
+      "line": 224,
+      "column": 7
+    },
+    {
+      "code": "TS7006",
+      "file": "test/helpers/entityAuthorityFixture.ts",
+      "line": 166,
+      "column": 29
+    },
+    {
+      "code": "TS2366",
+      "file": "test/helpers/entityPublicationRace.ts",
+      "line": 193,
+      "column": 100
+    },
+    {
+      "code": "TS7053",
+      "file": "test/helpers/producerReadinessWorkflow.ts",
+      "line": 72,
+      "column": 55
+    },
+    {
+      "code": "TS2339",
+      "file": "test/helpers/producerReadinessWorkflow.ts",
+      "line": 74,
+      "column": 14
+    },
+    {
+      "code": "TS2339",
+      "file": "test/helpers/producerReadinessWorkflow.ts",
+      "line": 75,
+      "column": 14
+    },
+    {
+      "code": "TS7053",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 113,
+      "column": 55
+    },
+    {
+      "code": "TS2339",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 115,
+      "column": 14
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 258,
+      "column": 23
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 260,
+      "column": 11
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 261,
+      "column": 11
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 262,
+      "column": 10
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 263,
+      "column": 10
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 264,
+      "column": 11
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 265,
+      "column": 11
+    },
+    {
+      "code": "TS18046",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 266,
+      "column": 10
+    },
+    {
+      "code": "TS2345",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 268,
+      "column": 81
+    },
+    {
+      "code": "TS2345",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 269,
+      "column": 71
+    },
+    {
+      "code": "TS2322",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 366,
+      "column": 25
+    },
+    {
+      "code": "TS2322",
+      "file": "test/helpers/profileFullGlossaryWorkflow.ts",
+      "line": 378,
+      "column": 32
+    },
+    {
+      "code": "TS2339",
+      "file": "test/helpers/retiredStartupGuidance.ts",
+      "line": 185,
+      "column": 16
+    },
+    {
+      "code": "TS2339",
+      "file": "test/helpers/retiredStartupGuidance.ts",
+      "line": 191,
+      "column": 132
+    },
+    {
+      "code": "TS2304",
+      "file": "test/helpers/runtimeBootstrapMatrix.ts",
+      "line": 274,
+      "column": 150
+    },
+    {
+      "code": "TS2345",
+      "file": "test/hooks/compaction.test.ts",
+      "line": 48,
+      "column": 48
+    },
+    {
+      "code": "TS2339",
+      "file": "test/hooks/compaction.test.ts",
+      "line": 124,
+      "column": 17
+    },
+    {
+      "code": "TS2339",
+      "file": "test/hooks/compaction.test.ts",
+      "line": 125,
+      "column": 17
+    },
+    {
+      "code": "TS2339",
+      "file": "test/hooks/compaction.test.ts",
+      "line": 126,
+      "column": 17
+    },
+    {
+      "code": "TS2345",
+      "file": "test/hooks/compaction.test.ts",
+      "line": 218,
+      "column": 70
+    },
+    {
+      "code": "TS2339",
+      "file": "test/migrate/v2HandoffManifest.test.ts",
+      "line": 53,
+      "column": 85
+    },
+    {
+      "code": "TS2339",
+      "file": "test/migrate/v2HandoffManifest.test.ts",
+      "line": 54,
+      "column": 82
+    },
+    {
+      "code": "TS2305",
+      "file": "test/packaging/packageSetup.ts",
+      "line": 7,
+      "column": 15
+    },
+    {
+      "code": "TS7016",
+      "file": "test/packaging/packageSetup.ts",
+      "line": 9,
+      "column": 99
+    },
+    {
+      "code": "TS7016",
+      "file": "test/packaging/packageSetup.ts",
+      "line": 10,
+      "column": 44
+    },
+    {
+      "code": "TS7016",
+      "file": "test/performance/entityAuthorityPerformance.test.ts",
+      "line": 12,
+      "column": 44
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 39,
+      "column": 24
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 39,
+      "column": 29
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 41,
+      "column": 5
+    },
+    {
+      "code": "TS2769",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 52,
+      "column": 39
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 62,
+      "column": 52
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 63,
+      "column": 45
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 67,
+      "column": 23
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 67,
+      "column": 36
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 68,
+      "column": 20
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 68,
+      "column": 33
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 94,
+      "column": 30
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 109,
+      "column": 40
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 116,
+      "column": 21
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 117,
+      "column": 17
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 118,
+      "column": 30
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 119,
+      "column": 26
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 120,
+      "column": 28
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 123,
+      "column": 21
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 131,
+      "column": 63
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 131,
+      "column": 121
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 132,
+      "column": 88
+    },
+    {
+      "code": "TS2769",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 142,
+      "column": 39
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 146,
+      "column": 38
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 146,
+      "column": 56
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 150,
+      "column": 21
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 153,
+      "column": 30
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 156,
+      "column": 27
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 156,
+      "column": 66
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 172,
+      "column": 5
+    },
+    {
+      "code": "TS2769",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 172,
+      "column": 46
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 198,
+      "column": 24
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 221,
+      "column": 5
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 221,
+      "column": 44
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 222,
+      "column": 5
+    },
+    {
+      "code": "TS7053",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 222,
+      "column": 5
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 223,
+      "column": 5
+    },
+    {
+      "code": "TS7053",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 223,
+      "column": 5
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 235,
+      "column": 21
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 235,
+      "column": 56
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 250,
+      "column": 5
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 250,
+      "column": 28
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 254,
+      "column": 5
+    },
+    {
+      "code": "TS7053",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 254,
+      "column": 5
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 255,
+      "column": 5
+    },
+    {
+      "code": "TS7053",
+      "file": "test/registries/artifactRegistry.test.ts",
+      "line": 255,
+      "column": 5
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 160,
+      "column": 26
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 161,
+      "column": 26
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 162,
+      "column": 23
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 163,
+      "column": 19
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 164,
+      "column": 19
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 165,
+      "column": 19
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 166,
+      "column": 26
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 167,
+      "column": 24
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 168,
+      "column": 15
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 169,
+      "column": 27
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 170,
+      "column": 28
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 172,
+      "column": 25
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 173,
+      "column": 32
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 174,
+      "column": 33
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 175,
+      "column": 38
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 184,
+      "column": 15
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 185,
+      "column": 21
+    },
+    {
+      "code": "TS7024",
+      "file": "test/registries/explicitSegmentGrammarContract.test.ts",
+      "line": 186,
+      "column": 16
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/glossaryCandidateContracts.test.ts",
+      "line": 233,
+      "column": 9
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/glossaryCandidateContracts.test.ts",
+      "line": 279,
+      "column": 7
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/glossaryCandidateContracts.test.ts",
+      "line": 289,
+      "column": 38
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/glossaryMiningAuthority.test.ts",
+      "line": 839,
+      "column": 56
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/glossaryMiningAuthority.test.ts",
+      "line": 843,
+      "column": 9
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/glossaryMiningAuthority.test.ts",
+      "line": 847,
+      "column": 56
+    },
+    {
+      "code": "TS2322",
+      "file": "test/registries/glossaryMiningAuthority.test.ts",
+      "line": 851,
+      "column": 9
+    },
+    {
+      "code": "TS2532",
+      "file": "test/registries/hybridRouteContract.test.ts",
+      "line": 288,
+      "column": 62
+    },
+    {
+      "code": "TS2532",
+      "file": "test/registries/hybridRouteContract.test.ts",
+      "line": 288,
+      "column": 85
+    },
+    {
+      "code": "TS2532",
+      "file": "test/registries/hybridRouteContract.test.ts",
+      "line": 288,
+      "column": 129
+    },
+    {
+      "code": "TS2532",
+      "file": "test/registries/hybridRouteContract.test.ts",
+      "line": 289,
+      "column": 58
+    },
+    {
+      "code": "TS2538",
+      "file": "test/registries/hybridRouteResolver.test.ts",
+      "line": 140,
+      "column": 28
+    },
+    {
+      "code": "TS2538",
+      "file": "test/registries/hybridRouteResolver.test.ts",
+      "line": 140,
+      "column": 28
+    },
+    {
+      "code": "TS2769",
+      "file": "test/registries/hybridRouteResolver.test.ts",
+      "line": 143,
+      "column": 50
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 49,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 49,
+      "column": 35
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 52,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 52,
+      "column": 32
+    },
+    {
+      "code": "TS2531",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 180,
+      "column": 28
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 180,
+      "column": 81
+    },
+    {
+      "code": "TS2531",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 200,
+      "column": 20
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 200,
+      "column": 82
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 210,
+      "column": 20
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 210,
+      "column": 42
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 211,
+      "column": 26
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 211,
+      "column": 48
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 219,
+      "column": 34
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 219,
+      "column": 57
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 220,
+      "column": 41
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 220,
+      "column": 64
+    },
+    {
+      "code": "TS18047",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 224,
+      "column": 26
+    },
+    {
+      "code": "TS2339",
+      "file": "test/registries/packageRegistry.test.ts",
+      "line": 224,
+      "column": 46
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/structuredInputInventory.test.ts",
+      "line": 187,
+      "column": 43
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/todoReadinessContract.test.ts",
+      "line": 447,
+      "column": 70
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/todoReadinessContract.test.ts",
+      "line": 448,
+      "column": 133
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/todoReadinessContract.test.ts",
+      "line": 449,
+      "column": 133
+    },
+    {
+      "code": "TS2345",
+      "file": "test/registries/todoReadinessContract.test.ts",
+      "line": 455,
+      "column": 70
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/developmentPublicationState.test.ts",
+      "line": 3,
+      "column": 76
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/publicationOrchestration.test.ts",
+      "line": 12,
+      "column": 88
+    },
+    {
+      "code": "TS2769",
+      "file": "test/release/publicationOrchestration.test.ts",
+      "line": 683,
+      "column": 36
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 22,
+      "column": 8
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 23,
+      "column": 101
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 24,
+      "column": 34
+    },
+    {
+      "code": "TS7006",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 361,
+      "column": 10
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 474,
+      "column": 28
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 474,
+      "column": 35
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 627,
+      "column": 28
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/publicationTransaction.test.ts",
+      "line": 627,
+      "column": 35
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/publishDevelopment.test.ts",
+      "line": 8,
+      "column": 102
+    },
+    {
+      "code": "TS2339",
+      "file": "test/release/publishDevelopment.test.ts",
+      "line": 73,
+      "column": 49
+    },
+    {
+      "code": "TS2769",
+      "file": "test/release/publishDevelopment.test.ts",
+      "line": 95,
+      "column": 30
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 6,
+      "column": 94
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 7,
+      "column": 57
+    },
+    {
+      "code": "TS7006",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 65,
+      "column": 38
+    },
+    {
+      "code": "TS7006",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 66,
+      "column": 38
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 83,
+      "column": 40
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 172,
+      "column": 56
+    },
+    {
+      "code": "TS7031",
+      "file": "test/release/releaseBenchmark.test.ts",
+      "line": 176,
+      "column": 56
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseConjunction.test.ts",
+      "line": 3,
+      "column": 89
+    },
+    {
+      "code": "TS2741",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 217,
+      "column": 5
+    },
+    {
+      "code": "TS2741",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 233,
+      "column": 7
+    },
+    {
+      "code": "TS2741",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 249,
+      "column": 5
+    },
+    {
+      "code": "TS2741",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 269,
+      "column": 5
+    },
+    {
+      "code": "TS2741",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 280,
+      "column": 5
+    },
+    {
+      "code": "TS2353",
+      "file": "test/release/releaseMetadata.test.ts",
+      "line": 281,
+      "column": 47
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseQualification.test.ts",
+      "line": 27,
+      "column": 8
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseQualification.test.ts",
+      "line": 28,
+      "column": 63
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseQualification.test.ts",
+      "line": 29,
+      "column": 45
+    },
+    {
+      "code": "TS2769",
+      "file": "test/release/releaseQualification.test.ts",
+      "line": 742,
+      "column": 22
+    },
+    {
+      "code": "TS2769",
+      "file": "test/release/releaseQualification.test.ts",
+      "line": 768,
+      "column": 20
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/releaseReadiness.test.ts",
+      "line": 8,
+      "column": 68
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/rootReleaseScripts.test.ts",
+      "line": 10,
+      "column": 35
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/rootReleaseScripts.test.ts",
+      "line": 11,
+      "column": 62
+    },
+    {
+      "code": "TS2769",
+      "file": "test/release/rootReleaseScripts.test.ts",
+      "line": 229,
+      "column": 20
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/sourceQualificationDag.test.ts",
+      "line": 9,
+      "column": 61
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/sourceQualificationDag.test.ts",
+      "line": 10,
+      "column": 88
+    },
+    {
+      "code": "TS7016",
+      "file": "test/release/sourceQualificationDag.test.ts",
+      "line": 11,
+      "column": 45
+    },
+    {
+      "code": "TS2339",
+      "file": "test/release/sourceQualificationDag.test.ts",
+      "line": 238,
+      "column": 131
+    },
+    {
+      "code": "TS2345",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 50
+    },
+    {
+      "code": "TS7006",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 51
+    },
+    {
+      "code": "TS7006",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 55
+    },
+    {
+      "code": "TS7006",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 63
+    },
+    {
+      "code": "TS7006",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 71
+    },
+    {
+      "code": "TS7006",
+      "file": "test/runtime/lifecycleOperations.test.ts",
+      "line": 512,
+      "column": 79
+    },
+    {
+      "code": "TS2322",
+      "file": "test/runtime/retiredRuntimeSurfacePolicy.test.ts",
+      "line": 617,
+      "column": 47
+    },
+    {
+      "code": "TS2345",
+      "file": "test/runtime/retiredRuntimeSurfacePolicy.test.ts",
+      "line": 1259,
+      "column": 52
+    },
+    {
+      "code": "TS2349",
+      "file": "test/runtime/retiredRuntimeSurfacePolicy.test.ts",
+      "line": 1262,
+      "column": 5
+    },
+    {
+      "code": "TS7016",
+      "file": "test/scripts/sourceTestBreakdown.test.ts",
+      "line": 3,
+      "column": 62
+    },
+    {
+      "code": "TS2307",
+      "file": "test/shim/runBackend.test.ts",
+      "line": 24,
+      "column": 37
+    },
+    {
+      "code": "TS2305",
+      "file": "test/sourceSetup.ts",
+      "line": 6,
+      "column": 15
+    },
+    {
+      "code": "TS7016",
+      "file": "test/sourceSetup.ts",
+      "line": 8,
+      "column": 44
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 60,
+      "column": 49
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 62,
+      "column": 67
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 88,
+      "column": 70
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 120,
+      "column": 49
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 125,
+      "column": 70
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 140,
+      "column": 70
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 152,
+      "column": 49
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 157,
+      "column": 70
+    },
+    {
+      "code": "TS2322",
+      "file": "test/state/archiveRecovery.test.ts",
+      "line": 169,
+      "column": 57
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/decisionAmendmentContract.test.ts",
+      "line": 181,
+      "column": 24
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/decisionAmendmentContract.test.ts",
+      "line": 181,
+      "column": 45
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/directRetrieval.test.ts",
+      "line": 67,
+      "column": 50
+    },
+    {
+      "code": "TS2571",
+      "file": "test/state/entityAuthority.test.ts",
+      "line": 267,
+      "column": 14
+    },
+    {
+      "code": "TS2571",
+      "file": "test/state/entityAuthority.test.ts",
+      "line": 465,
+      "column": 14
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/entityReaderDiscoveryReuse.test.ts",
+      "line": 171,
+      "column": 69
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/listRetrieval.test.ts",
+      "line": 74,
+      "column": 52
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/listRetrieval.test.ts",
+      "line": 78,
+      "column": 53
+    },
+    {
+      "code": "TS2367",
+      "file": "test/state/listRetrieval.test.ts",
+      "line": 100,
+      "column": 11
+    },
+    {
+      "code": "TS2367",
+      "file": "test/state/listRetrieval.test.ts",
+      "line": 100,
+      "column": 74
+    },
+    {
+      "code": "TS2322",
+      "file": "test/state/planEntities.test.ts",
+      "line": 661,
+      "column": 65
+    },
+    {
+      "code": "TS7016",
+      "file": "test/state/planLifecycleContract.test.ts",
+      "line": 10,
+      "column": 37
+    },
+    {
+      "code": "TS7031",
+      "file": "test/state/planLifecycleContract.test.ts",
+      "line": 260,
+      "column": 55
+    },
+    {
+      "code": "TS18046",
+      "file": "test/state/progressEntities.test.ts",
+      "line": 677,
+      "column": 12
+    },
+    {
+      "code": "TS2571",
+      "file": "test/state/progressEntities.test.ts",
+      "line": 718,
+      "column": 12
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/projectionPolicy.test.ts",
+      "line": 39,
+      "column": 95
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 66,
+      "column": 12
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 66,
+      "column": 12
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 95,
+      "column": 17
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 95,
+      "column": 17
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 112,
+      "column": 17
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 112,
+      "column": 17
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 127,
+      "column": 17
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 127,
+      "column": 17
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/startupAnalysisBenchmark.test.ts",
+      "line": 180,
+      "column": 26
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisMetrics.test.ts",
+      "line": 90,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisMetrics.test.ts",
+      "line": 90,
+      "column": 37
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 86,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 86,
+      "column": 45
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 87,
+      "column": 17
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 87,
+      "column": 17
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 96,
+      "column": 21
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 96,
+      "column": 41
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 114,
+      "column": 12
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisRecords.test.ts",
+      "line": 114,
+      "column": 12
+    },
+    {
+      "code": "TS2345",
+      "file": "test/state/startupAnalysisReport.test.ts",
+      "line": 48,
+      "column": 40
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 91,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 91,
+      "column": 24
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 92,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 92,
+      "column": 24
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 93,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 93,
+      "column": 24
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 94,
+      "column": 19
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 94,
+      "column": 19
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 112,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 112,
+      "column": 23
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 113,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 113,
+      "column": 31
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 128,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 128,
+      "column": 23
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 129,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 129,
+      "column": 31
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 136,
+      "column": 12
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 136,
+      "column": 28
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 137,
+      "column": 19
+    },
+    {
+      "code": "TS7053",
+      "file": "test/state/startupAnalysisThreshold.test.ts",
+      "line": 137,
+      "column": 19
+    },
+    {
+      "code": "TS18047",
+      "file": "test/state/v2CompactionEvidence.test.ts",
+      "line": 229,
+      "column": 14
+    },
+    {
+      "code": "TS2339",
+      "file": "test/state/v2CompactionEvidence.test.ts",
+      "line": 229,
+      "column": 49
+    },
+    {
+      "code": "TS2740",
+      "file": "test/upgrade/nextMajorDoctor.test.ts",
+      "line": 280,
+      "column": 67
+    },
+    {
+      "code": "TS2740",
+      "file": "test/upgrade/nextMajorDoctor.test.ts",
+      "line": 299,
+      "column": 26
+    },
+    {
+      "code": "TS2353",
+      "file": "test/upgrade/parityOracle.test.ts",
+      "line": 80,
+      "column": 5
+    },
+    {
+      "code": "TS18048",
+      "file": "test/upgrade/retiredResourceDiagnostics.test.ts",
+      "line": 314,
+      "column": 36
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleCommandCleanup.test.ts",
+      "line": 171,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleCommandCleanup.test.ts",
+      "line": 185,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleCommandCleanup.test.ts",
+      "line": 202,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleCommandCleanup.test.ts",
+      "line": 216,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleCommandCleanup.test.ts",
+      "line": 231,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 176,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 211,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 225,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 245,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 267,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 284,
+      "column": 31
+    },
+    {
+      "code": "TS2345",
+      "file": "test/upgrade/staleSkillCleanup.test.ts",
+      "line": 322,
+      "column": 31
+    },
+    {
+      "code": "TS2322",
+      "file": "test/upgrade/upgradeEntityCutover.test.ts",
+      "line": 1000,
+      "column": 9
+    },
+    {
+      "code": "TS18047",
+      "file": "test/upgrade/upgradeOrchestrator.test.ts",
+      "line": 943,
+      "column": 66
+    },
+    {
+      "code": "TS7016",
+      "file": "test/validate/allTestTypecheckViability.test.ts",
+      "line": 6,
+      "column": 32
+    },
+    {
+      "code": "TS2345",
+      "file": "test/validate/vocabularyAuthority.test.ts",
+      "line": 112,
+      "column": 36
+    },
+    {
+      "code": "TS2345",
+      "file": "test/validate/vocabularyAuthority.test.ts",
+      "line": 115,
+      "column": 33
+    },
+    {
+      "code": "TS7016",
+      "file": "test/verification/overlapPending.test.ts",
+      "line": 9,
+      "column": 26
+    }
+  ]
+}

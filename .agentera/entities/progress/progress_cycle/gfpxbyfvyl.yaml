@@ -1,0 +1,15 @@
+id: gfpxbyfvyl
+artifact: progress
+record:
+  timestamp: 2026-09-04 17:06
+  type: test
+  phase: build
+  what: Started replayable certification of the source-only test-type outcome.
+  context:
+    intent: Retain exact isolated compiler evidence and executable classification proof for task xxprntajxz.
+    constraints: Preserve source-only tsc, formatter post-audit state, production manifests and configuration, pinned tools, CI, publication, and user caches.
+    scope: Existing all-test typecheck evidence, verifier, focused tests, and typed state only.
+  discovered: The retained evidence currently records aggregate diagnostics but does not retain the temporary toolchain boundary or recompile representative classifications.
+  verified: Task xxprntajxz is in progress; predecessor formatter audit state is preserved as an existing uncommitted change.
+  next: Add integrity-bound replay inputs and executable tamper and classification verification, then run required gates while leaving the task in progress for audit.
+  publication_order: 328

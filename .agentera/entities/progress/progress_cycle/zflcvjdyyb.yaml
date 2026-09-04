@@ -1,0 +1,15 @@
+id: zflcvjdyyb
+artifact: progress
+record:
+  timestamp: 2026-09-04 17:20
+  type: test
+  phase: build
+  what: Certified isolated source-only test typing replay.
+  context:
+    intent: Retain exact reproducible type evidence.
+    constraints: Keep source-only tsc and pinned tools.
+    scope: Type replay evidence and tests.
+  discovered: Exact isolation reports 451 test diagnostics across 103 files and zero source diagnostics.
+  verified: The digest-bound replay and six tamper classes pass; valid, intentional TS2353, and genuine TS18047 fixtures compile as classified.
+  next: Independent audit task xxprntajxz; retain source-only tsc.
+  publication_order: 329

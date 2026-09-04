@@ -1,0 +1,15 @@
+id: pfyqwmwnwu
+artifact: progress
+record:
+  timestamp: 2026-09-04 17:20
+  type: test
+  phase: build
+  what: Type replay certified.
+  context:
+    intent: Certify replay.
+    constraints: Preserve tsc.
+    scope: Type evidence.
+  discovered: 451 test diagnostics; zero source.
+  verified: Replay, classifications, and tamper tests pass.
+  next: Audit xxprntajxz.
+  publication_order: 330

@@ -1,0 +1,41 @@
+{
+  "schemaVersion": "agentera.allTestTypecheckReplay.v1",
+  "command": [
+    "vp",
+    "lint",
+    "src",
+    "test",
+    "--type-aware",
+    "--type-check",
+    "--tsconfig",
+    "tsconfig.json",
+    "--format=json"
+  ],
+  "packageManager": "pnpm@10.30.3",
+  "node": "v24.20.0",
+  "toolIntegrities": {
+    "vite-plus@0.3.0": "sha512-GNWbWuWD37frCSFrz6MLzUo62bTv5IOJozHEgZYOkxsLkuQtTwm4TowzpfoGrSsfwhAAtfPd/sK1Y0+v1SwhZA==",
+    "vite@8.2.2": "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==",
+    "vitest@4.1.11": "sha512-fhACrNXUidIbGSBr5FlbuBkO7VWC1ZyLl0DO4CU2DrQoAPxX84Ysxs+HeGQpii5lZWV1Q4gBZTTu49mF+A6Edw==",
+    "oxlint@1.79.0": "sha512-hVJ9hq9m2unPS+Of4eJJgCPdIeCC+3DHEUX3tkmrPJr3OK2hz7PhXwgC+ZP71ZcYu8cCDEtQrqLxWNvxBppBVg==",
+    "oxfmt@0.64.0": "sha512-XZ4GFBN/PLbXKq+0zrgpQfPKYuJlUuj+nzZJY7UpIbFMNyefNLCdN9EwViycNqnYcv0wrn0jXcQLlqJp8RCKBg==",
+    "@typescript/typescript6@6.0.2": "sha512-mbCddXd+jm7hfx7w2YU64/Av4/NqqeG3GoRZgxPcgoTxYjhrcfJRw9ULch71SS4G+Q3bOXFhRvPqjguN0Hyp5w=="
+  },
+  "inputs": {
+    "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
+    "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
+    "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
+    "source-binding.json": "22d8f300a36a38211b8758c84173422842012b37395ac766129f7773b47a2be7",
+    "compiler.raw.json.gz": "b92729b357c0ca356938872143b83972a715988f2a9aab192ac097cb2b0e57fb",
+    "compiler.normalized.json": "b861fe2b37c760b3f7303ab2c6ce364808e82a8a7fbb221761934bf28422e884",
+    "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
+    "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
+    "classifications/genuine-defect.ts": "17483fd7270f43a8dfb37a1d1fdbaf79cda287370ff3a8f04cd1e751ed86dc79"
+  },
+  "classifications": {
+    "classifications/valid.ts": [],
+    "classifications/intentional-invalid.ts": ["TS2353"],
+    "classifications/genuine-defect.ts": ["TS18047"]
+  },
+  "manifestSha256": "25f5b25b63206be88e820438a52b2545887aa526fd8d6aeaeb66629cf7f81ab9"
+}

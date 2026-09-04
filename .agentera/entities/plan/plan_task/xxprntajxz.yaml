@@ -4,7 +4,7 @@ record:
   name: Certify the source-only test-type outcome replayably
   depends_on:
     - fljunuxiyj
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN tracked temporary inputs WHEN verified THEN SHA-256 binds manifest, lockfile, tsconfig, source, output, exact command, and tool versions.
     - GIVEN disposable isolation WHEN replay runs THEN the exact Vite+ 0.3.0 and Vitest 4.1.11 measurement reproduces without checkout or user-cache mutation.

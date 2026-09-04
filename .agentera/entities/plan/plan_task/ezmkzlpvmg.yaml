@@ -4,7 +4,7 @@ record:
   name: Certify formatter normalization replayably
   depends_on:
     - fljunuxiyj
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN tracked replay inputs WHEN verified THEN SHA-256 binds exact tools, source, configuration, outputs, and equivalence results.
     - GIVEN disposable isolation WHEN replay runs THEN Vite+ 0.3.0 and Oxfmt 0.64.0 reproduce the clean formatter result without checkout or user-cache mutation.
@@ -12,12 +12,12 @@ record:
     - GIVEN altered input, output, or digest WHEN verified THEN replay fails; formatter, monolith, behavior, package, and source gates pass.
   plan: vtqzlztjsk
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Parity re-pin lacked owner-backed authorization; substantive paths were inferred rather than explicitly authorized; equivalence used path exceptions; replay did not execute claimed monolith, behavior, package, and source gates.
     provenance:
-      attempt_id: orchestrate-audit-ezmkzlpvmg-1
-      source: "Independent audit: integrity and isolated replay pass; criteria 3 and 4 plus evidence authorization fail."
-      recorded_at: 2026-09-04 16:04
+      attempt_id: orchestrate-audit-ezmkzlpvmg-2
+      source: "Independent correction audit: criteria 4/4 pass; replay, parity authority, explicit allowlist, tamper cases, and required gates verified."
+      recorded_at: 2026-09-04 17:04
       writer_command: agentera state plan record-evaluation

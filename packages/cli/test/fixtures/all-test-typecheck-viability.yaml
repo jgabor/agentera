@@ -9,16 +9,15 @@ toolchain:
   oxfmt: 0.64.0
   node: 24.20.0
 measurement:
-  boundary: packages/cli/src/**/*.ts and packages/cli/test/**/*.ts under strict NodeNext; production tsconfig and manifests unchanged
-  setup: npm install --ignore-scripts --save-exact vite-plus@0.3.0 in a temporary directory, then temporarily link its bundled vitest into packages/cli/node_modules/vitest
-  command: vp lint src test --type-aware --type-check --tsconfig <temporary-tsconfig> --format=json
-  temporary_tsconfig: mirrors packages/cli/tsconfig.json compiler options, omits rootDir/outDir, and includes src/**/*.ts plus test/**/*.ts
-  elapsed_seconds: 2.005
+  boundary: integrity-bound copies of packages/cli/src, test, and imported scripts under strict NodeNext; production tsconfig and manifests unchanged
+  setup: pnpm 10.30.3 frozen install from the tracked temporary manifest and lockfile in disposable HOME, cache, store, and work roots
+  command: vp lint src test --type-aware --type-check --tsconfig tsconfig.json --format=json
+  manifest_sha256: 25f5b25b63206be88e820438a52b2545887aa526fd8d6aeaeb66629cf7f81ab9
   compiler_diagnostics:
-    total: 419
-    files: 92
+    total: 451
+    files: 103
     source: 0
-    test: 419
+    test: 451
     by_code:
       TS18046: 12
       TS18047: 75
@@ -26,8 +25,9 @@ measurement:
       TS18049: 2
       TS2304: 1
       TS2305: 3
-      TS2322: 21
-      TS2339: 111
+      TS2307: 3
+      TS2322: 20
+      TS2339: 105
       TS2345: 87
       TS2349: 1
       TS2352: 2
@@ -38,55 +38,34 @@ measurement:
       TS2531: 9
       TS2532: 4
       TS2538: 2
-      TS2550: 2
       TS2571: 3
       TS2683: 1
       TS2739: 4
       TS2740: 6
       TS2741: 8
       TS2769: 11
-      TS7006: 7
+      TS7006: 9
+      TS7016: 29
       TS7024: 21
-      TS7031: 1
+      TS7031: 8
       TS7053: 14
-    files_by_count:
-      55: [test/analytics/extractCorpus.test.ts]
-      45: [test/registries/artifactRegistry.test.ts]
-      20: [test/state/startupAnalysisThreshold.test.ts]
-      18: [test/registries/explicitSegmentGrammarContract.test.ts, test/registries/packageRegistry.test.ts]
-      16: [test/cli/schema.test.ts]
-      14: [test/helpers/profileFullGlossaryWorkflow.ts]
-      10: [test/analytics/evidenceTiers.test.ts, test/cli/orientationCorpusCoverage.test.ts]
-      9: [test/state/archiveRecovery.test.ts, test/state/startupAnalysisBenchmark.test.ts]
-      8: [test/state/startupAnalysisRecords.test.ts]
-      7: [test/cli/orientation.test.ts, test/cli/parityOracle.test.ts, test/upgrade/staleSkillCleanup.test.ts]
-      6: [test/cli/prime.test.ts, test/eval/semanticEval.test.ts, test/release/releaseMetadata.test.ts, test/release/releaseQualification.test.ts, test/runtime/lifecycleOperations.test.ts]
-      5: [test/cli/glossaryAdviceWorkflow.test.ts, test/hooks/compaction.test.ts, test/upgrade/staleCommandCleanup.test.ts]
-      4: [test/analytics/personalGlossaryCandidateProjection.test.ts, test/analytics/usageStats.test.ts, test/cli/doctor.test.ts, test/cli/profileAcquisition.test.ts, test/registries/glossaryMiningAuthority.test.ts, test/registries/hybridRouteContract.test.ts, test/registries/todoReadinessContract.test.ts, test/state/listRetrieval.test.ts]
-      3: [test/cli/primeTask3Brief.test.ts, test/helpers/producerReadinessWorkflow.ts, test/registries/glossaryCandidateContracts.test.ts, test/registries/hybridRouteResolver.test.ts, test/runtime/retiredRuntimeSurfacePolicy.test.ts]
-      2: [test/analytics/personalGlossaryExplicit.test.ts, test/analytics/personalGlossaryReviewRecords.test.ts, test/cli/primeGlossaryCaveatAttention.test.ts, test/cli/primeProjectIntegration.test.ts, test/cli/sourceContractOracles.test.ts, test/cli/statusContextStartup.test.ts, test/helpers/retiredStartupGuidance.ts, test/migrate/v2HandoffManifest.test.ts, test/release/publishDevelopment.test.ts, test/release/releaseBenchmark.test.ts, test/release/sourceQualificationDag.test.ts, test/state/decisionAmendmentContract.test.ts, test/state/entityAuthority.test.ts, test/state/progressEntities.test.ts, test/state/startupAnalysisMetrics.test.ts, test/state/v2CompactionEvidence.test.ts, test/upgrade/nextMajorDoctor.test.ts, test/validate/vocabularyAuthority.test.ts]
-      1: [test/analytics/extractCorpusTruncation.test.ts, test/analytics/personalGlossaryAdmission.test.ts, test/analytics/personalGlossaryRecurrence.test.ts, test/analytics/profileSignals.test.ts, test/analytics/tierReader.test.ts, test/audit/terminologyDrift.test.ts, test/cli/buildExecutionRequest.test.ts, test/cli/compactTodoReferenceGate.test.ts, test/cli/freshPlanInitialization.test.ts, test/cli/invalidInputEnvelope.test.ts, test/cli/npmParityMatrix.test.ts, test/cli/npxBundle.test.ts, test/cli/personalGlossaryCandidateReads.test.ts, test/cli/personalGlossaryDecision.test.ts, test/cli/personalGlossaryPublish.test.ts, test/cli/splitBrain.test.ts, test/cli/statusDashboardBudget.test.ts, test/helpers/coldProcessScheduler.ts, test/helpers/entityAuthorityFixture.ts, test/helpers/entityPublicationRace.ts, test/helpers/runtimeBootstrapMatrix.ts, test/packaging/packageSetup.ts, test/registries/structuredInputInventory.test.ts, test/release/publicationOrchestration.test.ts, test/release/publicationTransaction.test.ts, test/release/rootReleaseScripts.test.ts, test/scripts/precommitVitest.test.ts, test/sourceSetup.ts, test/state/directRetrieval.test.ts, test/state/entityReaderDiscoveryReuse.test.ts, test/state/planEntities.test.ts, test/state/planLifecycleContract.test.ts, test/state/projectionPolicy.test.ts, test/state/startupAnalysisReport.test.ts, test/upgrade/parityOracle.test.ts, test/upgrade/retiredResourceDiagnostics.test.ts, test/upgrade/upgradeEntityCutover.test.ts, test/upgrade/upgradeOrchestrator.test.ts]
-  additional_diagnostics:
-    typed_lint: {total: 739, files: 148, source: 661, test: 78}
-    ordinary_lint: {total: 422, files: 101, source: 364, test: 58}
 classification_examples:
   valid:
-    file: test/core/yaml.test.ts
+    file: classifications/valid.ts
     compiler_diagnostics: 0
     rationale: ordinary positive behavioral test with resolved Vitest types
   intentional_invalid:
-    file: test/release/releaseMetadata.test.ts
-    line: 281
+    file: classifications/intentional-invalid.ts
+    line: 2
     code: TS2353
-    test: rejects package contract drift outside version and gitRef
-    rationale: the deliberately added unexpected dependency is rejected at runtime; its invalid static shape is expected negative-fixture ceremony
+    rationale: an excess property is deliberate negative-fixture input and compiles to TS2353
   genuine:
-    file: test/state/startupAnalysisThreshold.test.ts
-    line: 91
-    codes: [TS18047, TS2339]
-    rationale: unchecked JsonValue narrowing in assertions is genuine test type debt, not an invalid fixture
+    file: classifications/genuine-defect.ts
+    line: 2
+    codes: [TS18047]
+    rationale: an unchecked nullable access compiles to a genuine TS18047 defect
 conclusion:
-  rationale: 419 compiler diagnostics across 92 test files, including genuine defects and intentional-negative fixture ceremony, are not a bounded admission cost; retain source-only typecheck until separately scoped test debt is reduced
+  rationale: 451 compiler diagnostics across 103 test files, including genuine defects and intentional-negative fixture ceremony, are not a bounded admission cost; retain source-only typecheck until separately scoped test debt is reduced
   behavior_change: none
 
 # Replay contract
