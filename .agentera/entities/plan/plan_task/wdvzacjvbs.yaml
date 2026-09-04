@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: vtqzlztjsk
   name: Make source verification hermetic under disposable user roots
-  status: in_progress
+  status: complete
   depends_on:
     - fljunuxiyj
   acceptance:
@@ -12,12 +12,12 @@ record:
     - GIVEN bundle, lifecycle, Prime, and TODO routing assertions WHEN exercised THEN test-owned fixtures determine behavior rather than inherited user state.
     - GIVEN accepted and rejected environment cases WHEN tested THEN intended fallback and isolation failures remain explicit without changing production behavior.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Hermetic source rerun has one Prime budget failure at 3,006/3,000 tokens; Prime test points at ignored generated bundle output rather than a tracked test-owned fixture.
     provenance:
-      attempt_id: orchestrate-audit-wdvzacjvbs-1
-      source: "Independent audit: environment redirection and production isolation pass; criteria 1-3 fail on Prime fixture and budget."
-      recorded_at: 2026-09-04 23:37
+      attempt_id: orchestrate-audit-wdvzacjvbs-2
+      source: "Independent correction audit: criteria 4/4 pass; standard and disposable-root full source both 263 files, 4,306 passed, 2 skipped; tracked Prime fixture 2,972/3,000."
+      recorded_at: 2026-09-05 00:21
       writer_command: agentera state plan record-evaluation

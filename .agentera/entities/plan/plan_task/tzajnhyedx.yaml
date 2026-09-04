@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: vtqzlztjsk
   name: Re-certify the source-only type outcome under hermetic verification
-  status: pending
+  status: in_progress
   depends_on:
     - wdvzacjvbs
   acceptance:

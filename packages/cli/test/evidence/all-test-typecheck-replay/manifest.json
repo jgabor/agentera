@@ -26,7 +26,7 @@
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
     "source-binding.json": "256dbfa142fbc70ff430bfd74a2d952780692a5ef9875aa8dc92109c1d4ab953",
-    "compiler.raw.json.gz": "fb03ed28f710d77ee883f09f9a279f13ed059fe54847912ea9af0b269ae82c64",
+    "compiler.raw.json.gz": "dfcf76ea4c16173f8c7558c045a498818d74e070a543cc18aacfd0735f9ff5b3",
     "compiler.normalized.json": "7903e877756b85fdee4daabd78189cb65be52ca9526cd6b43cda5ea82aad2239",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
@@ -44,14 +44,14 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-RmgGhc/work"
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-V7DmJn/work"
   },
-  "rawGzipSha256": "fb03ed28f710d77ee883f09f9a279f13ed059fe54847912ea9af0b269ae82c64",
+  "rawGzipSha256": "dfcf76ea4c16173f8c7558c045a498818d74e070a543cc18aacfd0735f9ff5b3",
   "normalizedSha256": "7903e877756b85fdee4daabd78189cb65be52ca9526cd6b43cda5ea82aad2239",
   "classifications": {
     "classifications/valid.ts": [],
     "classifications/intentional-invalid.ts": ["TS2353"],
     "classifications/genuine-defect.ts": ["TS18047"]
   },
-  "manifestSha256": "d0fb8ccfb7ce558e145855416f925bccc0091894191103c241a90e42e6561009"
+  "manifestSha256": "a35d01bb04c82c6b63d3e0ae12c1ed8437f1a83259f5d6842b746913a179fe5e"
 }
