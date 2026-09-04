@@ -97,7 +97,7 @@
   },
   {
     "path": "packages/cli/scripts/verify-all-test-typecheck-evidence.mjs",
-    "sha256": "350b336c9ca9214268fe72b651304879c3b3c5425ae2e260f3bb61c1891f8a28"
+    "sha256": "499eaea979b1b3821f23f29676af46c4b23a98d3c06d43fa735d22b50d9d7c1c"
   },
   {
     "path": "packages/cli/scripts/verify-formatter-normalization.mjs",
@@ -2857,7 +2857,7 @@
   },
   {
     "path": "packages/cli/test/validate/allTestTypecheckViability.test.ts",
-    "sha256": "a473fb16eafd9879a3d97520d33f91c1bb28e889113401495acea80e9350298f"
+    "sha256": "de54b97f5113c04d067df2d0695d85aef73a7cf90542bf9e904f9157f274203e"
   },
   {
     "path": "packages/cli/test/validate/appHomeContract.test.ts",

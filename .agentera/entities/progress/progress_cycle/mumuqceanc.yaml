@@ -1,0 +1,15 @@
+id: mumuqceanc
+artifact: progress
+record:
+  timestamp: 2026-09-04 17:50
+  type: fix
+  phase: build
+  what: Corrected typecheck replay raw-to-normalized evidence after the failed audit.
+  context:
+    intent: Bind tracked and fresh raw compiler output to one explicit canonicalizer.
+    constraints: Preserve the first FAIL evaluation, source-only-retain, task in_progress for final audit, package integrity, and production files.
+    scope: Typecheck replay evidence, verifier, tamper tests, and typed state only.
+  discovered: The prior verifier hash-checked compiler.raw.json.gz without decoding it; full compiler diagnostic records differ only at the exact disposable work root and ordering after compiler-only selection.
+  verified: Manifest eb4f1b7ddfdd836bd3b0cf45d62ca0babbf19c5d019885bc37bdfd8601a8a7d7 binds canonicalizer code/version/policy plus raw and normalized hashes. Decoded raw and fresh isolated replay canonicalize exactly to 451 diagnostics across 103 test files and zero source files. Nine tamper cases, classification replay, 263-file source verification, source typecheck, build, 25 package tests, compact, capability-contract, retained-reference, and activation gates pass.
+  next: Run final independent audit of xxprntajxz; retain source-only typecheck.
+  publication_order: 331

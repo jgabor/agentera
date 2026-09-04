@@ -25,17 +25,33 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "22d8f300a36a38211b8758c84173422842012b37395ac766129f7773b47a2be7",
-    "compiler.raw.json.gz": "b92729b357c0ca356938872143b83972a715988f2a9aab192ac097cb2b0e57fb",
-    "compiler.normalized.json": "b861fe2b37c760b3f7303ab2c6ce364808e82a8a7fbb221761934bf28422e884",
+    "source-binding.json": "bbac6067266e88dae0c903eda2dca7d10d4c47fb3c57a299abcd7c83ca1f16fe",
+    "compiler.raw.json.gz": "93ac0c677f5a805b45cfb0ada6bae2c8dc4ef2c856ec07e3783f3a5cf54e8ef4",
+    "compiler.normalized.json": "a0cd9a79a9c372a48503c4cdecc98b27674b05c9d6153fd0ab5609a93779bedd",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
     "classifications/genuine-defect.ts": "17483fd7270f43a8dfb37a1d1fdbaf79cda287370ff3a8f04cd1e751ed86dc79"
   },
+  "normalization": {
+    "canonicalizer": {
+      "version": "agentera.compilerDiagnosticsCanonicalizer.v1",
+      "path": "packages/cli/scripts/verify-all-test-typecheck-evidence.mjs",
+      "sha256": "499eaea979b1b3821f23f29676af46c4b23a98d3c06d43fa735d22b50d9d7c1c"
+    },
+    "policy": {
+      "selection": "Keep only diagnostics whose code exactly matches typescript(TS<digits>); non-TypeScript lint diagnostics and top-level lint/runtime telemetry are outside this compiler-evidence artifact.",
+      "disposablePaths": "Replace only the exact isolated work-root string supplied to the canonicalizer with <DISPOSABLE_WORK_ROOT>; perform no general absolute-path normalization.",
+      "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
+      "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
+    },
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-XXM41r/work"
+  },
+  "rawGzipSha256": "93ac0c677f5a805b45cfb0ada6bae2c8dc4ef2c856ec07e3783f3a5cf54e8ef4",
+  "normalizedSha256": "a0cd9a79a9c372a48503c4cdecc98b27674b05c9d6153fd0ab5609a93779bedd",
   "classifications": {
     "classifications/valid.ts": [],
     "classifications/intentional-invalid.ts": ["TS2353"],
     "classifications/genuine-defect.ts": ["TS18047"]
   },
-  "manifestSha256": "25f5b25b63206be88e820438a52b2545887aa526fd8d6aeaeb66629cf7f81ab9"
+  "manifestSha256": "eb4f1b7ddfdd836bd3b0cf45d62ca0babbf19c5d019885bc37bdfd8601a8a7d7"
 }

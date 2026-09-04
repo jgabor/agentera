@@ -11,3 +11,13 @@ record:
     - GIVEN representative cases WHEN compiled THEN valid, intentional-invalid, and genuine-defect classifications are proven.
     - GIVEN tamper tests and green source verification WHEN complete THEN source-only-retain is the explicit downstream outcome.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: The verifier hash-checks compressed raw compiler output but never decodes it or proves its defined relationship to the normalized replay; raw bytes are not exact across isolated runs.
+    provenance:
+      attempt_id: orchestrate-audit-xxprntajxz-1
+      source: "Independent audit: classifications, tamper tests, source verification, and normalized 451/103/0-source replay pass; raw-output binding fails."
+      recorded_at: 2026-09-04 17:37
+      writer_command: agentera state plan record-evaluation
