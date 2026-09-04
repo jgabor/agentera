@@ -5,7 +5,7 @@ record:
   depends_on:
     - ezmkzlpvmg
     - xxprntajxz
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN fresh setup WHEN bootstrap and install run THEN the exact root toolchain wins and pnpm lock authority is unchanged.
     - GIVEN bare vp check WHEN validation runs THEN formatter, accepted lint ceiling, and separate source-only tsc block regressions.

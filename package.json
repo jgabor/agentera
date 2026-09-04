@@ -2,6 +2,11 @@
   "name": "agentera-monorepo",
   "private": true,
   "scripts": {
+    "bootstrap": "vp install --frozen-lockfile",
+    "test": "pnpm -C packages/cli test",
+    "build": "pnpm -C packages/cli build",
+    "verify": "pnpm -C packages/cli run verify:release",
+    "typecheck": "pnpm -C packages/cli run typecheck",
     "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
     "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
     "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
@@ -15,6 +20,14 @@
     "cli:promote:dev": "pnpm -C packages/cli run release:promote",
     "cli:stage:stable": "pnpm -C packages/cli/shim run release:stage",
     "cli:promote:stable": "pnpm -C packages/cli/shim run release:promote"
+  },
+  "devDependencies": {
+    "@typescript/typescript6": "catalog:",
+    "oxfmt": "catalog:",
+    "oxlint": "catalog:",
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   },
   "packageManager": "pnpm@10.30.3"
 }

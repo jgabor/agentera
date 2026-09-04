@@ -1,0 +1,15 @@
+id: polrzarjvi
+artifact: progress
+record:
+  timestamp: 2026-09-05 01:44
+  type: chore
+  phase: build
+  what: Established the workspace-root Vite+ toolchain and uncached contributor command routing.
+  context:
+    intent: Make exact Vite+ installation, checks, source typechecking, and owner delegation deterministic.
+    constraints: Retain pnpm 10.30.3 lock authority, source-only TypeScript checking, existing Node owners, and package contents.
+    scope: Root catalog, manifests, Vite+ configuration, toolchain fixtures, and integrity-bound type replay evidence.
+  discovered: Vite+ check does not include custom tsc without enabling all-test type checking, so vp check owns format and lint while vp run typecheck remains a separate required source-only command.
+  verified: Exact toolchain, stale-global/frozen-lock fixture, lockfile byte stability, bare vp check and deliberate format/lint failures, source-only typecheck, standard and hermetic source suites, build, package verification, pack dry-run, replay, compact, capability, retained, and activation checks passed. No-receipt generated overlap remained blocked by its activation runtime-matrix owner during concurrent release verification.
+  next: Keep pseiddctar in progress for independent audit; audit the generated-overlap runtime-matrix failure before task completion.
+  publication_order: 335

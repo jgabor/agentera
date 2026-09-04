@@ -1,6 +1,14 @@
 packages:
   - "packages/cli"
 
+catalog:
+  "@typescript/typescript6": "6.0.2"
+  oxfmt: "0.64.0"
+  oxlint: "1.79.0"
+  vite: "8.2.2"
+  vite-plus: "0.3.0"
+  vitest: "4.1.11"
+
 # pnpm 10+ ignores the legacy `pnpm` field in package.json. The settings that
 # used to live under `pnpm.onlyBuiltDependencies` and `pnpm.overrides` now
 # belong here, in the workspace config.

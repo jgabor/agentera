@@ -1700,13 +1700,13 @@
         {
           "span": {
             "column": 20,
-            "length": 22,
+            "length": 28,
             "line": 7,
             "offset": 260
           }
         }
       ],
-      "message": "Cannot find module '../../vite.config.js' or its corresponding type declarations.",
+      "message": "Cannot find module '../../../../vite.config.js' or its corresponding type declarations.",
       "severity": "error"
     },
     {

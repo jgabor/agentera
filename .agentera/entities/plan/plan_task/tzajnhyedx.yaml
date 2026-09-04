@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: vtqzlztjsk
   name: Re-certify the source-only type outcome under hermetic verification
-  status: in_progress
+  status: complete
   depends_on:
     - wdvzacjvbs
   acceptance:
@@ -11,3 +11,13 @@ record:
     - GIVEN valid, intentional-invalid, and genuine-defect fixtures WHEN compiled THEN their classifications and all tamper failures remain exact.
     - GIVEN standard and disposable user-root environments WHEN full source runs THEN both are green and source-only-retain remains explicit.
     - GIVEN replay cleanup WHEN inspected THEN checkout and user caches remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-tzajnhyedx-1
+      source: "Independent audit: criteria 4/4 pass; exact replay, classifications, nine tamper cases, both source lanes, and cleanup verified."
+      recorded_at: 2026-09-05 00:51
+      writer_command: agentera state plan record-evaluation

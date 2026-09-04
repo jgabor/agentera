@@ -10,6 +10,7 @@ const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), 
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
 const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
 const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
+const rootViteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf8");
 
 const setupVpReleases = [
   ["1.0.0", "4a524139920f87f9f7080d3b8545acac019e1852"],
@@ -59,6 +60,31 @@ describe("toolchain baseline", () => {
   it("binds the executable integration proof to live project policy", () => {
     expect(baseline.selection.vite_plus.version).toBe("0.3.0");
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
+    expect(workspace.catalog).toEqual({
+      "@typescript/typescript6": "6.0.2",
+      oxfmt: "0.64.0",
+      oxlint: "1.79.0",
+      vite: "8.2.2",
+      "vite-plus": "0.3.0",
+      vitest: "4.1.11",
+    });
+    expect(Object.values(rootPackage.devDependencies)).toSatisfy((versions: unknown[]) => versions.every((version) => version === "catalog:"));
+    expect(cliPackage.devDependencies).toMatchObject({
+      "@typescript/typescript6": "catalog:",
+      vite: "catalog:",
+      "vite-plus": "catalog:",
+      vitest: "catalog:",
+    });
+    expect(rootViteConfig).toContain("maxWarnings: 431");
+    expect(rootViteConfig).not.toContain("typeCheck: true");
+    expect(rootViteConfig).not.toContain("tasks:");
+    expect(rootPackage.scripts).toMatchObject({
+      bootstrap: "vp install --frozen-lockfile",
+      test: "pnpm -C packages/cli test",
+      build: "pnpm -C packages/cli build",
+      verify: "pnpm -C packages/cli run verify:release",
+      typecheck: "pnpm -C packages/cli run typecheck",
+    });
     expect(workspace.onlyBuiltDependencies).toEqual(["esbuild"]);
     expect(cliPackage.scripts["test:toolchain-baseline"]).toBe("node scripts/verify-toolchain-baseline.mjs");
   });

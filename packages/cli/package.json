@@ -40,7 +40,7 @@
     "test:performance:integration": "node test/integration/performanceOwner.integration.mjs",
     "test:capacity": "node scripts/verify-lane.mjs capacity",
     "test:toolchain-baseline": "node scripts/verify-toolchain-baseline.mjs",
-    "test:watch": "vp test watch --config vite.config.ts",
+    "test:watch": "pnpm --workspace-root exec vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:prime-budget": "node scripts/measure-prime-budget.mjs",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
@@ -62,8 +62,8 @@
     "verify:merge": "node scripts/verify-lane.mjs policy merge",
     "verify:scheduled": "node scripts/verify-lane.mjs policy scheduled",
     "verify:release": "node scripts/release-qualification.mjs verify --json",
-    "lint": "vp lint",
-    "fmt": "vp fmt",
+    "lint": "pnpm --workspace-root exec vp lint packages/cli",
+    "fmt": "pnpm --workspace-root exec vp fmt packages/cli",
     "typecheck": "tsc -p tsconfig.json --noEmit"
   },
   "dependencies": {
@@ -72,11 +72,12 @@
   },
   "devDependencies": {
     "@types/node": "^24.13.3",
-    "@typescript/typescript6": "6.0.2",
+    "@typescript/typescript6": "catalog:",
     "gpt-tokenizer": "4.0.0",
     "typescript": "^7.0.2",
-    "vite": "^8.2.2",
-    "vite-plus": "^0.2.9"
+    "vite": "catalog:",
+    "vite-plus": "catalog:",
+    "vitest": "catalog:"
   },
   "engines": {
     "node": ">=22"

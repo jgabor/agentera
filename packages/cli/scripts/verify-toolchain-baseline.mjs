@@ -11,6 +11,12 @@ const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const REQUIRED_PNPM = "10.30.3";
 const REQUIRED_PACKAGE_MANAGER = `pnpm@${REQUIRED_PNPM}`;
 const REQUIRED_VP = "0.3.0";
+const REQUIRED_TOOLS = {
+  vite: "8.2.2",
+  vitest: "4.1.11",
+  oxlint: "1.79.0",
+  oxfmt: "0.64.0",
+};
 const REQUIRED_SETUP_VP = "1.18.0";
 const REQUIRED_SETUP_VP_COMMIT = "1b32467adbe183473499fd9d5d372c3ed9641754";
 const REQUIRED_NODE = fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim();
@@ -130,6 +136,16 @@ try {
   env.AGENTERA_TOOLCHAIN_MARKERS = markers;
 
   const livePnpm = requirePinnedPnpm(REPO_ROOT, env);
+  const rootManifest = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
+  const workspaceConfig = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "pnpm-workspace.yaml"), "utf8"));
+  assert.equal(rootManifest.scripts.bootstrap, "vp install --frozen-lockfile");
+  assert.equal(rootManifest.devDependencies["vite-plus"], "catalog:");
+  assert.equal(workspaceConfig.catalog["vite-plus"], REQUIRED_VP);
+  for (const [name, version] of Object.entries(REQUIRED_TOOLS)) assert.equal(workspaceConfig.catalog[name], version);
+  const liveVp = requireSuccess("workspace Vite+ probe", runPnpm(REPO_ROOT, ["exec", "vp", "--version"], env));
+  for (const [name, version] of Object.entries({ "vite-plus": REQUIRED_VP, ...REQUIRED_TOOLS })) {
+    assert.match(`${liveVp.stdout}${liveVp.stderr}`, new RegExp(`${name}\\s+v?${version.replaceAll(".", "\\.")}`));
+  }
   const livePolicy = parseJsonOutput("live onlyBuiltDependencies probe", runPnpm(REPO_ROOT, ["config", "get", "onlyBuiltDependencies", "--json"], env));
   assert.deepEqual(livePolicy, ["esbuild"], "live dependency-script policy drifted");
 
@@ -183,7 +199,10 @@ try {
   assert.match(`${rootVp.stdout}${rootVp.stderr}`, /(?:vp\s+)?0\.3\.0/);
   assert.ok(!fs.existsSync(staleMarker), "stale global vp owned the root-local probe");
 
+  const lockfile = path.join(fixture, "pnpm-lock.yaml");
+  const lockfileBeforeInstall = fs.readFileSync(lockfile);
   const delegatedInstall = requireSuccess("root-local Vite+ frozen install", runPnpm(fixture, ["exec", "vp", "install", "--frozen-lockfile"], staleEnv));
+  assert.deepEqual(fs.readFileSync(lockfile), lockfileBeforeInstall, "vp install changed the authoritative pnpm lockfile");
   assert.ok(!fs.existsSync(staleMarker), "stale global vp owned the project install");
   assert.ok(!fs.existsSync(path.join(markers, "blocked-build.marker")), "unlisted dependency script ran during the delegated install");
 

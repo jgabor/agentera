@@ -113,7 +113,7 @@
   },
   {
     "path": "packages/cli/scripts/verify-toolchain-baseline.mjs",
-    "sha256": "365ea315826800cd335a0351da7d6a0e24d57875b04ffeefa92c2c5eb9ea9253"
+    "sha256": "9528ccd1ec345b0352e32c0c0986e61c40babe744d42b6c1ceab1b830e209ce1"
   },
   {
     "path": "packages/cli/src/analytics/extractCorpus.ts",
@@ -2053,7 +2053,7 @@
   },
   {
     "path": "packages/cli/test/config/formatterSurface.test.ts",
-    "sha256": "cb0f7fccc0fb7d2569305c0bbf51126300768ceb0491dbd14d9021685b5c2df6"
+    "sha256": "cacafa21cf4e0d742070b35419d9b4d236d8167803b3d69700acd58a314a77f1"
   },
   {
     "path": "packages/cli/test/config/vitestShared.test.ts",
@@ -2885,7 +2885,7 @@
   },
   {
     "path": "packages/cli/test/validate/toolchainBaseline.test.ts",
-    "sha256": "1ee83d4bb829bfde7e049056d7da289e50074107f313b26632952be3984d0f2c"
+    "sha256": "474c83240912d749913a358c5f528b75efbee58415a9d76c443d78c390a81bc4"
   },
   {
     "path": "packages/cli/test/validate/vocabularyAuthority.test.ts",
