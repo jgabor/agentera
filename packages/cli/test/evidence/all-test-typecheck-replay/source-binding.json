@@ -25,7 +25,7 @@
   },
   {
     "path": "packages/cli/scripts/measure-prime-budget.mjs",
-    "sha256": "689a41e012abc24871eac5f06b3e1f5fa3a5f23664c3f57f44fa63499e815879"
+    "sha256": "63550d9f981f853f67df87ea975e41919b6ae14f7418b7812d53059c3a1aeb99"
   },
   {
     "path": "packages/cli/scripts/observe-capability-source.mjs",
@@ -1921,7 +1921,7 @@
   },
   {
     "path": "packages/cli/test/cli/primeBudget.test.ts",
-    "sha256": "24cafa8e327df374b6d405e28c662b8f6bef1c4b4602ab453b886ca98236a712"
+    "sha256": "22c9f829d9cafb737bdb96d3fa5b3fc4a066c76f9cbe304f690584dfa3c9d2e1"
   },
   {
     "path": "packages/cli/test/cli/primeChannels.test.ts",

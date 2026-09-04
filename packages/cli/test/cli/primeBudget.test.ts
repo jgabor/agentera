@@ -6,7 +6,7 @@ import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import { GPT5_TOKENIZER, measurePrimeOutput } from "../../scripts/measure-prime-budget.mjs";
+import { createPrimeBudgetFixture, GPT5_TOKENIZER, measurePrimeOutput } from "../../scripts/measure-prime-budget.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
@@ -22,7 +22,7 @@ describe("prime GPT-5 token budget", () => {
     });
   });
 
-  it("keeps the live source prime briefing within its byte and GPT-5 token budgets", () => {
+  it("keeps the bounded fixture prime briefing within its byte and GPT-5 token budgets", () => {
     const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "prime-token-budget-"));
     const previousCwd = process.cwd();
     const previous = {
@@ -33,16 +33,13 @@ describe("prime GPT-5 token budget", () => {
       AGENTERA_BOOTSTRAP_SOURCE_ROOT: process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT,
     };
     try {
-      const home = path.join(temporaryRoot, "home");
-      const appHome = path.join(REPO_ROOT, "packages/cli/bundle");
-      const profile = path.join(temporaryRoot, "profile");
-      for (const directory of [home, profile]) fs.mkdirSync(directory, { recursive: true });
+      const { appHome, home, profile, project } = createPrimeBudgetFixture(REPO_ROOT, temporaryRoot);
       process.env.HOME = home;
       process.env.AGENTERA_HOME = appHome;
       process.env.AGENTERA_PROFILE_DIR = profile;
       process.env.PROFILERA_PROFILE_DIR = profile;
-      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = REPO_ROOT;
-      process.chdir(REPO_ROOT);
+      process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = appHome;
+      process.chdir(project);
 
       let out = "";
       let err = "";
@@ -66,7 +63,8 @@ describe("prime GPT-5 token budget", () => {
 
       expect(rc).toBe(0);
       expect(err).toBe("");
-      expect(JSON.parse(out)).toMatchObject({ command: "prime" });
+      expect(out).not.toContain(temporaryRoot);
+      expect(JSON.parse(out)).toMatchObject({ command: "prime", app_home: { status: "up_to_date", source: "bundled app" }, app: { status: "up_to_date" } });
       expect(result.violations).toEqual([]);
     } finally {
       process.chdir(previousCwd);

@@ -55,17 +55,56 @@ export function measurePrimeOutput(stdout, budget) {
   return { measurement, violations };
 }
 
+export function createPrimeBudgetFixture(repoRoot, temporaryRoot) {
+  const appHome = path.join(temporaryRoot, "app");
+  const home = path.join(temporaryRoot, "home");
+  const profile = path.join(temporaryRoot, "profile");
+  const project = path.join(temporaryRoot, "project");
+  for (const directory of [appHome, home, profile, project]) fs.mkdirSync(directory, { recursive: true });
+  fs.cpSync(path.join(repoRoot, "skills"), path.join(appHome, "skills"), { recursive: true });
+  fs.cpSync(path.join(repoRoot, "references"), path.join(appHome, "references"), { recursive: true });
+  const registry = fs.readFileSync(path.join(repoRoot, "registry.json"), "utf8");
+  fs.writeFileSync(path.join(appHome, "registry.json"), registry);
+  fs.writeFileSync(path.join(appHome, ".agentera-npx-bundle.json"), `${JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: JSON.parse(registry).skills[0].version }, null, 2)}\n`);
+  const writeEntity = (artifact, boundary, id, record) => {
+    const directory = path.join(project, ".agentera/entities", artifact, boundary);
+    fs.mkdirSync(directory, { recursive: true });
+    fs.writeFileSync(path.join(directory, `${id}.yaml`), `${JSON.stringify({ id, artifact, record }, null, 2)}\n`);
+  };
+  fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+  fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+  writeEntity("plan", "plan", "abcdefghij", {
+    header: { level: "full", created: "2026-09-04", status: "open", title: "Prime fixture" },
+    what: "Bound Prime routing.",
+    why: "Avoid live state.",
+    scope: { included: ["budget"], excluded: ["live state"] },
+  });
+  writeEntity("plan", "plan_task", "bcdefghijk", {
+    plan: "abcdefghij",
+    name: "Verify Prime",
+    status: "pending",
+    depends_on: [],
+    acceptance: ["Required routes remain within budget."],
+  });
+  writeEntity("progress", "progress_cycle", "cdefghijkl", {
+    timestamp: "2026-09-04 12:00",
+    type: "test",
+    phase: "build",
+    what: "Seed Prime evidence.",
+    next: "Verify Prime.",
+    publication_order: 1,
+  });
+  return { appHome, home, profile, project };
+}
+
 export function runPrimeBudget(repoRoot = defaultRepoRoot) {
   const budget = budgetAuthority(repoRoot);
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-prime-budget-"));
   try {
-    const home = path.join(temporaryRoot, "home");
-    const appHome = path.join(repoRoot, "packages/cli/bundle");
-    const profile = path.join(temporaryRoot, "profile");
-    for (const directory of [home, profile]) fs.mkdirSync(directory, { recursive: true });
+    const { appHome, home, profile, project } = createPrimeBudgetFixture(repoRoot, temporaryRoot);
 
     const result = spawnSync(process.execPath, [path.join(repoRoot, "packages/cli/dist/bin/agentera.js"), "prime"], {
-      cwd: repoRoot,
+      cwd: project,
       encoding: "utf8",
       env: {
         ...process.env,
@@ -73,7 +112,7 @@ export function runPrimeBudget(repoRoot = defaultRepoRoot) {
         AGENTERA_HOME: appHome,
         AGENTERA_PROFILE_DIR: profile,
         PROFILERA_PROFILE_DIR: profile,
-        AGENTERA_BOOTSTRAP_SOURCE_ROOT: repoRoot,
+        AGENTERA_BOOTSTRAP_SOURCE_ROOT: appHome,
       },
     });
     if (result.status !== 0 || result.stderr !== "") {
@@ -85,7 +124,7 @@ export function runPrimeBudget(repoRoot = defaultRepoRoot) {
       status: violations.length === 0 ? "pass" : "fail",
       surface: "prime-briefing",
       command: "agentera prime",
-      fixture: "repo_root_with_isolated_home_and_profile",
+      fixture: "bounded_state_with_disposable_bundle",
       tokenizer: GPT5_TOKENIZER,
       measurement,
       budget,

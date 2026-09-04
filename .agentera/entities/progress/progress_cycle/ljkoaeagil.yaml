@@ -1,0 +1,15 @@
+id: ljkoaeagil
+artifact: progress
+record:
+  timestamp: 2026-09-05 00:06
+  type: test
+  phase: build
+  what: Corrected Prime budget verification to use bounded disposable state and a disposable bundle built only from tracked sources.
+  context:
+    intent: Repair the failed hermetic audit without changing production Prime behavior or the 3,000-token limit.
+    constraints: Preserve the first FAIL evaluation and leave wdvzacjvbs in progress for final audit.
+    scope: Prime budget fixture, measurement metadata, source verification evidence, and typed progress only.
+  discovered: The prior test and measurement read ignored packages/cli/bundle output and live checkout state; random temporary project paths also changed tokenization.
+  verified: "Final standard and hermetic source runs each passed the identical 263-file inventory: 4,306 passed and 2 skipped. The hermetic proof parent was empty after wrapper cleanup. Focused Prime, bundle, lifecycle, TODO, and release-index isolation passed 107 tests. Prime measured deterministically at 11,199 bytes and 2,972 GPT-5 tokens, leaving 28 tokens and 801 bytes under the unchanged limits. Type replay passed at 451 diagnostics across 103 test files; typecheck, build, 25 package tests, compact, capability contract, retained references, and activation conjunction passed."
+  next: Keep wdvzacjvbs in progress for final independent audit.
+  publication_order: 333

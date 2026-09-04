@@ -86,7 +86,7 @@ surfaces:
   inventory_classification: change
   budget_classification: bounded_brief
   measurement_scope: primary
-  fixture: repo_root
+  fixture: bounded_state_with_disposable_bundle
   enforcement_tier: enforce
   # Bounded default decision brief (Plan Task 3). The bare default emission
   # projects the full orientation payload to routing-essential leaves plus named
