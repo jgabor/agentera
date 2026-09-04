@@ -4,9 +4,19 @@ record:
   name: Restore the clean verification baseline
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN required Prime context WHEN measured THEN it stays below the existing 3,000-token budget without lost behavior.
     - GIVEN normal and deliberately oversized fixtures WHEN checked THEN the normal case passes and the oversized case fails.
     - GIVEN the correction WHEN verification runs THEN full source, compact, and capability contracts are green.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-fljunuxiyj-1
+      source: "Independent audit: criteria 3/3 pass; Prime 2,981/3,000 tokens; focused and full source, compact, and capability contract green."
+      recorded_at: 2026-09-04 15:28
+      writer_command: agentera state plan record-evaluation

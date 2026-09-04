@@ -1,0 +1,15 @@
+id: oofpfobfou
+artifact: progress
+record:
+  timestamp: 2026-09-04 15:46
+  type: test
+  phase: build
+  what: Added an integrity-bound isolated formatter replay for the accepted normalization.
+  context:
+    intent: Certify formatter normalization with independently replayable tracked evidence.
+    constraints: Do not change formatter output, product behavior, versions, publication surfaces, or owner-authorized parity content.
+    scope: Replay verifier, SHA-256 manifest, tamper tests, retained-reference registration, and typed state only.
+  discovered: "The normalization spans 678 changed paths: 656 are AST semantic-token equivalent and 22 are explicitly authorized substantive paths. The parity fixture is the sole changed protected path and is classified as a parity-owner compatibility re-pin."
+  verified: The tracked verifier replays 736 formatter inputs with Vite+ 0.3.0 and Oxfmt 0.64.0 in disposable HOME and npm cache directories, verifies package tarball integrity, source history, config, inputs, outputs, equivalence, and manifest digest, and rejects resigned input/output tampering plus digest tampering. Focused behavior, formatter, monolith, parity, typecheck, build, package, compact, capability, retained-reference, activation, and full source gates are the required closeout set.
+  next: Leave task ezmkzlpvmg in progress for independent audit before resolving systemic evidence TODOs.
+  publication_order: 324

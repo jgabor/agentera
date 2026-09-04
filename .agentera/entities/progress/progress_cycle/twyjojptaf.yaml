@@ -1,0 +1,14 @@
+id: twyjojptaf
+artifact: progress
+record:
+  timestamp: 2026-09-04 15:47
+  type: test
+  phase: build
+  what: Formatter replay certified.
+  context:
+    intent: Record the compact formatter replay milestone needed by subsequent plan work.
+    constraints: Task remains in progress; systemic TODOs remain open.
+    scope: Formatter replay evidence only.
+  verified: Manifest 1af0eb6ff9bd74eac118014555ba2c9eb4ce71f741ff4cbd30454f188cee8528 binds 736 inputs, 656 equivalent paths, 22 authorized substantive paths, exact tools, output hashes, and passing input/output/digest tamper checks.
+  next: Independent audit.
+  publication_order: 325
