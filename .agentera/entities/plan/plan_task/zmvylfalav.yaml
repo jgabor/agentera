@@ -1,0 +1,24 @@
+id: zmvylfalav
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Remove warmed-checkout dependencies from package verification
+  status: complete
+  depends_on:
+    - gjsukzvohl
+    - vfochpjefw
+  acceptance:
+    - GIVEN absent checkout dist and bundle WHEN generated-overlap runs THEN package verification passes using fresh isolated outputs.
+    - GIVEN constructed and extracted packages WHEN compared THEN version, source identity, inventory and CLI selector behavior retain their required checks.
+    - GIVEN valid and invalid package behavior WHEN regression checks run THEN valid output passes and violations remain detectable.
+    - GIVEN the correction WHEN reviewed THEN production construction, build isolation and publication safeguards remain unchanged; no push or publication occurs without fresh authorization.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-clean-package-zmvylfalav-1
+      source: "Independent Agentera audit: four criteria and evidence audit PASS. Fresh absent-output generated-overlap passed 4311 reported source tests and 25 package tests; index observer proof and retained evidence validated. Hosted closeout remains pending."
+      recorded_at: 2026-09-05 18:03
+      writer_command: agentera state plan record-evaluation

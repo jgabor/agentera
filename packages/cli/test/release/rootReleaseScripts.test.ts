@@ -67,14 +67,16 @@ describe("root release script argument forwarding", () => {
           const file = path.join(isolated, relative);
           return [relative, fs.statSync(file).isFile() ? fs.readFileSync(file).toString("base64") : null];
         });
-    const git = (args: string[]) => {
-      const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8", env });
+    const git = (args: string[], input?: string) => {
+      const result = spawnSync("git", args, { cwd: REPO_ROOT, encoding: "utf8", env, input });
       expect(result.status, `git ${args.join(" ")}: ${result.stderr}`).toBe(0);
       return result.stdout.trim();
     };
     const fixtureIndex = path.join(isolated, "git-index");
     fs.copyFileSync(git(["rev-parse", "--path-format=absolute", "--git-path", "index"]), fixtureIndex);
     env.GIT_INDEX_FILE = fixtureIndex;
+    // Retain staged entries but invalidate their stat cache: status observations must not refresh it.
+    git(["update-index", "-z", "--index-info"], git(["ls-files", "--stage", "-z"]));
     const isolatedBefore = isolatedFiles();
     const gitDirectory = git(["rev-parse", "--path-format=absolute", "--git-dir"]);
     const gitCommonDirectory = git(["rev-parse", "--path-format=absolute", "--git-common-dir"]);
@@ -134,7 +136,7 @@ describe("root release script argument forwarding", () => {
     };
     const gitStorageBefore = gitStorage();
     const logicalGitRefsBefore = logicalGitRefs();
-    const gitBefore = spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
+    const gitBefore = spawnSync("git", ["--no-optional-locks", "status", "--porcelain=v1", "--untracked-files=all"], {
       cwd: REPO_ROOT,
       encoding: "utf8",
       env,
@@ -159,7 +161,7 @@ describe("root release script argument forwarding", () => {
       expect(gitStorage()).toEqual(gitStorageBefore);
       expect(logicalGitRefs()).toEqual(logicalGitRefsBefore);
       expect(
-        spawnSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
+        spawnSync("git", ["--no-optional-locks", "status", "--porcelain=v1", "--untracked-files=all"], {
           cwd: REPO_ROOT,
           encoding: "utf8",
           env,

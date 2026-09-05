@@ -2245,7 +2245,7 @@
   },
   {
     "path": "packages/cli/test/packaging/packageVerification.test.ts",
-    "sha256": "122ebe5aca4b1b91f6d66be46f5dce7081e77b4960e1301df98243f25953b614"
+    "sha256": "e2e3ac9108fb194e4696f2a2c105900f52a858ae2e62ec3779c706854483bde2"
   },
   {
     "path": "packages/cli/test/performance/entityAuthorityPerformance.test.ts",
@@ -2373,7 +2373,7 @@
   },
   {
     "path": "packages/cli/test/release/rootReleaseScripts.test.ts",
-    "sha256": "1407b15cfc3531a42728a90a617a1821a5c201c7927e5baae1499d6bdc4189af"
+    "sha256": "fae1575de3063cb9f95eea68fcfa5bad160147be74626db7fa8ce9648d5d11ce"
   },
   {
     "path": "packages/cli/test/release/routineCiOwnership.test.ts",

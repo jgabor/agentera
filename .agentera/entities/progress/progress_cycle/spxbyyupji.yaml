@@ -1,0 +1,16 @@
+id: spxbyyupji
+artifact: progress
+record:
+  timestamp: 2026-09-05 17:50
+  type: test
+  phase: build
+  what: Resolved the release-entrypoint test's self-induced index refresh; final fresh-output generated-overlap and full verification pass for zmvylfalav.
+  context:
+    intent: Continue task zmvylfalav in plan vtqzlztjsk after the full-verification failure recorded in yzfohsapqb.
+    constraints: Assigned diagnose-generated-overlap checkout only. Preserve prior package correction, progress and coordinator dependency edit. No commits, integration, pushes, publication, CI reruns, task evaluation or plan closure.
+    unknowns: Independent audit and hosted revalidation remain pending. Prior decision-satisfaction and unavailable profile-grounding caveats remain; no user satisfaction is inferred.
+    scope: Only rootReleaseScripts.test.ts and its directly invalidated generated type evidence were additionally changed. Production construction, isolation, publication, manifests and workflows remain unchanged.
+  discovered: rootReleaseScripts.test.ts copied a private Git index and snapshotted its bytes before running ordinary git status. That observer can refresh cached stat data itself. A disposable proof changed index bytes while retaining every staged path, mode, object ID and stage; --no-optional-locks preserved bytes. Deterministically reinserting identical staged entries into the private index reproduced the exact isolatedFiles equality failure. Applying --no-optional-locks only to the two test observers passed all five focused tests; release children and all byte/ref nonmutation assertions remain unrestricted and intact.
+  verified: "Pinned Node 24.19.0 and pnpm 10.30.3: final pnpm -C packages/cli run verify:generated-overlap passed, reporting 263 source files/4311 tests with the sole permitted Darwin skip, 3 package files/25 tests, private build and 42 activation checks. Final vp run verify passed all 11 gates with reconciled cleanup and zero leases; no receipt, candidate, registry, activation or publication effects. Both runs used the same final source generation. Shell checks proved checkout dist/bundle absent, including symlinks, before and after each run; no checkout build or warming occurred. vp check passed with 0 errors/426 warnings; vp run typecheck and git diff --check passed. Existing generator and independent replay passed: 451 diagnostics across 103 test files, zero source diagnostics, unchanged classifications/codes/messages; normalized output differs only in one existing diagnostic's line/offset after regression setup. Version, source identity, inventory, selectors and negative package controls passed unchanged."
+  next: Leave zmvylfalav in_progress without evaluation. Independent audit and coordinator-owned authorization/hosted validation remain; the local index-snapshot blocker is resolved. Preserve yzfohsapqb as prior-attempt chronology.
+  publication_order: 353

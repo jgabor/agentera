@@ -1,0 +1,15 @@
+id: yzfohsapqb
+artifact: progress
+record:
+  timestamp: 2026-09-05 17:28
+  type: test
+  phase: build
+  what: Package verification uses fresh constructed and extracted outputs instead of checkout dist and bundle; source authority comparisons remain intact.
+  context:
+    intent: Remove warmed-checkout dependencies for approved task zmvylfalav in plan vtqzlztjsk.
+    constraints: Assigned checkout only; preserve coordinator dependencies. No task evaluation/completion, commits, integration, version bumps, CI reruns, push or publication.
+    unknowns: Full-verification git-index snapshot mismatch is unresolved. Decision confidence remains provisional with no satisfaction record; profile-derived state is unavailable. Hosted correction is unverified.
+    scope: Package verification test and directly invalidated all-test evidence only; production construction, isolation and publication safeguards unchanged.
+  verified: "Node 24.19.0 and pnpm 10.30.3: generated-overlap passed with checkout dist/bundle absent before and after, covering 4311 source tests and 25 package tests. Version, identity, inventory and selector parity passed; malformed inventory/YAML, rejected selectors and invalid selected terms retained rejection and nonmutation checks. Final formatting and evidence refresh retained 451 test diagnostics across 103 files, zero source diagnostics and unchanged normalized output. vp check passed with 0 errors and 426 warnings; vp run typecheck passed. Full vp run verify failed in generated-overlap at rootReleaseScripts.test.ts isolated git-index snapshot equality; stress and typecheck completed. Checkout outputs remained absent and git diff --check passed. Production files were unchanged; no remote mutation occurred."
+  next: Independent audit of zmvylfalav and coordinator diagnosis of the full-verification git-index snapshot failure are required. Leave the task in_progress; hosted revalidation and final readiness remain pending.
+  publication_order: 352

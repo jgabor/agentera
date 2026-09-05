@@ -253,13 +253,13 @@ describe("npm distribution boundary", () => {
     expect(manifests.map(({ version }) => version)).toEqual(Array(3).fill("3.0.0-dev.84"));
     expect(manifests.map(({ agentera }) => agentera.gitRef)).toEqual(Array(3).fill(manifests[0].agentera.gitRef));
 
-    const versions = roots.map((root) =>
+    const versions = [fixture.constructionRoot, fixture.packageRoot].map((root) =>
       spawnSync(process.execPath, [path.join(root, "dist/bin/agentera.js"), "--version"], {
         encoding: "utf8",
       }),
     );
     expect(versions.every(({ status }) => status === 0)).toBe(true);
-    expect(versions.map(({ stdout }) => stdout.trim())).toEqual(Array(3).fill("3.0.0-dev.84"));
+    expect(versions.map(({ stdout }) => stdout.trim())).toEqual(Array(2).fill("3.0.0-dev.84"));
   });
 
   it("extracts the manifest as regular files with the executable mode and no source maps", () => {
@@ -292,7 +292,7 @@ describe("npm distribution boundary", () => {
 
   it("keeps the structured-input disposition and metric contract identical across package surfaces", () => {
     const relative = "references/analysis/structured-input-inventory.yaml";
-    const paths = [path.join(CHECKOUT_ROOT, relative), path.join(CHECKOUT_ROOT, "packages/cli/bundle", relative), path.join(fixture.packageRoot, "bundle", relative)];
+    const paths = [path.join(CHECKOUT_ROOT, relative), path.join(fixture.constructionRoot, "bundle", relative), path.join(fixture.packageRoot, "bundle", relative)];
     const contents = paths.map((inventoryPath) => fs.readFileSync(inventoryPath, "utf8"));
     expect(contents).toEqual(Array(3).fill(contents[0]));
     expect(paths.map((inventoryPath) => validateStructuredInputInventory(inventoryPath))).toEqual([[], [], []]);
@@ -350,7 +350,7 @@ describe("npm distribution boundary", () => {
   });
 
   it("matches no-selector, explicit JSON, and rejected-selector behavior across package boundaries", () => {
-    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+    const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observe = (bin: string, args: string[]) => {
       const result = spawnSync(process.execPath, [bin, ...args], {
         cwd: fixture.root,
@@ -373,14 +373,12 @@ describe("npm distribution boundary", () => {
       return { schemaVersion, command, status };
     });
     expect(successContracts[1]).toEqual(successContracts[0]);
-    expect(successContracts[2]).toEqual(successContracts[0]);
     expect(successContracts[0]).toEqual({
       schemaVersion: "agentera.schema.v1",
       command: "schema",
       status: "ok",
     });
     expect(rejected[1]).toEqual(rejected[0]);
-    expect(rejected[2]).toEqual(rejected[0]);
     expect(rejected[0]).toMatchObject({ status: 2, stderr: "" });
     expect(JSON.parse(rejected[0].stdout)).toMatchObject({
       status: "fail",
@@ -388,13 +386,12 @@ describe("npm distribution boundary", () => {
     });
   });
 
-  it("matches selected-term startup across source, bundled, and extracted runtimes", () => {
-    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+  it("matches selected-term startup across constructed and extracted runtimes", () => {
+    const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observations = bins.map((bin, index) => selectedTermObservation(bin, path.join(fixture.root, `term-parity-${index}`), "package-private-selected-term"));
 
     const withoutBytes = observations.map(({ bytes: _bytes, ...observation }) => observation);
     expect(withoutBytes[1]).toEqual(withoutBytes[0]);
-    expect(withoutBytes[2]).toEqual(withoutBytes[0]);
     expect(observations[0]).toMatchObject({
       status: 0,
       advice: { outcome: "no_applicable_entry" },
@@ -405,7 +402,6 @@ describe("npm distribution boundary", () => {
 
     const helps = bins.map((bin) => spawnSync(process.execPath, [bin, "prime", "--help"], { encoding: "utf8" }).stdout);
     expect(helps[1]).toBe(helps[0]);
-    expect(helps[2]).toBe(helps[0]);
     expect(helps[0]).toContain("--term-input FILE|-");
 
     for (const relative of ["skills/agentera/capabilities/plan/schemas/validation.yaml", "skills/agentera/protocol.yaml"]) {
@@ -415,12 +411,11 @@ describe("npm distribution boundary", () => {
     }
   });
 
-  it("retains cleanup preview parity across local build, constructed, and extracted package surfaces", () => {
-    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+  it("retains cleanup preview parity across constructed and extracted package surfaces", () => {
+    const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observations = bins.map((bin, index) => cleanupPreviewObservation(bin, path.join(fixture.root, `cleanup-parity-${index}`)));
 
     expect(observations[1]).toEqual(observations[0]);
-    expect(observations[2]).toEqual(observations[0]);
     expect(observations[0]).toEqual({
       status: 1,
       items: [
@@ -491,12 +486,11 @@ describe("npm distribution boundary", () => {
     expect(fs.readdirSync(inheritedData)).toEqual([]);
   });
 
-  it("matches structured, mutation-free scalar failures across all runtimes", () => {
-    const bins = [path.join(CHECKOUT_ROOT, "packages/cli/dist/bin/agentera.js"), path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+  it("matches structured, mutation-free scalar failures across constructed and extracted runtimes", () => {
+    const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observations = bins.map((bin, index) => selectedTermObservation(bin, path.join(fixture.root, `term-failure-parity-${index}`), Buffer.from([0xc3, 0x28])));
 
     expect(observations[1]).toEqual(observations[0]);
-    expect(observations[2]).toEqual(observations[0]);
     expect(observations[0]).toMatchObject({
       status: 2,
       error: { class: "invalid_selected_term" },
