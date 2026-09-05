@@ -134,6 +134,72 @@ function requireReviewedOidcPublicationSteps(workflow: any) {
 }
 
 describe("package publication orchestration", () => {
+  it.each([
+    ["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }],
+    ["routine", YAML.parse(ciYaml).jobs.cli, { "fetch-depth": 0 }],
+  ])("provides complete history and archived parity proof before %s verification", (_name, job, checkoutInputs) => {
+    const fixture = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json"), "utf8"));
+    const previousCommit = fixture.pinEvidence.previous_python_commit;
+    expect(previousCommit).toMatch(/^[a-f0-9]{40}$/);
+    const archivalCommand = `git fetch --depth=1 origin '${previousCommit}'`;
+    type Step = {
+      name?: string;
+      uses?: string;
+      run?: string;
+      with?: Record<string, unknown>;
+      if?: string;
+      "continue-on-error"?: boolean;
+      "timeout-minutes"?: number;
+    };
+    const requireHistory = (steps: Step[]) => {
+      const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
+      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify");
+      expect(checkoutIndex).toBeGreaterThanOrEqual(0);
+      expect(checkoutIndex).toBeLessThan(verifyIndex);
+      expect(steps.filter((step) => step.uses === "actions/checkout@v5")).toHaveLength(1);
+      expect(steps[checkoutIndex]!.with).toEqual(checkoutInputs);
+      // Full checkout supplies origin/main and ordinary historical fixtures.
+      // Only the archived pre-rewrite parity proof needs an explicit fetch.
+      const fetchIndex = steps.findIndex((step) => step.run === archivalCommand);
+      expect(fetchIndex).toBeGreaterThan(checkoutIndex);
+      expect(fetchIndex).toBeLessThan(verifyIndex);
+      expect(steps.filter((step) => /\bgit\s+fetch\b/.test(step.run ?? ""))).toEqual([steps[fetchIndex]]);
+      expect(steps[fetchIndex]).toMatchObject({
+        name: "Fetch archived pre-rewrite parity proof",
+        "timeout-minutes": 1,
+      });
+      for (const step of [steps[checkoutIndex], steps[fetchIndex], steps[verifyIndex]]) {
+        expect(step).not.toHaveProperty("if");
+        expect(step).not.toHaveProperty("continue-on-error");
+      }
+    };
+    const steps: Step[] = job.steps;
+    expect(() => requireHistory(steps)).not.toThrow();
+    const checkout = steps.find((step) => step.uses === "actions/checkout@v5")!;
+    const withoutCheckout = steps.filter((step) => step !== checkout);
+    expect(() => requireHistory(withoutCheckout)).toThrow();
+    expect(() => requireHistory([...withoutCheckout, checkout])).toThrow();
+    for (const depth of [undefined, 1, 2]) {
+      const inputs = { ...checkout.with, "fetch-depth": depth };
+      if (depth === undefined) delete inputs["fetch-depth"];
+      expect(() => requireHistory(steps.map((step) => (step === checkout ? { ...checkout, with: inputs } : step)))).toThrow();
+    }
+    const archivalFetch = steps.find((step) => step.run === archivalCommand)!;
+    const withoutFetch = steps.filter((step) => step !== archivalFetch);
+    expect(() => requireHistory(withoutFetch)).toThrow();
+    expect(() => requireHistory([archivalFetch, ...withoutFetch])).toThrow();
+    expect(() => requireHistory([...withoutFetch, archivalFetch])).toThrow();
+    for (const override of [{ run: archivalCommand.replace(previousCommit, "0".repeat(40)) }, { run: "git fetch --depth=1 origin '${PARITY_COMMIT}'" }, { "timeout-minutes": undefined }, { "timeout-minutes": 2 }]) {
+      expect(() => requireHistory(steps.map((step) => (step === archivalFetch ? { ...step, ...override } : step)))).toThrow();
+    }
+    for (const target of [checkout, archivalFetch, steps.find((step) => step.run === "vp run verify")]) {
+      for (const override of [{ if: "always()" }, { "continue-on-error": true }]) {
+        expect(() => requireHistory(steps.map((step) => (step === target ? { ...step, ...override } : step)))).toThrow();
+      }
+    }
+    expect(() => requireHistory([...steps, { run: "git fetch origin main --depth=1" }])).toThrow();
+  });
+
   it("prepares only the first checked-in development package version", () => {
     expect(developmentPackage.version).toBe("3.0.0-dev.84");
     expect(developmentPackage.agentera.suiteVersion).toBe("3.0.0");
@@ -336,23 +402,7 @@ describe("package publication orchestration", () => {
     expect(verification["timeout-minutes"]).toBeGreaterThanOrEqual(45);
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5").with.ref).toBe("${{ github.sha }}");
     expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
-    const requireParityPrerequisite = (steps: { uses?: string; run?: string; if?: string; "continue-on-error"?: boolean }[]) => {
-      const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
-      const fetchIndex = steps.findIndex((step) => step.run === "git fetch origin refs/heads/main:refs/remotes/origin/main --depth=1");
-      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify");
-      expect(fetchIndex).toBeGreaterThan(checkoutIndex);
-      expect(fetchIndex).toBeLessThan(verifyIndex);
-      for (const step of [steps[fetchIndex], steps[verifyIndex]]) {
-        expect(step).not.toHaveProperty("if");
-        expect(step).not.toHaveProperty("continue-on-error");
-      }
-    };
-    expect(() => requireParityPrerequisite(verification.steps)).not.toThrow();
-    const fetch = verification.steps.find((step: { name?: string }) => step.name === "Fetch main for source-owned py-ts parity");
-    const withoutFetch = verification.steps.filter((step: unknown) => step !== fetch);
-    expect(() => requireParityPrerequisite(withoutFetch)).toThrow();
-    expect(() => requireParityPrerequisite([...withoutFetch, fetch])).toThrow();
-    expect(() => requireParityPrerequisite(verification.steps.map((step: unknown) => (step === fetch ? { ...fetch, run: "git fetch origin refs/heads/main --depth=1" } : step)))).toThrow();
+    expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5")["timeout-minutes"]).toBe(1);
     expect(verification).not.toHaveProperty("continue-on-error");
     const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify release source without receipt");
     expect(sourceVerification.run).toBe("vp run verify");

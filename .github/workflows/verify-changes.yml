@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
       - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
         with:
           version: "0.3.0"
@@ -22,10 +24,11 @@ jobs:
         run: vp install --frozen-lockfile
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - name: Fetch main for source-owned py-ts parity
-        run: git fetch origin main --depth=1
       - name: Run static validation
         run: vp check
+      - name: Fetch archived pre-rewrite parity proof
+        timeout-minutes: 1
+        run: git fetch --depth=1 origin '9b36f93fbeaa391550db3e8dedf015ff54b5ce69'
       - name: Run check-only release verification
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured

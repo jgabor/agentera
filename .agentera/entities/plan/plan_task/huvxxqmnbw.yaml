@@ -1,0 +1,23 @@
+id: huvxxqmnbw
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Make CI release verification self-contained and source-isolated
+  status: complete
+  depends_on:
+    - zfrceplpfm
+  acceptance:
+    - GIVEN a fresh CI runner WHEN verification starts THEN full history and the pinned pre-rewrite parity proof support historical fixtures.
+    - GIVEN regression cases WHEN history is incomplete THEN checks reject it; temporary fixtures never modify the checkout source inventory.
+    - GIVEN remote-only history and empty user Git configuration WHEN release verification runs THEN all gates pass without local backup refs or checkout build artifacts.
+    - GIVEN the correction WHEN reviewed THEN strict assertions, exact-SHA checkout, finite budgets, default workers, failure suppression and publisher isolation remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-ci-history-huvxxqmnbw-1
+      source: "Independent Agentera audit: four criteria and evidence PASS; 65 tests, compiler binding and 7274-file full-run inventory checked. Remote-only eleven-gate run and zero source watcher events verified; publisher bytes unchanged. Actual CI confirmation remains pending."
+      recorded_at: 2026-09-06 01:52
+      writer_command: agentera state plan record-evaluation

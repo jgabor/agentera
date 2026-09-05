@@ -118,10 +118,12 @@ describe("routine CI owner DAG", () => {
     expect(verificationPolicy.owners.performance.execution.authoritative_runner.runs_on).toBe("ubuntu-24.04");
 
     const lines = runLines(workflow);
-    const fetchIndex = lines.indexOf("git fetch origin main --depth=1");
-    const conjunctionIndex = lines.indexOf(RELEASE_COMMAND);
-    expect(fetchIndex).toBeGreaterThanOrEqual(0);
-    expect(fetchIndex).toBeLessThan(conjunctionIndex);
+    const steps = workflow.jobs.cli.steps;
+    const checkoutIndex = steps.findIndex((step: { uses?: string }) => step.uses === "actions/checkout@v5");
+    const conjunctionIndex = steps.findIndex((step: { run?: string }) => step.run === RELEASE_COMMAND);
+    expect(checkoutIndex).toBeGreaterThanOrEqual(0);
+    expect(checkoutIndex).toBeLessThan(conjunctionIndex);
+    expect(steps[checkoutIndex].with).toEqual({ "fetch-depth": 0 });
     expect(lines).not.toContain("bash packages/cli/scripts/py_ts_parity.sh --check --json");
     for (const gate of source.gates) {
       expect(lines.some((line) => invokes(line, gate.command.join(" ")))).toBe(false);

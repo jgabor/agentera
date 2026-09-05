@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { createHash } from "node:crypto";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
@@ -7,6 +8,7 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildProtocolValueLookup, checkDeprecation, checkPrimitiveReferences, checkTriggerEnrichment, collectSchemaGroups, loadCapabilitySchemaContract, validateCapability } from "../../src/validate/capability.js";
+import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -25,16 +27,11 @@ function writeCapability(capDir: string, schemaText: string | null, opts: { inst
   const prose = opts.prose ?? false;
   fs.mkdirSync(capDir, { recursive: true });
   if (instructions) {
-    // D65: the per-capability prose is a TypeScript module at
-    // packages/cli/src/capabilities/<name>/instructions.ts. The validator
-    // resolves that path against the repo root using the capability name
-    // derived from the capDir, so the test fixture must mirror the new
-    // shape: write a minimal instructions.ts that exports the prose.
+    // Mirror the production layout inside the isolated source-root override.
     const capabilityName = path.basename(capDir);
-    const modulePath = path.join(REPO_ROOT, "packages", "cli", "src", "capabilities", capabilityName, "instructions.ts");
+    const modulePath = path.join(tmp, "packages", "cli", "src", "capabilities", capabilityName, "instructions.ts");
     fs.mkdirSync(path.dirname(modulePath), { recursive: true });
     fs.writeFileSync(modulePath, '// Fixture for capability validator (D65).\nexport const instructions: string = "# Fixture\\n";\nexport default instructions;\n');
-    fixtureModules.push(modulePath);
   }
   if (prose) {
     // Legacy compatibility fixture: a prose.md file in the capDir must not
@@ -75,17 +72,29 @@ function validSchema(opts: { triggerPriority?: string; triggerId?: string } = {}
 }
 
 let tmp: string;
-let fixtureModules: string[];
 beforeEach(() => {
   tmp = fs.mkdtempSync(path.join(os.tmpdir(), "vc-"));
-  fixtureModules = [];
+  vi.stubEnv(BOOTSTRAP_SOURCE_ROOT_ENV, tmp);
 });
 afterEach(() => {
+  vi.unstubAllEnvs();
   fs.rmSync(tmp, { recursive: true, force: true });
-  for (const modulePath of fixtureModules) {
-    fs.rmSync(modulePath, { force: true });
-  }
 });
+
+function checkoutSourceInventory() {
+  const root = path.join(REPO_ROOT, "packages/cli/src");
+  return fs
+    .readdirSync(root, { recursive: true })
+    .map(String)
+    .filter((file) => /\.(?:ts|mjs)$/.test(file))
+    .sort()
+    .map((file) => ({
+      path: file,
+      sha256: createHash("sha256")
+        .update(fs.readFileSync(path.join(root, file)))
+        .digest("hex"),
+    }));
+}
 
 function writeContract(mutate: (data: any) => void): string {
   const data = structuredClone(YAML.parse(fs.readFileSync(CONTRACT_PATH, "utf8")));
@@ -96,6 +105,31 @@ function writeContract(mutate: (data: any) => void): string {
 }
 
 describe("validateCapability", () => {
+  it("keeps checkout source unchanged while fixture instruction modules exist", () => {
+    const before = checkoutSourceInventory();
+    const capDir = writeCapability(path.join(tmp, "source-isolation-proof"), validSchema());
+    const modulePath = path.join(tmp, "packages/cli/src/capabilities/source-isolation-proof/instructions.ts");
+    expect(fs.statSync(modulePath).isFile()).toBe(true);
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);
+    expect(checkoutSourceInventory()).toEqual(before);
+    // The module is still alive: cleanup cannot conceal a checkout write.
+    expect(fs.existsSync(modulePath)).toBe(true);
+  });
+
+  it.each(["missing", "directory"])("rejects a %s fixture module without falling back to checkout instructions", (kind) => {
+    const before = checkoutSourceInventory();
+    expect(fs.statSync(path.join(REPO_ROOT, "packages/cli/src/capabilities/status/instructions.ts")).isFile()).toBe(true);
+    const capDir = writeCapability(path.join(tmp, "status"), validSchema(), {
+      instructions: false,
+    });
+    if (kind === "directory")
+      fs.mkdirSync(path.join(tmp, "packages/cli/src/capabilities/status/instructions.ts"), {
+        recursive: true,
+      });
+    expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([`V1 [error]: packages/cli/src/capabilities/status/instructions.ts not found in ${capDir}`]);
+    expect(checkoutSourceInventory()).toEqual(before);
+  });
+
   it("passes a valid fixture", () => {
     const capDir = writeCapability(path.join(tmp, "valid"), validSchema());
     expect(validateCapability(capDir, CONTRACT_PATH)).toEqual([]);

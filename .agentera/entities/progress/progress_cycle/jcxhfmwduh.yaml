@@ -1,0 +1,16 @@
+id: jcxhfmwduh
+artifact: progress
+record:
+  timestamp: 2026-09-06 01:41
+  type: fix
+  phase: build
+  what: Capability validator fixtures now create instruction modules in disposable source roots instead of the checkout, removing the observed live-source writes during parallel verification.
+  context:
+    intent: Fix the demonstrated fixture-isolation defect without changing runtime validation, history prerequisites or strict evidence assertions.
+    constraints: Only the capability test and directly invalidated canonical evidence changed. Existing full-history checkouts and single archived-parity fetch are unchanged, as are default workers, finite budgets, exact-SHA/default-PR semantics and publisher isolation. No commits, integration, CI reruns, main mutation or Orca use.
+    unknowns: This is local CI-equivalent verification, not a hosted run or authoritative hosted performance qualification. The watcher is event-based, but had no errors or dropped records. No audit, evaluation, decision satisfaction or task completion was recorded.
+    scope: Reused the proven GitHub-only neutral Git database and frozen dependencies after checking its prior source binding. Applied the exact updated dirty overlay, not HEAD-only authority. Prior chronology is preserved. This subsequent progress record is the only post-verification checkout change and is outside the tested snapshot.
+  discovered: The validator already honors AGENTERA_BOOTSTRAP_SOURCE_ROOT through resolveSourceRoot. Tests now scope that existing override to each temporary fixture and restore it afterward, so no production interface change was needed. A regression compares checkout path/hash inventory while the valid fixture module still exists; missing-module and directory-module cases cannot fall back to the checkout's real status capability.
+  verified: All 32 capability tests and the combined 42 validator/evidence tests passed. Static validation and source typecheck passed; canonical compiler evidence remains 451 diagnostics across 103 test files with zero source diagnostics. Exactly one owning release run passed all eleven gates on the updated remote-only neutral snapshot, generation ca049eb96ef89743337c1ea666ff1cb927340b68ac6b45d14026e3a9228ac2ce. The external read-only watcher recorded zero events, differences, drops or errors under checkout src/test/scripts, versus the previously observed 71 events and 21 transient module paths. Pre/post bindings, selected SHA and remote Git metadata matched, with no alternates, local backup refs or checkout dist/bundle.
+  next: Leave huvxxqmnbw in progress for one independent audit. Coordinator owns acceptance evaluation and completion. No additional full run, commit, push or publication was performed.
+  publication_order: 367

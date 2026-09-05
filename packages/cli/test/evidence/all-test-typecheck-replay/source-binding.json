@@ -2349,7 +2349,7 @@
   },
   {
     "path": "packages/cli/test/release/publicationOrchestration.test.ts",
-    "sha256": "2a8f2f207a65463eb92a73619960eefc805762ea4f4e688ef6aeb5de195d7cf5"
+    "sha256": "9bb7f3bc49e3bb2d9a6793db5b3b9146566db49fb02bd697ac89110928f7c490"
   },
   {
     "path": "packages/cli/test/release/publicationTransaction.test.ts",
@@ -2385,7 +2385,7 @@
   },
   {
     "path": "packages/cli/test/release/routineCiOwnership.test.ts",
-    "sha256": "7f2fc6090828371febdad37f26375ab98b08a0a9e2162cab3f0c3ce6509744c4"
+    "sha256": "0e3f71057410f0fbb7d0c11ade036574f1eacb18db9c451d5d5891decc56b698"
   },
   {
     "path": "packages/cli/test/release/sourceQualificationDag.test.ts",
@@ -2877,7 +2877,7 @@
   },
   {
     "path": "packages/cli/test/validate/capability.test.ts",
-    "sha256": "1d98ac6e89bd3ba2f395d7a9d609886eb7395601733105b37f5332cab41e7a84"
+    "sha256": "1fddf28eb0959c454ff2d2ff1d02907866e115954b114c512484daf0b45a8b48"
   },
   {
     "path": "packages/cli/test/validate/crossCapability.test.ts",

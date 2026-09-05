@@ -1,0 +1,16 @@
+id: bvlspfxytk
+artifact: progress
+record:
+  timestamp: 2026-09-05 23:41
+  type: fix
+  phase: build
+  what: Both shallow source-verification jobs now fetch the exact parity and historical-plugin evidence before tests. Workflow regressions bind those pins to existing test authorities.
+  context:
+    intent: Supply bounded historical evidence to shallow CI without weakening parity or upgrade assertions.
+    constraints: No commits, integration, pushes, CI reruns or publication. Exact-SHA checkout, default workers, budgets, failure suppression and publisher isolation unchanged.
+    unknowns: Underlying fresh-reset failure remains undiagnosed. Profile unavailable; vision deferred; decision satisfaction remains null/provisional without user confirmation. No retry history recorded. Metadata emulation is not a fresh hosted checkout or uncontended performance evidence.
+    scope: Two workflow fetch steps, existing workflow regression suite and directly invalidated canonical type evidence. No runtime changes. Coordinator-owned task and final dependency preserved.
+  discovered: "Full release verification still fails the packaged destructive-reset assertion: canonical fresh-v3 initialization did not produce fresh_uninitialized state. No broader correction was attempted."
+  verified: Four targeted suites passed 90 tests with four-commit shallow metadata, no alternates and empty global/system Git configuration. Missing parity history rejected with pin_evidence_source_mismatch; missing plugin history exited 128. Workflow mutations rejected missing, wrong, late and suppressed fetches. Static checks and source typecheck passed; replay evidence remains 451 diagnostics across 103 test files and zero source diagnostics. Full release verification failed generated-overlap at packageVerification.test.ts; only stress and typecheck were reported complete. Checkout dist/bundle remained absent; real Git metadata and coordinator dependency were unchanged.
+  next: Coordinator must resolve the packaged fresh-reset assertion before rerunning the owning release gate. Task huvxxqmnbw remains in progress, unaudited and unevaluated; final dependency and plan lifecycle remain open.
+  publication_order: 361

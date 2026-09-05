@@ -71,6 +71,7 @@ jobs:
         timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
+          fetch-depth: 0
       - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
         timeout-minutes: 1
         with:
@@ -84,9 +85,9 @@ jobs:
       - name: Check static project policy
         timeout-minutes: 1
         run: vp check
-      - name: Fetch main for source-owned py-ts parity
+      - name: Fetch archived pre-rewrite parity proof
         timeout-minutes: 1
-        run: git fetch origin refs/heads/main:refs/remotes/origin/main --depth=1
+        run: git fetch --depth=1 origin '9b36f93fbeaa391550db3e8dedf015ff54b5ce69'
       - name: Verify release source without receipt
         timeout-minutes: 40
         run: vp run verify

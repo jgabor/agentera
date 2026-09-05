@@ -1,0 +1,16 @@
+id: bprqswbkmk
+artifact: progress
+record:
+  timestamp: 2026-09-05 23:51
+  type: fix
+  phase: build
+  what: "The two-pin shallow-history correction passes targeted verification but does not yet satisfy the full release gate: formatter replay requires two additional historical commits."
+  context:
+    intent: Report the next concrete shallow-history prerequisite without expanding the two-pin implementation scope.
+    constraints: No commits, integration, pushes, CI reruns or publication. Exact-SHA checkout, workers, budgets, suppression and publisher isolation unchanged.
+    unknowns: Further failures may remain because release verification stopped at the first reported owner. Profile unavailable; vision deferred; decision satisfaction remains null/provisional. No evaluation or retry history recorded. Local metadata emulation is not a fresh hosted checkout or uncontended performance evidence.
+    scope: This record corrects the earlier failure attribution. Repository changes remain two workflow fetches, existing workflow regression coverage and directly invalidated canonical type evidence.
+  discovered: The formatter-normalization replay manifest owns base and normalized commits absent from the four-commit shallow fixture. Its verifier requires both even for static replay. The earlier packaged reset failure recorded in progress bvlspfxytk came from disposable Git-adapter misrouting of positional fixture initialization, not established product behavior.
+  verified: After correcting only the disposable adapter, fixture initialization and cold shallow-metadata preflight passed. The owning full release gate then failed generated-overlap at formatterNormalizationReplay.test.ts:27 with verifier exit 1. Read-only object checks confirmed both formatter manifest commits absent. Only stress and typecheck were reported complete; no all-gate pass is claimed. The 90 targeted tests, static checks, source typecheck and unchanged 451/103/0 compiler-evidence result remain valid. Post-run checks confirmed exactly four shallow commits, no alternates, empty global/system Git configuration, absent checkout dist/bundle, and unchanged real Git metadata and coordinator dependency.
+  next: Coordinator must decide the bounded prerequisite expansion for formatter replay before rerunning the owning full gate. No additional history was fetched and no omitted owner was run separately. Task huvxxqmnbw remains in progress, unaudited and unevaluated; preserve the final dependency and open plan.
+  publication_order: 362

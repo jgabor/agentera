@@ -1,0 +1,16 @@
+id: pxbaswmuww
+artifact: progress
+record:
+  timestamp: 2026-09-06 00:12
+  type: fix
+  phase: build
+  what: Both source-verification jobs now request full checkout history instead of individual pins. Acceptance remains blocked because the required previous-main parity commit is not reachable from advertised remote branches or tags.
+  context:
+    intent: Replace the rejected pin-fetch approach with the simplest full-history checkout contract and test it against actual remote history.
+    constraints: Only the two verification checkouts and existing regressions changed, plus invalidated canonical compiler evidence. Exact-SHA and default PR selection, checkout timeout, package and parent budgets, default workers and publisher isolation remain unchanged. No commits, integration, pushes, CI reruns, publication or main mutation.
+    unknowns: Remote history retention requires coordinator action outside this task's mutation authority. Further failures remain unexcluded because the owning release command stopped at generated-overlap. Local execution is not hosted CI or authoritative performance evidence. Prior absent profile, deferred vision and provisional decision-satisfaction caveats remain.
+    scope: The disposable fixture used normal Git with no adapter or inherited object database, clean user roots and a frozen dependency bootstrap. The verified source included the uncommitted overlay, not HEAD alone. This progress record is subsequent state-only closeout, not part of that failed release snapshot. No runtime, parity or formatter assertions were weakened.
+  discovered: A fresh Git database fetched all remote branches and tags but lacked the previous-main parity commit. Only a local pre-rewrite main backup contains it. Both formatter commits and the historical plugin commit are remotely reachable. Full checkout fixes shallow history but cannot recover unadvertised history. Preserve progress bvlspfxytk and bprqswbkmk as prior evidence, not current acceptance.
+  verified: Both workflow regressions failed without full-history checkout, then all 33 workflow tests passed. Static validation and source typecheck passed; canonical compiler evidence remains 451 diagnostics across 103 test files with zero source diagnostics. The fresh remote-history fixture preserved the selected SHA and exact dirty-tree bytes, had 2701 commits, origin/main, no alternates, empty global/system Git configuration and no checkout dist/bundle before or after verification. Focused tests passed 104 of 106, including strict negative evidence and historical plugin assertions; parity and formatter replay failed on the missing previous-main evidence. The full eleven-gate release command failed generated-overlap with only stress and typecheck reported complete. No all-gate pass is claimed.
+  next: Coordinator must resolve durable remote reachability of the required pre-rewrite parity history before rerunning the owning release command. No omitted owner was run separately. Task huvxxqmnbw remains in progress pending audit; no evaluation or completion recorded.
+  publication_order: 363

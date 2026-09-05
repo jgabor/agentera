@@ -1,0 +1,16 @@
+id: zsxpycclej
+artifact: progress
+record:
+  timestamp: 2026-09-06 01:21
+  type: test
+  phase: build
+  what: The single neutral-path remote-only reproduction passed all eleven release gates with the existing full-history and archived-parity workflow correction unchanged.
+  context:
+    intent: Perform the one authorized clean reproduction without the prior task-ID path collision and retain read-only filesystem observations.
+    constraints: No commits, pushes, integration, CI reruns, publication, main writes, Orca, worker changes, budget changes or assertion weakening. Preserve all prior progress chronology and workflow fixes.
+    unknowns: Local CI-equivalent setup is not a hosted CI run or authoritative performance qualification. Event-time hashing can miss a file restored before its callback, but this run had no watcher drops or errors. The observed transient inventory changes remain a credible scheduling-dependent risk despite the passing result.
+    scope: The passing snapshot includes all current intended uncommitted bytes, not HEAD alone. Only this subsequent typed progress record changes the assigned checkout after verification; it is outside the tested snapshot. No task completion, audit or evaluation state was recorded.
+  discovered: The external watcher observed capability validator fixtures create and delete instruction modules inside the live source inventory. The helper in test/validate/capability.test.ts writes under repository src/capabilities and removes the files after each case. These transient entries can affect a concurrent source-binding scan; this passing run did not reproduce the mismatch, so the earlier failure is not claimed eliminated.
+  verified: Exactly one clean vp run verify passed source, stress, performance, capacity, package, generated-overlap, typecheck, build, compact, capability-contract and activation-conjunction. The neutral fixture used fresh GitHub branch/tag history plus the fixed archival SHA, pinned Node and pnpm, default workers and empty global/system Git config. Pre/post checks confirmed the exact current overlay, selected SHA, unchanged refs/config, no alternates or local backup refs, and absent checkout dist/bundle. The read-only external watcher recorded 71 events with zero drops or errors, including 21 transient instruction-module paths; final bound-file differences were empty. No source edits, evidence regeneration, diagnostic shims or preloads were used.
+  next: Coordinator owns independent audit and acceptance evaluation. Keep huvxxqmnbw in progress and unevaluated. Review the observed live-source fixture writes as a concrete remaining isolation risk; no additional full run or source correction was performed.
+  publication_order: 366

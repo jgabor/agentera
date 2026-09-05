@@ -1,0 +1,16 @@
+id: pfwbtuqgat
+artifact: progress
+record:
+  timestamp: 2026-09-06 01:02
+  type: test
+  phase: build
+  what: Structured overlap diagnostics captured a live source-binding mismatch in compiler-evidence verification and a separate disposable-path collision in npm parity. No underlying compiler fix is yet justified.
+  context:
+    intent: Obtain actual errors from the existing remote-only full-history and archival-proof fixture before changing behavior.
+    constraints: No commits, pushes, integration, CI reruns, publication, main writes, Orca, worker or budget changes. Preserve the two full-history checkouts, single archival fetch, strict evidence checks and prior progress chronology.
+    unknowns: No differing source entry, cross-file writer or concurrency cause is proven. The first direct-script diagnostic bypassed Vite+ and selected the wrong pnpm; it is launcher-only evidence. A reporter added to the root shim missed the package-local shim and was corrected before structured capture. These limitations are retained in the diagnostic report.
+    scope: All instrumentation was disposable-only and removed from active execution. The exact dirty source snapshot and Git metadata remained unchanged. The neutral-path harness correction was identified but not applied during this stopped diagnosis. This one subsequent progress record is outside the failed verification snapshots.
+  discovered: The positive compiler replay returned source binding mismatch during full overlap while post-run static verification returned no errors. The offending source entry was not captured, and the earlier two tamper assertions' exact received arrays remain unproven. The parity response embeds the task-named fixture path, whose name contains the forbidden uvx substring. That failure is a path collision, not a demonstrated legacy-command regression.
+  verified: Normal owning release runs with diagnostic capture still failed generated-overlap; only stress and typecheck were reported complete. A retained source report identified three failures in one capture. The structured reporter later captured actual source binding mismatch versus expected empty errors in the positive replay case, plus the full parity response containing the fixture path. Final source and metadata checks passed, and verifyEvidence with replay false returned an empty array afterward. Both temporary installed CLI shim edits were removed; no tracked implementation or canonical evidence changed. No all-gate pass or compiler root-cause claim is made.
+  next: Keep huvxxqmnbw in progress and unevaluated. A subsequent bounded diagnosis must capture the differing source-binding entry at the failing read; do not weaken exact tamper assertions or regenerate away an unexplained mismatch. Use a neutral disposable path for future parity proof. Stopped rather than continue verification loops.
+  publication_order: 365

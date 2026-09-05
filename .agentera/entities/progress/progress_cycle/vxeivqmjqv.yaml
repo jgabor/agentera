@@ -1,0 +1,16 @@
+id: vxeivqmjqv
+artifact: progress
+record:
+  timestamp: 2026-09-06 00:31
+  type: fix
+  phase: build
+  what: Full-history checkout plus the explicitly authorized archived parity fetch now passes every focused history test. Full release verification remains blocked by all-test compiler-evidence assertions under generated overlap.
+  context:
+    intent: Preserve full history and add only the newly authorized fixed archived parity proof prerequisite.
+    constraints: No commits, pushes, integration, publication, CI reruns, main writes, Git config changes, runtime changes or budget changes. Exact-SHA and default PR checkout semantics, default workers and publisher isolation remain unchanged.
+    unknowns: The release envelope truncates the received error array and cleans its temporary report; isolated reproduction passed, so neither a race nor a particular verifier error is proven. Local execution is not hosted CI or authoritative performance evidence. Prior profile, vision and decision-satisfaction caveats remain.
+    scope: Only both named archival fetch steps, their existing regression and directly invalidated canonical compiler evidence changed in this continuation. Prior progress pxbaswmuww, bprqswbkmk and bvlspfxytk is preserved. Snapshot evidence includes the dirty overlay and updated typed acceptance, not HEAD alone; this subsequent progress record is outside the failed release snapshot.
+  discovered: GitHub serves the pre-rewrite parity proof by its fixed SHA although it is absent from advertised branch and tag history. The reused remote-only database contained no such object before retrieval; afterward it retained all ordinary history and one separate depth-limited archival commit. The new release failure names raw-versus-normalized evidence assertions, but the same test file passes alone, so its underlying mismatch is not established.
+  verified: Both workflow regressions rejected the missing archival fetch, then all 33 workflow tests passed. Static checks and source typecheck passed; regenerated canonical evidence remains 451 diagnostics across 103 test files with zero source diagnostics. The remote-only snapshot passed all 106 focused tests, including strict parity, formatter and historical upgrade assertions. The owning eleven-gate release command failed generated-overlap; only stress and typecheck were reported complete. A bounded offline diagnostic of the failing compiler-evidence file passed all ten tests. Pre/post checks preserved selected SHA, source bytes, refs and Git config, with no alternates, local backup refs or checkout dist/bundle. No all-gate pass is claimed.
+  next: Coordinator must diagnose the full-overlap compiler-evidence failure with untruncated assertion output before another owning release run. No omitted owner was run separately and no generator strategy was changed. Task huvxxqmnbw remains in progress pending independent audit, without evaluation completion.
+  publication_order: 364
