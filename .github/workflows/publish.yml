@@ -84,6 +84,9 @@ jobs:
       - name: Check static project policy
         timeout-minutes: 1
         run: vp check
+      - name: Fetch main for source-owned py-ts parity
+        timeout-minutes: 1
+        run: git fetch origin refs/heads/main:refs/remotes/origin/main --depth=1
       - name: Verify release source without receipt
         timeout-minutes: 40
         run: vp run verify

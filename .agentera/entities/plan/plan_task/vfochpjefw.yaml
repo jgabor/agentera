@@ -1,0 +1,23 @@
+id: vfochpjefw
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Restore CLI watch-test discovery (P2)
+  status: complete
+  depends_on:
+    - mmdhuclbjn
+  acceptance:
+    - GIVEN the CLI package watch command WHEN invoked THEN it discovers CLI tests with their package setup rather than the root no-test selection.
+    - GIVEN a changed CLI test WHEN watch mode observes it THEN that test reruns.
+    - GIVEN bounded regression coverage WHEN package or incorrect root selection is exercised THEN package discovery passes and the wrong selection is detected.
+    - GIVEN contributor verification WHEN checks run THEN project-local tool resolution and existing source-owner behavior remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-review-vfochpjefw-1
+      source: "Independent audit: four criteria PASS; package/root discovery and local runner checked, recorded fail/pass watch rerun substantiated, compiler evidence validated. Progress nfgveliwii."
+      recorded_at: 2026-09-05 14:17
+      writer_command: agentera state plan record-evaluation

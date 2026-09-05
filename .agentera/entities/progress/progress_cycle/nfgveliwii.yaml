@@ -1,0 +1,16 @@
+id: nfgveliwii
+artifact: progress
+record:
+  timestamp: 2026-09-05 14:09
+  type: fix
+  phase: build
+  what: Restored CLI package watch discovery for vfochpjefw in plan vtqzlztjsk by retaining package cwd with project-local pnpm exec.
+  context:
+    intent: Discover CLI tests with package setup and observe changed-test reruns without changing verification ownership.
+    constraints: Keep project-local runner resolution, pinned root Vite+, pnpm 10.30.3 and uncached checks. No commits, pushes, tags, publication or version changes.
+    unknowns: Decision udusuvfkcj confidence is provisional and satisfaction null. Vision detail remains deferred, profile unavailable and no persona grounding inferred. Retry status is not_recorded; historical readiness does not certify this checkout.
+    scope: Package watch script, existing configuration regression, and directly invalidated compiler evidence.
+  discovered: The first disposable watch harness expected Waiting after failure, but Vitest prints Watching; correcting that observation matched the successful fail/pass reruns. Retained compiler evidence was regenerated after regression edits without changing diagnostics totals or source-only policy.
+  verified: "Configuration tests passed: 7 tests, including bounded package discovery, rejection of empty root selection, package sourceSetup evidence and unchanged source-owner command. Actual pnpm -C packages/cli run test:watch loaded package setup, reran an intentionally failing edit, then reran a passing correction. The smoke harness terminated its process group and removed fixtures. Combined focused suite passed 70 tests. Consolidated static, source typecheck, source suite (4309 passed, 2 skipped), build and package suite (25 tests) passed. Capability validation and package dry run passed; dry run reported five warnings and created no artifact."
+  next: Keep vfochpjefw in_progress pending external audit. Coordinator owns evaluation, final release verification and lifecycle closeout.
+  publication_order: 350

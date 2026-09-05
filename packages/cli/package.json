@@ -40,7 +40,7 @@
     "test:performance:integration": "node test/integration/performanceOwner.integration.mjs",
     "test:capacity": "node scripts/verify-lane.mjs capacity",
     "test:toolchain-baseline": "node scripts/verify-toolchain-baseline.mjs",
-    "test:watch": "pnpm --workspace-root exec vp test watch --config vite.config.ts",
+    "test:watch": "pnpm exec vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:prime-budget": "node scripts/measure-prime-budget.mjs",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",

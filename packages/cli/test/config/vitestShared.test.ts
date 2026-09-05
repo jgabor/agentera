@@ -1,6 +1,7 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, inject, it } from "vitest";
 import YAML from "yaml";
 import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
 
@@ -17,6 +18,34 @@ describe("source worker policy", () => {
   it("wires the local source command to the measured runner policy", () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
     expect(packageJson.scripts["test:source:local"]).toBe(`AGENTERA_VITEST_RUNNER_POLICY=${MEASURED_LOCAL_WORKER_POLICY} node scripts/verify-lane.mjs source`);
+  });
+
+  it("keeps watch discovery in the CLI package with its source setup, not the root no-test config", () => {
+    const packageRoot = path.join(REPO_ROOT, "packages/cli");
+    const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"));
+    expect(packageJson.scripts["test:watch"]).toBe("pnpm exec vp test watch --config vite.config.ts");
+    expect(packageJson.scripts["test:source"]).toBe("node scripts/verify-lane.mjs source");
+    expect(fs.existsSync(path.join(inject("sourceBuildRoot"), "bin/agentera.js"))).toBe(true);
+    const args = packageJson.scripts["test:watch"]
+      .split(" ")
+      .slice(1)
+      .map((arg: string) => (arg === "watch" ? "list" : arg));
+    for (const workspaceRoot of [false, true]) {
+      const result = spawnSync("pnpm", [...(workspaceRoot ? ["--workspace-root"] : []), ...args, "test/config/vitestShared.test.ts", "--json"], {
+        cwd: packageRoot,
+        encoding: "utf8",
+        timeout: 15_000,
+      });
+      expect(result.error).toBeUndefined();
+      const tests = JSON.parse(result.stdout);
+      if (workspaceRoot) {
+        expect(tests).toEqual([]);
+      } else {
+        expect(result.status, result.stderr).toBe(0);
+        expect(tests.length).toBeGreaterThan(0);
+        expect(tests.every((test: { file: string }) => test.file === path.join(packageRoot, "test/config/vitestShared.test.ts"))).toBe(true);
+      }
+    }
   });
 
   it("keeps unmeasured runners at the conservative fallback", () => {

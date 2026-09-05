@@ -1,0 +1,23 @@
+id: gjsukzvohl
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Fix fresh-checkout development verification (P1)
+  status: complete
+  depends_on:
+    - lbsqhpmbnw
+  acceptance:
+    - GIVEN a fresh selected-SHA checkout without origin/main WHEN development verification starts THEN the parity-required ref is available before source tests run.
+    - GIVEN regression coverage WHEN prerequisites are present or absent THEN the valid case passes and the missing-ref case is detected.
+    - GIVEN verification failure WHEN jobs settle THEN construction and publication remain suppressed; publisher isolation remains unchanged.
+    - GIVEN no fresh push authorization WHEN this correction is verified THEN no push or publication occurs.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-review-gjsukzvohl-1
+      source: "Independent audit: four criteria PASS; 30 focused tests, shallow ref-fetch smoke, unchanged publisher, evidence integrity verified. Progress wdvprqtzhh. Hosted execution remains untested."
+      recorded_at: 2026-09-05 14:17
+      writer_command: agentera state plan record-evaluation

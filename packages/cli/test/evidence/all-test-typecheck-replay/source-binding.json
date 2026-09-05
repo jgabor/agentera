@@ -2061,7 +2061,7 @@
   },
   {
     "path": "packages/cli/test/config/vitestShared.test.ts",
-    "sha256": "aaf10224b0794d38138614761de035aca48adcec89224d35a706b54f3acff74f"
+    "sha256": "21f0326d1a2392dbdbbff42527da7e5815e4f20229551c9f8c853abc93e0f191"
   },
   {
     "path": "packages/cli/test/core/developmentInvocation.test.ts",
@@ -2341,7 +2341,7 @@
   },
   {
     "path": "packages/cli/test/release/publicationOrchestration.test.ts",
-    "sha256": "125fb2cbe17cf38df9a564d10b021e7b437e22d648619ba5538f21116a4808b0"
+    "sha256": "2a8f2f207a65463eb92a73619960eefc805762ea4f4e688ef6aeb5de195d7cf5"
   },
   {
     "path": "packages/cli/test/release/publicationTransaction.test.ts",

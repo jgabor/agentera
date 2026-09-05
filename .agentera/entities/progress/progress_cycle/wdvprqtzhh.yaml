@@ -1,0 +1,16 @@
+id: wdvprqtzhh
+artifact: progress
+record:
+  timestamp: 2026-09-05 14:09
+  type: fix
+  phase: build
+  what: Added the parity-required main fetch before development source verification for gjsukzvohl in plan vtqzlztjsk.
+  context:
+    intent: Make fresh selected-SHA development verification acquire its existing parity prerequisite before tests.
+    constraints: Preserve pinned root Vite+, pnpm 10.30.3, exact setup-vp, publisher bytes and isolation. No commits, pushes, tags, publication or version changes.
+    unknowns: Hosted execution remains untested. Decision udusuvfkcj confidence is provisional and satisfaction null; its degraded list omission is not a reconstructed outcome. Vision detail is deferred and profile grounding unavailable. Retry status is not_recorded.
+    scope: Workflow prerequisite, existing publication regression, and directly invalidated verification evidence; final lifecycle remains coordinator-owned.
+  discovered: Regression edits invalidated retained all-test compiler evidence. The existing generator refreshed its bindings; isolated replay retained 451 test-only diagnostics across 103 files and zero source diagnostics.
+  verified: "Publication tests passed: 49 tests, including missing, wrong and late prerequisite rejection, failure-sensitive job dependencies, and unchanged hash-pinned OIDC publisher isolation. Disposable shallow Git metadata rejected missing and wrong-destination origin/main; the exact workflow fetch created the correct ref while retaining the selected SHA. Consolidated checks passed: vp check, vp run typecheck, vp run test (263 files; 4309 passed, 2 skipped), vp run build, and package verification (25 tests). No push or publication occurred."
+  next: Keep gjsukzvohl in_progress pending external audit. Coordinator owns task evaluation and final release verification; no hosted run is authorized.
+  publication_order: 349

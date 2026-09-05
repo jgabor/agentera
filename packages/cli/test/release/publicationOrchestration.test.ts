@@ -336,6 +336,24 @@ describe("package publication orchestration", () => {
     expect(verification["timeout-minutes"]).toBeGreaterThanOrEqual(45);
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5").with.ref).toBe("${{ github.sha }}");
     expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
+    const requireParityPrerequisite = (steps: { uses?: string; run?: string; if?: string; "continue-on-error"?: boolean }[]) => {
+      const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
+      const fetchIndex = steps.findIndex((step) => step.run === "git fetch origin refs/heads/main:refs/remotes/origin/main --depth=1");
+      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify");
+      expect(fetchIndex).toBeGreaterThan(checkoutIndex);
+      expect(fetchIndex).toBeLessThan(verifyIndex);
+      for (const step of [steps[fetchIndex], steps[verifyIndex]]) {
+        expect(step).not.toHaveProperty("if");
+        expect(step).not.toHaveProperty("continue-on-error");
+      }
+    };
+    expect(() => requireParityPrerequisite(verification.steps)).not.toThrow();
+    const fetch = verification.steps.find((step: { name?: string }) => step.name === "Fetch main for source-owned py-ts parity");
+    const withoutFetch = verification.steps.filter((step: unknown) => step !== fetch);
+    expect(() => requireParityPrerequisite(withoutFetch)).toThrow();
+    expect(() => requireParityPrerequisite([...withoutFetch, fetch])).toThrow();
+    expect(() => requireParityPrerequisite(verification.steps.map((step: unknown) => (step === fetch ? { ...fetch, run: "git fetch origin refs/heads/main --depth=1" } : step)))).toThrow();
+    expect(verification).not.toHaveProperty("continue-on-error");
     const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify release source without receipt");
     expect(sourceVerification.run).toBe("vp run verify");
     expect(sourceVerification["timeout-minutes"] * 60_000).toBeGreaterThanOrEqual(publicationContract.benchmark.timeouts.sourceQualificationMs);

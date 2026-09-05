@@ -1,0 +1,16 @@
+id: xiilobrotz
+artifact: progress
+record:
+  timestamp: 2026-09-05 13:43
+  type: chore
+  phase: plan
+  what: Added two blocking review corrections to the active Vite+ consolidation plan.
+  context:
+    intent: Track confirmed publication-verification and watch-test regressions before final validation.
+    constraints: Keep plan vtqzlztjsk open and final validation tpujtbmeqj in_progress. Preserve historical completed tasks and evaluations; new correction tasks explicitly block closeout. No implementation, commit, push, or publication is authorized by this amendment.
+    unknowns: Hosted phase timing and projected queue cost still require a separately authorized run.
+    scope: Two correction tasks and final-validation dependencies; no product or workflow changes.
+  discovered: "P1: publish.yml runs release verification without fetching origin/main, required by pyTsParity.test.ts on a fresh checkout. P2: test:watch changes to the workspace root and selects the root no-test configuration. Corrections are gjsukzvohl and vfochpjefw respectively."
+  verified: Both correction tasks were accepted by the typed plan writer. Final validation now explicitly depends on both corrections and all existing task records. Earlier passing audits remain historical evidence, not proof that these findings are resolved.
+  next: Implement and verify gjsukzvohl and vfochpjefw before resuming tpujtbmeqj. Obtain fresh explicit authorization before any hosted push; retain hosted timing and TODO closeout requirements.
+  publication_order: 348

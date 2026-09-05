@@ -1,5 +1,5 @@
 schema_version: agentera.allTestTypecheckViability.v1
-recorded: 2026-09-03
+recorded: 2026-09-05
 outcome: source-only-retain
 toolchain:
   vite_plus: 0.3.0
@@ -7,12 +7,12 @@ toolchain:
   vitest: 4.1.11
   oxlint: 1.79.0
   oxfmt: 0.64.0
-  node: 24.20.0
+  node: 24.19.0
 measurement:
   boundary: integrity-bound copies of packages/cli/src, test, and imported scripts under strict NodeNext; production tsconfig and manifests unchanged
   setup: pnpm 10.30.3 frozen install from the tracked temporary manifest and lockfile in disposable HOME, cache, store, and work roots
   command: vp lint src test --type-aware --type-check --tsconfig tsconfig.json --format=json
-  manifest_sha256: d13eaef93921f6a0b88ed2a8d3ba93ae879f9f8b0912098fd76af5f822301e7f
+  manifest_sha256: d91e8495a0d9817a9cbdfc5e16587dedfc775e887ce6397dccd1248bef1fbf92
   compiler_diagnostics:
     total: 451
     files: 103

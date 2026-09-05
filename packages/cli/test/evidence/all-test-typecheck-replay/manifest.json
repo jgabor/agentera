@@ -12,7 +12,7 @@
     "--format=json"
   ],
   "packageManager": "pnpm@10.30.3",
-  "node": "v24.20.0",
+  "node": "v24.19.0",
   "toolIntegrities": {
     "vite-plus@0.3.0": "sha512-GNWbWuWD37frCSFrz6MLzUo62bTv5IOJozHEgZYOkxsLkuQtTwm4TowzpfoGrSsfwhAAtfPd/sK1Y0+v1SwhZA==",
     "vite@8.2.2": "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==",
@@ -25,9 +25,9 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "ef622afac564232c010e98db16caedf1f24e1254f48774d36e56a566ebc1f052",
-    "compiler.raw.json.gz": "d934da50954b6120eb5a6d1ba22ec5edf9c842f1867a11305246146af725885a",
-    "compiler.normalized.json": "055fa4c0675fd45c9e1b7a798301b511d619a2789624051b34e6ec77dbebefe8",
+    "source-binding.json": "2ae9da934377f2c11cb8fb21e14cfd9c5f8cf47b6289ec769980f96ac3ee185f",
+    "compiler.raw.json.gz": "824446090bcccbe974685a56c5f49501e33bc5af81c9c68142e5ea8f150dc198",
+    "compiler.normalized.json": "ead4c67fef951a1b3d080ccca84e26fcf1efc478db84c345d9b061dd6534d1f4",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
     "classifications/genuine-defect.ts": "17483fd7270f43a8dfb37a1d1fdbaf79cda287370ff3a8f04cd1e751ed86dc79"
@@ -44,10 +44,10 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-DQZTA4/work"
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-OO3Bgg/work"
   },
-  "rawGzipSha256": "d934da50954b6120eb5a6d1ba22ec5edf9c842f1867a11305246146af725885a",
-  "normalizedSha256": "055fa4c0675fd45c9e1b7a798301b511d619a2789624051b34e6ec77dbebefe8",
+  "rawGzipSha256": "824446090bcccbe974685a56c5f49501e33bc5af81c9c68142e5ea8f150dc198",
+  "normalizedSha256": "ead4c67fef951a1b3d080ccca84e26fcf1efc478db84c345d9b061dd6534d1f4",
   "classifications": {
     "classifications/valid.ts": [],
     "classifications/intentional-invalid.ts": [
@@ -57,5 +57,5 @@
       "TS18047"
     ]
   },
-  "manifestSha256": "d13eaef93921f6a0b88ed2a8d3ba93ae879f9f8b0912098fd76af5f822301e7f"
+  "manifestSha256": "d91e8495a0d9817a9cbdfc5e16587dedfc775e887ce6397dccd1248bef1fbf92"
 }
