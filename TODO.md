@@ -49,6 +49,7 @@
 - [ ] [id:ifdcgoxqsf] [test:3.0.0] Retain replayable Vite+ formatter equivalence evidence
 - [ ] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
 - [ ] [id:jrwiznhelw] [test:3.0.0] Make source verification hermetic under disposable user roots
+- [ ] [id:gutcrlqdyy] [test:3.0.0] Make root toolchain verification host-runtime independent
 
 ## ⇢ Annoying
 

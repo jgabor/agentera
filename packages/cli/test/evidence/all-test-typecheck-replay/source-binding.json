@@ -112,8 +112,12 @@
     "sha256": "9492d16b00b73cb06f83318e44f92f182cec7f3e12ca0762ceea4e04c99e90d0"
   },
   {
+    "path": "packages/cli/scripts/verify-managed-toolchain.mjs",
+    "sha256": "7ffabc69b8d4a755a45b74da278bc4c3d2183a0064b755292e1ff69b95b0b701"
+  },
+  {
     "path": "packages/cli/scripts/verify-toolchain-baseline.mjs",
-    "sha256": "9528ccd1ec345b0352e32c0c0986e61c40babe744d42b6c1ceab1b830e209ce1"
+    "sha256": "a6261e0564278e10af8ab77dc39ca7c089eca741f75a21243c19581d06c0d547"
   },
   {
     "path": "packages/cli/src/analytics/extractCorpus.ts",
@@ -2885,7 +2889,7 @@
   },
   {
     "path": "packages/cli/test/validate/toolchainBaseline.test.ts",
-    "sha256": "474c83240912d749913a358c5f528b75efbee58415a9d76c443d78c390a81bc4"
+    "sha256": "60c82039bc3ffeebdf7fb250599b96fb2c516beab3a34e932de063fcd380f4df"
   },
   {
     "path": "packages/cli/test/validate/vocabularyAuthority.test.ts",

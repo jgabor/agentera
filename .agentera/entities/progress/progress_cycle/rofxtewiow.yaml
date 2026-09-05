@@ -1,0 +1,13 @@
+id: rofxtewiow
+artifact: progress
+record:
+  timestamp: 2026-09-05 04:00
+  type: test
+  phase: build
+  what: Started arbitrary-host certification of the root Vite+ authority.
+  context:
+    intent: Provide one canonical managed-runtime entry that selects Node 24.19.0 and pnpm 10.30.3 from a different supported host.
+    constraints: Preserve the root migration, lockfile, package and publication boundaries, versions, and existing failed predecessor state.
+    scope: Managed-runtime proof, wrong-runtime pre-command rejection, and user-state isolation.
+  next: Run positive and negative runtime proofs, then the full uncached root and package verification set; leave mmdhuclbjn in progress for audit.
+  publication_order: 337

@@ -1,0 +1,24 @@
+id: gutcrlqdyy
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Make root toolchain verification host-runtime independent
+  requirements:
+    - Provide one canonical root verification command that enters the pinned Node 24.19.0 environment before checking toolchain identity.
+    - Allow independent evaluation from a supported but different host Node version without installing into user-managed state.
+    - Preserve exact Vite+, pnpm, lockfile, no-cache, and package-boundary proofs.
+  acceptance:
+    - A host on Node 24.20.0 can run the canonical proof and observe the managed 24.19.0 toolchain passing.
+    - A deliberately wrong managed runtime fails before project commands execute.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Make root toolchain verification host-runtime independent"
+      severity: normal
+      status: open
+      order: 35

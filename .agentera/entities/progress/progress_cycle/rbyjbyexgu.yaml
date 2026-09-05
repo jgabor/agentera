@@ -1,0 +1,15 @@
+id: rbyjbyexgu
+artifact: progress
+record:
+  timestamp: 2026-09-05 09:40
+  type: test
+  phase: build
+  what: Certified root Vite+ authority from host Node 24.20.0 through managed Node 24.19.0.
+  context:
+    intent: Close the predecessor audit gap with a canonical arbitrary-host proof.
+    constraints: Preserve exact versions, lock authority, root command semantics, package behavior, and publication boundaries.
+    scope: Managed runtime entry, pre-command wrong-runtime fixture, replay refresh, and complete local verification.
+  discovered: The project-local Vite+ binary intentionally rejects env commands, so the launcher removes workspace node_modules bins from PATH only for the global Vite+ environment entry; project commands still resolve the exact root Vite+ 0.3.0.
+  verified: "Host v24.20.0 entered disposable VP_HOME runtimes: v24.19.0 passed with pnpm 10.30.3 and Vite+ 0.3.0; v24.20.0 failed before the project marker. Lock SHA-256 remained f7c7ec45623317cd5b04472012a0178106f630138564373356fc4f8ece722993. Bare check, uncached root formatter/lint/typecheck/test/build/11-gate no-receipt verify, standard and hermetic source, exact replays, package/dry-run, compact, capability, retained-reference, activation, and hooks passed."
+  next: Leave mmdhuclbjn in progress for independent audit.
+  publication_order: 338

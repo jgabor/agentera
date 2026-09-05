@@ -5,7 +5,7 @@ record:
   depends_on:
     - ezmkzlpvmg
     - xxprntajxz
-  status: in_progress
+  status: blocked
   acceptance:
     - GIVEN fresh setup WHEN bootstrap and install run THEN the exact root toolchain wins and pnpm lock authority is unchanged.
     - GIVEN bare vp check WHEN validation runs THEN formatter, accepted lint ceiling, and separate source-only tsc block regressions.
@@ -13,12 +13,12 @@ record:
     - GIVEN package validation WHEN complete THEN shipped CLI behavior and package boundaries remain unchanged.
   plan: vtqzlztjsk
   evaluation:
-    attempt_count: 1
-    failure_count: 1
+    attempt_count: 2
+    failure_count: 2
     last_verdict: fail
-    last_failure_evidence: Bare vp check enforces only warning count, not accepted warning identity; vp run verify fails generated-overlap on runtime-matrix rejection semantics and offline formatter/type replay dependencies.
+    last_failure_evidence: All functional criteria pass except fresh toolchain proof cannot be independently rerun from a host on Node 24.20.0 without invoking the managed 24.19.0 runtime.
     provenance:
-      attempt_id: orchestrate-audit-pseiddctar-1
-      source: "Independent audit: bootstrap and package criteria pass; static non-regression and root verify criteria fail."
-      recorded_at: 2026-09-05 02:14
+      attempt_id: orchestrate-audit-pseiddctar-2
+      source: "Independent correction audit: criteria 2-4 pass; criterion 1 not certifiable in evaluator runtime; aggregate lint ceiling accepted."
+      recorded_at: 2026-09-05 03:28
       writer_command: agentera state plan record-evaluation

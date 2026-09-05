@@ -110,6 +110,7 @@ function parseJsonOutput(label, result) {
 const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-toolchain-baseline-"));
 try {
   assert.equal(process.version, `v${REQUIRED_NODE}`, "integration must use the pinned Node.js");
+  if (process.env.AGENTERA_PROJECT_COMMAND_MARKER) fs.writeFileSync(process.env.AGENTERA_PROJECT_COMMAND_MARKER, "started\n");
   const retainedBaseline = loadToolchainBaseline();
   assert.equal(retainedBaseline.selection.vite_plus.version, REQUIRED_VP);
   assert.equal(retainedBaseline.selection.setup_vp.selected.version, REQUIRED_SETUP_VP);
