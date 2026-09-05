@@ -12,3 +12,13 @@ record:
     - GIVEN a deliberately wrong managed runtime WHEN proof starts THEN it fails before project commands execute.
     - GIVEN bare check and root run commands WHEN formatter, lint ceiling, typecheck, test, build, and no-receipt verify execute THEN all pass with cache disabled.
     - GIVEN package validation WHEN complete THEN shipped CLI behavior and package boundaries remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Managed vp check reports formatting drift in packages/cli/test/validate/toolchainBaseline.test.ts; managed runtime and package criteria pass.
+    provenance:
+      attempt_id: orchestrate-audit-mmdhuclbjn-1
+      source: "Independent audit: criteria 1, 2, and 4 pass; criterion 3 fails before the full root command sequence."
+      recorded_at: 2026-09-05 09:41
+      writer_command: agentera state plan record-evaluation

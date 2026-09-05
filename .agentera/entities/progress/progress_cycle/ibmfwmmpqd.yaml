@@ -1,0 +1,15 @@
+id: ibmfwmmpqd
+artifact: progress
+record:
+  timestamp: 2026-09-05 10:12
+  type: fix
+  phase: build
+  what: Corrected the managed root formatting drift in the toolchain baseline test.
+  context:
+    intent: Resolve only the failed audit's Oxfmt finding and restore mechanically invalidated replay evidence.
+    constraints: Preserve the first FAIL evaluation, exact toolchain versions, lockfile, package and publication boundaries, accepted setup-vp risk, and in-progress task status.
+    scope: One exact Vite+ 0.3.0/Oxfmt 0.64.0 formatting pass plus generated all-test type replay bindings.
+  discovered: The audit failure was formatting-only. The historical formatter replay remained valid; the live all-test type source binding required regeneration through its supported generator.
+  verified: Managed host-to-project runtime proof and wrong-runtime pre-marker rejection, bare check, uncached root commands and eleven-gate no-receipt verification, standard and hermetic source, both replays, package and dry-run checks, compact, capability, retained-reference, activation, and hooks passed. The lockfile, root version authority, package/publication boundaries, and non-OIDC setup risk were unchanged.
+  next: Keep mmdhuclbjn in progress with its first FAIL evaluation preserved for final independent audit.
+  publication_order: 339

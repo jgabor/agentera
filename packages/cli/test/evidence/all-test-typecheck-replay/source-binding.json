@@ -2889,7 +2889,7 @@
   },
   {
     "path": "packages/cli/test/validate/toolchainBaseline.test.ts",
-    "sha256": "60c82039bc3ffeebdf7fb250599b96fb2c516beab3a34e932de063fcd380f4df"
+    "sha256": "474c83240912d749913a358c5f528b75efbee58415a9d76c443d78c390a81bc4"
   },
   {
     "path": "packages/cli/test/validate/vocabularyAuthority.test.ts",
