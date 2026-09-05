@@ -1,0 +1,15 @@
+id: feladlofoa
+artifact: progress
+record:
+  timestamp: 2026-09-05 21:32
+  type: fix
+  phase: build
+  what: Scoped hosted development source verification to the existing two-worker overlap override; added allocation regression coverage and refreshed directly invalidated retained type evidence.
+  context:
+    intent: Apply the selected hosted-only worker allocation without changing defaults or scheduling.
+    constraints: Preserve publisher isolation, failure suppression, budgets, coverage, coordinator state edits; no commits, integration, push, CI reruns, or publication.
+    unknowns: Hosted performance remains unproven. Task retry not_recorded; decision udusuvfkcj provisional with satisfaction null; profile unavailable and vision deferred.
+    scope: publish.yml verification-step environment, existing publication/overlap regression tests, generated retained type evidence, typed task/progress state.
+  verified: "Focused publication/overlap tests passed 41/41; vp check, source typecheck, and retained type-evidence verification passed (451 diagnostics, 103 test files, zero source diagnostics). One final four-core full vp run verify with AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS=2 failed the unchanged package wall-time budget: 66781ms versus 60000ms. Conjunction failed after 68961ms; stress and typecheck completed. Checkout dist and bundle absent before and after. No retry or hosted action. Exact local failure JSON retained in /tmp/opencode/zfrceplpfm-final-verify.log."
+  next: Leave task zfrceplpfm pending for audit and coordinator decision; final full verification and hosted acceptance remain unsatisfied. No budget increase or blind retry.
+  publication_order: 357

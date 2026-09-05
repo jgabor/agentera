@@ -130,7 +130,7 @@ owners:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
     execution:
-      wall_time_budget_ms: 60000
+      wall_time_budget_ms: 515000
       budget_basis:
         baseline:
           source: docs/packaging/v3-release-workflow-baseline.json#measurements.package
@@ -162,7 +162,26 @@ owners:
           measured_on: 2026-08-12
           owner_wall_time_ms: 28714
           conditions: GitHub-hosted Ubuntu 24.04 with a shared Corepack download cache and otherwise isolated package state.
+        hosted_overlap_measurement:
+          command: vp run verify
+          conditions: GitHub-hosted release source qualification with source, package, and build overlapping under the existing DAG and default workers.
+          maximum_ms: 256090
+          observations:
+            - run_id: 33977118182
+              source: https://github.com/jgabor/agentera/actions/runs/33977118182
+              owner_wall_time_ms: 256090
+              outcome: tests_passed_budget_failed
+            - run_id: 33983584914
+              source: https://github.com/jgabor/agentera/actions/runs/33983584914
+              owner_wall_time_ms: 247379
+              setup_ms: 32305
+              outside_setup_residual_ms: 215074
+              outcome: tests_passed_budget_failed
+          note: Package Vitest succeeded in both runs; post-completion rejection was solely the owner budget, not a new hosted qualification pass or performance certification.
         calibration_history:
+          superseded_standalone_budget_ms: 60000
+          superseded_standalone_formula: min(baseline_minimum_ms, max(ceil(controlled_maximum_ms * 1.25 / 5000) * 5000, ceil(remote_cold_ms * 2 / 5000) * 5000))
+          superseded_context: The controlled maximum of 5558ms and remote cold observation of 28714ms remain historical standalone evidence, not calibration for the intended release overlap. The historical baseline ceiling does not bound this workload.
           superseded_single_construction_command_runs_ms: [7500, 7738, 7604, 11733, 11012, 9967, 14293]
           note: These runs calibrated the candidate limits but do not represent the final two-construction snapshot.
           rejected_candidate:
@@ -176,7 +195,7 @@ owners:
             command_wall_time_runs_ms: [11012, 9967, 14293]
             outcome: passed_repeatedly_before_final_fixture_strengthening
         derivation:
-          formula: min(baseline_minimum_ms, max(ceil(controlled_maximum_ms * 1.25 / 5000) * 5000, ceil(remote_cold_ms * 2 / 5000) * 5000))
+          formula: ceil(hosted_overlap_maximum_ms * 2 / 5000) * 5000
           controlled_headroom_multiplier: 1.25
           remote_cold_headroom_multiplier: 2
           rounding_quantum_ms: 5000

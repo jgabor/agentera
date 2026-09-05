@@ -476,8 +476,25 @@ reduced to its distribution-only inventory, three controlled runs took 5.558,
 retained in the policy but is explicitly superseded as final-snapshot evidence:
   the 10,000 ms limit rejected a passing 10.429-second owner, while the
   15,000 ms limit passed owner runs of 9.859, 8.962, and 13.069 seconds. The
-policy combines the controlled maximum with the remote cold-run evidence. The
-remote headroom governs the current 60,000 ms limit.
+former 60,000 ms calibration combined the controlled maximum (5,558 ms) with
+standalone remote cold-run evidence (28,714 ms); that context is superseded,
+not erased. The intended release DAG overlaps source, package, and build.
+Its successful package Vitest runs measured 256,090 ms in
+[run 33977118182](https://github.com/jgabor/agentera/actions/runs/33977118182)
+and 247,379 ms in
+[run 33983584914](https://github.com/jgabor/agentera/actions/runs/33983584914).
+Both were rejected after completion solely by the old package budget. The latter
+included 32,305 ms of setup and 215,074 ms outside setup: the budget covers the
+whole owner, not just construction. Applying the existing remote 2× headroom
+and 5,000 ms rounding to the overlap maximum gives
+`ceil(256090 * 2 / 5000) * 5000 = 515000` ms. The historical standalone
+baseline ceiling is not a bound for this different workload.
+This is a measured correctness-gate bound, not a cache, bypass, runtime
+optimization, or performance certification. Machine-sensitive performance
+remains with its separate isolated owner. Assertions, two independent
+constructions, isolation, sequencing, and default workers are unchanged, as is
+the active 2,400,000 ms parent qualification deadline. These historical failed
+qualifications do not establish a new hosted pass; hosted closeout is pending.
 The controlled shell timings include command-launch overhead, so they
 conservatively bound the owner process measured by `verify-lane.mjs`. An invalid
 limit fails before test execution. A successful test process that exceeds the

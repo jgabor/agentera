@@ -1,0 +1,16 @@
+id: urgmkqqkgz
+artifact: progress
+record:
+  timestamp: 2026-09-05 22:40
+  type: fix
+  phase: build
+  what: "Accepted package verification budget recalibration for task zfrceplpfm: the single owner limit is 515000ms, derived from the successful hosted-overlap maximum using existing 2x headroom and 5000ms rounding. Removed the abandoned two-worker candidate; default workers and verification workload remain unchanged."
+  context:
+    intent: Restore the user-approved simple, reliable root Vite+ same-SHA pipeline through policy correction, not runtime optimization.
+    constraints: Preserve assertions, two independent constructions, isolation, sequencing, default workers, other owner budgets and the finite qualification deadline. No runtime/cache/import changes, changelog bookkeeping, commits, integration, push, CI rerun or publication.
+    unknowns: No new hosted qualification has run under the revised budget; local performance-owner success is not hosted performance certification.
+    scope: Verification policy, corresponding packaging guide, canonical-budget regression and invalidated retained type evidence only. No new plan or task.
+  discovered: The historical standalone calibration did not represent the intended release overlap. Runs 33977118182 and 33983584914 passed package Vitest but failed the post-completion budget; they are not new hosted passes. Historical progress feladlofoa and nuzcvfjlie is preserved.
+  verified: Pinned Node 24.19.0 and Corepack pnpm 10.30.3. Focused laneOwnership, sourceQualificationDag and publicationOrchestration passed 125 tests. vp check and vp run typecheck passed. Regenerated type evidence verified with 451 diagnostics across 103 test files and zero source diagnostics. Full vp run verify passed all 11 gates without worker overrides, including package and activation conjunction. Checkout dist and bundle were absent before and after; git diff --check passed. Workflow and abandoned regression edits match HEAD.
+  next: Task remains in_progress, unaudited and unevaluated. Coordinator owns review, lifecycle completion and remaining authorized push; hosted closeout remains pending.
+  publication_order: 359

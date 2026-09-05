@@ -1,0 +1,16 @@
+id: nuzcvfjlie
+artifact: progress
+record:
+  timestamp: 2026-09-05 21:40
+  type: fix
+  phase: build
+  what: Retained the uncommitted overlap allocation candidate; source inspection found no defensible fixture-only package speedup or wall-time accounting defect.
+  context:
+    intent: Continue zfrceplpfm only for a bounded coverage-preserving repair after failed verification recorded in feladlofoa.
+    constraints: Keep runtime coverage, both constructions, negative controls, overlap and deadlines. No commits, integration, push, CI reruns, publication or main mutation.
+    unknowns: Cold CLI module evaluation versus contract parsing cost is unmeasured. Final local and hosted acceptance remain unproven; decision satisfaction and task evaluation are unchanged.
+    scope: Package/helper/startup and timing source inspection; existing candidate checks; typed task state. No product or test edits.
+  discovered: Producer readiness has 15 invocation sites but 27 cold CLI invocations after loop expansion, covering distinct publication, replay, validation, startup and privacy outcomes. Its project fixture is already small. Profile lookup is targeted, not a source-wide scan. Eager imports and repeated authority reads need attribution before changing runtime behavior.
+  verified: Pinned Node 24.19.0 and Corepack pnpm 10.30.3. Focused publication/overlap tests passed 41/41; retained type-evidence verification and git diff --check passed. Checkout dist and bundle remained absent. Prior full verification still fails the unchanged package budget; no new full/performance run or omitted owner was executed. Inspection and exact prior timing evidence are in /tmp/opencode/zfrceplpfm-escalation-report.md.
+  next: Task zfrceplpfm remains in_progress, not evaluated or complete. Blocked pending authorization for scoped extracted-CLI cold-start attribution under the same four-core overlap owner. A proven repair, full eleven-gate pass and coordinator audit must precede any separately authorized final push; hosted acceptance remains pending.
+  publication_order: 358

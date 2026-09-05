@@ -2905,7 +2905,7 @@
   },
   {
     "path": "packages/cli/test/verification/laneOwnership.test.ts",
-    "sha256": "e6c718d167d873ab727ca9ef34b07371830c335ce32973235acb8edaa6ba1ad1"
+    "sha256": "146d349951b3eaeb473857d1732bafc675a729445076b0947e702ab29d8f3642"
   },
   {
     "path": "packages/cli/test/verification/overlapPending.test.ts",

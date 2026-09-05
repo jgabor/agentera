@@ -253,6 +253,38 @@ describe("verification lane ownership", () => {
     expect(run(["source"]).runs[0].workers).toBe("");
   });
 
+  it("calibrates the single package budget from successful hosted overlap owners", () => {
+    const { wall_time_budget_ms: budget, budget_basis: basis } = PRODUCTION_POLICY.owners.package.execution;
+    const measurement = basis.hosted_overlap_measurement;
+    expect(measurement.observations).toEqual([
+      {
+        run_id: 33977118182,
+        source: "https://github.com/jgabor/agentera/actions/runs/33977118182",
+        owner_wall_time_ms: 256090,
+        outcome: "tests_passed_budget_failed",
+      },
+      {
+        run_id: 33983584914,
+        source: "https://github.com/jgabor/agentera/actions/runs/33983584914",
+        owner_wall_time_ms: 247379,
+        setup_ms: 32305,
+        outside_setup_residual_ms: 215074,
+        outcome: "tests_passed_budget_failed",
+      },
+    ]);
+    expect(measurement.maximum_ms).toBe(Math.max(...measurement.observations.map((entry: { owner_wall_time_ms: number }) => entry.owner_wall_time_ms)));
+    expect(basis.derivation.formula).toBe("ceil(hosted_overlap_maximum_ms * 2 / 5000) * 5000");
+    expect(basis.derivation.remote_cold_headroom_multiplier).toBe(2);
+    expect(basis.derivation.rounding_quantum_ms).toBe(5000);
+    expect(budget).toBe(Math.ceil((measurement.maximum_ms * basis.derivation.remote_cold_headroom_multiplier) / basis.derivation.rounding_quantum_ms) * basis.derivation.rounding_quantum_ms);
+    expect(budget).toBe(515000);
+    expect(basis.controlled_measurement.maximum_ms).toBe(5558);
+    expect(basis.remote_cold_measurement.owner_wall_time_ms).toBe(28714);
+    const publication = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"));
+    expect(publication.benchmark.timeouts.sourceQualificationMs).toBe(2400000);
+    expect(budget).toBeLessThan(publication.benchmark.timeouts.sourceQualificationMs);
+  });
+
   it("enforces an owner wall-time budget after a successful runner", () => {
     const passing = packageTimingFixture();
     const passingContract = JSON.parse(fs.readFileSync(passing.contractPath, "utf8"));

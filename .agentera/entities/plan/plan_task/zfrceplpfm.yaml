@@ -1,0 +1,23 @@
+id: zfrceplpfm
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Align package verification budget with the release workload
+  status: complete
+  depends_on:
+    - aldcaqatkf
+  acceptance:
+    - GIVEN recorded successful hosted-overlap durations WHEN existing calibration is applied THEN the single package budget is 515000 milliseconds with traceable evidence.
+    - GIVEN verification WHEN it runs THEN package assertions, independent constructions, isolation, sequencing and default workers remain unchanged.
+    - GIVEN policy regression checks WHEN results pass, fail or exceed budget THEN existing failure semantics and finite qualification deadlines remain enforced.
+    - GIVEN the revised policy WHEN full local verification runs THEN all gates pass; runtime optimization is excluded and hosted closeout remains pending.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-package-policy-zfrceplpfm-1
+      source: "Independent Agentera audit: four criteria and evidence PASS; hosted timings verified from run logs, existing remote calibration retained, 125 focused tests and retained type replay passed. Default workers and publisher unchanged; hosted closeout pending."
+      recorded_at: 2026-09-05 22:47
+      writer_command: agentera state plan record-evaluation
