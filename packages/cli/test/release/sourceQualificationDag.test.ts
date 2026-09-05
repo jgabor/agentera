@@ -631,6 +631,73 @@ describe("source qualification DAG", () => {
     }
   });
 
+  it.each(["budget", "process", "setup"])("retains bounded package timings after %s failure, cleanup and parent tail truncation", async (failure) => {
+    const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-timing-test-"));
+    fs.mkdirSync(path.join(workRoot, "barrier"));
+    const timings = {
+      barrier_ms: 185,
+      build_first_ms: 80_000,
+      build_second_ms: 90_000,
+      pack_first_ms: 20_000,
+      pack_second_ms: 20_000,
+      extract_ms: 1000,
+      scan_ms: 500,
+      evidence_ms: 30_000,
+      setup_ms: 241_685,
+      wall_ms: 256_090,
+      outside_setup_residual_ms: 14_405,
+    };
+    const partial = {
+      barrier_ms: 185,
+      build_first_ms: 80_000,
+      setup_incomplete_ms: 80_185,
+      wall_ms: 80_200,
+    };
+    const expected = failure === "setup" ? partial : timings;
+    const reason = failure === "budget" ? "package owner exceeded its 60000ms wall-time budget (256090ms)" : "package overlap command failed with exit 1";
+    try {
+      const operation = runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        sourceIdentity: sourceIdentity(),
+        workRoot,
+        now: () => 1000,
+        handleSignals: false,
+        policyBytes: Buffer.from("policy"),
+        loadInventory: () => ({ counts: {}, files: {} }),
+        waitForReady: async () => undefined,
+        startParticipant: (name: string) => {
+          if (name === "package")
+            fs.writeFileSync(
+              path.join(workRoot, "package.json.timings.json"),
+              JSON.stringify({
+                ...expected,
+                secret: "NPM_TOKEN=private-secret",
+                argv: "/private/fixture/path",
+                identity_ms: -1,
+              }),
+            );
+          return {
+            name,
+            promise: name === "package" ? Promise.reject(ownerError("generated-overlap", `${reason}; ${"log noise ".repeat(1000)}`)) : Promise.resolve({}),
+            cancel: () => undefined,
+          };
+        },
+        withDeadline: async (promise: Promise<unknown>) => promise,
+      });
+      const error = await operation.catch((error: Error & { owner: string }) => error);
+      expect(error.owner).toBe("generated-overlap");
+      expect(error.message).toContain(reason);
+      expect(fs.existsSync(workRoot)).toBe(false);
+      const retained = error.message.slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
+      expect(retained).toContain(`package timings ms: ${JSON.stringify(expected)}`);
+      expect(retained).not.toContain("private-secret");
+      expect(retained).not.toContain("/private/fixture/path");
+      expect(retained).not.toContain("identity_ms");
+    } finally {
+      fs.rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
   it("bounds blocked overlap settlement, cancels every owned child, and skips later reader evidence", async () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-blocked-test-"));
@@ -705,6 +772,7 @@ describe("source qualification DAG", () => {
     let now = 1_000;
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-success-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
+    fs.writeFileSync(path.join(workRoot, "package.json.timings.json"), JSON.stringify({ setup_ms: 6, wall_ms: 10, outside_setup_residual_ms: 4 }));
     const packageRoot = createOverlapPackageRoot(workRoot);
     const started: Array<{ name: string; command: string[] }> = [];
     const inventory = {
@@ -780,7 +848,11 @@ describe("source qualification DAG", () => {
         invocation: "3.0.0-dev.41",
         participants: {
           source: { command: gate("source").command, elapsedMs: 10 },
-          package: { command: gate("package").command, elapsedMs: 10 },
+          package: {
+            command: gate("package").command,
+            elapsedMs: 10,
+            timings: { setup_ms: 6, wall_ms: 10, outside_setup_residual_ms: 4 },
+          },
           build: {
             command: [...gate("build").command, "--", "--output-root", privateRoot],
             elapsedMs: 10,

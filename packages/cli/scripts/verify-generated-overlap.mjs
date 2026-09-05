@@ -9,6 +9,7 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
+import { readPackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultPackageRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -444,6 +445,7 @@ export async function runGeneratedOverlap(options = {}) {
           ...packageResult,
           command: completed.package.command,
           elapsedMs: completed.package.elapsedMs,
+          timings: readPackageTimings(path.join(root, "package.json.timings.json")),
         },
         build: {
           command: completed.build.command,
@@ -480,6 +482,10 @@ export async function runGeneratedOverlap(options = {}) {
       if (!primaryFailure) setPrimaryFailure(cleanupError);
     }
     if (now() >= handoffDeadline) primaryFailure.handoffDeadlineExceeded = true;
+    const timings = readPackageTimings(path.join(root, "package.json.timings.json"));
+    // Append after raw tails: the parent retains the last 1,000 characters.
+    // Copy before deleting the private overlap directory, including on failure.
+    if (Object.keys(timings).length > 0) primaryFailure.message += `; ${packageTimingSummary(timings)}`;
     throw primaryFailure;
   } finally {
     if (options.handleSignals !== false) process.removeListener("SIGTERM", onSigterm);

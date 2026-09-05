@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -8,6 +9,7 @@ import YAML from "yaml";
 
 import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
+import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -289,6 +291,9 @@ function runOwner(owner, state, forwarded = []) {
     runnerEnv.AGENTERA_VERIFICATION_WORKERS = String(definition.execution.workers);
   }
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
+  const timingRoot = owner === "package" && !resultChannel ? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-timing-")) : undefined;
+  const timingFile = owner === "package" ? (resultChannel ? `${resultChannel}.timings.json` : path.join(timingRoot, "timings.json")) : undefined;
+  if (timingFile) runnerEnv.AGENTERA_VERIFICATION_PACKAGE_TIMINGS = timingFile;
   const startedAt = process.hrtime.bigint();
   const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
     cwd: packageRoot,
@@ -298,6 +303,8 @@ function runOwner(owner, state, forwarded = []) {
     env: runnerEnv,
   });
   const elapsedMs = Math.ceil(Number(process.hrtime.bigint() - startedAt) / 1_000_000);
+  if (timingFile) console.log(packageTimingSummary(completePackageTimings(timingFile, elapsedMs)));
+  if (timingRoot) fs.rmSync(timingRoot, { recursive: true, force: true });
   if (captureEvidence) {
     process.stdout.write(result.stdout ?? "");
     process.stderr.write(result.stderr ?? "");

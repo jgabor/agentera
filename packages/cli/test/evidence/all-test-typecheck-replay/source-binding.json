@@ -48,6 +48,10 @@
     "sha256": "3c036e95290af251266c5eb213881dd069f5ab4c11f0d828ba0aaca091b28081"
   },
   {
+    "path": "packages/cli/scripts/package-verification-timing.mjs",
+    "sha256": "cc42adc40a7b5019e68040e6beae9fce6c78673e6e60fcd2f635118b71ee574b"
+  },
+  {
     "path": "packages/cli/scripts/performance-evidence.mjs",
     "sha256": "f02ba4dad83d3c161139f758a5571515bec8bd875379594bfbb808c7e42c1e60"
   },
@@ -105,11 +109,11 @@
   },
   {
     "path": "packages/cli/scripts/verify-generated-overlap.mjs",
-    "sha256": "5479ff108999bec4fce2269dc408ce693d9061d45e523a01a2991a3b805b061c"
+    "sha256": "4948b91ad84aad39ef557f79e19bc55939ccaeec791d2418fac0917598b89f02"
   },
   {
     "path": "packages/cli/scripts/verify-lane.mjs",
-    "sha256": "9492d16b00b73cb06f83318e44f92f182cec7f3e12ca0762ceea4e04c99e90d0"
+    "sha256": "88cd8cef6930932beec26733a77274f92d4476e9e6e1f7fb8ab5a765356875f3"
   },
   {
     "path": "packages/cli/scripts/verify-managed-toolchain.mjs",
@@ -2148,6 +2152,10 @@
     "sha256": "953d86383289c8ae14d741ff231fb362bd29cc9c6969aecb5534841e16c36abb"
   },
   {
+    "path": "packages/cli/test/helpers/packageVerificationTiming.d.ts",
+    "sha256": "89912966a2251c561b95a1435713c44776ee51313ea36e1fa7a65090619140da"
+  },
+  {
     "path": "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
     "sha256": "fbd2287c851fbee6196b6925ca740df691f03fd9b567591882808763bf21a81b"
   },
@@ -2241,7 +2249,7 @@
   },
   {
     "path": "packages/cli/test/packaging/packageSetup.ts",
-    "sha256": "84e735f2230f79e6287a9475c1abc68384d39ba2db1423fac94064ce5c3462bb"
+    "sha256": "f6ce6ef8e3cc30acb2a31eb7215fd99be260f0ccb02cad85e2db3e8990b8955a"
   },
   {
     "path": "packages/cli/test/packaging/packageVerification.test.ts",
@@ -2381,7 +2389,7 @@
   },
   {
     "path": "packages/cli/test/release/sourceQualificationDag.test.ts",
-    "sha256": "319ff911c7385553826bb45b719858b242b66f9697b2f76474239129630453cc"
+    "sha256": "3d22b6e79bd8682a674466d4c13aad905ed2576d06b3d637351cb1987495e4d7"
   },
   {
     "path": "packages/cli/test/runtime/lifecycleAuthority.test.ts",
@@ -2897,7 +2905,7 @@
   },
   {
     "path": "packages/cli/test/verification/laneOwnership.test.ts",
-    "sha256": "446299933e2121b07c038ea28f84b8d11765706fd13d9a2de0cf33b3a7f1ca2c"
+    "sha256": "e6c718d167d873ab727ca9ef34b07371830c335ce32973235acb8edaa6ba1ad1"
   },
   {
     "path": "packages/cli/test/verification/overlapPending.test.ts",

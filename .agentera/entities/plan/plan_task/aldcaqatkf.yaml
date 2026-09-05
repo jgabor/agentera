@@ -1,0 +1,23 @@
+id: aldcaqatkf
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Expose package-owner timing on verification failure
+  status: complete
+  depends_on:
+    - zmvylfalav
+  acceptance:
+    - GIVEN package verification WHEN it passes or exceeds budget THEN bounded monotonic phase timings distinguish barrier, builds, packaging, evidence and test execution.
+    - GIVEN overlap cleanup WHEN package verification fails THEN its timing evidence remains available in the failure result without private paths or credentials.
+    - GIVEN passing and over-budget cases WHEN regression checks run THEN timing is observable and failure semantics remain unchanged.
+    - GIVEN instrumentation WHEN reviewed THEN the 60-second budget, both constructions, package assertions, build isolation and publication safeguards remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-package-timing-aldcaqatkf-1
+      source: "Independent Agentera audit: four criteria and evidence PASS; 101 tests, static/typecheck, final conjunction truncation and cascade probe passed. Residual accurately includes runner/tests/teardown; hosted cause remains unproven."
+      recorded_at: 2026-09-05 20:13
+      writer_command: agentera state plan record-evaluation

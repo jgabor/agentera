@@ -8,6 +8,7 @@ import type { GlobalSetupContext } from "vitest/node";
 
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";
+import { createPackageTimingRecorder } from "../../scripts/package-verification-timing.mjs";
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
 import { finalizePackageOwnerEvidence, writeContentAddressedOwnerEvidence, writeContentAddressedPackageIdentity } from "../../src/validate/activationArtifactEvidence.js";
 
@@ -182,92 +183,111 @@ export async function createPackageFixture(): Promise<{
   fixture: PackageFixture;
   cleanup: () => void;
 }> {
-  waitForVerificationBarrier();
-  const packageRoot = path.resolve(import.meta.dirname, "../..");
-  const checkoutRoot = path.resolve(packageRoot, "../..");
-  const sourceIdentity = generatedSourceIdentity(packageRoot);
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-verification-"));
-  const constructionRoot = path.join(root, "construction one ; [source]");
-  const secondConstructionRoot = path.join(root, "construction two $ (source)");
+  const timing = createPackageTimingRecorder(process.env.AGENTERA_VERIFICATION_PACKAGE_TIMINGS);
+  let complete = false;
+  timing.start("barrier_ms");
   try {
-    stageConstructionInputs(packageRoot, constructionRoot);
-    stageConstructionInputs(packageRoot, secondConstructionRoot);
-    run(process.execPath, ["scripts/build-package.mjs", "--output-root", constructionRoot], packageRoot);
-    run(process.execPath, ["scripts/build-package.mjs", "--output-root", secondConstructionRoot], packageRoot);
-    for (const construction of [constructionRoot, secondConstructionRoot]) {
-      if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(construction), sourceIdentity)) {
-        throw new Error("package verification boundary failed: construction source identity drifted");
+    waitForVerificationBarrier();
+    timing.start("prepare_ms");
+    const packageRoot = path.resolve(import.meta.dirname, "../..");
+    const checkoutRoot = path.resolve(packageRoot, "../..");
+    const sourceIdentity = generatedSourceIdentity(packageRoot);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-verification-"));
+    const constructionRoot = path.join(root, "construction one ; [source]");
+    const secondConstructionRoot = path.join(root, "construction two $ (source)");
+    try {
+      stageConstructionInputs(packageRoot, constructionRoot);
+      stageConstructionInputs(packageRoot, secondConstructionRoot);
+      timing.start("build_first_ms");
+      run(process.execPath, ["scripts/build-package.mjs", "--output-root", constructionRoot], packageRoot);
+      timing.start("build_second_ms");
+      run(process.execPath, ["scripts/build-package.mjs", "--output-root", secondConstructionRoot], packageRoot);
+      timing.start("identity_ms");
+      for (const construction of [constructionRoot, secondConstructionRoot]) {
+        if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(construction), sourceIdentity)) {
+          throw new Error("package verification boundary failed: construction source identity drifted");
+        }
       }
-    }
-    const manifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", root], constructionRoot));
-    const secondPackRoot = path.join(root, "second package ; [$]");
-    fs.mkdirSync(secondPackRoot);
-    const secondManifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", secondPackRoot], secondConstructionRoot));
-    const tarball = path.join(root, manifest.filename);
-    const secondTarball = path.join(secondPackRoot, secondManifest.filename);
-    const tarballBytes = fs.readFileSync(tarball);
-    const secondTarballBytes = fs.readFileSync(secondTarball);
-    const tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
-    const secondTarballSha256 = createHash("sha256").update(secondTarballBytes).digest("hex");
-    assertDeterministicPackagePair(tarballBytes, secondTarballBytes, manifest, secondManifest);
-    run("tar", ["-xzf", path.join(root, manifest.filename), "-C", root], root);
-    const extractedPackage = path.join(root, "package");
-    if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(extractedPackage), sourceIdentity)) {
-      throw new Error("package verification boundary failed: extracted package source identity drifted");
-    }
-    const firstContent = regularFileManifest(extractedPackage);
-    const contentSha256 = createHash("sha256").update(JSON.stringify(firstContent)).digest("hex");
-    const pathScanNeedles = [...pathNeedles("checkout-root", checkoutRoot), ...pathNeedles("construction-root-primary", constructionRoot), ...pathNeedles("construction-root-secondary", secondConstructionRoot), ...pathNeedles("extraction-root-primary", extractedPackage), ...pathNeedles("actual-home", os.homedir())];
-    const pathMatches = assertNoForbiddenPathMatches(extractedPackage, pathScanNeedles);
-    // Both constructed and extracted runtimes use the checkout's already
-    // installed dependency graph. Package verification must never consult a
-    // registry or mutate npm's user cache.
-    fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(extractedPackage, "node_modules"), "dir");
-    // Package parity executes the freshly constructed output, not checkout dist.
-    // The source construction deliberately has no installed dependencies, so give
-    // it the checkout's already-installed dependency graph after packing it.
-    fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(constructionRoot, "node_modules"), "dir");
-    const fixture: PackageFixture = {
-      root,
-      constructionRoot,
-      packageRoot: extractedPackage,
-      manifest,
-      sourceIdentity,
-      deterministicBytes: {
-        packRuns: 2,
-        sha256: tarballSha256,
-        secondSha256: secondTarballSha256,
-      },
-      pathIndependence: {
-        constructionRoots: [constructionRoot, secondConstructionRoot],
-        extractedRoots: [extractedPackage],
-        regularFiles: firstContent.length,
-        contentSha256,
-        forbiddenPathMatches: pathMatches,
-        pathNeedleClasses: [...new Set([...pathScanNeedles.map((needle) => needle.class), ...developerHomePatterns.map((pattern) => pattern.class)])].sort(),
-        secondManifest,
-      },
-    };
-    const evidenceOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT;
-    const identityOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT;
-    const snapshotOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT;
-    if (evidenceOutput || identityOutput || snapshotOutput) {
-      if (!evidenceOutput || !identityOutput || !snapshotOutput) {
-        throw new Error("package verification boundary failed: activation package outputs must be configured together");
+      timing.start("pack_first_ms");
+      const manifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", root], constructionRoot));
+      timing.start("pack_second_ms");
+      const secondPackRoot = path.join(root, "second package ; [$]");
+      fs.mkdirSync(secondPackRoot);
+      const secondManifest = parseManifest(run("npm", ["pack", "--json", "--ignore-scripts", "--pack-destination", secondPackRoot], secondConstructionRoot));
+      timing.start("compare_ms");
+      const tarball = path.join(root, manifest.filename);
+      const secondTarball = path.join(secondPackRoot, secondManifest.filename);
+      const tarballBytes = fs.readFileSync(tarball);
+      const secondTarballBytes = fs.readFileSync(secondTarball);
+      const tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
+      const secondTarballSha256 = createHash("sha256").update(secondTarballBytes).digest("hex");
+      assertDeterministicPackagePair(tarballBytes, secondTarballBytes, manifest, secondManifest);
+      timing.start("extract_ms");
+      run("tar", ["-xzf", path.join(root, manifest.filename), "-C", root], root);
+      timing.start("scan_ms");
+      const extractedPackage = path.join(root, "package");
+      if (!sameGeneratedSourceIdentity(readGeneratedSourceIdentity(extractedPackage), sourceIdentity)) {
+        throw new Error("package verification boundary failed: extracted package source identity drifted");
       }
-      const { evidence, packageIdentity } = await finalizePackageOwnerEvidence({
-        root: checkoutRoot,
-        fixture,
-        requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
-        snapshotDirectory: snapshotOutput,
-      });
-      writeContentAddressedOwnerEvidence(evidenceOutput, evidence);
-      writeContentAddressedPackageIdentity(identityOutput, packageIdentity);
+      const firstContent = regularFileManifest(extractedPackage);
+      const contentSha256 = createHash("sha256").update(JSON.stringify(firstContent)).digest("hex");
+      const pathScanNeedles = [...pathNeedles("checkout-root", checkoutRoot), ...pathNeedles("construction-root-primary", constructionRoot), ...pathNeedles("construction-root-secondary", secondConstructionRoot), ...pathNeedles("extraction-root-primary", extractedPackage), ...pathNeedles("actual-home", os.homedir())];
+      const pathMatches = assertNoForbiddenPathMatches(extractedPackage, pathScanNeedles);
+      timing.start("fixture_ms");
+      // Both constructed and extracted runtimes use the checkout's already
+      // installed dependency graph. Package verification must never consult a
+      // registry or mutate npm's user cache.
+      fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(extractedPackage, "node_modules"), "dir");
+      // Package parity executes the freshly constructed output, not checkout dist.
+      // The source construction deliberately has no installed dependencies, so give
+      // it the checkout's already-installed dependency graph after packing it.
+      fs.symlinkSync(path.join(packageRoot, "node_modules"), path.join(constructionRoot, "node_modules"), "dir");
+      const fixture: PackageFixture = {
+        root,
+        constructionRoot,
+        packageRoot: extractedPackage,
+        manifest,
+        sourceIdentity,
+        deterministicBytes: {
+          packRuns: 2,
+          sha256: tarballSha256,
+          secondSha256: secondTarballSha256,
+        },
+        pathIndependence: {
+          constructionRoots: [constructionRoot, secondConstructionRoot],
+          extractedRoots: [extractedPackage],
+          regularFiles: firstContent.length,
+          contentSha256,
+          forbiddenPathMatches: pathMatches,
+          pathNeedleClasses: [...new Set([...pathScanNeedles.map((needle) => needle.class), ...developerHomePatterns.map((pattern) => pattern.class)])].sort(),
+          secondManifest,
+        },
+      };
+      timing.start("evidence_ms");
+      const evidenceOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_EVIDENCE_OUTPUT;
+      const identityOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_IDENTITY_OUTPUT;
+      const snapshotOutput = process.env.AGENTERA_ACTIVATION_PACKAGE_SNAPSHOT_OUTPUT;
+      if (evidenceOutput || identityOutput || snapshotOutput) {
+        if (!evidenceOutput || !identityOutput || !snapshotOutput) {
+          throw new Error("package verification boundary failed: activation package outputs must be configured together");
+        }
+        const { evidence, packageIdentity } = await finalizePackageOwnerEvidence({
+          root: checkoutRoot,
+          fixture,
+          requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
+          snapshotDirectory: snapshotOutput,
+        });
+        writeContentAddressedOwnerEvidence(evidenceOutput, evidence);
+        writeContentAddressedPackageIdentity(identityOutput, packageIdentity);
+      }
+      complete = true;
+      return { fixture, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
+    } catch (error) {
+      fs.rmSync(root, { recursive: true, force: true });
+      throw error;
     }
-    return { fixture, cleanup: () => fs.rmSync(root, { recursive: true, force: true }) };
-  } catch (error) {
-    fs.rmSync(root, { recursive: true, force: true });
-    throw error;
+  } finally {
+    timing.finish(complete);
   }
 }
 

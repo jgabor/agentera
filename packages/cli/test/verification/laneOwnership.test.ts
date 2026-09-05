@@ -5,6 +5,7 @@ import path from "node:path";
 
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
+import { completePackageTimings, createPackageTimingRecorder, packageTimingSummary, readPackageTimings } from "../../scripts/package-verification-timing.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const PACKAGE_ROOT = path.join(REPO_ROOT, "packages/cli");
@@ -108,6 +109,15 @@ function fixtureWithPerformanceIntegration() {
     command: [process.execPath, integration],
   };
   fs.writeFileSync(setup.contractPath, JSON.stringify(contract));
+  return setup;
+}
+
+function packageTimingFixture() {
+  const setup = fixture();
+  const vp = path.join(setup.bin, "vp");
+  const script = fs.readFileSync(vp, "utf8");
+  const writeTiming = `require("node:fs").writeFileSync(process.env.AGENTERA_VERIFICATION_PACKAGE_TIMINGS, JSON.stringify({barrier_ms:1,build_first_ms:2,build_second_ms:3,pack_first_ms:4,pack_second_ms:5,extract_ms:6,scan_ms:7,evidence_ms:8,setup_ms:36,secret:"NPM_TOKEN=private-secret",wall_ms:"/private/path"}))`;
+  fs.writeFileSync(vp, script.replace('[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]', `"${process.execPath}" -e '${writeTiming}'\n[ "$AGENTERA_VERIFICATION_OWNER" != "$FAIL_OWNER" ]`));
   return setup;
 }
 
@@ -244,7 +254,7 @@ describe("verification lane ownership", () => {
   });
 
   it("enforces an owner wall-time budget after a successful runner", () => {
-    const passing = fixture();
+    const passing = packageTimingFixture();
     const passingContract = JSON.parse(fs.readFileSync(passing.contractPath, "utf8"));
     passingContract.owners.package.execution = { wall_time_budget_ms: 60_000 };
     fs.writeFileSync(passing.contractPath, JSON.stringify(passingContract));
@@ -253,8 +263,11 @@ describe("verification lane ownership", () => {
     expect(pass.result.status, pass.result.stderr).toBe(0);
     expect(pass.runs).toHaveLength(1);
     expect(pass.result.stdout).toMatch(/package owner wall time \d+ms; budget 60000ms/);
+    expect(pass.result.stdout).toContain('"build_first_ms":2,"build_second_ms":3');
+    expect(pass.result.stdout).toContain('"setup_ms":36');
+    expect(pass.result.stdout).toMatch(/"outside_setup_residual_ms":\d+/);
 
-    const failing = fixture();
+    const failing = packageTimingFixture();
     const failingContract = JSON.parse(fs.readFileSync(failing.contractPath, "utf8"));
     failingContract.owners.package.execution = { wall_time_budget_ms: 1 };
     fs.writeFileSync(failing.contractPath, JSON.stringify(failingContract));
@@ -264,6 +277,75 @@ describe("verification lane ownership", () => {
     expect(failure.runs).toHaveLength(1);
     expect(failure.result.stderr).toMatch(/package owner exceeded its 1ms wall-time budget \(\d+ms\)/);
     expect(failure.result.stderr).toContain("run package correction");
+    expect(failure.result.stdout).toContain('"evidence_ms":8,"setup_ms":36');
+    expect(failure.result.stdout).toMatch(/"wall_ms":\d+,"outside_setup_residual_ms":\d+/);
+    for (const output of [pass.result.stdout, failure.result.stdout]) {
+      expect(output).not.toContain("private-secret");
+      expect(output).not.toContain("/private/path");
+    }
+  });
+
+  it("preserves a failing process exit and package timings rather than replacing it with the budget failure", () => {
+    const setup = packageTimingFixture();
+    const contract = JSON.parse(fs.readFileSync(setup.contractPath, "utf8"));
+    contract.owners.package.execution = { wall_time_budget_ms: 1 };
+    fs.writeFileSync(setup.contractPath, JSON.stringify(contract));
+    const { result } = run(["package"], setup, { FAIL_OWNER: "package" });
+    expect(result.status).toBe(1);
+    expect(result.stderr).toContain("package owner failed (exit 1)");
+    expect(result.stderr).not.toContain("exceeded its");
+    expect(result.stdout).toContain('"build_first_ms":2,"build_second_ms":3');
+  });
+
+  it("records disjoint monotonic phases and explicitly labels non-setup time as residual", () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-clock-"));
+    const file = path.join(root, "timings.json");
+    let now = 0n;
+    const clock = () => now;
+    try {
+      const timing = createPackageTimingRecorder(file, clock);
+      const phases = ["barrier_ms", "prepare_ms", "build_first_ms", "build_second_ms", "identity_ms", "pack_first_ms", "pack_second_ms", "compare_ms", "extract_ms", "scan_ms", "fixture_ms", "evidence_ms"];
+      for (const phase of phases) {
+        timing.start(phase);
+        now += 2_500_000n;
+      }
+      timing.finish(true);
+      const summary = completePackageTimings(file, 60_001);
+      expect(phases.reduce((sum, phase) => sum + summary[phase], 0)).toBe(30);
+      expect(summary).toMatchObject({
+        setup_ms: 30,
+        wall_ms: 60_001,
+        outside_setup_residual_ms: 59_971,
+      });
+      expect(packageTimingSummary(summary).length).toBeLessThan(1000);
+      fs.rmSync(file);
+      const failed = createPackageTimingRecorder(file, clock);
+      failed.start("barrier_ms");
+      now += 5_000_000n;
+      failed.start("build_first_ms");
+      now += 9_000_000n;
+      failed.finish(false);
+      expect(completePackageTimings(file, 20)).toEqual({
+        barrier_ms: 5,
+        build_first_ms: 9,
+        setup_incomplete_ms: 14,
+        wall_ms: 20,
+      });
+      fs.writeFileSync(file, "private-secret".repeat(1000));
+      expect(readPackageTimings(file)).toEqual({});
+      fs.writeFileSync(
+        file,
+        JSON.stringify({
+          setup_ms: -1,
+          wall_ms: "/private/path",
+          evidence_ms: 1.1,
+          secret: "private-secret",
+        }),
+      );
+      expect(readPackageTimings(file)).toEqual({});
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
   });
 
   it("rejects an invalid owner wall-time budget before runner execution", () => {
