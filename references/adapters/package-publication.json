@@ -78,6 +78,8 @@
         "candidate version is the checked-in manifest base line with ordinal GITHUB_RUN_NUMBER plus 89; publish.yml run 1 is dev.90",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
+        "after default-branch routing selects the configured ref, a contents-read job checks out GITHUB_SHA, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3 toolchain without automatic install or cache, runs bare vp check, then runs uncached root vp run verify as the existing verify:release no-receipt source qualification with its full 2400000 millisecond authority deadline",
+        "candidate construction and artifact upload depend on successful source verification, so verification failure permits no package construction, upload, registry, activation, or publication effect",
         "a contents-read build job without OIDC builds one isolated tarball, validates version and git ref, executable-smokes it, and credential-free classifies it as exact-replay, superseded-replay, forward-publish, or forward-retag",
         "the tarball and bounded classification cross into the dependent OIDC job as one immutable same-run Actions artifact; the publication job checks out no source, downloads no executable helper, and does not rebuild or execute package code",
         "a fixed workflow-owned guard runs without OIDC or inherited npm credentials/config and revalidates the bounded classification, tarball metadata, integrity, version, git ref, and immediate registry state without extracting or executing package code",

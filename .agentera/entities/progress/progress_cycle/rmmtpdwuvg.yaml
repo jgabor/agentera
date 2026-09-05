@@ -1,0 +1,16 @@
+id: rmmtpdwuvg
+artifact: progress
+record:
+  timestamp: 2026-09-05 12:00
+  type: chore
+  phase: build
+  what: Started gating serialized development publication on exact-source no-receipt verification before candidate construction.
+  context:
+    intent: Deliver plan task lbsqhpmbnw for independent audit in one local commit.
+    constraints: Preserve queue serialization, candidate allocation and replay semantics, and the checkout-free action-free OIDC publisher while keeping verification and build without id-token.
+    unknowns: Hosted execution is intentionally excluded; local workflow and release-model evidence will establish the boundary.
+    scope: Publication workflow topology, canonical publication authority, structural behavior tests, replay bindings, and inherited post-audit state.
+  discovered: The current selected route enters build-development directly, so verification must become a separate prerequisite job to suppress all construction and artifact effects on failure.
+  verified: The predecessor setup task is complete and its uncommitted post-audit PASS state is preserved.
+  next: Implement and locally verify route to exact-SHA verification to candidate build and upload to isolated OIDC publication; leave the task in_progress for audit.
+  publication_order: 344

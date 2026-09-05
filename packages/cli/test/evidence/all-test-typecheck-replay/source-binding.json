@@ -2341,7 +2341,7 @@
   },
   {
     "path": "packages/cli/test/release/publicationOrchestration.test.ts",
-    "sha256": "2afdb5710995fc3a7d0d3a1e93678ac8b3781a8325275e93c3286ac7a193f847"
+    "sha256": "125fb2cbe17cf38df9a564d10b021e7b437e22d648619ba5538f21116a4808b0"
   },
   {
     "path": "packages/cli/test/release/publicationTransaction.test.ts",
@@ -2889,7 +2889,7 @@
   },
   {
     "path": "packages/cli/test/validate/toolchainBaseline.test.ts",
-    "sha256": "fb5a2cc07d7b6bd892431decdc8684defb59676adfe4c2d24df5ff6677520f94"
+    "sha256": "023a2772ed66cc78af9ad5eeef247f195370f633b5cfb78724093d12ba51d66e"
   },
   {
     "path": "packages/cli/test/validate/vocabularyAuthority.test.ts",

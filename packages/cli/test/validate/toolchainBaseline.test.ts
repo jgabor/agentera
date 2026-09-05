@@ -45,9 +45,9 @@ function validateSetupJobs(workflows: any[]): void {
       .filter(({ job }) => job.steps.some((step: { run?: string }) => /vp install|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
       .map(({ name }) => name)
       .sort(),
-  ).toEqual(["build-development", "cli", "source-migration"]);
+  ).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
   const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@")));
-  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "cli", "source-migration"]);
+  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
   for (const { job } of setupJobs) {
     const setup = job.steps.find((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@"));
     expect(setup).toMatchObject({
@@ -92,6 +92,7 @@ describe("toolchain baseline", () => {
     expect(verificationWorkflow.jobs.cli.steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
     expect(verificationWorkflow.jobs["source-migration"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
     expect(publicationWorkflow.jobs["build-development"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile --ignore-scripts")).toBe(true);
+    expect(publicationWorkflow.jobs["verify-development"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile --ignore-scripts")).toBe(true);
   });
 
   it("binds the executable integration proof to live project policy", () => {

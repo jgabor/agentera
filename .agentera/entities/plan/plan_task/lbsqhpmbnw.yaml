@@ -4,7 +4,7 @@ record:
   name: Gate serialized @next publication
   depends_on:
     - irvnacpcby
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a selected push WHEN root vp run verify delegates to verify:release THEN no-receipt exact-SHA verification precedes construction.
     - GIVEN workflow deadlines WHEN inspected THEN verification receives at least 2,400,000 milliseconds plus setup and construction allowance.

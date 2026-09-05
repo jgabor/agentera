@@ -4,10 +4,20 @@ record:
   name: Standardize setup-requiring CI
   depends_on:
     - pseiddctar
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN an applicable CI job WHEN inspected THEN it uses setup-vp commit 1b32467adbe183473499fd9d5d372c3ed9641754 and rejects mutable tags.
     - GIVEN setup inputs WHEN dependencies install THEN automatic install and caches are disabled while frozen and lifecycle restrictions remain explicit.
     - GIVEN verification CI WHEN it runs THEN static validation precedes no-receipt verification and migration evidence remains present.
     - GIVEN the OIDC publisher WHEN structurally tested THEN no setup action is present.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-irvnacpcby-1
+      source: "Independent audit: criteria 4/4 pass; exact setup-vp inputs, explicit install policy, verification ordering, migration evidence, and OIDC exclusion verified."
+      recorded_at: 2026-09-05 11:58
+      writer_command: agentera state plan record-evaluation

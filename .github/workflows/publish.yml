@@ -58,9 +58,38 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `selected=${selected}\nref=${configuredRef}\n`);
           NODE
 
-  build-development:
+  verify-development:
     if: needs.route-development.outputs.selected == 'true'
     needs: route-development
+    name: Verify development source
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
+        timeout-minutes: 1
+        with:
+          version: "0.3.0"
+          node-version-file: .node-version
+          run-install: false
+          cache: false
+      - name: Install dependencies
+        timeout-minutes: 3
+        run: vp install --frozen-lockfile --ignore-scripts
+      - name: Check static project policy
+        timeout-minutes: 1
+        run: vp check
+      - name: Verify release source without receipt
+        timeout-minutes: 40
+        run: vp run verify
+
+  build-development:
+    needs: verify-development
     name: Build and classify development candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 8

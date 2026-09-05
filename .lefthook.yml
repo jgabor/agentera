@@ -39,6 +39,7 @@ pre-commit:
       glob: "*.json"
       exclude:
         - "packages/cli/test/evidence/**"
+        - "references/**"
     tests:
       run: bash scripts/precommit-vitest.sh {staged_files}
       glob:

@@ -54,7 +54,16 @@ derives the base release line from the valid checked-in
 `packages/cli/package.json#version` and allocates the candidate ordinal as
 `GITHUB_RUN_NUMBER + 89`. The new workflow's runs 1, 2, and 3 map to
 `3.0.0-dev.90`, `.91`, and `.92`; the fixed offset follows the prior workflow's
-`dev.89` publication. It builds once from `GITHUB_SHA`, and sets the
+`dev.89` publication. Before construction, a no-OIDC verification job checks
+out `GITHUB_SHA`, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3
+toolchain without automatic install or caching, runs bare `vp check`, then
+runs uncached `vp run verify`. This delegates to the existing eleven-gate
+`verify:release` source qualification without producing a receipt. Its
+40-minute step deadline retains the 2,400,000 ms authority deadline, while the
+45-minute job allows setup and the dependent build keeps its separate
+construction allowance. A verification failure therefore prevents candidate
+construction, artifact upload, and registry effects. After verification, CI
+builds once from `GITHUB_SHA`, and sets the
 candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
 construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
@@ -62,7 +71,7 @@ version smoke, then uploads the tarball and bounded classification as one
 same-run Actions artifact. The entire dependent checkout-free, action-free job has OIDC
     capability and runs only fixed reviewed workflow logic. It downloads and
     publishes that exact tarball to `@next`; it does not rebuild. This routine path does
-not run the manual qualification, receipt, attestation, benchmark, or artifact
+not run the manual receipt-producing qualification, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
 commit. The package-global `publish-agentera` group uses
 `queue: max`, which keeps up to 100 pending pushes.

@@ -299,7 +299,7 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("pack-package.mjs");
     expect(qualificationYaml).toContain("publish-development.mjs classify");
     expect(qualificationYaml).not.toContain("publish-development.mjs mutate");
-    expect(qualificationYaml.match(/--package-version \"\$\{\{ steps\.version\.outputs\.value \}\}\"/g)).toHaveLength(2);
+    expect(qualificationYaml.match(/--package-version "\$\{\{ steps\.version\.outputs\.value \}\}"/g)).toHaveLength(2);
     expect(qualificationYaml).toContain('--git-ref "${GITHUB_SHA}"');
     expect(qualificationYaml).toContain("agentera-development-candidate");
     expect(qualificationYaml).not.toContain("secrets.NPM_TOKEN");
@@ -328,9 +328,22 @@ describe("package publication orchestration", () => {
     expect(routeStep.run).toContain("configuredRef === 'refs/heads/main'");
     expect(routeStep.run).toContain("configuredRef === process.env.GITHUB_REF");
     expect(routeStep.run).toContain("selected=${selected}");
+    const verification = workflow.jobs["verify-development"];
+    expect(verification.permissions).toEqual({ contents: "read" });
+    expect(verification.permissions).not.toHaveProperty("id-token");
+    expect(verification.needs).toBe("route-development");
+    expect(verification.if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(verification["timeout-minutes"]).toBeGreaterThanOrEqual(45);
+    expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5").with.ref).toBe("${{ github.sha }}");
+    expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
+    const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify release source without receipt");
+    expect(sourceVerification.run).toBe("vp run verify");
+    expect(sourceVerification["timeout-minutes"] * 60_000).toBeGreaterThanOrEqual(publicationContract.benchmark.timeouts.sourceQualificationMs);
+    expect(JSON.stringify(verification)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|upload-artifact|npm publish|id-token/i);
     expect(workflow.jobs["build-development"].permissions).toEqual({ contents: "read" });
-    expect(workflow.jobs["build-development"].needs).toBe("route-development");
-    expect(workflow.jobs["build-development"].if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(workflow.jobs["build-development"].permissions).not.toHaveProperty("id-token");
+    expect(workflow.jobs["build-development"].needs).toBe("verify-development");
+    expect(workflow.jobs["build-development"]).not.toHaveProperty("if");
     expect(workflow.jobs["publish-development"].permissions).toEqual({
       actions: "read",
       "id-token": "write",
@@ -844,7 +857,7 @@ describe("package publication orchestration", () => {
       const cases = [
         ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90$(touch "${marker}")`],
         ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90\`touch "${marker}"\``],
-        ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90\"; touch \"${marker}\"; #`],
+        ["EXPECTED_VERSION_VALUE", (marker: string) => `3.0.0-dev.90"; touch "${marker}"; #`],
         ["EXPECTED_OUTCOME_VALUE", (marker: string) => `forward-publish\ntouch "${marker}"`],
         ["EXPECTED_OUTCOME_VALUE", () => "../../../*?[hostile]"],
       ] as const;
