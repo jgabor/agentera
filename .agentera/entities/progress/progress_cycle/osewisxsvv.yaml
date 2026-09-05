@@ -1,0 +1,16 @@
+id: osewisxsvv
+artifact: progress
+record:
+  timestamp: 2026-09-05 11:04
+  type: fix
+  phase: build
+  what: Aligned hook formatting with the bootstrapped project-local Vite+ binary and consolidated daily contributor commands under AGENTS.md.
+  context:
+    intent: Deliver task eehlopgmsi for audit in one local commit.
+    constraints: No CI, publication, registry, version, cache, route, budget, or package behavior changes.
+    unknowns: Standalone source race remains outside this scoped hook and guidance task.
+    scope: One hook command, focused regression coverage, delegated contributor guidance, regenerated replay binding, and inherited post-audit task state.
+  discovered: The all-test type replay binds every TypeScript test, so the focused hook regression required regeneration through its supported generator. Concurrent standalone source runs exposed existing transient source-binding/root-isolation races; hermetic source and the release-owned source gate passed.
+  verified: Focused hook tests passed the stale-global and missing-local cases while retaining stage_fixed. Pinned Node 24.19 checks passed for docs/config formatting, hermetic source, typecheck, build, package, replay, retained reference, activation, compact, capability contract, bare vp check, and the full 11-gate release conjunction.
+  next: Independent audit eehlopgmsi; keep the task in_progress.
+  publication_order: 341

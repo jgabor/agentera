@@ -4,9 +4,14 @@ record:
   name: Align hooks and contributor guidance
   depends_on:
     - pseiddctar
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN any global vp state WHEN hooks run THEN project-local tools resolve while routes and budgets remain unchanged.
     - GIVEN guidance WHEN reviewed THEN one daily Vite+ vocabulary is canonical and recovery commands remain available.
     - GIVEN published and local CLI checks WHEN used THEN their authority is unambiguous, including missing-bootstrap failure.
   plan: vtqzlztjsk
+  evidence:
+    - Hook config invokes only node_modules/.bin/vp, retains the 10-second timeout and stage_fixed, and focused tests prove a stale global vp is ignored plus missing bootstrap fails with vp install recovery.
+    - "AGENTS.md owns the uncached daily vocabulary: vp install, vp check, vp run typecheck, vp run test, vp run build, and vp run verify; package README delegates while maintainer pnpm recovery remains in verification and packaging authorities."
+    - Guidance identifies npx -y agentera@next state as published state authority and requires vp run build before node packages/cli/dist/bin/agentera.js checks.
+    - "Pinned Node 24.19 verification passed: focused hook/replay/retained/activation tests, hermetic source, typecheck, build, compact, capability contract, package owner, and the 11-gate uncached release conjunction. Bare vp check passed with the existing warning-only lint baseline. Standard source passed inside the release conjunction; two standalone runs exposed transient source-binding/root-isolation races, while isolated reruns passed."

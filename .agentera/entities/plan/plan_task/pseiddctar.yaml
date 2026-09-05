@@ -5,7 +5,7 @@ record:
   depends_on:
     - ezmkzlpvmg
     - xxprntajxz
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN fresh setup WHEN bootstrap and install run THEN the exact root toolchain wins and pnpm lock authority is unchanged.
     - GIVEN bare vp check WHEN validation runs THEN formatter, accepted lint ceiling, and separate source-only tsc block regressions.
@@ -22,3 +22,6 @@ record:
       source: "Independent correction audit: criteria 2-4 pass; criterion 1 not certifiable in evaluator runtime; aggregate lint ceiling accepted."
       recorded_at: 2026-09-05 03:28
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - mmdhuclbjn
+  superseded_reason: Replaced with an independently audited host-runtime-independent managed toolchain proof; all root and package criteria pass.

@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: vtqzlztjsk
   name: Certify root Vite+ authority from an arbitrary host runtime
-  status: in_progress
+  status: complete
   depends_on:
     - ezmkzlpvmg
     - tzajnhyedx
@@ -13,12 +13,12 @@ record:
     - GIVEN bare check and root run commands WHEN formatter, lint ceiling, typecheck, test, build, and no-receipt verify execute THEN all pass with cache disabled.
     - GIVEN package validation WHEN complete THEN shipped CLI behavior and package boundaries remain unchanged.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: Managed vp check reports formatting drift in packages/cli/test/validate/toolchainBaseline.test.ts; managed runtime and package criteria pass.
     provenance:
-      attempt_id: orchestrate-audit-mmdhuclbjn-1
-      source: "Independent audit: criteria 1, 2, and 4 pass; criterion 3 fails before the full root command sequence."
-      recorded_at: 2026-09-05 09:41
+      attempt_id: orchestrate-audit-mmdhuclbjn-2
+      source: "Independent correction audit: criteria 4/4 pass; managed runtime, wrong-runtime rejection, all root commands, 11-gate verify, and package boundary verified."
+      recorded_at: 2026-09-05 10:32
       writer_command: agentera state plan record-evaluation

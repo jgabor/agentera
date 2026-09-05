@@ -77,6 +77,9 @@ lefthook install
 Pre-commit runs:
 
 - State and TODO changes run `agentera check compact` within a 10-second budget.
+- Configuration formatting resolves `node_modules/.bin/vp` after bootstrap and
+  fails with `vp install` recovery if that project-local binary is missing; it
+  never falls back to a global `vp`.
 - Ordinary source changes run deterministic source-owned tests plus typecheck
   within 60 seconds, with at most two Vitest workers.
 - Specialized and global owner surfaces route to `ci_owned`; the local hook

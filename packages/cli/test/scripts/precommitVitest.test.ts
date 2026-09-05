@@ -9,6 +9,7 @@ import { describe, expect, it } from "vitest";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "..", "..", "..", "..");
 const PRECOMMIT_SCRIPT = path.join(REPO_ROOT, "scripts", "precommit-vitest.sh");
+const CONFIG_FORMAT_COMMAND = 'test -x node_modules/.bin/vp || { echo "error: project-local Vite+ is missing; run vp install" >&2; exit 1; }; node_modules/.bin/vp fmt --write "$@"';
 
 type Route = {
   mode: "targeted" | "ci_owned";
@@ -250,6 +251,41 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
     expect(lefthook).toContain('- ".agentera/**"');
     expect(lefthook).toContain('- "TODO.md"');
     expect(lefthook).not.toContain("pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact");
+  });
+
+  it("formats configs with only the project-local Vite+ and preserves restaging", () => {
+    const lefthook = fs.readFileSync(path.join(REPO_ROOT, ".lefthook.yml"), "utf8");
+    expect(lefthook).toContain(CONFIG_FORMAT_COMMAND);
+    expect(lefthook).not.toContain("10s vp fmt --write");
+    expect(lefthook).toMatch(/configs:[\s\S]*?stage_fixed: true[\s\S]*?glob: "\*\.json"/);
+
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-vp-"));
+    const localBin = path.join(root, "node_modules", ".bin");
+    const globalBin = path.join(root, "global-bin");
+    fs.mkdirSync(localBin, { recursive: true });
+    fs.mkdirSync(globalBin);
+    fs.writeFileSync(path.join(localBin, "vp"), '#!/usr/bin/env bash\nprintf "local:%s\\n" "$*"\n');
+    fs.writeFileSync(path.join(globalBin, "vp"), '#!/usr/bin/env bash\nprintf "global:%s\\n" "$*"\n');
+    fs.chmodSync(path.join(localBin, "vp"), 0o755);
+    fs.chmodSync(path.join(globalBin, "vp"), 0o755);
+
+    const positive = spawnSync("bash", ["-c", CONFIG_FORMAT_COMMAND, "--", "staged config.json"], {
+      cwd: root,
+      env: { ...process.env, PATH: `${globalBin}:${process.env.PATH}` },
+      encoding: "utf8",
+    });
+    expect(positive.status, positive.stderr).toBe(0);
+    expect(positive.stdout).toBe("local:fmt --write staged config.json\n");
+
+    fs.rmSync(path.join(localBin, "vp"));
+    const missing = spawnSync("bash", ["-c", CONFIG_FORMAT_COMMAND, "--", "staged.json"], {
+      cwd: root,
+      env: { ...process.env, PATH: `${globalBin}:${process.env.PATH}` },
+      encoding: "utf8",
+    });
+    expect(missing.status).toBe(1);
+    expect(missing.stdout).toBe("");
+    expect(missing.stderr).toBe("error: project-local Vite+ is missing; run vp install\n");
   });
 
   it("routes central contracts and schemas through every owner", () => {

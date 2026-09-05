@@ -34,7 +34,7 @@ pre-commit:
         - "packages/cli/test/fixtures/v2-compaction-2.7.11/input/TODO.md"
         - "packages/cli/test/fixtures/v2-compaction-2.7.11/output/TODO.md"
     configs:
-      run: timeout --foreground 10s vp fmt --write {staged_files}
+      run: 'timeout --foreground 10s bash -c ''test -x node_modules/.bin/vp || { echo "error: project-local Vite+ is missing; run vp install" >&2; exit 1; }; node_modules/.bin/vp fmt --write "$@"'' -- {staged_files}'
       stage_fixed: true
       glob: "*.json"
       exclude:

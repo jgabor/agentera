@@ -2409,7 +2409,7 @@
   },
   {
     "path": "packages/cli/test/scripts/precommitVitest.test.ts",
-    "sha256": "1f0fa8cd4c093ccb00c5b0ce1c341c4710917922581bb06672b68b7896953aec"
+    "sha256": "cb315bb97add6dcbae523d521c88d76aa022c914dba42607f2ba11a799a37bc5"
   },
   {
     "path": "packages/cli/test/scripts/pyTsParity.test.ts",

@@ -1,0 +1,14 @@
+id: hnajxpfsyp
+artifact: progress
+record:
+  timestamp: 2026-09-05 10:33
+  type: fix
+  phase: build
+  what: Started hook and contributor-guidance alignment after the managed Vite+ root authority audit.
+  context:
+    intent: Execute plan task eehlopgmsi only.
+    constraints: Preserve uncommitted post-audit state, hook routes and budgets, pnpm recovery authority, and published-versus-local CLI boundaries.
+    unknowns: None at start.
+    scope: Hooks, focused hook tests, contributor guidance, and required generated bindings only.
+  next: Make hooks resolve the bootstrapped project-local Vite+ binary, consolidate daily commands, and verify positive and failure paths.
+  publication_order: 340

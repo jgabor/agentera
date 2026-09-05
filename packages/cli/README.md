@@ -249,7 +249,9 @@ state, candidate projection, or publication result.
 ## Contributors
 
 Contributors use the Node.js 24 LTS version pinned in `.node-version` and pnpm
-10.30.3.
+10.30.3. Use the canonical daily Vite+ commands in
+[AGENTS.md](../../AGENTS.md). The commands below are maintainer recovery and
+generated-output checks, not a second daily command vocabulary.
 
 ### Generated-output ownership
 

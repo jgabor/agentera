@@ -155,29 +155,29 @@ editing files or checking credentials.
 ## Common commands
 
 Use the Node.js 24 LTS version pinned in `.node-version` and pnpm 10.30.3
-through Corepack. Run commands from the repository root unless noted.
+through Corepack. This is the canonical daily contributor vocabulary; run it
+from the repository root:
 
 ```bash
-# CLI tests
-pnpm -C packages/cli test
-
-# Package boundary
-pnpm -C packages/cli run verify:package
-
-# Typecheck and build
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-
-# Artifact compact gate, after build
-node packages/cli/dist/bin/agentera.js check compact
-
-# Capability contract, after build
-node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract
-
-# Package dry run
-pnpm -C packages/cli run pack:dry-run
+vp install
+vp check
+vp run typecheck
+vp run test
+vp run build
+vp run verify
 ```
+
+The scripts are uncached. Hooks require the project-local Vite+ installed by
+`vp install` and fail with that recovery command when it is missing; a global
+`vp` is never used for hook formatting. pnpm remains the underlying authority
+and recovery interface. Maintainer-only package and lane commands live in
+`.opencode/skills/agentera-verification/SKILL.md` and
+`docs/packaging/v3-packaging.md`.
+
+Project-state operations use the published development runtime,
+`npx -y agentera@next state ...`. Checks for changed local CLI behavior use
+`node packages/cli/dist/bin/agentera.js ...` only after `vp run build`; they do
+not use the published package.
 
 Run the narrowest relevant check first, then broaden according to impact. Load
 `agentera-verification` before changing gate policy, diagnosing a failed lane,
