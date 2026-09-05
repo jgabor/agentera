@@ -10,7 +10,7 @@ const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "pack
 const publicationContract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"));
 const verificationPolicy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 
-const RELEASE_COMMAND = "pnpm -C packages/cli run verify:release";
+const RELEASE_COMMAND = "vp run verify";
 const PARITY_TEST = "packages/cli/test/scripts/pyTsParity.test.ts";
 const REMOVED_DUPLICATES = [
   {
@@ -70,6 +70,7 @@ describe("routine CI owner DAG", () => {
     expect(workflow.jobs["source-migration"].name).toBe("v2→v3 migration (source build)");
     expect(workflow.jobs["source-migration"].if).toBe("github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'");
     const migrationSteps = workflow.jobs["source-migration"].steps;
+    expect(migrationSteps).toEqual(expect.arrayContaining([expect.objectContaining({ uses: "oven-sh/setup-bun@v2", with: { "bun-version": "1.3" } }), expect.objectContaining({ uses: "astral-sh/setup-uv@v5" })]));
     const scenarioStep = migrationSteps.find((step: { name?: string }) => step.name === "Run v2→v3 migration scenarios");
     expect(scenarioStep).toMatchObject({ env: expect.any(Object), run: expect.any(String) });
     const reportStep = migrationSteps.find((step: { name?: string }) => step.name === "Upload sandbox reports");
@@ -88,6 +89,11 @@ describe("routine CI owner DAG", () => {
       },
     });
     expect(step).not.toHaveProperty("continue-on-error");
+    const staticIndex = workflow.jobs.cli.steps.findIndex((candidate: { run?: string }) => candidate.run === "vp check");
+    const verifyIndex = workflow.jobs.cli.steps.findIndex((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
+    expect(staticIndex).toBeGreaterThan(-1);
+    expect(staticIndex).toBeLessThan(verifyIndex);
+    expect(workflow.jobs.cli.steps.some((candidate: { run?: string }) => candidate.run === "vp run typecheck")).toBe(false);
   });
 
   it.each(REMOVED_DUPLICATES)("retains positive $owner coverage through generated overlap", ({ owner, gate, command }) => {

@@ -2377,7 +2377,7 @@
   },
   {
     "path": "packages/cli/test/release/routineCiOwnership.test.ts",
-    "sha256": "20c7a14085af8fbfd30f42650c7ef4c8fc55cdd2d31fb26c81d88a567257a704"
+    "sha256": "7f2fc6090828371febdad37f26375ab98b08a0a9e2162cab3f0c3ce6509744c4"
   },
   {
     "path": "packages/cli/test/release/sourceQualificationDag.test.ts",
@@ -2889,7 +2889,7 @@
   },
   {
     "path": "packages/cli/test/validate/toolchainBaseline.test.ts",
-    "sha256": "474c83240912d749913a358c5f528b75efbee58415a9d76c443d78c390a81bc4"
+    "sha256": "fb5a2cc07d7b6bd892431decdc8684defb59676adfe4c2d24df5ff6677520f94"
   },
   {
     "path": "packages/cli/test/validate/vocabularyAuthority.test.ts",

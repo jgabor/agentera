@@ -4,7 +4,7 @@ record:
   name: Standardize setup-requiring CI
   depends_on:
     - pseiddctar
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN an applicable CI job WHEN inspected THEN it uses setup-vp commit 1b32467adbe183473499fd9d5d372c3ed9641754 and rejects mutable tags.
     - GIVEN setup inputs WHEN dependencies install THEN automatic install and caches are disabled while frozen and lifecycle restrictions remain explicit.

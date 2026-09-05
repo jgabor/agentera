@@ -12,7 +12,7 @@
     "--format=json"
   ],
   "packageManager": "pnpm@10.30.3",
-  "node": "v24.19.0",
+  "node": "v24.20.0",
   "toolIntegrities": {
     "vite-plus@0.3.0": "sha512-GNWbWuWD37frCSFrz6MLzUo62bTv5IOJozHEgZYOkxsLkuQtTwm4TowzpfoGrSsfwhAAtfPd/sK1Y0+v1SwhZA==",
     "vite@8.2.2": "sha512-cFKLV/PRgAUlIRm5WjMjJ86jrftzpqcgH+Us+DS8mI3CDNiH30Whrz8uHL3+MOLPAgqbMBAqWdAHAphOAM+z/Q==",
@@ -25,8 +25,8 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "ad63177def0b5e98f7b396e1b67eb3aae17e3d441c60ed789562e7685bf572d9",
-    "compiler.raw.json.gz": "fcca0585abfa4a90f4cef1f3fa9f4548e32ecd19699aee2ee8d978960f5f5512",
+    "source-binding.json": "3cab4dae6f923d462a6f9788cb481acd294b3f3249acdaee3c1f80fa24b61e0c",
+    "compiler.raw.json.gz": "c49899659b78d71e788079fc26ff586b1043bdf4e6474545e632a390036de998",
     "compiler.normalized.json": "def2de5bfdc7f54cfff2d2e0b6ff013180abc83df64a2d23fd4c2bfd02c7bbb1",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
@@ -44,9 +44,9 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-qmANqG/work"
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-LyKfsR/work"
   },
-  "rawGzipSha256": "fcca0585abfa4a90f4cef1f3fa9f4548e32ecd19699aee2ee8d978960f5f5512",
+  "rawGzipSha256": "c49899659b78d71e788079fc26ff586b1043bdf4e6474545e632a390036de998",
   "normalizedSha256": "def2de5bfdc7f54cfff2d2e0b6ff013180abc83df64a2d23fd4c2bfd02c7bbb1",
   "classifications": {
     "classifications/valid.ts": [],
@@ -57,5 +57,5 @@
       "TS18047"
     ]
   },
-  "manifestSha256": "9c921c296c46f51b9000e9822ddd0edb0b82dea04cce9668cbd86a3ffe4cd788"
+  "manifestSha256": "3f34085b62d37cabec8aeca11d2c8479ab9b1a55b174beb36a26db6571e6a9bb"
 }

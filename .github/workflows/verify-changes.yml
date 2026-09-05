@@ -12,24 +12,27 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
         with:
+          version: "0.3.0"
           node-version-file: .node-version
-      - name: Enable corepack (pnpm)
-        run: corepack enable
+          run-install: false
+          cache: false
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: vp install --frozen-lockfile
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
       - name: Fetch main for source-owned py-ts parity
         run: git fetch origin main --depth=1
+      - name: Run static validation
+        run: vp check
       - name: Run check-only release verification
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
           VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
-        run: pnpm -C packages/cli run verify:release
+        run: vp run verify
 
   source-migration:
     name: v2→v3 migration (source build)
@@ -37,18 +40,20 @@ jobs:
     if: github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
         with:
+          version: "0.3.0"
           node-version-file: .node-version
-      - run: corepack enable
-      - run: pnpm install --frozen-lockfile
+          run-install: false
+          cache: false
+      - run: vp install --frozen-lockfile
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
         with:
           bun-version: "1.3"
       - name: Setup uv
         uses: astral-sh/setup-uv@v5
-      - run: pnpm -C packages/cli build
+      - run: vp run build
       - name: Run v2→v3 migration scenarios
         env:
           REPO_ROOT: ${{ github.workspace }}

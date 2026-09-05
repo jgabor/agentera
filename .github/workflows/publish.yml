@@ -74,18 +74,16 @@ jobs:
         timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
-      - uses: actions/setup-node@v5
+      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
         timeout-minutes: 1
         with:
+          version: "0.3.0"
           node-version-file: .node-version
-          package-manager-cache: false
+          run-install: false
+          cache: false
       - name: Install dependencies
         timeout-minutes: 3
-        env:
-          COREPACK_HOME: ${{ runner.temp }}/corepack
-        run: |
-          corepack enable
-          pnpm install --frozen-lockfile --ignore-scripts
+        run: vp install --frozen-lockfile --ignore-scripts
       - name: Allocate candidate development version
         id: version
         timeout-minutes: 1

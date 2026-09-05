@@ -1,0 +1,16 @@
+id: euxlvoxdga
+artifact: progress
+record:
+  timestamp: 2026-09-05 11:51
+  type: chore
+  phase: build
+  what: Standardized dependency-installing and build CI jobs on the exact reviewed setup-vp action while preserving the setup-free OIDC publisher.
+  context:
+    intent: Deliver plan task irvnacpcby for independent audit in one local commit.
+    constraints: Keep setup-vp risk limited to non-OIDC install/build jobs; disable setup installs and caches; preserve frozen and ignore-scripts flags, migration tooling, and publication structure.
+    unknowns: Hosted action execution remains for CI; local structural and release-model verification passed.
+    scope: Verification CI, development candidate build setup, structural workflow tests, replay evidence, and inherited post-audit task state.
+  discovered: The release no-receipt DAG already owns typecheck, so CI adds bare vp check before vp run verify without duplicating vp run typecheck. Test changes required regeneration of the all-test typecheck source binding and its fixture manifest digest.
+  verified: Exact-SHA setup inventory and mutable-tag rejection tests passed. Bare vp check passed with 0 errors and 431 baseline warnings. The uncached 11-gate no-receipt release conjunction, hermetic source (4,308 passed, 2 skipped), type and formatter replays, local build, compact, capability contract, retained references, and package dry-run passed.
+  next: Independent audit irvnacpcby; keep the task in_progress.
+  publication_order: 343

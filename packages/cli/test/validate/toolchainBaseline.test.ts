@@ -9,6 +9,7 @@ const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
 const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
+const verificationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
 const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
 const rootViteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf8");
 
@@ -35,6 +36,31 @@ const setupVpReleases = [
   ["1.17.0", "313600b80b104eadebb9111787d37a2e83e014ca"],
   ["1.18.0", "1b32467adbe183473499fd9d5d372c3ed9641754"],
 ];
+const SETUP_VP = "voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754";
+
+function validateSetupJobs(workflows: any[]): void {
+  const jobs = workflows.flatMap((workflow) => Object.entries(workflow.jobs as Record<string, any>).map(([name, job]) => ({ name, job })));
+  expect(
+    jobs
+      .filter(({ job }) => job.steps.some((step: { run?: string }) => /vp install|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
+      .map(({ name }) => name)
+      .sort(),
+  ).toEqual(["build-development", "cli", "source-migration"]);
+  const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@")));
+  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "cli", "source-migration"]);
+  for (const { job } of setupJobs) {
+    const setup = job.steps.find((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@"));
+    expect(setup).toMatchObject({
+      uses: SETUP_VP,
+      with: {
+        version: "0.3.0",
+        "node-version-file": ".node-version",
+        "run-install": false,
+        cache: false,
+      },
+    });
+  }
+}
 
 describe("toolchain baseline", () => {
   it("retains every exact setup-vp release and the accepted risk boundary", () => {
@@ -55,6 +81,17 @@ describe("toolchain baseline", () => {
     expect(publisher.permissions["id-token"]).toBe("write");
     expect(publisher.steps.every((step: { uses?: string }) => step.uses === undefined)).toBe(true);
     expect(JSON.stringify(publisher)).not.toContain("setup-vp");
+  });
+
+  it("pins setup-vp and disables automatic installs and caches in every setup job", () => {
+    expect(() => validateSetupJobs([verificationWorkflow, publicationWorkflow])).not.toThrow();
+    const mutable = structuredClone(verificationWorkflow);
+    mutable.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_VP).uses = "voidzero-dev/setup-vp@v1";
+    expect(() => validateSetupJobs([mutable, publicationWorkflow])).toThrow();
+
+    expect(verificationWorkflow.jobs.cli.steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
+    expect(verificationWorkflow.jobs["source-migration"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
+    expect(publicationWorkflow.jobs["build-development"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile --ignore-scripts")).toBe(true);
   });
 
   it("binds the executable integration proof to live project policy", () => {
