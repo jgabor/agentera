@@ -37,6 +37,8 @@ pre-commit:
       run: timeout --foreground 10s vp fmt --write {staged_files}
       stage_fixed: true
       glob: "*.json"
+      exclude:
+        - "packages/cli/test/evidence/**"
     tests:
       run: bash scripts/precommit-vitest.sh {staged_files}
       glob:

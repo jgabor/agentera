@@ -8,9 +8,10 @@ import { describe, expect, it } from "vitest";
 const root = path.resolve(import.meta.dirname, "../../../..");
 const verifier = path.join(root, "packages/cli/scripts/verify-formatter-normalization.mjs");
 const authority = path.join(root, "packages/cli/test/evidence/formatter-normalization-replay.json");
+const generatedOverlapOffline = process.env.AGENTERA_OFFLINE === "1" && Boolean(process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT);
 
 function verify(manifest = authority) {
-  return spawnSync(process.execPath, [verifier, "--manifest", manifest], { cwd: root, encoding: "utf8" });
+  return spawnSync(process.execPath, [verifier, ...(generatedOverlapOffline ? ["--static"] : []), "--manifest", manifest], { cwd: root, encoding: "utf8" });
 }
 
 function resign(manifest: Record<string, unknown>) {

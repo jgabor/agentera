@@ -25,8 +25,8 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "b66254de74e3a2cf6f7571eed2216c3ccade383650ceb938339262a494ee987a",
-    "compiler.raw.json.gz": "177e8c567d28cdc287121fb357537c5302200b0da673964ac5fb113aad4506d3",
+    "source-binding.json": "ee2a7983a51fbe614db2df5015e71f97c494aa0ce63977c634fbb0b40dc3123b",
+    "compiler.raw.json.gz": "993acf54d9efc7396c99fffba8d8b12d6ef8f94d7f2f482748dc8f7381ed693e",
     "compiler.normalized.json": "def2de5bfdc7f54cfff2d2e0b6ff013180abc83df64a2d23fd4c2bfd02c7bbb1",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
@@ -44,9 +44,9 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-UEwJJd/work"
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-tbua2a/work"
   },
-  "rawGzipSha256": "177e8c567d28cdc287121fb357537c5302200b0da673964ac5fb113aad4506d3",
+  "rawGzipSha256": "993acf54d9efc7396c99fffba8d8b12d6ef8f94d7f2f482748dc8f7381ed693e",
   "normalizedSha256": "def2de5bfdc7f54cfff2d2e0b6ff013180abc83df64a2d23fd4c2bfd02c7bbb1",
   "classifications": {
     "classifications/valid.ts": [],
@@ -57,5 +57,5 @@
       "TS18047"
     ]
   },
-  "manifestSha256": "b39704133e53485615d9c55164bcd6413379012918d02437ed6578761a3bee7e"
+  "manifestSha256": "f4f85a02f8152f0599ba95c6c2be11797b6e5a0b17bd604085f98ae44d7d8daf"
 }

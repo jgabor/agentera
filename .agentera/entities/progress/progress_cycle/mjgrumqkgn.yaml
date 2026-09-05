@@ -1,0 +1,15 @@
+id: mjgrumqkgn
+artifact: progress
+record:
+  timestamp: 2026-09-05 03:00
+  type: fix
+  phase: build
+  what: Corrected generated-overlap rejection inputs and offline replay verification.
+  context:
+    intent: Restore the no-receipt verification DAG without weakening offline isolation or retained evidence integrity.
+    constraints: Preserve exact root versions, source-only TypeScript, owner delegation, package contents, and the recorded failed audit state.
+    scope: Bootstrap runtime-matrix authority plus formatter and all-test retained replay owners.
+  discovered: The two named runtime rejections reused the accepted command, so the binder correctly returned accepted. Offline generated-overlap then reached replay tests whose fresh npm caches could not fetch exact formatter tools or the type replay dependency tree. Vite+ 0.3.0 and Oxlint 1.79.0 expose only aggregate warning thresholds; current official Vite+/Oxlint references expose no baseline or diagnostic-fingerprint facility, and a same-count warning replacement still passes bare vp check.
+  verified: Correct invalid candidates now return not_exact. Offline generated-overlap uses integrity-bound retained/static checks while ordinary runs retain full isolated replay. Focused offline overlap, the complete 11-gate no-receipt root verify DAG, standard and hermetic source, exact replays, source-only typecheck, build, package, dry-run, compact, capability, retained-reference, activation, and toolchain baseline checks passed.
+  next: "Keep pseiddctar in progress: its lint-identity acceptance is irreducibly blocked until the pinned bare Vite+/Oxlint check gains a supported diagnostic baseline or the acceptance is revised."
+  publication_order: 336

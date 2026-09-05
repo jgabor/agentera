@@ -1,6 +1,6 @@
 {
   "schemaVersion": "agentera.formatterNormalizationReplay.v2",
-  "manifestSha256": "9fcf82c1c4d5a7f436ea468cf1a09b0a518f314fa7397e1e83d33ba14d05fcd2",
+  "manifestSha256": "46d5099669e995818368ec357636267a7b3cf7df00a9d0f8d5898760b1f912e2",
   "source": {
     "baseCommit": "5cdee5b35830d7d7404a083c4db5b11aade07f0a",
     "normalizedCommit": "0afd213355c8ca5a09d95d643f2e793c44dfb760",
@@ -4456,8 +4456,14 @@
   "replay": {
     "command": "node packages/cli/scripts/verify-formatter-normalization.mjs",
     "fullCommand": "node packages/cli/scripts/verify-formatter-normalization.mjs --full",
-    "verifierSha256": "9ffd445f8e25a6dea7c1d05e459c47ac2c14344333e085cf76d13878527e63b6",
-    "argv": ["fmt", "packages/cli", "--check", "--config", "packages/cli/vite.config.ts"]
+    "verifierSha256": "10ea440f481ca9d41f094f073bf16b77fef5c7822d18fe91616eec84c3bb4e49",
+    "argv": [
+      "fmt",
+      "packages/cli",
+      "--check",
+      "--config",
+      "packages/cli/vite.config.ts"
+    ]
   },
   "parityOwner": {
     "files": [
@@ -5382,23 +5388,50 @@
       },
       {
         "id": "typecheck",
-        "command": ["pnpm", "-C", "packages/cli", "run", "typecheck"]
+        "command": [
+          "pnpm",
+          "-C",
+          "packages/cli",
+          "run",
+          "typecheck"
+        ]
       },
       {
         "id": "build",
-        "command": ["pnpm", "-C", "packages/cli", "build"]
+        "command": [
+          "pnpm",
+          "-C",
+          "packages/cli",
+          "build"
+        ]
       },
       {
         "id": "package",
-        "command": ["pnpm", "-C", "packages/cli", "run", "verify:package"]
+        "command": [
+          "pnpm",
+          "-C",
+          "packages/cli",
+          "run",
+          "verify:package"
+        ]
       },
       {
         "id": "source",
-        "command": ["pnpm", "-C", "packages/cli", "test"]
+        "command": [
+          "pnpm",
+          "-C",
+          "packages/cli",
+          "test"
+        ]
       },
       {
         "id": "compact",
-        "command": ["node", "packages/cli/dist/bin/agentera.js", "check", "compact"]
+        "command": [
+          "node",
+          "packages/cli/dist/bin/agentera.js",
+          "check",
+          "compact"
+        ]
       },
       {
         "id": "capability",

@@ -17,6 +17,9 @@ type Manifest = {
 
 const sha256 = (bytes: string | Buffer) => createHash("sha256").update(bytes).digest("hex");
 const canonical = (value: unknown) => `${JSON.stringify(value, null, 2)}\n`;
+const generatedOverlapOffline =
+  process.env.AGENTERA_OFFLINE === "1" &&
+  Boolean(process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT);
 
 function rewriteManifest(directory: string, mutate: (manifest: Manifest) => void) {
   const file = path.join(directory, "manifest.json");
@@ -40,7 +43,7 @@ function inCopy(run: (directory: string) => void) {
 
 describe("all-test typecheck viability evidence", () => {
   it("replays the isolated measurement and compiled classifications", () =>
-    expect(verifyEvidence()).toEqual([]));
+    expect(verifyEvidence({ replay: !generatedOverlapOffline })).toEqual([]));
 
   for (const [name, mutate] of Object.entries({
     input: (dir: string) => fs.appendFileSync(path.join(dir, "package.json"), " "),

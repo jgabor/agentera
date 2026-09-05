@@ -12,3 +12,13 @@ record:
     - GIVEN root vp run commands WHEN test, build, and verify execute THEN existing owners run without cached-success replay.
     - GIVEN package validation WHEN complete THEN shipped CLI behavior and package boundaries remain unchanged.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Bare vp check enforces only warning count, not accepted warning identity; vp run verify fails generated-overlap on runtime-matrix rejection semantics and offline formatter/type replay dependencies.
+    provenance:
+      attempt_id: orchestrate-audit-pseiddctar-1
+      source: "Independent audit: bootstrap and package criteria pass; static non-regression and root verify criteria fail."
+      recorded_at: 2026-09-05 02:14
+      writer_command: agentera state plan record-evaluation

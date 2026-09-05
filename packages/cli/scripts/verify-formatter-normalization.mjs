@@ -16,6 +16,7 @@ const valueAfter = (flag) => {
 const manifestPath = path.resolve(valueAfter("--manifest") ?? defaultManifest);
 const generate = args.includes("--generate");
 const full = args.includes("--full");
+const staticOnly = args.includes("--static");
 const sha256 = (bytes) => createHash("sha256").update(bytes).digest("hex");
 const sha512 = (bytes) => `sha512-${createHash("sha512").update(bytes).digest("base64")}`;
 const gitText = (...gitArgs) => execFileSync("git", gitArgs, { cwd: repo, encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
@@ -470,30 +471,36 @@ function runCloseout(manifest, formatterResult, sourceSha256) {
 
 try {
   if (generate) {
+    if (staticOnly) fail("--static cannot be combined with --generate");
     const manifest = await makeManifest();
     fs.writeFileSync(manifestPath, canonical(manifest));
     console.log(`wrote ${path.relative(repo, manifestPath)} ${manifest.manifestSha256}`);
   } else {
+    if (staticOnly && full) fail("--static cannot be combined with --full");
     const manifest = JSON.parse(fs.readFileSync(manifestPath, "utf8"));
     verifyManifest(manifest);
-    const sourceSha256 = workspaceDigest();
-    const formatterResult = await runReplay(manifest);
-    if (workspaceDigest() !== sourceSha256) fail("isolated replay changed tracked or untracked source");
-    if (full) {
-      console.log(JSON.stringify(runCloseout(manifest, formatterResult, sourceSha256)));
+    if (staticOnly) {
+      console.log(JSON.stringify({ status: "pass", verification: "retained-static", manifestSha256: manifest.manifestSha256, inputs: manifest.inputs.length }));
     } else {
-      console.log(
-        JSON.stringify({
-          status: "pass",
-          manifestSha256: manifest.manifestSha256,
-          inputs: manifest.inputs.length,
-          formattingOnly: manifest.equivalence.formattingOnly.length,
-          authorizedSubstantive: manifest.equivalence.authorizedSubstantive.length,
-          protectedUnchangedExceptOwnerAuthorizedParity: true,
-          parityOwnerEvidence: manifest.parityOwner.evidence.sourceEquivalence.targetSha256,
-          sourceUnchanged: true,
-        }),
-      );
+      const sourceSha256 = workspaceDigest();
+      const formatterResult = await runReplay(manifest);
+      if (workspaceDigest() !== sourceSha256) fail("isolated replay changed tracked or untracked source");
+      if (full) {
+        console.log(JSON.stringify(runCloseout(manifest, formatterResult, sourceSha256)));
+      } else {
+        console.log(
+          JSON.stringify({
+            status: "pass",
+            manifestSha256: manifest.manifestSha256,
+            inputs: manifest.inputs.length,
+            formattingOnly: manifest.equivalence.formattingOnly.length,
+            authorizedSubstantive: manifest.equivalence.authorizedSubstantive.length,
+            protectedUnchangedExceptOwnerAuthorizedParity: true,
+            parityOwnerEvidence: manifest.parityOwner.evidence.sourceEquivalence.targetSha256,
+            sourceUnchanged: true,
+          }),
+        );
+      }
     }
   }
 } catch (error) {

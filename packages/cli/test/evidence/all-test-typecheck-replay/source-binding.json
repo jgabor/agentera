@@ -101,7 +101,7 @@
   },
   {
     "path": "packages/cli/scripts/verify-formatter-normalization.mjs",
-    "sha256": "9ffd445f8e25a6dea7c1d05e459c47ac2c14344333e085cf76d13878527e63b6"
+    "sha256": "10ea440f481ca9d41f094f073bf16b77fef5c7822d18fe91616eec84c3bb4e49"
   },
   {
     "path": "packages/cli/scripts/verify-generated-overlap.mjs",
@@ -1633,7 +1633,7 @@
   },
   {
     "path": "packages/cli/src/validate/bootstrapAuthority.ts",
-    "sha256": "02e4968f618f6545e447cdc4092092a8513e083942887bd8a3e89b706531058e"
+    "sha256": "236613bc308f0f5e6671ff9751a3e61b95a3824ede48ec11459ddd4e4871ece1"
   },
   {
     "path": "packages/cli/src/validate/capability.ts",
@@ -2401,7 +2401,7 @@
   },
   {
     "path": "packages/cli/test/scripts/formatterNormalizationReplay.test.ts",
-    "sha256": "ef9eedaf735e17df9d19bf826fcc1bca8cf273fc2d9db52c6fd5ad7b91369485"
+    "sha256": "1d1e8a425b4171d195cae2714227503b01ea2b470c3e7f0caa3c3cf9d3e34f52"
   },
   {
     "path": "packages/cli/test/scripts/precommitVitest.test.ts",
@@ -2857,7 +2857,7 @@
   },
   {
     "path": "packages/cli/test/validate/allTestTypecheckViability.test.ts",
-    "sha256": "de54b97f5113c04d067df2d0695d85aef73a7cf90542bf9e904f9157f274203e"
+    "sha256": "fea8339f181d69a8e2e2f20832fc9f96f161e8406362036bc0b5ca9bd8bba7ce"
   },
   {
     "path": "packages/cli/test/validate/appHomeContract.test.ts",
