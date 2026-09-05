@@ -13,12 +13,16 @@ record:
     - The formatter normalization task can be replaced by a complete independently audited task.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[refactor:3.0.0] Decompose formatter-expanded CLI monoliths"
+      status: resolved
+      order: 134
       severity: normal
-      status: open
-      order: 31
+  lifecycle:
+    operation: resolve
+    reason: Maintained source and monolith constraints pass and the replacement formatter task completed independent audit.
+    date: 2026-09-05

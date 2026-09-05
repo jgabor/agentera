@@ -21,4 +21,4 @@ record:
       description: "[chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap"
       severity: normal
       status: open
-      order: 30
+      order: 28

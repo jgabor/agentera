@@ -13,12 +13,16 @@ record:
     - A deliberately wrong managed runtime fails before project commands execute.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[test:3.0.0] Make root toolchain verification host-runtime independent"
+      status: resolved
+      order: 137
       severity: normal
-      status: open
-      order: 35
+  lifecycle:
+    operation: resolve
+    reason: Canonical managed-toolchain proof passes from host Node 24.20.0 using managed Node 24.19.0 and rejects the deliberately wrong runtime.
+    date: 2026-09-05

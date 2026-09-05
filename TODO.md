@@ -42,14 +42,7 @@
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:dzrruetyod] [chore:3.0.0] Unify setup-requiring CI behind Vite+
-- [ ] [id:oeadkhtqub] [test:3.0.0] Measure all-test Vite+ type-check viability
-- [ ] [id:qefxkkmyyw] [refactor:3.0.0] Establish workspace-root Vite+ authority
 - [ ] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
-- [ ] [id:bhwgdxohmy] [refactor:3.0.0] Decompose formatter-expanded CLI monoliths
-- [ ] [id:ifdcgoxqsf] [test:3.0.0] Retain replayable Vite+ formatter equivalence evidence
-- [ ] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
-- [ ] [id:jrwiznhelw] [test:3.0.0] Make source verification hermetic under disposable user roots
-- [ ] [id:gutcrlqdyy] [test:3.0.0] Make root toolchain verification host-runtime independent
 
 ## ⇢ Annoying
 
@@ -185,3 +178,10 @@
 - [x] [id:wknsemowih] [fix:3.0.0] Restore output history and prime token compliance
 - [x] [id:yfpppnyyzm] [feat:3.0.0] Make JSON the sole operational CLI output protocol
 - [x] [id:klhxdhzlth] [fix:3.0.0] Pass the bounded GitHub provenance identity to npm Trusted Publishing.
+- [x] [id:oeadkhtqub] [test:3.0.0] Measure all-test Vite+ type-check viability
+- [x] [id:qefxkkmyyw] [refactor:3.0.0] Establish workspace-root Vite+ authority
+- [x] [id:ifdcgoxqsf] [test:3.0.0] Retain replayable Vite+ formatter equivalence evidence
+- [x] [id:bhwgdxohmy] [refactor:3.0.0] Decompose formatter-expanded CLI monoliths
+- [x] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
+- [x] [id:jrwiznhelw] [test:3.0.0] Make source verification hermetic under disposable user roots
+- [x] [id:gutcrlqdyy] [test:3.0.0] Make root toolchain verification host-runtime independent

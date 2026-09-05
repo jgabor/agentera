@@ -13,12 +13,16 @@ record:
     - The standard source suite remains green and the exact typecheck replay result is unchanged.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[test:3.0.0] Make source verification hermetic under disposable user roots"
+      status: resolved
+      order: 136
       severity: normal
-      status: open
-      order: 34
+  lifecycle:
+    operation: resolve
+    reason: Hermetic disposable-root and standard source suites both pass 263 files and 4308 tests with exact typecheck replay unchanged.
+    date: 2026-09-05

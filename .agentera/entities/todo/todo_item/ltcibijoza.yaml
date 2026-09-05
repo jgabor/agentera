@@ -13,12 +13,16 @@ record:
     - Orchestration resumes only after the active plan is revised with truthful behavioral acceptance.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[test:3.0.0] Make Vite+ orchestration evidence independently replayable"
+      status: resolved
+      order: 135
       severity: normal
-      status: open
-      order: 33
+  lifecycle:
+    operation: resolve
+    reason: All required replacement tasks now carry reproducible audited PASS evidence under the revised successor plan.
+    date: 2026-09-05

@@ -14,12 +14,16 @@ record:
     - pnpm@10.30.3 and pnpm-lock.yaml remain dependency authorities.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[refactor:3.0.0] Establish workspace-root Vite+ authority"
+      status: resolved
+      order: 132
       severity: normal
-      status: open
-      order: 29
+  lifecycle:
+    operation: resolve
+    reason: Root Vite+ 0.3.0, managed pnpm 10.30.3, frozen lockfile, contributor commands, and project-local resolution are implemented and verified.
+    date: 2026-09-05

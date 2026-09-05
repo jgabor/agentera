@@ -4,10 +4,20 @@ record:
   name: Gate serialized @next publication
   depends_on:
     - irvnacpcby
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a selected push WHEN root vp run verify delegates to verify:release THEN no-receipt exact-SHA verification precedes construction.
     - GIVEN workflow deadlines WHEN inspected THEN verification receives at least 2,400,000 milliseconds plus setup and construction allowance.
     - GIVEN verification failure WHEN jobs settle THEN package construction, artifact upload, and registry effects never start.
     - GIVEN success or replay WHEN publication settles THEN allocation, bytes, ordering, forward-only tags, convergence, and publisher isolation remain unchanged.
   plan: vtqzlztjsk
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-audit-lbsqhpmbnw-1
+      source: "Independent security audit: criteria 4/4 pass; exact-SHA no-receipt verify ordering, deadlines, failure suppression, queue/replay, and publisher isolation verified."
+      recorded_at: 2026-09-05 12:33
+      writer_command: agentera state plan record-evaluation
