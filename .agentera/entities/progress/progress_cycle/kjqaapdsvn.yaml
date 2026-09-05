@@ -1,0 +1,16 @@
+id: kjqaapdsvn
+artifact: progress
+record:
+  timestamp: 2026-09-05 11:22
+  type: fix
+  phase: build
+  what: Removed the root README's competing pnpm contributor command list and delegated daily commands to AGENTS.md's canonical Vite+ authority.
+  context:
+    intent: Correct only the failed eehlopgmsi audit finding and retain the task for final independent audit.
+    constraints: Preserve hook routes and budgets, root toolchain, CLI authority boundaries, package and publication behavior, versions, and the first FAIL evaluation.
+    unknowns: None.
+    scope: Root README guidance plus mechanically required audit and progress state.
+  discovered: The first independent audit failed only because README.md repeated unqualified pnpm test, typecheck, and build commands after AGENTS.md became the daily Vite+ authority. README.md is not bound by either replay artifact, so no generated evidence changed.
+  verified: README markdownlint/format and the command-conflict scan passed. Focused hook tests passed 49 tests. Bare vp check passed with 0 errors and the existing 431-warning root baseline. Formatter and all-test type replays passed. Hermetic source passed 263 files with 4,307 tests passed and 2 skipped. Build, compact, capability contract, retained references, activation conjunction, and the staged docs/state hooks passed.
+  next: Independent final audit eehlopgmsi; keep the task in_progress with its first FAIL evaluation preserved.
+  publication_order: 342

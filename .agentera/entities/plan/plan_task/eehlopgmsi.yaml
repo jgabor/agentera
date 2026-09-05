@@ -15,3 +15,13 @@ record:
     - "AGENTS.md owns the uncached daily vocabulary: vp install, vp check, vp run typecheck, vp run test, vp run build, and vp run verify; package README delegates while maintainer pnpm recovery remains in verification and packaging authorities."
     - Guidance identifies npx -y agentera@next state as published state authority and requires vp run build before node packages/cli/dist/bin/agentera.js checks.
     - "Pinned Node 24.19 verification passed: focused hook/replay/retained/activation tests, hermetic source, typecheck, build, compact, capability contract, package owner, and the 11-gate uncached release conjunction. Bare vp check passed with the existing warning-only lint baseline. Standard source passed inside the release conjunction; two standalone runs exposed transient source-binding/root-isolation races, while isolated reruns passed."
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: Root README still presents pnpm test/typecheck/build as an unqualified contributor command list, competing with AGENTS.md's canonical daily Vite+ vocabulary.
+    provenance:
+      attempt_id: orchestrate-audit-eehlopgmsi-1
+      source: "Independent audit: hook and local/published authority criteria pass; guidance uniqueness fails."
+      recorded_at: 2026-09-05 11:11
+      writer_command: agentera state plan record-evaluation

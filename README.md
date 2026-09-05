@@ -132,13 +132,8 @@ The intentional singleton project state is:
 | --- | --- |
 | `packages/cli` (`agentera`) | Primary TypeScript CLI and bundled runtime data |
 
-Contributor commands and repository rules live in [AGENTS.md](./AGENTS.md).
-Migration and recovery details live in [UPGRADE.md](./UPGRADE.md).
-
-```bash
-pnpm -C packages/cli test
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-```
+Use the canonical daily Vite+ contributor commands in
+[AGENTS.md](./AGENTS.md#common-commands). Migration and recovery details live
+in [UPGRADE.md](./UPGRADE.md).
 
 License: [Apache-2.0](./LICENSE) · Author: Jonathan Gabor
