@@ -1,0 +1,16 @@
+id: vlgglcvmpt
+artifact: progress
+record:
+  timestamp: 2026-09-06 09:32
+  type: fix
+  phase: build
+  what: Local candidate receipt fixtures explicitly own their environment instead of inheriting the publication workflow identity.
+  context:
+    intent: Restore reliable same-SHA uncached verification without runtime optimization or weakening CI binding.
+    constraints: No commits, integration, push, publication, CI rerun, main mutation or Orca use. Only receipt tests and invalidated canonical evidence changed, alongside typed state. No credentials, worker overrides, BASH_ENV or checkout output prewarming in the full gate.
+    unknowns: Local verification with representative workflow identity is not a hosted runner or publication test. No evaluation or retry count recorded; retry remains not_recorded. Decision remains provisional with satisfaction null; profile unavailable and vision deferred.
+    scope: Existing neutral GitHub-only fixture and dependencies reused; current SHA freshly fetched and exact overlay checked. This progress record is subsequent to the passing snapshot. Structured evidence and exact commands are in /tmp/opencode/receipt-ci-report.md and /tmp/opencode/receipt-ci-evidence/.
+  discovered: The SHA guard activates only for the contracted Actions repository, workflow name and workflow ref. With those fields and the actual checkout SHA, the two local interval/smoke tests failed before their intended assertions. An explicit empty environment at the existing per-call seam preserves local manifest identity; the dedicated real-CI matching and mismatch scenarios remain unchanged. Regression tests inject foreign workflow identity, assert receipt operations preserve it, and restore stubs in afterEach.
+  verified: Reproduced 41 passing and two failing receipt tests under complete contracted CI identity before correction. The related receipt/readiness/transaction suite passed 132 tests; receipt and strict compiler-evidence tests passed 53. Static checks, source typecheck and canonical evidence replay passed with 451 diagnostics across 103 test files and zero source diagnostics. One uncached full verification passed all eleven gates on GitHub-fetched 6ac980ed9fbf76662e0e6e3ba1240bb769981671 plus the exact dirty overlay, with CI and complete nonsecret workflow identity present. Pre/post source bindings matched; the read-only watcher observed zero events or differences. Production source/scripts, publisher workflows, history prerequisites, workers and budgets have zero diff.
+  next: Keep xsllvjxnxy in progress and unaudited. Coordinator owns independent audit, acceptance evaluation and completion.
+  publication_order: 368

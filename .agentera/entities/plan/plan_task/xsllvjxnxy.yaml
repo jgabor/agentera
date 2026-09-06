@@ -1,0 +1,23 @@
+id: xsllvjxnxy
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Isolate receipt fixtures from ambient CI identity
+  status: complete
+  depends_on:
+    - huvxxqmnbw
+  acceptance:
+    - GIVEN inherited GitHub Actions identity WHEN receipt fixture tests run THEN fixture-local identities govern their scenarios without changing the caller environment.
+    - GIVEN real development CI binding WHEN source identity matches or differs THEN matching identity passes and mismatches still fail closed.
+    - GIVEN regression and full release verification with CI variables present WHEN executed THEN all gates pass with strict timing, smoke-failure and receipt assertions intact.
+    - GIVEN the correction WHEN reviewed THEN production guards, publication isolation, history prerequisites, worker defaults and finite budgets remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-ci-identity-xsllvjxnxy-1
+      source: "Independent Agentera audit: four criteria and evidence PASS. Existing real-CI guard and match/mismatch cases unchanged; ambient identity probes passed. Full eleven-gate CI-identity snapshot and 1011 implementation-file hashes verified. Actual CI confirmation pending."
+      recorded_at: 2026-09-06 09:40
+      writer_command: agentera state plan record-evaluation

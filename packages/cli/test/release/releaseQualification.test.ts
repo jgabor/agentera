@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import {
   canonicalJson,
@@ -203,6 +203,14 @@ function developmentCandidateEnvironment(repo: string) {
   return sourceQualificationEnvironment(repo);
 }
 
+function stubForeignCiIdentity() {
+  // Model the real workflow identity, whose checkout SHA does not belong to the fixture.
+  for (const [key, value] of Object.entries(sourceQualificationEnvironment(REPO_ROOT))) {
+    vi.stubEnv(key, value);
+  }
+  return { ...process.env };
+}
+
 function write(root: string, relative: string, contents: string): void {
   const file = path.join(root, relative);
   fs.mkdirSync(path.dirname(file), { recursive: true });
@@ -377,6 +385,7 @@ function candidateExecution(candidateDirectory: string, version = "3.0.0-dev.41"
 }
 
 afterEach(() => {
+  vi.unstubAllEnvs();
   while (temporary.length) fs.rmSync(temporary.pop()!, { recursive: true, force: true });
 });
 
@@ -977,6 +986,9 @@ describe("release qualification receipts", () => {
   it("records non-overlapping monotonic candidate gate intervals with explicit overhead", async () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
+    const ambient = stubForeignCiIdentity();
+    const environment = {};
+    expect(git(repo, "rev-parse", "HEAD")).not.toBe(ambient.GITHUB_SHA);
     const ticks = [0, 10, 20, 25, 55, 60, 90, 100];
     const candidate = candidateExecution(candidateDirectory);
     const issued = issueCandidateReceipt({
@@ -984,6 +996,7 @@ describe("release qualification receipts", () => {
       candidateDirectory,
       adapterName: "development",
       clock: () => ticks.shift()!,
+      environment,
       metadataRun: () => "{}",
       ...candidate,
     });
@@ -1019,6 +1032,7 @@ describe("release qualification receipts", () => {
       metadataRun: () => {
         throw new Error("candidate replay must not rerun metadata");
       },
+      environment,
       run: () => {
         throw new Error("candidate replay must not reconstruct bytes");
       },
@@ -1065,6 +1079,7 @@ describe("release qualification receipts", () => {
         metadataRun: () => {
           throw new Error("invalid replay must not rerun metadata");
         },
+        environment,
         run: () => {
           throw new Error("invalid replay must not reconstruct bytes");
         },
@@ -1074,11 +1089,15 @@ describe("release qualification receipts", () => {
       }),
     ).toThrow("package receipt gate 'release-metadata' has invalid execution evidence");
     expect(fs.readFileSync(artifact)).toEqual(retained.artifact);
+    expect(process.env).toEqual(ambient);
   });
 
   it("preserves the local smoke owner and writes no package receipt on failure", async () => {
     const { repo, candidateDirectory } = fixture();
     await sourceReceipt(repo, candidateDirectory);
+    const ambient = stubForeignCiIdentity();
+    const environment = {};
+    expect(git(repo, "rev-parse", "HEAD")).not.toBe(ambient.GITHUB_SHA);
     const execution = candidateExecution(candidateDirectory);
     let failure: unknown;
     try {
@@ -1088,6 +1107,7 @@ describe("release qualification receipts", () => {
         adapterName: "development",
         metadataRun: () => "{}",
         run: execution.run,
+        environment,
         smokeRun: () => {
           throw new Error("isolated smoke failed first");
         },
@@ -1100,6 +1120,7 @@ describe("release qualification receipts", () => {
       message: "isolated smoke failed first",
     });
     expect(fs.existsSync(path.join(candidateDirectory, "candidate-receipt.json"))).toBe(false);
+    expect(process.env).toEqual(ambient);
   });
 
   it("probes tool versions in a fresh isolated npm state even when the caller has a token", () => {

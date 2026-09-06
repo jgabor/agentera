@@ -12,7 +12,7 @@ measurement:
   boundary: integrity-bound copies of packages/cli/src, test, and imported scripts under strict NodeNext; production tsconfig and manifests unchanged
   setup: pnpm 10.30.3 frozen install from the tracked temporary manifest and lockfile in disposable HOME, cache, store, and work roots
   command: vp lint src test --type-aware --type-check --tsconfig tsconfig.json --format=json
-  manifest_sha256: 0cd000578a7a19bd990f132ff47ca8b57dd5df5d5aad428151287db163930e9c
+  manifest_sha256: bbddcd89156a726e626e4ea926a2e16526947e42fc90578c5241ce0b054d9965
   compiler_diagnostics:
     total: 451
     files: 103
