@@ -2229,7 +2229,7 @@
   },
   {
     "path": "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts",
-    "sha256": "d326d190707f83d55a19322858aa04f31944ec08b80c3b2062b2bed4d73c3c65"
+    "sha256": "896fa83ade7bf914d6f5fa8e0151a9ec525c6f1f7458a281445677bece985dd3"
   },
   {
     "path": "packages/cli/test/lint/monolithLint.test.ts",

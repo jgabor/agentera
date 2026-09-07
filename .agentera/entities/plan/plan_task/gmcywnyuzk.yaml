@@ -1,0 +1,23 @@
+id: gmcywnyuzk
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Separate bootstrap boundary and release-evidence proofs
+  status: complete
+  depends_on:
+    - mkfvnurovd
+  acceptance:
+    - GIVEN bootstrap release verification WHEN executed THEN missing-surface, baseline evidence, mutation, coordinated-attack and observer-failure proofs have distinct bounded tests.
+    - GIVEN the split WHEN coverage is compared THEN all sixteen missing-surface cases, matrix rows, integrity mutations and security assertions remain; fixture construction is not multiplied.
+    - GIVEN complete CI identity and profile WHEN full verification runs THEN every gate passes and individual proof durations are recorded without blanket timeout increases.
+    - GIVEN completion WHEN reviewed THEN production behavior, publication safeguards, owner budgets and source isolation remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-bootstrap-proofs-gmcywnyuzk-1
+      source: "Independent Agentera audit: four criteria PASS; AST/value comparison preserved all 69 original assertions and mutation bodies, fixture reuse and cleanup verified. Full eleven-gate snapshot, focused release-mode timings and compiler bindings validated. Actual CI remains pending."
+      recorded_at: 2026-09-07 15:44
+      writer_command: agentera state plan record-evaluation

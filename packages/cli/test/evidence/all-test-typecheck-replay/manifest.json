@@ -25,8 +25,8 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "a6974e62fbd23584df19cfdc4b002943cf0a5f6dbb82a84dda4ee6834e5330e8",
-    "compiler.raw.json.gz": "bf940e33c3cbb27f4f0f16e368add1dd5366f1f55f873a298ec9e5c1580203a2",
+    "source-binding.json": "1c4009369c1b8a6039bc8576e51aa5901234df8c1b55265fc2577e9c206e2840",
+    "compiler.raw.json.gz": "9b2871d503453fa8bddb99101d396a8d338c5ad7ec0d4deee0c5641bb8a6f722",
     "compiler.normalized.json": "1a2513fe981ac35c766aa052eb57999f9fffc5fd9517ff2954d65be659907986",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
@@ -44,9 +44,9 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-XtwbTD/work"
+    "trackedDisposableWorkRoot": "/tmp/opencode/bootstrap-proof-results/tmp/agentera-type-replay-TyyRrS/work"
   },
-  "rawGzipSha256": "bf940e33c3cbb27f4f0f16e368add1dd5366f1f55f873a298ec9e5c1580203a2",
+  "rawGzipSha256": "9b2871d503453fa8bddb99101d396a8d338c5ad7ec0d4deee0c5641bb8a6f722",
   "normalizedSha256": "1a2513fe981ac35c766aa052eb57999f9fffc5fd9517ff2954d65be659907986",
   "classifications": {
     "classifications/valid.ts": [],
@@ -57,5 +57,5 @@
       "TS18047"
     ]
   },
-  "manifestSha256": "e39b3c319173a7f963976090beb80bd55c62fbe89387d4b004363fff82d3b472"
+  "manifestSha256": "7a47287d93d45c100584b6de7c604a5540e47ba6a0958412e2ae9dc589b52917"
 }

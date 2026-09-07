@@ -48,6 +48,12 @@ const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const RELEASE_EVIDENCE_RUN = Boolean(process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT);
 let matrixSummary: ReturnType<typeof runRuntimeBootstrapMatrix> | undefined;
 
+// Cache observations, never sibling assertions. Selecting any release proof on its
+// own still constructs its prerequisites once from the same immutable package.
+function runtimeSummary() {
+  return (matrixSummary ??= runRuntimeBootstrapMatrix(fixture, CHECKOUT_ROOT));
+}
+
 beforeAll(async () => {
   ({ fixture, cleanup: cleanupPackageFixture } = await createPackageFixture());
 });
@@ -125,8 +131,7 @@ describe("source-owned runtime bootstrap integration", () => {
   });
 
   it.skipIf(!RELEASE_EVIDENCE_RUN)("preserves every protected root and rejects the governed runtime matrix before child start", { timeout: 300_000 }, () => {
-    const summary = runRuntimeBootstrapMatrix(fixture, CHECKOUT_ROOT);
-    matrixSummary = summary;
+    const summary = runtimeSummary();
     expect(summary.runtimeCounts).toEqual({
       source: { accepted: 15, rejected: 80 },
       package: { accepted: 15, rejected: 80 },
@@ -162,14 +167,14 @@ describe("source-owned runtime bootstrap integration", () => {
     });
   });
 
-  it("rejects missing source and package surfaces before the CLI boundary", { timeout: 240_000 }, async () => {
+  let missingSurfaces: ReturnType<typeof observeMissingSurfaces> | undefined;
+  function observeMissingSurfaces() {
     const dispatcher = path.join(CHECKOUT_ROOT, "packages/cli/test/helpers/preCutoverBootstrapMissingSurfaceDispatcher.mjs");
     const project = path.join(fixture.root, "missing surface project");
     fs.mkdirSync(project);
-    expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
     const requiredFiles = RELEASE_EVIDENCE_RUN ? DEVELOPMENT_RUNTIME_REQUIRED_FILES : DEVELOPMENT_RUNTIME_REQUIRED_FILES.slice(0, 1);
     let batches = 0;
-    const missingSurfaceResults: unknown[] = [];
+    const results = [];
     for (const [runtime, root] of Object.entries({
       source: fixture.constructionRoot,
       package: fixture.packageRoot,
@@ -181,8 +186,22 @@ describe("source-owned runtime bootstrap integration", () => {
         encoding: "utf8",
         shell: false,
       });
-      expect(result.status, runtime).toBe(0);
       const observations = JSON.parse(result.stdout);
+      results.push({ runtime, status: result.status, observations });
+    }
+    return { batches, requiredFiles, results };
+  }
+
+  function missingSurfaceObservations() {
+    return (missingSurfaces ??= observeMissingSurfaces());
+  }
+
+  it("rejects missing source and package surfaces before the CLI boundary", () => {
+    const { batches, requiredFiles, results } = missingSurfaceObservations();
+    expect(DEVELOPMENT_RUNTIME_REQUIRED_FILES).toHaveLength(8);
+    const missingSurfaceResults: unknown[] = [];
+    for (const { runtime, status, observations } of results) {
+      expect(status, runtime).toBe(0);
       expect(observations, runtime).toHaveLength(requiredFiles.length);
       for (const observation of observations) {
         expect(observation.status, `${runtime}/${observation.relative}`).toBe(64);
@@ -194,24 +213,63 @@ describe("source-owned runtime bootstrap integration", () => {
     }
     expect(batches).toBe(2);
     expect(missingSurfaceResults).toHaveLength(requiredFiles.length * 2);
-    if (!RELEASE_EVIDENCE_RUN) return;
-    expect(matrixSummary).toBeDefined();
+  });
+
+  let baseline: ReturnType<typeof createBaseline> | undefined;
+  function releaseBaseline() {
+    return (baseline ??= createBaseline());
+  }
+
+  async function createBaseline() {
+    const summary = runtimeSummary();
+    const missingSurfaceResults = missingSurfaceObservations().results.flatMap(({ runtime, observations }) => observations.map((observation: any) => ({ runtime, ...observation })));
     const productionInputs = loadActivationProductionInputs(CHECKOUT_ROOT, fixture.constructionRoot);
     const sourceEvidence = createSourceOwnerEvidence(CHECKOUT_ROOT, productionInputs, {
       fixture,
-      runtimeSummary: matrixSummary!,
+      runtimeSummary: summary,
       missingSurfaceResults,
     });
-    const sourceOutput = process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT;
-    if (sourceOutput) {
-      expect(writeContentAddressedOwnerEvidence(sourceOutput, sourceEvidence).digest).toBe(sourceEvidence.evidenceDigest);
-    }
     const finalized = await finalizePackageOwnerEvidence({
       root: CHECKOUT_ROOT,
       fixture,
       requiredFiles: DEVELOPMENT_RUNTIME_REQUIRED_FILES,
     });
     const { evidence, packageIdentity } = finalized;
+    const generation = fixture.sourceIdentity.identitySha256;
+    const generatedEvidence = await createGeneratedOwnerEvidence({
+      root: CHECKOUT_ROOT,
+      generationRoot: fixture.constructionRoot,
+      generation,
+      productionInputs,
+    });
+    const manifest = createActivationEvidenceManifest({
+      root: CHECKOUT_ROOT,
+      generation,
+      productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
+      sourceEvidence,
+      generatedEvidence,
+      packageEvidence: evidence,
+    });
+    return {
+      productionInputs,
+      sourceEvidence,
+      evidence,
+      packageIdentity,
+      generation,
+      manifest,
+      summary,
+      missingSurfaceResults,
+    };
+  }
+
+  it.skipIf(!RELEASE_EVIDENCE_RUN)("assembles baseline release evidence from one immutable package fixture", { timeout: 240_000 }, async () => {
+    const { productionInputs, sourceEvidence, evidence, packageIdentity, generation, manifest, summary } = await releaseBaseline();
+    expect(summary).toBeDefined();
+    expect(fixture.deterministicBytes.packRuns).toBe(2);
+    const sourceOutput = process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT;
+    if (sourceOutput) {
+      expect(writeContentAddressedOwnerEvidence(sourceOutput, sourceEvidence).digest).toBe(sourceEvidence.evidenceDigest);
+    }
     const expectedSecondManifestFiles = [...fixture.pathIndependence.secondManifest.files].map(({ path: file, size, mode }) => ({ path: file, size, mode })).sort((left, right) => left.path.localeCompare(right.path));
     const portabilityFiles = (evidence.records["package.portability"].content as any).secondManifest.files;
     expect(portabilityFiles).toEqual({
@@ -251,21 +309,6 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(() => readContentAddressedPackageIdentity(path.join(retainedProbe, "missing-identity"))).toThrow(/package identity is missing/);
     fs.rmSync(retainedProbe, { recursive: true, force: true });
 
-    const generation = fixture.sourceIdentity.identitySha256;
-    const generatedEvidence = await createGeneratedOwnerEvidence({
-      root: CHECKOUT_ROOT,
-      generationRoot: fixture.constructionRoot,
-      generation,
-      productionInputs,
-    });
-    const manifest = createActivationEvidenceManifest({
-      root: CHECKOUT_ROOT,
-      generation,
-      productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
-      sourceEvidence,
-      generatedEvidence,
-      packageEvidence: evidence,
-    });
     expect(activationEvidenceManifestViolations(manifest, manifest)).toEqual([]);
 
     let sourceObservations = 0;
@@ -293,6 +336,10 @@ describe("source-owned runtime bootstrap integration", () => {
     });
     expect(activationEvidenceManifestViolations(assembled, assembled)).toEqual([]);
     expect(assembled.producers.package.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
+  });
+
+  it.skipIf(!RELEASE_EVIDENCE_RUN)("rejects manifest mutations and re-signed artifact evidence", { timeout: 240_000 }, async () => {
+    const { manifest, generation, productionInputs, packageIdentity } = await releaseBaseline();
 
     const forged = structuredClone(manifest) as any;
     const forgedRecord = forged.producers.generated.records["capability.generated-modules"];
@@ -557,6 +604,15 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(productionViolations).toMatch(/capability\.source-modules.*authoritative artifact observation/);
     expect(productionViolations).toMatch(/capability\.generated-modules.*authoritative artifact observation/);
     expect(productionViolations).toMatch(/trusted release observation/);
+  });
+
+  let attack: ReturnType<typeof createAttack> | undefined;
+  function coordinatedAttack() {
+    return (attack ??= createAttack());
+  }
+
+  async function createAttack() {
+    const { evidence, packageIdentity, summary, missingSurfaceResults } = await releaseBaseline();
 
     const attackRoot = path.join(fixture.root, "coordinated-attack-checkout");
     const copyIntoAttackRoot = (relative: string): void => {
@@ -585,112 +641,139 @@ describe("source-owned runtime bootstrap integration", () => {
     });
     const attackTarball = path.join(fixture.root, "coordinated-attack-agentera-3.0.0-dev.42.tgz");
     fs.copyFileSync(path.join(fixture.root, fixture.manifest.filename), attackTarball);
-    try {
-      const attackSourceSnapshot = path.join(fixture.root, "coordinated-attack-snapshot-source");
-      observeCurrentPackageArtifact(path.join(fixture.root, fixture.manifest.filename), fixture.packageRoot, attackSourceSnapshot);
-      installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
-      expect(activationSourceDigest(attackRoot)).toBe(activationSourceDigest(CHECKOUT_ROOT));
-      const baselineInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
-      const baselinePackageEvidence = structuredClone(evidence);
-      const baselineManifest = createActivationEvidenceManifest({
+    const attackSourceSnapshot = path.join(fixture.root, "coordinated-attack-snapshot-source");
+    observeCurrentPackageArtifact(path.join(fixture.root, fixture.manifest.filename), fixture.packageRoot, attackSourceSnapshot);
+    installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
+    const attackSourceDigest = activationSourceDigest(attackRoot);
+    const baselineInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
+    const baselinePackageEvidence = structuredClone(evidence);
+    const baselineManifest = createActivationEvidenceManifest({
+      root: attackRoot,
+      generation: attackGeneration,
+      productionEvidence: collectActivationProductionEvidence(attackRoot, baselineInputs),
+      sourceEvidence: createSourceOwnerEvidence(attackRoot, baselineInputs, {
+        fixture,
+        runtimeSummary: summary,
+        missingSurfaceResults,
+      }),
+      generatedEvidence: await createGeneratedOwnerEvidence({
         root: attackRoot,
-        generation: attackGeneration,
-        productionEvidence: collectActivationProductionEvidence(attackRoot, baselineInputs),
-        sourceEvidence: createSourceOwnerEvidence(attackRoot, baselineInputs, {
-          fixture,
-          runtimeSummary: matrixSummary!,
-          missingSurfaceResults,
-        }),
-        generatedEvidence: await createGeneratedOwnerEvidence({
-          root: attackRoot,
-          generationRoot: attackGenerationRoot,
-          generation: attackGeneration,
-          productionInputs: baselineInputs,
-        }),
-        packageEvidence: baselinePackageEvidence,
-      });
-
-      fs.appendFileSync(path.join(attackRoot, "packages/cli/src/capabilities/design/instructions.ts"), "\n// coordinated source tampering\n");
-      fs.appendFileSync(path.join(attackGenerationRoot, "dist/capabilities/design/instructions.js"), "\n// coordinated generated tampering\n");
-      const attackedPackageJson = path.join(attackPackageRoot, "package.json");
-      fs.appendFileSync(attackedPackageJson, "\n");
-      fs.writeFileSync(path.join(attackPackageRoot, "coordinated-addition.txt"), "attacker-added\n");
-      fs.appendFileSync(attackTarball, "coordinated-tarball-tampering");
-      const retainedSnapshot = path.join(attackGenerationRoot, ".activation-package-snapshot");
-      fs.appendFileSync(path.join(retainedSnapshot, "package.tgz"), "retained-tarball-tampering");
-      fs.writeFileSync(path.join(retainedSnapshot, "extracted", "retained-addition.txt"), "retained addition\n");
-
-      const attackedInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
-      const attackedPackageEvidence = structuredClone(baselinePackageEvidence) as any;
-      const attackedArtifactRecord = attackedPackageEvidence.records["package.extracted-artifact"];
-      const attackedArtifact = attackedArtifactRecord.content;
-      const tarballBytes = fs.readFileSync(attackTarball);
-      attackedArtifact.filename = fixture.manifest.filename;
-      attackedArtifact.integrity = `sha512-${createHash("sha512").update(tarballBytes).digest("base64")}`;
-      attackedArtifact.shasum = createHash("sha1").update(tarballBytes).digest("hex");
-      attackedArtifact.tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
-      attackedArtifact.manifest.contentDigest = createHash("sha256").update(fs.readFileSync(attackedPackageJson)).digest("hex");
-      const packageJsonEntry = attackedArtifact.extractedTree.entries.find((entry: any) => entry.path === "package.json");
-      packageJsonEntry.size = fs.statSync(attackedPackageJson).size;
-      packageJsonEntry.sha256 = attackedArtifact.manifest.contentDigest;
-      attackedArtifact.extractedTree.entries.push({
-        path: "coordinated-addition.txt",
-        type: "file",
-        mode: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).mode & 0o777,
-        size: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).size,
-        sha256: createHash("sha256")
-          .update(fs.readFileSync(path.join(attackPackageRoot, "coordinated-addition.txt")))
-          .digest("hex"),
-      });
-      attackedArtifact.extractedTree.entries.sort((left: any, right: any) => left.path.localeCompare(right.path));
-      attackedArtifact.extractedTree.digest = observationDigest(attackedArtifact.extractedTree.entries);
-      const resignedTarballEntries = attackedArtifact.extractedTree.entries.filter((entry: any) => entry.path !== "node_modules");
-      attackedArtifact.tarballTree.count = resignedTarballEntries.length;
-      attackedArtifact.tarballTree.digest = observationDigest(resignedTarballEntries);
-      attackedPackageEvidence.sourceDigest = activationSourceDigest(attackRoot);
-      attackedPackageEvidence.packageIntegrity = attackedArtifact.integrity;
-      for (const record of Object.values(attackedPackageEvidence.records) as any[]) record.packageIntegrity = attackedArtifact.integrity;
-      attackedArtifactRecord.artifactContentDigest = observationDigest(attackedArtifact);
-      attackedArtifactRecord.observationDigest = observationDigest(attackedArtifact);
-      const { evidenceDigest: _attackedEvidenceDigest, ...unsignedAttackedPackageEvidence } = attackedPackageEvidence;
-      attackedPackageEvidence.evidenceDigest = observationDigest(unsignedAttackedPackageEvidence);
-
-      const coordinatedManifest = createActivationEvidenceManifest({
-        root: attackRoot,
-        generation: attackGeneration,
-        productionEvidence: collectActivationProductionEvidence(attackRoot, attackedInputs),
-        sourceEvidence: createSourceOwnerEvidence(attackRoot, attackedInputs, {
-          fixture,
-          runtimeSummary: matrixSummary!,
-          missingSurfaceResults,
-        }),
-        generatedEvidence: await createGeneratedOwnerEvidence({
-          root: attackRoot,
-          generationRoot: attackGenerationRoot,
-          generation: attackGeneration,
-          productionInputs: attackedInputs,
-        }),
-        packageEvidence: attackedPackageEvidence,
-      });
-      fs.writeFileSync(path.join(attackGenerationRoot, "activation-evidence.json"), `${JSON.stringify(coordinatedManifest)}\n`);
-
-      const conjunction = validateActivationConjunction({
-        root: attackRoot,
-        expectedGeneration: attackGeneration,
         generationRoot: attackGenerationRoot,
-        expectedEvidenceDigest: baselineManifest.manifestDigest,
-        expectedPackageIdentity: packageIdentity,
-      }) as any;
-      expect(conjunction.status).toBe("fail");
-      expect(conjunction.violations).toEqual(
-        expect.arrayContaining([
-          {
-            owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
-            violation: "retained package snapshot differs from the independently retained package identity",
-            correction: "pnpm -C packages/cli run verify:package",
-          },
-        ]),
-      );
+        generation: attackGeneration,
+        productionInputs: baselineInputs,
+      }),
+      packageEvidence: baselinePackageEvidence,
+    });
+
+    fs.appendFileSync(path.join(attackRoot, "packages/cli/src/capabilities/design/instructions.ts"), "\n// coordinated source tampering\n");
+    fs.appendFileSync(path.join(attackGenerationRoot, "dist/capabilities/design/instructions.js"), "\n// coordinated generated tampering\n");
+    const attackedPackageJson = path.join(attackPackageRoot, "package.json");
+    fs.appendFileSync(attackedPackageJson, "\n");
+    fs.writeFileSync(path.join(attackPackageRoot, "coordinated-addition.txt"), "attacker-added\n");
+    fs.appendFileSync(attackTarball, "coordinated-tarball-tampering");
+    const retainedSnapshot = path.join(attackGenerationRoot, ".activation-package-snapshot");
+    fs.appendFileSync(path.join(retainedSnapshot, "package.tgz"), "retained-tarball-tampering");
+    fs.writeFileSync(path.join(retainedSnapshot, "extracted", "retained-addition.txt"), "retained addition\n");
+
+    const attackedInputs = loadActivationProductionInputs(attackRoot, attackGenerationRoot);
+    const attackedPackageEvidence = structuredClone(baselinePackageEvidence) as any;
+    const attackedArtifactRecord = attackedPackageEvidence.records["package.extracted-artifact"];
+    const attackedArtifact = attackedArtifactRecord.content;
+    const tarballBytes = fs.readFileSync(attackTarball);
+    attackedArtifact.filename = fixture.manifest.filename;
+    attackedArtifact.integrity = `sha512-${createHash("sha512").update(tarballBytes).digest("base64")}`;
+    attackedArtifact.shasum = createHash("sha1").update(tarballBytes).digest("hex");
+    attackedArtifact.tarballSha256 = createHash("sha256").update(tarballBytes).digest("hex");
+    attackedArtifact.manifest.contentDigest = createHash("sha256").update(fs.readFileSync(attackedPackageJson)).digest("hex");
+    const packageJsonEntry = attackedArtifact.extractedTree.entries.find((entry: any) => entry.path === "package.json");
+    packageJsonEntry.size = fs.statSync(attackedPackageJson).size;
+    packageJsonEntry.sha256 = attackedArtifact.manifest.contentDigest;
+    attackedArtifact.extractedTree.entries.push({
+      path: "coordinated-addition.txt",
+      type: "file",
+      mode: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).mode & 0o777,
+      size: fs.statSync(path.join(attackPackageRoot, "coordinated-addition.txt")).size,
+      sha256: createHash("sha256")
+        .update(fs.readFileSync(path.join(attackPackageRoot, "coordinated-addition.txt")))
+        .digest("hex"),
+    });
+    attackedArtifact.extractedTree.entries.sort((left: any, right: any) => left.path.localeCompare(right.path));
+    attackedArtifact.extractedTree.digest = observationDigest(attackedArtifact.extractedTree.entries);
+    const resignedTarballEntries = attackedArtifact.extractedTree.entries.filter((entry: any) => entry.path !== "node_modules");
+    attackedArtifact.tarballTree.count = resignedTarballEntries.length;
+    attackedArtifact.tarballTree.digest = observationDigest(resignedTarballEntries);
+    attackedPackageEvidence.sourceDigest = activationSourceDigest(attackRoot);
+    attackedPackageEvidence.packageIntegrity = attackedArtifact.integrity;
+    for (const record of Object.values(attackedPackageEvidence.records) as any[]) record.packageIntegrity = attackedArtifact.integrity;
+    attackedArtifactRecord.artifactContentDigest = observationDigest(attackedArtifact);
+    attackedArtifactRecord.observationDigest = observationDigest(attackedArtifact);
+    const { evidenceDigest: _attackedEvidenceDigest, ...unsignedAttackedPackageEvidence } = attackedPackageEvidence;
+    attackedPackageEvidence.evidenceDigest = observationDigest(unsignedAttackedPackageEvidence);
+
+    const coordinatedManifest = createActivationEvidenceManifest({
+      root: attackRoot,
+      generation: attackGeneration,
+      productionEvidence: collectActivationProductionEvidence(attackRoot, attackedInputs),
+      sourceEvidence: createSourceOwnerEvidence(attackRoot, attackedInputs, {
+        fixture,
+        runtimeSummary: summary,
+        missingSurfaceResults,
+      }),
+      generatedEvidence: await createGeneratedOwnerEvidence({
+        root: attackRoot,
+        generationRoot: attackGenerationRoot,
+        generation: attackGeneration,
+        productionInputs: attackedInputs,
+      }),
+      packageEvidence: attackedPackageEvidence,
+    });
+    fs.writeFileSync(path.join(attackGenerationRoot, "activation-evidence.json"), `${JSON.stringify(coordinatedManifest)}\n`);
+    return {
+      attackRoot,
+      attackGeneration,
+      attackGenerationRoot,
+      attackSourceSnapshot,
+      attackSourceDigest,
+      baselineManifest,
+      attackedInputs,
+      coordinatedManifest,
+      packageIdentity,
+    };
+  }
+
+  it.skipIf(!RELEASE_EVIDENCE_RUN)("rejects coordinated multi-root artifact attacks against retained identity", { timeout: 240_000 }, async () => {
+    const { attackRoot, attackGeneration, attackGenerationRoot, attackSourceDigest, baselineManifest, packageIdentity } = await coordinatedAttack();
+    expect(attackSourceDigest).toBe(activationSourceDigest(CHECKOUT_ROOT));
+
+    const conjunction = validateActivationConjunction({
+      root: attackRoot,
+      expectedGeneration: attackGeneration,
+      generationRoot: attackGenerationRoot,
+      expectedEvidenceDigest: baselineManifest.manifestDigest,
+      expectedPackageIdentity: packageIdentity,
+    }) as any;
+    expect(conjunction.status).toBe("fail");
+    expect(conjunction.violations).toEqual(
+      expect.arrayContaining([
+        {
+          owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+          violation: "retained package snapshot differs from the independently retained package identity",
+          correction: "pnpm -C packages/cli run verify:package",
+        },
+      ]),
+    );
+  });
+
+  it.skipIf(!RELEASE_EVIDENCE_RUN)("classifies missing malformed and unexecutable activation observers", { timeout: 240_000 }, async () => {
+    const { attackRoot, attackGeneration, attackGenerationRoot: sharedGenerationRoot, attackSourceSnapshot, baselineManifest, attackedInputs, coordinatedManifest, packageIdentity } = await coordinatedAttack();
+    // The retained attacked fixture stays unchanged even if this proof runs first.
+    const attackGenerationRoot = path.join(fixture.root, "observer-failure-generation", attackGeneration);
+    fs.cpSync(sharedGenerationRoot, attackGenerationRoot, {
+      recursive: true,
+      verbatimSymlinks: true,
+    });
+    try {
+      const retainedSnapshot = path.join(attackGenerationRoot, ".activation-package-snapshot");
 
       fs.rmSync(retainedSnapshot, { recursive: true, force: true });
       installRetainedPackageSnapshot(attackSourceSnapshot, attackGenerationRoot, packageIdentity);
@@ -704,35 +787,39 @@ describe("source-owned runtime bootstrap integration", () => {
         ["unexecutable", () => fs.writeFileSync(generatedCli, "process.exit(64)\n"), "authoritative activation evidence artifact could not be executed"],
       ];
       for (const [label, breakArtifact, expectedViolation] of observerCases) {
-        fs.writeFileSync(generatedCli, originalGeneratedCli, { mode: originalGeneratedCliMode });
-        breakArtifact();
-        const result = validateActivationConjunction({
-          root: attackRoot,
-          productionInputs: attackedInputs,
-          expectedGeneration: attackGeneration,
-          generationRoot: attackGenerationRoot,
-          evidenceManifest: coordinatedManifest,
-          expectedEvidenceDigest: baselineManifest.manifestDigest,
-          expectedPackageIdentity: packageIdentity,
-        }) as any;
-        expect(result, label).toMatchObject({
-          status: "fail",
-          violation_count: 1,
-          violations: [
-            {
-              owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
-              violation: expectedViolation,
-              correction: "pnpm -C packages/cli run verify:package",
-            },
-          ],
-        });
-        expect(JSON.stringify(result), label).not.toContain("unsupported_target");
+        try {
+          breakArtifact();
+          const result = validateActivationConjunction({
+            root: attackRoot,
+            productionInputs: attackedInputs,
+            expectedGeneration: attackGeneration,
+            generationRoot: attackGenerationRoot,
+            evidenceManifest: coordinatedManifest,
+            expectedEvidenceDigest: baselineManifest.manifestDigest,
+            expectedPackageIdentity: packageIdentity,
+          }) as any;
+          expect(result, label).toMatchObject({
+            status: "fail",
+            violation_count: 1,
+            violations: [
+              {
+                owner: "packages/cli/scripts/verify-generated-overlap.mjs#writeActivationEvidence",
+                violation: expectedViolation,
+                correction: "pnpm -C packages/cli run verify:package",
+              },
+            ],
+          });
+          expect(JSON.stringify(result), label).not.toContain("unsupported_target");
+        } finally {
+          fs.writeFileSync(generatedCli, originalGeneratedCli, {
+            mode: originalGeneratedCliMode,
+          });
+        }
+        expect(fs.readFileSync(generatedCli)).toEqual(originalGeneratedCli);
+        expect(fs.statSync(generatedCli).mode & 0o777).toBe(originalGeneratedCliMode);
       }
-      fs.writeFileSync(generatedCli, originalGeneratedCli, { mode: originalGeneratedCliMode });
     } finally {
-      fs.rmSync(attackRoot, { recursive: true, force: true });
-      fs.rmSync(attackPackageRoot, { recursive: true, force: true });
-      fs.rmSync(attackTarball, { force: true });
+      fs.rmSync(attackGenerationRoot, { recursive: true, force: true });
     }
   });
 });
