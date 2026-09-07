@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
 import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
@@ -364,7 +365,19 @@ function sourceProcessFailure(name, detail, status) {
 }
 
 function sourceDiagnostic(value) {
-  return String(value).replaceAll(REPO_ROOT, "<repository>").replaceAll(os.homedir(), "<home>").replaceAll(os.tmpdir(), "<tmp>").trim().slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
+  const text = stripVTControlCharacters(String(value)).replaceAll(REPO_ROOT, "<repository>").replaceAll(os.homedir(), "<home>").replaceAll(os.tmpdir(), "<tmp>");
+  const lines = text.split("\n").filter((line) => !/^\s*(?:\d+\s*\||\|\s*\^|at\s|❯\s)/u.test(line));
+  const assertion = lines.find((line) => line.trim().startsWith("AssertionError:"));
+  const limit = RELEASE_CONTRACT.bounds.diagnosticCharacters;
+  if (!assertion) return lines.join("\n").trim().slice(-limit);
+  const context = lines.filter((line) => /^\s*(?:Expected:|Received:)/.test(line)).join("\n");
+  const actionable = `${context ? `${context}\n` : ""}${assertion.trim()}`.slice(0, limit);
+  const remaining = limit - actionable.length - 1;
+  const tail = lines
+    .filter((line) => line !== assertion && !/^\s*(?:Expected:|Received:)/.test(line))
+    .join("\n")
+    .trim();
+  return remaining > 0 && tail ? `${tail.slice(-remaining)}\n${actionable}` : actionable;
 }
 
 function killProcessGroup(child, signal) {
@@ -403,7 +416,7 @@ function defaultStartSourceOwner(specification) {
   let cancelled = false;
   let timedOut = false;
   let forceTimer;
-  const capture = (current, chunk) => `${current}${chunk}`.slice(-outputLimit);
+  const capture = (current, chunk) => stripVTControlCharacters(`${current}${chunk}`).slice(-outputLimit);
   child.stdout.setEncoding("utf8").on("data", (chunk) => {
     stdout = capture(stdout, chunk);
     stream.write(chunk);

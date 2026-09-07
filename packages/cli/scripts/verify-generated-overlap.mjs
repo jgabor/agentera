@@ -5,6 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { stripVTControlCharacters } from "node:util";
 
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { validatePendingTests } from "./overlap-pending.mjs";
@@ -191,7 +192,7 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
   let forceTimer;
   let stdout = "";
   let stderr = "";
-  const capture = (current, chunk) => `${current}${chunk}`.slice(-1000);
+  const capture = (current, chunk) => stripVTControlCharacters(`${current}${chunk}`).slice(-1000);
   child.stdout.setEncoding("utf8").on("data", (chunk) => {
     stdout = capture(stdout, chunk);
     stream.write(chunk);
@@ -237,14 +238,14 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
                 .slice(0, 3)
                 .map(
                   (assertion) =>
-                    `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail")
+                    `${assertion.fullName ?? assertion.title} [${stripVTControlCharacters(String(assertion.failureMessages?.[0] ?? "no detail"))
                       .replace(/\s+/g, " ")
                       .slice(0, 240)}]`,
                 )
                 .join(" | ");
               const detail =
                 assertions ||
-                String(suite.message || "no detail")
+                stripVTControlCharacters(String(suite.message || "no detail"))
                   .replaceAll(repoRoot, "<repository>")
                   .replaceAll(os.homedir(), "<home>")
                   .replaceAll(os.tmpdir(), "<tmp>")

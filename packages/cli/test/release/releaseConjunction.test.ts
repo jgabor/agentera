@@ -1,8 +1,63 @@
+import { spawnSync } from "node:child_process";
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { RELEASE_CONTRACT, runSourceConjunction, sourceQualificationGateIdentity } from "../../scripts/release-qualification.mjs";
 
 describe("no-receipt release verification", () => {
+  it("preserves a real colored Vitest over-budget failure through conjunction", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-measurement-diagnostic-"));
+    try {
+      fs.writeFileSync(path.join(root, "vite.config.mjs"), "export default { test: { globals: true, maxWorkers: 1 } };");
+      fs.writeFileSync(
+        path.join(root, "measurement.test.js"),
+        `it('known over-budget fixture', () => { expect(1234, 'exact_get repetition 3: ' + JSON.stringify({elapsedMs:1234,runtime:{node:process.version,v8:process.versions.v8,effectiveChildFlags:{execArgv:[],nodeOptions:null,nodeOptionsUtf8Limit:512}}})).toBeLessThanOrEqual(1000); });`,
+      );
+      const rendered = spawnSync("vp", ["test", "run", "--root", root, "--config", path.join(root, "vite.config.mjs")], {
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        env: { ...process.env, FORCE_COLOR: "1", GITHUB_ACTIONS: "false" },
+      });
+      expect(rendered.error).toBeUndefined();
+      expect(rendered.status).toBe(1);
+      expect(rendered.stderr).toContain("AssertionError");
+      expect(rendered.stderr).toContain("\u001b[");
+      const error = Object.assign(new Error(`${rendered.stderr}\n${"    at /private/fixture.ts:151:1\n".repeat(50)}cleanup failed`), { owner: "performance" });
+      const result = await runSourceConjunction({
+        runDag: async () => {
+          throw error;
+        },
+      });
+      expect(result.status).toBe("fail");
+      expect(result.first_failure).toBe("performance");
+      expect(result.violation.length).toBeLessThanOrEqual(1000);
+      for (const value of ["exact_get", "repetition 3", "1234", "1000", process.version]) expect(result.violation).toContain(value);
+      expect(result.violation).not.toContain("\u001b");
+      expect(result.violation).not.toContain(root);
+      expect(result.violation).not.toContain("/private/fixture.ts");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("retains assertion measurements before colored frames and cleanup cascades", async () => {
+    const assertion = "AssertionError: exact_get repetition 3: elapsedMs=1234 runtime=v24.19.0: expected 1234 to be less than or equal to 1000";
+    const error = Object.assign(new Error(`\u001b[31m${assertion}\u001b[39m\n${"\u001b[90m  151 | expect(measured.elapsedMs).toBeLessThanOrEqual(1000)\u001b[39m\n".repeat(40)}${"    at /private/fixture.ts:151:1\n".repeat(40)}cleanup failed\n`), { owner: "performance" });
+    const result = await runSourceConjunction({
+      runDag: async () => {
+        throw error;
+      },
+    });
+    expect(result.status).toBe("fail");
+    expect(result.first_failure).toBe("performance");
+    expect(result.violation.length).toBeLessThanOrEqual(1000);
+    expect(result.violation).toContain(assertion);
+    expect(result.violation).not.toContain("\u001b");
+    expect(result.violation).not.toContain("/private/fixture.ts");
+  });
+
   it("shares the exact eleven-gate DAG identity and reports no authority side effects", async () => {
     const gates = RELEASE_CONTRACT.qualification.source.gates;
     const result = await runSourceConjunction({

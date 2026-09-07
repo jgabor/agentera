@@ -23,6 +23,7 @@ let previousEnv: Record<string, string | undefined>;
 
 function measurementDiagnostic(label: string, measured: Awaited<ReturnType<typeof measureColdCli>>): string {
   return `${label}: ${JSON.stringify({
+    elapsedMs: measured.elapsedMs,
     baselineHeapBytes: measured.baselineHeapBytes,
     peakHeapBytes: measured.peakHeapBytes,
     heapDeltaBytes: measured.heapDeltaBytes,

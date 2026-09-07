@@ -1,0 +1,15 @@
+id: coaboxzlqi
+artifact: progress
+record:
+  timestamp: 2026-09-07 21:32
+  type: fix
+  phase: build
+  what: "Fixed the performance diagnostic gap for task vafromkutg: ANSI is removed before bounds, actionable assertions survive code frames, and elapsedMs is included. The final diagnostic remains limited to 1000 characters."
+  context:
+    intent: Preserve actual failure measurements before deciding any CI latency correction.
+    constraints: No budget, wall boundary, GC, cache, imports, workers, dependencies, or publication guards changed. No commits, integration, pushes, CI reruns, publication, or main mutation. Coordinator task and final dependency preserved.
+    unknowns: CI latency remains unresolved after the two reported failures, not established as an outlier. Decision satisfaction provisional/null; profile unavailable; vision deferred; retry not_recorded.
+    scope: Release and overlap diagnostic collection, performance assertion context, regression tests, and regenerated compiler evidence. Task remains in_progress, unaudited, evaluation pending.
+  verified: "Red assertion-tail regression then 24 passing focused tests: vp test run --config vite.config.ts test/release/releaseConjunction.test.ts test/release/sourceQualificationDag.test.ts (packages/cli). vp check and vp run typecheck passed. Existing compiler generator and verifier passed: 451 diagnostics/103 files/0 source. vp run verify passed all 11 local gates under saved CI-profile environment, four cores and source4/package1/perf1. Separate real Vitest rendering verified worker v24.19.0; its 757-character final failure retained exact_get, 1234, 1000, repetition 3 and runtime despite ANSI/stack/cleanup noise. Fixture numbers are not measurements. Commands, results and saved environment: /tmp/opencode/measurement-diagnostic-verification/report.md and results.json. Full-run per-sample values were cleaned up by the existing conjunction and are not claimed."
+  next: Coordinator audit remains pending. A future explicitly authorized CI failure should expose actual elapsedMs, limit, repetition and measured runtime; obtain that evidence before changing latency behavior. No task evaluation or overall plan completion recorded.
+  publication_order: 372

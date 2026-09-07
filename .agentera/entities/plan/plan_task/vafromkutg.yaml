@@ -1,0 +1,23 @@
+id: vafromkutg
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Preserve actionable performance failure measurements
+  status: complete
+  depends_on:
+    - gmcywnyuzk
+  acceptance:
+    - GIVEN a performance assertion failure WHEN release diagnostics are bounded THEN the metric, actual value, limit and available repetition/runtime context remain readable.
+    - GIVEN colored output and large stack frames WHEN summarized THEN useful failure details survive without private paths or unbounded output.
+    - GIVEN passing and failing regression cases WHEN checked THEN original failure status, performance budgets and publication suppression remain unchanged.
+    - GIVEN local verification WHEN complete THEN required gates pass; the unresolved CI latency failure stays visible rather than being declared fixed.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-performance-diagnostics-vafromkutg-1
+      source: "Independent Agentera audit: four diagnostic criteria PASS; real Vitest rendering retained metric/value/limit/runtime within 757 characters, capture boundaries and hashes verified, full local eleven-gate result checked. CI exact_get latency remains unresolved."
+      recorded_at: 2026-09-07 21:40
+      writer_command: agentera state plan record-evaluation

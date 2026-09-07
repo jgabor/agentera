@@ -77,7 +77,7 @@
   },
   {
     "path": "packages/cli/scripts/release-qualification.mjs",
-    "sha256": "ad5b0ac0e082d150cf0b4c889e099f6c72abbd7aeaa18af437618a66295b8945"
+    "sha256": "c8ee6b3056288d63fa23e43b8156c9091ad943033a5ac8a6b0dda6cfc7575aa5"
   },
   {
     "path": "packages/cli/scripts/release-readiness.mjs",
@@ -109,7 +109,7 @@
   },
   {
     "path": "packages/cli/scripts/verify-generated-overlap.mjs",
-    "sha256": "c1acc826ac057be6cd5190bf824ec784ef7af0ff66bd7ec82d4d1796a929b203"
+    "sha256": "2d20a48ba171fb382f5314f36f286b348ae785b119ab40b90112e052f8ba2646"
   },
   {
     "path": "packages/cli/scripts/verify-lane.mjs",
@@ -2257,7 +2257,7 @@
   },
   {
     "path": "packages/cli/test/performance/entityAuthorityPerformance.test.ts",
-    "sha256": "ef138df7b8982f9e07cb0223be615323b1b52f569ad545673c2a17d280ded1d7"
+    "sha256": "e486ee578be3e500d89ab582d45b4d34eb3de85ac2fc515075d62ebb5050a927"
   },
   {
     "path": "packages/cli/test/registries/artifactRegistry.test.ts",
@@ -2365,7 +2365,7 @@
   },
   {
     "path": "packages/cli/test/release/releaseConjunction.test.ts",
-    "sha256": "e8e00b7467da45b1a16a00d9d5288576b2edebd8fb860c1b269548d9469a76cf"
+    "sha256": "3e2e51f840b577c2a000ee5602e275fbce3adebc6a72b0fbbb2d9cd77504ccd2"
   },
   {
     "path": "packages/cli/test/release/releaseMetadata.test.ts",
