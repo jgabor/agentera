@@ -2,11 +2,49 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { RELEASE_CONTRACT, runSourceConjunction, sourceQualificationGateIdentity } from "../../scripts/release-qualification.mjs";
+import { RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceConjunction, sourceQualificationGateIdentity } from "../../scripts/release-qualification.mjs";
+import { performanceObservationFixture } from "../helpers/performanceEvidence.js";
 
 describe("no-receipt release verification", () => {
+  it.each([true, false])("emits bounded advisory overruns from the actual command entry (json=%s)", async (json) => {
+    const observation: any = performanceObservationFixture();
+    observation.evidence.maxima.exact_get.maxElapsedMs = 1330.53;
+    observation.evidence.latencyAdvisory.exact_get = {
+      targetMs: 1000,
+      maxObservedMs: 1330.53,
+      exceededRepetitions: 1,
+    };
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const result = await runNoReceiptVerificationCommand(new Map(json ? [["--json", true]] : []), {
+        runDag: async () => ({
+          gates: RELEASE_CONTRACT.qualification.source.gates.map(({ name }: any) => ({
+            name,
+            phase: "fixture",
+            outcome: "passed",
+            elapsedMs: 1,
+            origin: name,
+            ...(name === "performance" ? { observation } : {}),
+          })),
+          execution: { generation: "fixture" },
+        }),
+      });
+      const output = write.mock.calls.map(([value]) => value).join("");
+      expect(result.status).toBe("pass");
+      expect(Object.keys(result.performance.latencyAdvisory)).toHaveLength(7);
+      expect(output).not.toContain('"samples"');
+      expect(output.length).toBeLessThan(10000);
+      if (json) expect(JSON.parse(output).performance.latencyAdvisory.exact_get).toEqual(observation.evidence.latencyAdvisory.exact_get);
+      else {
+        expect(output).toContain("not latency target compliance");
+        expect(output).toContain("latency advisory exact_get: targetMs=1000; maxObservedMs=1330.53; exceededRepetitions=1");
+      }
+    } finally {
+      write.mockRestore();
+    }
+  });
   it("preserves a real colored Vitest over-budget failure through conjunction", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-measurement-diagnostic-"));
     try {
@@ -69,6 +107,7 @@ describe("no-receipt release verification", () => {
           outcome: "passed",
           elapsedMs: 1,
           origin: name,
+          ...(name === "performance" ? { observation: performanceObservationFixture() } : {}),
         })),
         execution: { generation: "fresh", elapsedMs: 10, reconciled: true },
       }),

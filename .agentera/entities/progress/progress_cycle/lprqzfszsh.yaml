@@ -1,0 +1,15 @@
+id: lprqzfszsh
+artifact: progress
+record:
+  timestamp: 2026-09-07 23:23
+  type: chore
+  phase: build
+  what: The approved advisory-latency implementation now passes the full eleven-gate local conjunction. Added explicit test-side declarations for the performance evidence module and an exact-target/overrun-count regression; preserved the corrected authority assertion and all existing policy implementation. No runtime improvement is claimed.
+  context:
+    intent: Continue task kqzixyufkm in plan vtqzlztjsk without completing its lifecycle.
+    constraints: Preserved plan edits, prior progress xyfxqwruvy, runtime behavior, thresholds, workers, compiler classification and publication safeguards. No commits, integration, pushes, CI reruns or publication.
+    unknowns: The disposable capture watched the wrong temporary root. Owner cleanup removed the raw 35-sample report and measured-worker identity; only the actual bounded success result is retained. Hosted certification and audit remain outstanding.
+    scope: New declaration coverage, boundary regression, regenerated canonical type evidence and final local verification.
+  verified: Node 24.19.0/Corepack pnpm 10.30.3 launch preflight and four-CPU affinity verified. Targeted seven-file run passed 119 tests, including synthetic 1330.53 ms advisory reporting and blocking guards. Canonical evidence and isolated replay passed with 449 diagnostics across 101 test files and zero source diagnostics. vp check passed with zero errors and 426 warnings; source typecheck passed. The one final root vp run verify passed all eleven gates. Actual seven-target advisory maxima/counts and bounded JSON/text printer replay are retained in /tmp/opencode/advisory-latency-final-proof. Raw-sample retention was not satisfied. Checkout dist/bundle stayed absent and lockfiles/manifests stayed unchanged.
+  next: Keep kqzixyufkm in_progress, unaudited and without evaluation completion. Audit follows; any additional measured run to recover retained raw evidence requires fresh authorization and a capture using the parent's actual temporary root.
+  publication_order: 374

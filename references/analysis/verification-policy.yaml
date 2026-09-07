@@ -74,7 +74,7 @@ owners:
     correction: Run `pnpm -C packages/cli test:stress`; fix the named stress invariant or its fixture.
   performance:
     config: packages/cli/vite.config.ts
-    correction: Run `pnpm -C packages/cli test:performance`; check runner conditions and fix the named budget regression.
+    correction: Run `pnpm -C packages/cli test:performance`; fix invalid evidence, correctness, heap/output excess, or execution failure. Latency targets are advisory under the measurement authority.
     execution:
       workers: 1
       authoritative_runner:

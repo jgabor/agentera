@@ -26,6 +26,85 @@ function sameValue(left, right) {
   return JSON.stringify(left) === JSON.stringify(right);
 }
 
+export function performanceAuthority(root) {
+  const authority = YAML.parse(fs.readFileSync(path.join(root, "references/artifacts/state-storage-authority.yaml"), "utf8"));
+  const measurement = authority.entity_target.measurement_contract;
+  if (
+    !sameValue(measurement.enforcement, {
+      latency: "advisory",
+      heap: "blocking",
+      bytes: "blocking",
+    })
+  )
+    throw new Error("invalid canonical performance enforcement policy");
+  return authority;
+}
+
+const targetFor = (sample) => (sample?.operation === "exact_get" ? "exact_get" : `${sample?.operation}_${sample?.scale}`);
+
+export function deriveLatencyAdvisory(samples, targets) {
+  return Object.fromEntries(
+    Object.entries(targets).map(([target, limits]) => {
+      const timings = samples.filter((sample) => targetFor(sample) === target).map((sample) => sample.elapsedMs);
+      return [
+        target,
+        {
+          targetMs: limits.max_latency_ms,
+          maxObservedMs: Math.max(...timings),
+          exceededRepetitions: timings.filter((elapsed) => elapsed > limits.max_latency_ms).length,
+        },
+      ];
+    }),
+  );
+}
+
+// Old normalized v1 receipts have no raw samples. Only below-target maxima can
+// prove their missing advisory: zero overruns. Never infer an overrun count.
+export function normalizedLatencyAdvisory(evidence, authority) {
+  const measurement = authority.entity_target.measurement_contract;
+  const names = Object.keys(measurement.targets);
+  if (evidence.samples !== names.length * measurement.sampling.repetitions || !sameValue(Object.keys(evidence.maxima ?? {}).sort(), [...names].sort())) throw new Error("incomplete performance maxima or sample count");
+  const advisory =
+    evidence.latencyAdvisory ??
+    Object.fromEntries(
+      names.map((target) => [
+        target,
+        {
+          targetMs: measurement.targets[target].max_latency_ms,
+          maxObservedMs: evidence.maxima[target].maxElapsedMs,
+          exceededRepetitions: 0,
+        },
+      ]),
+    );
+  if (!sameValue(Object.keys(advisory).sort(), [...names].sort())) throw new Error("incomplete latency advisory");
+  for (const target of names) {
+    const limits = measurement.targets[target];
+    const maximum = evidence.maxima[target];
+    const entry = advisory[target];
+    const outputLimit = target.startsWith("startup_") ? authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes : limits.max_utf8_bytes;
+    if (
+      maximum.repetitions !== measurement.sampling.repetitions ||
+      !Number.isFinite(maximum.maxElapsedMs) ||
+      maximum.maxElapsedMs < 0 ||
+      !Number.isFinite(maximum.maxHeapDeltaBytes) ||
+      maximum.maxHeapDeltaBytes > limits.max_heap_delta_bytes ||
+      !Number.isFinite(maximum.maxOutputBytes) ||
+      maximum.maxOutputBytes < 0 ||
+      maximum.maxOutputBytes > outputLimit ||
+      !entry ||
+      !sameValue(Object.keys(entry).sort(), ["exceededRepetitions", "maxObservedMs", "targetMs"]) ||
+      entry.targetMs !== limits.max_latency_ms ||
+      entry.maxObservedMs !== maximum.maxElapsedMs ||
+      !Number.isInteger(entry.exceededRepetitions) ||
+      entry.exceededRepetitions < 0 ||
+      entry.exceededRepetitions > maximum.repetitions ||
+      entry.exceededRepetitions > 0 !== entry.maxObservedMs > entry.targetMs
+    )
+      throw new Error(`invalid latency advisory or blocking maxima for ${target}`);
+  }
+  return advisory;
+}
+
 export function performanceEvidenceRecords(stdout, schemaVersion) {
   return stdout.split("\n").flatMap((line) => {
     try {
@@ -53,8 +132,13 @@ export function validatePerformanceEvidence(stdout, definition, root) {
   if (records.length !== 1) return [`expected exactly one ${evidenceDefinition.schema_version} stdout line; observed ${records.length}`];
   const evidence = records[0];
   const bytes = Buffer.byteLength(`${JSON.stringify(evidence)}\n`, "utf8");
-  const [authorityFile, authorityPointer] = evidenceDefinition.authority.split("#", 2);
-  const authority = YAML.parse(fs.readFileSync(path.join(root, authorityFile), "utf8"));
+  const [, authorityPointer] = evidenceDefinition.authority.split("#", 2);
+  let authority;
+  try {
+    authority = performanceAuthority(root);
+  } catch (error) {
+    return [error.message];
+  }
   const measurement = authorityPointer.split(".").reduce((current, key) => current?.[key], authority);
   const targetNames = Object.keys(measurement.targets);
   const scales = Object.fromEntries(
@@ -111,11 +195,11 @@ export function validatePerformanceEvidence(stdout, definition, root) {
   if (!sameValue(evidence.measurement?.heapBaseline, measurement.sampling.heap_baseline)) errors.push("heap baseline normalization changed");
   if (evidence.measurement?.repetitions !== measurement.sampling.repetitions || evidence.measurement?.heapSampling?.intervalMs !== 1 || evidence.measurement?.heapSampling?.cadenceChanged !== false) errors.push("repetitions or 1 ms heap cadence changed");
   if (!sameValue(evidence.limits, measurement.targets)) errors.push("declared limits changed");
-  if (!Array.isArray(evidence.samples) || evidence.samples.length !== targetNames.length * measurement.sampling.repetitions) {
+  if (!Array.isArray(evidence.samples) || evidence.samples.some((sample) => !sample || typeof sample !== "object")) return [...errors, "samples must be an array of measurement records"];
+  if (evidence.samples.length !== targetNames.length * measurement.sampling.repetitions) {
     errors.push(`expected ${targetNames.length * measurement.sampling.repetitions} samples`);
   } else {
     const expectedRepetitions = Array.from({ length: measurement.sampling.repetitions }, (_, index) => index + 1);
-    const targetFor = (sample) => (sample.operation === "exact_get" ? "exact_get" : `${sample.operation}_${sample.scale}`);
     const complete =
       targetNames.every((target) =>
         sameValue(
@@ -129,17 +213,28 @@ export function validatePerformanceEvidence(stdout, definition, root) {
       evidence.samples.every(
         (sample) =>
           sample.status === "pass" &&
+          Number.isFinite(sample.elapsedMs) &&
+          sample.elapsedMs >= 0 &&
+          Number.isFinite(sample.outputBytes) &&
+          sample.outputBytes >= 0 &&
           [sample.baselineHeapBytes, sample.peakHeapBytes, sample.heapDeltaBytes, sample.inspectorSamples].every(Number.isFinite) &&
           sample.inspectorSamples >= 2 &&
           (sample.operation !== "archive_list" || sample.entries === scales[`archive_${sample.scale}`]) &&
           sample.peakHeapBytes - sample.baselineHeapBytes === sample.heapDeltaBytes,
       );
     if (!complete) errors.push("samples do not cover every target and repetition");
+    for (const sample of evidence.samples) {
+      const target = targetFor(sample);
+      const limits = measurement.targets[target];
+      const outputLimit = sample.operation === "startup" ? authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes : limits?.max_utf8_bytes;
+      if (!limits || sample.heapDeltaBytes > limits.max_heap_delta_bytes || sample.outputBytes > outputLimit) errors.push(`sample exceeds blocking heap/output limits: ${target}`);
+    }
+    if (evidence.latencyAdvisory !== undefined && !sameValue(evidence.latencyAdvisory, deriveLatencyAdvisory(evidence.samples, measurement.targets))) errors.push("latency advisory does not match the declared samples and targets");
   }
   const maximaMatch =
     sameValue(Object.keys(evidence.maxima ?? {}), targetNames) &&
     targetNames.every((target) => {
-      const samples = evidence.samples?.filter((sample) => (target === "exact_get" ? sample.operation === target : `${sample.operation}_${sample.scale}` === target)) ?? [];
+      const samples = Array.isArray(evidence.samples) ? evidence.samples.filter((sample) => targetFor(sample) === target) : [];
       return sameValue(evidence.maxima[target], {
         repetitions: samples.length,
         maxElapsedMs: Math.max(...samples.map((sample) => Number(sample.elapsedMs))),

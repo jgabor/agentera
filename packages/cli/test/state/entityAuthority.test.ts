@@ -414,9 +414,10 @@ describe("Decision 94 entity authority", () => {
 
     expect(measurement).toMatchObject({
       status: "implemented",
+      enforcement: { latency: "advisory", heap: "blocking", bytes: "blocking" },
       sampling: {
         repetitions: 5,
-        pass_rule: "every repetition stays within every applicable limit",
+        pass_rule: "every repetition is valid and stays within every applicable blocking limit; latency targets are report-only",
       },
       targets: {
         exact_get: {
@@ -426,6 +427,8 @@ describe("Decision 94 entity authority", () => {
         },
         bounded_list_small: { max_latency_ms: 5000, max_utf8_bytes: 32768 },
         bounded_list_large: { max_latency_ms: 15000, max_utf8_bytes: 32768 },
+        archive_list_small: { max_latency_ms: 5000, max_utf8_bytes: 32768 },
+        archive_list_large: { max_latency_ms: 15000, max_utf8_bytes: 32768 },
         startup_small: { max_latency_ms: 5000 },
         startup_large: { max_latency_ms: 15000 },
       },

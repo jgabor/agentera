@@ -176,6 +176,17 @@ performance runs are diagnostic, not authoritative package verification evidence
 ordered barrier provides resource isolation for machine-sensitive timing
 evidence; separate HOME and npm state provide output isolation but cannot
 prevent CPU contention. Performance receives the same absolute source deadline.
+All seven cold-operation latency targets are advisory under
+`state-storage-authority.yaml#entity_target.measurement_contract.enforcement`;
+there is no evidenced release latency SLO. The required owner still blocks on
+invalid evidence, incorrect behavior, process failure, heap/output excess, and
+finite execution deadlines. Passing means these checks passed, not latency
+target compliance. Five repetitions per target (35 samples) and runner identity
+remain required. Evidence, source receipts, and verification JSON/text retain
+bounded `latencyAdvisory` target/max/overrun summaries after temporary cleanup.
+The additive v1 summary is derived from raw samples when absent; old normalized
+receipts without raw samples are accepted only when below-target maxima prove
+zero overruns. Supplied summaries must agree with their evidence.
 After it passes, capacity runs alone with one worker for large deterministic
 scale evidence. After capacity passes, compact, capability-contract, and the
 source-only activation conjunction run together as reader barrier B. All three
@@ -443,7 +454,7 @@ independent:
 | ----- | ----------- | ---- |
 | Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
 | Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
-| Performance | `pnpm -C packages/cli run test:performance` | Machine-sensitive budget evidence, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
+| Performance | `pnpm -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
 | Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
 

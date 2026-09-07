@@ -1144,6 +1144,10 @@ entity_target:
   measurement_contract:
     status: implemented
     environment: Linux, Node.js 24 LTS, one cold CLI process per sample
+    enforcement:
+      latency: advisory
+      heap: blocking
+      bytes: blocking
     fixtures:
       small: 100 valid entities distributed across every active entity_target.entities boundary
       large: 1000 valid entities distributed across every active entity_target.entities boundary
@@ -1152,7 +1156,7 @@ entity_target:
       relationship_rule: every active entity_target.relationships declaration has at least one valid fixture edge
     sampling:
       repetitions: 5
-      pass_rule: every repetition stays within every applicable limit
+      pass_rule: every repetition is valid and stays within every applicable blocking limit; latency targets are report-only
       elapsed: wall-clock milliseconds from process start through complete serialized output
       heap: process heapUsed peak minus the normalized heapUsed baseline before fixture discovery
       heap_baseline:
@@ -1192,7 +1196,11 @@ entity_target:
         max_heap_delta_bytes: 268435456
         serialized_limits: budgets.startup.surfaces
     failure_rule: >-
-      Over-budget results fail the target gate. They may return a measured
+      Invalid evidence, incorrect behavior, process failure, and heap or output
+      excess fail the target gate; finite execution deadlines remain blocking.
+      All max_latency_ms values are advisory targets, not release SLOs. Report
+      each target, observed maximum, and exceeded repetition count from all five
+      samples; pass does not mean latency target compliance. Results may return a measured
       degraded envelope only where the referenced budget permits omission; they
       never truncate bytes, omit required identity, or fabricate detail.
 
@@ -2464,6 +2472,7 @@ budgets:
     max_utf8_bytes: 32768
     benchmark:
       measurement_contract: entity_target.measurement_contract.sampling
+      enforcement_contract: entity_target.measurement_contract.enforcement
       fixture: numbered progress archive entries measured through one cold source process per scale
       small:
         entries: 100
@@ -2477,8 +2486,9 @@ budgets:
     index_decision:
       decision: no_index
       trigger: >-
-        Defer a persistent index until the large fixture exceeds any declared
-        latency, heap, or response threshold on a reproducible authority test.
+        Reproducible large-fixture latency target overruns inform reconsidering
+        a persistent index, not release failure. Heap and response limits remain
+        blocking under entity_target.measurement_contract.enforcement.
   projection:
     max_utf8_bytes: 32768
     applies_to: current, summary, and migration result responses
@@ -2494,6 +2504,7 @@ budgets:
     source_manifest: scripts/json_output_surface_manifest.yaml
     source_work:
       schema_version: agentera.startupSourceWorkBudget.v1
+      enforcement_contract: entity_target.measurement_contract.enforcement
       measurement: >-
         Count current projection entry rows and archive files inspected by the
         source-side metadata query. Full archive records are never retained by

@@ -30,7 +30,14 @@ extract newline-delimited records by `schemaVersion`; the owner command validate
 the record and its runner authority against the policy before returning success.
 The integration surface is owned by the performance owner in
 `verification-policy.yaml`; it invokes `test:performance` once, so policy proof
-does not recurse or duplicate the 25-sample matrix.
+does not recurse or duplicate the 35-sample matrix (seven targets, five repeats).
+All latency targets are report-only under the measurement authority's canonical
+enforcement classification. The owner remains required and isolated: invalid
+timings, incomplete evidence, process/correctness failures, heap/output excess,
+and finite deadlines still block. `status: pass` does not assert latency target
+compliance. `latencyAdvisory` reports all seven target/max/overrun summaries;
+consumers independently derive these from raw samples and validate any supplied
+summary. Startup output uses the prime dashboard surface bound, not a latency target.
 Forwarded owner arguments are normalized once: `--` delimiters are discarded,
 only reviewed observability flags and exact owner-inventory files reach Vitest,
 and every performance selection must retain the marked evidence producer.

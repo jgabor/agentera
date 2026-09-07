@@ -1,0 +1,23 @@
+id: kqzixyufkm
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Report cold-operation latency without blocking releases
+  status: complete
+  depends_on:
+    - vafromkutg
+  acceptance:
+    - GIVEN all cold-operation latency targets WHEN measured THEN valid samples and target overruns remain visible as advisory results rather than release failures.
+    - GIVEN invalid evidence, incorrect behavior or excessive heap/output WHEN verified THEN checks still fail; finite execution deadlines remain blocking.
+    - GIVEN structured and text verification results WHEN emitted THEN bounded target, maximum and overrun summaries accurately distinguish advisory latency from blocking checks.
+    - GIVEN the approved policy WHEN implemented THEN contracts and guidance agree, required gates pass, and runtime behavior, workers and publication safeguards remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-advisory-latency-kqzixyufkm-1
+      source: "Independent Agentera audit: four criteria PASS; 59 enforcement/compatibility checks verified advisory overruns and blocking invalid-data/heap/output guards. Actual bounded JSON/text and eleven-gate local result checked. Raw-sample retention caveat noted; CI confirmation pending."
+      recorded_at: 2026-09-07 23:40
+      writer_command: agentera state plan record-evaluation

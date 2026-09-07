@@ -10,6 +10,7 @@ import { RELEASE_CONTRACT, runSourceQualificationDag } from "../../scripts/relea
 import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap, startChild } from "../../scripts/verify-generated-overlap.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
+import { performanceEvidence } from "../helpers/performanceEvidence.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const GATES = RELEASE_CONTRACT.qualification.source.gates;
@@ -101,23 +102,7 @@ function overlapEvidence(buildRoot = "/tmp/private-build/generation-a") {
 }
 
 function performanceStdout() {
-  return `${JSON.stringify({
-    schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
-    status: "pass",
-    runner: {
-      node: process.version,
-      authority: {
-        authoritative: true,
-        provider: "github_actions",
-        class: "github-hosted-ubuntu-24.04",
-        identity: "GitHub Actions 1",
-        actions: true,
-        workers: 1,
-      },
-    },
-    samples: [{ status: "pass" }],
-    maxima: { exact_get: { maxElapsedMs: 1 } },
-  })}\n`;
+  return `${JSON.stringify(performanceEvidence())}\n`;
 }
 
 function result(name: string, specification?: { environment?: NodeJS.ProcessEnv }) {
@@ -271,8 +256,8 @@ describe("source qualification DAG", () => {
       inventoryFiles: 3,
       evidence: {
         status: "pass",
-        samples: 1,
-        runner: { authority: { identity: "GitHub Actions 1" } },
+        samples: 35,
+        runner: { authority: { identity: "GitHub Actions fixture" } },
       },
     });
     expect(qualification.gates.find((entry: any) => entry.name === "performance").phase).toBe("performance-barrier");

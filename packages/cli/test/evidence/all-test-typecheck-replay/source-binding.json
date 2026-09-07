@@ -53,7 +53,7 @@
   },
   {
     "path": "packages/cli/scripts/performance-evidence.mjs",
-    "sha256": "f02ba4dad83d3c161139f758a5571515bec8bd875379594bfbb808c7e42c1e60"
+    "sha256": "4b39ab0c299defe1c36e54a84dfdfc940cea42ba4a2e6f875537fb51b6f5ba2b"
   },
   {
     "path": "packages/cli/scripts/publication-transaction.mjs",
@@ -77,7 +77,7 @@
   },
   {
     "path": "packages/cli/scripts/release-qualification.mjs",
-    "sha256": "c8ee6b3056288d63fa23e43b8156c9091ad943033a5ac8a6b0dda6cfc7575aa5"
+    "sha256": "6a6a063096d146b213b4e41c40a7b0801e9624289198686d12018e8d406d1def"
   },
   {
     "path": "packages/cli/scripts/release-readiness.mjs",
@@ -2156,6 +2156,14 @@
     "sha256": "89912966a2251c561b95a1435713c44776ee51313ea36e1fa7a65090619140da"
   },
   {
+    "path": "packages/cli/test/helpers/performanceEvidence.ts",
+    "sha256": "c5b38ef8894e3ace074254128a3c1edc3bb447f72bc7c9358baf52fee7db2c9a"
+  },
+  {
+    "path": "packages/cli/test/helpers/performanceEvidenceScripts.d.ts",
+    "sha256": "d3c26f2616ce1debf05439bd1fd9b07ec0b610aa86c99867c7976c6dedfb1697"
+  },
+  {
     "path": "packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs",
     "sha256": "fbd2287c851fbee6196b6925ca740df691f03fd9b567591882808763bf21a81b"
   },
@@ -2257,7 +2265,7 @@
   },
   {
     "path": "packages/cli/test/performance/entityAuthorityPerformance.test.ts",
-    "sha256": "e486ee578be3e500d89ab582d45b4d34eb3de85ac2fc515075d62ebb5050a927"
+    "sha256": "fda2f923183cac2321d3904a06d0b7cd54c1b6029150a1cc44311fe004a49fef"
   },
   {
     "path": "packages/cli/test/registries/artifactRegistry.test.ts",
@@ -2365,7 +2373,7 @@
   },
   {
     "path": "packages/cli/test/release/releaseConjunction.test.ts",
-    "sha256": "3e2e51f840b577c2a000ee5602e275fbce3adebc6a72b0fbbb2d9cd77504ccd2"
+    "sha256": "7a4e9a23122ff570d1de51c5b46b6d2f48e134f36c8fa973215aa1ba40dfc004"
   },
   {
     "path": "packages/cli/test/release/releaseMetadata.test.ts",
@@ -2373,7 +2381,7 @@
   },
   {
     "path": "packages/cli/test/release/releaseQualification.test.ts",
-    "sha256": "5845d25181baac665cbea6d508362523f74d753bf6bd7df8c08d5169755dc2a2"
+    "sha256": "fffd31f580b8aa3a2d9c47d46be005aa1a0520faea1f5361ca93a69667d58d22"
   },
   {
     "path": "packages/cli/test/release/releaseReadiness.test.ts",
@@ -2389,7 +2397,7 @@
   },
   {
     "path": "packages/cli/test/release/sourceQualificationDag.test.ts",
-    "sha256": "f17c8a027743a977e4c5c1855d13d684553e03e0a0b30d0b8da68cd03510bb00"
+    "sha256": "f55fd2764750a1cd4b56bb0c08ec0ab48ffdf5aea0a21dfb6b4fb0d0bf348472"
   },
   {
     "path": "packages/cli/test/runtime/lifecycleAuthority.test.ts",
@@ -2489,7 +2497,7 @@
   },
   {
     "path": "packages/cli/test/state/entityAuthority.test.ts",
-    "sha256": "c34948661b9370fc8a3b026dbb88d41802da1ec51fb9c62a07565ec0e8d6c5c9"
+    "sha256": "417312d86793e86503b2a67b5fc28d332a666b334f72a032ee09d511e9198ca0"
   },
   {
     "path": "packages/cli/test/state/entityListProjection.test.ts",
@@ -2910,5 +2918,9 @@
   {
     "path": "packages/cli/test/verification/overlapPending.test.ts",
     "sha256": "65683527e3f20409b1c56f7a14c930b97a1f2227af06adf37d2a5c97116f350a"
+  },
+  {
+    "path": "packages/cli/test/verification/performanceEvidence.test.ts",
+    "sha256": "4b5dd06fec8a556bd272bbd523c202f934922f1cf743a298b3584c90c0b81c54"
   }
 ]

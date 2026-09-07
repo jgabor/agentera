@@ -25,9 +25,9 @@
     "package.json": "06745cdb1479a031fd342a422346c3c06643c77942276113a9f204f60f8e2ddf",
     "pnpm-lock.yaml": "2704380cbd4b8b7e8f3c50a9049685247450638cf8985abff71f258fa79d312c",
     "tsconfig.json": "37c3efecbe7405eeab4d0954641aead9fcaa84a833334f1dde8abfc72024b0ed",
-    "source-binding.json": "50a7c1ec9d5b9c26d1139f03cb6c7e2c321e9a6a03e1bbb578993b3aa200c4a9",
-    "compiler.raw.json.gz": "e79b662361b5205bdf1306fa40570e17404965f21668cf2ecf0ef543a5769f5f",
-    "compiler.normalized.json": "d7c840453e9a7e29b6263f43af63eed39edc97050b11f68660e73d1b787b87b2",
+    "source-binding.json": "ff3ca77b070c8f08e1dbb36ea6213695a68bfa415b2266221d7db88d385ae826",
+    "compiler.raw.json.gz": "84c12c3ac1a4f7851afa749f1943709ce25e90cfc5ac9c9b9704a7ecd955c7d3",
+    "compiler.normalized.json": "d02ec31c5abdaecb16d21df1dfaf492d63d18e6e3cd16c770e0775a1f8726b46",
     "classifications/valid.ts": "f70db79d85c6ba7494c836084b0b00779ced693e82c3b8f024a9549b019f1f34",
     "classifications/intentional-invalid.ts": "bb0a55a05f0ce520ae2660c5076cf28ce2f5b3a41b0fafe01e388f3fb0123934",
     "classifications/genuine-defect.ts": "17483fd7270f43a8dfb37a1d1fdbaf79cda287370ff3a8f04cd1e751ed86dc79"
@@ -44,10 +44,10 @@
       "diagnosticFields": "Preserve every field and value of each selected diagnostic; only unwrap its code from typescript(TS<digits>) to TS<digits>.",
       "ordering": "Recursively sort object keys and sort diagnostics by their complete canonical JSON; preserve array order inside each diagnostic."
     },
-    "trackedDisposableWorkRoot": "/tmp/opencode/bootstrap-proof-results/tmp/agentera-type-replay-2kve3s/work"
+    "trackedDisposableWorkRoot": "/tmp/agentera-type-replay-Zbg5Cy/work"
   },
-  "rawGzipSha256": "e79b662361b5205bdf1306fa40570e17404965f21668cf2ecf0ef543a5769f5f",
-  "normalizedSha256": "d7c840453e9a7e29b6263f43af63eed39edc97050b11f68660e73d1b787b87b2",
+  "rawGzipSha256": "84c12c3ac1a4f7851afa749f1943709ce25e90cfc5ac9c9b9704a7ecd955c7d3",
+  "normalizedSha256": "d02ec31c5abdaecb16d21df1dfaf492d63d18e6e3cd16c770e0775a1f8726b46",
   "classifications": {
     "classifications/valid.ts": [],
     "classifications/intentional-invalid.ts": [
@@ -57,5 +57,5 @@
       "TS18047"
     ]
   },
-  "manifestSha256": "c3b77983fd9d3bcbc31e00f53edd3970378d60cf0c53d8b6d928315792a02402"
+  "manifestSha256": "69c69949c2ea02a3e6c13014683bf423b83943f2f3d3e25b8c3253df2ca2ece4"
 }

@@ -10,7 +10,8 @@ import { stripVTControlCharacters } from "node:util";
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
 import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
-import { performanceEvidenceRecords } from "./performance-evidence.mjs";
+import { deriveLatencyAdvisory, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validatePerformanceEvidence } from "./performance-evidence.mjs";
+import YAML from "yaml";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import "./source-loader-register.mjs";
 
@@ -686,6 +687,7 @@ function validateSourceGateRecords(records) {
       ) {
         throw new Error("source receipt performance observation is incomplete");
       }
+      normalizedLatencyAdvisory(observation.evidence, performanceAuthority(REPO_ROOT));
     } else {
       if (!isOutputObservation(observation)) {
         throw new Error(`source receipt gate '${record.name}' output observation is incomplete`);
@@ -716,6 +718,9 @@ function performanceObservation(result, inventoryFiles, requireAuthoritative) {
     throw sourceProcessFailure("performance", "performance owner returned no unique passing evidence record", "failed");
   }
   const record = records[0];
+  const policy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
+  const errors = validatePerformanceEvidence(result.stdout, policy.owners.performance, REPO_ROOT);
+  if (errors.length) throw sourceProcessFailure("performance", errors.join("; "), "failed");
   if (requireAuthoritative && record.runner?.authority?.authoritative !== true) {
     throw sourceProcessFailure("performance", "authoritative performance evidence requires the pinned remote runner identity declared by verification policy", "failed");
   }
@@ -728,6 +733,7 @@ function performanceObservation(result, inventoryFiles, requireAuthoritative) {
       bytes: Buffer.byteLength(`${JSON.stringify(record)}\n`),
       samples: Array.isArray(record.samples) ? record.samples.length : 0,
       maxima: record.maxima,
+      latencyAdvisory: deriveLatencyAdvisory(record.samples, performanceAuthority(REPO_ROOT).entity_target.measurement_contract.targets),
       runner: record.runner,
     },
   };
@@ -1123,6 +1129,9 @@ export async function runSourceConjunction(options = {}) {
         origin,
       })),
       execution: result.execution,
+      performance: {
+        latencyAdvisory: normalizedLatencyAdvisory(result.gates.find(({ name }) => name === "performance").observation.evidence, performanceAuthority(REPO_ROOT)),
+      },
       first_failure: null,
       owner: null,
       correction: null,
@@ -1967,7 +1976,13 @@ export async function runNoReceiptVerificationCommand(flags, options = {}) {
   const result = await runSourceConjunction(options);
   const json = Boolean(flags.get("--json"));
   if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
-  else process.stdout.write(`release verification ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
+  else {
+    process.stdout.write(`release verification ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
+    if (result.performance) {
+      process.stdout.write("Latency targets are advisory; pass means valid evidence and blocking checks passed, not latency target compliance.\n");
+      for (const [target, entry] of Object.entries(result.performance.latencyAdvisory)) process.stdout.write(`latency advisory ${target}: targetMs=${entry.targetMs}; maxObservedMs=${entry.maxObservedMs}; exceededRepetitions=${entry.exceededRepetitions}\n`);
+    }
+  }
   if (result.status !== "pass") process.exitCode = 1;
   return result;
 }

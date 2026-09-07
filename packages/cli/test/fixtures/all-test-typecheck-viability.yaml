@@ -12,12 +12,12 @@ measurement:
   boundary: integrity-bound copies of packages/cli/src, test, and imported scripts under strict NodeNext; production tsconfig and manifests unchanged
   setup: pnpm 10.30.3 frozen install from the tracked temporary manifest and lockfile in disposable HOME, cache, store, and work roots
   command: vp lint src test --type-aware --type-check --tsconfig tsconfig.json --format=json
-  manifest_sha256: c3b77983fd9d3bcbc31e00f53edd3970378d60cf0c53d8b6d928315792a02402
+  manifest_sha256: 69c69949c2ea02a3e6c13014683bf423b83943f2f3d3e25b8c3253df2ca2ece4
   compiler_diagnostics:
-    total: 451
-    files: 103
+    total: 449
+    files: 101
     source: 0
-    test: 451
+    test: 449
     by_code:
       TS18046: 12
       TS18047: 75
@@ -45,7 +45,7 @@ measurement:
       TS2741: 8
       TS2769: 11
       TS7006: 9
-      TS7016: 29
+      TS7016: 27
       TS7024: 21
       TS7031: 8
       TS7053: 14
@@ -65,7 +65,7 @@ classification_examples:
     codes: [TS18047]
     rationale: an unchecked nullable access compiles to a genuine TS18047 defect
 conclusion:
-  rationale: 451 compiler diagnostics across 103 test files, including genuine defects and intentional-negative fixture ceremony, are not a bounded admission cost; retain source-only typecheck until separately scoped test debt is reduced
+  rationale: 449 compiler diagnostics across 101 test files, including genuine defects and intentional-negative fixture ceremony, are not a bounded admission cost; retain source-only typecheck until separately scoped test debt is reduced
   behavior_change: none
 
 # Replay contract

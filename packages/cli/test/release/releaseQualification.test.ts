@@ -1,6 +1,7 @@
 import { spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
+import { performanceObservationFixture } from "../helpers/performanceEvidence.js";
 import os from "node:os";
 import path from "node:path";
 
@@ -137,27 +138,7 @@ function gateRecord(gate: { name: string; command: string[] }) {
   } else if (gate.name === "generated-overlap") {
     observation = overlapObservation();
   } else if (gate.name === "performance") {
-    observation = {
-      inventoryFiles: 1,
-      evidence: {
-        schemaVersion: RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema,
-        status: "pass",
-        sha256: "0".repeat(64),
-        bytes: 1,
-        samples: 1,
-        maxima: {},
-        runner: {
-          authority: {
-            authoritative: true,
-            provider: "github_actions",
-            class: "github-hosted-ubuntu-24.04",
-            identity: "GitHub Actions 1",
-            actions: true,
-            workers: 1,
-          },
-        },
-      },
-    };
+    observation = performanceObservationFixture();
   } else {
     observation = {
       ...(["stress", "capacity"].includes(gate.name) ? { inventoryFiles: 1 } : {}),
