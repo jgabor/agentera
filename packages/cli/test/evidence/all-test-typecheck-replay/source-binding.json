@@ -109,7 +109,7 @@
   },
   {
     "path": "packages/cli/scripts/verify-generated-overlap.mjs",
-    "sha256": "4948b91ad84aad39ef557f79e19bc55939ccaeec791d2418fac0917598b89f02"
+    "sha256": "c1acc826ac057be6cd5190bf824ec784ef7af0ff66bd7ec82d4d1796a929b203"
   },
   {
     "path": "packages/cli/scripts/verify-lane.mjs",
@@ -2065,7 +2065,7 @@
   },
   {
     "path": "packages/cli/test/config/vitestShared.test.ts",
-    "sha256": "21f0326d1a2392dbdbbff42527da7e5815e4f20229551c9f8c853abc93e0f191"
+    "sha256": "b11012aae59337624d3161c8de4789f154e6785e85d71790231a57106378e3ec"
   },
   {
     "path": "packages/cli/test/core/developmentInvocation.test.ts",
@@ -2389,7 +2389,7 @@
   },
   {
     "path": "packages/cli/test/release/sourceQualificationDag.test.ts",
-    "sha256": "3d22b6e79bd8682a674466d4c13aad905ed2576d06b3d637351cb1987495e4d7"
+    "sha256": "f17c8a027743a977e4c5c1855d13d684553e03e0a0b30d0b8da68cd03510bb00"
   },
   {
     "path": "packages/cli/test/runtime/lifecycleAuthority.test.ts",

@@ -1,0 +1,15 @@
+id: awcxjskzup
+artifact: progress
+record:
+  timestamp: 2026-09-06 13:52
+  type: fix
+  phase: build
+  what: Aligned publication verification with the existing CI profile, shared its test deadline with setup hooks, and retained bounded hook-only suite diagnostics. Task mkfvnurovd remains in progress and unaudited.
+  context:
+    intent: Make the uniform root Vite+ publication verification profile reliable without changing runtime assertions or budgets.
+    constraints: Preserved worker defaults, owner allocations, package and qualification budgets, publisher isolation, and coordinator final dependency. No commit, integration, push, publication, or evaluation closeout.
+    unknowns: Fresh remote-only checkout verification is blocked by the execution restriction against cloning or duplicating the checkout. Existing dependencies were used for focused checks; these are not fresh-checkout full verification. The original CI hook message is unrecoverable, so its cause remains strongly inferred. Profile unavailable; vision deferred; decision satisfaction null and provisional; retries_not_recorded.
+    scope: Publication verification environment, shared hook deadline, overlap failure fallback, focused regression tests, and invalidated compiler evidence.
+  verified: Static check passed with 426 warnings and no errors; source typecheck passed. Local focused tests passed 59/59, and focused tests under the complete requested nonsecret CI identity passed 69/69, including isolated compiler-evidence replay. Controlled regressions reproduced the default hook deadline and lost suite message before the fixes, then passed. Compiler evidence remains 451 diagnostics across 103 test files, zero source diagnostics. No full release verification or new CI run occurred.
+  next: Coordinator must arrange the required fresh remote-history, fresh-dependency full verification before considering the remaining push; retain task in progress until verification and audit are complete.
+  publication_order: 369

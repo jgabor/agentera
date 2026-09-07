@@ -1717,8 +1717,8 @@
           "span": {
             "column": 120,
             "length": 24,
-            "line": 6,
-            "offset": 303
+            "line": 8,
+            "offset": 371
           }
         }
       ],
@@ -3526,7 +3526,7 @@
             "column": 131,
             "length": 9,
             "line": 238,
-            "offset": 9521
+            "offset": 9533
           }
         }
       ],
@@ -6547,10 +6547,26 @@
       "labels": [
         {
           "span": {
+            "column": 100,
+            "length": 44,
+            "line": 10,
+            "offset": 406
+          }
+        }
+      ],
+      "message": "Could not find a declaration file for module '../../scripts/verify-generated-overlap.mjs'. '<DISPOSABLE_WORK_ROOT>/scripts/verify-generated-overlap.mjs' implicitly has an 'any' type.",
+      "severity": "error"
+    },
+    {
+      "code": "TS7016",
+      "filename": "test/release/sourceQualificationDag.test.ts",
+      "labels": [
+        {
+          "span": {
             "column": 45,
             "length": 36,
             "line": 11,
-            "offset": 484
+            "offset": 496
           }
         }
       ],
@@ -6571,22 +6587,6 @@
         }
       ],
       "message": "Could not find a declaration file for module '../../scripts/release-qualification.mjs'. '<DISPOSABLE_WORK_ROOT>/scripts/release-qualification.mjs' implicitly has an 'any' type.",
-      "severity": "error"
-    },
-    {
-      "code": "TS7016",
-      "filename": "test/release/sourceQualificationDag.test.ts",
-      "labels": [
-        {
-          "span": {
-            "column": 88,
-            "length": 44,
-            "line": 10,
-            "offset": 394
-          }
-        }
-      ],
-      "message": "Could not find a declaration file for module '../../scripts/verify-generated-overlap.mjs'. '<DISPOSABLE_WORK_ROOT>/scripts/verify-generated-overlap.mjs' implicitly has an 'any' type.",
       "severity": "error"
     },
     {

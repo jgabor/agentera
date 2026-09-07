@@ -7,7 +7,7 @@ import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 import { RELEASE_CONTRACT, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
-import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap } from "../../scripts/verify-generated-overlap.mjs";
+import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap, startChild } from "../../scripts/verify-generated-overlap.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 
@@ -576,6 +576,58 @@ describe("source qualification DAG", () => {
         message: "source verification requires 6000ms for barrier B plus 4000ms reconciliation; 9999ms remain",
       });
       expect(phases).toHaveLength(3);
+    }
+  });
+
+  it("retains hook-only Vitest failures in the bounded, path-redacted conjunction diagnostic", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-diagnostic-"));
+    const report = {
+      success: false,
+      testResults: [
+        {
+          name: path.join(REPO_ROOT, "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts"),
+          status: "failed",
+          assertionResults: [],
+          message: `Hook timed out in 500ms.\nIf this is a long-running hook, configure hookTimeout.\n${REPO_ROOT}/fixture.ts ${os.homedir()}/private-fixture.ts ${root}/setup.ts`,
+        },
+      ],
+    };
+    try {
+      const error = (await runSourceQualificationDag({
+        repo: REPO_ROOT,
+        gates: GATES,
+        createState: (name: string) => ({
+          root: `/isolated/${name}`,
+          environment: {},
+          cleanup: () => undefined,
+        }),
+        startOwner: (specification: any) =>
+          specification.name === "generated-overlap"
+            ? startChild({
+                name: "source",
+                repoRoot: REPO_ROOT,
+                root,
+                barrier: path.join(root, "barrier"),
+                cleanupMarginMs: 1000,
+                now: () => performance.now(),
+                sourceIdentity: sourceIdentity(),
+                command: [process.execPath, "-e", `require('node:fs').writeFileSync(process.env.AGENTERA_VERIFICATION_RESULT, ${JSON.stringify(JSON.stringify(report))}); console.error('x'.repeat(1200)); process.exitCode = 1;`],
+              })
+            : {
+                name: specification.name,
+                promise: Promise.resolve(result(specification.name, specification)),
+                cancel: () => undefined,
+              },
+      }).catch((failure: unknown) => failure)) as { failures: Array<{ detail: string }> };
+      const detail = error.failures[0].detail;
+      expect(detail.length).toBeLessThanOrEqual(RELEASE_CONTRACT.bounds.diagnosticCharacters);
+      expect(detail).toContain("runtimeBootstrapMatrix.test.ts:");
+      expect(detail).toContain("Hook timed out in 500ms.");
+      expect(detail).not.toContain(REPO_ROOT);
+      expect(detail).not.toContain(os.homedir());
+      expect(detail).not.toContain(root);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
     }
   });
 

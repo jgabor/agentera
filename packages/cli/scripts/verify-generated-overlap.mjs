@@ -120,7 +120,7 @@ function defaultWithDeadline(promise, deadline, label, now) {
   ]).finally(() => clearTimeout(timer));
 }
 
-function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }) {
+export function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }) {
   const started = now();
   const output = path.join(root, `${name}.log`);
   const stream = fs.createWriteStream(output, { flags: "wx", mode: 0o600 });
@@ -231,19 +231,27 @@ function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, n
           failures = (report.testResults ?? [])
             .filter((suite) => suite.status === "failed")
             .slice(0, 5)
-            .map(
-              (suite) =>
-                `${path.relative(repoRoot, suite.name)}: ${(suite.assertionResults ?? [])
-                  .filter((assertion) => assertion.status === "failed")
-                  .slice(0, 3)
-                  .map(
-                    (assertion) =>
-                      `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail")
-                        .replace(/\s+/g, " ")
-                        .slice(0, 240)}]`,
-                  )
-                  .join(" | ")}`,
-            )
+            .map((suite) => {
+              const assertions = (suite.assertionResults ?? [])
+                .filter((assertion) => assertion.status === "failed")
+                .slice(0, 3)
+                .map(
+                  (assertion) =>
+                    `${assertion.fullName ?? assertion.title} [${String(assertion.failureMessages?.[0] ?? "no detail")
+                      .replace(/\s+/g, " ")
+                      .slice(0, 240)}]`,
+                )
+                .join(" | ");
+              const detail =
+                assertions ||
+                String(suite.message || "no detail")
+                  .replaceAll(repoRoot, "<repository>")
+                  .replaceAll(os.homedir(), "<home>")
+                  .replaceAll(os.tmpdir(), "<tmp>")
+                  .replace(/\s+/g, " ")
+                  .slice(0, 240);
+              return `${path.relative(repoRoot, suite.name)}: ${detail}`;
+            })
             .join("; ");
         } catch {
           failures = "";

@@ -1,0 +1,23 @@
+id: mkfvnurovd
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Align CI verification profiles and setup deadlines
+  status: complete
+  depends_on:
+    - xsllvjxnxy
+  acceptance:
+    - GIVEN publication and routine CI verification WHEN configured THEN both use the established CI environment profile and shared test/setup deadline.
+    - GIVEN passing and over-deadline tests or setup hooks WHEN checked THEN success remains valid and timeouts fail with useful bounded diagnostics.
+    - GIVEN fresh dependencies, remote history and complete CI identity WHEN release verification runs THEN all gates pass without checkout artifacts or environment omissions.
+    - GIVEN the correction WHEN reviewed THEN assertions, worker defaults, package/qualification budgets and publisher isolation remain unchanged.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-ci-deadline-mkfvnurovd-1
+      source: "Independent Agentera audit: four criteria PASS; 34 real deadline/diagnostic tests, 1011 implementation hashes and actual full-run output checked. Eleven gates passed with complete CI profile and shared hook deadlines; history evidence is composite, not a new CI run."
+      recorded_at: 2026-09-07 11:52
+      writer_command: agentera state plan record-evaluation

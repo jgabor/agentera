@@ -1,0 +1,15 @@
+id: qbkgpyaiuh
+artifact: progress
+record:
+  timestamp: 2026-09-07 11:44
+  type: fix
+  phase: build
+  what: Completed full verification of the CI profile and setup-deadline correction for task mkfvnurovd. The verification blocker in progress awcxjskzup is historical; the task remains in progress and unaudited.
+  context:
+    intent: Resume the crash-interrupted verification without repeating completed checks or changing the implementation.
+    constraints: Reused the successful fresh dependency install after matching both saved source checkpoints. Preserved interrupted logs, worker defaults, owner budgets, and publisher isolation. No repository duplication, commit, integration, push, CI rerun, publication, or evaluation write.
+    unknowns: History evidence combines revalidated local pins with the prior actual CI checkout and successful archived-proof fetch. This native checkout retains backup refs; this is not a new remote CI run. Local performance is diagnostic, not authoritative remote-runner evidence. The original CI hook cause remains inferred.
+    scope: Verification evidence and this typed progress update only. No implementation or compiler-evidence regeneration. The OpenCode interruption has no pass/fail evaluation outcome.
+  verified: "One owning vp run verify passed all 11 gates with the complete saved nonsecret CI identity, Node 24.19.0, Corepack pnpm 10.30.3, four-CPU affinity, source/package workers 4/1, and shared test/hook deadline 120000ms. Source inventory was unchanged, the source watcher observed zero events, and checkout dist/bundle remained absent. Report: /tmp/opencode/ci-deadline-full/restart-full-report.json; source and environment provenance are in the adjacent restart-full-binding.json and restart-provenance.json. Previously completed focused, static, typecheck, and compiler-evidence checks were not repeated separately. git diff --check passed."
+  next: Coordinator audit of mkfvnurovd is next. Keep plan vtqzlztjsk and the task open, with evaluation unrecorded. The one remaining push remains coordinator-only after audit; this verification grants no mutation authority.
+  publication_order: 370

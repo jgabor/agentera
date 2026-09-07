@@ -32,5 +32,6 @@ export const sharedTestConfig = {
   globals: false,
   maxWorkers,
   testTimeout,
+  hookTimeout: testTimeout,
   experimentalFsModuleCache: true,
 };
