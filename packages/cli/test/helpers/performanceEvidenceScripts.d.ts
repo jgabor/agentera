@@ -71,6 +71,8 @@ declare module "*scripts/performance-evidence.mjs" {
   export function deriveLatencyAdvisory(samples: ReadonlyArray<Record<string, number | string>>, targets: Record<string, PerformanceTarget>): LatencyAdvisory;
   export function normalizedLatencyAdvisory(evidence: NormalizedPerformanceEvidence, authority: PerformanceAuthority): LatencyAdvisory;
   export function validatePerformanceEvidence(stdout: string, definition: PerformanceDefinition, root: string): string[];
+  export function validateDevelopmentResourceEvidence(stdout: string, definition: PerformanceDefinition, root: string): string[];
+  export function measurementProfile(profile?: string, repetitions?: number): { profile: string; repetitions: number; schemaVersion: string };
   export function performanceEvidenceRecords(stdout: string, schemaVersion: string): Array<Record<string, unknown>>;
   export function effectiveChildFlagsAreComplete(flags: unknown): boolean;
   export function performanceRunnerAuthority(

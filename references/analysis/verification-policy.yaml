@@ -8,6 +8,10 @@ inventory:
   suffix: .test.ts
   default_owner: source
   rules:
+    - owner: certification
+      path: packages/cli/test/validate/allTestTypecheckViability.test.ts
+    - owner: certification
+      path: packages/cli/test/scripts/formatterNormalizationReplay.test.ts
     - owner: stress
       path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance
@@ -36,7 +40,7 @@ overlap:
       platform: darwin
 
 # Release source qualification executes this evidence DAG without changing the
-# owner inventories or public commands above. generated-overlap is the only
+# public owner commands above. generated-overlap is the only
 # private generated-output owner and the only execution origin for source,
 # package, build, and overlap evidence.
 release_qualification:
@@ -65,7 +69,17 @@ release_qualification:
     authority: source tests may compare the direct checkout bundle when present;
       they never construct or clean checkout generated output
 
+# Routine development uses the same DAG without historical certification and
+# uses development-resource to run the performance workload once per target.
+# Heap/output and correctness limits, scales, inspector cadence, stress,
+# capacity, generation barriers and deadlines are unchanged. This is not full
+# qualification: distinct development evidence cannot issue a source receipt.
+# Full `vp run verify` retains five repeats and certification; latency is advisory.
+
 owners:
+  certification:
+    config: packages/cli/vite.config.ts
+    correction: Run `pnpm -C packages/cli run test:certification`; fix the historical toolchain certification failure. This owner requires archived pre-rewrite history and is mandatory in full qualification, not routine development.
   source:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:source`; fix the reported source test or its source setup.
@@ -214,7 +228,7 @@ policies:
   local: [source]
   merge: [source, package]
   scheduled: [source, stress, performance, capacity]
-  release: [source, stress, performance, capacity, package]
+  release: [source, stress, performance, capacity, package, certification]
 
 # Task 1 classified probabilistic stale-lock repetition as scheduled/release
 # evidence after proportional deterministic lock correctness remained in source.
@@ -223,7 +237,8 @@ policies:
 
 # Pre-commit routing marks authority, verification, and specialized-owner
 # surfaces as ci_owned. The local hook runs only source-owned route guards and
-# typecheck; required CI executes the unchanged release policy authoritatively.
+# typecheck; routine CI executes development safety, while explicit full release
+# qualification retains every owner including historical certification.
 # All other paths retain targeted source routing.
 conservative_routing:
   exact:

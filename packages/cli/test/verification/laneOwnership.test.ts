@@ -13,7 +13,7 @@ const RUNNER = path.join(PACKAGE_ROOT, "scripts/verify-lane.mjs");
 const PRODUCTION_POLICY = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 const PERFORMANCE_FORWARDING = PRODUCTION_POLICY.owners.performance.forwarding;
 const FIXTURE_OVERLAP = PRODUCTION_POLICY.overlap;
-const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"] as const;
+const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package", "certification"] as const;
 const POLICY_OWNERS = {
   targeted: ["source"],
   precommit: ["source"],
@@ -21,13 +21,14 @@ const POLICY_OWNERS = {
   local: ["source"],
   merge: ["source", "package"],
   scheduled: ["source", "stress", "performance", "capacity"],
-  release: ["source", "stress", "performance", "capacity", "package"],
+  release: ["source", "stress", "performance", "capacity", "package", "certification"],
 } as const;
 
 function fixture(overrides: Record<string, unknown> = {}) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-lanes-"));
   for (const relative of [
     "packages/cli/test/source.test.ts",
+    "packages/cli/test/certification.test.ts",
     FIXTURE_OVERLAP.allowed_pending_assertion.path,
     "packages/cli/test/stress.test.ts",
     "packages/cli/test/performance-analytics.test.ts",
@@ -49,6 +50,7 @@ function fixture(overrides: Record<string, unknown> = {}) {
       suffix: ".test.ts",
       default_owner: "source",
       rules: [
+        { owner: "certification", path: "packages/cli/test/certification.test.ts" },
         { owner: "stress", path: "packages/cli/test/stress.test.ts" },
         { owner: "performance", path: "packages/cli/test/performance-analytics.test.ts" },
         {
@@ -183,7 +185,7 @@ describe("verification lane ownership", () => {
       route: "ci_owned",
       local_policy: "precommit",
       ci_policy: "release",
-      ci_owners: ["source", "stress", "performance", "capacity", "package"],
+      ci_owners: ["source", "stress", "performance", "capacity", "package", "certification"],
     });
     expect(productionRouteJson("packages/cli/test/performance/entityAuthorityPerformance.test.ts")).toMatchObject({
       route: "ci_owned",
@@ -624,9 +626,9 @@ describe("verification lane ownership", () => {
     const shimReadme = fs.readFileSync(path.join(PACKAGE_ROOT, "shim/README.md"), "utf8");
     const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
     expect(authority).toContain("canonical authority for checkout generated output");
-    expect(authority).toContain("The five test owners are");
+    expect(authority).toContain("The six test owners are");
     expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
-    expect(authority).toContain("| `release` | Source, stress, performance, capacity, package |");
+    expect(authority).toContain("| `release` | Source, stress, performance, capacity, package, certification |");
     expect(authority).toContain("Conservative authority and verification surfaces route to `ci_owned`");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("Routine builds do not write `.agentera-generated`");
@@ -669,7 +671,7 @@ describe("verification lane ownership", () => {
     expect(contract).toContain("path: packages/cli/test/stress/entityStorageStress.test.ts");
     expect(contract).toContain("merge: [source, package]");
     expect(contract).toContain("scheduled: [source, stress, performance, capacity]");
-    expect(contract).toContain("release: [source, stress, performance, capacity, package]");
+    expect(contract).toContain("release: [source, stress, performance, capacity, package, certification]");
     expect(contract).not.toMatch(/^  fast:\n/m);
     expect(performanceIntegration).toContain('spawnSync("pnpm", ["run", "test:performance"]');
     expect(performanceIntegration).not.toContain('"test:performance:integration"');

@@ -5,6 +5,15 @@ import YAML from "yaml";
 
 export const EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT = 512;
 
+export function measurementProfile(profile = "full", repetitions = 5) {
+  if (!["full", "development"].includes(profile)) throw new Error(`unknown measurement profile '${profile}'`);
+  return {
+    profile,
+    repetitions: profile === "development" ? 1 : repetitions,
+    schemaVersion: profile === "development" ? "agentera.developmentResourceEvidence.v1" : "agentera.entityAuthorityPerformanceEvidence.v1",
+  };
+}
+
 export function performanceRunnerAuthority(environment, definition, runtime) {
   const contract = definition.execution?.authoritative_runner;
   const workers = Number.parseInt(environment.AGENTERA_VERIFICATION_WORKERS ?? "", 10);
@@ -124,6 +133,25 @@ export function effectiveChildFlagsAreComplete(flags) {
 }
 
 export function validatePerformanceEvidence(stdout, definition, root) {
+  return validateMeasurementEvidence(stdout, definition, root, "full");
+}
+
+export function validateDevelopmentResourceEvidence(stdout, definition, root) {
+  return validateMeasurementEvidence(
+    stdout,
+    {
+      ...definition,
+      evidence: {
+        ...definition.evidence,
+        schema_version: measurementProfile("development").schemaVersion,
+      },
+    },
+    root,
+    "development",
+  );
+}
+
+function validateMeasurementEvidence(stdout, definition, root, profile) {
   const evidenceDefinition = definition.evidence;
   if (evidenceDefinition.stdout_format !== "newline_delimited_json_record_amid_runner_output") {
     return [`unsupported stdout format '${evidenceDefinition.stdout_format}'`];
@@ -140,6 +168,7 @@ export function validatePerformanceEvidence(stdout, definition, root) {
     return [error.message];
   }
   const measurement = authorityPointer.split(".").reduce((current, key) => current?.[key], authority);
+  const repetitions = measurementProfile(profile, measurement.sampling.repetitions).repetitions;
   const targetNames = Object.keys(measurement.targets);
   const scales = Object.fromEntries(
     Object.entries(measurement.fixtures).flatMap(([name, fixture]) => {
@@ -148,6 +177,8 @@ export function validatePerformanceEvidence(stdout, definition, root) {
     }),
   );
   const errors = [];
+  if (profile === "development" && evidence.profile !== "development") errors.push("development resource provenance is missing");
+  if (profile === "full" && evidence.profile !== undefined && evidence.profile !== "full") errors.push("development evidence is not full qualification");
   const heapBaseline = measurement.sampling.heap_baseline;
   const execution = definition.execution;
   const runnerContract = execution?.authoritative_runner;
@@ -193,13 +224,13 @@ export function validatePerformanceEvidence(stdout, definition, root) {
   if (!sameValue(evidence.measurement?.scales, scales) || !sameValue(evidence.measurement?.declaredFixtures, measurement.fixtures)) errors.push("declared scales or fixtures changed");
   if (!["elapsed", "heap", "bytes"].every((field) => evidence.measurement?.[field] === measurement.sampling[field])) errors.push("sampling conditions changed");
   if (!sameValue(evidence.measurement?.heapBaseline, measurement.sampling.heap_baseline)) errors.push("heap baseline normalization changed");
-  if (evidence.measurement?.repetitions !== measurement.sampling.repetitions || evidence.measurement?.heapSampling?.intervalMs !== 1 || evidence.measurement?.heapSampling?.cadenceChanged !== false) errors.push("repetitions or 1 ms heap cadence changed");
+  if (evidence.measurement?.repetitions !== repetitions || evidence.measurement?.heapSampling?.intervalMs !== 1 || evidence.measurement?.heapSampling?.cadenceChanged !== false) errors.push("repetitions or 1 ms heap cadence changed");
   if (!sameValue(evidence.limits, measurement.targets)) errors.push("declared limits changed");
   if (!Array.isArray(evidence.samples) || evidence.samples.some((sample) => !sample || typeof sample !== "object")) return [...errors, "samples must be an array of measurement records"];
-  if (evidence.samples.length !== targetNames.length * measurement.sampling.repetitions) {
-    errors.push(`expected ${targetNames.length * measurement.sampling.repetitions} samples`);
+  if (evidence.samples.length !== targetNames.length * repetitions) {
+    errors.push(`expected ${targetNames.length * repetitions} samples`);
   } else {
-    const expectedRepetitions = Array.from({ length: measurement.sampling.repetitions }, (_, index) => index + 1);
+    const expectedRepetitions = Array.from({ length: repetitions }, (_, index) => index + 1);
     const complete =
       targetNames.every((target) =>
         sameValue(

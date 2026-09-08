@@ -10,7 +10,7 @@ import { stripVTControlCharacters } from "node:util";
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
 import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
-import { deriveLatencyAdvisory, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validatePerformanceEvidence } from "./performance-evidence.mjs";
+import { deriveLatencyAdvisory, measurementProfile, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import YAML from "yaml";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
@@ -193,8 +193,26 @@ function sourceGateSet() {
   return RELEASE_MODEL.sourceGates;
 }
 
-function governedSourceGates(gates = sourceGateSet()) {
-  const governed = sourceGateSet();
+export function qualificationGates(profile = "full") {
+  measurementProfile(profile); // Closed selection; never infer qualification from the environment.
+  return profile === "full"
+    ? sourceGateSet()
+    : sourceGateSet()
+        .filter(({ name }) => name !== "certification")
+        .map((gate) =>
+          gate.name === "performance"
+            ? {
+                ...gate,
+                command: ["pnpm", "-C", "packages/cli", "run", "test:development-resource"],
+                correction: "pnpm -C packages/cli run test:development-resource",
+              }
+            : gate,
+        );
+}
+
+function governedSourceGates(gates, profile = "full") {
+  const governed = qualificationGates(profile);
+  gates ??= governed;
   if (canonicalJson(gates) !== canonicalJson(governed)) {
     throw new Error("source verification must use the exact governed gate set");
   }
@@ -337,8 +355,8 @@ const SOURCE_BARRIER_B = SOURCE_DAG.barrierB;
 const GENERATED_OVERLAP_ORIGINS = SOURCE_DAG.generatedOverlapOrigins;
 const OVERLAP_PARTICIPANTS = GENERATED_OVERLAP_ORIGINS.filter((name) => name !== "generated-overlap");
 
-function sourceGateMap(gates) {
-  const required = sourceGateSet();
+function sourceGateMap(gates, profile = "full") {
+  const required = qualificationGates(profile);
   if (!Array.isArray(gates) || gates.length !== required.length) throw new Error(`source verification gate set must contain exactly the ${required.length} governed gates`);
   const entries = new Map();
   for (let index = 0; index < required.length; index += 1) {
@@ -718,15 +736,15 @@ function validateSourceReceiptSemantics(receipt) {
   }
 }
 
-function performanceObservation(result, inventoryFiles, requireAuthoritative) {
-  const schema = RELEASE_CONTRACT.qualification.source.performanceEvidenceSchema;
+function performanceObservation(result, inventoryFiles, requireAuthoritative, profile = "full") {
+  const schema = measurementProfile(profile).schemaVersion;
   const records = performanceEvidenceRecords(result.stdout, schema);
   if (records.length !== 1 || records[0].status !== "pass") {
     throw sourceProcessFailure("performance", "performance owner returned no unique passing evidence record", "failed");
   }
   const record = records[0];
   const policy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
-  const errors = validatePerformanceEvidence(result.stdout, policy.owners.performance, REPO_ROOT);
+  const errors = (profile === "development" ? validateDevelopmentResourceEvidence : validatePerformanceEvidence)(result.stdout, policy.owners.performance, REPO_ROOT);
   if (errors.length) throw sourceProcessFailure("performance", errors.join("; "), "failed");
   if (requireAuthoritative && record.runner?.authority?.authoritative !== true) {
     throw sourceProcessFailure("performance", "authoritative performance evidence requires the pinned remote runner identity declared by verification policy", "failed");
@@ -748,8 +766,9 @@ function performanceObservation(result, inventoryFiles, requireAuthoritative) {
 
 async function executeSourceQualificationDag(options, overlapRoot) {
   const repo = options.repo ?? REPO_ROOT;
-  const gateSet = governedSourceGates(options.gates);
-  const gates = sourceGateMap(gateSet);
+  const profile = options.profile ?? "full";
+  const gateSet = governedSourceGates(options.gates, profile);
+  const gates = sourceGateMap(gateSet, profile);
   const clock = options.clock ?? (() => performance.now());
   const wallClock = options.wallClock ?? (() => Date.now());
   const started = options.startedAt ?? clock();
@@ -771,7 +790,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     throw sourceProcessFailure("full-qualification", "source verification has no safe overlap execution window before its cleanup margin", "failed");
   }
   const batch = await runConcurrent(
-    SOURCE_BATCH_A.map((name) => ({
+    SOURCE_BATCH_A.filter((name) => gates.has(name)).map((name) => ({
       name,
       command: gates.get(name).command,
       repo,
@@ -819,7 +838,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     )
   ).performance;
   const performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
-  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance, options.requireAuthoritativePerformance === true);
+  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance, options.requireAuthoritativePerformance === true, profile);
   const afterPerformance = readState(repo);
   if (afterPerformance.generation !== afterBatch.generation || afterPerformance.leases.length !== 0) {
     throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
@@ -925,6 +944,20 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     ]),
   );
   const entries = {
+    ...(profile === "full"
+      ? {
+          certification: {
+            name: "certification",
+            origin: "certification",
+            phase: "batch-a",
+            outcome: "passed",
+            elapsedMs: batch.certification.elapsedMs,
+            executed: "command",
+            reused: false,
+            observation: outputObservation(batch.certification),
+          },
+        }
+      : {}),
     ...originEntries,
     "generated-overlap": {
       name: "generated-overlap",
@@ -1047,6 +1080,7 @@ export async function runSourceQualificationDag(options = {}) {
 }
 
 export async function issueSourceReceipt(options = {}) {
+  if (options.profile !== undefined && options.profile !== "full") throw new Error("source receipts require full qualification");
   const repo = options.repo ?? REPO_ROOT;
   const clock = options.clock ?? (() => performance.now());
   const started = clock();
@@ -1089,7 +1123,15 @@ export async function issueSourceReceipt(options = {}) {
   return { receipt, reused: false, gates: qualification.gates };
 }
 
-export function sourceQualificationGateIdentity() {
+export function sourceQualificationGateIdentity(profile = "full") {
+  if (profile !== "full")
+    return sha256(
+      canonicalJson({
+        profile: measurementProfile(profile).profile,
+        gates: qualificationGates(profile),
+        fullGateIdentity: sourceQualificationGateIdentity(),
+      }),
+    );
   return sha256(
     canonicalJson({
       gates: sourceGateSet(),
@@ -1109,7 +1151,13 @@ export function sourceQualificationGateIdentity() {
 export async function runSourceConjunction(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const started = performance.now();
-  const gates = governedSourceGates(options.gates);
+  const profile = options.profile ?? "full";
+  const gates = governedSourceGates(options.gates, profile);
+  const identity = {
+    schemaVersion: profile === "development" ? "agentera.developmentConjunction.v1" : "agentera.releaseConjunction.v1",
+    profile,
+    gate_identity: sourceQualificationGateIdentity(profile),
+  };
   try {
     const result = await (options.runDag ?? runSourceQualificationDag)({
       ...options,
@@ -1124,8 +1172,7 @@ export async function runSourceConjunction(options = {}) {
       },
     });
     return {
-      schemaVersion: "agentera.releaseConjunction.v1",
-      gate_identity: sourceQualificationGateIdentity(),
+      ...identity,
       status: "pass",
       gate_count: gates.length,
       gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({
@@ -1137,7 +1184,7 @@ export async function runSourceConjunction(options = {}) {
       })),
       execution: result.execution,
       performance: {
-        latencyAdvisory: normalizedLatencyAdvisory(result.gates.find(({ name }) => name === "performance").observation.evidence, performanceAuthority(REPO_ROOT)),
+        latencyAdvisory: profile === "development" ? result.gates.find(({ name }) => name === "performance").observation.evidence.latencyAdvisory : normalizedLatencyAdvisory(result.gates.find(({ name }) => name === "performance").observation.evidence, performanceAuthority(REPO_ROOT)),
       },
       first_failure: null,
       owner: null,
@@ -1158,8 +1205,7 @@ export async function runSourceConjunction(options = {}) {
     const owner = error?.owner ?? "full-qualification";
     const gate = gates.find((entry) => entry.name === owner);
     return {
-      schemaVersion: "agentera.releaseConjunction.v1",
-      gate_identity: sourceQualificationGateIdentity(),
+      ...identity,
       status: "fail",
       gate_count: gates.length,
       gates: [],
@@ -1167,7 +1213,7 @@ export async function runSourceConjunction(options = {}) {
       first_failure: owner,
       owner: gate?.owner ?? `packages/cli/scripts/release-qualification.mjs#${owner}`,
       violation: sourceDiagnostic(error instanceof Error ? error.message : error),
-      correction: gate?.correction ?? (gate ? gate.command.join(" ") : "pnpm -C packages/cli run verify:release"),
+      correction: gate?.correction ?? (gate ? gate.command.join(" ") : `pnpm -C packages/cli run verify:${profile === "development" ? "development" : "release"}`),
       generated_artifact: null,
       side_effects: {
         receipt: false,
@@ -1980,11 +2026,14 @@ export function runSourceReceiptCheckCommand(flags, options = {}) {
 }
 
 export async function runNoReceiptVerificationCommand(flags, options = {}) {
-  const result = await runSourceConjunction(options);
+  const result = await runSourceConjunction({
+    ...options,
+    profile: flags.get("--profile") ?? options.profile ?? "full",
+  });
   const json = Boolean(flags.get("--json"));
   if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else {
-    process.stdout.write(`release verification ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
+    process.stdout.write(`${result.profile} verification ${result.status}; gates:${result.gate_count}; generation:${result.generated_artifact?.generation ?? "none"}; first failure:${result.first_failure ?? "none"}; correction:${result.correction ?? "none"}\n`);
     if (result.performance) {
       process.stdout.write("Latency targets are advisory; pass means valid evidence and blocking checks passed, not latency target compliance.\n");
       for (const [target, entry] of Object.entries(result.performance.latencyAdvisory)) process.stdout.write(`latency advisory ${target}: targetMs=${entry.targetMs}; maxObservedMs=${entry.maxObservedMs}; exceededRepetitions=${entry.exceededRepetitions}\n`);
@@ -1999,7 +2048,7 @@ async function main() {
   if (!["verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
     throw new Error("usage: release-qualification.mjs <verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
   }
-  const valueFlags = command === "verify" ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
+  const valueFlags = command === "verify" ? ["--profile"] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
   if (command === "candidate") valueFlags.push("--source-commit");
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {

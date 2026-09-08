@@ -159,6 +159,7 @@ describe("source qualification DAG", () => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-performance-progress-"));
       const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
       const previousExitCode = process.exitCode;
+      let readinessError: unknown;
       try {
         const bin = path.join(root, "bin");
         fs.mkdirSync(bin);
@@ -167,8 +168,10 @@ describe("source qualification DAG", () => {
         fs.writeFileSync(
           path.join(root, "probe.test.js"),
           `
+        import fs from 'node:fs';
         import { createPerformanceProgress } from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/performance-progress.mjs"))};
         it('bounded diagnostic probe', async () => {
+          ${mode === "coordinator-timeout" ? `process.on('SIGTERM', () => { fs.writeFileSync(${JSON.stringify(path.join(root, "probe-stopped"))}, 'stopped'); process.exit(0); });` : ""}
           const progress = createPerformanceProgress();
           progress.start('archive_list_large_4'); progress.complete();
           progress.start('archive_list_large_5');
@@ -211,24 +214,63 @@ describe("source qualification DAG", () => {
                 },
                 cleanup: () => undefined,
               }),
-              startOwner: (specification: any) =>
-                specification.name === "performance"
-                  ? defaultStartSourceOwner({
-                      ...specification,
-                      command: [process.execPath, "--import", host, path.join(REPO_ROOT, "packages/cli/scripts/verify-lane.mjs"), "performance"],
-                      timeoutMs: mode === "coordinator-timeout" ? 4000 : 10_000,
-                    })
-                  : {
-                      name: specification.name,
-                      cancellable: specification.cancellable,
-                      promise: Promise.resolve(result(specification.name, specification)),
-                      cancel: () => undefined,
-                    },
+              startOwner: (specification: any) => {
+                if (specification.name !== "performance")
+                  return {
+                    name: specification.name,
+                    cancellable: specification.cancellable,
+                    promise: Promise.resolve(result(specification.name, specification)),
+                    cancel: () => undefined,
+                  };
+                const owner = {
+                  ...specification,
+                  command: [process.execPath, "--import", host, path.join(REPO_ROOT, "packages/cli/scripts/verify-lane.mjs"), "performance"],
+                  timeoutMs: 10_000,
+                };
+                if (mode !== "coordinator-timeout") return defaultStartSourceOwner(owner);
+
+                // Control only this owner's deadline. Startup and readiness use real
+                // time, as do process-group cancellation and its force-kill timer.
+                const realSetTimeout = globalThis.setTimeout;
+                let fireDeadline!: () => void;
+                const timer = vi.spyOn(globalThis, "setTimeout").mockImplementationOnce((callback, delay) => {
+                  fireDeadline = callback as () => void;
+                  return realSetTimeout(() => undefined, delay);
+                });
+                let handle;
+                try {
+                  handle = defaultStartSourceOwner(owner);
+                } finally {
+                  timer.mockRestore();
+                }
+                const completed = handle.promise;
+                const settled = completed.catch(() => undefined);
+                handle.promise = (async () => {
+                  try {
+                    await expect
+                      .poll(() => (fs.existsSync(owner.reportFile) ? fs.readFileSync(owner.reportFile, "utf8") : ""), {
+                        timeout: 10_000,
+                        interval: 20,
+                        message: "real performance checkpoint must reach captured output before coordinator timeout",
+                      })
+                      .toMatch(/AGENTERA_PERFORMANCE_PROGRESS last=archive_list_large_4 inFlight=archive_list_large_5 elapsedMs=\d+ clock=entity-performance\/performance.now/);
+                  } catch (error) {
+                    readinessError = error;
+                    throw error;
+                  } finally {
+                    fireDeadline();
+                    await settled;
+                  }
+                  return completed;
+                })();
+                return handle;
+              },
               readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
             });
             return observed;
           },
         });
+        if (readinessError) throw readinessError;
         expect(JSON.parse(write.mock.calls.map(([value]) => value).join(""))).toEqual(qualification);
         if (mode === "success") {
           expect(qualification.status).toBe("pass");
@@ -245,6 +287,7 @@ describe("source qualification DAG", () => {
           expect(qualification.violation).toMatch(/owner elapsedMs=\d+ clock=release-source-owner\/performance.now/);
           expect(qualification.violation).toContain(mode === "inner-timeout" ? "performance test deadline exceeded" : "exceeded the source verification deadline");
           for (const privateValue of [root, REPO_ROOT, "/private", "NPM_TOKEN", "secret", "unrelated reporter"]) expect(qualification.violation).not.toContain(privateValue);
+          if (mode === "coordinator-timeout") expect(fs.readFileSync(path.join(root, "probe-stopped"), "utf8")).toBe("stopped");
         }
       } finally {
         write.mockRestore();
@@ -271,7 +314,7 @@ describe("source qualification DAG", () => {
     ).toThrow("generated-overlap source worker allocation must be a positive integer");
   });
 
-  it("runs one-worker performance alone, then capacity serially, before the parallel reader barrier", async () => {
+  it.each(["full", "development"])("runs %s measurement alone, then capacity serially, before the unchanged reader barrier", async (profile) => {
     const started: Array<{
       name: string;
       environment: NodeJS.ProcessEnv;
@@ -283,7 +326,7 @@ describe("source qualification DAG", () => {
     let stateReads = 0;
     const qualification = await runSourceQualificationDag({
       repo: REPO_ROOT,
-      gates: GATES,
+      profile,
       clock: () => 0,
       wallClock: () => 1_000,
       requireAuthoritativePerformance: true,
@@ -303,7 +346,14 @@ describe("source qualification DAG", () => {
         return {
           name: specification.name,
           cancellable: specification.cancellable,
-          promise: Promise.resolve(result(specification.name, specification)).finally(() => active.delete(specification.name)),
+          promise: Promise.resolve(
+            specification.name === "performance"
+              ? {
+                  ...result(specification.name, specification),
+                  stdout: JSON.stringify(performanceEvidence(profile)),
+                }
+              : result(specification.name, specification),
+          ).finally(() => active.delete(specification.name)),
           cancel: () => undefined,
         };
       },
@@ -313,7 +363,7 @@ describe("source qualification DAG", () => {
       },
     });
 
-    expect(started.map(({ name }) => name)).toEqual(["generated-overlap", "stress", "typecheck", "performance", "capacity", "compact", "capability-contract", "activation-conjunction"]);
+    expect(started.map(({ name }) => name)).toEqual(["generated-overlap", "stress", "typecheck", ...(profile === "full" ? ["certification"] : []), "performance", "capacity", "compact", "capability-contract", "activation-conjunction"]);
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
     expect(started[0]).toMatchObject({
       name: "generated-overlap",
@@ -326,6 +376,7 @@ describe("source qualification DAG", () => {
     });
     expect(started.slice(0, 3).every(({ name }) => !["performance", "compact", "capability-contract", "activation-conjunction"].includes(name))).toBe(true);
     expect(started.find(({ name }) => name === "performance")).toMatchObject({
+      command: ["pnpm", "-C", "packages/cli", "run", profile === "full" ? "test:performance" : "test:development-resource"],
       timeoutMs: SOURCE_QUALIFICATION_MS - PARENT_RECONCILIATION_MARGIN_MS,
       concurrentWith: [],
       environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(1_000 + SOURCE_QUALIFICATION_MS) },
@@ -351,14 +402,14 @@ describe("source qualification DAG", () => {
       AGENTERA_ACTIVATION_EVIDENCE_DIGEST: "a".repeat(64),
       AGENTERA_ACTIVATION_PACKAGE_IDENTITY: JSON.stringify(packageIdentity()),
     });
-    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(8);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(8);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(8);
-    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(8);
-    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(8);
-    expect(cleaned).toHaveLength(8);
+    expect(new Set(started.map(({ environment }) => environment.HOME)).size).toBe(started.length);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_CACHE)).size).toBe(started.length);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_USERCONFIG)).size).toBe(started.length);
+    expect(new Set(started.map(({ environment }) => environment.NPM_CONFIG_GLOBALCONFIG)).size).toBe(started.length);
+    expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(started.length);
+    expect(cleaned).toHaveLength(started.length);
     expect(stateReads).toBe(4);
-    expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name));
+    expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.filter((entry: any) => profile === "full" || entry.name !== "certification").map((entry: any) => entry.name));
     expect(qualification.gates.every((entry: any) => entry.outcome === "passed")).toBe(true);
     expect(qualification.gates.filter((entry: any) => entry.origin === "generated-overlap").map((entry: any) => entry.name)).toEqual(["source", "package", "generated-overlap", "build"]);
     expect(qualification.gates.find((entry: any) => entry.name === "source").observation).toMatchObject({
@@ -371,7 +422,7 @@ describe("source qualification DAG", () => {
       inventoryFiles: 3,
       evidence: {
         status: "pass",
-        samples: 35,
+        samples: profile === "full" ? 35 : 7,
         runner: { authority: { identity: "GitHub Actions fixture" } },
       },
     });
@@ -388,6 +439,48 @@ describe("source qualification DAG", () => {
       generation: "generation-a",
       leasesAfterBarrier: 0,
     });
+  });
+
+  it("full qualification stops visibly at certification failure before measurement or readers", async () => {
+    const batches: string[][] = [];
+    await expect(
+      runSourceQualificationDag({
+        clock: () => 0,
+        runConcurrent: async (specifications: any[]) => {
+          batches.push(specifications.map(({ name }) => name));
+          throw ownerError("certification", "historical compiler certification failed");
+        },
+      }),
+    ).rejects.toMatchObject({
+      owner: "certification",
+      message: "historical compiler certification failed",
+    });
+    expect(batches).toEqual([["generated-overlap", "stress", "typecheck", "certification"]]);
+  });
+
+  it("full DAG rejects development measurement before capacity or readers", async () => {
+    const batches: string[][] = [];
+    await expect(
+      runSourceQualificationDag({
+        clock: () => 0,
+        readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
+        runConcurrent: async (specifications: any[]) => {
+          batches.push(specifications.map(({ name }) => name));
+          return Object.fromEntries(
+            specifications.map((specification) => [
+              specification.name,
+              specification.name === "performance"
+                ? {
+                    ...result("performance", specification),
+                    stdout: JSON.stringify(performanceEvidence("development")),
+                  }
+                : result(specification.name, specification),
+            ]),
+          );
+        },
+      }),
+    ).rejects.toMatchObject({ owner: "performance" });
+    expect(batches).toEqual([["generated-overlap", "stress", "typecheck", "certification"], ["performance"]]);
   });
 
   it("keeps the parent-owned overlap root through barrier B and removes it after the DAG", async () => {
@@ -542,9 +635,9 @@ describe("source qualification DAG", () => {
         detail: "performance exceeded its remaining source deadline",
       },
     });
-    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "performance"]);
+    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "certification", "performance"]);
     expect(cleaned).toEqual(expect.arrayContaining(["generated-overlap", "stress", "typecheck", "performance"]));
-    expect(new Set(cleaned).size).toBe(4);
+    expect(new Set(cleaned).size).toBe(5);
     expect(stateReads).toBe(1);
   });
 
@@ -574,7 +667,7 @@ describe("source qualification DAG", () => {
       owner: "capacity",
       firstFailure: { name: "capacity", detail: "capacity fixture failed" },
     });
-    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "performance", "capacity"]);
+    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "certification", "performance", "capacity"]);
   });
 
   it("blocks receipt completion when a post-build reader fails and cancels its peer", async () => {

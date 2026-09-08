@@ -28,6 +28,11 @@ Performance stdout is not JSON-only: normal Vitest text surrounds exactly one
 whole-line `agentera.entityAuthorityPerformanceEvidence.v1` JSON record. Consumers
 extract newline-delimited records by `schemaVersion`; the owner command validates
 the record and its runner authority against the policy before returning success.
+Development `test:development-resource` reuses that exact workload with one cold
+sample per target (seven samples) and emits only
+`agentera.developmentResourceEvidence.v1` with explicit development provenance.
+Scales, heap sampling, correctness and heap/output limits do not change. Full
+consumers still require five repetitions and reject development evidence.
 The integration surface is owned by the performance owner in
 `verification-policy.yaml`; it invokes `test:performance` once, so policy proof
 does not recurse or duplicate the 35-sample matrix (seven targets, five repeats).
@@ -58,7 +63,7 @@ process is the sole origin for source, package, build, and overlap evidence. It
 runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
 and the adversarial activation-evidence cases instead of repeating them in
 ordinary source verification. It
-runs beside isolated stress and typecheck owners. After those three batch owners
+runs beside isolated stress, typecheck and historical certification owners. After those batch owners
 pass and the private build settles, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner
 identity so CPU contention cannot invalidate its machine-sensitive evidence.
@@ -72,7 +77,12 @@ reader barrier or receipt follows a batch, performance, or capacity failure.
 Pre-commit is a local feedback lane, not release verification. It runs exact
 source-owned tests and typecheck with at most two workers. Specialized and
 global surfaces are labeled `ci_owned`; required CI runs their authoritative
-owners through the unchanged release verification. The hook accepts no receipt
+development safety through `vp run verify:development`; explicit full
+`vp run verify` retains historical certification and repeated performance.
+Only `allTestTypecheckViability.test.ts` and `formatterNormalizationReplay.test.ts`
+are certification-owned (`test:certification`); no arbitrary source exclusion is
+supported. Development retains stress, capacity and all private-generation and
+package contracts, but its distinct success is not full qualification. The hook accepts no receipt
 or environment bypass.
 
 ## Classification key

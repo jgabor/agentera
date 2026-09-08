@@ -137,7 +137,7 @@ describe("package publication orchestration", () => {
   it.each([
     ["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }],
     ["routine", YAML.parse(ciYaml).jobs.cli, { "fetch-depth": 0 }],
-  ])("provides complete history and archived parity proof before %s verification", (_name, job, checkoutInputs) => {
+  ])("provides complete history without historical certification fetches before %s verification", (_name, job, checkoutInputs) => {
     const fixture = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json"), "utf8"));
     const previousCommit = fixture.pinEvidence.previous_python_commit;
     expect(previousCommit).toMatch(/^[a-f0-9]{40}$/);
@@ -153,22 +153,15 @@ describe("package publication orchestration", () => {
     };
     const requireHistory = (steps: Step[]) => {
       const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
-      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify");
+      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify:development");
       expect(checkoutIndex).toBeGreaterThanOrEqual(0);
       expect(checkoutIndex).toBeLessThan(verifyIndex);
       expect(steps.filter((step) => step.uses === "actions/checkout@v5")).toHaveLength(1);
       expect(steps[checkoutIndex]!.with).toEqual(checkoutInputs);
-      // Full checkout supplies origin/main and ordinary historical fixtures.
-      // Only the archived pre-rewrite parity proof needs an explicit fetch.
-      const fetchIndex = steps.findIndex((step) => step.run === archivalCommand);
-      expect(fetchIndex).toBeGreaterThan(checkoutIndex);
-      expect(fetchIndex).toBeLessThan(verifyIndex);
-      expect(steps.filter((step) => /\bgit\s+fetch\b/.test(step.run ?? ""))).toEqual([steps[fetchIndex]]);
-      expect(steps[fetchIndex]).toMatchObject({
-        name: "Fetch archived pre-rewrite parity proof",
-        "timeout-minutes": 1,
-      });
-      for (const step of [steps[checkoutIndex], steps[fetchIndex], steps[verifyIndex]]) {
+      // Ordinary source fixtures still need history; archived toolchain
+      // certification is owned by explicit full qualification only.
+      expect(steps.filter((step) => /\bgit\s+fetch\b/.test(step.run ?? ""))).toEqual([]);
+      for (const step of [steps[checkoutIndex], steps[verifyIndex]]) {
         expect(step).not.toHaveProperty("if");
         expect(step).not.toHaveProperty("continue-on-error");
       }
@@ -184,15 +177,8 @@ describe("package publication orchestration", () => {
       if (depth === undefined) delete inputs["fetch-depth"];
       expect(() => requireHistory(steps.map((step) => (step === checkout ? { ...checkout, with: inputs } : step)))).toThrow();
     }
-    const archivalFetch = steps.find((step) => step.run === archivalCommand)!;
-    const withoutFetch = steps.filter((step) => step !== archivalFetch);
-    expect(() => requireHistory(withoutFetch)).toThrow();
-    expect(() => requireHistory([archivalFetch, ...withoutFetch])).toThrow();
-    expect(() => requireHistory([...withoutFetch, archivalFetch])).toThrow();
-    for (const override of [{ run: archivalCommand.replace(previousCommit, "0".repeat(40)) }, { run: "git fetch --depth=1 origin '${PARITY_COMMIT}'" }, { "timeout-minutes": undefined }, { "timeout-minutes": 2 }]) {
-      expect(() => requireHistory(steps.map((step) => (step === archivalFetch ? { ...step, ...override } : step)))).toThrow();
-    }
-    for (const target of [checkout, archivalFetch, steps.find((step) => step.run === "vp run verify")]) {
+    expect(() => requireHistory([...steps, { run: archivalCommand }])).toThrow();
+    for (const target of [checkout, steps.find((step) => step.run === "vp run verify:development")]) {
       for (const override of [{ if: "always()" }, { "continue-on-error": true }]) {
         expect(() => requireHistory(steps.map((step) => (step === target ? { ...step, ...override } : step)))).toThrow();
       }
@@ -404,8 +390,8 @@ describe("package publication orchestration", () => {
     expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5")["timeout-minutes"]).toBe(1);
     expect(verification).not.toHaveProperty("continue-on-error");
-    const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify release source without receipt");
-    expect(sourceVerification.run).toBe("vp run verify");
+    const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
+    expect(sourceVerification.run).toBe("vp run verify:development");
     expect(sourceVerification["timeout-minutes"] * 60_000).toBeGreaterThanOrEqual(publicationContract.benchmark.timeouts.sourceQualificationMs);
     expect(JSON.stringify(verification)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|upload-artifact|npm publish|id-token/i);
     expect(workflow.jobs["build-development"].permissions).toEqual({ contents: "read" });

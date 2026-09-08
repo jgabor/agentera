@@ -163,9 +163,9 @@ export const ACTIVATION_EVIDENCE_SOURCES: Readonly<Record<ActivationClassId, Rea
 });
 
 export const ACTIVATION_CHECK_IDS = Object.freeze(ACTIVATION_CLASSES.flatMap((classId) => ACTIVATION_DIMENSIONS.map((dimension) => `${classId}.${dimension}`)));
-export const SOURCE_GATE_IDS = ["source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build", "compact", "capability-contract", "activation-conjunction"] as const;
+export const SOURCE_GATE_IDS = ["source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build", "compact", "capability-contract", "activation-conjunction", "certification"] as const;
 export const SOURCE_DAG_PHASES = {
-  batchA: ["generated-overlap", "stress", "typecheck"],
+  batchA: ["generated-overlap", "stress", "typecheck", "certification"],
   performanceBarrier: ["performance"],
   capacityBarrier: ["capacity"],
   barrierB: ["compact", "capability-contract", "activation-conjunction"],
@@ -260,6 +260,7 @@ export interface PackagePublicationModel {
 }
 
 const EXACT_COMMANDS: Record<string, readonly string[]> = {
+  certification: ["pnpm", "-C", "packages/cli", "run", "test:certification"],
   source: ["pnpm", "-C", "packages/cli", "run", "test:source"],
   stress: ["pnpm", "-C", "packages/cli", "run", "test:stress"],
   performance: ["pnpm", "-C", "packages/cli", "run", "test:performance"],

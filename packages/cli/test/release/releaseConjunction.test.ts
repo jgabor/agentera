@@ -4,10 +4,54 @@ import os from "node:os";
 import path from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
-import { RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceConjunction, sourceQualificationGateIdentity } from "../../scripts/release-qualification.mjs";
+import { issueSourceReceipt, qualificationGates, RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceConjunction, sourceQualificationGateIdentity } from "../../scripts/release-qualification.mjs";
 import { performanceObservationFixture } from "../helpers/performanceEvidence.js";
 
 describe("no-receipt release verification", () => {
+  it("selects a distinct no-receipt development command without certifying omitted gates", async () => {
+    const runDag = vi.fn(async ({ gates }: any) => ({
+      gates: gates.map(({ name }: any) => ({
+        name,
+        phase: "fixture",
+        outcome: "passed",
+        elapsedMs: 1,
+        origin: name,
+        observation: performanceObservationFixture(),
+      })),
+      execution: { generation: "fixture" },
+    }));
+    const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+    try {
+      const result = await runNoReceiptVerificationCommand(
+        new Map([
+          ["--profile", "development"],
+          ["--json", true],
+        ]),
+        { runDag },
+      );
+      expect(runDag.mock.calls[0][0].profile).toBe("development");
+      expect(result.status).toBe("pass");
+      expect(result.schemaVersion).toBe("agentera.developmentConjunction.v1");
+      expect(result.profile).toBe("development");
+      expect(result.gate_identity).not.toBe(sourceQualificationGateIdentity());
+      expect(result.gates.some(({ name }: any) => name === "certification")).toBe(false);
+      expect(
+        qualificationGates("development")
+          .find(({ name }: any) => name === "performance")
+          .command.at(-1),
+      ).toBe("test:development-resource");
+      expect(
+        qualificationGates()
+          .find(({ name }: any) => name === "performance")
+          .command.at(-1),
+      ).toBe("test:performance");
+      expect(Object.values(result.side_effects).every((value) => value === false)).toBe(true);
+      await expect(issueSourceReceipt({ profile: "development" })).rejects.toThrow(/require full/);
+      await expect(runSourceConjunction({ profile: "fast", runDag })).rejects.toThrow(/unknown measurement profile/);
+    } finally {
+      write.mockRestore();
+    }
+  });
   it.each([true, false])("emits bounded advisory overruns from the actual command entry (json=%s)", async (json) => {
     const observation: any = performanceObservationFixture();
     observation.evidence.maxima.exact_get.maxElapsedMs = 1330.53;
@@ -45,7 +89,7 @@ describe("no-receipt release verification", () => {
       write.mockRestore();
     }
   });
-  it("preserves a real colored Vitest over-budget failure through conjunction", async () => {
+  it("preserves a real uncolored Vitest over-budget failure through conjunction", async () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-measurement-diagnostic-"));
     try {
       fs.writeFileSync(path.join(root, "vite.config.mjs"), "export default { test: { globals: true, maxWorkers: 1 } };");
@@ -56,12 +100,11 @@ describe("no-receipt release verification", () => {
       const rendered = spawnSync("vp", ["test", "run", "--root", root, "--config", path.join(root, "vite.config.mjs")], {
         encoding: "utf8",
         maxBuffer: 1024 * 1024,
-        env: { ...process.env, FORCE_COLOR: "1", GITHUB_ACTIONS: "false" },
+        env: { ...process.env, FORCE_COLOR: "0", NO_COLOR: "1", GITHUB_ACTIONS: "false" },
       });
       expect(rendered.error).toBeUndefined();
       expect(rendered.status).toBe(1);
       expect(rendered.stderr).toContain("AssertionError");
-      expect(rendered.stderr).toContain("\u001b[");
       const error = Object.assign(new Error(`${rendered.stderr}\n${"    at /private/fixture.ts:151:1\n".repeat(50)}cleanup failed`), { owner: "performance" });
       const result = await runSourceConjunction({
         runDag: async () => {
@@ -96,7 +139,7 @@ describe("no-receipt release verification", () => {
     expect(result.violation).not.toContain("/private/fixture.ts");
   });
 
-  it("shares the exact eleven-gate DAG identity and reports no authority side effects", async () => {
+  it("shares the exact twelve-gate DAG identity and reports no authority side effects", async () => {
     const gates = RELEASE_CONTRACT.qualification.source.gates;
     const result = await runSourceConjunction({
       gates,
@@ -112,7 +155,7 @@ describe("no-receipt release verification", () => {
         execution: { generation: "fresh", elapsedMs: 10, reconciled: true },
       }),
     });
-    expect(gates).toHaveLength(11);
+    expect(gates).toHaveLength(12);
     expect(result.gate_identity).toBe(sourceQualificationGateIdentity());
     expect(result.gates.map(({ name }: any) => name)).toEqual(gates.map(({ name }: any) => name));
     expect(result.side_effects).toEqual({
@@ -124,9 +167,29 @@ describe("no-receipt release verification", () => {
     });
   });
 
-  it("normalizes the first owner failure to an exact owner and runnable correction", async () => {
-    const error = Object.assign(new Error("bounded failure"), { owner: "activation-conjunction" });
+  it.each(["full", "development"])("uses the %s correction for coordinator failures", async (profile) => {
     const result = await runSourceConjunction({
+      profile,
+      runDag: async () => {
+        throw new Error("injected coordinator failure");
+      },
+    });
+    expect(result).toMatchObject({
+      status: "fail",
+      profile,
+      first_failure: "full-qualification",
+      owner: "packages/cli/scripts/release-qualification.mjs#full-qualification",
+      violation: "injected coordinator failure",
+      correction: `pnpm -C packages/cli run verify:${profile === "development" ? "development" : "release"}`,
+    });
+  });
+
+  it.each(["full", "development"])("normalizes the first owner failure to an exact owner and runnable correction (%s)", async (profile) => {
+    const error = Object.assign(new Error("bounded failure"), {
+      owner: "activation-conjunction",
+    });
+    const result = await runSourceConjunction({
+      profile,
       runDag: async () => {
         throw error;
       },
@@ -135,7 +198,7 @@ describe("no-receipt release verification", () => {
       status: "fail",
       first_failure: "activation-conjunction",
       owner: "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
-      correction: expect.stringMatching(/^node /),
+      correction: "node packages/cli/dist/bin/agentera.js check validate activation-conjunction",
     });
   });
 

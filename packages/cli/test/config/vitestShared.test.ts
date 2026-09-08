@@ -124,7 +124,7 @@ describe("source worker policy", () => {
 
   it("keeps GitHub Actions explicitly unmeasured", () => {
     const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
-    const sourceOwnerStep = workflow.jobs.cli.steps.find((step: { name?: string }) => step.name === "Run check-only release verification");
+    const sourceOwnerStep = workflow.jobs.cli.steps.find((step: { name?: string }) => step.name === "Run development safety verification");
     expect(sourceOwnerStep.env).toEqual({
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
       VITEST_TEST_TIMEOUT_MS: "120000",
@@ -132,7 +132,7 @@ describe("source worker policy", () => {
       AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
     });
     const publication = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8"));
-    const publicationStep = publication.jobs["verify-development"].steps.find((step: { name?: string }) => step.name === "Verify release source without receipt");
+    const publicationStep = publication.jobs["verify-development"].steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
     expect(publicationStep.env).toEqual(sourceOwnerStep.env);
     expect(workerPolicyFor(sourceOwnerStep.env)).toEqual({
       name: UNMEASURED_WORKER_POLICY,

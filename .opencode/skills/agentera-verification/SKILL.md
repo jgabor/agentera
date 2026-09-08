@@ -55,6 +55,15 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   performance before source verification readers.
 - Generated overlap is the sole source, package, and build execution origin in
   release source verification.
+- Routine `vp run verify:development` retains source, typecheck, private
+  build/package/generation checks, stress, capacity, compact and contract readers.
+  It runs the existing live CLI resource workload once per target at unchanged
+  scales and heap/output limits, not five repetitions; latency stays advisory.
+  Its distinct development evidence is not full qualification or a receipt.
+- Explicit `vp run verify` remains full qualification: five cold repetitions and
+  historical certification as well as all development safety guards. The two
+  historical suites belong to `test:certification`, not source. See the packaging
+  guide for the archived-history prerequisite. Certification failures stay visible.
 
 Do not run an omitted owner separately after verification failure. Correct the
 first reported owner and rerun the owning command.
@@ -83,8 +92,8 @@ Pre-commit runs:
 - Ordinary source changes run deterministic source-owned tests plus typecheck
   within 60 seconds, with at most two Vitest workers.
 - Specialized and global owner surfaces route to `ci_owned`; the local hook
-  runs source-owned route guards while required CI executes `release`
-  authoritatively.
+  runs source-owned route guards while routine CI executes development safety;
+  explicit full qualification retains the `release` owners.
 - Markdown lint and supported configuration formatting each have a 10-second
   budget. Py-TS parity runs only for its analytics inputs.
 

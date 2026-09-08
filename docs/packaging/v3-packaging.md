@@ -57,8 +57,8 @@ derives the base release line from the valid checked-in
 `dev.89` publication. Before construction, a no-OIDC verification job checks
 out `GITHUB_SHA`, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3
 toolchain without automatic install or caching, runs bare `vp check`, then
-runs uncached `vp run verify`. This delegates to the existing eleven-gate
-`verify:release` source qualification without producing a receipt. Its
+runs uncached `vp run verify:development`. This runs development safety,
+not full release qualification, and produces no receipt. Its
 40-minute step deadline retains the 2,400,000 ms authority deadline, while the
 45-minute job allows setup and the dependent build keeps its separate
 construction allowance. A verification failure therefore prevents candidate
@@ -158,8 +158,8 @@ Stable publication is not implemented. The cutover must add a no-OIDC stable
     build job and a dependent OIDC-enabled publication job with the protected
 `npm-publish` environment inside the same `.github/workflows/publish.yml`.
 
-Source verification runs one evidence DAG. Batch A starts generated-overlap,
-stress, and typecheck together with separate HOME, cache, npm configs, and
+Full source qualification runs one evidence DAG. Batch A starts generated-overlap,
+stress, typecheck, and historical certification together with separate HOME, cache, npm configs, and
 report outputs. Generated-overlap invokes the exact public source, package, and
 build commands once. The build writes only its private immutable root and returns
 the owner inventories, pending-test results, and build evidence. Source, package,
@@ -258,7 +258,7 @@ child execution plus the 4,000 ms reconciliation reserve remain. The 2,400,000 m
 source envelope retains headroom over the observed 1,676,355 ms hosted failure
 with two 120-second fixture ceilings and the 516,590 ms local eleven-gate pass.
 
-The content-addressed `source-receipt.json` contains all eleven named gates with
+The content-addressed `source-receipt.json` contains all twelve named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and
 executed/reused state. Validation requires the exact gate order, governed origin
 and phase, successful outcome, execution shape, and gate-relevant observations;
@@ -447,7 +447,7 @@ it is not a budget, package artifact receipt, approval, or publication authority
 ## Generated-output and verification ownership
 
 `references/analysis/verification-policy.yaml` is the executable authority for
-test inventory ownership and policy composition. The five test owners are
+test inventory ownership and policy composition. The six test owners are
 independent:
 
 | Owner | Entry point | Owns |
@@ -457,6 +457,7 @@ independent:
 | Performance | `pnpm -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
 | Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
+| Certification | `pnpm -C packages/cli run test:certification` | Historical all-test compiler viability and formatter normalization replay, including tamper rejection. Only the two explicitly named policy files move here; ordinary source tests are not filtered or skipped. Mandatory in full qualification, omitted from routine development. |
 
 Build is a separate generated-output participant, not a test owner. Routine
 builds synchronize staged output into checkout `dist/` and `bundle/`; release
@@ -521,7 +522,7 @@ The canonical policy compositions are:
 | `local` | Source |
 | `merge` | Source, package |
 | `scheduled` | Source, stress, performance, capacity |
-| `release` | Source, stress, performance, capacity, package |
+| `release` | Source, stress, performance, capacity, package, certification |
 
 Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
 run deterministic source-owned files plus typecheck within a 60-second total
@@ -529,13 +530,13 @@ budget and use at most two Vitest workers. State and documentation-only changes
 run only their relevant compact, schema, lint, or format checks within a
 10-second budget. Conservative authority and verification surfaces route to `ci_owned`; the hook runs source-owned route guards and does not execute a
 local release lane. Specialized test files retain their exact owner in the
-route result. Routine CI invokes the check-only `release` verification once on
+route result. Routine CI invokes check-only development safety once on
 pull requests and `main` pushes. Direct pushes to the configured development ref
 run the package verification workflow instead of routine CI.
 Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,
-performance, and capacity evidence without standalone duplicate steps. Release
+one-sample live resource safety, and capacity evidence without standalone duplicate steps. Full release
 gates add metadata and dry-run publication checks while using the same package
 construction path rather than adding another extracted-package matrix.
 
@@ -558,11 +559,58 @@ This diagnostic verification is not a step before or after `cli:ready:dev` in a
 normal package-readiness run. Doing both would repeat owners that the
 coordinator already executes once.
 
-`verify:release` runs that same eleven-gate source verification DAG against the
+`verify:release` (root `vp run verify`) runs that same twelve-gate source verification DAG against the
 current source tree, including dirty or staged work, in check-only mode. It
 emits one bounded result and creates no source receipt, package artifact, registry
 request, activation, or publication action. Receipt verification retains its
 clean committed-tree and explicit external artifact directory requirements.
+
+### Routine development safety versus full qualification
+
+`vp run verify:development` is the required routine push/PR gate. It reuses the
+qualification DAG and first-failure cancellation/cleanup, with two explicit
+differences: no historical certification owner, and a single cold sample per
+declared measurement target instead of five. It retains:
+
+- Source correctness and state-integrity regression tests, plus typecheck.
+- Clean private builds and self-contained package construction/extracted smoke.
+  Generated-overlap remains the sole source/package/build execution origin;
+  source identity, stale/mixed-generation rejection, pending-test validation,
+  and fresh-build reader barriers are unchanged.
+- Stress and deterministic capacity, not just small correctness fixtures.
+- Live resource correctness through `test:development-resource`: the same seven
+  targets at the existing 100/1,000 entity/archive scales, one fresh CLI process
+  each, pre-baseline inspector GC, unchanged 1 ms heap sampling, behavior
+  assertions, and existing blocking heap and serialized-output limits. Measurement
+  runs alone with one worker after batch A; capacity follows before readers.
+- Compact state budgets, capability contracts, and the activation conjunction
+  as read-only validators of the selected private build.
+
+Latency remains advisory in both profiles. No deadline or limit is increased.
+One sample can detect observed live heap/output excess but does not establish
+repeatability, a latency SLO, historical toolchain certification, or full release
+qualification. Local measurement is diagnostic, not hosted performance authority.
+Development emits `agentera.developmentConjunction.v1` with `profile: development`
+and a distinct gate identity; its measurement emits
+`agentera.developmentResourceEvidence.v1`. Full consumers reject that evidence,
+even if its schema is relabeled, because full sampling remains mandatory.
+No development result issues or replaces a source receipt.
+
+Full qualification remains explicitly reachable without a scheduled workflow:
+
+```bash
+# Required archived history for the historical certification owner:
+git fetch --depth=1 origin '9b36f93fbeaa391550db3e8dedf015ff54b5ce69'
+vp run verify
+# Focused historical certification diagnosis (not full qualification):
+pnpm -C packages/cli run test:certification
+```
+
+Full qualification still executes all five cold repetitions, stress, capacity,
+and both historical certification suites. Failures remain blocking and visible;
+development success does not dismiss an unresolved certification failure. Receipt
+issuance and manual release benchmark commands retain their existing authority
+requirements and repeated work. Routine CI does not fetch the archived history.
 
 `pnpm -C packages/cli run verify:generated-overlap` starts the exact public
 source, package, and build owners concurrently. The build owner writes one

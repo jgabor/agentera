@@ -46,6 +46,5 @@ record:
       rationale: The docs policy exposes no versioning block and development candidate versions remain CI-derived.
     - issue: setup-vp in a non-OIDC build job violates the publisher boundary.
       rationale: The jobs are separate; the credential-bearing publisher remains setup-free.
-  surprises:
-    []
+  surprises: "Approved scope amendment: routine development publication requires product safeguards, not full benchmark or historical tooling certification. Full qualification remains explicit and distinguishable; development retains bounded heap/output checks. This replaces the earlier full-release requirement for every selected push, not completed task history. Critic risks addressed: lighter evidence must never satisfy full qualification, and removing benchmarks must not silently remove resource safeguards. No deadline increase or new push authorization is granted."
   previous_plan_archived: seltbrpsin

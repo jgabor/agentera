@@ -1,13 +1,14 @@
 import path from "node:path";
-import { deriveLatencyAdvisory, performanceAuthority } from "../../scripts/performance-evidence.mjs";
+import { deriveLatencyAdvisory, measurementProfile, performanceAuthority } from "../../scripts/performance-evidence.mjs";
 
-export function performanceEvidence() {
+export function performanceEvidence(profile = "full") {
   const measurement = performanceAuthority(path.resolve(import.meta.dirname, "../../../..")).entity_target.measurement_contract;
+  const selected = measurementProfile(profile, measurement.sampling.repetitions);
   const scales = { small: 100, large: 1000, archive_small: 100, archive_large: 1000 };
   const samples = Object.keys(measurement.targets).flatMap((target) => {
     const scale = target.endsWith("small") ? "small" : "large";
     const operation = target === "exact_get" ? target : target.slice(0, -(scale.length + 1));
-    return Array.from({ length: measurement.sampling.repetitions }, (_, i) => ({
+    return Array.from({ length: selected.repetitions }, (_, i) => ({
       operation,
       scale,
       repetition: i + 1,
@@ -22,7 +23,8 @@ export function performanceEvidence() {
     }));
   });
   const evidence = {
-    schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
+    schemaVersion: selected.schemaVersion,
+    ...(profile === "development" ? { profile } : {}),
     status: "pass",
     runner: {
       platform: "linux",
@@ -46,7 +48,7 @@ export function performanceEvidence() {
       authority: "references/artifacts/state-storage-authority.yaml#entity_target.measurement_contract",
       scales,
       declaredFixtures: measurement.fixtures,
-      repetitions: measurement.sampling.repetitions,
+      repetitions: selected.repetitions,
       elapsed: measurement.sampling.elapsed,
       heap: measurement.sampling.heap,
       bytes: measurement.sampling.bytes,

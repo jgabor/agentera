@@ -1,0 +1,14 @@
+id: eupvqtfvat
+artifact: progress
+record:
+  timestamp: 2026-09-08 13:44
+  type: test
+  phase: build
+  what: Development qualification separates product safeguards from full certification in packages/cli/scripts/release-qualification.mjs. Seven live resource samples retain heap/output checks; full qualification retains five repetitions and historical certification with distinct evidence.
+  context:
+    intent: Keep development publication blockers tied to product safety.
+    constraints: No deadline inflation, weakened package isolation, or development evidence accepted as full qualification.
+    unknowns: Full historical certification remains unrecertified; hosted development qualification remains unverified.
+  verified: vp run verify:development passed all 11 gates. Focused tests and audit corrections passed. Final vp check, typecheck, and build passed; 426 existing lint warnings remain.
+  next: Final validation stays open. Obtain fresh authorization before commit, integration, or push; preserve explicit full-qualification failure visibility.
+  publication_order: 376

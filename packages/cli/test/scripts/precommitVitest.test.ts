@@ -61,7 +61,7 @@ function targeted(...targets: string[]): Route {
   };
 }
 
-function ciOwned(ciOwners = ["source", "stress", "performance", "capacity", "package"]): Route {
+function ciOwned(ciOwners = ["source", "stress", "performance", "capacity", "package", "certification"]): Route {
   return {
     mode: "ci_owned",
     targets: ["test/release/routineCiOwnership.test.ts", "test/verification/laneOwnership.test.ts"],

@@ -8,11 +8,11 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 
 import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
-import { validatePerformanceEvidence } from "./performance-evidence.mjs";
+import { validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
 
-const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
+const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package", "certification"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRoot = path.resolve(packageRoot, "../..");
 const root = path.resolve(process.env.AGENTERA_VERIFICATION_ROOT ?? defaultRoot);
@@ -257,7 +257,7 @@ function validateForwardedSelection(owner, state, forwarded) {
   }
 }
 
-async function runOwner(owner, state, forwarded = []) {
+async function runOwner(owner, state, forwarded = [], profile = "full") {
   const definition = state.contract.owners[owner];
   const owned = state.files.filter((file) => state.assignments.get(file) === owner);
   if (owned.length === 0) {
@@ -287,6 +287,7 @@ async function runOwner(owner, state, forwarded = []) {
   const reporter = resultChannel ? ["--reporter=json", `--outputFile=${resultChannel}`] : [];
   const captureEvidence = definition.evidence !== undefined;
   const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
+  runnerEnv.AGENTERA_MEASUREMENT_PROFILE = profile;
   if (definition.execution?.workers !== undefined) {
     runnerEnv.VITEST_MAX_WORKERS = String(definition.execution.workers);
     runnerEnv.AGENTERA_VERIFICATION_WORKERS = String(definition.execution.workers);
@@ -345,7 +346,7 @@ async function runOwner(owner, state, forwarded = []) {
   }
   if (result.error) console.error(`${owner} owner failed: ${result.error.message}`);
   else if (result.status !== 0) console.error(`${owner} owner failed (exit ${result.status ?? "signal"})`);
-  const evidenceErrors = !result.error && result.status === 0 && captureEvidence ? validatePerformanceEvidence(result.stdout ?? "", definition, root) : [];
+  const evidenceErrors = !result.error && result.status === 0 && captureEvidence ? (profile === "development" ? validateDevelopmentResourceEvidence : validatePerformanceEvidence)(result.stdout ?? "", definition, root) : [];
   for (const error of evidenceErrors.slice(0, 10)) console.error(`${owner} owner evidence invalid: ${error}`);
   const wallTimeBudgetMs = definition.execution?.wall_time_budget_ms;
   if (Number.isSafeInteger(wallTimeBudgetMs)) {
@@ -451,6 +452,13 @@ if (command === "route") {
 if (command === "policy") {
   const forwarded = rest[0] === "--" ? rest.slice(1) : rest;
   process.exitCode = await runPolicy(name, state, forwarded);
+} else if (command === "development-resource") {
+  process.exitCode = await runOwner(
+    "performance",
+    state,
+    [name, ...rest].filter((value) => value !== undefined),
+    "development",
+  );
 } else if (OWNER_NAMES.includes(command)) {
   const forwarded = [name, ...rest].filter((value) => value !== undefined);
   process.exitCode = await runOwner(command, state, forwarded);

@@ -78,7 +78,7 @@
         "candidate version is the checked-in manifest base line with ordinal GITHUB_RUN_NUMBER plus 89; publish.yml run 1 is dev.90",
         "agentera.gitRef equals GITHUB_SHA",
         "the checkout manifest is not modified",
-        "after default-branch routing selects the configured ref, a contents-read job checks out GITHUB_SHA, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3 toolchain without automatic install or cache, runs bare vp check, then runs uncached root vp run verify as the existing verify:release no-receipt source qualification with its full 2400000 millisecond authority deadline",
+        "after default-branch routing selects the configured ref, a contents-read job checks out GITHUB_SHA, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3 toolchain without automatic install or cache, runs bare vp check, then runs uncached root vp run verify:development without receipts under the existing 2400000 millisecond deadline; this distinct profile retains product/state/package/generation, stress and capacity guards and one cold resource sample per declared target, not full repeated performance or historical toolchain certification",
         "candidate construction and artifact upload depend on successful source verification, so verification failure permits no package construction, upload, registry, activation, or publication effect",
         "a contents-read build job without OIDC builds one isolated tarball, validates version and git ref, executable-smokes it, and credential-free classifies it as exact-replay, superseded-replay, forward-publish, or forward-retag",
         "the tarball and bounded classification cross into the dependent OIDC job as one immutable same-run Actions artifact; the publication job checks out no source, downloads no executable helper, and does not rebuild or execute package code",
@@ -194,11 +194,17 @@
           ],
           "owner": "packages/cli/src/validate/activationConjunction.ts#activationConjunctionMain",
           "correction": "node packages/cli/dist/bin/agentera.js check validate activation-conjunction"
+        },
+        {
+          "name": "certification",
+          "command": ["pnpm", "-C", "packages/cli", "run", "test:certification"],
+          "owner": "packages/cli/scripts/verify-lane.mjs#certification",
+          "correction": "pnpm -C packages/cli run test:certification"
         }
       ],
       "performanceEvidenceSchema": "agentera.entityAuthorityPerformanceEvidence.v1",
       "overlapEvidenceSchema": "agentera.generatedOverlapEvidence.v1",
-      "gateEvidence": "A source receipt contains the exact eleven governed gates in contract order. Every gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
+      "gateEvidence": "A source receipt contains the exact twelve governed gates in contract order, including historical certification. Development verification has a distinct schema/profile and gate identity, issues no receipt, and cannot satisfy full qualification. Every full gate has its governed origin and phase, outcome passed, a finite non-negative duration, the exact executed/reused shape, and gate-relevant observations. Digest validation precedes semantic validation; either kind of one-field tampering fails closed.",
       "activationConjunction": {
         "gateIdentity": "agentera.activationConjunction.v1",
         "classes": ["cli", "capability", "runtime", "reference", "state", "package", "bootstrap"],
@@ -350,7 +356,7 @@
         "scope": "Manual readiness preparation uses the check as a source-readiness prerequisite. Direct diagnostics may inspect reuse without executing a gate. Build, compact, parity, package verification, release metadata, approval, and publication remain mandatory at their owning stages."
       },
       "dag": {
-        "batchA": ["generated-overlap", "stress", "typecheck"],
+        "batchA": ["generated-overlap", "stress", "typecheck", "certification"],
         "performanceBarrier": ["performance"],
         "capacityBarrier": ["capacity"],
         "generatedOverlapOrigins": ["source", "package", "build", "generated-overlap"],
@@ -366,7 +372,7 @@
         "failure": "The coordinator passes generated-overlap, the solo performance barrier, and the serial capacity barrier the actual source deadline. Overlap stops owned work 10000ms before that deadline, settles its children, and returns at least 4000ms before the deadline for parent reconciliation. The first observed owner failure cancels only cancellable process groups. generated-overlap is cooperatively stopped and never force-killed; performance, capacity, barrier B, and receipt issuance remain blocked after any batch failure, capacity, barrier B, and receipt issuance remain blocked after any performance failure, and barrier B and receipt issuance remain blocked after any capacity failure.",
         "isolation": "Every child receives a distinct HOME, cache, user config, global config, and report output. Batch A provides output isolation. Performance runs alone with one worker on the policy-declared authoritative runner after batch A settles. Capacity then runs serially before the reader barrier."
       },
-      "parallelism": "Batch A runs generated-overlap, stress, and typecheck concurrently. generated-overlap owns one private immutable build root and is the sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, performance runs alone in fresh isolated state with one worker. Capacity runs alone after performance. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of that private build."
+      "parallelism": "Full batch A runs generated-overlap, stress, typecheck, and historical certification concurrently. Development omits only certification and replaces repeated performance with one cold sample per target using the same scales, correctness assertions, heap/output limits and inspector cadence. generated-overlap owns one private immutable build root and is the sole execution origin for source, package, build, and overlap evidence. After batch A settles and passes, measurement runs alone in fresh isolated state with one worker. Capacity runs alone after measurement. After capacity passes, compact, capability-contract, and activation-conjunction run concurrently as readers of that private build."
     },
     "readiness": {
       "schemaVersion": "agentera.releaseReadiness.v1",

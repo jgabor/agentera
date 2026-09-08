@@ -1,0 +1,13 @@
+id: dypiouihbn
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Separate development safeguards from full qualification
+  status: complete
+  depends_on:
+    - fnzbttkcho
+  acceptance:
+    - GIVEN development publication WHEN qualification runs THEN correctness, state integrity, clean packaging, generation isolation, and bounded heap/output remain blocking without repeated benchmarks or historical certification.
+    - GIVEN full qualification WHEN explicitly invoked THEN repeated benchmarks and historical certification remain available and failures visible; development evidence cannot satisfy full qualification.
+    - GIVEN changed gate routing WHEN tested THEN pass/fail probes prove selection, evidence separation, and publication blocking without deadline inflation.
+    - GIVEN documentation WHEN maintainers choose verification THEN each gate states purpose, coverage, and limitations; publication still requires fresh authorization.

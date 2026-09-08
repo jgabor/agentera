@@ -849,7 +849,7 @@ describe("release qualification receipts", () => {
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
-  it("seals all eleven governed DAG gates and execution evidence in one source receipt", async () => {
+  it("seals all twelve governed DAG gates and execution evidence in one source receipt", async () => {
     const { repo, candidateDirectory } = fixture();
     const governed = GOVERNED_GATES;
     const issued = await issueSourceReceipt({
@@ -869,7 +869,7 @@ describe("release qualification receipts", () => {
     });
 
     expect(issued.receipt.gates.map((gate: { name: string }) => gate.name)).toEqual(governed.map((gate: { name: string }) => gate.name));
-    expect(issued.receipt.gates).toHaveLength(11);
+    expect(issued.receipt.gates).toHaveLength(12);
     expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
       strategy: "parallel-overlap-dag",

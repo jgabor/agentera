@@ -62,6 +62,9 @@
     "verify:merge": "node scripts/verify-lane.mjs policy merge",
     "verify:scheduled": "node scripts/verify-lane.mjs policy scheduled",
     "verify:release": "node scripts/release-qualification.mjs verify --json",
+    "verify:development": "node scripts/release-qualification.mjs verify --profile development --json",
+    "test:certification": "node scripts/verify-lane.mjs certification",
+    "test:development-resource": "node scripts/verify-lane.mjs development-resource",
     "lint": "pnpm --workspace-root exec vp lint packages/cli",
     "fmt": "pnpm --workspace-root exec vp fmt packages/cli",
     "typecheck": "tsc -p tsconfig.json --noEmit"

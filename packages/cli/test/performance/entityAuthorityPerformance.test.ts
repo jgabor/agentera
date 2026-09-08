@@ -9,7 +9,7 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { measureColdCli, measureColdStateList } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
-import { deriveLatencyAdvisory, performanceAuthority, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
+import { deriveLatencyAdvisory, measurementProfile, performanceAuthority, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
 import { createPerformanceProgress } from "../../scripts/performance-progress.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -78,20 +78,21 @@ afterEach(() => {
 });
 
 describe("entity authority performance", () => {
-  it("measures every declared scale and target through five cold processes", async () => {
+  it("measures every declared scale and target through the selected cold-process profile", async () => {
     const progress = createPerformanceProgress();
     const authority = performanceAuthority(REPO_ROOT) as Record<string, any>;
     const policy = YAML.parse(fs.readFileSync(POLICY_PATH, "utf8")) as Record<string, any>;
     const measurementContract = authority.entity_target.measurement_contract;
     const targets = measurementContract.targets;
-    const repetitions = measurementContract.sampling.repetitions as number;
+    const profile = measurementProfile(process.env.AGENTERA_MEASUREMENT_PROFILE, measurementContract.sampling.repetitions);
+    const repetitions = profile.repetitions;
     const scales = Object.fromEntries(["small", "large", "archive_small", "archive_large"].map((scale) => [scale, Number(String(measurementContract.fixtures[scale]).match(/^\d+/)?.[0])])) as Record<"small" | "large" | "archive_small" | "archive_large", number>;
     const samples: Array<Record<string, number | string>> = [];
     const fixtures: Record<string, unknown> = {};
     let runtime: Awaited<ReturnType<typeof measureColdCli>>["runtime"] | undefined;
 
     expect(measurementContract.environment).toContain("one cold CLI process per sample");
-    expect(repetitions).toBe(5);
+    expect(measurementContract.sampling.repetitions).toBe(5);
     expect(scales).toEqual({ small: 100, large: 1000, archive_small: 100, archive_large: 1000 });
 
     for (const scale of ["small", "large"] as const) {
@@ -255,11 +256,12 @@ describe("entity authority performance", () => {
         ];
       }),
     );
-    expect(Object.values(maxima).every(({ repetitions }: any) => repetitions === 5)).toBe(true);
-    expect(samples).toHaveLength(35);
+    expect(Object.values(maxima).every((maximum: any) => maximum.repetitions === repetitions)).toBe(true);
+    expect(samples).toHaveLength(Object.keys(targets).length * repetitions);
 
     const evidence = {
-      schemaVersion: "agentera.entityAuthorityPerformanceEvidence.v1",
+      schemaVersion: profile.schemaVersion,
+      ...(profile.profile === "development" ? { profile: "development" } : {}),
       status: "pass",
       runner: {
         platform: process.platform,
@@ -298,7 +300,7 @@ describe("entity authority performance", () => {
       latencyAdvisory: deriveLatencyAdvisory(samples, targets),
     };
     const serializedEvidence = `${JSON.stringify(evidence)}\n`;
-    expect(evidence.schemaVersion).toBe(policy.owners.performance.evidence.schema_version);
+    expect(evidence.schemaVersion).toBe(profile.schemaVersion);
     expect(Buffer.byteLength(serializedEvidence, "utf8")).toBeLessThanOrEqual(policy.owners.performance.evidence.max_utf8_bytes);
     process.stdout.write(serializedEvidence);
     progress.complete();

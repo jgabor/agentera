@@ -15,7 +15,7 @@ const mutate = (change: (copy: any) => void) => {
 };
 
 describe("strict package publication model", () => {
-  it("owns exactly eleven ordered gates with capacity after performance and before readers", () => {
+  it("owns exactly twelve ordered gates including certification with capacity after performance and before readers", () => {
     const model = validatePackagePublicationDocument(authority);
     expect(model.developmentRef).toBe(authority.ci.developmentPush.ref);
     expect(model.developmentRefAuthority).toBe("ci.developmentPush.ref");

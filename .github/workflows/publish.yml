@@ -85,17 +85,14 @@ jobs:
       - name: Check static project policy
         timeout-minutes: 1
         run: vp check
-      - name: Fetch archived pre-rewrite parity proof
-        timeout-minutes: 1
-        run: git fetch --depth=1 origin '9b36f93fbeaa391550db3e8dedf015ff54b5ce69'
-      - name: Verify release source without receipt
+      - name: Verify development safety without receipt
         timeout-minutes: 40
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
           VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
-        run: vp run verify
+        run: vp run verify:development
 
   build-development:
     needs: verify-development

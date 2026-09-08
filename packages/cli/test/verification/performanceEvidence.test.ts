@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
-import { normalizedLatencyAdvisory, performanceAuthority, validatePerformanceEvidence } from "../../scripts/performance-evidence.mjs";
+import { measurementProfile, normalizedLatencyAdvisory, performanceAuthority, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "../../scripts/performance-evidence.mjs";
 import { performanceEvidence, performanceObservationFixture, refreshPerformanceEvidence } from "../helpers/performanceEvidence.js";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
@@ -11,6 +11,43 @@ const definition = YAML.parse(fs.readFileSync(path.join(root, "references/analys
 const validate = (evidence: any) => validatePerformanceEvidence(JSON.stringify(evidence), definition, root);
 
 describe("canonical performance enforcement", () => {
+  it("selects closed full/development profiles and rejects development in full consumers", () => {
+    expect(measurementProfile().repetitions).toBe(5);
+    expect(measurementProfile("development").repetitions).toBe(1);
+    expect(() => measurementProfile("fast")).toThrow(/unknown measurement profile/);
+    const development = performanceEvidence("development");
+    expect(development.samples).toHaveLength(7);
+    expect(validateDevelopmentResourceEvidence(JSON.stringify(development), definition, root)).toEqual([]);
+    expect(validate(development).join(";")).toContain("expected exactly one");
+    expect(() => normalizedLatencyAdvisory({ samples: 7, maxima: development.maxima }, performanceAuthority(root))).toThrow(/sample count/);
+    development.schemaVersion = measurementProfile().schemaVersion;
+    expect(validate(development).join(";")).toContain("not full qualification");
+    expect(validate(development).join(";")).toContain("expected 35 samples");
+    expect(validateDevelopmentResourceEvidence(JSON.stringify(performanceEvidence()), definition, root).length).toBeGreaterThan(0);
+  });
+  it.each(["heap", "output", "startup_output", "missing", "duplicate", "baseline", "inspector", "provenance"])("development rejects %s defects at the evidence boundary", (defect) => {
+    const evidence: any = performanceEvidence("development");
+    const sample = evidence.samples.find((sample: any) => sample.operation === (defect === "startup_output" ? "startup" : "exact_get"));
+    if (defect === "heap") {
+      sample.heapDeltaBytes = evidence.limits.exact_get.max_heap_delta_bytes + 1;
+      sample.peakHeapBytes = sample.baselineHeapBytes + sample.heapDeltaBytes;
+    }
+    if (defect === "output") sample.outputBytes = evidence.limits.exact_get.max_utf8_bytes + 1;
+    if (defect === "startup_output") sample.outputBytes = performanceAuthority(root).budgets.startup.surfaces.prime_dashboard.max_utf8_bytes + 1;
+    if (defect === "missing") evidence.samples.pop();
+    if (defect === "duplicate") evidence.samples.push(evidence.samples[0]);
+    if (defect === "baseline") evidence.measurement.heapBaseline = {};
+    if (defect === "inspector") sample.inspectorSamples = 1;
+    if (defect === "provenance") delete evidence.profile;
+    refreshPerformanceEvidence(evidence);
+    expect(validateDevelopmentResourceEvidence(JSON.stringify(evidence), definition, root).length).toBeGreaterThan(0);
+  });
+  it("development reports latency overruns without making them an SLO", () => {
+    const evidence = performanceEvidence("development");
+    for (const sample of evidence.samples) sample.elapsedMs = 100000;
+    refreshPerformanceEvidence(evidence);
+    expect(validateDevelopmentResourceEvidence(JSON.stringify(evidence), definition, root)).toEqual([]);
+  });
   it("accepts all seven advisory target overruns with accurate five-repeat summaries", () => {
     const evidence: any = performanceEvidence();
     expect(evidence.samples).toHaveLength(35);
