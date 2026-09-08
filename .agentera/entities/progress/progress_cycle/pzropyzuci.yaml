@@ -1,0 +1,13 @@
+id: pzropyzuci
+artifact: progress
+record:
+  timestamp: 2026-09-08 08:50
+  type: test
+  phase: build
+  what: packages/cli/scripts/performance-progress.mjs retains timeout checkpoints through release wrappers; workload and deadlines are unchanged.
+  context:
+    intent: Make performance timeout failures actionable.
+    unknowns: Hosted root cause remains unknown.
+  verified: Direct source-owner verification passed 114 tests twice; typecheck, focused lint, vp run build, and compact passed. Independent audit found no material issues. The package-script invocation failed an existing ANSI precondition.
+  next: Obtain fresh push authorization and replan repairs from hosted evidence; final validation remains open.
+  publication_order: 375

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { spawnSync } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +10,7 @@ import YAML from "yaml";
 import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendingAuthority } from "./overlap-pending.mjs";
 import { validatePerformanceEvidence } from "./performance-evidence.mjs";
 import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
+import { createPerformanceProgressReader } from "./performance-progress.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -256,7 +257,7 @@ function validateForwardedSelection(owner, state, forwarded) {
   }
 }
 
-function runOwner(owner, state, forwarded = []) {
+async function runOwner(owner, state, forwarded = []) {
   const definition = state.contract.owners[owner];
   const owned = state.files.filter((file) => state.assignments.get(file) === owner);
   if (owned.length === 0) {
@@ -295,20 +296,44 @@ function runOwner(owner, state, forwarded = []) {
   const timingFile = owner === "package" ? (resultChannel ? `${resultChannel}.timings.json` : path.join(timingRoot, "timings.json")) : undefined;
   if (timingFile) runnerEnv.AGENTERA_VERIFICATION_PACKAGE_TIMINGS = timingFile;
   const startedAt = process.hrtime.bigint();
-  const result = spawnSync("vp", ["test", "run", "--config", config, ...selection.argv, ...reporter], {
+  const progress = createPerformanceProgressReader();
+  const args = ["test", "run", "--config", config, ...selection.argv, ...reporter];
+  const options = {
     cwd: packageRoot,
     stdio: captureEvidence ? ["inherit", "pipe", "pipe"] : "inherit",
     encoding: captureEvidence ? "utf8" : undefined,
     maxBuffer: captureEvidence ? 1024 * 1024 : undefined,
     env: runnerEnv,
-  });
+  };
+  const result = captureEvidence
+    ? await new Promise((resolve) => {
+        const child = spawn("vp", args, options);
+        const result = { stdout: "", stderr: "", status: null, error: undefined };
+        for (const name of ["stdout", "stderr"]) {
+          child[name].setEncoding("utf8").on("data", (chunk) => {
+            progress.feed(chunk, name);
+            process[name].write(chunk);
+            result[name] += chunk;
+            if (Buffer.byteLength(result[name]) > options.maxBuffer) {
+              result.error = new Error("verification output exceeded maxBuffer");
+              result[name] = result[name].slice(-options.maxBuffer);
+              child.kill();
+            }
+          });
+        }
+        child.on("error", (error) => {
+          result.error = error;
+        });
+        child.on("close", (status) => {
+          result.status = status;
+          resolve(result);
+        });
+      })
+    : spawnSync("vp", args, options);
   const elapsedMs = Math.ceil(Number(process.hrtime.bigint() - startedAt) / 1_000_000);
   if (timingFile) console.log(packageTimingSummary(completePackageTimings(timingFile, elapsedMs)));
   if (timingRoot) fs.rmSync(timingRoot, { recursive: true, force: true });
-  if (captureEvidence) {
-    process.stdout.write(result.stdout ?? "");
-    process.stderr.write(result.stderr ?? "");
-  }
+  if (owner === "performance" && progress.timeout && (result.error || result.status !== 0)) console.error(`${progress.summary(elapsedMs, "verify-lane/process.hrtime.bigint")}\n${progress.timeout}`);
   if (!result.error && result.status === 0 && resultChannel && fs.existsSync(resultChannel)) {
     try {
       fs.writeFileSync(resultChannel, normalizeReporterSuiteAggregates(fs.readFileSync(resultChannel)));
@@ -354,7 +379,7 @@ function runIntegration(owner, state) {
   return 0;
 }
 
-function runPolicy(name, state, forwarded) {
+async function runPolicy(name, state, forwarded) {
   const owners = state.contract.policies[name];
   if (!owners) {
     console.error(`unknown verification policy '${name}'; expected ${Object.keys(state.contract.policies).join(", ")}`);
@@ -362,7 +387,7 @@ function runPolicy(name, state, forwarded) {
   }
   for (const owner of owners) {
     const definition = state.contract.owners[owner];
-    const status = definition.integration ? runIntegration(owner, state) : runOwner(owner, state, owners.length === 1 ? forwarded : []);
+    const status = definition.integration ? runIntegration(owner, state) : await runOwner(owner, state, owners.length === 1 ? forwarded : []);
     if (status !== 0) return status;
   }
   return 0;
@@ -425,11 +450,11 @@ if (command === "route") {
 }
 if (command === "policy") {
   const forwarded = rest[0] === "--" ? rest.slice(1) : rest;
-  process.exit(runPolicy(name, state, forwarded));
-}
-if (OWNER_NAMES.includes(command)) {
+  process.exitCode = await runPolicy(name, state, forwarded);
+} else if (OWNER_NAMES.includes(command)) {
   const forwarded = [name, ...rest].filter((value) => value !== undefined);
-  process.exit(runOwner(command, state, forwarded));
+  process.exitCode = await runOwner(command, state, forwarded);
+} else {
+  console.error(`verification command expected an owner (${OWNER_NAMES.join(", ")}), 'policy NAME', 'inventory', 'route', or 'validate'`);
+  process.exit(2);
 }
-console.error(`verification command expected an owner (${OWNER_NAMES.join(", ")}), 'policy NAME', 'inventory', 'route', or 'validate'`);
-process.exit(2);

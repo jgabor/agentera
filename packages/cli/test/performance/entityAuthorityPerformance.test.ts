@@ -10,6 +10,7 @@ import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { measureColdCli, measureColdStateList } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 import { deriveLatencyAdvisory, performanceAuthority, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
+import { createPerformanceProgress } from "../../scripts/performance-progress.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const POLICY_PATH = path.join(REPO_ROOT, "references/analysis/verification-policy.yaml");
@@ -78,6 +79,7 @@ afterEach(() => {
 
 describe("entity authority performance", () => {
   it("measures every declared scale and target through five cold processes", async () => {
+    const progress = createPerformanceProgress();
     const authority = performanceAuthority(REPO_ROOT) as Record<string, any>;
     const policy = YAML.parse(fs.readFileSync(POLICY_PATH, "utf8")) as Record<string, any>;
     const measurementContract = authority.entity_target.measurement_contract;
@@ -94,7 +96,10 @@ describe("entity authority performance", () => {
 
     for (const scale of ["small", "large"] as const) {
       const entities = scales[scale];
+      progress.start(`fixture_${scale}`);
       const fixture = createEntityAuthorityFixture(project, entities, authority);
+      progress.complete();
+      progress.start(`validation_${scale}`);
       const declaredBoundaries = (authority.entity_target.entities as Array<Record<string, string>>).map(({ boundary }) => boundary);
       const declaredRelationships = (authority.entity_target.relationships.declarations as Array<Record<string, string>>).map(({ source, field, target }) => `${source}.${field}->${target}`);
       expect(Object.keys(fixture.boundaryCounts)).toEqual(declaredBoundaries);
@@ -108,11 +113,13 @@ describe("entity authority performance", () => {
         boundaryCounts: fixture.boundaryCounts,
         relationshipEdges: fixture.relationshipEdges,
       };
+      progress.complete();
 
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {
         for (const operation of ["startup", "bounded_list"] as const) {
           const args = operation === "startup" ? ["prime", "--dashboard", "--format", "json"] : ["state", "progress", "list", "--limit", "100", "--format", "json"];
           const limits = targets[`${operation}_${scale}`];
+          progress.start(`${operation}_${scale}_${repetition}`);
           const measured = await measureColdCli({ args, project, home, repoRoot: REPO_ROOT });
           runtime ??= measured.runtime;
           expect(measured.runtime).toEqual(runtime);
@@ -135,10 +142,12 @@ describe("entity authority performance", () => {
             outputBytes,
             inspectorSamples: measured.inspectorSamples,
           });
+          progress.complete();
         }
       }
       if (scale === "large") {
         for (let repetition = 1; repetition <= repetitions; repetition += 1) {
+          progress.start(`exact_get_large_${repetition}`);
           const measured = await measureColdCli({
             args: ["state", "progress", "get", "--id", fixture.exactId, "--format", "json"],
             project,
@@ -165,12 +174,14 @@ describe("entity authority performance", () => {
             outputBytes,
             inspectorSamples: measured.inspectorSamples,
           });
+          progress.complete();
         }
       }
     }
 
     for (const scale of ["small", "large"] as const) {
       const entries = scales[`archive_${scale}`];
+      progress.start(`archive_fixture_${scale}`);
       const archiveProject = path.join(tmp, `archive-${scale}`);
       fs.mkdirSync(archiveProject, { recursive: true });
       for (let number = 1; number <= entries; number += 1) {
@@ -190,8 +201,10 @@ describe("entity authority performance", () => {
         );
       }
       fixtures[`archive_${scale}`] = { entries };
+      progress.complete();
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {
         const limits = targets[`archive_list_${scale}`];
+        progress.start(`archive_list_${scale}_${repetition}`);
         const measured = await measureColdStateList({
           project: archiveProject,
           repoRoot: REPO_ROOT,
@@ -216,9 +229,11 @@ describe("entity authority performance", () => {
           outputBytes,
           inspectorSamples: measured.inspectorSamples,
         });
+        progress.complete();
       }
     }
 
+    progress.start("evidence");
     const targetNames = Object.keys(targets);
     const maxima = Object.fromEntries(
       targetNames.map((targetName) => {
@@ -286,5 +301,6 @@ describe("entity authority performance", () => {
     expect(evidence.schemaVersion).toBe(policy.owners.performance.evidence.schema_version);
     expect(Buffer.byteLength(serializedEvidence, "utf8")).toBeLessThanOrEqual(policy.owners.performance.evidence.max_utf8_bytes);
     process.stdout.write(serializedEvidence);
+    progress.complete();
   }, 120_000);
 });

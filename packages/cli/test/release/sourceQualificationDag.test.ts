@@ -3,10 +3,11 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import YAML from "yaml";
 
-import { RELEASE_CONTRACT, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
+import { defaultStartSourceOwner, RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
+import { createPerformanceProgressReader } from "../../scripts/performance-progress.mjs";
 import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap, startChild } from "../../scripts/verify-generated-overlap.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
@@ -140,6 +141,120 @@ function createOverlapPackageRoot(workRoot: string) {
 }
 
 describe("source qualification DAG", () => {
+  it("retains only bounded, valid performance checkpoints across chunk boundaries", () => {
+    const reader = createPerformanceProgressReader();
+    const line = "AGENTERA_PERFORMANCE_PROGRESS last=startup_small_1 inFlight=bounded_list_small_1 elapsedMs=12 clock=entity-performance/performance.now\n";
+    reader.feed(line.slice(0, 40));
+    reader.feed(line.slice(40));
+    for (const invalid of [line.replace("elapsedMs=12", "elapsedMs=-1"), line.replace("startup_small_1", "/private/NPM_TOKEN=secret"), line.replace("elapsedMs=12", "elapsedMs=11"), `${"x".repeat(600)}${line}`, line.replace("performance.now", "wallClock")]) reader.feed(invalid);
+    expect(reader.summary(20, "release-source-owner/performance.now")).toBe("performance diagnostic: last-completed=startup_small_1; work-in-flight=bounded_list_small_1; checkpoint elapsedMs=12 clock=entity-performance/performance.now; owner elapsedMs=20 clock=release-source-owner/performance.now");
+    reader.feed("Error: Test timed out in 50ms\n", "stderr");
+    reader.feed(line.replace("elapsedMs=12", "elapsedMs=13"));
+    expect(reader.summary(20, "release-source-owner/performance.now")).toContain("checkpoint elapsedMs=12");
+  });
+
+  it.each(["success", "inner-timeout", "coordinator-timeout"])(
+    "preserves performance diagnostics and evidence through real subprocess wrappers: %s",
+    async (mode) => {
+      const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-performance-progress-"));
+      const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
+      const previousExitCode = process.exitCode;
+      try {
+        const bin = path.join(root, "bin");
+        fs.mkdirSync(bin);
+        const config = path.join(root, "vite.config.mjs");
+        fs.writeFileSync(config, "export default { test: { globals: true, maxWorkers: 1, include: ['probe.test.js'] } };");
+        fs.writeFileSync(
+          path.join(root, "probe.test.js"),
+          `
+        import { createPerformanceProgress } from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/performance-progress.mjs"))};
+        it('bounded diagnostic probe', async () => {
+          const progress = createPerformanceProgress();
+          progress.start('archive_list_large_4'); progress.complete();
+          progress.start('archive_list_large_5');
+          process.stdout.write('AGENTERA_PERFORMANCE_PROGRESS last=/private/NPM_TOKEN=secret inFlight=bad elapsedMs=999999 clock=entity-performance/performance.now\\n');
+          ${mode === "success" ? `progress.complete(); process.stdout.write(${JSON.stringify(performanceStdout())});` : "await new Promise(() => {});"}
+        }, ${mode === "inner-timeout" ? 50 : 60_000});
+      `,
+        );
+        const vp = path.join(bin, "vp");
+        fs.writeFileSync(
+          vp,
+          `#!${process.execPath}
+        const { spawnSync } = require('node:child_process');
+        const child = spawnSync(${JSON.stringify(path.join(REPO_ROOT, "node_modules/.bin/vp"))}, ['test','run','--root',${JSON.stringify(root)},'--config',${JSON.stringify(config)}], {stdio:'inherit',env:process.env});
+        process.stdout.write('AGENTERA_PERFORMANCE_PROGRESS last=/private/NPM_TOKEN=secret inFlight=bad elapsedMs=999999 clock=entity-performance/performance.now\\n');
+        process.stderr.write('unrelated reporter tail\\n'.repeat(100));
+        process.exitCode = child.status ?? 1;
+      `,
+        );
+        fs.chmodSync(vp, 0o755);
+        // The outer source runner is marked as an active owner. This synthetic
+        // workload models an idle host without changing the production guard.
+        const host = path.join(root, "idle-host.mjs");
+        fs.writeFileSync(host, `import fs from 'node:fs'; const read = fs.readdirSync; fs.readdirSync = function (dir, ...args) { return dir === '/proc' ? [] : read.call(this, dir, ...args); };`);
+        let observed: any;
+        const qualification = await runNoReceiptVerificationCommand(new Map([["--json", true]]), {
+          runDag: async () => {
+            observed = await runSourceQualificationDag({
+              repo: REPO_ROOT,
+              gates: GATES,
+              clock: () => 0,
+              createState: () => ({
+                root,
+                environment: {
+                  ...process.env,
+                  PATH: `${bin}${path.delimiter}${process.env.PATH}`,
+                  AGENTERA_VERIFICATION_OWNER: "",
+                  FORCE_COLOR: "0",
+                  GITHUB_ACTIONS: "false",
+                },
+                cleanup: () => undefined,
+              }),
+              startOwner: (specification: any) =>
+                specification.name === "performance"
+                  ? defaultStartSourceOwner({
+                      ...specification,
+                      command: [process.execPath, "--import", host, path.join(REPO_ROOT, "packages/cli/scripts/verify-lane.mjs"), "performance"],
+                      timeoutMs: mode === "coordinator-timeout" ? 4000 : 10_000,
+                    })
+                  : {
+                      name: specification.name,
+                      cancellable: specification.cancellable,
+                      promise: Promise.resolve(result(specification.name, specification)),
+                      cancel: () => undefined,
+                    },
+              readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
+            });
+            return observed;
+          },
+        });
+        expect(JSON.parse(write.mock.calls.map(([value]) => value).join(""))).toEqual(qualification);
+        if (mode === "success") {
+          expect(qualification.status).toBe("pass");
+          const evidence = observed.gates.find(({ name }: any) => name === "performance").observation.evidence;
+          expect(evidence.samples).toBe(35);
+          expect(Object.keys(evidence.maxima)).toHaveLength(7);
+        } else {
+          expect(qualification.status).toBe("fail");
+          expect(qualification.first_failure).toBe("performance");
+          expect(qualification.violation.length).toBeLessThanOrEqual(1000);
+          expect(qualification.violation).toContain("last-completed=archive_list_large_4");
+          expect(qualification.violation).toContain("work-in-flight=archive_list_large_5");
+          expect(qualification.violation).toMatch(/checkpoint elapsedMs=\d+ clock=entity-performance\/performance.now/);
+          expect(qualification.violation).toMatch(/owner elapsedMs=\d+ clock=release-source-owner\/performance.now/);
+          expect(qualification.violation).toContain(mode === "inner-timeout" ? "performance test deadline exceeded" : "exceeded the source verification deadline");
+          for (const privateValue of [root, REPO_ROOT, "/private", "NPM_TOKEN", "secret", "unrelated reporter"]) expect(qualification.violation).not.toContain(privateValue);
+        }
+      } finally {
+        write.mockRestore();
+        process.exitCode = previousExitCode;
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    },
+    15_000,
+  );
+
   it("reserves workers for the long source participant without widening its peers", () => {
     const environment = {
       VITEST_MAX_WORKERS: "1",

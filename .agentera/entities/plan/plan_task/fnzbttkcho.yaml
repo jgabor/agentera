@@ -1,0 +1,14 @@
+id: fnzbttkcho
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Make performance timeout failures actionable
+  status: complete
+  depends_on:
+    - vafromkutg
+    - kqzixyufkm
+  acceptance:
+    - GIVEN either timeout WHEN release fails THEN report last-completed/in-flight phase/sample and named monotonic-owner elapsed within 1,000 characters, without secrets/private paths.
+    - GIVEN verification WHEN measured THEN preserve 35 samples, five repetitions, scales, cold isolation, serial execution, runner identity, blocking correctness/heap/output, advisory latency, and deadlines.
+    - GIVEN deterministic success, inner-timeout, and coordinator-timeout probes WHEN wrappers finish THEN diagnostics survive and successful structured evidence remains compatible.
+    - GIVEN hosted diagnosis WHEN repair is indicated THEN replan from evidence; require fresh push authorization and keep failed verification publication-blocking.

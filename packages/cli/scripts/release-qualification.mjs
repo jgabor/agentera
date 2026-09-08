@@ -13,6 +13,7 @@ import { gitSourceTreeDigest } from "./git-source-tree.mjs";
 import { deriveLatencyAdvisory, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import YAML from "yaml";
 import { parseReleaseFlags } from "./release-arguments.mjs";
+import { createPerformanceProgressReader } from "./performance-progress.mjs";
 import "./source-loader-register.mjs";
 
 const { loadPackagePublicationModel } = await import("../src/registries/packagePublication.ts");
@@ -400,7 +401,7 @@ function requestCooperativeStop(child) {
   }
 }
 
-function defaultStartSourceOwner(specification) {
+export function defaultStartSourceOwner(specification) {
   const started = performance.now();
   const stream = fs.createWriteStream(specification.reportFile, { flags: "wx", mode: 0o600 });
   const command = specification.command[0] === "node" ? process.execPath : specification.command[0];
@@ -412,6 +413,7 @@ function defaultStartSourceOwner(specification) {
   });
   const outputLimit = 1024 * 1024;
   let stdout = "";
+  const progress = createPerformanceProgressReader();
   let stderr = "";
   let closed = false;
   let cancelled = false;
@@ -419,10 +421,12 @@ function defaultStartSourceOwner(specification) {
   let forceTimer;
   const capture = (current, chunk) => stripVTControlCharacters(`${current}${chunk}`).slice(-outputLimit);
   child.stdout.setEncoding("utf8").on("data", (chunk) => {
+    if (specification.name === "performance") progress.feed(chunk);
     stdout = capture(stdout, chunk);
     stream.write(chunk);
   });
   child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    if (specification.name === "performance") progress.feed(chunk, "stderr");
     stderr = capture(stderr, chunk);
     stream.write(chunk);
   });
@@ -437,6 +441,7 @@ function defaultStartSourceOwner(specification) {
   const timeout = setTimeout(
     () => {
       timedOut = true;
+      progress.freeze();
       if (specification.cancellable) cancel();
       else if (specification.cooperativeStop) requestCooperativeStop(child);
     },
@@ -452,12 +457,14 @@ function defaultStartSourceOwner(specification) {
       if (forceTimer) clearTimeout(forceTimer);
       stream.end();
       const elapsedMs = Math.max(0, Math.round(performance.now() - started));
+      const diagnostic = specification.name === "performance" && (timedOut || progress.timeout) ? progress.summary(elapsedMs, "release-source-owner/performance.now") : undefined;
       if (timedOut) {
-        reject(sourceProcessFailure(specification.name, `${specification.name} exceeded the source verification deadline`, "failed"));
+        reject(sourceProcessFailure(specification.name, `${specification.name} exceeded the source verification deadline${diagnostic ? `; ${diagnostic}` : ""}`, "failed"));
       } else if (cancelled) {
         reject(sourceProcessFailure(specification.name, `${specification.name} cancelled after peer failure`, "cancelled"));
       } else if (code !== 0) {
-        reject(sourceProcessFailure(specification.name, sourceDiagnostic(stderr || stdout || `exit ${code ?? signal ?? "unknown"}`), "failed"));
+        const detail = progress.timeout ?? sourceDiagnostic(stderr || stdout || `exit ${code ?? signal ?? "unknown"}`);
+        reject(sourceProcessFailure(specification.name, diagnostic ? `${diagnostic}\n${detail}`.slice(0, RELEASE_CONTRACT.bounds.diagnosticCharacters) : detail, "failed"));
       } else {
         resolve({ name: specification.name, elapsedMs, stdout, stderr });
       }
