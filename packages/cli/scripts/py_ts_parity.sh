@@ -225,6 +225,11 @@ if [ "$PINNED" = "$MAIN_HEAD" ]; then
     [ "${PIN_EVIDENCE[7]}" != "full tracked tree" ]; then
     REASON="pin_evidence_contract"
   else
+    for proof_commit in "${PIN_EVIDENCE[3]}" "${PIN_EVIDENCE[4]}"; do
+      if ! git -C "$REPO_ROOT" cat-file -e "${proof_commit}^{tree}" 2>/dev/null; then
+        printf 'Historical parity prerequisite unavailable: %s. Restore the pinned archive from a trusted retained checkout/bundle; see docs/packaging/v3-packaging.md (historical certification prerequisites).\n' "$proof_commit" >&2
+      fi
+    done
     PREVIOUS_SHA="$(source_tree_sha256 "${PIN_EVIDENCE[3]}" 2>/dev/null || true)"
     TARGET_SHA="$(source_tree_sha256 "${PIN_EVIDENCE[4]}" 2>/dev/null || true)"
     PREVIOUS_TREE="$(git -C "$REPO_ROOT" rev-parse "${PIN_EVIDENCE[3]}^{tree}" 2>/dev/null || true)"

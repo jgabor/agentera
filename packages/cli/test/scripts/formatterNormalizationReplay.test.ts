@@ -24,7 +24,8 @@ function resign(manifest: Record<string, unknown>) {
 
 describe("formatter normalization replay", () => {
   it("replays the integrity-bound formatter result", () => {
-    expect(verify().status).toBe(0);
+    const result = verify();
+    expect(result.status, `stdout: ${result.stdout.slice(-4096)}\nstderr: ${result.stderr.slice(-4096)}`).toBe(0);
   }, 120_000);
 
   it("tracks every substantive path with an owner and rationale", () => {

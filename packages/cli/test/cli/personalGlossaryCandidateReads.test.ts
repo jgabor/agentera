@@ -475,44 +475,56 @@ describe("agentera report personal-glossary-candidates", () => {
     const pathname = personalGlossaryCandidateProjectionPath();
     const before = fs.readFileSync(pathname, "utf8");
 
-    const result = run(exactArgs(projection));
-    expect(result).toMatchObject({ rc: 0, err: "" });
-    const body = JSON.parse(result.out);
-    expect(body).toMatchObject({
-      status: "ok",
-      generation,
-      policy_version: POLICY,
-      candidate_projection_sha256: projection.projection_sha256,
-      entry: {
-        occurrence_count: 3,
-        safe_context: {
-          text: "private conversation term has safe review context.",
-          redacted: false,
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(RETAINED_AT));
+      const result = run(exactArgs(projection));
+      expect(result).toMatchObject({ rc: 0, err: "" });
+      const body = JSON.parse(result.out);
+      expect(body).toMatchObject({
+        status: "ok",
+        generation,
+        policy_version: POLICY,
+        candidate_projection_sha256: projection.projection_sha256,
+        entry: {
+          occurrence_count: 3,
+          safe_context: {
+            text: "private conversation term has safe review context.",
+            redacted: false,
+          },
         },
-      },
-    });
-    expect(body.entry.occurrences).toHaveLength(3);
-    expect(body.entry.occurrences[0]).toEqual({
-      occurrence_id: expect.stringMatching(/^[a-f0-9]{64}$/),
-      source_kind: "conversation_turn",
-      signal_type: "correction",
-      author_class: "user",
-    });
-    for (const leaked of ["source-private", "anchor-private", "session-private", "project-private", "content_fingerprint", "project_keys"]) {
-      expect(result.out).not.toContain(leaked);
+      });
+      expect(body.entry.occurrences).toHaveLength(3);
+      expect(body.entry.occurrences[0]).toEqual({
+        occurrence_id: expect.stringMatching(/^[a-f0-9]{64}$/),
+        source_kind: "conversation_turn",
+        signal_type: "correction",
+        author_class: "user",
+      });
+      for (const leaked of ["source-private", "anchor-private", "session-private", "project-private", "content_fingerprint", "project_keys"]) {
+        expect(result.out).not.toContain(leaked);
+      }
+      expect(fs.readFileSync(pathname, "utf8")).toBe(before);
+    } finally {
+      vi.useRealTimers();
     }
-    expect(fs.readFileSync(pathname, "utf8")).toBe(before);
   });
 
   it("keeps the exact occurrence and context bounds whole", () => {
     const projection = persist([candidate(conversation(100), ["project-one", "project-two"], [`private conversation term ${"x".repeat(470)}`])]);
 
-    const result = run(exactArgs(projection));
-    expect(result).toMatchObject({ rc: 0, err: "" });
-    const body = JSON.parse(result.out);
-    expect(body.entry.occurrences).toHaveLength(100);
-    expect(Buffer.byteLength(body.entry.safe_context.text, "utf8")).toBeLessThanOrEqual(500);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32_768);
+    vi.useFakeTimers();
+    try {
+      vi.setSystemTime(new Date(RETAINED_AT));
+      const result = run(exactArgs(projection));
+      expect(result).toMatchObject({ rc: 0, err: "" });
+      const body = JSON.parse(result.out);
+      expect(body.entry.occurrences).toHaveLength(100);
+      expect(Buffer.byteLength(body.entry.safe_context.text, "utf8")).toBeLessThanOrEqual(500);
+      expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(32_768);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it.each([

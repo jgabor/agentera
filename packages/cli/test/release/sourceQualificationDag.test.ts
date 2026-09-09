@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vitest";
 import YAML from "yaml";
 
 import { defaultStartSourceOwner, RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
@@ -153,31 +153,27 @@ describe("source qualification DAG", () => {
     expect(reader.summary(20, "release-source-owner/performance.now")).toContain("checkpoint elapsedMs=12");
   });
 
-  it.each(["success", "inner-timeout", "coordinator-timeout"])(
+  it.each(["success", "failure", "inner-timeout", "coordinator-timeout"])(
     "preserves performance diagnostics and evidence through real subprocess wrappers: %s",
     async (mode) => {
       const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-performance-progress-"));
       const write = vi.spyOn(process.stdout, "write").mockImplementation(() => true);
       const previousExitCode = process.exitCode;
-      let readinessError: unknown;
+      let readiness: fs.FSWatcher | undefined;
       try {
         const bin = path.join(root, "bin");
         fs.mkdirSync(bin);
-        const config = path.join(root, "vite.config.mjs");
-        fs.writeFileSync(config, "export default { test: { globals: true, maxWorkers: 1, include: ['probe.test.js'] } };");
         fs.writeFileSync(
-          path.join(root, "probe.test.js"),
+          path.join(root, "probe.mjs"),
           `
         import fs from 'node:fs';
         import { createPerformanceProgress } from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/performance-progress.mjs"))};
-        it('bounded diagnostic probe', async () => {
           ${mode === "coordinator-timeout" ? `process.on('SIGTERM', () => { fs.writeFileSync(${JSON.stringify(path.join(root, "probe-stopped"))}, 'stopped'); process.exit(0); });` : ""}
           const progress = createPerformanceProgress();
           progress.start('archive_list_large_4'); progress.complete();
           progress.start('archive_list_large_5');
           process.stdout.write('AGENTERA_PERFORMANCE_PROGRESS last=/private/NPM_TOKEN=secret inFlight=bad elapsedMs=999999 clock=entity-performance/performance.now\\n');
-          ${mode === "success" ? `progress.complete(); process.stdout.write(${JSON.stringify(performanceStdout())});` : "await new Promise(() => {});"}
-        }, ${mode === "inner-timeout" ? 50 : 60_000});
+          ${mode === "success" ? `progress.complete(); process.stdout.write(${JSON.stringify(performanceStdout())});` : mode === "coordinator-timeout" ? "setInterval(() => {}, 1000);" : `process.stderr.write(${JSON.stringify(mode === "inner-timeout" ? "Test timed out in 50ms\n" : "synthetic performance failure\n")}); process.exitCode = 1;`}
       `,
         );
         const vp = path.join(bin, "vp");
@@ -185,9 +181,9 @@ describe("source qualification DAG", () => {
           vp,
           `#!${process.execPath}
         const { spawnSync } = require('node:child_process');
-        const child = spawnSync(${JSON.stringify(path.join(REPO_ROOT, "node_modules/.bin/vp"))}, ['test','run','--root',${JSON.stringify(root)},'--config',${JSON.stringify(config)}], {stdio:'inherit',env:process.env});
+        const child = spawnSync(process.execPath, [${JSON.stringify(path.join(root, "probe.mjs"))}], {stdio:'inherit',env:process.env});
         process.stdout.write('AGENTERA_PERFORMANCE_PROGRESS last=/private/NPM_TOKEN=secret inFlight=bad elapsedMs=999999 clock=entity-performance/performance.now\\n');
-        process.stderr.write('unrelated reporter tail\\n'.repeat(100));
+        ${mode === "failure" ? "" : "process.stderr.write('unrelated reporter tail\\n'.repeat(100));"}
         process.exitCode = child.status ?? 1;
       `,
         );
@@ -225,9 +221,14 @@ describe("source qualification DAG", () => {
                 const owner = {
                   ...specification,
                   command: [process.execPath, "--import", host, path.join(REPO_ROOT, "packages/cli/scripts/verify-lane.mjs"), "performance"],
-                  timeoutMs: 10_000,
                 };
                 if (mode !== "coordinator-timeout") return defaultStartSourceOwner(owner);
+
+                const checkpointReady = new Promise<void>((resolve) => {
+                  readiness = fs.watch(path.dirname(owner.reportFile), () => {
+                    if (fs.existsSync(owner.reportFile) && /AGENTERA_PERFORMANCE_PROGRESS last=archive_list_large_4 inFlight=archive_list_large_5 elapsedMs=\d+ clock=entity-performance\/performance.now/.test(fs.readFileSync(owner.reportFile, "utf8"))) resolve();
+                  });
+                });
 
                 // Control only this owner's deadline. Startup and readiness use real
                 // time, as do process-group cancellation and its force-kill timer.
@@ -235,11 +236,12 @@ describe("source qualification DAG", () => {
                 let fireDeadline!: () => void;
                 const timer = vi.spyOn(globalThis, "setTimeout").mockImplementationOnce((callback, delay) => {
                   fireDeadline = callback as () => void;
-                  return realSetTimeout(() => undefined, delay);
+                  return realSetTimeout(callback, delay);
                 });
                 let handle;
                 try {
                   handle = defaultStartSourceOwner(owner);
+                  onTestFinished(() => handle.cancel());
                 } finally {
                   timer.mockRestore();
                 }
@@ -247,16 +249,14 @@ describe("source qualification DAG", () => {
                 const settled = completed.catch(() => undefined);
                 handle.promise = (async () => {
                   try {
-                    await expect
-                      .poll(() => (fs.existsSync(owner.reportFile) ? fs.readFileSync(owner.reportFile, "utf8") : ""), {
-                        timeout: 10_000,
-                        interval: 20,
-                        message: "real performance checkpoint must reach captured output before coordinator timeout",
-                      })
-                      .toMatch(/AGENTERA_PERFORMANCE_PROGRESS last=archive_list_large_4 inFlight=archive_list_large_5 elapsedMs=\d+ clock=entity-performance\/performance.now/);
-                  } catch (error) {
-                    readinessError = error;
-                    throw error;
+                    // The report change event acknowledges the checkpoint at the outer boundary.
+                    // This tests transport/cancellation, not nested Vitest startup or deadlines.
+                    await Promise.race([
+                      checkpointReady,
+                      completed.then(() => {
+                        throw new Error("probe exited before readiness");
+                      }),
+                    ]);
                   } finally {
                     fireDeadline();
                     await settled;
@@ -270,7 +270,6 @@ describe("source qualification DAG", () => {
             return observed;
           },
         });
-        if (readinessError) throw readinessError;
         expect(JSON.parse(write.mock.calls.map(([value]) => value).join(""))).toEqual(qualification);
         if (mode === "success") {
           expect(qualification.status).toBe("pass");
@@ -281,17 +280,20 @@ describe("source qualification DAG", () => {
           expect(qualification.status).toBe("fail");
           expect(qualification.first_failure).toBe("performance");
           expect(qualification.violation.length).toBeLessThanOrEqual(1000);
-          expect(qualification.violation).toContain("last-completed=archive_list_large_4");
-          expect(qualification.violation).toContain("work-in-flight=archive_list_large_5");
-          expect(qualification.violation).toMatch(/checkpoint elapsedMs=\d+ clock=entity-performance\/performance.now/);
-          expect(qualification.violation).toMatch(/owner elapsedMs=\d+ clock=release-source-owner\/performance.now/);
-          expect(qualification.violation).toContain(mode === "inner-timeout" ? "performance test deadline exceeded" : "exceeded the source verification deadline");
+          if (mode !== "failure") {
+            expect(qualification.violation).toContain("last-completed=archive_list_large_4");
+            expect(qualification.violation).toContain("work-in-flight=archive_list_large_5");
+            expect(qualification.violation).toMatch(/checkpoint elapsedMs=\d+ clock=entity-performance\/performance.now/);
+            expect(qualification.violation).toMatch(/owner elapsedMs=\d+ clock=release-source-owner\/performance.now/);
+            expect(qualification.violation).toContain(mode === "inner-timeout" ? "performance test deadline exceeded" : "exceeded the source verification deadline");
+          } else expect(qualification.violation).toContain("synthetic performance failure");
           for (const privateValue of [root, REPO_ROOT, "/private", "NPM_TOKEN", "secret", "unrelated reporter"]) expect(qualification.violation).not.toContain(privateValue);
           if (mode === "coordinator-timeout") expect(fs.readFileSync(path.join(root, "probe-stopped"), "utf8")).toBe("stopped");
         }
       } finally {
         write.mockRestore();
         process.exitCode = previousExitCode;
+        readiness?.close();
         fs.rmSync(root, { recursive: true, force: true });
       }
     },

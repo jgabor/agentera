@@ -28,6 +28,7 @@ function runCheck(extraEnv: NodeJS.ProcessEnv = {}): {
 function runCheckJson(extraEnv: NodeJS.ProcessEnv = {}): {
   status: number | null;
   payload: Record<string, unknown>;
+  diagnostic: string;
 } {
   const result = spawnSync("bash", [SCRIPT, "--check", "--json"], {
     cwd: REPO_ROOT,
@@ -35,7 +36,11 @@ function runCheckJson(extraEnv: NodeJS.ProcessEnv = {}): {
     encoding: "utf8",
   });
   const line = (result.stdout || "").trim().split("\n").pop() ?? "{}";
-  return { status: result.status, payload: JSON.parse(line) as Record<string, unknown> };
+  return {
+    status: result.status,
+    payload: JSON.parse(line) as Record<string, unknown>,
+    diagnostic: `stdout: ${result.stdout.slice(-4096)}\nstderr: ${result.stderr.slice(-4096)}`,
+  };
 }
 
 describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
@@ -61,8 +66,8 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     expect(fixture.pinEvidence.target_python_commit).toBe(mainHead);
     expect(fixture.pinEvidence.sourceEquivalence.previousSha256).toBe(fixture.pinEvidence.sourceEquivalence.targetSha256);
 
-    const { status, payload } = runCheckJson();
-    expect(status).toBe(0);
+    const { status, payload, diagnostic } = runCheckJson();
+    expect(status, diagnostic).toBe(0);
     expect(payload).toMatchObject({
       drift: "none",
       pinned: mainHead,
@@ -77,6 +82,23 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     });
   });
 
+  it("fails closed with actionable diagnostics when the historical proof is absent", () => {
+    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-absent-"));
+    try {
+      const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8"));
+      fixture.pinEvidence.previous_python_commit = "0".repeat(40);
+      const target = path.join(directory, "fixture.json");
+      fs.writeFileSync(target, JSON.stringify(fixture));
+      const { status, payload, diagnostic } = runCheckJson({ PY_TS_PARITY_FIXTURE: target });
+      expect(status, diagnostic).toBe(2);
+      expect(payload.reason).toBe("pin_evidence_source_mismatch");
+      expect(diagnostic).toContain("Historical parity prerequisite unavailable: " + "0".repeat(40));
+      expect(diagnostic).toContain("trusted retained checkout/bundle");
+    } finally {
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  });
+
   it("rejects altered owner source-equivalence evidence", () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-owner-"));
     const alteredFixture = path.join(tmpDir, "parity-remaining-families.json");
@@ -84,8 +106,8 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     fixture.pinEvidence.sourceEquivalence.targetSha256 = "0".repeat(64);
     fs.writeFileSync(alteredFixture, JSON.stringify(fixture));
 
-    const { status, payload } = runCheckJson({ PY_TS_PARITY_FIXTURE: alteredFixture });
-    expect(status).toBe(2);
+    const { status, payload, diagnostic } = runCheckJson({ PY_TS_PARITY_FIXTURE: alteredFixture });
+    expect(status, diagnostic).toBe(2);
     expect(payload.reason).toBe("pin_evidence_source_mismatch");
   });
 
@@ -101,8 +123,8 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     }
     fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
 
-    const { status, stdout } = runCheck({ PY_TS_PARITY_FIXTURE: divergentFixture });
-    expect(status).toBe(1);
+    const { status, stdout, stderr } = runCheck({ PY_TS_PARITY_FIXTURE: divergentFixture });
+    expect(status, `stdout: ${stdout.slice(-4096)}\nstderr: ${stderr.slice(-4096)}`).toBe(1);
     expect(stdout).toContain("drift: detected");
     expect(stdout).toContain("Rebase procedure:");
     expect(stdout).toContain("pnpm -C packages/cli test -- npmParityMatrix");
@@ -116,8 +138,10 @@ describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
     fixture.python_commit = "1".repeat(40);
     fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
 
-    const { status, payload } = runCheckJson({ PY_TS_PARITY_FIXTURE: divergentFixture });
-    expect(status).toBe(1);
+    const { status, payload, diagnostic } = runCheckJson({
+      PY_TS_PARITY_FIXTURE: divergentFixture,
+    });
+    expect(status, diagnostic).toBe(1);
     expect(payload.drift).toBe("detected");
     expect(payload.pinned).toBe("1".repeat(40));
     expect(typeof payload.main).toBe("string");

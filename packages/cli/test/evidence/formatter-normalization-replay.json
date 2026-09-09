@@ -1,6 +1,6 @@
 {
   "schemaVersion": "agentera.formatterNormalizationReplay.v2",
-  "manifestSha256": "46d5099669e995818368ec357636267a7b3cf7df00a9d0f8d5898760b1f912e2",
+  "manifestSha256": "f850ba412c8b8943ee7fb920528da9c8855517536251a1b189af89021f9505b9",
   "source": {
     "baseCommit": "5cdee5b35830d7d7404a083c4db5b11aade07f0a",
     "normalizedCommit": "0afd213355c8ca5a09d95d643f2e793c44dfb760",
@@ -4473,11 +4473,11 @@
       },
       {
         "path": "packages/cli/scripts/py_ts_parity.sh",
-        "sha256": "f7b6b684d5ba572c7134e5ca2946611f7442095d35905551819d00dd1d55ab57"
+        "sha256": "def002e798840739fbd76feb9484b4780002b3b1078f2a65622324a12c8b563a"
       },
       {
         "path": "packages/cli/test/scripts/pyTsParity.test.ts",
-        "sha256": "c310e853d2ad540f3187a00f3ce775d7cba2eb568645e69db8bb38a188131ca7"
+        "sha256": "7ad30ba4515b7d7af50ac5b808246cc4658a1747b6dda13e8d0f7a648256e4f4"
       },
       {
         "path": "packages/cli/test/cli/npmParityMatrix.test.ts",

@@ -457,7 +457,7 @@ independent:
 | Performance | `pnpm -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
 | Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
 | Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
-| Certification | `pnpm -C packages/cli run test:certification` | Historical all-test compiler viability and formatter normalization replay, including tamper rejection. Only the two explicitly named policy files move here; ordinary source tests are not filtered or skipped. Mandatory in full qualification, omitted from routine development. |
+| Certification | `pnpm -C packages/cli run test:certification` | Historical all-test compiler viability, formatter normalization replay, and parity re-pin proof, including tamper rejection. Only the three explicitly named policy files belong here; behavioral product parity remains source-owned. Mandatory in full qualification, omitted from routine development. |
 
 Build is a separate generated-output participant, not a test owner. Routine
 builds synchronize staged output into checkout `dist/` and `bundle/`; release
@@ -599,18 +599,36 @@ No development result issues or replaces a source receipt.
 Full qualification remains explicitly reachable without a scheduled workflow:
 
 ```bash
-# Required archived history for the historical certification owner:
-git fetch --depth=1 origin '9b36f93fbeaa391550db3e8dedf015ff54b5ce69'
+# Restore the historical certification prerequisites below first.
 vp run verify
 # Focused historical certification diagnosis (not full qualification):
 pnpm -C packages/cli run test:certification
 ```
 
 Full qualification still executes all five cold repetitions, stress, capacity,
-and both historical certification suites. Failures remain blocking and visible;
+and all three historical certification suites. Failures remain blocking and visible;
 development success does not dismiss an unresolved certification failure. Receipt
 issuance and manual release benchmark commands retain their existing authority
 requirements and repeated work. Routine CI does not fetch the archived history.
+
+Historical certification prerequisites (required together):
+
+- Parity re-pin proof needs full trees for previous pin
+  `9b36f93fbeaa391550db3e8dedf015ff54b5ce69` and target
+  `149e059547a847b136c4783c6f418330a5398b2c`, with `origin/main` matching
+  the target. The previous pin is not reachable from advertised remote refs;
+  an ordinary fresh clone or fetch of all branches/tags cannot supply it.
+  Restore it from a trusted retained checkout or Git bundle; do not assume
+  a fetch of the unadvertised SHA will work or silently skip the proof.
+- Formatter replay needs its manifest-pinned base
+  `5cdee5b35830d7d7404a083c4db5b11aade07f0a` and normalized commit
+  `0afd213355c8ca5a09d95d643f2e793c44dfb760`, the pinned tools, and the same
+  parity history because its historical verifier invokes the parity shell.
+- Compiler replay needs the retained inputs, source binding, raw compressed
+  diagnostics and normalized evidence under
+  `packages/cli/test/evidence/all-test-typecheck-replay/`, plus its pinned
+  compiler/tool dependencies. Missing inputs or changed replay diagnostics
+  remain failures; development success is not historical certification.
 
 `pnpm -C packages/cli run verify:generated-overlap` starts the exact public
 source, package, and build owners concurrently. The build owner writes one

@@ -1,0 +1,13 @@
+id: qpqxqimzah
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Stabilize verification boundaries before hosted closeout
+  status: complete
+  depends_on:
+    - dypiouihbn
+  acceptance:
+    - GIVEN subprocess probes WHEN success, failure, and timeout execute THEN real wrappers preserve streaming, diagnostics, termination, and cleanup without nested-runner scheduling assumptions.
+    - GIVEN historical proofs WHEN absent THEN certification fails clearly; current product parity remains required independently.
+    - GIVEN the complete unpublished candidate WHEN reconstructed with CI-provided refs and frozen tools THEN development qualification passes without inherited objects, configuration, or generated outputs.
+    - GIVEN closeout WHEN evidence is assessed THEN product/resource/package safeguards and deadlines remain unchanged; candidate-tree, full-certification, and hosted exact-SHA outcomes remain distinct.

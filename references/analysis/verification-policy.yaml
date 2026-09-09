@@ -12,6 +12,8 @@ inventory:
       path: packages/cli/test/validate/allTestTypecheckViability.test.ts
     - owner: certification
       path: packages/cli/test/scripts/formatterNormalizationReplay.test.ts
+    - owner: certification
+      path: packages/cli/test/scripts/pyTsParity.test.ts
     - owner: stress
       path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance

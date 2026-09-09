@@ -61,7 +61,7 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   scales and heap/output limits, not five repetitions; latency stays advisory.
   Its distinct development evidence is not full qualification or a receipt.
 - Explicit `vp run verify` remains full qualification: five cold repetitions and
-  historical certification as well as all development safety guards. The two
+   historical certification as well as all development safety guards. The three
   historical suites belong to `test:certification`, not source. See the packaging
   guide for the archived-history prerequisite. Certification failures stay visible.
 

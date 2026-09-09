@@ -1,0 +1,14 @@
+id: qdeepsxixq
+artifact: progress
+record:
+  timestamp: 2026-09-09 08:44
+  type: test
+  phase: build
+  what: Stabilized subprocess isolation in packages/cli/test/release/sourceQualificationDag.test.ts; moved historical parity proof to certification and pinned two glossary reads before fixture expiry.
+  context:
+    intent: Finish the pinned Vite+ workflow without incidental runner, clock, or Git-history dependencies.
+    constraints: Product parity, resource/package guards, deadlines, and development/full evidence separation remain unchanged.
+    unknowns: Hosted exact-SHA qualification is unverified; historical compiler source binding still fails.
+  verified: "Independent candidate checkout matched intended files and passed all 11 development gates without old parity history. Focused tests, typecheck, build, and static checks passed with 426 existing warnings. Certification: 19 passed, 3 compiler source-binding failures; no rebaseline."
+  next: Final plan validation remains open. Obtain fresh authorization before commit, integration, or push; do not equate candidate-tree verification with full or hosted qualification.
+  publication_order: 377

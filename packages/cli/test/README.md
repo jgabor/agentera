@@ -79,9 +79,11 @@ source-owned tests and typecheck with at most two workers. Specialized and
 global surfaces are labeled `ci_owned`; required CI runs their authoritative
 development safety through `vp run verify:development`; explicit full
 `vp run verify` retains historical certification and repeated performance.
-Only `allTestTypecheckViability.test.ts` and `formatterNormalizationReplay.test.ts`
+Only `allTestTypecheckViability.test.ts`, `formatterNormalizationReplay.test.ts`, and `pyTsParity.test.ts`
 are certification-owned (`test:certification`); no arbitrary source exclusion is
-supported. Development retains stress, capacity and all private-generation and
+supported. Behavioral `cli/npmParityMatrix.test.ts` remains source-owned; historical
+prerequisites are listed together in `docs/packaging/v3-packaging.md`.
+Development retains stress, capacity and all private-generation and
 package contracts, but its distinct success is not full qualification. The hook accepts no receipt
 or environment bypass.
 

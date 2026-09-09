@@ -11,7 +11,7 @@ const publicationContract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "ref
 const verificationPolicy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
 
 const RELEASE_COMMAND = "vp run verify:development";
-const PARITY_TEST = "packages/cli/test/scripts/pyTsParity.test.ts";
+const PARITY_TEST = "packages/cli/test/cli/npmParityMatrix.test.ts";
 const REMOVED_DUPLICATES = [
   {
     owner: "source",
@@ -114,6 +114,9 @@ describe("routine CI owner DAG", () => {
     expect(gateNames).toEqual(expect.arrayContaining(["typecheck", "compact", "stress", "performance", "capacity"]));
     expect(verificationPolicy.policies.release).toEqual(["source", "stress", "performance", "capacity", "package", "certification"]);
     expect(verificationPolicy.inventory.default_owner).toBe("source");
+    expect(verificationPolicy.inventory.rules.filter((rule: { path?: string; prefix?: string }) => rule.path === "packages/cli/test/scripts/pyTsParity.test.ts" || "packages/cli/test/scripts/pyTsParity.test.ts".startsWith(rule.prefix ?? "never/"))).toEqual([
+      { owner: "certification", path: "packages/cli/test/scripts/pyTsParity.test.ts" },
+    ]);
     expect(verificationPolicy.inventory.rules.some((rule: { path?: string; prefix?: string }) => rule.path === PARITY_TEST || PARITY_TEST.startsWith(rule.prefix ?? "never/"))).toBe(false);
     expect(verificationPolicy.owners.performance.execution.authoritative_runner.runs_on).toBe("ubuntu-24.04");
 
