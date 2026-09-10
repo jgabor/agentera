@@ -46,55 +46,61 @@ seed_happy_path() {
 }
 
 case "$SCENARIO" in
-  v2-yaml-project|v2-app-home|v2-runtime-python|v2-app-home-noisy|v2-legacy-agents-home|v2-runtime-codex-full|v2-full-artifacts|v2-runtime-opencode|v2-v1-stale-surfaces)
-    case "$SCENARIO" in
-      v2-yaml-project) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
-      v2-app-home|v2-app-home-noisy|v2-legacy-agents-home)
-        copy_fixture "$SCENARIO" "$HOME/.local/share/agentera"
-        ;;
-      v2-runtime-python|v2-runtime-codex-full|v2-runtime-opencode|v2-v1-stale-surfaces)
-        copy_fixture "$SCENARIO" "$HOME"
-        if [[ "$SCENARIO" == v2-runtime-opencode || "$SCENARIO" == v2-v1-stale-surfaces ]]; then
-          mkdir -p "$XDG_CONFIG_HOME"
-          cp -a "$HOME/xdg/opencode/." "$XDG_CONFIG_HOME/opencode/" 2>/dev/null || true
-        fi
-        ;;
-      v2-full-artifacts) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
-    esac
+v2-yaml-project | v2-app-home | v2-runtime-python | v2-app-home-noisy | v2-legacy-agents-home | v2-runtime-codex-full | v2-full-artifacts | v2-runtime-opencode | v2-v1-stale-surfaces)
+  case "$SCENARIO" in
+  v2-yaml-project) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
+  v2-app-home | v2-app-home-noisy | v2-legacy-agents-home)
+    copy_fixture "$SCENARIO" "$HOME/.local/share/agentera"
     ;;
-  v2-runtime-cursor-full)
-    copy_fixture v2-runtime-cursor-full/home "$HOME"
-    copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
+  v2-runtime-python | v2-runtime-codex-full | v2-runtime-opencode | v2-v1-stale-surfaces)
+    copy_fixture "$SCENARIO" "$HOME"
+    if [[ "$SCENARIO" == v2-runtime-opencode || "$SCENARIO" == v2-v1-stale-surfaces ]]; then
+      mkdir -p "$XDG_CONFIG_HOME"
+      cp -a "$HOME/xdg/opencode/." "$XDG_CONFIG_HOME/opencode/" 2>/dev/null || true
+    fi
     ;;
-  happy-path-clean|stable-safety|partial-only-runtime|v2-python-control|full-runtime-matrix)
-    seed_happy_path
-    ;;
-  noisy-app-home)
-    copy_fixture v2-app-home-noisy "$HOME/.local/share/agentera"
-    copy_fixture v2-yaml-project "$SANDBOX/project"
-    ;;
-  legacy-home-retirement)
-    copy_fixture v2-legacy-agents-home "$HOME/.agents/agentera"
-    ;;
-  codex-plugin-vs-copied)
-    copy_fixture v2-runtime-codex-full "$HOME"
-    copy_fixture v2-app-home "$HOME/.local/share/agentera"
-    copy_fixture v2-yaml-project "$SANDBOX/project"
-    ;;
-  full-runtime-matrix)
-    copy_fixture v2-app-home-realistic "$HOME/.local/share/agentera"
-    copy_fixture v2-yaml-project "$SANDBOX/project"
-    copy_fixture v2-runtime-codex-full "$HOME"
-    copy_fixture v2-runtime-cursor-full/home "$HOME"
-    copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
-    copy_fixture v2-runtime-opencode "$HOME"
-    mkdir -p "$XDG_CONFIG_HOME"
-    cp -a "$HOME/xdg/opencode/." "$XDG_CONFIG_HOME/opencode/" 2>/dev/null || true
-    ;;
-  *)
-    echo "unknown scenario or fixture: $SCENARIO" >&2
-    exit 2
-    ;;
+  v2-full-artifacts) copy_fixture "$SCENARIO" "$SANDBOX/project" ;;
+  esac
+  ;;
+v2-runtime-cursor-full)
+  copy_fixture v2-runtime-cursor-full/home "$HOME"
+  copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
+  ;;
+happy-path-clean)
+  seed_happy_path
+  # Shared Codex registration has no key-level ownership evidence. Keep it
+  # in the negative fixtures, not in the clean automatic-cleanup case.
+  rm "$HOME/.codex/config.toml"
+  ;;
+stable-safety | partial-only-runtime | v2-python-control | full-runtime-matrix)
+  seed_happy_path
+  ;;
+noisy-app-home)
+  copy_fixture v2-app-home-noisy "$HOME/.local/share/agentera"
+  copy_fixture v2-yaml-project "$SANDBOX/project"
+  ;;
+legacy-home-retirement)
+  copy_fixture v2-legacy-agents-home "$HOME/.agents/agentera"
+  ;;
+codex-plugin-vs-copied)
+  copy_fixture v2-runtime-codex-full "$HOME"
+  copy_fixture v2-app-home "$HOME/.local/share/agentera"
+  copy_fixture v2-yaml-project "$SANDBOX/project"
+  ;;
+full-runtime-matrix)
+  copy_fixture v2-app-home-realistic "$HOME/.local/share/agentera"
+  copy_fixture v2-yaml-project "$SANDBOX/project"
+  copy_fixture v2-runtime-codex-full "$HOME"
+  copy_fixture v2-runtime-cursor-full/home "$HOME"
+  copy_fixture v2-runtime-cursor-full/project "$SANDBOX/project"
+  copy_fixture v2-runtime-opencode "$HOME"
+  mkdir -p "$XDG_CONFIG_HOME"
+  cp -a "$HOME/xdg/opencode/." "$XDG_CONFIG_HOME/opencode/" 2>/dev/null || true
+  ;;
+*)
+  echo "unknown scenario or fixture: $SCENARIO" >&2
+  exit 2
+  ;;
 esac
 
 if [[ -d "$HOME/.local/share/agentera" ]]; then

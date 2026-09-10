@@ -1,0 +1,15 @@
+id: abymiymyvt
+artifact: progress
+record:
+  timestamp: 2026-09-10 22:23
+  type: fix
+  phase: build
+  what: .github/workflows/publish.yml now builds the checkout CLI and gates candidate construction on five migration scenarios with observed outcomes.
+  context:
+    intent: Complete task onqdqswcrj without weakening migration ownership or duplicating qualification.
+    constraints: Preserve the three coordinator edits, strict census and retention checks, pinned bootstrap and finite job budget.
+    scope: Migration harness, selected-push verification, affected contract tests, bootstrap guidance and documentation inventory.
+  discovered: Unowned shared Codex registration requires manual review even after forward entity activation. Clean fixtures exclude that registration; the explicit negative case preserves it. Reports summarize outcomes without copying command-discovery guidance.
+  verified: Pinned Node 24.19.0, pnpm 10.30.3 and Vite+ 0.3.0 passed the local build and all five scenarios. Reintroducing unowned registration into the clean fixture made the harness exit 1. Contract and retention tests, typecheck and eight-warning lint passed. Development verification passed all eleven gates after correcting the report boundary. Candidate and publisher job bytes and ownership guards are unchanged.
+  next: Coordinator review and separately authorized hosted execution remain pending. No task status, evaluation, TODO, commit, integration, push or publication was changed.
+  publication_order: 386

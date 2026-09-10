@@ -26,7 +26,7 @@ selection:
       boundary: non_oidc_install_or_build_jobs_only
       compatibility: requests the exact Vite+ 0.3.0 release before fallback
     conclusion: >-
-      Retained as historical selection inventory, no longer deployed in the four
+      Retained as historical selection inventory, no longer deployed in the two
       setup jobs. Unverified installer execution and mutable fallback never satisfy
       bootstrap integrity acceptance. The replacement and its trusted host
       prerequisites are documented in bootstrap-integrity.md; hosted acceptance

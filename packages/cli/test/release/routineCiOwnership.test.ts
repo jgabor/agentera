@@ -5,7 +5,7 @@ import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
+const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8"));
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
 const publicationContract = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"));
 const verificationPolicy = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml"), "utf8"));
@@ -34,7 +34,7 @@ const REMOVED_DUPLICATES = [
 ] as const;
 
 function runLines(candidate: any): string[] {
-  return candidate.jobs.cli.steps.flatMap((step: { run?: string }) =>
+  return candidate.jobs["verify-development"].steps.flatMap((step: { run?: string }) =>
     typeof step.run === "string"
       ? step.run
           .split(/\r?\n/u)
@@ -58,29 +58,37 @@ function validateRoutineCiOwnership(candidate: any): void {
       throw new Error(`routine CI must not invoke ${entry.owner} outside generated overlap`);
     }
   }
+  const job = candidate.jobs["verify-development"];
+  const buildIndex = job.steps.findIndex((step: { run?: string }) => step.run === "vp run build");
+  const verifyIndex = job.steps.findIndex((step: { run?: string }) => step.run === RELEASE_COMMAND);
+  const migration = job.steps[buildIndex + 1];
+  expect(buildIndex).toBe(verifyIndex + 1);
+  expect(lines.filter((line) => invokes(line, "vp run build"))).toHaveLength(1);
+  expect(migration.env).toEqual({
+    REPO_ROOT: "${{ github.workspace }}",
+    AGENTERA_SANDBOX_TIER: "L1",
+  });
+  expect(migration.run).toBe('set -euo pipefail\nfor scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do\n  bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"\ndone\n');
+  for (const step of job.steps) {
+    expect(step).not.toHaveProperty("continue-on-error");
+    expect(step).not.toHaveProperty("if");
+  }
+  expect(job).not.toHaveProperty("continue-on-error");
+  expect(candidate.jobs["build-development"].needs).toBe("verify-development");
+  expect(candidate.jobs["build-development"]).not.toHaveProperty("if");
+  expect(candidate.jobs["publish-development"].needs).toBe("build-development");
 }
 
 describe("routine CI owner DAG", () => {
   it("runs the canonical check-only conjunction once on the authoritative performance runner", () => {
     expect(() => validateRoutineCiOwnership(workflow)).not.toThrow();
-    expect(workflow.jobs.cli["runs-on"]).toBe("ubuntu-24.04");
-    expect(workflow.jobs.cli).not.toHaveProperty("if");
-    expect(workflow.on.push.branches).toEqual(["main"]);
-    expect(workflow.on).toHaveProperty("pull_request");
-    expect(workflow.jobs["source-migration"].name).toBe("v2→v3 migration (source build)");
-    expect(workflow.jobs["source-migration"].if).toBe("github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'");
-    const migrationSteps = workflow.jobs["source-migration"].steps;
-    expect(migrationSteps).toEqual(expect.arrayContaining([expect.objectContaining({ uses: "oven-sh/setup-bun@v2", with: { "bun-version": "1.3" } }), expect.objectContaining({ uses: "astral-sh/setup-uv@v5" })]));
-    const scenarioStep = migrationSteps.find((step: { name?: string }) => step.name === "Run v2→v3 migration scenarios");
-    expect(scenarioStep).toMatchObject({ env: expect.any(Object), run: expect.any(String) });
-    const reportStep = migrationSteps.find((step: { name?: string }) => step.name === "Upload sandbox reports");
-    expect(reportStep).toMatchObject({
-      if: "always()",
-      uses: "actions/upload-artifact@v4",
-      with: { name: "source-migration-reports" },
-    });
+    expect(workflow.jobs["verify-development"]["runs-on"]).toBe("ubuntu-24.04");
+    expect(workflow.jobs["verify-development"].if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(workflow.on).toEqual({ push: null });
+    expect(fs.existsSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"))).toBe(false);
+    expect(JSON.stringify(workflow)).not.toMatch(/setup-bun|setup-uv/);
     expect(developmentPackage.scripts["verify:release"]).toBe("node scripts/release-qualification.mjs verify --json");
-    const step = workflow.jobs.cli.steps.find((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
+    const step = workflow.jobs["verify-development"].steps.find((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
     expect(step).toMatchObject({
       env: {
         AGENTERA_VITEST_RUNNER_POLICY: "unmeasured",
@@ -89,11 +97,11 @@ describe("routine CI owner DAG", () => {
       },
     });
     expect(step).not.toHaveProperty("continue-on-error");
-    const staticIndex = workflow.jobs.cli.steps.findIndex((candidate: { run?: string }) => candidate.run === "vp check");
-    const verifyIndex = workflow.jobs.cli.steps.findIndex((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
+    const staticIndex = workflow.jobs["verify-development"].steps.findIndex((candidate: { run?: string }) => candidate.run === "vp check");
+    const verifyIndex = workflow.jobs["verify-development"].steps.findIndex((candidate: { run?: string }) => candidate.run === RELEASE_COMMAND);
     expect(staticIndex).toBeGreaterThan(-1);
     expect(staticIndex).toBeLessThan(verifyIndex);
-    expect(workflow.jobs.cli.steps.some((candidate: { run?: string }) => candidate.run === "vp run typecheck")).toBe(false);
+    expect(workflow.jobs["verify-development"].steps.some((candidate: { run?: string }) => candidate.run === "vp run typecheck")).toBe(false);
   });
 
   it.each(REMOVED_DUPLICATES)("retains positive $owner coverage through generated overlap", ({ owner, gate, command }) => {
@@ -104,8 +112,27 @@ describe("routine CI owner DAG", () => {
 
   it.each(REMOVED_DUPLICATES)("rejects a forbidden standalone $owner invocation", ({ owner, forbidden }) => {
     const candidate = structuredClone(workflow);
-    candidate.jobs.cli.steps.push({ name: `Forbidden ${owner}`, run: forbidden[0] });
+    candidate.jobs["verify-development"].steps.push({
+      name: `Forbidden ${owner}`,
+      run: forbidden[0],
+    });
     expect(() => validateRoutineCiOwnership(candidate)).toThrow(`routine CI must not invoke ${owner} outside generated overlap`);
+  });
+
+  it.each(["continue", "dependency", "skip-build", "ignore-scenario", "duplicate-verify"])("rejects broken migration dependency gating: %s", (fault) => {
+    const candidate = structuredClone(workflow);
+    const steps = candidate.jobs["verify-development"].steps;
+    const migration = steps.find((step: { name?: string }) => step.name === "Run v2→v3 migration scenarios");
+    if (fault === "continue") migration["continue-on-error"] = true;
+    if (fault === "dependency") candidate.jobs["build-development"].needs = "route-development";
+    if (fault === "skip-build")
+      steps.splice(
+        steps.findIndex((step: { run?: string }) => step.run === "vp run build"),
+        1,
+      );
+    if (fault === "ignore-scenario") migration.run = migration.run.replace('"$scenario"', '"$scenario" || true');
+    if (fault === "duplicate-verify") steps.push({ run: RELEASE_COMMAND });
+    expect(() => validateRoutineCiOwnership(candidate)).toThrow();
   });
 
   it("retains typecheck, parity, compact, stress, performance, and capacity coverage", () => {
@@ -121,12 +148,12 @@ describe("routine CI owner DAG", () => {
     expect(verificationPolicy.owners.performance.execution.authoritative_runner.runs_on).toBe("ubuntu-24.04");
 
     const lines = runLines(workflow);
-    const steps = workflow.jobs.cli.steps;
+    const steps = workflow.jobs["verify-development"].steps;
     const checkoutIndex = steps.findIndex((step: { uses?: string }) => step.uses === "actions/checkout@v5");
     const conjunctionIndex = steps.findIndex((step: { run?: string }) => step.run === RELEASE_COMMAND);
     expect(checkoutIndex).toBeGreaterThanOrEqual(0);
     expect(checkoutIndex).toBeLessThan(conjunctionIndex);
-    expect(steps[checkoutIndex].with).toEqual({ "fetch-depth": 0 });
+    expect(steps[checkoutIndex].with).toEqual({ ref: "${{ github.sha }}", "fetch-depth": 0 });
     expect(lines).not.toContain("bash packages/cli/scripts/py_ts_parity.sh --check --json");
     for (const gate of source.gates) {
       expect(lines.some((line) => invokes(line, gate.command.join(" ")))).toBe(false);

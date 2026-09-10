@@ -1,6 +1,6 @@
 # Pinned bootstrap and workflow rollout
 
-The four setup jobs now use the integrity-bound bootstrap described below.
+The two development setup jobs use the integrity-bound bootstrap described below.
 The replaced setup-vp installer remains unverified; its old accepted-risk record
 is **not acceptance evidence**. Hosted acceptance is still outstanding. The
 credential-bearing publisher is unchanged. Historical compiler/formatter
@@ -80,9 +80,9 @@ fail closed; no installer or dynamically learned digest is a fallback.
 
 The helper creates fresh homes, stores, caches and empty npm configs, installs
 the integrity-bound pnpm, and runs the unchanged frozen lockfile with store
-integrity checking. The two ordinary verification jobs retain the workspace's
-esbuild-only lifecycle allowlist. `verify-development` and `build-development`
-retain `--ignore-scripts`. No dependency cache is restored or saved; authoritative
+integrity checking. `verify-development` and `build-development` retain
+`--ignore-scripts`. The contributor allowlist variant remains locally proven,
+not a separate hosted gate. No dependency cache is restored or saved; authoritative
 Vite task `cache: false` settings and the eleven development gates are unchanged.
 
 After successful installation, a private bin directory exposes the selected
@@ -98,18 +98,22 @@ global Vite+ installer.
 
 Acceptance is deliberately split:
 
-1. **Local pre-merge evidence:** credential-free execution of both clean install
+1. **Local evidence:** credential-free execution of both clean install
    variants, the deployment trust-boundary and workflow-contract tests, and
    meaningful local Agentera build/package smoke. This does not qualify a hosted
    job or authorize registry mutation.
-2. **Hosted pre-merge acceptance:** both ordinary `verify-changes.yml` jobs must
-   pass on a clean hosted checkout. This gate remains outstanding until separately
-   authorized hosted execution supplies evidence.
-3. **Actual publication jobs:** the exact `publish.yml` jobs run only after a
-   separately authorized integration and push to the configured development ref.
-   PR verification is not their execution evidence. There is no special
-   publication dry-run workflow. Neither local proof nor hosted PR success
-   authorizes that integration, push, or publication.
+2. **Selected direct-push acceptance:** `publish.yml` checks out the pushed SHA,
+   runs `vp check` and exactly one `vp run verify:development`, then explicitly
+   runs `vp run build`: the private verification build has already been removed.
+   That checkout CLI runs all five L1 migration scenarios before the dependent
+   candidate job. Expected refusal passes only when typed outcomes and preserved
+   files match the scenario; unexpected build or scenario failure blocks the job.
+   The 45-minute job budget is unchanged. There is no PR prerequisite or duplicate
+   verification workflow on the v3 branch; default `main` is untouched.
+3. **Hosted evidence:** the corrected migration gate remains pending a separately
+   authorized integration and push to the configured development ref. Local proof
+   does not authorize either action or prove hosted execution. Existing dev.112
+   publication evidence is not evidence for this corrected migration gate.
 
 The OIDC publisher remains checkout-free, action-free and setup-free; its logic
 and the exact-tarball construction/smoke steps are unchanged.
@@ -148,7 +152,7 @@ retain cheap pin and missing/altered prerequisite regression checks.
 
 Local Linux x64 evidence on 2026-09-10 passed all six report checks under
 Node 24.19.0, Corepack 0.35.0, pnpm 10.30.3 and local Vite+ 0.3.0. This is
-mechanism evidence only: no hosted job has run this replacement.
+mechanism evidence only, not hosted acceptance of the corrected migration gate.
 
 ## Maintenance
 

@@ -12,7 +12,6 @@ import YAML from "yaml";
 import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "../../scripts/release-qualification.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
-const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8");
 const qualificationYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8");
 const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
@@ -134,10 +133,7 @@ function requireReviewedOidcPublicationSteps(workflow: any) {
 }
 
 describe("package publication orchestration", () => {
-  it.each([
-    ["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }],
-    ["routine", YAML.parse(ciYaml).jobs.cli, { "fetch-depth": 0 }],
-  ])("provides complete history without historical certification fetches before %s verification", (_name, job, checkoutInputs) => {
+  it.each([["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }]])("provides complete history without historical certification fetches before %s verification", (_name, job, checkoutInputs) => {
     const fixture = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json"), "utf8"));
     const previousCommit = fixture.pinEvidence.previous_python_commit;
     expect(previousCommit).toMatch(/^[a-f0-9]{40}$/);
@@ -323,15 +319,10 @@ describe("package publication orchestration", () => {
   it("keeps credentials out of package scripts and ordinary CI pushes", () => {
     expect(JSON.stringify(developmentPackage.scripts)).not.toContain(".env");
     expect(JSON.stringify(stablePackage.scripts)).not.toContain(".env");
-    expect(ciYaml).not.toContain("NPM_TOKEN");
-    expect(ciYaml).not.toContain("publish-next");
-    expect(ciYaml).not.toContain("publish-latest");
-    expect(ciYaml).not.toContain("npm publish");
-    const ciWorkflow = YAML.parse(ciYaml);
-    expect(ciWorkflow.on.push.branches).toEqual(["main"]);
-    expect(ciWorkflow.on).toHaveProperty("pull_request");
-    expect(ciWorkflow.jobs.cli).not.toHaveProperty("if");
-    expect(ciWorkflow.jobs["source-migration"].if).toBe("github.ref == 'refs/heads/feat/v3' || github.event_name == 'pull_request'");
+    const ciWorkflow = YAML.parse(qualificationYaml);
+    const verification = JSON.stringify(ciWorkflow.jobs["verify-development"]);
+    expect(verification).not.toMatch(/NPM_TOKEN|publish-next|publish-latest|npm publish/);
+    expect(ciWorkflow.on).toEqual({ push: null });
   });
 
   it("selects the development branch and separates immutable build from OIDC publication", () => {
@@ -385,7 +376,7 @@ describe("package publication orchestration", () => {
     expect(verification.permissions).not.toHaveProperty("id-token");
     expect(verification.needs).toBe("route-development");
     expect(verification.if).toBe("needs.route-development.outputs.selected == 'true'");
-    expect(verification["timeout-minutes"]).toBeGreaterThanOrEqual(45);
+    expect(verification["timeout-minutes"]).toBe(45);
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5").with.ref).toBe("${{ github.sha }}");
     expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5")["timeout-minutes"]).toBe(1);

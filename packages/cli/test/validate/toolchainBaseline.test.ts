@@ -9,7 +9,6 @@ const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
 const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
-const verificationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/verify-changes.yml"), "utf8"));
 const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
 const rootViteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf8");
 
@@ -46,10 +45,10 @@ function validateSetupJobs(workflows: any[]): void {
       .filter(({ job }) => job.steps.some((step: { run?: string }) => /bootstrap-integrity\.mjs|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
       .map(({ name }) => name)
       .sort(),
-  ).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
+  ).toEqual(["build-development", "verify-development"]);
   const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@")));
-  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
-  for (const { name, job } of setupJobs) {
+  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "verify-development"]);
+  for (const { job } of setupJobs) {
     const setupIndex = job.steps.findIndex((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"));
     const setup = job.steps[setupIndex];
     expect(setup.uses).toBe(SETUP_NODE);
@@ -57,7 +56,7 @@ function validateSetupJobs(workflows: any[]): void {
       "node-version-file": ".node-version",
       "package-manager-cache": false,
     });
-    expect(job.steps[setupIndex + 1].run).toBe(`${BOOTSTRAP}${name.endsWith("-development") ? " --ignore-scripts" : ""}`);
+    expect(job.steps[setupIndex + 1].run).toBe(`${BOOTSTRAP} --ignore-scripts`);
     expect(JSON.stringify(job)).not.toContain("setup-vp");
     expect(job.permissions?.["id-token"]).toBeUndefined();
   }
@@ -86,17 +85,17 @@ describe("toolchain baseline", () => {
   });
 
   it("pins Node provisioning and the verified bootstrap variant with no dependency cache in every setup job", () => {
-    expect(() => validateSetupJobs([verificationWorkflow, publicationWorkflow])).not.toThrow();
-    const mutable = structuredClone(verificationWorkflow);
-    mutable.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).uses = "actions/setup-node@v6";
-    expect(() => validateSetupJobs([mutable, publicationWorkflow])).toThrow();
+    expect(() => validateSetupJobs([publicationWorkflow])).not.toThrow();
+    const mutable = structuredClone(publicationWorkflow);
+    mutable.jobs["verify-development"].steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).uses = "actions/setup-node@v6";
+    expect(() => validateSetupJobs([mutable])).toThrow();
 
-    const cached = structuredClone(verificationWorkflow);
-    cached.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).with["package-manager-cache"] = true;
-    expect(() => validateSetupJobs([cached, publicationWorkflow])).toThrow();
+    const cached = structuredClone(publicationWorkflow);
+    cached.jobs["verify-development"].steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).with["package-manager-cache"] = true;
+    expect(() => validateSetupJobs([cached])).toThrow();
     const lifecycle = structuredClone(publicationWorkflow);
     lifecycle.jobs["build-development"].steps.find((step: { run?: string }) => step.run?.startsWith(BOOTSTRAP)).run = BOOTSTRAP;
-    expect(() => validateSetupJobs([verificationWorkflow, lifecycle])).toThrow();
+    expect(() => validateSetupJobs([lifecycle])).toThrow();
   });
 
   it("binds the executable integration proof to live project policy", () => {

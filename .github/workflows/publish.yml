@@ -91,6 +91,20 @@ jobs:
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
         run: vp run verify:development
+      # The private verification build is cleaned up; migration needs checkout dist.
+      - name: Build checkout CLI for migration
+        timeout-minutes: 1
+        run: vp run build
+      - name: Run v2→v3 migration scenarios
+        timeout-minutes: 2
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L1
+        run: |
+          set -euo pipefail
+          for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
+            bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
+          done
 
   build-development:
     needs: verify-development

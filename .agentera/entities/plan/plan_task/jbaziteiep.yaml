@@ -7,10 +7,11 @@ record:
     - onqdqswcrj
     - oqpmgqzrnb
     - uovujxmdli
-  status: pending
+  status: in_progress
   acceptance:
-    - GIVEN the combined candidate WHEN required static, type, development, and package checks run THEN they pass without relaxed budgets or altered product contracts.
-    - GIVEN separate explicit integration and push authorization WHEN the actual publication jobs run THEN bootstrap and candidate construction pass under existing publication policy; otherwise retain the unverified boundary.
+    - GIVEN the combined candidate WHEN required static, type, development, package, and migration checks run THEN they pass without relaxed budgets or product contracts.
+    - GIVEN separate explicit integration and push authorization WHEN hosted direct-push validation executes THEN all migration scenarios gate candidate construction and publication; otherwise retain the unverified boundary.
     - GIVEN satisfied outcomes WHEN state reconciles THEN rtfizoqaxt and ehudiaaepe resolve, evidence and guidance agree, and compact passes.
     - GIVEN closeout WHEN full-qualification status is reported THEN vcrmaxuasq remains open and historical certification is not implied by development success.
   plan: newohpexum
+  evidence: Local corrected workflow, five scenarios, fail-closed injection and all 11 development gates passed. Existing dev.112 publication proves the prior pipeline only; new migration-gate hosted evidence is not yet available.

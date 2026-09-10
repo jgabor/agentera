@@ -32,5 +32,4 @@ record:
     - question: Can all 378 unused-declaration findings be removed without changing public signatures, side effects, or historical fixtures?
       affects_task: 4
       resolve_by: Task 3 measures the actual result. Any incompatible case requires an explicit scope decision before changing the target; never hide it with suppression.
-  surprises:
-    []
+  surprises: "User-corrected repository convention: no PR workflow. Replace prior four-job and PR-hosted prerequisites with the selected direct-push publication flow. Run development qualification once, retain all five unique source-migration scenarios as a blocking same-source verification step, and retire the dormant duplicate workflow. Preserve verified bootstrap and publisher protections. Build the source CLI before migration checks; do not substitute stale outputs or report-only success. Existing dev.112 publication remains valid, but the corrected migration gate still needs a separately authorized hosted push."

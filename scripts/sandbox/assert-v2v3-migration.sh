@@ -27,99 +27,125 @@ fi
 APP_HOME="${AGENTERA_INSTALL_ROOT:-$HOME/.local/share/agentera}"
 PROJECT="${AGENTERA_PROJECT:-$SANDBOX/project}"
 
-manifest_before="$SANDBOX/manifest-before.json"
-manifest_after="$SANDBOX/manifest-after.json"
-
-collect_manifest() {
-  local out="$1"
-  python3 - "$APP_HOME" "$PROJECT" "$out" <<'PY'
-import hashlib, json, os, sys
-app_home, project, out = sys.argv[1:4]
-paths = []
-for root, rels in ((app_home, [
-    ".agentera/progress.yaml", ".agentera/decisions.yaml", ".agentera/health.yaml",
-    ".agentera/plan.yaml", ".agentera/docs.yaml", ".agentera/vision.yaml",
-]), (project, [])):
-    if not os.path.isdir(root):
-        continue
-    ag = os.path.join(root, ".agentera")
-    if os.path.isdir(ag):
-        for name in os.listdir(ag):
-            p = os.path.join(ag, name)
-            if os.path.isfile(p) and name.endswith(".yaml"):
-                paths.append(os.path.relpath(p, app_home if root == app_home else project))
-    for rel in rels:
-        p = os.path.join(root, rel)
-        if os.path.isfile(p):
-            key = rel if root == app_home else os.path.join(".agentera", os.path.basename(rel))
-            paths.append(key)
-manifest = {}
-for rel in sorted(set(paths)):
-    base = app_home if rel.startswith(".agentera") and os.path.isfile(os.path.join(app_home, rel)) else project
-    full = os.path.join(base if rel.startswith(".") else project, rel)
-    if not os.path.isfile(full):
-        full = os.path.join(app_home, rel)
-    if os.path.isfile(full):
-        h = hashlib.sha256(open(full, "rb").read()).hexdigest()
-        manifest[rel] = h
-json.dump(manifest, open(out, "w"), indent=2, sort_keys=True)
-PY
+python3 - "$SANDBOX" "$SCENARIO" "$APP_HOME" <<'PY'
+import json, pathlib, sys
+root, scenario, app_home = pathlib.Path(sys.argv[1]), sys.argv[2], pathlib.Path(sys.argv[3])
+def load(name):
+    return json.load(open(root / (name + '.json')))
+before, preview_files, after = (load('manifest-' + label) for label in ('before', 'preview', 'after'))
+preview, codes = load('preview'), load('exit-codes')
+apply = load('apply') if codes['apply'] is not None and (root / 'apply.json').stat().st_size else None
+items = [item for phase in preview['phases'] for item in phase['items']]
+runtime = next(phase for phase in preview['phases'] if phase['name'] == 'runtime')
+app = app_home.relative_to(root).as_posix() + '/'
+preserved = {p: digest for p, digest in before.items() if p.startswith(app) and not p.startswith(app + 'app')}
+if scenario == 'codex-plugin-vs-copied':
+    preserved['home/.codex/config.toml'] = before['home/.codex/config.toml']
+observations = {
+    'previewLifecycle': preview.get('lifecycleStatus'),
+    'applyLifecycle': ('applied' if apply.get('phase') == 'complete' and apply.get('status') == 'success' else apply.get('lifecycleStatus') or apply.get('status')) if apply else ('skipped' if codes['apply'] is None else 'rejected'),
+    'exitCodes': codes,
+    'applyResult': apply,
+    'previewUnchanged': before == preview_files,
+    'noMutation': before == after,
+    'preservedChecksumOk': all(after.get(p) == digest for p, digest in preserved.items()),
+    'preservedPaths': sorted(preserved),
+    'appSubTreeRemoved': app + 'app' not in after,
+    'unrecognizedAppHomeEntries': sorted(p[len(app):] for p in after if p.startswith(app) and p not in {app + 'app'} and p[len(app):] in {'notes.txt', 'backup'}),
+    'runtimeMatrix': {name: ','.join(sorted({i['status'] for i in runtime['items'] if i.get('runtime') == name})) for name in sorted({i['runtime'] for i in runtime['items'] if 'runtime' in i})},
+    'runtimeMatrixPhase': 'preview',
+    'runtimePreviewItems': runtime['items'],
+    'pythonLeftoversFound': None,
+    'idempotentSecondRun': None,
+    'assertions': {},
 }
-
-if [[ -f "$manifest_before" ]]; then
-  collect_manifest "$manifest_after"
-  python3 - "$manifest_before" "$manifest_after" <<'PY'
-import json, sys
-before, after = map(json.load, (open(sys.argv[1]), open(sys.argv[2])))
-for k, v in before.items():
-    if after.get(k) != v:
-        raise SystemExit(f"checksum mismatch for preserved path {k}")
-print("assert_preserved_checksums: ok")
+checks = observations['assertions']
+def check(name, value):
+    checks[name] = bool(value)
+check('preview_read_only', observations['previewUnchanged'])
+check('preserved_checksums', observations['preservedChecksumOk'])
+check('preview_exit', codes['preview'] == 1)
+if scenario == 'stable-safety':
+    check('stable_boundary', preview['channel']['channel'] == 'stable' and preview['crossMajorBoundary'] and any(i['action'] == 'major-boundary' and i['status'] == 'blocked' for i in items))
+    check('no_cross_major_operations', 'requires_explicit_major_opt_in' not in json.dumps(items))
+    check('stable_rejection', codes['apply'] == 1 and apply is None and (root / 'apply.stderr').read_text().strip() == 'upgrade error: v2-to-v3 apply requires the development channel; preview there, then retry with --yes.')
+    check('no_mutation', observations['noMutation'])
+elif scenario == 'partial-only-runtime':
+    check('partial_pending', preview['lifecycleStatus'] == 'manual_review_needed' and runtime['status'] == 'pending' and runtime['summary']['pending'] > 0)
+    check('full_cutover_required', any(i['action'] == 'entity-cutover-required' and i['status'] == 'blocked' for i in items))
+    check('preview_only', codes['apply'] is None and observations['noMutation'])
+else:
+    check('forward_state_validation', apply is not None and apply.get('startup_validation', {}).get('status') == 'passed' and apply.get('state_validation', {}).get('status') == 'passed' and apply['state_validation']['entity_count'] > 0)
+    check('entity_activation', any(p.startswith('project/.agentera/entities/') for p in after))
+    if scenario == 'codex-plugin-vs-copied':
+        check('manual_review_preview', preview['lifecycleStatus'] == 'manual_review_needed')
+        check('expected_apply_failure', codes['apply'] == 1 and apply is not None and apply.get('phase') == 'apply' and apply.get('status') == 'failed')
+        for resource in ('plugin', 'restorer'):
+            check('unowned_' + resource, any(i.get('resourceId') == 'agentera.registration.' + resource + '.codex' and i['status'] == 'blocked' and i['action'] == 'review-declared-resource' and 'shared configuration lacks key-level ownership evidence' in i['message'] for i in items))
+        check('copied_hook_removed', 'home/.codex/hooks/codex-hooks.json' in before and 'home/.codex/hooks/codex-hooks.json' not in after)
+        check('registration_preserved', before['home/.codex/config.toml'] == after.get('home/.codex/config.toml'))
+    else:
+        check('successful_apply', codes['apply'] == 0 and apply is not None and apply.get('phase') == 'complete' and apply.get('status') == 'success')
+        check('app_subtree_removed', observations['appSubTreeRemoved'])
+        if scenario == 'happy-path-clean':
+            check('clean_codex_fixture', 'home/.codex/config.toml' not in before)
+            check('ready_preview', preview['lifecycleStatus'] == 'ready_to_apply')
+        if scenario == 'noisy-app-home':
+            check('foreign_noise_present_and_preserved', all(p in before and before[p] == after.get(p) for p in (app + 'notes.txt', app + 'backup/readme.txt')))
+json.dump(observations, open(root / 'observations.json', 'w'), indent=2, sort_keys=True)
+failed = [name for name, passed in checks.items() if not passed]
+if failed:
+    raise SystemExit('scenario assertions failed: ' + ', '.join(failed))
+print('assert_scenario_outcomes: ok')
 PY
-fi
 
-if [[ "$SCENARIO" != "noisy-app-home" && "$SCENARIO" != "partial-only-runtime" ]]; then
-  if [[ -d "$APP_HOME/app" ]]; then
-    echo "assert_app_subtree_removed: app/ still present under $APP_HOME" >&2
-    exit 1
-  fi
-  echo "assert_app_subtree_removed: ok"
-fi
-
-if [[ "$SCENARIO" == "stable-safety" ]]; then
-  stable_out="$SANDBOX/stable-preview.json"
-  "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-    --dry-run --channel stable >"$stable_out" 2>"$SANDBOX/stable.stderr" || rc=$?
-  rc="${rc:-0}"
-  python3 - "$stable_out" <<'PY'
-import json, sys
-payload = json.load(open(sys.argv[1]))
-text = json.dumps(payload)
-if "requires_explicit_major_opt_in" in text:
-    raise SystemExit("stable preview contains cross-major ops")
-print("assert_stable_channel_safe: ok")
-PY
+if [[ "$SCENARIO" == stable-safety || "$SCENARIO" == partial-only-runtime ]]; then
+  echo "assert-v2v3-migration: expected refusal/preview-only; no mutation"
+  exit 0
 fi
 
 second_out="$SANDBOX/second-dry-run.json"
+FORCE=()
+if [[ "$SCENARIO" == noisy-app-home ]]; then FORCE=(--force); fi
 "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-  --dry-run --channel development >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
+  --dry-run --channel development "${FORCE[@]}" >"$second_out" 2>"$SANDBOX/second.stderr" || rc2=$?
 rc2="${rc2:-0}"
-python3 - "$second_out" "$SCENARIO" "$rc2" <<'PY'
+python3 - "$second_out" "$SCENARIO" "$rc2" "$SANDBOX/observations.json" <<'PY'
 import json, sys
 payload = json.load(open(sys.argv[1]))
 scenario, rc = sys.argv[2], int(sys.argv[3])
 pending = payload.get("summary", {}).get("pending", 0)
 lifecycle = payload.get("lifecycleStatus")
-if scenario in {"noisy-app-home", "partial-only-runtime"}:
-    print("assert_upgrade_idempotent: skipped for scenario", scenario)
-else:
-    if pending != 0 or lifecycle != "no_changes_needed" or rc != 0:
-        raise SystemExit(f"idempotency failed pending={pending} lifecycle={lifecycle} rc={rc}")
-    print("assert_upgrade_idempotent: ok")
+observations = json.load(open(sys.argv[4]))
+idempotent = pending == 0 and lifecycle == 'no_changes_needed' and rc == 0
+observations['idempotentSecondRun'] = idempotent
+expected = lifecycle == 'manual_review_needed' and rc == 1 if scenario == 'codex-plugin-vs-copied' else idempotent
+observations['assertions']['second_preview'] = expected
+observations['secondPreviewLifecycle'] = lifecycle
+json.dump(observations, open(sys.argv[4], 'w'), indent=2, sort_keys=True)
+if not expected:
+    raise SystemExit(f"second preview failed pending={pending} lifecycle={lifecycle} rc={rc}")
+print('assert_second_preview: ok')
 PY
 
-"$SCRIPT_DIR/scan-python-leftovers.sh" "$SANDBOX"
+# Scan installed runtime surfaces, not JSON evidence describing retired paths.
+# The negative Codex case preserves its registration, not copied Python hooks.
+scan_rc=0
+for root in "$HOME" "$PROJECT" "$XDG_CONFIG_HOME"; do
+  "$SCRIPT_DIR/scan-python-leftovers.sh" "$root" >>"$SANDBOX/python-scan.stderr" || scan_rc=$?
+done
+python3 - "$SANDBOX" "$scan_rc" <<'PY'
+import json, pathlib, sys
+root, rc = pathlib.Path(sys.argv[1]), int(sys.argv[2])
+hits = [line for line in (root / 'python-scan.stderr').read_text().splitlines() if line.startswith('leftover:')]
+expected = rc == 0 and not hits
+observations = json.load(open(root / 'observations.json'))
+observations['pythonLeftoversFound'] = hits
+observations['assertions']['python_leftovers'] = expected
+json.dump(observations, open(root / 'observations.json', 'w'), indent=2, sort_keys=True)
+if not expected:
+    raise SystemExit('unexpected Python leftovers: ' + repr(hits))
+PY
 
 # Post-migration startup smoke: prime must start cleanly and advertise the
 # deferred profile seam; the exact profile command must then validate it.
@@ -203,6 +229,19 @@ validity = payload.get("validity") or {}
 if payload.get("status") != "ok" or validity.get("status") != "valid":
     raise SystemExit(f"assert_post_migration_profile: invalid grounding {payload!r}")
 print("assert_post_migration_profile: ok")
+PY
+
+python3 - "$SANDBOX" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+observations = json.load(open(root / 'observations.json'))
+startup = json.load(open(root / 'prime-post-migration.json'))['startup']
+# Summarize observed outcomes, not the unrelated command-discovery capsule.
+# The full startup response remains in the sandbox evidence file.
+observations['startup'] = {key: startup[key] for key in ('outcome', 'state_cutover')}
+observations['profileValidity'] = json.load(open(root / 'profile-post-migration.json'))['validity']
+observations['assertions']['startup_and_profile'] = observations['startup']['outcome'] == 'ok' and observations['profileValidity']['status'] == 'valid'
+json.dump(observations, open(root / 'observations.json', 'w'), indent=2, sort_keys=True)
 PY
 
 echo "assert-v2v3-migration: ok"

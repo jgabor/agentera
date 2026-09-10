@@ -9,6 +9,10 @@ REPO_ROOT="${REPO_ROOT:-$(cd "$SCRIPT_DIR/../.." && pwd)}"
 SANDBOX="$(mktemp -d "${TMPDIR:-/tmp}/agentera-v2v3.XXXXXX")"
 
 cleanup() {
+  if [[ -n "${AGENTERA_SANDBOX_EVIDENCE_DIR:-}" ]]; then
+    mkdir -p "$AGENTERA_SANDBOX_EVIDENCE_DIR/$SCENARIO"
+    cp "$SANDBOX/"*.json "$SANDBOX/"*.stderr "$AGENTERA_SANDBOX_EVIDENCE_DIR/$SCENARIO/"
+  fi
   rm -rf "$SANDBOX"
 }
 trap cleanup EXIT
@@ -16,21 +20,16 @@ trap cleanup EXIT
 export REPO_ROOT
 export NPM_CONFIG_CACHE="$SANDBOX/npm-cache"
 mkdir -p "$NPM_CONFIG_CACHE"
-
 "$SCRIPT_DIR/seed-v2-fixture.sh" "$SANDBOX" "$SCENARIO" >/dev/null
-
 export HOME="$SANDBOX/home"
 export XDG_CONFIG_HOME="$SANDBOX/xdg-config"
-
 APP_HOME="$HOME/.local/share/agentera"
 if [[ "$SCENARIO" == "legacy-home-retirement" ]]; then
   APP_HOME="$HOME/.agents/agentera"
 fi
 PROJECT="$SANDBOX/project"
 
-# Cross-major apply accepts only a complete v2 source tracked unchanged at
-# HEAD. Sandbox fixtures are copied into a fresh directory, so establish that
-# source authority before either the source-build or npm package runtime inspects it.
+# Cross-major apply requires the complete v2 source tracked unchanged at HEAD.
 git -C "$PROJECT" init -q
 git -C "$PROJECT" add -f .
 git -C "$PROJECT" \
@@ -52,180 +51,76 @@ if [[ "$TIER" == "L2" ]]; then
 else
   export AGENTERA_BOOTSTRAP_SOURCE_ROOT="$REPO_ROOT"
   CLI=(node "$REPO_ROOT/packages/cli/dist/bin/agentera.js")
-fi
-
-if [[ ! -f "$REPO_ROOT/packages/cli/dist/bin/agentera.js" && "$TIER" != "L2" ]]; then
-  (cd "$REPO_ROOT/packages/cli" && pnpm run build) >/dev/null
-fi
-
-report="$SANDBOX/sandbox-report.json"
-preview_rc=0
-apply_rc=0
-
-if [[ "$SCENARIO" == "stable-safety" ]]; then
-  CHANNEL=(--channel stable)
-  TARGET=()
-else
-  CHANNEL=(--channel development)
-  TARGET=()
-fi
-
-if [[ "$SCENARIO" == "partial-only-runtime" ]]; then
-  ONLY=(--only runtime)
-else
-  ONLY=()
-fi
-
-FORCE=()
-if [[ "$SCENARIO" == "noisy-app-home" ]]; then
-  FORCE=(--force)
-fi
-
-collect_manifest() {
-  python3 - "$APP_HOME" "$PROJECT" "$SANDBOX/manifest-before.json" <<'PY'
-import hashlib, json, os, sys
-app_home, project, out = sys.argv[1:4]
-manifest = {}
-for root in (app_home, project):
-    ag = os.path.join(root, ".agentera")
-    if not os.path.isdir(ag):
-        continue
-    for name in os.listdir(ag):
-        p = os.path.join(ag, name)
-        if os.path.isfile(p) and name.endswith(".yaml"):
-            rel = os.path.relpath(p, root)
-            manifest[rel] = hashlib.sha256(open(p, "rb").read()).hexdigest()
-json.dump(manifest, open(out, "w"), indent=2, sort_keys=True)
-PY
-}
-collect_manifest
-
-set +e
-"${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-  "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" --dry-run \
-  >"$SANDBOX/preview.json" 2>"$SANDBOX/preview.stderr"
-preview_rc=$?
-set -e
-
-if [[ ! -s "$SANDBOX/preview.json" ]]; then
-  echo "harness: empty preview JSON (tier=$TIER rc=$preview_rc)" >&2
-  cat "$SANDBOX/preview.stderr" >&2 || true
-  exit 1
-fi
-
-preview_lifecycle="$(
-  python3 - "$SANDBOX/preview.json" <<'PY'
-import json, sys
-print(json.load(open(sys.argv[1])).get("lifecycleStatus", "unknown"))
-PY
-)"
-
-overall="pass"
-if [[ "$SCENARIO" == "stable-safety" ]]; then
-  if [[ "$preview_rc" -ne 1 && "$preview_rc" -ne 0 ]]; then overall="fail"; fi
-elif [[ "$SCENARIO" == "partial-only-runtime" ]]; then
-  if [[ "$preview_rc" -ne 1 || "$preview_lifecycle" != "manual_review_needed" ]] ||
-    ! python3 - "$SANDBOX/preview.json" <<'PY'; then
-import json, sys
-payload = json.load(open(sys.argv[1]))
-runtime = next((phase for phase in payload.get("phases", []) if phase.get("name") == "runtime"), None)
-if (
-    runtime is None
-    or runtime.get("status") != "pending"
-    or (runtime.get("summary") or {}).get("pending", 0) < 1
-):
-    raise SystemExit(1)
-PY
-    overall="fail"
-  fi
-elif [[ "$preview_rc" -ne 1 ]]; then
-  overall="fail"
-fi
-
-apply_lifecycle="skipped"
-if [[ "$SCENARIO" != "stable-safety" && "$SCENARIO" != "partial-only-runtime" ]]; then
-  set +e
-  "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
-    "${CHANNEL[@]}" "${TARGET[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes \
-    >"$SANDBOX/apply.json" 2>"$SANDBOX/apply.stderr"
-  apply_rc=$?
-  set -e
-
-  if [[ ! -s "$SANDBOX/apply.json" ]]; then
-    echo "harness: empty apply JSON (tier=$TIER rc=$apply_rc)" >&2
-    cat "$SANDBOX/apply.stderr" >&2 || true
+  if [[ ! -f "$REPO_ROOT/packages/cli/dist/bin/agentera.js" ]]; then
+    echo 'harness: build the checkout CLI with vp run build first' >&2
     exit 1
   fi
+fi
 
-  apply_lifecycle="$(
-    python3 - "$SANDBOX/apply.json" <<'PY'
-import json, sys
-payload = json.load(open(sys.argv[1]))
-lifecycle = payload.get("lifecycleStatus")
-if isinstance(lifecycle, str):
-    print(lifecycle)
-elif (
-    payload.get("phase") == "complete"
-    and payload.get("status") == "success"
-    and (payload.get("startup_validation") or {}).get("status") == "passed"
-    and (payload.get("state_validation") or {}).get("status") == "passed"
-):
-    print("applied")
-else:
-    print("unknown")
+CHANNEL=(--channel development)
+if [[ "$SCENARIO" == "stable-safety" ]]; then CHANNEL=(--channel stable); fi
+ONLY=()
+if [[ "$SCENARIO" == "partial-only-runtime" ]]; then ONLY=(--only runtime); fi
+FORCE=()
+if [[ "$SCENARIO" == "noisy-app-home" ]]; then FORCE=(--force); fi
+
+collect_manifest() {
+  python3 - "$SANDBOX" "$1" <<'PY'
+import hashlib, json, os, pathlib, sys
+root, label = pathlib.Path(sys.argv[1]), sys.argv[2]
+manifest = {}
+for name in ('home', 'project', 'xdg-config'):
+    for base, dirs, files in os.walk(root / name):
+        dirs[:] = sorted(d for d in dirs if d != '.git')
+        for entry in sorted(dirs + files):
+            p = pathlib.Path(base) / entry
+            key = p.relative_to(root).as_posix()
+            if p.is_symlink():
+                manifest[key] = 'link:' + os.readlink(p)
+            elif p.is_file():
+                manifest[key] = hashlib.sha256(p.read_bytes()).hexdigest()
+            else:
+                manifest[key] = 'directory'
+json.dump(manifest, open(root / ('manifest-' + label + '.json'), 'w'), indent=2, sort_keys=True)
 PY
-  )"
-  if [[ "$apply_rc" -ne 0 ]]; then
-    overall="fail"
-  elif [[ "$SCENARIO" != "noisy-app-home" ]]; then
-    if ! "$SCRIPT_DIR/assert-v2v3-migration.sh" "$SANDBOX" "$SCENARIO"; then
-      overall="fail"
-    fi
-  else
-    if [[ "$apply_lifecycle" != "applied" && "$apply_lifecycle" != "manual_review_needed" ]]; then
-      overall="fail"
-    fi
-  fi
-fi
-
-cli_version="repo-dist"
-if [[ "$TIER" == "L2" ]]; then
-  cli_version="${AGENTERA_NPM_PIN:-agentera@3.0.0-next.0}"
-fi
-
-python3 - "$report" "$SCENARIO" "$TIER" "$cli_version" "$preview_lifecycle" "$apply_lifecycle" "$overall" <<'PY'
-import json, sys
-report, fixture, tier, cli_version, preview_lifecycle, apply_lifecycle, overall = sys.argv[1:8]
-payload = {
-    "fixtureId": fixture,
-    "tier": tier,
-    "cliVersion": cli_version,
-    "previewLifecycle": preview_lifecycle,
-    "applyLifecycle": apply_lifecycle,
-    "preservedChecksumOk": True,
-    "pythonLeftoversFound": [],
-    "appSubTreeRemoved": fixture not in {"noisy-app-home", "stable-safety", "partial-only-runtime"},
-    "unrecognizedAppHomeEntries": ["notes.txt"] if fixture == "noisy-app-home" else [],
-    "idempotentSecondRun": fixture not in {"noisy-app-home", "partial-only-runtime"} and overall == "pass",
-    "runtimeMatrix": {
-        "claude": "noop",
-        "opencode": "applied",
-        "copilot": "noop",
-        "codex": "applied",
-        "cursor": "applied",
-        "cursor-agent": "noop",
-    },
-    "overall": overall,
 }
-json.dump(payload, open(report, "w"), indent=2, sort_keys=True)
+collect_manifest before
+preview_rc=0
+"${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
+  "${CHANNEL[@]}" "${ONLY[@]}" --dry-run \
+  >"$SANDBOX/preview.json" 2>"$SANDBOX/preview.stderr" || preview_rc=$?
+collect_manifest preview
+
+# Partial migration remains preview-only. Stable apply must reject without mutation.
+apply_rc=skipped
+if [[ "$SCENARIO" != "partial-only-runtime" ]]; then
+  apply_rc=0
+  "${CLI[@]}" upgrade --install-root "$APP_HOME" --project "$PROJECT" --home "$HOME" \
+    "${CHANNEL[@]}" "${ONLY[@]}" "${FORCE[@]}" --yes \
+    >"$SANDBOX/apply.json" 2>"$SANDBOX/apply.stderr" || apply_rc=$?
+fi
+collect_manifest after
+python3 - "$SANDBOX/exit-codes.json" "$preview_rc" "$apply_rc" <<'PY'
+import json, sys
+json.dump({'preview': int(sys.argv[2]), 'apply': None if sys.argv[3] == 'skipped' else int(sys.argv[3])}, open(sys.argv[1], 'w'))
+PY
+
+overall=pass
+"$SCRIPT_DIR/assert-v2v3-migration.sh" "$SANDBOX" "$SCENARIO" || overall=fail
+cli_version=repo-dist
+if [[ "$TIER" == "L2" ]]; then cli_version="$PIN"; fi
+python3 - "$SANDBOX" "$SCENARIO" "$TIER" "$cli_version" "$overall" <<'PY'
+import json, pathlib, sys
+root = pathlib.Path(sys.argv[1])
+observations = root / 'observations.json'
+payload = json.load(open(observations)) if observations.exists() else {}
+payload.update(fixtureId=sys.argv[2], tier=sys.argv[3], cliVersion=sys.argv[4], overall=sys.argv[5])
+json.dump(payload, open(root / 'sandbox-report.json', 'w'), indent=2, sort_keys=True)
 print(json.dumps(payload, indent=2))
 PY
-
-cp "$report" "${REPO_ROOT}/sandbox-report-${SCENARIO}.json" 2>/dev/null || true
-
-if [[ "$overall" != "pass" ]]; then
+cp "$SANDBOX/sandbox-report.json" "$REPO_ROOT/sandbox-report-$SCENARIO.json"
+if [[ "$overall" != pass ]]; then
   echo "harness failed for $SCENARIO (preview_rc=$preview_rc apply_rc=$apply_rc)" >&2
   exit 1
 fi
-
-echo "harness passed: $SCENARIO"
+echo "harness passed: $SCENARIO (expected scenario outcome, not necessarily successful migration)"

@@ -60,8 +60,14 @@ toolchain without automatic install or caching, runs bare `vp check`, then
 runs uncached `vp run verify:development`. This runs development safety,
 not full release qualification, and produces no receipt. Its
 40-minute step deadline retains the 2,400,000 ms authority deadline, while the
-45-minute job allows setup and the dependent build keeps its separate
-construction allowance. A verification failure therefore prevents candidate
+45-minute job allows setup, an explicit `vp run build` of the checkout CLI, and
+all five L1 source-migration scenarios: `happy-path-clean`, `stable-safety`,
+`noisy-app-home`, `codex-plugin-vs-copied`, and `partial-only-runtime`.
+The private verification build is cleaned up and cannot serve those scenarios.
+Each scenario must satisfy its typed outcome and preservation assertions;
+expected refusal is a passing safety test, not successful migration. No Bun or
+uv setup is needed. The dependent candidate build retains its separate
+construction allowance. A build or scenario failure therefore prevents candidate
 construction, artifact upload, and registry effects. After verification, CI
 builds once from `GITHUB_SHA`, and sets the
 candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
