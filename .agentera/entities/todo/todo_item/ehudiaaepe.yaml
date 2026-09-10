@@ -3,12 +3,21 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration."
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration."
+      description: "[chore:3.0.0] Address existing CLI lint warnings"
       severity: normal
       status: open
       order: 13
+  kind: chore
+  target_version: 3.0.0
+  requirements:
+    - Reduce pre-existing packages/cli lint findings in a dedicated cleanup; the verified September 10 baseline is 426 warnings and zero errors.
+    - Preserve the current formatter and lint non-regression gates; formatter normalization was completed by the Vite+ consolidation plan.
+  acceptance:
+    - The current lint baseline is measured before cleanup and warning counts decrease without new errors.
+    - Formatting and relevant behavioral checks remain green.
+  release_blocker: false
+  title: Address existing CLI lint warnings

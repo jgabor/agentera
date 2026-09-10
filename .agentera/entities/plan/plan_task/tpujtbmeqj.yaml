@@ -29,10 +29,14 @@ record:
     - qpqxqimzah
     - gaintyurzz
     - dngmiitupr
-  status: in_progress
+  status: complete
   acceptance:
-    - GIVEN all local work WHEN gates run THEN the complete required suite passes.
+    - GIVEN the approved integration closeout scope WHEN development qualification runs THEN all required development gates pass; historical compiler re-certification remains deferred to TODO vcrmaxuasq without claiming full qualification.
     - GIVEN fresh push authorization WHEN one hosted run executes THEN uncontended phase timing and projected queue cost are recorded; otherwise no remote effect occurs.
     - GIVEN satisfied outcomes WHEN TODO state closes THEN oeadkhtqub, qefxkkmyyw, dzrruetyod, ifdcgoxqsf, bhwgdxohmy, and ltcibijoza resolve.
     - GIVEN closeout WHEN state reconciles THEN rtfizoqaxt and ehudiaaepe remain accurate, plan and progress agree, and compact passes.
   plan: vtqzlztjsk
+  evidence:
+    - Actions https://github.com/jgabor/agentera/actions/runs/34455682896 passed development 11 gates, exact-tarball validation, Trusted Publishing, and convergence to npm next 3.0.0-dev.110.
+    - "Qualification elapsed 1278070ms: batch A 1102400ms, resource 22320ms, capacity 131630ms, readers 21504ms; reconciled, zero leases. Job service: verification 21m38s, construction 26s, publication 30s; end-to-end 22m45s. Serialized queue estimate N ahead times 22m45s; ten ahead 3h47m30s. Projection only, not contended measurement."
+    - User deferred historical compiler recertification to vcrmaxuasq; full qualification remains unqualified. Six required TODOs resolved; rtfizoqaxt and ehudiaaepe remain open.

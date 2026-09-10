@@ -27,7 +27,7 @@
 - [ ] [id:ymoffilhgo] [feat:3.0.0] Add macOS and Windows GitHub Actions jobs for `pnpm -C packages/cli test` (and related gates); CLI tests are cross-platform-hardened on darwin and linux.
 - [ ] [id:zxccscfiox] [test:3.0.0] Make contributor verification terminable and discoverable. Reproduce the 300-second timeout with process-tree evidence, assign cleanup to the actual owner, and, if reproduced, verify that termination stops all descendants without residue. Document `pnpm -C packages/cli run test:source -- test/path.test.ts`, including exact-path and source-owner constraints.
 - [ ] [id:ttwpziwvol] [docs:3.0.0] Surface the four-question update/repair wording template (What happened / What the preview did / What the recommended fix will do / What it will not do) in `agentera prime --format json` when `app.status` is `outdated` or `repair_needed`, or document in the collapsed SKILL.md that the host must read `agentera prime --context status --format json` `prose` for the framing. The JSON provides `app.approval` (one-line) and `app.signals[].message` — not the structured four-question template or recommendation-first label convention the old SKILL.md specified. (Branch: `feat/v3` — implement on `feat/v3`.)
-- [ ] [id:ehudiaaepe] [chore:3.0.0] Address pre-existing lint findings surfaced by the `vp lint` migration in `packages/cli`. The toolchain-cutover plan (Task 3) wired `scripts.lint` → `vp lint` and recorded a baseline of 101 warnings / 0 errors over 190 files (exit 0) at `packages/cli/.lint-baseline.txt`; `vp fmt --check src/` reports 151 files would be reformatted. Non-regression is the gate held here — address the findings (unused imports, regex-preference, control-char, etc.) in a separate cleanup pass, not as part of the toolchain migration.
+- [ ] [id:ehudiaaepe] [chore:3.0.0] Address existing CLI lint warnings
 - [ ] [id:cybxkpsyut] [refactor:3.0.0] After the unified status capsule and reserve gate ship, measure whether repeated capability instructions remain a material startup cost. Only if they do, generate one concise, validated, versioned execution contract from the authoritative capability prose so callers can omit an unchanged instruction body without creating a second hand-maintained contract.
 - [ ] [id:savaekyuar] [feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`
 - [ ] [id:ocntbqcatr] [feat:3.0.0] Detect "You're right", "my mistake", "You're right to push back" responses during profiling, to add generalized rules to the profile to correct the model's behavior.
@@ -41,8 +41,8 @@
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
-- [ ] [id:dzrruetyod] [chore:3.0.0] Unify setup-requiring CI behind Vite+
 - [ ] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
+- [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 
 ## ⇢ Annoying
 
@@ -185,3 +185,4 @@
 - [x] [id:ltcibijoza] [test:3.0.0] Make Vite+ orchestration evidence independently replayable
 - [x] [id:jrwiznhelw] [test:3.0.0] Make source verification hermetic under disposable user roots
 - [x] [id:gutcrlqdyy] [test:3.0.0] Make root toolchain verification host-runtime independent
+- [x] [id:dzrruetyod] [chore:3.0.0] Unify setup-requiring CI behind Vite+

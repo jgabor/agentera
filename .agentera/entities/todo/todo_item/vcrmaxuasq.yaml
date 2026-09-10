@@ -1,0 +1,25 @@
+id: vcrmaxuasq
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Re-certify historical all-test typecheck evidence
+  requirements:
+    - Document the intended source boundary and repair the historical compiler source-binding mismatch without silently replacing retained evidence.
+    - Reconcile the retained 449-diagnostic measurement with the completed task acceptance of 451 diagnostics.
+    - Keep development qualification separate and full qualification unqualified until integrity-bound replay and tamper checks pass.
+  acceptance:
+    - The declared compiler evidence source binding and isolated replay pass together with explicit provenance for any regenerated measurement.
+    - The diagnostic count agrees across the retained artifact and its owning acceptance criteria.
+    - Invalid or missing evidence still blocks full qualification; routine development publication remains separately governed.
+  release_blocker: true
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Re-certify historical all-test typecheck evidence"
+      severity: normal
+      status: open
+      order: 28

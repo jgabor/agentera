@@ -14,12 +14,16 @@ record:
     - Hosted wall time and queue cost are recorded after rollout.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[chore:3.0.0] Unify setup-requiring CI behind Vite+"
+      status: resolved
+      order: 138
       severity: normal
-      status: open
-      order: 27
+  lifecycle:
+    operation: resolve
+    reason: Pinned Vite+ setup and frozen installs now gate serialized same-source development construction and publication. Actions run 34455682896 passed and npm next converged to dev.110; hosted timings and queue-cost projection are retained with final plan evidence.
+    date: 2026-09-10

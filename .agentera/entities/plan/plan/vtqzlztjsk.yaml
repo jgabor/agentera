@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-09-03
-    status: open
+    status: archived
     reviewed: 2026-09-03
     critic_issues: 8 found, 4 addressed, 4 dismissed
     title: "Plan: Finish replayable Vite+ consolidation"
@@ -46,5 +46,8 @@ record:
       rationale: The docs policy exposes no versioning block and development candidate versions remain CI-derived.
     - issue: setup-vp in a non-OIDC build job violates the publisher boundary.
       rationale: The jobs are separate; the credential-bearing publisher remains setup-free.
-  surprises: "Approved scope amendment: routine development publication requires product safeguards, not full benchmark or historical tooling certification. Full qualification remains explicit and distinguishable; development retains bounded heap/output checks. This replaces the earlier full-release requirement for every selected push, not completed task history. Critic risks addressed: lighter evidence must never satisfy full qualification, and removing benchmarks must not silently remove resource safeguards. No deadline increase or new push authorization is granted."
+  surprises: |-
+    Approved scope amendment: routine development publication requires product safeguards, not full benchmark or historical tooling certification. Full qualification remains explicit and distinguishable; development retains bounded heap/output checks. This replaces the earlier full-release requirement for every selected push, not completed task history. Critic risks addressed: lighter evidence must never satisfy full qualification, and removing benchmarks must not silently remove resource safeguards. No deadline increase or new push authorization is granted.
+    Approved scope amendment: routine development publication requires product safeguards, not full benchmark or historical tooling certification. Full qualification remains explicit and distinguishable; development retains bounded heap/output checks. This replaces the earlier full-release requirement for every selected push, not completed task history. Critic risks addressed: lighter evidence must never satisfy full qualification, and removing benchmarks must not silently remove resource safeguards. No deadline increase or new push authorization is granted.
+    User-approved closeout amendment: historical all-test compiler re-certification, including source-binding drift and the 449/451 diagnostic discrepancy, is deferred to TODO vcrmaxuasq. It is no longer required to close this Vite+ development-integration plan. Full qualification remains unqualified until that follow-up passes; prior task/evaluation history is preserved, not retroactively certified. Closeout requires the successful development CI/npm path and state reconciliation; installer hardening and lint cleanup remain separate open work.
   previous_plan_archived: seltbrpsin
