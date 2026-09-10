@@ -63,13 +63,14 @@ function validateSetupJobs(workflows: any[]): void {
 }
 
 describe("toolchain baseline", () => {
-  it("retains every exact setup-vp release and the accepted risk boundary", () => {
+  it("retains the setup-vp inventory without treating its old waiver as integrity acceptance", () => {
+    expect(baseline.status).toBe("bootstrap_replacement_pending_rollout");
     expect(Object.entries(baseline.selection.setup_vp.release_inventory)).toEqual(setupVpReleases);
     expect(Object.values(baseline.selection.setup_vp.implementations)).toSatisfy((implementations: any[]) => implementations.every((implementation) => implementation.integrity_verified === false && implementation.fail_closed === false));
     expect(baseline.selection.setup_vp.selected).toEqual({
       version: "1.18.0",
       action_commit: "1b32467adbe183473499fd9d5d372c3ed9641754",
-      classification: "accepted_risk",
+      classification: "unverified_pending_replacement",
       boundary: "non_oidc_install_or_build_jobs_only",
       compatibility: "requests the exact Vite+ 0.3.0 release before fallback",
     });

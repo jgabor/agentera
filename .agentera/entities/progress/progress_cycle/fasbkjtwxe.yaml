@@ -1,0 +1,16 @@
+id: fasbkjtwxe
+artifact: progress
+record:
+  timestamp: 2026-09-10 14:53
+  type: fix
+  phase: build
+  what: Implemented and locally exercised an integrity-bound bootstrap proof without workflow rollout.
+  context:
+    intent: Prove task fybrcupkrl without changing its lifecycle state.
+    constraints: Preserve selected tool versions, frozen lockfile authority, lifecycle restrictions, workflow caches and the credential-bearing publisher.
+    unknowns: Hosted Corepack provision and actual GitHub job behavior remain unverified. Optional decision details were omitted; profile grounding remains absent.
+    scope: Bootstrap proof, current baseline classification and targeted regressions only.
+  discovered: Host Node does not imply Corepack availability. The proof requires a matching provisioned Corepack bundle, a fresh private home and store, and explicit digest-bound pnpm execution; the old installer waiver is not acceptance evidence.
+  verified: The isolated proof passed six boundary checks, including a local Vite+ TypeScript build and rejection of altered or unavailable inputs. Two targeted test files passed all six tests; typecheck and scoped lint passed. Mechanism and provenance are documented in references/analysis/bootstrap-integrity.md.
+  next: Coordinator owns task evaluation and commit. Workflow rollout and hosted prerequisite verification remain separate work.
+  publication_order: 381

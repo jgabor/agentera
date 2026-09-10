@@ -4,10 +4,20 @@ record:
   name: Prove a fail-closed pinned bootstrap
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a clean supported environment WHEN bootstrap runs THEN each downloaded bootstrap executable is checked against reviewed immutable integrity before execution and selected versions match.
     - GIVEN altered, missing, or unavailable expected inputs WHEN setup runs THEN it fails before unverified execution without mutable fallbacks or cached-success substitution.
     - GIVEN installed tools WHEN a representative project build runs THEN pinned local tools resolve without global-tool leakage.
     - GIVEN trust-boundary regressions WHEN tested THEN successful and rejecting paths pass without expanding the credential-bearing publisher.
   plan: newohpexum
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-newohpexum-bootstrap-proof-1
+      source: "Independent audit: all four bootstrap-proof criteria and evidence audit passed; isolated pinned-tool build and six integrity/rejection checks verified. Hosted rollout remains task onqdqswcrj."
+      recorded_at: 2026-09-10 14:57
+      writer_command: agentera state plan record-evaluation

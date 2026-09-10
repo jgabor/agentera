@@ -115,7 +115,7 @@ try {
   assert.equal(retainedBaseline.selection.vite_plus.version, REQUIRED_VP);
   assert.equal(retainedBaseline.selection.setup_vp.selected.version, REQUIRED_SETUP_VP);
   assert.equal(retainedBaseline.selection.setup_vp.selected.action_commit, REQUIRED_SETUP_VP_COMMIT);
-  assert.equal(retainedBaseline.selection.setup_vp.selected.classification, "accepted_risk");
+  assert.equal(retainedBaseline.selection.setup_vp.selected.classification, "unverified_pending_replacement");
   assert.equal(retainedBaseline.selection.setup_vp.selected.boundary, "non_oidc_install_or_build_jobs_only");
 
   const fixture = path.join(sandbox, "project");
