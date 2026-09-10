@@ -1,5 +1,5 @@
 schema_version: agentera.toolchainBaseline.v2
-status: bootstrap_replacement_pending_rollout
+status: bootstrap_rollout_pending_hosted_acceptance
 recorded: 2026-09-03
 purpose: >-
   Retain the exact Vite+ candidate, exhaustive setup-vp trust review, isolated
@@ -22,14 +22,15 @@ selection:
     selected:
       version: 1.18.0
       action_commit: 1b32467adbe183473499fd9d5d372c3ed9641754
-      classification: unverified_pending_replacement
+      classification: replaced_pending_hosted_acceptance
       boundary: non_oidc_install_or_build_jobs_only
       compatibility: requests the exact Vite+ 0.3.0 release before fallback
     conclusion: >-
-      Still deployed in non-OIDC install or build jobs, but unverified installer
-      execution and mutable fallback do not satisfy bootstrap integrity acceptance.
-      The local replacement proof is documented in bootstrap-integrity.md;
-      workflow rollout and hosted validation remain separate work.
+      Retained as historical selection inventory, no longer deployed in the four
+      setup jobs. Unverified installer execution and mutable fallback never satisfy
+      bootstrap integrity acceptance. The replacement and its trusted host
+      prerequisites are documented in bootstrap-integrity.md; hosted acceptance
+      remains outstanding.
     required_properties:
       - integrity verification before installer execution
       - fail-closed behavior with no mutable installer fallback
@@ -153,5 +154,5 @@ caveat: >-
   setup-vp 1.18.0 executes installer bytes without prior integrity verification
   and can fall back to mutable viteplus.dev or vite-plus main-branch content.
   The previous waiver is not acceptance evidence for the replacement proof.
-  Workflow rollout remains pending; the checkout-free, action-free, setup-free
+  Replacement hosted acceptance remains pending; the checkout-free, action-free, setup-free
   OIDC publisher remains excluded.

@@ -36,41 +36,42 @@ const setupVpReleases = [
   ["1.17.0", "313600b80b104eadebb9111787d37a2e83e014ca"],
   ["1.18.0", "1b32467adbe183473499fd9d5d372c3ed9641754"],
 ];
-const SETUP_VP = "voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754";
+const SETUP_NODE = "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f";
+const BOOTSTRAP = "node packages/cli/scripts/bootstrap-integrity.mjs";
 
 function validateSetupJobs(workflows: any[]): void {
   const jobs = workflows.flatMap((workflow) => Object.entries(workflow.jobs as Record<string, any>).map(([name, job]) => ({ name, job })));
   expect(
     jobs
-      .filter(({ job }) => job.steps.some((step: { run?: string }) => /vp install|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
+      .filter(({ job }) => job.steps.some((step: { run?: string }) => /bootstrap-integrity\.mjs|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
       .map(({ name }) => name)
       .sort(),
   ).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
-  const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@")));
+  const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@")));
   expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "cli", "source-migration", "verify-development"]);
-  for (const { job } of setupJobs) {
-    const setup = job.steps.find((step: { uses?: string }) => step.uses?.startsWith("voidzero-dev/setup-vp@"));
-    expect(setup).toMatchObject({
-      uses: SETUP_VP,
-      with: {
-        version: "0.3.0",
-        "node-version-file": ".node-version",
-        "run-install": false,
-        cache: false,
-      },
+  for (const { name, job } of setupJobs) {
+    const setupIndex = job.steps.findIndex((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"));
+    const setup = job.steps[setupIndex];
+    expect(setup.uses).toBe(SETUP_NODE);
+    expect(setup.with).toEqual({
+      "node-version-file": ".node-version",
+      "package-manager-cache": false,
     });
+    expect(job.steps[setupIndex + 1].run).toBe(`${BOOTSTRAP}${name.endsWith("-development") ? " --ignore-scripts" : ""}`);
+    expect(JSON.stringify(job)).not.toContain("setup-vp");
+    expect(job.permissions?.["id-token"]).toBeUndefined();
   }
 }
 
 describe("toolchain baseline", () => {
   it("retains the setup-vp inventory without treating its old waiver as integrity acceptance", () => {
-    expect(baseline.status).toBe("bootstrap_replacement_pending_rollout");
+    expect(baseline.status).toBe("bootstrap_rollout_pending_hosted_acceptance");
     expect(Object.entries(baseline.selection.setup_vp.release_inventory)).toEqual(setupVpReleases);
     expect(Object.values(baseline.selection.setup_vp.implementations)).toSatisfy((implementations: any[]) => implementations.every((implementation) => implementation.integrity_verified === false && implementation.fail_closed === false));
     expect(baseline.selection.setup_vp.selected).toEqual({
       version: "1.18.0",
       action_commit: "1b32467adbe183473499fd9d5d372c3ed9641754",
-      classification: "unverified_pending_replacement",
+      classification: "replaced_pending_hosted_acceptance",
       boundary: "non_oidc_install_or_build_jobs_only",
       compatibility: "requests the exact Vite+ 0.3.0 release before fallback",
     });
@@ -84,16 +85,18 @@ describe("toolchain baseline", () => {
     expect(JSON.stringify(publisher)).not.toContain("setup-vp");
   });
 
-  it("pins setup-vp and disables automatic installs and caches in every setup job", () => {
+  it("pins Node provisioning and the verified bootstrap variant with no dependency cache in every setup job", () => {
     expect(() => validateSetupJobs([verificationWorkflow, publicationWorkflow])).not.toThrow();
     const mutable = structuredClone(verificationWorkflow);
-    mutable.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_VP).uses = "voidzero-dev/setup-vp@v1";
+    mutable.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).uses = "actions/setup-node@v6";
     expect(() => validateSetupJobs([mutable, publicationWorkflow])).toThrow();
 
-    expect(verificationWorkflow.jobs.cli.steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
-    expect(verificationWorkflow.jobs["source-migration"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile")).toBe(true);
-    expect(publicationWorkflow.jobs["build-development"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile --ignore-scripts")).toBe(true);
-    expect(publicationWorkflow.jobs["verify-development"].steps.some((step: { run?: string }) => step.run === "vp install --frozen-lockfile --ignore-scripts")).toBe(true);
+    const cached = structuredClone(verificationWorkflow);
+    cached.jobs.cli.steps.find((step: { uses?: string }) => step.uses === SETUP_NODE).with["package-manager-cache"] = true;
+    expect(() => validateSetupJobs([cached, publicationWorkflow])).toThrow();
+    const lifecycle = structuredClone(publicationWorkflow);
+    lifecycle.jobs["build-development"].steps.find((step: { run?: string }) => step.run?.startsWith(BOOTSTRAP)).run = BOOTSTRAP;
+    expect(() => validateSetupJobs([verificationWorkflow, lifecycle])).toThrow();
   });
 
   it("binds the executable integration proof to live project policy", () => {

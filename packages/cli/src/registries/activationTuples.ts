@@ -89,6 +89,15 @@ const emittedReasons = JSON.parse(gunzipSync(Buffer.from(EMITTED_REASON_CATALOG,
 const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)).replace(/,\s*]$/, "]")) as ActivationCanonicalTuple[];
 const addedTuples: ActivationCanonicalTuple[] = [
   {
+    class: "reference",
+    surface_id: "references/analysis/bootstrap-integrity.md",
+    owner_path: "references/meta/retained-reference-authority.yaml",
+    owner_symbol_or_selector: "inventory",
+    owner_selector: "references/analysis/bootstrap-integrity.md",
+    semantic_selector_if_any: null,
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate retained-references",
+  },
+  {
     class: "state",
     surface_id: "write:plan.replace",
     owner_path: "packages/cli/src/state/write/runtimeOperations.ts",
@@ -296,8 +305,8 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "089cf633c18625404ed7e19730a0c609f29f8f3f89bb89e184033e84ae9bba74",
     },
     reference: {
-      count: 28,
-      sha256: "45e2bbf90fee4480244129d8c21f593317d20c5d46a0aa276330e8bbf028bfbd",
+      count: 29,
+      sha256: "22fb8d32e037367fdd0cb69fa18c401002e8120115e2d1b2f10ea712b03ca74f",
     },
     state: {
       count: 38,
@@ -312,7 +321,7 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 306, sha256: "6fcb5c6e30c85ab0baaa34bffd60b84674f03f75642e20511a0a15936d676617" },
+  total: { count: 307, sha256: "763c53c96638a5f40611a187cadaf37823d5b43234bbcbda438f7d55032f3804" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

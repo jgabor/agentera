@@ -1,0 +1,16 @@
+id: ltlamxpooc
+artifact: progress
+record:
+  timestamp: 2026-09-10 15:18
+  type: fix
+  phase: build
+  what: Replaced the four CI setup jobs with the integrity-checked bootstrap; hosted acceptance remains pending.
+  context:
+    intent: Roll out the proven bootstrap without changing publication authority or lifecycle policy.
+    constraints: Local implementation only. Leave task evaluation, status changes and commits to the coordinator.
+    unknowns: Hosted job behavior is unverified. Local development qualification stopped at the generated-overlap bootstrap-authority inventory assertions; the cause is not established here.
+    scope: Four setup jobs, shared bootstrap helper, regression tests and rollout guidance.
+  discovered: packages/cli/scripts/bootstrap-integrity.mjs checks the fixed Corepack archive before extraction and reuses the checked bundle copy. Later steps use private Node, npm, npx, pinned pnpm and local Vite+ entrypoints. Guidance separates PR acceptance from separately authorized integration and publication pushes.
+  verified: Both clean credential-free install variants passed 41 targeted tests, Agentera build and typecheck. The lifecycle-disabled variant also passed local tarball construction and validation smoke. Scoped lint passed. Development qualification did not pass; no omitted owners were run after its first failure. No hosted checks or registry mutations ran.
+  next: Coordinator evaluation must retain the qualification failure and obtain separately authorized clean hosted passes for both ordinary verification jobs. Actual publication-job execution requires a separate authorized integration and push.
+  publication_order: 382

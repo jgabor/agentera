@@ -4,10 +4,22 @@ record:
   name: Roll out the proven bootstrap
   depends_on:
     - fybrcupkrl
-  status: pending
+  status: blocked
   acceptance:
     - GIVEN the four setup jobs WHEN configured THEN each uses the proven bootstrap with its existing frozen-install, lifecycle-script, and cache restrictions.
     - GIVEN pre-merge verification WHEN exercised THEN every distinct bootstrap variant passes credential-free checks and the two ordinary verification jobs pass on a clean hosted checkout.
     - GIVEN the publisher WHEN reviewed THEN its checkout-free, action-free, setup-free credential boundary is unchanged.
     - GIVEN rollout guidance WHEN read THEN it distinguishes pre-merge proof from actual publication-job execution, which requires separately authorized integration and push.
   plan: newohpexum
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Development qualification fails at retired-runtime inventory: 147 CHANGELOG scalar line bindings shifted by the prior closeout entry. Audit in-memory rebinding removes 481 diagnostics without changing hashes/categories. Both ordinary hosted jobs remain unverified pending authorization."
+    provenance:
+      attempt_id: orchestrate-newohpexum-bootstrap-rollout-1
+      source: "Independent audit: local bootstrap variants and publication boundaries pass; full task fails on stale line bindings plus missing hosted acceptance. One bounded binding correction authorized within orchestration."
+      recorded_at: 2026-09-10 15:25
+      writer_command: agentera state plan record-evaluation
+  evidence: Both local bootstrap variants passed build/typecheck and package smoke. Independent audit accepted local trust and publisher boundaries; stale inventory/census bindings corrected. 317 focused checks and generated-overlap source/package/build passed. Progress vqjhaejjal retains evidence; hosted acceptance is not claimed.
+  blocked_reason: Local rollout and generated-overlap pass. Await separately authorized branch push/PR and clean hosted cli/source-migration jobs; actual publication jobs require a later separately authorized integration/push.

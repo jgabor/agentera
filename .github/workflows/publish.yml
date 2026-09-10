@@ -72,16 +72,14 @@ jobs:
         with:
           ref: ${{ github.sha }}
           fetch-depth: 0
-      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
         timeout-minutes: 1
         with:
-          version: "0.3.0"
           node-version-file: .node-version
-          run-install: false
-          cache: false
-      - name: Install dependencies
+          package-manager-cache: false
+      - name: Verified bootstrap and frozen install
         timeout-minutes: 3
-        run: vp install --frozen-lockfile --ignore-scripts
+        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
       - name: Check static project policy
         timeout-minutes: 1
         run: vp check
@@ -109,16 +107,14 @@ jobs:
         timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
-      - uses: voidzero-dev/setup-vp@1b32467adbe183473499fd9d5d372c3ed9641754
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
         timeout-minutes: 1
         with:
-          version: "0.3.0"
           node-version-file: .node-version
-          run-install: false
-          cache: false
-      - name: Install dependencies
+          package-manager-cache: false
+      - name: Verified bootstrap and frozen install
         timeout-minutes: 3
-        run: vp install --frozen-lockfile --ignore-scripts
+        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
       - name: Allocate candidate development version
         id: version
         timeout-minutes: 1

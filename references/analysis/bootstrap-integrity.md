@@ -1,9 +1,10 @@
-# Pinned bootstrap proof (not workflow rollout)
+# Pinned bootstrap and workflow rollout
 
-This proof does not authorize or implement a change to the four setup jobs.
-The existing setup-vp installer remains unverified; its old accepted-risk record
-is **not acceptance evidence for this task**. The credential-bearing publisher
-is unchanged. Historical compiler/formatter certification is not re-run here.
+The four setup jobs now use the integrity-bound bootstrap described below.
+The replaced setup-vp installer remains unverified; its old accepted-risk record
+is **not acceptance evidence**. Hosted acceptance is still outstanding. The
+credential-bearing publisher is unchanged. Historical compiler/formatter
+certification is not re-run here.
 
 ## Trust root and pins
 
@@ -58,9 +59,63 @@ Sources:
 - <https://github.com/nodejs/corepack/blob/v0.35.0/README.md>
 - <https://github.com/nodejs/corepack/blob/v0.35.0/sources/corepackUtils.ts>
 
-Hosted prerequisite provision and the four workflow integrations belong to
-the later rollout task. Local evidence cannot establish GitHub publication
-job behavior or authorize publication.
+## Workflow deployment and acceptance boundaries
+
+The trusted hosted baseline is GitHub's Linux runner, its action runtime and
+filesystem/process isolation, the reviewed checkout, and the Node/npm
+distribution provisioned by `actions/setup-node` **v6.3.0**, pinned to
+`53b83947a5a98c8d113130e565377fae1a50d02f`. The action uses `.node-version`
+(**24.19.0**) and `package-manager-cache: false`, with no registry-auth setup.
+Its Node distribution acquisition/tool cache is a trusted prerequisite, not
+something the Corepack/pnpm proof independently authenticates. Host `/bin/tar`
+and `/bin/gzip` are also trusted utilities. Local checks require the same Node
+version and its colocated `lib/node_modules/npm`; there is no global npm fallback.
+
+`bootstrap-integrity.mjs` downloads the exact Corepack archive above using Node
+built-ins and verifies its fixed archive SHA-512 **before extraction**. Trusted
+tar/gzip emit only `package/dist/lib/corepack.cjs` to stdout; no archive paths are
+unpacked into the host. The existing bundle digest check and private copy then
+apply before Corepack is loaded. Missing, altered, or unavailable prerequisites
+fail closed; no installer or dynamically learned digest is a fallback.
+
+The helper creates fresh homes, stores, caches and empty npm configs, installs
+the integrity-bound pnpm, and runs the unchanged frozen lockfile with store
+integrity checking. The two ordinary verification jobs retain the workspace's
+esbuild-only lifecycle allowlist. `verify-development` and `build-development`
+retain `--ignore-scripts`. No dependency cache is restored or saved; authoritative
+Vite task `cache: false` settings and the eleven development gates are unchanged.
+
+After successful installation, a private bin directory exposes the selected
+Node, npm/npx from that same trusted distribution, a pnpm launcher with the explicit
+version/digest, and the lockfile-installed Vite+ **0.3.0** entrypoint. All are
+checked before exporting the private PATH and config environment across steps.
+Later steps retain ordinary runner tools behind this directory. This is not a
+sandbox against trusted checkout code, nor a claim that later tools cannot
+modify PATH. No runner-global package installation or configuration is changed.
+The root contributor vocabulary (`vp install`, `vp check`, `vp run ...`) is
+unchanged; initial CI installation uses the helper rather than an unverified
+global Vite+ installer.
+
+Acceptance is deliberately split:
+
+1. **Local pre-merge evidence:** credential-free execution of both clean install
+   variants, the deployment trust-boundary and workflow-contract tests, and
+   meaningful local Agentera build/package smoke. This does not qualify a hosted
+   job or authorize registry mutation.
+2. **Hosted pre-merge acceptance:** both ordinary `verify-changes.yml` jobs must
+   pass on a clean hosted checkout. This gate remains outstanding until separately
+   authorized hosted execution supplies evidence.
+3. **Actual publication jobs:** the exact `publish.yml` jobs run only after a
+   separately authorized integration and push to the configured development ref.
+   PR verification is not their execution evidence. There is no special
+   publication dry-run workflow. Neither local proof nor hosted PR success
+   authorizes that integration, push, or publication.
+
+The OIDC publisher remains checkout-free, action-free and setup-free; its logic
+and the exact-tarball construction/smoke steps are unchanged.
+
+Action input authority:
+<https://github.com/actions/setup-node/blob/53b83947a5a98c8d113130e565377fae1a50d02f/action.yml>.
 
 ## Running and interpreting the proof
 
@@ -94,3 +149,10 @@ retain cheap pin and missing/altered prerequisite regression checks.
 Local Linux x64 evidence on 2026-09-10 passed all six report checks under
 Node 24.19.0, Corepack 0.35.0, pnpm 10.30.3 and local Vite+ 0.3.0. This is
 mechanism evidence only: no hosted job has run this replacement.
+
+## Maintenance
+
+- Maintainer: Agentera CLI maintainers
+- Source checkout root: `.`
+- Working directory: `.`
+- Command: `pnpm -C packages/cli run test:toolchain-baseline`

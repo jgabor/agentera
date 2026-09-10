@@ -134,6 +134,12 @@ inventory:
     source_checkout_root: .
     working_directory: .
     command: pnpm -C packages/cli run pack:dry-run
+  - path: references/analysis/bootstrap-integrity.md
+    classification: runbook
+    maintainer: Agentera CLI maintainers
+    source_checkout_root: .
+    working_directory: .
+    command: pnpm -C packages/cli run test:toolchain-baseline
   - path: references/cli/routing-model.md
     classification: runbook
     maintainer: Agentera CLI maintainers

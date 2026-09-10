@@ -1,0 +1,14 @@
+id: vqjhaejjal
+artifact: progress
+record:
+  timestamp: 2026-09-10 16:13
+  type: fix
+  phase: build
+  what: Pinned bootstrap rollout passes local generated-overlap with complete runbook ownership and activation census declarations.
+  context:
+    intent: Establish durable local bootstrap rollout readiness without claiming hosted acceptance.
+    constraints: No task lifecycle changes, commit, push, or registry mutation; publication boundaries and pinned workflow policy remain unchanged.
+    scope: Bootstrap rollout task onqdqswcrj, packages/cli/scripts/bootstrap-integrity.mjs, references/analysis/bootstrap-integrity.md, scalar bindings, activation declarations, and strict regression expectations.
+  verified: Both isolated bootstrap install variants have local build and toolchain evidence. The combined bootstrap, census, runtime, retained-reference, and package-model regressions pass. pnpm -C packages/cli run verify:generated-overlap passes its source, package, build, and reader checks. Hosted jobs remain unrun; this is not a fresh eleven-gate development qualification.
+  next: Keep Task2 partial. Coordinator review and combined lint precede any required full development rerun; hosted acceptance still requires authorization. Publication jobs require separate integration and push authorization.
+  publication_order: 383
