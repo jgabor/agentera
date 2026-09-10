@@ -1,0 +1,13 @@
+id: uovujxmdli
+artifact: plan
+record:
+  name: Review residual warnings and ratchet the ceiling
+  depends_on:
+    - oqpmgqzrnb
+  status: pending
+  acceptance:
+    - GIVEN residual findings WHEN assessed THEN safe rewrites remove straightforward cases and behavior-sensitive remainder is explicitly tracked, with at most 48 warnings and zero errors.
+    - GIVEN the accepted measured result WHEN the warning ceiling is set THEN it equals the actual count rather than the prior ceiling of 431.
+    - GIVEN the ratcheted gate WHEN an additional warning is introduced THEN validation fails; the accepted baseline passes.
+    - GIVEN cleanup verification WHEN rerun THEN formatting and relevant behavior remain unchanged without blanket fixes or new suppressions.
+  plan: newohpexum

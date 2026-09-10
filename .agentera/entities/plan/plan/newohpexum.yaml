@@ -1,0 +1,36 @@
+id: newohpexum
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-10
+    status: open
+    reviewed: 2026-09-10
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    title: "Plan: Harden CI bootstrap and reduce CLI lint debt"
+  what: Deliver fail-closed bootstrap integrity for rtfizoqaxt and remove the dominant unused-declaration debt for ehudiaaepe, preserving the delivered Vite+ development workflow.
+  why: Replace the accepted mutable-installer risk with verified execution and restore a meaningful lint ceiling without reopening historical certification or redesigning publication.
+  constraints: Preserve Vite+ 0.3.0, pnpm 10.30.3, the current Node 24 pin, lockfile authority, CLI and state behavior, package integrity, frozen installs, lifecycle restrictions, and disabled authoritative caching. Keep the OIDC publisher checkout-free, action-free, and setup-free. No rule disabling, new suppressions, directory exclusions, warning-ceiling increases, mass formatting, or unrelated refactors. Do not alter historical certification evidence or bump release metadata. Integration and every publishing push require separate explicit authorization. Implementation branches target feat/v3 after closeout state is integrated. Prefer one passing and one rejecting case per changed testable boundary; reuse existing behavioral tests for declaration cleanup and justify extra cases.
+  overall_acceptance: GIVEN clean setup WHEN bootstrap runs THEN downloaded bootstrap code is verified before execution and unavailable or altered inputs fail without mutable fallback. GIVEN the four setup jobs WHEN exercised THEN pinned tools and existing installation restrictions are preserved while the credential-bearing publisher is unchanged. GIVEN lint validation WHEN cleanup is complete THEN warnings are at most 48, errors are zero, and the ceiling equals the accepted measured count. GIVEN closeout WHEN evidence is reviewed THEN both selected TODOs are satisfied without claiming historical full qualification or unperformed hosted validation.
+  scope:
+    included:
+      - Integrity-checked bootstrap and its existing baseline verifier and regression tests for rtfizoqaxt.
+      - The cli and source-migration jobs in .github/workflows/verify-changes.yml and the verify-development and build-development jobs in .github/workflows/publish.yml.
+      - The measured 426-warning packages/cli baseline, including 378 unused-declaration findings across source, tests, and scripts.
+      - Review of the remaining findings, the warning ceiling in vite.config.ts, maintainer guidance, and typed state closeout.
+    excluded:
+      - Historical compiler re-certification tracked separately by vcrmaxuasq and changes to retained certification artifacts.
+      - Publisher redesign, new qualification profiles, performance-policy changes, stable cutover, and new runtime platforms.
+      - Broad behavior-changing cleanup or a mandatory zero-warning target.
+    deferred:
+      - Behavior-sensitive residual lint findings that cannot be removed safely within this cleanup; retain explicit tracking without suppressing them.
+  design: Prove a trusted installation path before applying it to automation. Remove unused declarations independently, assess remaining findings, and tighten the accepted warning ceiling. Verify the combined result before reconciling state. Distinguish credential-free pre-merge checks from actual publication-job evidence.
+  unknowns:
+    - question: Can clean hosted prerequisites verify the pinned bootstrap code before executing every downloaded bootstrap component?
+      affects_task: 2
+      resolve_by: Task 1 must prove the trust boundary and exact versions. Failure blocks rollout and requires a new mechanism decision, not a fallback or renewed waiver.
+    - question: Can all 378 unused-declaration findings be removed without changing public signatures, side effects, or historical fixtures?
+      affects_task: 4
+      resolve_by: Task 3 measures the actual result. Any incompatible case requires an explicit scope decision before changing the target; never hide it with suppression.
+  surprises:
+    []

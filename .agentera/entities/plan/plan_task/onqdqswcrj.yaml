@@ -1,0 +1,13 @@
+id: onqdqswcrj
+artifact: plan
+record:
+  name: Roll out the proven bootstrap
+  depends_on:
+    - fybrcupkrl
+  status: pending
+  acceptance:
+    - GIVEN the four setup jobs WHEN configured THEN each uses the proven bootstrap with its existing frozen-install, lifecycle-script, and cache restrictions.
+    - GIVEN pre-merge verification WHEN exercised THEN every distinct bootstrap variant passes credential-free checks and the two ordinary verification jobs pass on a clean hosted checkout.
+    - GIVEN the publisher WHEN reviewed THEN its checkout-free, action-free, setup-free credential boundary is unchanged.
+    - GIVEN rollout guidance WHEN read THEN it distinguishes pre-merge proof from actual publication-job execution, which requires separately authorized integration and push.
+  plan: newohpexum
