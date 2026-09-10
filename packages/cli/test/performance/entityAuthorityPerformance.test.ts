@@ -6,7 +6,7 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { main } from "../../src/cli/dispatch/index.js";
-import { publishNumberedArchive } from "../../src/state/archivePublication.js";
+import { createArchivePerformanceFixture } from "../helpers/archivePerformanceFixture.js";
 import { measureColdCli, measureColdStateList } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 import { deriveLatencyAdvisory, measurementProfile, performanceAuthority, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
@@ -184,23 +184,7 @@ describe("entity authority performance", () => {
       const entries = scales[`archive_${scale}`];
       progress.start(`archive_fixture_${scale}`);
       const archiveProject = path.join(tmp, `archive-${scale}`);
-      fs.mkdirSync(archiveProject, { recursive: true });
-      for (let number = 1; number <= entries; number += 1) {
-        publishNumberedArchive(
-          archiveProject,
-          "progress",
-          number,
-          {
-            number,
-            timestamp: "2026-07-13 16:00",
-            type: "test",
-            phase: "build",
-            what: `Archive fixture ${number}`,
-            context: { intent: "Measure archive enumeration" },
-          },
-          { sourceRoot: REPO_ROOT },
-        );
-      }
+      createArchivePerformanceFixture(archiveProject, entries);
       fixtures[`archive_${scale}`] = { entries };
       progress.complete();
       for (let repetition = 1; repetition <= repetitions; repetition += 1) {

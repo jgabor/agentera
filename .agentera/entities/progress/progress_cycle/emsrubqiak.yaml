@@ -1,0 +1,14 @@
+id: emsrubqiak
+artifact: progress
+record:
+  timestamp: 2026-09-10 10:14
+  type: test
+  phase: build
+  what: packages/cli/test/helpers/archivePerformanceFixture.ts removes repeated durable publication from archive-reader setup; representative fixture bytes match the real publisher.
+  context:
+    intent: Remove avoidable setup cost without weakening development resource checks.
+    constraints: 100/1000 records, seven/full35 samples, cold isolation, resource limits, production archive behavior, and deadlines remain unchanged.
+    unknowns: Hosted resource qualification remains unverified; previous CI checkpoint was cumulative, not fixture-only duration.
+  verified: Publisher/discovery 21 tests and profile evidence 37 tests passed. Real seven-sample development resource command passed; local setup checkpoints confirm reduced archive preparation. Typecheck, formatting, and focused lint passed with one existing warning. Audit found no material issues.
+  next: Final validation stays open pending freshly authorized commit/integration/push and hosted confirmation. Full historical certification remains separate.
+  publication_order: 379

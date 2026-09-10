@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import { publishImmutableFile, publishNumberedArchive, type ArchivePublicationFileSystem } from "../../src/state/archivePublication.js";
 import { discoverNumberedArchives } from "../../src/state/archiveDiscovery.js";
+import { createArchivePerformanceFixture } from "../helpers/archivePerformanceFixture.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const roots: string[] = [];
@@ -78,6 +79,32 @@ function fileSystem(overrides: Partial<ArchivePublicationFileSystem> = {}): Arch
 }
 
 describe("numbered archive publication", () => {
+  it("matches the direct performance fixture filename and bytes to production publication", () => {
+    const fixtureRoot = project();
+    const publishedRoot = project();
+    createArchivePerformanceFixture(fixtureRoot, 1);
+    const published = publishNumberedArchive(
+      publishedRoot,
+      "progress",
+      1,
+      {
+        number: 1,
+        timestamp: "2026-07-13 16:00",
+        type: "test",
+        phase: "build",
+        what: "Archive fixture 1",
+        context: { intent: "Measure archive enumeration" },
+      },
+      { sourceRoot: REPO_ROOT },
+    );
+    const relativePath = path.relative(publishedRoot, published.path);
+    expect(relativePath).toBe(path.join(".agentera", "archive", "progress", "1.yaml"));
+    expect(fs.readFileSync(path.join(fixtureRoot, relativePath))).toEqual(fs.readFileSync(published.path));
+    const discovered = discoverNumberedArchives(fixtureRoot, { sourceRoot: REPO_ROOT });
+    expect(discovered.entries).toHaveLength(1);
+    expect(discovered.rejected).toEqual([]);
+  });
+
   it("publishes each newly created directory entry before the archive file", () => {
     const calls: string[] = [];
     const target = "/project/.agentera/optimize/latency/archive/experiments/0.yaml";

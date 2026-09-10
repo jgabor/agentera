@@ -1,0 +1,13 @@
+id: dngmiitupr
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Remove archive publisher overhead from resource fixtures
+  status: complete
+  depends_on:
+    - gaintyurzz
+  acceptance:
+    - GIVEN resource fixtures WHEN prepared THEN 100 and 1000 valid archive records retain identical names, contents, and serialized bytes without repeated durability publication.
+    - GIVEN a representative fixture WHEN compared with the production publisher THEN bytes match; measured readers still validate every record and count.
+    - GIVEN development and full measurements WHEN executed THEN seven and thirty-five cold samples retain heap/output/correctness checks, runner identity, advisory latency, and existing deadlines.
+    - GIVEN verification WHEN setup cost is compared THEN redundant work is removed without production archive changes, and real development resource verification passes.
