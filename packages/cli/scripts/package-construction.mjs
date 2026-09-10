@@ -64,7 +64,7 @@ export function normalizeConstruction(packed, options) {
 }
 
 export function npmChildEnvironment(environment, userConfig, globalConfig) {
-  const sanitized = Object.fromEntries(Object.entries(environment).filter(([key]) => !/^(?:npm|pnpm)/i.test(key) && !/^AGENTERA_VERIFICATION_/.test(key) && !["NPM_TOKEN", "NODE_AUTH_TOKEN"].includes(key)));
+  const sanitized = Object.fromEntries(Object.entries(environment).filter(([key]) => !/^(?:npm|pnpm)/i.test(key) && !/^AGENTERA_VERIFICATION_/.test(key) && !["NPM_TOKEN", "NODE_AUTH_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_TOKEN", "ACTIONS_ID_TOKEN_REQUEST_URL"].includes(key)));
   return {
     ...sanitized,
     ...(userConfig ? { NPM_CONFIG_USERCONFIG: userConfig } : {}),

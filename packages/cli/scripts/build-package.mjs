@@ -28,7 +28,7 @@ function construct(outputRoot, sourceIdentity) {
   const createdDependencyLink = !fs.existsSync(dependencies);
   if (createdDependencyLink) fs.symlinkSync(path.join(packageRoot, "node_modules"), dependencies, "dir");
   try {
-    run("pnpm", ["exec", "tsc", "-p", "tsconfig.json", "--outDir", distRoot, "--sourceMap", "false"]);
+    run("vp", ["exec", "tsc", "-p", "tsconfig.json", "--outDir", distRoot, "--sourceMap", "false"]);
     fs.chmodSync(path.join(distRoot, "bin", "agentera.js"), 0o755);
     run(process.execPath, ["scripts/copy-bundle.mjs", "--dist-root", distRoot, "--bundle-root", bundleRoot]);
     writeGeneratedSourceIdentity(outputRoot, sourceIdentity);

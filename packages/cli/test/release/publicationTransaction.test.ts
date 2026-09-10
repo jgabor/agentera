@@ -65,6 +65,8 @@ describe("publication contract", () => {
         HOME: "/private/home",
         NPM_TOKEN: "secret",
         NODE_AUTH_TOKEN: "secret",
+        ACTIONS_ID_TOKEN_REQUEST_TOKEN: "oidc-sentinel",
+        ACTIONS_ID_TOKEN_REQUEST_URL: "https://oidc.invalid/sentinel",
         npm_config_registry: "https://hostile.invalid/",
         PNPM_HOME: "/private/pnpm",
         AGENTERA_VERIFICATION_RESULT: "/private/outer-result.json",
@@ -81,6 +83,8 @@ describe("publication contract", () => {
     });
     expect(environment).not.toHaveProperty("NPM_TOKEN");
     expect(environment).not.toHaveProperty("NODE_AUTH_TOKEN");
+    expect(environment).not.toHaveProperty("ACTIONS_ID_TOKEN_REQUEST_TOKEN");
+    expect(environment).not.toHaveProperty("ACTIONS_ID_TOKEN_REQUEST_URL");
     expect(environment).not.toHaveProperty("npm_config_registry");
     expect(environment).not.toHaveProperty("PNPM_HOME");
     expect(environment).not.toHaveProperty("AGENTERA_VERIFICATION_RESULT");

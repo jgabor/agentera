@@ -57,7 +57,10 @@ function isolatedNpmEnvironment(root, environment = process.env, preserveOidc = 
     NPM_CONFIG_FUND: "false",
     NPM_CONFIG_IGNORE_SCRIPTS: "true",
   };
-  if (!preserveOidc) for (const key of OIDC_ENVIRONMENT_KEYS) delete result[key];
+  for (const key of OIDC_ENVIRONMENT_KEYS) {
+    if (preserveOidc && environment[key] !== undefined) result[key] = environment[key];
+    else delete result[key];
+  }
   return result;
 }
 

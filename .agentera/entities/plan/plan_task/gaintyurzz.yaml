@@ -1,0 +1,13 @@
+id: gaintyurzz
+artifact: plan
+record:
+  plan: vtqzlztjsk
+  name: Resolve isolated builds through the project toolchain
+  status: complete
+  depends_on:
+    - qpqxqimzah
+  acceptance:
+    - GIVEN initialized Vite+ without bare pnpm WHEN isolated construction runs THEN the installed project compiler builds without global fallback or installation.
+    - GIVEN the constructed tarball WHEN validated and executed THEN requested version, source identity, executable mode, and CLI smoke pass without checkout mutation.
+    - GIVEN unavailable required tooling WHEN construction runs THEN failure is explicit and no candidate is published.
+    - GIVEN sanitized construction WHEN credential sentinels are inherited THEN npm children receive no credentials or OIDC; publication protections remain unchanged.

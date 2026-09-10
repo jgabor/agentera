@@ -1,0 +1,14 @@
+id: pmndpyvrcf
+artifact: progress
+record:
+  timestamp: 2026-09-09 12:25
+  type: fix
+  phase: build
+  what: packages/cli/scripts/build-package.mjs resolves the installed compiler through vp exec without bare pnpm. Construction strips npm/OIDC credentials; authorized publication explicitly restores its existing allowlist.
+  context:
+    intent: Complete isolated candidate construction under the pinned Vite+ workflow.
+    constraints: No global fallback, package-manager/version changes, workflow edits, or registry mutation.
+    unknowns: Hosted construction and publication of this fix remain unverified; historical compiler certification remains separate.
+  verified: Restricted-PATH pack and exact-tarball executable smoke passed; checkout unchanged. Missing tooling fails explicitly. Fake credential observations passed. Publisher/sanitation suite passed 117 tests; focused construction tests, typecheck, static checks, build, and compact passed with 426 existing warnings.
+  next: Final validation remains open; obtain fresh commit, integration, and push authorization before hosted publication confirmation.
+  publication_order: 378
