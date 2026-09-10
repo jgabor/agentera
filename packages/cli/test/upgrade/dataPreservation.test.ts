@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
-import { applyCleanupPhase, applyMigrationPhases, dryRunMigration, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
+import { applyCleanupPhase, dryRunMigration, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { sandboxMigrationEnv } from "./helpers/migrationCtx.js";
 import { assertChecksumsUnchanged, checksumManifest, listPreservedAppHomeRelPaths, listProjectArtifactRelPaths } from "./helpers/preservation.js";
 

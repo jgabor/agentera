@@ -3,7 +3,7 @@ import type { SchemaInfo } from "../appContext.js";
 import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
-import { docsConventions, entryStatus, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
+import { docsConventions, sourceProvenance, uniqueList, hasRecordedValue } from "./shared.js";
 import { selectEvidenceTarget, taskByRef } from "./planState.js";
 import { progressVerificationSummary, retryState } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";

@@ -221,25 +221,6 @@ export function filterRecordsByProject(records: Iterable<JsonObject>, requested:
   return out;
 }
 
-function userTurnsByConversation(records: Iterable<JsonObject>): Map<string, JsonObject[]> {
-  const buckets = new Map<string, JsonObject[]>();
-  for (const record of records) {
-    if (!isMapping(record)) continue;
-    if (record.source_kind !== "conversation_turn") continue;
-    const data = record.data;
-    if (!isMapping(data)) continue;
-    if (data.actor !== "user") continue;
-    const key = conversationKey(record);
-    if (key === null) continue;
-    if (!buckets.has(key)) buckets.set(key, []);
-    buckets.get(key)!.push(record);
-  }
-  for (const items of buckets.values()) {
-    stableSortByTimestamp(items);
-  }
-  return buckets;
-}
-
 function precedingUserTurn(userTurns: JsonObject[], assistantTimestamp: string): JsonObject | null {
   let candidate: JsonObject | null = null;
   for (const turn of userTurns) {

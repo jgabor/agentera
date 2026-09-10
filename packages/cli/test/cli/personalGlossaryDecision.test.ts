@@ -21,7 +21,7 @@ import { createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt,
 import { glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 import { PERSONAL_GLOSSARY_MINING_POLICY_VERSION } from "../../src/registries/glossaryMiningAuthority.js";
 import { personalGlossaryCandidateDecisionContract } from "../../src/registries/glossaryCandidateDecisionContract.js";
-import { GLOSSARY_ADMISSION_OUTCOMES, GLOSSARY_ADMISSION_REASONS_BY_OUTCOME } from "../../src/registries/glossaryCandidateDecisionAuthority.js";
+import { GLOSSARY_ADMISSION_REASONS_BY_OUTCOME } from "../../src/registries/glossaryCandidateDecisionAuthority.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const SOURCE_BUILD_RUNNER = sourceGlossaryEvaluationRunnerPath();
@@ -29,7 +29,6 @@ const SOURCE_BUILD_RUNNER_URL = pathToFileURL(SOURCE_BUILD_RUNNER).href;
 setGlossaryEvaluationRunnerForTest(SOURCE_BUILD_RUNNER);
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AUTHORITY_PATH = path.join(ROOT, "references/artifacts/glossary-entry-contract.yaml");
-const ADMISSION_REASON_PAIRS = Object.entries(GLOSSARY_ADMISSION_REASONS_BY_OUTCOME).flatMap(([outcome, reasons]) => reasons.map((reason) => ({ outcome, reason })));
 
 let profileDir: string;
 let currentGeneration: string;

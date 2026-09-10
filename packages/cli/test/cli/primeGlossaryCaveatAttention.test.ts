@@ -121,7 +121,7 @@ function runBuilt(args: string[], stdin = ""): { rc: number | null; out: string;
   return { rc: result.status, out: result.stdout, err: result.stderr };
 }
 
-function appendArgs(reason: string, ownershipState: string): string[] {
+function appendArgs(): string[] {
   return ["state", "progress", "append", "--input", "-", "--format", "json"];
 }
 
@@ -258,7 +258,7 @@ describe("prime glossary caveat attention", () => {
         expect(parsed.status, pair).toBe(valid.has(pair) ? "valid" : "invalid");
         const before = snapshot(project);
         const written = runBuilt(
-          appendArgs(reason, ownershipState),
+          appendArgs(),
           JSON.stringify({
             type: "test",
             phase: "build",

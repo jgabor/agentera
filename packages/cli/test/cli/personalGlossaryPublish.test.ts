@@ -18,7 +18,6 @@ import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.
 import { createGlossaryAdmissionDecision, createGlossaryEvidenceCapsule, createGlossaryHostClassificationReceipt, type GlossaryAdmissionDecision, type GlossaryEvidenceCapsule, type GlossaryHostClassificationReceipt } from "../../src/registries/glossaryCandidateContracts.js";
 import { canonicalGlossaryJson, glossaryCanonicalSha256 } from "../../src/registries/glossaryTermIdentity.js";
 
-const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const RETAINED_AT = "2026-08-10T00:00:00.000Z";
 const AS_OF = "2026-08-10";
 const BASE_PROFILE = "# Decision Profile: Publish Test\n\n## Process\n\nKeep these bytes exactly.\n";

@@ -1,5 +1,5 @@
 import { capabilityContext } from "./contract.js";
-import { entryStatus, sourceProvenance, uniqueList } from "./shared.js";
+import { entryStatus, uniqueList } from "./shared.js";
 import { formatPlanTaskDepRef, indexPlanTasksByNumber, orchestrationTaskSummary, planDependsOnList, resolvePlanTaskByRef, DONE_STATUSES_ORCH, BLOCKED_STATUSES_ORCH } from "./planState.js";
 import { progressVerificationSummary, retryState, evaluatorHandoff } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";

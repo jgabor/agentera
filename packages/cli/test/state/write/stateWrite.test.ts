@@ -80,11 +80,11 @@ function files(root: string): Record<string, string> {
   return result;
 }
 
-function progressArgs(what = "Entity writer"): string[] {
+function progressArgs(): string[] {
   return ["progress", "append", "--input", "-", "--format", "json"];
 }
 
-function decisionArgs(confidence = "firm"): string[] {
+function decisionArgs(): string[] {
   return ["decisions", "append", "--input", "-", "--format", "json"];
 }
 
@@ -328,7 +328,7 @@ describe("typed state writer on active entity authority", () => {
     roots.push(outside);
     fs.mkdirSync(path.join(root, ".agentera/entities"));
     fs.symlinkSync(outside, path.join(root, ".agentera/entities/progress"));
-    const unsafe = run(root, progressArgs("unsafe"));
+    const unsafe = run(root, progressArgs());
     expect(unsafe.rc).not.toBe(0);
     expect(fs.readdirSync(outside)).toEqual([]);
     expect(validateEntityState(root).valid).toBe(false);
@@ -401,7 +401,7 @@ describe("retained entity writer contract matrix", () => {
     const root = project();
     const result = run(
       root,
-      decisionArgs(confidence),
+      decisionArgs(),
       JSON.stringify({
         question: "q",
         context: "c",
@@ -464,7 +464,7 @@ describe("retained entity writer contract matrix", () => {
   it.each([
     ["state backfill", ["backfill", "--apply", "--force", "--format", "json"]],
     ["unknown repair", ["unknown-repair", "--apply", "--format", "json"]],
-    ["progress append", progressArgs("blocked")],
+    ["progress append", progressArgs()],
     ["decision append", decisionArgs()],
     ["health append", ["health", "append", "--input", "-", "--format", "json"]],
     ["plan create", ["plan", "create", "--input", "-", "--format", "json"]],
@@ -536,7 +536,7 @@ describe("retained entity writer contract matrix", () => {
     const root = project();
     let args: string[];
     let stdin = "";
-    if (artifact === "progress") args = [...progressArgs("dry"), "--dry-run"];
+    if (artifact === "progress") args = [...progressArgs(), "--dry-run"];
     else if (artifact === "decisions") args = [...decisionArgs(), "--dry-run"];
     else if (artifact === "health") {
       args = ["health", "append", "--input", "-", "--dry-run", "--format", "json"];

@@ -9,7 +9,7 @@ import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
-import { briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
+import { briefOrientationPayload, briefUtf8Bytes } from "./briefOrientation.js";
 import { capabilityContext } from "../../capabilityContext/contract.js";
 import { startupAggregation } from "../../capabilityContext/startupAggregation.js";
 

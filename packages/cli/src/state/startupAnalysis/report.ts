@@ -3,7 +3,7 @@ import path from "node:path";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
-import { Flt, formatFloat, pyFmt, pyJsonDumps, pyJsonString } from "./helpers.js";
+import { Flt, formatFloat, pyFmt, pyJsonDumps } from "./helpers.js";
 
 export const STARTUP_REPORT_MARKDOWN = "startup-overhead-report.md";
 export const STARTUP_REPORT_JSON = "startup-overhead-report.json";

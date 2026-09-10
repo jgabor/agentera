@@ -10,7 +10,6 @@ import { APP_MANUAL_REVIEW_NEEDED, APP_MIGRATION_NEEDED, APP_OUTDATED, APP_REPAI
 import { classifyInstall } from "../../upgrade/compatibility.js";
 import type { UpdateChannelName } from "../../upgrade/channels.js";
 import { prependNextMajorDoctorSection, resolveNextMajorDoctorLines } from "../../upgrade/nextMajorDoctor.js";
-import { emitStructured } from "../structured.js";
 import { diagnoseCanonicalSkill } from "../../setup/sharedSkill.js";
 import { diagnoseRetiredResources, type RetiredResourceDiagnosis } from "../../upgrade/retiredResourceDiagnostics.js";
 import { commandText } from "../../upgrade/upgradeCommands.js";

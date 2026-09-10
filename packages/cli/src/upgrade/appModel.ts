@@ -5,7 +5,7 @@ import path from "node:path";
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { Classification, SOURCE_LABELS, classifyResolvedRoot, defaultAppHome, isForeignPlatformDefaultAppHome, resolveCandidate } from "../state/installRoot.js";
+import { Classification, SOURCE_LABELS, classifyResolvedRoot, isForeignPlatformDefaultAppHome, resolveCandidate } from "../state/installRoot.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 import type { JsonObject } from "../core/jsonValue.js";

@@ -12,7 +12,7 @@ function emitStateFailure(error: StateRetrievalFailure, format: string | undefin
   return error.exitCode;
 }
 
-export function runCapability(command: string, argv: string[], io: Io, prog: string): number {
+export function runCapability(command: string, argv: string[], io: Io, _prog: string): number {
   let format = "json";
   let i = 0;
   const value = makeArgvValueReader(
@@ -62,7 +62,7 @@ export function runCapability(command: string, argv: string[], io: Io, prog: str
   }
 }
 
-export function runPrime(command: string, argv: string[], io: Io, prog: string): number {
+export function runPrime(command: string, argv: string[], io: Io, _prog: string): number {
   const args: PrimeArgs = {
     command,
     guidance: false,

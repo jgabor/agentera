@@ -1,11 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import { cmdQuery } from "../../src/cli/commands/query.js";
-import { cmdState } from "../../src/cli/commands/state/index.js";
 import { runPrime } from "../../src/cli/dispatch/prime.js";
 import { runQuery, runState } from "../../src/cli/dispatch/state.js";
 
@@ -126,8 +123,6 @@ interface SourceContractOracle {
 }
 
 const SOURCE_CONTRACT_ORACLE = JSON.parse(fs.readFileSync(SOURCE_CONTRACT_ORACLE_PATH, "utf8")) as SourceContractOracle;
-
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -285,7 +280,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
     return runDispatch(["prime", "--context", capability, "--format", "json"]);
   }
 
-  function readBespokeSourceContract(payload: Record<string, unknown>, capability: string): Record<string, unknown> | null {
+  function readBespokeSourceContract(payload: Record<string, unknown>): Record<string, unknown> | null {
     const capCtx = payload.capability_context as Record<string, unknown> | undefined;
     if (!capCtx) return null;
     const ctx = capCtx.context as Record<string, unknown> | undefined;
@@ -316,7 +311,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
     const spec = SOURCE_CONTRACT_ORACLE.commands.prime_context.perCapabilitySourceContract;
     const { rc, payload } = capturePrimeContext(capability);
     expect(rc, `prime --context ${capability} rc`).toBe(0);
-    const sc = readBespokeSourceContract(payload, capability);
+    const sc = readBespokeSourceContract(payload);
     expect(sc, `${capability} emits a per-capability source_contract`).not.toBeNull();
     expect(sc, `${capability} source_contract is an object`).toBeTypeOf("object");
     assertRequiredKeys(sc!, spec.sharedRequiredKeys, `prime_context.${capability}`, "source-contract.json");
@@ -356,7 +351,7 @@ describe("prime --context <capability> source_contract (oracle parity)", () => {
     // Non-bespoke capabilities (hej, planera, resonera, inspirera, visionera, visualisera, profilera)
     // share the bare capability_context.context.{capability, schema_error, first_invocation_read}
     // shape and have no bespoke source_contract under context.<bespoke>.source_contract.
-    const sc = readBespokeSourceContract(payload, capability);
+    const sc = readBespokeSourceContract(payload);
     expect(sc, `${capability} has no per-capability source_contract`).toBeNull();
   });
 });

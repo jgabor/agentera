@@ -11,7 +11,7 @@ import { classifyInstall, cliDistributionMajor, crossMajorBoundaryApplies, type 
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
-import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
+import type { BundleStatus, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 import { classifyInstallRootStatus } from "./doctorClassifier.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
@@ -86,10 +86,6 @@ function legacyDefaultAppHome(home: string): string {
 
 function isRecoverableStaleDefaultAppHome(appHome: string, rootSource: string, home: string): boolean {
   return rootSource === "AGENTERA_HOME" && appHome === legacyDefaultAppHome(home);
-}
-
-function legacyAppHomeHasBundle(appHome: string): boolean {
-  return hasBundleRootEvidence(appHome) && !pathExists(path.join(appHome, ".git"));
 }
 
 function agenteraUserStateDirIsRecognized(p: string): boolean {

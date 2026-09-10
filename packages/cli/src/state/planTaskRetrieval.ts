@@ -236,7 +236,7 @@ function taskEntry(plan: LoadedPlan, task: LoadedPlan["tasks"][number]): JsonObj
   };
 }
 
-function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTasks: LoadedPlan["tasks"], projectRoot: string): PlanTaskListResponse {
+function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTasks: LoadedPlan["tasks"]): PlanTaskListResponse {
   const snapshot = snapshotId(plan.planId, snapshotTasks);
   const entries = pageTasks.map((task) => taskEntry(plan, task));
   return {
@@ -268,7 +268,7 @@ function baseList(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], pageTask
 function withPage(plan: LoadedPlan, snapshotTasks: LoadedPlan["tasks"], candidates: LoadedPlan["tasks"], retained: number, projectRoot: string, reason: string): PlanTaskListResponse {
   const selected = candidates.slice(0, retained);
   const remaining = candidates.length - selected.length;
-  const response = baseList(plan, snapshotTasks, selected, projectRoot);
+  const response = baseList(plan, snapshotTasks, selected);
   response.counts = {
     total: snapshotTasks.length,
     returned: selected.length,

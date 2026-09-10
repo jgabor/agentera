@@ -1,18 +1,15 @@
-import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import YAML from "yaml";
 import type { JsonObject } from "../core/jsonValue.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { discoverPlanArtifacts, planDocumentParts } from "../cli/planArtifacts.js";
 import { assertRealpathBoundary, docsPathOverridesFromBytes, loadArtifactRecord, resolveArtifactPath } from "../registries/artifactRegistry.js";
-import { canonicalRecordJson, validateStateRecord } from "./archiveDiscovery.js";
+import { canonicalRecordJson } from "./archiveDiscovery.js";
 import { canonicalEntityEnvelopeBytes, entityForbiddenCanonicalAliases, entityPreservedAggregateCollections, validateCanonicalEntityTargets } from "./entityStorage.js";
 import { discoverObjectiveArtifacts, inspectExperimentIdentities } from "./experimentIdentity.js";
 import { decisionRevisionContract, decisionRevisionViolations } from "./decisionRevision.js";
-import { classifyCompleteDecisionConfidence, decisionLegacyCoexistence } from "./decisionLegacyValidation.js";
 import { migrateDecisionRevisionEntries } from "./decisionRevisionMigration.js";
 import { entityMigrationId } from "./entityMigrationIdentity.js";
 import { assertValidatedProjectRoot, validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
@@ -24,7 +21,6 @@ import { canonicalMigrationRecord } from "./canonicalMigrationRecord.js";
 import { legacySummaryRecord } from "./legacySummaryRecord.js";
 import { applyCausalBlockers } from "./entityMigrationCausality.js";
 import { todoMigrationObservations, todoReconciliationMigrationPlan } from "./entityMigrationTodo.js";
-import { classifyProjectState } from "./stateMode.js";
 import { TODO_RECONCILIATION_ACTIVATION_PATH } from "./todoReconciliationActivation.js";
 import { projectPathIsStable as migrationPathIsStable, readProjectFileSnapshot, resolveProjectDescriptorPath, snapshotProjectPath as snapshotMigrationPath, type ProjectDescriptorPathResolver as DescriptorPathResolver } from "./safeProjectFile.js";
 
@@ -44,7 +40,6 @@ import {
   mapping,
   readMigrationSource,
   relative,
-  type EntityCutoverProjectState,
   type Observation,
   type SourceFile,
 } from "./entityMigrationPreviewSupport.js";

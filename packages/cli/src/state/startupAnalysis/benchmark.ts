@@ -10,7 +10,6 @@ import type { JsonObject } from "../../core/jsonValue.js";
 import { inc, counterDict, safeInt, pyJsonDumps } from "./helpers.js";
 import { boundedRuntimeStatus } from "./threshold.js";
 import { classifyStartupRecords } from "./records.js";
-import { aggregateStartupMetrics } from "./metrics.js";
 import { renderStartupReport } from "./report.js";
 import { tiersDirForCorpusPath, assessTiers, readBoundedMetadata, iterBoundedRecords, legacyCorpusReadable, recoveryForState } from "../../analytics/extractCorpus/index.js";
 

@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
-import { capabilityContext } from "./contract.js";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../../core/envPaths.js";
 import { expanduser } from "../../core/paths.js";
 import { sourceProvenance, uniqueList } from "./shared.js";

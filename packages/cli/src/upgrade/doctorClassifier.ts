@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import type { Classification } from "../state/installRoot.js";
 import type { DoctorSignal } from "../cli/contracts/bundleStatus.js";
 import type { DoctorRoots } from "./appModel.js";

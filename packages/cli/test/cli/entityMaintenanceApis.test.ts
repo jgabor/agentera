@@ -261,7 +261,7 @@ describe("entity-mode retrieval and maintenance APIs", () => {
     for (const format of ["json", "text"]) {
       for (const family of convertedSchemas) {
         const canonical = capture(root, ["state", "query", family, "--format", format]);
-        for (const [alias, target] of convertedQueryAliases.filter(([, target]) => target === family)) {
+        for (const [alias] of convertedQueryAliases.filter(([, target]) => target === family)) {
           const result = capture(root, ["state", "query", alias, "--format", format]);
           expect({ rc: result.rc, out: result.out, err: result.err }, `${format}:${alias}`).toEqual({
             rc: canonical.rc,

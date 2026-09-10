@@ -350,7 +350,7 @@ function compactTodoResolved(p: string): CompactResult {
     fs.writeFileSync(p, normalized.text);
     text = normalized.text;
   }
-  const [start, end, currentBody] = extractResolvedSection(text);
+  const [start, end] = extractResolvedSection(text);
   if (start < 0)
     return {
       full_before: 0,

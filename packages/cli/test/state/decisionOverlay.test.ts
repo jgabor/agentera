@@ -7,12 +7,10 @@ import { afterEach, describe, expect, it } from "vitest";
 import { main } from "../../src/cli/dispatch.js";
 import { decisionContextEntry, decisionSatisfactionContext, hydrateDecisionEntries } from "../../src/cli/commands/state/decisions.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
-import { composeDecisionOverlay, decisionOverlayPath, decisionOverlayViolations, loadDecisionOverlay } from "../../src/state/decisionOverlay.js";
-import { InjectedMutationFailure } from "../../src/state/write/mutation.js";
-import { executeStateWrite, type StateWriteRequest } from "../../src/state/write/transaction.js";
-import { operationSpec } from "../../src/state/write/operations.js";
+import { composeDecisionOverlay, decisionOverlayPath, decisionOverlayViolations } from "../../src/state/decisionOverlay.js";
+// Keep the writer operation module's initialization after removing the unused request helper.
+import "../../src/state/write/operations.js";
 import { checkCompaction } from "../../src/hooks/compaction/status.js";
-import { compactYamlFile } from "../../src/hooks/compaction/apply.js";
 
 interface Captured {
   rc: number;
@@ -73,23 +71,6 @@ function update(root: string, state: string, ...extra: string[]): Captured {
     .find((entry) => entry.isFile() && entry.name.endsWith(".yaml"))!
     .name.slice(0, -5);
   return run(root, ["decisions", "update", "--id", id, "--satisfaction-state", state, ...extra, "--format", "json"]);
-}
-
-function updateRequest(root: string, state: string): StateWriteRequest {
-  const spec = operationSpec("decisions", "update");
-  if (!spec) throw new Error("decision update operation is unavailable");
-  const id = fs.readdirSync(path.join(root, ".agentera/entities/decisions/decision"))[0].slice(0, -5);
-  const satisfaction = state === "provisionally_satisfied" ? { state, evidence: "atomic evidence" } : { state };
-  return {
-    artifact: "decisions",
-    spec,
-    projectRoot: root,
-    dryRun: false,
-    force: false,
-    values: { id, satisfaction },
-    callerPayload: { id, satisfaction },
-    input: null,
-  };
 }
 
 describe("decision review overlays", () => {

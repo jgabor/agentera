@@ -50,7 +50,8 @@ export interface RuntimeOperationSpec {
 export const RUNTIME_WRITE_VERBS = ["append", "update", "amend", "set-status", "supersede", "set-plan-status", "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "correct-owners", "set-severity", "resolve", "reopen", "explain"] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
-const readiness = loadTodoReadinessContract();
+// Retain eager contract validation even though no operation consumes the old field list.
+loadTodoReadinessContract();
 
 const f = (flag: string, field: string, kind: RuntimeFieldKind, options: Omit<RuntimeOperationField, "flag" | "field" | "kind"> = {}): RuntimeOperationField => ({
   flag,
@@ -59,43 +60,6 @@ const f = (flag: string, field: string, kind: RuntimeFieldKind, options: Omit<Ru
   required: false,
   ...options,
 });
-
-const todoReadinessFields: RuntimeOperationField[] = [
-  f("--capability", "readiness.capability", "string", {
-    validValues: readiness.allowedDestinations,
-    validValuesSource: "todo_readiness.allowed_destinations",
-    description: "Reviewer-approved capability that owns the next action.",
-  }),
-  f("--reason", "readiness.reason", "string", {
-    description: "Durable intent explaining why the destination is correct.",
-  }),
-  f("--dependency", "readiness.dependencies", "string_list", {
-    repeatable: true,
-    description: "Bare ten-letter canonical TODO prerequisite ID; repeat for each dependency.",
-  }),
-  f("--blocked-reason", "readiness.blocked.reason", "string", {
-    description: "Explicit blocker reason; requires --blocked-recovery.",
-  }),
-  f("--blocked-recovery", "readiness.blocked.recovery", "string", {
-    description: "Bounded action that clears the declared blocker; requires --blocked-reason.",
-  }),
-  f("--gate-state", "readiness.gate.state", "string", {
-    validValues: ["pending", "satisfied"],
-    description: "Declared external or approval gate state.",
-  }),
-  f("--gate-reason", "readiness.gate.reason", "string", {
-    description: "Reason for the declared gate.",
-  }),
-  f("--gate-recovery", "readiness.gate.recovery", "string", {
-    description: "Bounded action for the declared gate.",
-  }),
-  f("--queue-rank", "readiness.queue_rank", "integer", {
-    description: "Reviewer-assigned intent order within severity; lower values run first.",
-  }),
-  f("--order-reason", "readiness.order_reason", "string", {
-    description: "Durable reason for the queue rank.",
-  }),
-];
 
 const planEvaluationFields: RuntimeOperationField[] = [
   f("--id", "id", "string", { required: true }),

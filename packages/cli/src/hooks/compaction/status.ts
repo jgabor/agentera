@@ -18,7 +18,7 @@ import { discoverEntities } from "../../state/entityStorage.js";
 import { decisionProtectedOverflowCount, decisionSatisfiedActiveCount, overLimitCount, yamlArchiveEntries } from "./retention.js";
 import { CompactResult, CompactionOperation, CompactionStatus } from "./types.js";
 import { compactFile, compactYamlBytes, compactYamlFile } from "./apply.js";
-import { countTodoResolvedEntries, countTodoResolvedSectionHeadings, countTodoPendingSummarization, parseEntries, TODO_DROPPED_RECOVERY_GUIDANCE } from "./parse.js";
+import { countTodoResolvedEntries, countTodoResolvedSectionHeadings, countTodoPendingSummarization, TODO_DROPPED_RECOVERY_GUIDANCE } from "./parse.js";
 import { YAML_SPEC_BY_ARTIFACT } from "./dryRun.js";
 import { InjectedMutationFailure, type StateMutationTransaction, type StateMutationOptions, withStateMutation } from "../../state/write/mutation.js";
 import { hydrateDecisionRecords } from "../../state/decisionOverlay.js";

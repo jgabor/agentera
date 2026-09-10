@@ -22,9 +22,8 @@ import { fileURLToPath } from "node:url";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import { collectOrientationState } from "../../src/cli/commands/prime/collectOrientationState.js";
 import { BriefBudgetError, briefByteGate, briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/briefOrientation.js";
-import { buildOrientationJsonPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
+import { emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");

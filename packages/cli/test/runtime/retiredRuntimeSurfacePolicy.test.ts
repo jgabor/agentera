@@ -712,7 +712,7 @@ describe("retired runtime current-surface policy", () => {
       },
     ];
 
-    for (const { label, path: surface, statement, content, invocations, violations } of matrix) {
+    for (const { label, path: surface, content, invocations, violations } of matrix) {
       const spans = scanBootstrapAuthority(surface, content).spans;
       expect(spans, `${label}: inventory`).toHaveLength(invocations.length);
       expect(new Set(spans.map(({ identity }) => identity)).size, `${label}: offset identity`).toBe(spans.length);

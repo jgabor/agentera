@@ -3,7 +3,7 @@ import path from "node:path";
 import type { JsonObject } from "../core/jsonValue.js";
 import { PROFILE_SIGNAL_TYPES, profileSufficiency } from "../registries/evidenceTierContract.js";
 import type { Env } from "./extractCorpus/core.js";
-import { defaultTiersDir, readCurrentPointer, readSignalTier, resolveEvidenceAnchor, type SignalRecord } from "./extractCorpus/evidenceTiers.js";
+import { readCurrentPointer, readSignalTier, resolveEvidenceAnchor, type SignalRecord } from "./extractCorpus/evidenceTiers.js";
 import { assessTiers, recoveryForState, resolveTiersDir, type TierAssessment } from "./extractCorpus/tierReader.js";
 
 /**

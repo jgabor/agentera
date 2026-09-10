@@ -4,7 +4,7 @@ import type { SchemaInfo } from "../appContext.js";
 import { artifactPath } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
-import { docsConventions, entryStatus, sourceProvenance, uniqueList } from "./shared.js";
+import { docsConventions, sourceProvenance, uniqueList } from "./shared.js";
 import { closeoutChangelogBoundary } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import { decisionReviewPressure } from "./evidence.js";

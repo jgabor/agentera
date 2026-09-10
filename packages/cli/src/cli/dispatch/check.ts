@@ -1,5 +1,5 @@
 import { cmdLint, LintArgs } from "../commands/lint.js";
-import { cmdCompact, cmdGate, CompactArgs } from "../commands/compact.js";
+import { cmdCompact, CompactArgs } from "../commands/compact.js";
 import { cmdSchema } from "../commands/schema.js";
 import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, cmdValidateArtifact, cmdValidateState, isDelegatedValidateFamily, VALIDATE_FAMILY_NAMES, cmdValidateActivationConjunction } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
@@ -51,7 +51,7 @@ export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
   return args;
 }
 
-export function runLint(argv: string[], io: Io, prog = "agentera lint"): number {
+export function runLint(argv: string[], io: Io, _prog = "agentera lint"): number {
   const parsed = parseLintArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
@@ -109,7 +109,7 @@ export function parseCompactArgs(argv: string[]): CompactArgs | { error: string 
   return args;
 }
 
-export function runCompact(argv: string[], io: Io, prog: string): number {
+export function runCompact(argv: string[], io: Io, _prog: string): number {
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
@@ -167,7 +167,7 @@ export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: s
   return args;
 }
 
-export function runDurability(argv: string[], io: Io, prog: string): number {
+export function runDurability(argv: string[], io: Io, _prog: string): number {
   const format = requestedDurabilityFormat(argv);
   const sourceRoot = resolveSourceRoot();
   const parsed = parseDurabilityArgs(argv);
@@ -183,7 +183,7 @@ export function runDurability(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runValidate(argv: string[], io: Io, prog: string): number {
+export function runValidate(argv: string[], io: Io, _prog: string): number {
   const requestedFormat = "json";
   let family: string | null = null;
   let capabilityTarget: string | null = null;
@@ -316,7 +316,7 @@ export function runValidate(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runSchema(argv: string[], io: Io, prog: string): number {
+export function runSchema(argv: string[], io: Io, _prog: string): number {
   let format = "json";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];

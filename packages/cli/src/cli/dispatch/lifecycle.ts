@@ -32,7 +32,7 @@ function rejectUnsupportedUpgradeFlag(io: Io, format: string, message: string, r
   });
 }
 
-export function runGate(argv: string[], io: Io, prog: string): number {
+export function runGate(argv: string[], io: Io, _prog: string): number {
   const parsed = parseCompactArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {
@@ -50,7 +50,7 @@ export function runGate(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runAppHome(argv: string[], io: Io, prog: string): number {
+export function runAppHome(argv: string[], io: Io, _prog: string): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   if (wantsHelp(argv)) {
     out(printAppHomeHelp() + "\n");
@@ -103,7 +103,7 @@ export function runAppHome(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runDoctor(argv: string[], io: Io, prog: string): number {
+export function runDoctor(argv: string[], io: Io, _prog: string): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   if (wantsHelp(argv)) {
@@ -175,7 +175,7 @@ export function runDoctor(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runUsage(argv: string[], io: Io, prog: string): number {
+export function runUsage(argv: string[], io: Io, _prog: string): number {
   const realOut = io.out ?? ((t: string) => process.stdout.write(t));
   const realErr = io.err ?? ((t: string) => process.stderr.write(t));
   let format = "json";
@@ -237,8 +237,9 @@ export function runUsage(argv: string[], io: Io, prog: string): number {
   });
 }
 
-export function runUpgrade(argv: string[], io: Io, prog: string): number {
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
+export function runUpgrade(argv: string[], io: Io, _prog: string): number {
+  // Preserve the caller's accessor read even though this route does not use stderr.
+  void io.err;
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   if (wantsHelp(argv)) {
     out(printUpgradeHelp() + "\n");
@@ -371,7 +372,7 @@ export function runUpgrade(argv: string[], io: Io, prog: string): number {
   }
 }
 
-export function runVerify(argv: string[], io: Io, prog: string): number {
+export function runVerify(argv: string[], io: Io, _prog: string): number {
   const args: VerifyArgs = {
     family: null,
     target: null,

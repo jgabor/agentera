@@ -126,10 +126,6 @@ function isMapping(value: unknown): value is Record<string, unknown> {
   return value !== null && typeof value === "object" && !Array.isArray(value);
 }
 
-function stringField(value: Record<string, unknown>, key: string): string {
-  return typeof value[key] === "string" ? value[key] : "";
-}
-
 function sourceError(sourcePath: string, location: string, message: string): string {
   return `${sourcePath}:${location}: ${message}`;
 }

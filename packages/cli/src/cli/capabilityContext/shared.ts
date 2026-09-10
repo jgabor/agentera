@@ -1,8 +1,5 @@
 import fs from "node:fs";
-import path from "node:path";
-import { loadYamlMapping } from "../../core/yaml.js";
-import { activeAppModel, discoverSchemasDir } from "../appContext.js";
-import { asList, firstPresent } from "../stateQuery.js";
+import { firstPresent } from "../stateQuery.js";
 import { CAPABILITY_NAMES } from "./types.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 

@@ -10,7 +10,6 @@ import { decisionSatisfactionContext } from "../../src/cli/commands/state/decisi
 import { progressVerificationSummary } from "../../src/cli/capabilityContext/progress.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
-const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
 const STATE_ARTIFACTS = new Set(["decisions", "progress", "health"]);
 const CAPABILITY_NAMES = Object.keys(CAPABILITY_INSTRUCTIONS);
 

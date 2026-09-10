@@ -1,7 +1,7 @@
 import { hashLabel, loadContract, parseTimestamp } from "./contract.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { argumentsText, capabilityInvocation, extractText, introCapability, recordLabel } from "./helpers.js";
-import { BOUNDARY_DEGRADATION_REASONS, STATE_EVENT_CLASSES, boundedRuntimeStatus, classifyStartupEvent, startupConversationKey } from "./threshold.js";
+import { BOUNDARY_DEGRADATION_REASONS, STATE_EVENT_CLASSES, classifyStartupEvent, startupConversationKey } from "./threshold.js";
 
 function hasTranscriptBearingField(record: JsonObject): boolean {
   if ("transcript" in record) return true;

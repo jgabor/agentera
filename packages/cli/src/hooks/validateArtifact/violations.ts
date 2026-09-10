@@ -12,24 +12,7 @@ import path from "node:path";
 import { parseYaml } from "../../core/yaml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { loadYamlMapping } from "../../core/yaml.js";
-import {
-  expectedSequenceOrder,
-  isEmptyRequired,
-  isMapping,
-  schemaFieldNames,
-  sequenceInOrder,
-  validationRuleSeverity,
-  validateDecisionAlternatives,
-  validateDecisionSatisfaction,
-  validateField,
-  validateFullPlanContract,
-  validatePlanDependencies,
-  validatePlanKnownFields,
-  validateSequences,
-  validateSingletonGroup,
-  collectSingletonGroups,
-  wordCount,
-} from "./schema.js";
+import { expectedSequenceOrder, isMapping, sequenceInOrder, validationRuleSeverity, validateDecisionAlternatives, validateDecisionSatisfaction, validateFullPlanContract, validatePlanDependencies, validatePlanKnownFields, validateSequences, validateSingletonGroup, collectSingletonGroups, wordCount } from "./schema.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
 

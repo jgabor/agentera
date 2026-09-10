@@ -1,5 +1,5 @@
 import path from "node:path";
-import { readdirSync as fsReaddirSync, readFileSync as fsReadFileSync, statSync as fsStatSync } from "node:fs";
+import { readdirSync as fsReaddirSync, statSync as fsStatSync } from "node:fs";
 
 import { resolvePath } from "../../core/paths.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
@@ -538,7 +538,7 @@ export function validateStatePayload(projectRootInput: string): JsonObject {
         if (issues.length < 100) issues.push(todoReconciliationValidationIssue(reconciliation));
         else additionalOmittedIssues += 1;
       }
-    } catch (error) {
+    } catch {
       if (issues.length < 100)
         issues.push({
           code: "invalid_todo_reconciliation",

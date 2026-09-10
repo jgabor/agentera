@@ -1,9 +1,8 @@
-import { publicDoctorStatus } from "../../upgrade/doctor.js";
 import type { SchemaInfo } from "../appContext.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
-import { entryStatus, sourceProvenance, uniqueList, hasRecordedValue, taskRef } from "./shared.js";
-import { closeoutChangelogBoundary, dependencyReadyTasks, orchestrationTaskSummary, planContextField, buildArtifactUpdateRequirements, buildPlanCompletionSweep, buildScopeBoundary, selectEvidenceTarget, taskByRef } from "./planState.js";
+import { sourceProvenance, uniqueList, hasRecordedValue, taskRef } from "./shared.js";
+import { closeoutChangelogBoundary, orchestrationTaskSummary, planContextField, buildArtifactUpdateRequirements, buildPlanCompletionSweep, buildScopeBoundary, selectEvidenceTarget, taskByRef } from "./planState.js";
 import { progressVerificationSummary } from "./progress.js";
 import { STATE_FAMILY_FALLBACK_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import { planLifecycleState } from "../planLifecycleState.js";

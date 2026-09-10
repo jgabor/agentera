@@ -7,7 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { evidenceTierAuthorityPath, evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 import { publishEvidenceTiers, type PublicationResult } from "../../src/analytics/extractCorpus/evidenceTiers.js";
-import { assessTiers, isAnalyzable, iterBoundedRecords, legacyCorpusReadable, readBoundedMetadata, recoveryForState, tiersDirForCorpusPath, type TierAssessment } from "../../src/analytics/extractCorpus/tierReader.js";
+import { assessTiers, isAnalyzable, iterBoundedRecords, legacyCorpusReadable, readBoundedMetadata, recoveryForState, tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
 
 type JsonObject = Record<string, unknown>;
 

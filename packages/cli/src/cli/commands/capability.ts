@@ -1,5 +1,3 @@
-import path from "node:path";
-
 import { emitStructured } from "../structured.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 

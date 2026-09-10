@@ -1,51 +1,26 @@
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
-import YAML from "yaml";
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { canonicalRecordJson } from "./archiveDiscovery.js";
-import { StateRetrievalFailure, type StateFailureClass } from "./directRetrieval.js";
-import {
-  allocateEntityId,
-  assertEntityDiscoveryOrigin,
-  canonicalEntityEnvelopeBytes,
-  canonicalEntityRecordViolations,
-  discoverEntities,
-  entityExactGetMaxBytes,
-  exactDiscoveredEntityBytes,
-  publishEntityUnderLock,
-  replaceEntityUnderLock,
-  validateEntityState,
-  withEntityWriterLock,
-  type DiscoveredEntity,
-  type EntityDiscoveryResult,
-} from "./entityStorage.js";
-import type { EntityPublicationContext, PublishedTargetIdentity } from "./entityPublicationContext.js";
-import type { MigrationSourceBindingContext } from "./migrationSourceBinding.js";
+import { allocateEntityId, canonicalEntityEnvelopeBytes, entityExactGetMaxBytes, exactDiscoveredEntityBytes, publishEntityUnderLock, replaceEntityUnderLock, withEntityWriterLock, type DiscoveredEntity, type EntityDiscoveryResult } from "./entityStorage.js";
+import type { PublishedTargetIdentity } from "./entityPublicationContext.js";
 import { detectStateModeBinding } from "./stateMode.js";
-import { reject, StateWriteInputError } from "./write/errors.js";
+import { reject } from "./write/errors.js";
 import type { StateWriteEnvelope, StateWriteRequest } from "./write/operations.js";
-import { TODO_SEVERITIES, TODO_STATUSES, todoDocsRecordViolations, todoInputViolations } from "./todoDocsEntityValidation.js";
-import { todoReadinessReferenceViolations } from "../registries/todoReadinessContract.js";
-import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
+import { TODO_SEVERITIES, TODO_STATUSES, todoInputViolations } from "./todoDocsEntityValidation.js";
 import { entityListSelectorFlags, entityListSelectorKey, projectEntityList, resolveEntityListSelector, type EntityListSelectorInput } from "./entityListProjection.js";
 import { decodeListCursor, encodeListCursor } from "./listCursor.js";
-import { entityListFamily } from "./entityRetrievalHelp.js";
 import { shellQuoteArgument } from "../core/shell.js";
-import { parseTodoMarkdownListItem, renderTodoPublicRecord } from "../cli/todoMarkdown.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessEvaluation } from "../cli/todoReadinessSelection.js";
-import { artifactSchemasDir, loadArtifactRecord, registryModelPath, resolveArtifactPath } from "../registries/artifactRegistry.js";
-import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, todoCreateRequestSha256, type TodoReconciliationBinding, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
+import { inspectTodoReconciliation, publishTodoReconciliation, recoverTodoReconciliation, todoCreateRequestSha256, type TodoReconciliationTarget } from "./todoReconciliationTransaction.js";
 import {
   loadTodoReconciliationActivation,
-  todoLegacyRowFingerprint,
   todoReconciliationActivationBytes,
   TODO_RECONCILIATION_ACTIVATION_PATH,
-  TODO_RECONCILIATION_ITEM_LIMIT,
   TODO_ACTIVATION_APPLY_COMMAND,
   TODO_ACTIVATION_PREVIEW_COMMAND,
-  TODO_ACTIVATION_RISK_LIMIT,
   TODO_OWNER_CORRECTION_APPLY_COMMAND,
   TODO_OWNER_CORRECTION_PREVIEW_COMMAND,
   TODO_REPAIR_APPLY_COMMAND,
@@ -58,8 +33,8 @@ import {
 } from "./todoReconciliationActivation.js";
 import { normalizeTodoOwnerCorrectionEvidence, planTodoOwnerCorrection, planTodoRepair } from "./todoReconciliationRepair.js";
 import { readTodoMarkdown, renderManagedMarkdown } from "./todoMarkdownProjection.js";
-import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation, unsafeInactiveDuplicateDiagnosis } from "./todoActivationSafety.js";
-import { assertTodoSeverityHeadingStructure, todoSeveritySectionForHeading } from "./todoSeverityHeadings.js";
+import { inactiveTodoActivationSafety, rejectUnsafeInactiveTodoActivation } from "./todoActivationSafety.js";
+import { assertTodoSeverityHeadingStructure } from "./todoSeverityHeadings.js";
 import { parseTodoUpdateBatch, todoUpdateBatchEffectSha256 } from "./todoUpdateBatch.js";
 import { parseTodoCreateBatch, resolveTodoCreateBatchRecords, todoCreateBatchEffectSha256 } from "./todoCreateBatch.js";
 import { matchesTodoTransitionBatchPostState, parseTodoTransitionBatch, todoTransitionBatchPostStateSha256 } from "./todoTransitionBatch.js";
@@ -70,39 +45,29 @@ import {
   TODO,
   assertState,
   assertTodoReconciliationReadable,
-  baseline,
-  changedPublicFields,
   contract,
   definition,
   failure,
-  importMarkdown,
-  inspectTodoReconciliationDrift,
   inspectTodoReadView,
   managedRows,
   mapping,
   relative,
-  projectTodoReadEntities,
   publicReadMetadata,
   publicReadRecord,
-  publicSnapshot,
   recordViolations,
   relevant,
   selectedById,
-  samePublic,
   rowSnapshot,
   todoPublicPath,
   todoReconciliationBinding,
   withBaseline,
-  PUBLIC_FIELDS,
   type ManagedRow,
-  type ManagedRowScan,
   type Options,
   type TodoEntityView,
-  type TodoPublicSnapshot,
   type TodoReadView,
 } from "./todoDocsReconciliation.js";
 export { assertTodoReconciliationReadable, inspectTodoReconciliationDrift, managedRows, projectTodoReadEntities, relevant, todoPublicPath, todoReconciliationBinding, type ManagedRow, type ManagedRowScan } from "./todoDocsReconciliation.js";
-import { inactiveTodoMutation, activationEnvelope, repairEnvelope, ownerCorrectionEnvelope, envelope, targetPath, readinessRecord, legacyTodoPayload, todoPayload, applyTodoPatch, transitionRecord, mutationRecord, assertTodoReferences, todoReadinessRecovery, reconcileTodoRecords } from "./todoDocsWrite.js";
+import { inactiveTodoMutation, activationEnvelope, repairEnvelope, ownerCorrectionEnvelope, envelope, targetPath, transitionRecord, mutationRecord, assertTodoReferences, todoReadinessRecovery, reconcileTodoRecords } from "./todoDocsWrite.js";
 export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const artifact = req.artifact as "todo" | "docs";
   if (artifact !== "todo" && artifact !== "docs") throw new Error("TODO/docs entity mutation received an unsupported artifact");
@@ -483,7 +448,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           ordered.filter((target) => !newTargets.includes(target)).map((target) => ({ path: target.path, before_sha256: target.before === null ? null : createHash("sha256").update(target.before).digest("hex"), after_sha256: createHash("sha256").update(target.after).digest("hex") })),
         );
         const batchReceipt = { effect_sha256: effectSha256, input_sha256: inputSha256, local_refs: localRefs };
-        for (const [localRef, id] of localIds) {
+        for (const id of localIds.values()) {
           const record = reconciled.records.get(id)!;
           record.reconciliation = { ...(record.reconciliation as JsonObject), create_batch: batchReceipt };
           newTargets.find((target) => target.path.endsWith(`/${id}.yaml`))!.after = canonicalEntityEnvelopeBytes({ id, artifact: "todo", record });
@@ -566,7 +531,7 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
           reconciled.records.set(entry.id, record);
           requestedRecords.push({ id: entry.id, record });
         }
-        for (const [todoId, record] of reconciled.records) {
+        for (const record of reconciled.records.values()) {
           const violations = recordViolations("todo", record, sourceRoot);
           if (violations.length) reject({ class: "schema_violation", message: `todo ${verb} batch input is invalid`, violations, recovery: "Correct the complete batch and preview it again; no state was changed." });
         }

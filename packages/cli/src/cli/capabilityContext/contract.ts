@@ -3,7 +3,7 @@ import path from "node:path";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir } from "../appContext.js";
 import { capabilityStartupCommand } from "../../capabilities/index.js";
-import { PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION, PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS, PLAN_PLANNING_LEVELS, PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR, PLAN_STARTUP_CONTRACT_VERSION, PLAN_STEP_VERBS, PLAN_TASK_COHERENCE_RULE, STARTUP_ENVELOPE_STATE_FAMILIES, STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
+import { PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION, PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS, PLAN_PLANNING_LEVELS, PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR, PLAN_STARTUP_CONTRACT_VERSION, PLAN_STEP_VERBS, PLAN_TASK_COHERENCE_RULE, STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";

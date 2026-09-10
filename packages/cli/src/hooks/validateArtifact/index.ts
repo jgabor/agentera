@@ -47,7 +47,7 @@ export class ArtifactSchemaValidator {
     return validateMd(content, name, schema);
   }
 
-  validateExplicit(artifact: string, filePath: string, cwd: string): string[] {
+  validateExplicit(artifact: string, filePath: string, _cwd: string): string[] {
     const content = readIfNeeded(null, filePath);
     if (content === null) return [`${artifact}: cannot read artifact file '${filePath}'`];
     const protocolId = normalizeArtifactProtocolId(artifact);

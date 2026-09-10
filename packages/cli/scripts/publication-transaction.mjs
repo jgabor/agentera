@@ -135,10 +135,6 @@ function run(command, args, options = {}) {
   return invocation.stdout.trim();
 }
 
-function git(args) {
-  return run("git", args, { cwd: repoRoot });
-}
-
 function emit(receipt, json, verbose = false) {
   const missing = validateResult(receipt);
   if (missing.length) throw new Error(`publication result missing: ${missing.join(", ")}`);
@@ -154,14 +150,6 @@ function emit(receipt, json, verbose = false) {
 
 function readManifest(adapter, projectRoot = repoRoot) {
   return JSON.parse(fs.readFileSync(path.join(projectRoot, adapter.manifestPath), "utf8"));
-}
-
-function metadataCommitted(adapter) {
-  const tracked = spawnSync("git", ["diff", "--quiet", "HEAD", "--", adapter.manifestPath], {
-    cwd: repoRoot,
-    env: npmChildEnvironment(process.env),
-  });
-  return tracked.status === 0;
 }
 
 function gitRefExists(gitRef, projectRoot = repoRoot) {

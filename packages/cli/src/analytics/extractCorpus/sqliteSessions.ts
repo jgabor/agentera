@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 import { createRequire } from "node:module";
 
 import { resolvePath } from "../../core/paths.js";
@@ -181,7 +180,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
 }
 
 function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): JsonObject[] {
-  const { sessionId, messageId, messageSession, partMessage, messageData, partData, roleCol, messageTime, partTime, sessionTime, projectCol, messageText, partText, partType, partId, sortExpr, recentSessionExpr } = schema;
+  const { sessionId, messageId, messageSession, partMessage, messageData, partData, roleCol, messageTime, partTime, projectCol, messageText, partText, partType, partId, sortExpr, recentSessionExpr } = schema;
   const query = `
         WITH recent_sessions AS (
             SELECT s."${sessionId}" AS recent_session_id
@@ -226,7 +225,7 @@ function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema):
 
 export function probeOpencodeTruncation(conn: SqliteDb, caps: SqliteCaps, fallback: string): SqliteTruncationInfo | null {
   const schema = resolveOpencodeSchema(conn);
-  const { sessionId, sessionTime, sessionUpdated, recentSessionExpr } = schema;
+  const { sessionId, sessionTime, recentSessionExpr } = schema;
   const sessionTimeCol = sessionTime || sessionId;
   const sessionCount = Number(conn.prepare("SELECT COUNT(*) AS c FROM session").get()?.c ?? 0);
   if (sessionCount > caps.maxSessions) {
@@ -245,7 +244,7 @@ export function probeOpencodeTruncation(conn: SqliteDb, caps: SqliteCaps, fallba
     return { truncatedAt, cap: "sessions", limit: caps.maxSessions };
   }
 
-  const { messageId, messageSession, partMessage, roleCol, messageTime, partTime, messageData, partData, messageText, partText, partType, partId, sortExpr } = schema;
+  const { messageId, messageSession, partMessage, partId, sortExpr } = schema;
   const rowCountQuery = `
     WITH recent_sessions AS (
       SELECT s."${sessionId}" AS recent_session_id

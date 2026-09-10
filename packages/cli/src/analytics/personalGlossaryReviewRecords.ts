@@ -21,7 +21,6 @@ import {
   ensurePersonalGlossaryReviewRecordsPrivate,
   isCurrentReviewRecord,
   isCurrentReviewStore,
-  isLegacyReviewRecord,
   isLegacyReviewStore,
   makePersonalGlossaryReviewStore,
   migrateLegacyPendingReviewRecord,

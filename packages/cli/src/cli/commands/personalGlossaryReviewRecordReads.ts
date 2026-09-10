@@ -9,7 +9,6 @@ import type { Io } from "../dispatch/shared.js";
 
 const COLLECTION = "personal_glossary_review_records";
 const CURSOR_VERSION = 1;
-const MAX_CURSOR_UTF8_BYTES = 4_096;
 
 type Mapping = Record<string, unknown>;
 type ReviewStatus = "pending" | "terminal";

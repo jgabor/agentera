@@ -6,7 +6,7 @@ import { loadDocsPathOverrides, resolveArtifactPath, ArtifactRecord } from "../.
 import { activeObjectiveName, artifactPath, discoverSchemasDir, loadSchemas, resolveArtifactPathLocal, SchemaInfo } from "../appContext.js";
 import { validateAgentString } from "../argvalidate.js";
 import { emitStructured } from "../structured.js";
-import { COMMAND_FILTERS, emitStateStructured, extractEntries, filterByFieldValue, filterByTopic, formatEntry, loadArtifact, missingSchemaError, recentCycles, sourceMetadata, structuredState, validateFilterValues } from "../stateQuery.js";
+import { COMMAND_FILTERS, emitStateStructured, extractEntries, filterByFieldValue, filterByTopic, formatEntry, loadArtifact, missingSchemaError, sourceMetadata, structuredState, validateFilterValues } from "../stateQuery.js";
 import { displayFields, queryTodo, StateArgs } from "./state/index.js";
 import { STATE_FAMILY_GET_COMMANDS, STATE_FAMILY_LIST_COMMANDS } from "../capabilityContext/types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -352,7 +352,6 @@ export function cmdQuery(args: QueryArgs, io: Io): number {
     throw new Error(`unsupported artifact/query name ${pyRepr(query)}; path-like values are not artifact names`);
   }
   const schemas = loadSchemas(discoverSchemasDir());
-  const stateArgs = args as unknown as StateArgs;
   const handlers: Record<string, (a: QueryArgs, s: Record<string, SchemaInfo>, io: Io) => number> = {
     "last-phase": queryLastPhase,
     design: queryDesign,

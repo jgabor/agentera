@@ -1,5 +1,4 @@
 import fs from "node:fs";
-import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";

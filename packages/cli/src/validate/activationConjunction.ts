@@ -22,7 +22,7 @@ import { entityListFamilies } from "../state/entityRetrievalHelp.js";
 import { ENTITY_LIST_RUNTIME_BOUNDS, ENTITY_LIST_RUNTIME_FAMILIES } from "../state/entityListRuntimeRegistry.js";
 import { stateWriterContract } from "../state/write/operations.js";
 import { runtimeOperationSpecs } from "../state/write/runtimeOperations.js";
-import { BOOTSTRAP_ACCEPTED_SPECS, BOOTSTRAP_PROJECT_STATE_IDS, BOOTSTRAP_REJECTION_SPECS, BOOTSTRAP_RUNTIME_IDS, bootstrapMatrixAuthority } from "./bootstrapAuthority.js";
+import { BOOTSTRAP_ACCEPTED_SPECS, BOOTSTRAP_REJECTION_SPECS, bootstrapMatrixAuthority } from "./bootstrapAuthority.js";
 import { ACTIVATION_EVIDENCE_FILE, activationEvidenceViolations, readActivationEvidenceManifest, type ActivationEvidenceManifest } from "./activationEvidenceManifest.js";
 import { packageDescriptorSemantics, packageDescriptors, packageSemanticSelector } from "./activationPackageSemantics.js";
 import { loadSourceCapabilityInstructions, retainedPackageSnapshotViolations, type ActivationPackageIdentity } from "./activationArtifactEvidence.js";
@@ -458,7 +458,7 @@ export function collectActivationProductionEvidence(root: string, productionInpu
         ...stateInstructionInput.operations.filter((operation: any) => operation.projection.examples.length > 0).map((operation: any) => `write:${operation.artifact}.${operation.verb}`),
       ]),
       adversarial: evidence("state", "adversarial", [
-        ...stateAdversarialInput.readFamilies.filter((family: any) => stateAdversarialInput.bounds.minimum > 0 && stateAdversarialInput.bounds.maximum >= stateAdversarialInput.bounds.default).map((family: any) => `read:${family.key}`),
+        ...stateAdversarialInput.readFamilies.filter((_family: any) => stateAdversarialInput.bounds.minimum > 0 && stateAdversarialInput.bounds.maximum >= stateAdversarialInput.bounds.default).map((family: any) => `read:${family.key}`),
         ...stateAdversarialInput.operations.filter((operation: any) => operation.inputMaxBytes >= 0 && operation.projection.formatValues.length === 2).map((operation: any) => `write:${operation.artifact}.${operation.verb}`),
       ]),
     },

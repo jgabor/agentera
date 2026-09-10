@@ -55,7 +55,6 @@ export function runStateGet(artifactId: string, argv: string[], io: Io, projectR
   try {
     if (!runtimeGenericEntityListFamily(artifactId)) throw failure(`unsupported state artifact '${artifactId}'`, undefined, artifactId);
     let id: string | undefined;
-    let entityFormat: "text" | "json" | "yaml" = "json";
     let formatSupplied = false;
     for (let index = 0; index < argv.length;) {
       const token = argv[index];
@@ -77,7 +76,6 @@ export function runStateGet(artifactId: string, argv: string[], io: Io, projectR
         if (formatSupplied) throw failure("--format may only be supplied once", id, artifactId);
         formatSupplied = true;
         if (parsed.value !== "json") throw failure(`invalid --format '${parsed.value}'`, id, artifactId);
-        entityFormat = parsed.value;
       }
     }
     if (!id) throw failure(`--id is required for entity-mode ${artifactId} retrieval`, id, artifactId);

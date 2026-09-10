@@ -8,7 +8,6 @@ import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { D56_PARITY_FAMILY_GAPS, GAP_IDS, DEFAULT_RUNTIME_MATRIX, TRACKED_GAPS, gapSkipReason, isGapClosed, isParityFamilyClosed } from "./gapRegistry.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const FIXTURES = path.join(__dirname, "fixtures");
 
 let tmp: string;
 

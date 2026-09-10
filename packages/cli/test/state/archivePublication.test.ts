@@ -152,7 +152,6 @@ describe("numbered archive publication", () => {
     const calls: string[] = [];
     const target = "/project/objective/archive/experiments/0.yaml";
     const archive = path.dirname(path.dirname(target));
-    const experiments = path.dirname(target);
     const objective = path.dirname(archive);
     const existing = new Set([objective]);
     expect(() =>

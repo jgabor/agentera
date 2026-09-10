@@ -406,24 +406,6 @@ function hasExactReadOrParse(fragments: string[], referencePath: string): boolea
   });
 }
 
-function allProductionModules(root: string): string[] {
-  const modules: string[] = [];
-  const visit = (relative: string): void => {
-    const absolute = path.join(root, relative);
-    if (!fs.existsSync(absolute)) return;
-    const stat = fs.lstatSync(absolute);
-    if (stat.isSymbolicLink()) return;
-    if (stat.isDirectory()) {
-      for (const entry of fs.readdirSync(absolute, { withFileTypes: true })) visit(path.posix.join(relative, entry.name));
-      return;
-    }
-    if (stat.isFile() && isProductionModulePath(relative)) modules.push(relative);
-  };
-  visit("packages/cli/src");
-  visit("packages/cli/scripts");
-  return modules;
-}
-
 function productionEntrypoints(root: string): string[] {
   const entrypoints = new Set<string>();
   if (regularContainedFile(root, "packages/cli/src/bin/agentera.ts")) {

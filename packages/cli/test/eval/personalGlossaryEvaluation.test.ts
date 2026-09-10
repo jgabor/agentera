@@ -29,7 +29,6 @@ import { evaluateGlossaryBehavior, evaluateGlossaryHoldout, main } from "../../s
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const ANALYSIS = path.join(ROOT, "references", "analysis");
-const AUTHORITY_PATH = path.join(ANALYSIS, "personal-glossary-evaluation-authority.yaml");
 const HOLDOUT_PATH = path.join(ANALYSIS, "personal-glossary-holdout.yaml");
 const BEHAVIOR_PATH = path.join(ANALYSIS, "personal-glossary-evaluation-corpus.yaml");
 const temporaryRoots: string[] = [];

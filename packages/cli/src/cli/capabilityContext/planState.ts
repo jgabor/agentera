@@ -1,6 +1,5 @@
 import { asList } from "../stateQuery.js";
-import { loadNamedArtifact } from "../orientation.js";
-import { entryStatus, sourceProvenance, taskRef, hasRecordedValue, uniqueList } from "./shared.js";
+import { entryStatus, sourceProvenance, taskRef, hasRecordedValue } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { JsonValue } from "../../core/jsonValue.js";
 import { planTaskIndex } from "../planTaskIndex.js";

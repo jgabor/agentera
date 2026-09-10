@@ -393,7 +393,8 @@ export interface ReleaseMetadataMainOptions {
 export function releaseMetadataMain(opts: ReleaseMetadataMainOptions = {}): number {
   const root = resolvePath(opts.root ?? rootDefault());
   const out = opts.out ?? ((line: string) => process.stdout.write(line + "\n"));
-  const err = opts.err ?? ((line: string) => process.stderr.write(line + "\n"));
+  // Preserve accessor effects without retaining an unused output callback.
+  void opts.err;
   const overrideVersion = process.env.AGENTERA_RELEASE_PACKAGE_VERSION;
   const overrideGitRef = process.env.AGENTERA_RELEASE_GIT_REF;
   if ((overrideVersion === undefined) !== (overrideGitRef === undefined)) {

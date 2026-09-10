@@ -8,7 +8,7 @@ import { expanduser, resolvePath } from "../../core/paths.js";
 import { authorClassForRole, type Env, MAX_TOOL_ARG_TEXT, eventTimestamp, isFilePath, isoFromMtime, iterJsonl, record, signalType, textFromContent, transportProvenance, toolCallRecordFromItem } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isDir } from "./core.js";
-import { type SqliteDb, openSqlite, jsonDict } from "./sqliteSessions.js";
+import { type SqliteDb, openSqlite } from "./sqliteSessions.js";
 
 function pathStem(p: string): string {
   const base = path.basename(p);
@@ -16,7 +16,7 @@ function pathStem(p: string): string {
   return ext ? base.slice(0, -ext.length) : base;
 }
 
-export function resolveOpencodeDbPath(env: Env = process.env): string | null {
+export function resolveOpencodeDbPath(_env: Env = process.env): string | null {
   let out: string;
   try {
     out = execFileSync("opencode", ["db", "path"], { encoding: "utf-8", timeout: 2000 });

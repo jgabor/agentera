@@ -17,7 +17,6 @@ import type {
   PersonalGlossaryMiningFamilySummary,
   PersonalGlossaryMiningSummary,
   PersonalGlossaryProjectionCandidateInput,
-  PersonalGlossarySafeExcerpt,
   PersonalGlossaryProjectionSourceFamily as SourceFamily,
   ProjectedPersonalGlossaryCandidate,
 } from "./personalGlossaryCandidateProjectionModel.js";

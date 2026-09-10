@@ -9,7 +9,7 @@ import { createRequire } from "node:module";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
-import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity, sha256 } from "../../scripts/release-qualification.mjs";
+import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "../../scripts/release-qualification.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const ciYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"), "utf8");

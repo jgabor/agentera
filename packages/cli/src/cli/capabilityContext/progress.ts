@@ -1,7 +1,6 @@
-import { asList } from "../stateQuery.js";
 import { evaluatorHandoffOutputRequirements, loadEvaluatorHandoffContract } from "../../registries/evaluatorHandoffContract.js";
 import { capabilityInstructionContractPath } from "./contract.js";
-import { hasRecordedValue, isFile, sourceProvenance, taskRef } from "./shared.js";
+import { hasRecordedValue, isFile, taskRef } from "./shared.js";
 import { STATE_FAMILY_LIST_COMMANDS } from "./types.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 

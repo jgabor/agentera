@@ -311,7 +311,7 @@ describe("decision entity authority", () => {
   it.each([
     [
       "nonexistent projection",
-      (root: string, source: Record<string, any>) => ({
+      (_root: string, _source: Record<string, any>) => ({
         source: "current_projection",
         source_path: ".agentera/decisions.yaml",
         digest: "a".repeat(64),

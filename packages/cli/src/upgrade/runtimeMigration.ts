@@ -7,7 +7,7 @@ import { hasManagedMarker, opencodeConfigDir } from "../setup/opencode.js";
 import { OPENCODE_SKILL_NAMES } from "../setup/opencodeConstants.js";
 import { doctorRoots } from "./appModel.js";
 import { bindMigrationResource, removeBoundMigrationResource, verifyBoundMigrationResource } from "./migrationPublication.js";
-import type { MigrationContext, MigrationPhaseItem, MigrationStatus } from "./migrateArtifactsV2ToV3.js";
+import type { MigrationContext, MigrationPhaseItem } from "./migrateArtifactsV2ToV3.js";
 
 const PYTHON_MANAGED_PATTERNS = [
   /hooks\/validate_artifact\.py/,
@@ -303,7 +303,8 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   }
   const home = resolvePath(ctx.home);
   const project = resolvePath(ctx.project);
-  const env = ctx.env;
+  // Keep the context accessor read in its original position.
+  void ctx.env;
   const items: MigrationPhaseItem[] = [];
 
   planCodexItems(items, home, project);

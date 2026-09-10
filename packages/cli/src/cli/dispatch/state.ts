@@ -34,7 +34,7 @@ function canonicalReadCorrection(familyKey: Parameters<typeof entityListFamily>[
   return 2;
 }
 
-export function runState(command: string, argv: string[], io: Io, prog: string): number {
+export function runState(command: string, argv: string[], io: Io, _prog: string): number {
   const runtime = runtimeEntityFamilyForStateCommand(command, argv);
   if (runtime) {
     const offset = runtime.commandTokens.length - 1;
@@ -109,7 +109,7 @@ export function parseQueryArgs(argv: string[]): QueryArgs | { error: string } {
   return args;
 }
 
-export function runQuery(argv: string[], io: Io, prog: string): number {
+export function runQuery(argv: string[], io: Io, _prog: string): number {
   const parsed = parseQueryArgs(argv);
   if ("error" in parsed) {
     return emitInvalidInput(io, {

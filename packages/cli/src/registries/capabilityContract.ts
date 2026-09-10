@@ -459,11 +459,6 @@ function checkSelfGroups(data: JsonObject, sourceLabel: string, requiredGroups: 
 /**
  * Required integer range field inside TRIGGER_ENRICHMENT compatibility rules.
  */
-function checkEnrichmentIntegerField(value: unknown, label: string, sourceLabel: string, errors: string[]): void {
-  if (typeof value !== "number" || !Number.isInteger(value) || value < 0 || value > 100) {
-    errors.push(`bootstrap [error]: ${label} in ${sourceLabel} must be an integer in range 0..100`);
-  }
-}
 
 function checkTriggerEnrichmentRules(data: JsonObject, sourceLabel: string, errors: string[]): void {
   const enrichment = data.TRIGGER_ENRICHMENT;

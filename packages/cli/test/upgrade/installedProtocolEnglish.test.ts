@@ -204,7 +204,7 @@ describe("installed protocol.yaml after app-content refresh (#28)", () => {
     const prevCwd = process.cwd();
     process.chdir(project);
     try {
-      const payload = capturePrime(appEnv);
+      capturePrime(appEnv);
       const buildPayload = capturePrime(appEnv, { context: "build" });
       const capabilityContext = buildPayload.capability_context as Record<string, unknown>;
       expect(capabilityContext.capability).toBe("build");

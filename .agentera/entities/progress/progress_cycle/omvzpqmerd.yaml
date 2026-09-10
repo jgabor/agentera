@@ -1,0 +1,15 @@
+id: omvzpqmerd
+artifact: progress
+record:
+  timestamp: 2026-09-10 18:36
+  type: refactor
+  phase: build
+  what: Removed all 378 unused-declaration warnings while preserving runtime effects and public call signatures.
+  context:
+    intent: Establish the verified unused-declaration baseline needed by the next lint-cleanup task.
+    constraints: No suppression, rule changes, new excludes, historical evidence changes, changelog, host configuration, commit, push, or hosted actions.
+    scope: Task oqpmgqzrnb in plan newohpexum; source, test, and script declaration cleanup plus one stale live inventory entry.
+  discovered: Removing dead imports left entityMigrationPreviewSupport outside the constructor-import closure. Removed its stale live non-producer classification; the strict closure inventory checks remain intact.
+  verified: Read-only local lint reports 48 warnings, zero errors, and zero no-unused-vars diagnostics; the other 48 diagnostics are unchanged from baseline. Source typecheck and changed-file formatting pass. The complete source owner passes 263 files with 4368 tests passed and 6 skipped. Final import-only follow-up tests pass. Emitted import checks preserve production module evaluation order; test writer initialization remains explicit.
+  next: Coordinator audit owns Task3 lifecycle and evaluation. Task4 owns the remaining 48 warnings; the ceiling remains 431. Hosted Task2 acceptance and historical source-binding certification are not claimed.
+  publication_order: 384

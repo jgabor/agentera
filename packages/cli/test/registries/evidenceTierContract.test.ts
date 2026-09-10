@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -21,13 +20,10 @@ import {
   STARTUP_ANALYSIS_CONSUMER,
   supportedSourceFamilies,
   validateEvidenceTierContract,
-  type CompatibilityStateId,
   type TierId,
 } from "../../src/registries/evidenceTierContract.js";
 
-const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const PRODUCTION_CONTRACT = evidenceTierAuthorityPath();
-const RELATIVE_CONTRACT = "references/analysis/evidence-tier-authority.yaml";
 
 // Runtime source products emitted by resolveRuntimeStoreConfigs (coverageAudit.ts).
 // The contract must cover every one without silent omission.

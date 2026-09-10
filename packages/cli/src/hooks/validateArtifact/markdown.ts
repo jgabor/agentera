@@ -7,7 +7,7 @@
 
 import { parseTodoMarkdownListItem } from "../../cli/todoMarkdown.js";
 import { classifyTodoSectionHeading, countTodoResolvedSectionHeadings, isLegacyStrikethroughTodoLine } from "../compaction/parse.js";
-import { isMapping, isEmptyRequired } from "./schema.js";
+import { isMapping } from "./schema.js";
 
 function validateTodoResolvedPlacement(content: string, name: string): string[] {
   const violations: string[] = [];

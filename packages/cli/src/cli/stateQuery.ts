@@ -331,7 +331,7 @@ export function requestedFields(fieldsArg: string | null | undefined): string[] 
   return fields;
 }
 
-function availableStructuredFields(command: string): string[] {
+function availableStructuredFields(): string[] {
   // State commands only; prime/capability handled by their own commands.
   return ROUTINE_STRUCTURED_FIELDS;
 }
@@ -340,7 +340,7 @@ export function selectStructuredFields(command: string, value: JsonObject, field
   const requested = requestedFields(fieldsArg);
   const working = value;
   if (requested.length === 0) return working;
-  const available = availableStructuredFields(command);
+  const available = availableStructuredFields();
   const unsupported = requested.filter((f) => !available.includes(f));
   if (unsupported.length > 0) {
     err(`Error: unsupported field '${unsupported[0]}' for ${command}. Available fields: ${available.join(", ")}\n`);

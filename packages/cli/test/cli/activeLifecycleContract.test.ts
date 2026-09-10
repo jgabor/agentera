@@ -115,7 +115,7 @@ describe("active shared-skill lifecycle contract", () => {
   });
 
   it("keeps normal preview/apply bounded to historical plugin retirement", () => {
-    const { root, home, project } = fixture();
+    const { home, project } = fixture();
     const forbidden = [".opencode", ".codex", ".cursor", ".github", ".claude-plugin"];
     for (const approval of ["--dry-run", "--yes"] as const) {
       const result = capture(["upgrade", "--home", home, "--install-root", REPO_ROOT, "--project", project, approval]);
