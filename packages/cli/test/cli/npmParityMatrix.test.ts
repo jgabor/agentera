@@ -167,7 +167,7 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
     if (doctorParity) delete parityPayload.retired_resources;
     normalized = normalizeEnvelope(parityPayload) as Record<string, unknown>;
     const literalPins = {
-      ...(row.literalPins ?? {}),
+      ...row.literalPins,
       ...(row.commandValue !== undefined ? { command: row.commandValue } : {}),
     };
     classification = classifyDrift(normalized, row.requiredKeys, literalPins, row.forbiddenSubstrings);

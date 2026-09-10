@@ -920,7 +920,7 @@ export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", li
       snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length },
       source: { artifact, authority: "canonical_entity_files", root: declared.entityRoot },
       source_contract: { authority: "references/artifacts/state-storage-authority.yaml", detail: "full", cursor: "opaque_snapshot_cursor" },
-      retrieval: { ...(next ? { continue: `agentera state ${artifact} list${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {}) },
+      retrieval: next ? { continue: `agentera state ${artifact} list${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {},
       ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
     };
   };

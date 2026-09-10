@@ -289,7 +289,7 @@ describe("prime projection contract", () => {
 
   it("keeps boundary-aligned non-BMP code points intact on every prime output surface", () => {
     const { taskName, blockedReason, todoText } = boundaryAlignedFixtureText();
-    writeArtifact("plan.yaml", ["header:", "  title: Boundary fixture", "  status: open", "tasks:", "  - number: 1", `    name: ${taskName}`, "    status: pending", "    depends_on: []", `    blocked_reasons: [\"${blockedReason}\"]`, ""].join("\n"));
+    writeArtifact("plan.yaml", ["header:", "  title: Boundary fixture", "  status: open", "tasks:", "  - number: 1", `    name: ${taskName}`, "    status: pending", "    depends_on: []", `    blocked_reasons: ["${blockedReason}"]`, ""].join("\n"));
     writeArtifact("TODO.md", `# TODO\n\n## normal\n- [ ] ${todoText}\n`);
     writeArtifact("progress.yaml", "cycles: []\n");
     writeArtifact("decisions.yaml", "decisions: []\n");

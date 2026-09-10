@@ -43,6 +43,7 @@
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
+- [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 
 ## ⇢ Annoying
 

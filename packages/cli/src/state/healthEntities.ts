@@ -359,13 +359,11 @@ export function listHealthEntities(
         detail: filtered.some(isSummaryEntity) ? "mixed" : "full",
         cursor: "opaque_snapshot_cursor",
       },
-      retrieval: {
-        ...(next
-          ? {
-              continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}`,
-            }
-          : {}),
-      },
+      retrieval: next
+        ? {
+            continue: `agentera state health list${dimension ? ` --dimension ${shellQuoteArgument(dimension)}` : ""}${selectorFlags} --limit ${effectiveLimit} --cursor ${next}`,
+          }
+        : {},
       ...(remaining
         ? {
             omitted: true,

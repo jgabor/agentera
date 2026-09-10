@@ -856,7 +856,7 @@ function boundedList(
     filters: filter,
     snapshot: { id: snap, first_page: !cursor, has_more: Boolean(remaining), candidate_count: selected.length },
     source: { artifact: ARTIFACT, authority: "canonical_entity_files", root: declared.entityRoot },
-    retrieval: { ...(next ? { continue: `${command.replace("state ", "agentera state ")}${familyIdentifier}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {}) },
+    retrieval: next ? { continue: `${command.replace("state ", "agentera state ")}${familyIdentifier}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}` } : {},
     ...(remaining ? { omitted: true, omitted_count: remaining, omission_reason: "page_limit", next_cursor: next } : {}),
     ...envelope,
   };

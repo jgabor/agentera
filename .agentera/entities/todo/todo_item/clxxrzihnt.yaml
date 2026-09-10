@@ -1,0 +1,25 @@
+id: clxxrzihnt
+artifact: todo
+record:
+  kind: chore
+  target_version: null
+  title: Review eight retained CLI lint diagnostics
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "Keep four intentional no-control-regex guards: src/cli/argvalidate.ts:5 rejects C0/DEL arguments; src/analytics/personalGlossaryCandidateProjectionExcerpts.ts:8 rejects unsafe excerpts; src/registries/packagePublication.ts:291,316 reject invalid branch refs and command tokens. Paths are relative to packages/cli."
+    - "Preserve two no-unused-expressions byte fixtures: test/evidence/all-test-typecheck-replay/classifications/genuine-defect.ts:2 is historical null-dereference evidence; test/upgrade/fixtures/v3-app-home-managed-content/dist/capabilities/status.js:1 is managed-content data."
+    - "Retain no-constant-condition at test/state/entityMigrationPreview.test.ts:1504: the pagination loop breaks before fetching without next_after; a post-fetch check can skip the terminal page."
+    - "Review const-comparisons at src/validate/vocabularyAuthority.ts:178 separately: duplicate git conditions may conceal missing-resolution validation intent. Preserve current behavior until that contract is decided."
+  acceptance:
+    - Any later reduction preserves guard rejection, fixture bytes and terminal-page coverage without suppressions, exclusions, or disguising regexes.
+    - Keep the actual eight-warning ceiling and zero errors/unused findings; separately authorize validation behavior changes.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore] Review eight retained CLI lint diagnostics"
+      severity: normal
+      status: open
+      order: 29

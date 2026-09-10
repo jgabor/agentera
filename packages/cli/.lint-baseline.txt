@@ -1,2 +1,2 @@
-Vite+ 0.3.0 / Oxlint 1.79.0 accepted migration ceiling: 431 warnings, 0 errors.
+Vite+ 0.3.0 / Oxlint 1.79.0 accepted migration ceiling: 8 warnings, 0 errors.
 The root vite.config.ts maxWarnings setting makes any increase fail; TODO ehudiaaepe owns cleanup.

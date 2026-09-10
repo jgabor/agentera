@@ -80,7 +80,7 @@ function envelope(
           },
         }
       : {}),
-    ...(preview ?? {}),
+    ...preview,
   };
 }
 

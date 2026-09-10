@@ -665,6 +665,20 @@ describe("activation conjunction", () => {
     expect(serialized).not.toContain("x".repeat(121));
   });
 
+  it.each([
+    ["surface[selector]=value", false],
+    ["surface\\selector", true],
+  ])("preserves surface ID character grammar for %s", (surfaceId, rejected) => {
+    const rows = deriveActivationSurfaces(collectActivationProductionEvidence(ROOT, baseline()));
+    rows[0].surfaceId = surfaceId;
+    const result = validateActivationConjunction({
+      root: ROOT,
+      productionInputs: baseline(),
+      surfaces: rows,
+    });
+    expect(JSON.stringify(result).includes("surface ID violates grammar or bound")).toBe(rejected);
+  });
+
   it("bounds many violations and emits compact output with 25 percent headroom", () => {
     const rows = deriveActivationSurfaces(collectActivationProductionEvidence(ROOT, baseline()));
     for (const row of rows) for (const dimension of row.dimensions) dimension.status = "fail";

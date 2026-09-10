@@ -165,7 +165,7 @@ describe("lossless projection policy", () => {
     expect((bounded.retrieval as Record<string, unknown>).get).toBe("agentera state progress get --id ID");
     const returned = bounded.entries as Array<Record<string, unknown>>;
     expect(returned.every((entry) => typeof entry.detail === "string" && !String(entry.detail).endsWith("..."))).toBe(true);
-    expect(returned.map((entry) => entry.number)).toEqual([...returned.map((entry) => entry.number)].sort((left, right) => Number(left) - Number(right)));
+    expect(returned.map((entry) => entry.number)).toEqual(returned.map((entry) => entry.number).sort((left, right) => Number(left) - Number(right)));
   });
 
   it.each(["json", "yaml"] as const)("replaces oversized required fields with a measured fallback (%s)", (format) => {

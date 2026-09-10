@@ -117,7 +117,7 @@ describe("toolchain baseline", () => {
       "vite-plus": "catalog:",
       vitest: "catalog:",
     });
-    expect(rootViteConfig).toContain("maxWarnings: 431");
+    expect(rootViteConfig).toContain("maxWarnings: 8");
     expect(rootViteConfig).not.toContain("typeCheck: true");
     expect(rootViteConfig).not.toContain("tasks:");
     expect(rootPackage.scripts).toMatchObject({

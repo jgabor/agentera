@@ -44,7 +44,7 @@ function invalidRouteInput(io: RouteIo, body: InvalidInputErrorBody): number {
 
 function parse(argv: string[]): { input: string; format: "json" } | InvalidInputErrorBody {
   let input: string | undefined;
-  let format: "json" = "json";
+  let format = "json" as const;
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index];
     const [name, inline] = argument.split("=", 2);

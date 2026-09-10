@@ -246,7 +246,7 @@ git -C "$PRECOMMIT_CHILD_REPO" config --local precommit.fixture child
 
   it("declares every non-TypeScript lane surface in the lefthook test glob", () => {
     const lefthook = fs.readFileSync(path.join(REPO_ROOT, ".lefthook.yml"), "utf8");
-    for (const surface of ["packages/cli/package.json", "packages/cli/scripts/*.mjs", "packages/cli/test/packaging/**", "scripts/precommit-vitest.sh"]) expect(lefthook, surface).toContain(`- \"${surface}\"`);
+    for (const surface of ["packages/cli/package.json", "packages/cli/scripts/*.mjs", "packages/cli/test/packaging/**", "scripts/precommit-vitest.sh"]) expect(lefthook, surface).toContain(`- "${surface}"`);
     expect(lefthook).toContain("timeout --foreground 10s npx -y agentera@next check compact");
     expect(lefthook).toContain('- ".agentera/**"');
     expect(lefthook).toContain('- "TODO.md"');

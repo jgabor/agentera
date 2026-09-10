@@ -660,7 +660,7 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
           recovery: recovery(projectRoot, `remove one record.depends_on edge in plan '${planId}' so the task graph is acyclic`),
         });
     for (const task of tasks.filter((candidate) => candidate.record?.status === "superseded")) {
-      for (const replacementId of task.record?.superseded_by as string[]) {
+      for (const replacementId of task.record!.superseded_by as string[]) {
         const replacement = byTaskId.get(replacementId);
         if (replacementId === task.id || replacement?.record?.status !== "complete")
           issues.push({

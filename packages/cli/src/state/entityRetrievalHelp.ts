@@ -121,7 +121,7 @@ function validIdentity(value: string, syntax: string, pattern: RegExp | undefine
 function exampleGrammarIssue(example: unknown, family: EntityListFamilyHelp, pattern: RegExp | undefined): string | undefined {
   if (typeof example !== "string") return "type";
   const tokens = example.split(" ");
-  if (example.trim() !== example || tokens.some((token) => token.length === 0 || !/^[A-Za-z0-9_@.,:/|=+\-]+$/.test(token)) || tokens.join(" ") !== example) return "lexical_form";
+  if (example.trim() !== example || tokens.some((token) => token.length === 0 || !/^[A-Za-z0-9_@.,:/|=+-]+$/.test(token)) || tokens.join(" ") !== example) return "lexical_form";
 
   const prefix = ["npx", "-y", "agentera@next", "state", ...family.commandTokens, "list"];
   if (tokens.length < prefix.length || !prefix.every((token, index) => tokens[index] === token)) return "command";

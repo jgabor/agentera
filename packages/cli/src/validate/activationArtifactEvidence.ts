@@ -601,7 +601,7 @@ export function createSourceOwnerEvidence(root: string, productionInputs?: any, 
     records["package.adversarial"] = createRecord("source-owner", "package-adversarial", "source-integration/runtime-matrix/rejections", observationDigest(rejectedRows), adversarial, null, null);
     records["bootstrap.extracted-classifications"] = createRecord("source-owner", "bootstrap-extracted-classifications", "source-integration/runtime-matrix/rows", observationDigest(packageRows), packageRows, null, null);
     records["bootstrap.extracted-diagnostics"] = createRecord("source-owner", "bootstrap-extracted-diagnostics", "source-integration/runtime-matrix/rejection-diagnostics", observationDigest(rejectedRows), rejectedRows, null, null);
-    const parity = { ...(runtimeSummary.runtimeObservationDigests ?? {}), packageArtifact: runtimeSummary.packageArtifact ?? null };
+    const parity = { ...runtimeSummary.runtimeObservationDigests, packageArtifact: runtimeSummary.packageArtifact ?? null };
     records["bootstrap.source-package-parity"] = createRecord("source-owner", "bootstrap-source-package-parity", "source-integration/runtime-matrix/parity", observationDigest(parity), parity, null, null);
     records["bootstrap.missing-surface"] = createRecord("source-owner", "bootstrap-missing-surface", "source-integration/runtime-matrix/missing-required-surfaces", observationDigest(missingSurfaceResults), missingSurfaceResults, null, null);
   }

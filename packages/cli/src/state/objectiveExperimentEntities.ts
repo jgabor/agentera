@@ -460,13 +460,11 @@ function boundedList(root: string, sourceRoot: string, artifact: string, boundar
       detail: "full",
       cursor: "opaque_snapshot_cursor",
     },
-    retrieval: {
-      ...(next
-        ? {
-            continue: `agentera ${listCommand}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}`,
-          }
-        : {}),
-    },
+    retrieval: next
+      ? {
+          continue: `agentera ${listCommand}${filterFlags}${selectorFlags} --limit ${take} --cursor ${next}`,
+        }
+      : {},
     ...(remaining
       ? {
           omitted: true,

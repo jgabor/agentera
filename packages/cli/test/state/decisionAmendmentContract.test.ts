@@ -162,9 +162,9 @@ describe("decision amend command discovery", () => {
     expect(result.rc).toBe(0);
     expect(result.json?.requested_verb).toBe("amend");
     expect(result.json?.verbs).toEqual(["append", "update", "amend", "explain"]);
-    const idField = (result.json?.fields as any[]).find((f) => f.flag === "--id");
+    const idField = (result.json!.fields as any[]).find((f) => f.flag === "--id");
     expect(idField).toMatchObject({ required: true, type: "string" });
-    const baseHash = (result.json?.fields as any[]).find((f) => f.flag === "--base-sha256");
+    const baseHash = (result.json!.fields as any[]).find((f) => f.flag === "--base-sha256");
     expect(baseHash).toMatchObject({ required: true, type: "string" });
     expect(result.json?.input.mode).toBe("structured");
     expect(result.json?.input.sources).toEqual(["file", "stdin"]);
@@ -220,26 +220,26 @@ describe("decision number ownership across append, update, and amend", () => {
     const appendExplain = run(root, ["decisions", "explain", "--verb", "append", "--format", "json"]);
     expect(appendExplain.rc).toBe(0);
     expect(appendExplain.json?.guidance).toContain("a bare ten-letter ID is assigned by the CLI; do not pass an identity");
-    expect((appendExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
+    expect((appendExplain.json!.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
 
     const updateExplain = run(root, ["decisions", "explain", "--verb", "update", "--format", "json"]);
     expect(updateExplain.rc).toBe(0);
     const updateGuidance = updateExplain.json?.guidance as string[];
     expect(updateGuidance.some((g) => g.includes("bare --id"))).toBe(true);
-    expect((updateExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
+    expect((updateExplain.json!.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
       required: true,
       type: "string",
     });
-    expect((updateExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
+    expect((updateExplain.json!.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
 
     const amendExplain = run(root, ["decisions", "explain", "--verb", "amend", "--format", "json"]);
     const amendGuidance = amendExplain.json?.guidance as string[];
     expect(amendGuidance.some((g) => g.includes("bare --id"))).toBe(true);
-    expect((amendExplain.json?.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
+    expect((amendExplain.json!.fields as any[]).find((f) => f.flag === "--id")).toMatchObject({
       required: true,
       type: "string",
     });
-    expect((amendExplain.json?.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
+    expect((amendExplain.json!.fields as any[]).some((f) => f.flag === "--number")).toBe(false);
   });
 
   it("rejects --number on append and requires --number on update", () => {

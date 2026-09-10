@@ -1488,7 +1488,7 @@ describe("entity migration read-only preview", () => {
     write(
       root,
       ".agentera/plan.yaml",
-      `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: [\"${index + 20}\"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`,
+      `header:\n  level: light\n  created: 2026-07-16\n  status: open\n  title: test\n  id: plan:123e4567-e89b-42d3-a456-426614174000\nwhat: test\nwhy: test\nconstraints: none\noverall_acceptance: pass\nscope:\n  included: [test]\n  excluded: []\ntasks:\n${Array.from({ length: 8 }, (_, index) => `  - number: ${index + 1}\n    name: task ${index + 1}\n    depends_on: ["${index + 20}"]\n    status: pending\n    acceptance: [pass]`).join("\n")}\nsurprises: []\n`,
     );
     const diagnostics: EntityMigrationPreview["diagnostics"] = [];
     let page = previewEntityMigration(root, REPO_ROOT, { limit: 2 });

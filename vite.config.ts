@@ -12,7 +12,7 @@ export default defineConfig({
       "**/node_modules/**",
       "**/*.generated.*",
     ],
-    options: { maxWarnings: 431 },
+    options: { maxWarnings: 8 },
   },
   fmt: {
     ignorePatterns: [

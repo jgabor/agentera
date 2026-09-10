@@ -142,7 +142,7 @@ describe("personal glossary candidate projection", () => {
       { family: "explicit", available: 51, retained: 48, dropped: 3 },
       { family: "recurring", available: 2, retained: 2, dropped: 0 },
     ]);
-    expect(first.candidates.map((item) => item.capsule.candidate_id)).toEqual([...first.candidates.map((item) => item.capsule.candidate_id)].sort());
+    expect(first.candidates.map((item) => item.capsule.candidate_id)).toEqual(first.candidates.map((item) => item.capsule.candidate_id).sort());
   });
 
   it("fails closed when a candidate exceeds the declared project-diversity bound", () => {

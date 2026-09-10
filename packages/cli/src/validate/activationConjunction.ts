@@ -630,7 +630,7 @@ function generationViolation(root: string, id: string, generationRoot: string | 
 
 function boundedIdentity(surface: ActivationSurfaceRow, contract: ActivationConjunctionContract): string | null {
   const { bounds } = contract;
-  if (surface.surfaceId.length > bounds.maxSurfaceIdCharacters || !/^[A-Za-z0-9][A-Za-z0-9._:/\[\]=@-]*$/.test(surface.surfaceId)) return "surface ID violates grammar or bound";
+  if (surface.surfaceId.length > bounds.maxSurfaceIdCharacters || !/^[A-Za-z0-9][A-Za-z0-9._:/[\]=@-]*$/.test(surface.surfaceId)) return "surface ID violates grammar or bound";
   if (surface.owner.path.length > bounds.maxPathCharacters || !OWNER_PATH.test(surface.owner.path)) return "owner path violates grammar or bound";
   if (surface.owner.symbol.length > bounds.maxSymbolCharacters || !SYMBOL.test(surface.owner.symbol)) return "owner symbol violates grammar or bound";
   if (surface.owner.selector !== undefined && (surface.owner.selector.length === 0 || surface.owner.selector.length > bounds.maxSelectorCharacters || /[\0\r\n]/.test(surface.owner.selector))) return "owner selector violates grammar or bound";

@@ -150,7 +150,7 @@ describe("declarative state mutation grammar", () => {
     expect(schemaOperations.size).toBe(29);
 
     const explainAllOperations = new Map<string, any>();
-    for (const artifact of [...new Set(runtime.map((operation) => operation.artifact))]) {
+    for (const artifact of new Set(runtime.map((operation) => operation.artifact))) {
       const all = run(root, [artifact, "explain", "--all", "--format", "json"]);
       expect(all.rc, all.err).toBe(0);
       for (const operation of all.json.operations) {

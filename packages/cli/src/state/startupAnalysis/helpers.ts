@@ -39,7 +39,7 @@ const PRIMARY_ROUTE_TO_CAPABILITY: Record<string, string> = {
   orchestrate: "orchestrate",
   vision: "vision",
 };
-const CAPABILITIES_WITH_STATUS = new Set([...Object.values(PRIMARY_ROUTE_TO_CAPABILITY)]);
+const CAPABILITIES_WITH_STATUS = new Set(Object.values(PRIMARY_ROUTE_TO_CAPABILITY));
 const MARKER_RE = /─{2,}\s+(\S)\s+(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)\s+·\s+([a-z]+(?:\s+\d+)?)\s+─{2,}/g;
 const BARE_AGENTERA_ROUTE_RE = /^\s*\/agentera(?:\s+([A-Za-z0-9._:-]+))?/m;
 const BARE_CAPABILITY_ROUTE_RE = /^\s*\/(status|vision|discuss|research|plan|build|optimize|audit|document|profile|design|orchestrate)(?:\s|$)/m;

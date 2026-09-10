@@ -214,7 +214,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         repo,
         candidateDirectory: request.candidateDirectory,
         environment: options.environment,
-        ...(options.sourceOptions ?? {}),
+        ...options.sourceOptions,
       });
       execution.sourceQualificationInvocations = issued.reused ? 0 : 1;
       execution.sourceGateExecutions = issued.reused ? 0 : issued.gates.length;
@@ -230,7 +230,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
     (options.checkSource ?? checkSourceReceipt)({
       repo,
       candidateDirectory: request.candidateDirectory,
-      ...(options.sourceCheckOptions ?? {}),
+      ...options.sourceCheckOptions,
     });
     source = {
       receipt: SOURCE_RECEIPT,
@@ -260,7 +260,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         repo,
         candidateDirectory: request.candidateDirectory,
         adapterName: READINESS_CONTRACT.adapter,
-        ...(options.candidateValidationOptions ?? {}),
+        ...options.candidateValidationOptions,
       });
       candidate = {
         receipt: CANDIDATE_RECEIPT,
@@ -276,7 +276,7 @@ export async function coordinateDevelopmentReadiness(request, options = {}) {
         adapterName: READINESS_CONTRACT.adapter,
         sourceCommit: request.sourceCommit,
         environment: options.environment,
-        ...(options.candidateOptions ?? {}),
+        ...options.candidateOptions,
       });
       execution.candidateQualificationInvocations = issued.reused ? 0 : 1;
       execution.candidateConstructionExecutions = issued.reused ? 0 : 1;

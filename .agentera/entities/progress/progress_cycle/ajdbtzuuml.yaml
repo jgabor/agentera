@@ -1,0 +1,16 @@
+id: ajdbtzuuml
+artifact: progress
+record:
+  timestamp: 2026-09-10 19:07
+  type: refactor
+  phase: build
+  what: Reviewed all 48 residual CLI lint findings; removed 40 behavior-preserving cases and set the live warning ceiling to eight.
+  context:
+    intent: Execute only the residual-warning review for Task uovujxmdli.
+    constraints: No lifecycle changes, commits, publication, hosted execution, bootstrap changes, suppressions, or historical certification edits.
+    unknowns: Task 2 hosted proof and historical source-binding TODO vcrmaxuasq remain outside this task.
+    scope: Redundant escapes, spreads and fallbacks; proven-string prefixes; optional-chain preconditions; live ceiling and its existing assertion/header.
+  discovered: "TODO clxxrzihnt records all eight retained locations: four intentional control-character guards, two byte/evidence fixtures, the terminal-page loop and vocabulary comparison requiring separate behavior review. Selected TODO ehudiaaepe remains open."
+  verified: "Pinned Node 24.19.0, pnpm 10.30.3 and local Vite+ 0.3.0. Final lint: eight warnings, zero errors and zero unused findings. The configured gate passed at eight and rejected a disposable ninth warning; probe removed. Targeted source: 690 tests passed. Full source: 263 files passed, 4371 tests passed, six skipped after updating one stale live-ceiling assertion. Source typecheck, touched-file formatting, local build and built capability-contract check passed. Individual dispositions and command logs: /tmp/opencode/uovujxmdli-review/diagnostic-review.json and sibling evidence files."
+  next: Coordinator evaluates and commits; Task 5 retains combined development verification after hosted dependencies.
+  publication_order: 385

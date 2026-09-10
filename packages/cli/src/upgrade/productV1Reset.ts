@@ -219,7 +219,7 @@ function evidence(project: string, installRoot: string, manifest: string): strin
       const value = JSON.parse(fs.readFileSync(registryPath, "utf8")) as {
         skills?: Array<{ version?: unknown }>;
       };
-      if (typeof value.skills?.[0]?.version === "string" && /^1\./.test(value.skills[0].version)) found.push(registryPath);
+      if (typeof value.skills?.[0]?.version === "string" && value.skills[0].version.startsWith("1.")) found.push(registryPath);
     } catch {
       /* malformed state is not product-generation evidence */
     }
