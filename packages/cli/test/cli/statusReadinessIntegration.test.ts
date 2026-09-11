@@ -155,7 +155,7 @@ describe("status TODO readiness integration", () => {
     expect(host.rc, host.err).toBe(0);
 
     const expected = {
-      object: "TODO aaaaaaaaaa: Resolve the glossary boundary",
+      object: "Resolve the glossary boundary · → TODO aaaaaaaaaa · actionable",
       capability: "discuss",
       reason: "Resolve the declared glossary boundary.",
       phase: "deliberate",
@@ -193,7 +193,7 @@ describe("status TODO readiness integration", () => {
       attention: "item",
     });
     expect(statusContext()).toMatchObject({
-      attention: expect.arrayContaining(["normal: TODO: Blocked fixture"]),
+      attention: expect.arrayContaining(["normal: Blocked fixture · → TODO aaaaaaaaaa · open"]),
       next_action: {
         capability: "status",
         eligible: false,
@@ -346,7 +346,7 @@ describe("status TODO readiness integration", () => {
       abstainRecovery: "Resolve the critical blocker.",
     });
     expect(statusContext()).toMatchObject({
-      attention: expect.arrayContaining(["critical: TODO: Critical blocked fixture"]),
+      attention: expect.arrayContaining(["critical: Critical blocked fixture · → TODO aaaaaaaaaa · open"]),
       next_action: {
         capability: "status",
         eligible: false,

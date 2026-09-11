@@ -1,0 +1,13 @@
+id: igbihcnzio
+artifact: progress
+record:
+  timestamp: 2026-09-11 12:21
+  type: fix
+  phase: build
+  what: Startup restores authoritative TODO metadata and bounded decision review context without treating readable list summaries as full records.
+  context:
+    intent: Restore truthful startup context for approved task ontonmdflp while preserving task1 and leaving lifecycle evaluation to the coordinator.
+  discovered: The plan unknown is resolved by existing field selection on the same bounded page, with one optional-path correction and explicit gaps on byte rejection. TODO startup joins page-selected IDs to records already loaded for readiness. No continuation traversal or per-row get fallback is used.
+  verified: 288 targeted tests, typecheck and build passed. Local startup preserved opybnibysh's saved title, critical severity, open status and exact readiness. jqnmapqoru retained its question and review pressure with unavailable satisfaction. Bare/status/discuss/build output measured 11226/21924/50926/40571 bytes, within existing 12000/22500/55000/55000 caps. Fixture and local smoke checks remained read-only.
+  next: Shared reference rendering and isolated package parity remain pending. The live bare brief is explicitly degraded; status has 576 bytes of headroom. No profile refresh, task transition, evaluation or decision satisfaction write was performed.
+  publication_order: 389

@@ -8,12 +8,8 @@ export default `${instructions
   .replaceAll("loaded or not found", "valid, absent, or repair_needed")
   .replace(
     "Render `profile.status` (`loaded` or `not found`). Render `profile.suggested_action` or a missing-profile attention item only when prime supplies one.",
-    "Render the exact shared `profile.validity` status (`valid`, `absent`, or `repair_needed`). Treat `profile.freshness` separately; show stale guidance only for valid stale input, preserve exact recovery for absent or repair-needed input, and never suggest refresh for repair-needed input.",
+    "Render `profile.validity` exactly: `valid`, `absent`, `repair_needed`. Show `profile.freshness` separately (`current`, `stale`, `unknown`); stale guidance only for valid stale input. Preserve exact absent/repair-needed recovery; never suggest refresh for repair-needed input or render profile path/content.",
   )}
-
-### Profile validity
-
-Render the shared profile validity exactly as \`valid\`, \`absent\`, or \`repair_needed\`. Freshness is separate and may be \`current\`, \`stale\`, or \`unknown\`; only valid stale input may carry stale guidance. Repair-needed input preserves its repair recovery and MUST NOT receive refresh advice. Never render profile path or content.
 
 ### Plan selection
 

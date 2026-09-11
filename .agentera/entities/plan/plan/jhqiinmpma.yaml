@@ -1,0 +1,37 @@
+id: jhqiinmpma
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-11
+    status: complete
+    reviewed: 2026-09-11
+    critic_issues: 7 found, 7 addressed, 0 dismissed
+    title: "Plan: Human-readable entity references"
+  what: Make existing human-facing Agentera references understandable without a lookup. Restore bounded descriptive state and truthful startup metadata, then apply source-backed names, plain-language labels, and the agreed supplementary glyphs across current output surfaces.
+  why: The firm decision to make entity references understandable without a lookup (jqnmapqoru) removes context switching caused by opaque IDs and labels. Current default list projections omit descriptive records, while startup consumes missing fields as if present and can incorrectly label critical TODOs normal.
+  constraints: Honor the saved firm decision. Use ⛋ Decision, ≡ Plan, □ Task, and → TODO with explicit type labels and textual status/confidence in structured human references. Ordinary prose remains natural. Preserve existing glyph meanings elsewhere; other entity types remain readable text. Exact IDs accompany every entity list row, action target, and duplicate-name disambiguation, not unnecessary narrative. Do not decorate machine IDs, canonical enum values, selectors, or relationship fields. Preserve existing field names, types, meanings, read-only effects, explicit field-selection behavior, and exact retrieval; readable default additions require synchronized contract coverage. Keep current pagination and byte limits; never silently drop rows or invent content. Report genuinely absent descriptions as unavailable without promising that exact get will reveal them. No new output formats, stored-name migration, historical-record rewriting, version bump, or publication. Testing for each of tasks 1-4 targets one positive and one negative or applicable boundary case per changed testable unit, reusing existing owners. Pure presentation has no mutation failure path, so missing-label or glyph-loss cases substitute. Additional boundary cases are justified by compacted content, duplicate names, byte pressure, cursors, or misleading metadata. Build before invoking changed local behavior; verify with the local executable rather than published npm and use repository helpers for isolated package checks. Fold related state and changelog changes into substantive implementation commits only when separately authorized; no standalone bookkeeping commit.
+  scope:
+    included:
+      - "Bounded entity-list projections and their existing authority: references/artifacts/state-storage-authority.yaml, packages/cli/src/state/entityListRuntimeRegistry.ts, and packages/cli/src/state/entityListProjection.ts; existing exact gets provide available detail without changing identity."
+      - "A source-backed coverage inventory for every existing list family: decisions, plans/tasks, TODOs, progress, health, objectives, experiments, and docs. Identify readable source content, applicable textual status/confidence, availability, stable identity, and exact retrieval in existing authorities/tests, not a new storage schema."
+      - Startup consumers under packages/cli/src/cli/commands/prime/, including TODO descriptions and metadata, decision context and review caveats, and other startup families affected by the same missing-record assumption.
+      - Shared reference/glyph rules in skills/agentera/protocol.yaml and skills/agentera/SKILL.md; packages/cli/src/capabilities/*/instructions.ts, status startup adaptations, and existing contract consumers needed to enforce those rules.
+      - Current maintained examples and newly generated conversation, dashboard, list, and artifact reference text; existing machine-facing schemas and protocol identifiers remain valid.
+      - Existing state, instruction, startup, and extracted-package test owners under packages/cli/test/, including entityListProjection, projectionPolicy, retrievalContractParity, summaryEntityReads, statusContextStartup, primeProjectionContract, validate/capability.test.ts, upgrade/installedProtocolEnglish.test.ts, and affected family tests.
+      - Verification through repository-owned source tests, typecheck, build, capability-contract checks, package verification, and applicable lanes governed by references/analysis/verification-policy.yaml and the verification skill. Current plan, authorized progress, related TODO resolution, decision review pressure, and user-facing unreleased changelog synchronization.
+    excluded:
+      - Adding text/YAML output formats or repairing unrelated advertised-format drift.
+      - New ID or alias schemes, mandatory saved-title fields or backfills, and inserting presentation glyphs into canonical machine values.
+      - Bulk rewriting immutable or archived artifacts, redesigning existing status/severity symbols, adding glyphs for other entity families, or adding terminal auto-detection/settings infrastructure.
+      - Unrelated TODO remediation, registry mutation, release metadata changes, pushes, or standalone state commits.
+    deferred:
+      []
+  design: Make bounded state self-describing first. Repair startup assumptions about missing records using bounded authoritative content, preserving facts and explicit availability. Then apply one shared human-reference convention to the consumers of that data. Verify the same outcomes through the built executable and isolated bundle before checking current project state.
+  overall_acceptance: GIVEN entities with readable source content WHEN existing human-facing references are produced THEN their meaning is understandable without lookup. GIVEN structured references WHEN rendered THEN explicit types use the agreed glyphs, status/confidence are words, and every entity list row and action target retains exact identity. GIVEN human-facing protocol codes WHEN presented THEN their meaning appears inline or unnecessary codes are omitted. GIVEN structured consumers WHEN reading improved responses THEN existing machine fields and selection, pagination, and byte-bound guarantees remain intact. GIVEN absent source descriptions WHEN referenced THEN unavailability is explicit without invented content or promised detail. GIVEN omitted detail WHEN retrieval is offered THEN that detail actually exists. GIVEN startup metadata WHEN compared with authoritative records THEN no missing field falsely reports normal, open, or satisfied. GIVEN glyphs are absent WHEN references are read THEN their meaning remains complete.
+  unknowns:
+    - question: Can startup safely consume the revised bounded list projection, or must it request explicit fields through another existing authoritative bounded read?
+      affects_task: 2
+      resolve_by: Compare task 1 projections with startup field requirements before task 2. Repair the proven missing-record coupling and test authoritative metadata under normal and degraded output. Re-plan if retaining current bounds requires a different downstream contract.
+  surprises:
+    []

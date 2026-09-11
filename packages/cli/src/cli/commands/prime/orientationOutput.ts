@@ -1,4 +1,5 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
+import { humanReference } from "../../../capabilities/humanReferences.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
 import { formatNextAction, startupPlanSummary } from "../../orientation.js";
 import { requestedFields, REQUIRED_SPARSE_CONTEXT_FIELDS, PRIME_STRUCTURED_FIELDS, RETIRED_PRIME_FIELD_CORRECTIONS, availablePrimeFields } from "../../stateQuery.js";
@@ -188,7 +189,16 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
   const risks = todoReconciliation?.risks;
   const unsafeDetailOmitted = todoReconciliation?.state === "unsafe_inactive" && Boolean(risks && typeof risks === "object" && !Array.isArray(risks) && Number(risks.omitted_count) > 0);
   const recovery = unsafeDetailOmitted && typeof todoReconciliation.recovery_command === "string" ? todoReconciliation.recovery_command : null;
-  const todoAttention = unsafeDetailOmitted ? new Set(state.todo_items.map((item) => `${String(item.severity)}: TODO: ${String(item.text)}`)) : new Set<string>();
+  const todoAttention = unsafeDetailOmitted
+    ? new Set(
+        state.todo_items.map((item) =>
+          humanReference("todo", item.text, item.id, item.status, {
+            prefix: `${String(item.severity)}: `,
+            maxCodePoints: 200,
+          }),
+        ),
+      )
+    : new Set<string>();
   const attention = projectPublicOrientationAttention(state)
     .flatMap((item) => (item === `action-required: TODO reconciliation is unsafe inactive; ${recovery}` ? ["action-required: TODO reconciliation is unsafe inactive; see capability_context.startup.todo_reconciliation"] : todoAttention.has(item) ? [] : [item]))
     .map((item) => truncateCodePoints(item, 200, "…"));
@@ -248,11 +258,13 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
       exists: state.progress.exists,
       status: state.progress.status ?? null,
       latest: state.progress.latest ?? null,
+      ...(state.progress.detail_omission ? { detail_omission: state.progress.detail_omission } : {}),
     },
     objective: {
       exists: state.objective.exists,
       active: state.objective.active ?? false,
       title: state.objective.title ?? null,
+      ...(state.objective.detail_omission ? { detail_omission: state.objective.detail_omission } : {}),
     },
     state_presence: state.state_presence,
     attention,

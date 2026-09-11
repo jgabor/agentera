@@ -1,0 +1,23 @@
+id: jqnmapqoru
+artifact: decisions
+record:
+  date: 2026-09-11
+  question: How should Agentera reference entities and protocol labels so humans understand them without a lookup?
+  context: Bare entity IDs and protocol codes force readers to retrieve records or ask side questions before understanding references. Glyphs alone identify neither the content nor the relevant implication. A startup response also omitted TODO titles that exact retrieval supplied, so readable references require adequate source data as well as writing guidance.
+  alternatives:
+    - name: Meaning-first references everywhere humans read Agentera output, with supplementary entity glyphs and exact IDs at lookup or action boundaries.
+      status: chosen
+    - name: Limit the improvement to conversational writing while leaving human-facing CLI and artifact references unchanged.
+      status: rejected
+    - name: Use text-only references without supplementary entity glyphs.
+      status: rejected
+    - name: Show IDs on every first mention, or hide them until explicitly requested.
+      status: rejected
+    - name: Require a new saved short title and mandatory backfill for every entity.
+      status: rejected
+    - name: Use a separate non-overlapping glyph set instead of accepting explicitly labeled contextual reuse.
+      status: rejected
+  choice: "Make human-facing entity references understandable without a lookup across conversation, dashboards, lists, and artifacts. Lead with a meaningful existing title or a faithful summary of the relevant content; ordinary prose should explain the implication naturally. Use plain words such as firm, provisional, exploratory, and blocked instead of unexplained protocol codes. In structured entity references, use the exact mapping: ⛋ Decision, ≡ Plan, □ Task, → TODO. Always accompany these glyphs with explicit entity labels; write status and confidence as words there. Entity glyphs remain constant when status changes. Preserve existing capability, status, severity, and flow conventions outside these typed references. Other entity families retain explicit text until separately assigned glyphs. Removing glyphs must lose no meaning. Preserve stable machine IDs and machine-reference contracts. Show exact IDs beside readable names in lists, action targets, and ambiguous references; omit unnecessary IDs in ordinary prose. Reuse existing titles and descriptive fields rather than creating another identity or mandatory title migration. Retrieve missing descriptive content or explicitly report it unavailable; never invent it. Fix source-summary omissions that prevent consumers from producing readable references."
+  reasoning: Meaningful text removes decoding and context switching; glyphs improve scanning without replacing explanation. Keeping IDs at lookup and action boundaries preserves traceability and disambiguation without cluttering narrative. Existing descriptive fields avoid duplicate naming metadata. The user accepts that ≡ reuses the plan cue, □ also means open elsewhere, and → also denotes severity or flow elsewhere, provided entity labels and textual status make the reference context explicit. This is a firm design direction, not an implementation or satisfaction claim. Remaining implementation checks are per-entity display fallback selection, the cause and repair of missing startup summaries, and terminal glyph rendering.
+  confidence: firm
+  feeds_into: Shared protocol reference and glyph conventions; cross-capability instructions; human-facing CLI output and artifact references; bounded list and startup summary projections; implementation planning and build.

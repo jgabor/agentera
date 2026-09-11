@@ -17,6 +17,7 @@ import profileInstructions, { servedInstructions as servedProfileInstructions } 
 import { instructions as designInstructions } from "./design/instructions.js";
 import orchestrateInstructions from "./orchestrate/instructions.js";
 import { preCutoverCommand, preCutoverInstructionBody } from "../cli/preCutoverCommand.js";
+import { withHumanReferences } from "./humanReferences.js";
 
 const canonicalInstructions: Record<string, string> = {
   status: statusStartupInstructions(statusInstructions),
@@ -33,11 +34,11 @@ const canonicalInstructions: Record<string, string> = {
   orchestrate: orchestrateInstructions,
 };
 
-export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(Object.entries(canonicalInstructions).map(([capability, body]) => [capability, preCutoverInstructionBody(body)]));
+export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(Object.entries(canonicalInstructions).map(([capability, body]) => [capability, withHumanReferences(preCutoverInstructionBody(body))]));
 
 Object.defineProperty(CAPABILITY_INSTRUCTIONS, "profile", {
   enumerable: true,
-  get: () => preCutoverInstructionBody(servedProfileInstructions()),
+  get: () => withHumanReferences(preCutoverInstructionBody(servedProfileInstructions())),
 });
 
 export function capabilityInstructionModulePath(capability: string): string {

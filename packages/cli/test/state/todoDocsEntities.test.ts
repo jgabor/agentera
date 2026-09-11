@@ -1618,6 +1618,52 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect((closeout.items as any[]).map((entry) => entry.id)).toEqual([selected.json.id]);
   });
 
+  it("keeps titled critical TODO metadata and readiness when the default list omits records", () => {
+    const root = project();
+    const created: string[] = [];
+    for (let index = 0; index < 21; index++) {
+      const result = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
+        kind: "fix",
+        target_version: "3.0.0",
+        title: `Critical startup item ${index}`,
+        requirements: ["x".repeat(4_000)],
+        acceptance: [],
+        release_blocker: true,
+        severity: "critical",
+        readiness: readinessInput({ queue_rank: index + 1 }),
+      });
+      expect(result.rc, result.err || result.out).toBe(0);
+      created.push(result.json.id);
+    }
+    const before = files(root);
+    const listed = capture(root, ["state", "todo", "list", "--format", "json"]);
+    expect(listed.json.entries.every((entry: any) => !entry.record)).toBe(true);
+    const projection = collectEntityOrientation(root, path.resolve(import.meta.dirname, "../../../../"));
+    expect(projection.todoItems.find((entry) => entry.id === created[0])).toMatchObject({
+      title: "Critical startup item 0",
+      text: "[fix:3.0.0] Critical startup item 0",
+      severity: "critical",
+      status: "open",
+      release_blocker: true,
+      readiness: {
+        capability: "build",
+        queue_rank: 1,
+        reason: "The implementation boundary is ready.",
+      },
+    });
+    expect(projection.todoDetail).toMatchObject({ total: 21, returned: 20, omitted: 1 });
+    const startup = capture(root, ["prime", "--context", "discuss", "--format", "json"]);
+    expect(startup.rc, startup.err || startup.out).toBe(0);
+    expect(startup.json.capability_context.context.deliberation_context.todo.entries[0]).toMatchObject({
+      id: created[0],
+      title: "Critical startup item 0",
+      severity: "critical",
+      status: "open",
+      readiness: { capability: "build" },
+    });
+    expect(files(root)).toEqual(before);
+  });
+
   it("uses the complete Markdown projection for production startup readiness and counts", () => {
     const root = project();
     const dependency = todo(root, "Resolved entity reopened by Markdown");

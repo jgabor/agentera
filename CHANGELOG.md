@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Entity references now use meaningful names and plain-language labels, with supplementary glyphs (⛋ Decision, ≡ Plan, □ Task, → TODO). Lists and action targets retain exact IDs; unavailable descriptions are explicit.
+- Startup context now preserves authoritative TODO severity and status and decision review context, rather than treating missing details as normal, open, or satisfied.
 - Unified configuration-as-code `@next` publication is live through `3.0.0-dev.93` using npm Trusted Publishing through GitHub OIDC; it rejects traditional npm credentials and fails closed when recovery would require `npm dist-tag`.
 - Operational commands now emit JSON by default; explicit `--format json` remains compatible, while operational text and YAML selectors are rejected.
 - Added private selected-term input for glossary advice. `prime --context <discuss|plan|build> --term-input <file|->` now returns initial advice in

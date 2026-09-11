@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { humanReference } from "../capabilities/humanReferences.js";
 import path from "node:path";
 import { preCutoverCommand } from "./preCutoverCommand.js";
 
@@ -723,7 +724,7 @@ export function decisionReviewAttention(schemas: Record<string, SchemaInfo>): De
     .sort()
     .map((name) => `${name}=${stateCounts[name]}`)
     .join(", ");
-  const refs = boundedEntries.map((entry) => `Decision ${entry.id}: ${entry.title}`).join("; ");
+  const refs = boundedEntries.map((entry) => humanReference("decision", entry.title, entry.id, entry.state)).join("; ");
   const more = reviewEntries.length - boundedEntries.length;
   const suffix = more > 0 ? `; +${more} more` : "";
   return {
@@ -760,11 +761,10 @@ export function selectStatusReadiness(plan: PlanSummary, health: HealthSummary, 
 
   const pending = plan.first_pending;
   if (pending && typeof pending === "object" && !Array.isArray(pending)) {
-    const number = pending.number ?? "?";
-    const title = firstPresent(pending, ["name", "title"], "pending task");
+    const title = firstPresent(pending, ["name", "title"], "");
     const id = typeof pending.id === "string" ? pending.id : undefined;
     candidates.push({
-      object: `PLAN Task ${number}: ${title}`,
+      object: humanReference("task", title, id, pending.status),
       capability: "orchestrate",
       reason: "first pending plan task",
       phase: "build",
@@ -819,7 +819,7 @@ export function selectStatusReadiness(plan: PlanSummary, health: HealthSummary, 
   if (todoReadiness.selected) {
     const item = todoReadiness.selected;
     candidates.push({
-      object: `TODO ${item.id}: ${truncate(item.description, 120)}`,
+      object: humanReference("todo", truncate(item.description, 120), item.id, item.result),
       capability: item.capability!,
       reason: item.reason!,
       phase: item.phase!,
@@ -860,6 +860,13 @@ export function selectStatusReadiness(plan: PlanSummary, health: HealthSummary, 
   if (decision) {
     candidates.push({
       object: String(decision.object),
+      ...(decision.id
+        ? {
+            id: decision.id,
+            artifact: "decisions",
+            retrieval: { exact: preCutoverCommand(`state decisions get --id ${decision.id}`) },
+          }
+        : {}),
       capability: "discuss",
       reason: "unresolved decision follow-up",
       phase: "deliberate",

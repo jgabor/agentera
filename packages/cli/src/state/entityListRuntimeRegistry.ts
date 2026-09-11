@@ -27,10 +27,13 @@ export interface EntityListRuntimeFamily {
   familyIdentifier?: { syntax: string; required: boolean };
   bareRecoveryCommandTokens?: readonly string[];
   summaryFields: readonly string[];
+  descriptionFields: readonly string[];
+  metadataFields: readonly string[];
   projection: EntityListRuntimeProjection;
 }
 
-const COMMON_SUMMARY_FIELDS = ["id", "artifact", "retrieval.get"] as const;
+const COMMON_SUMMARY_FIELDS = ["id", "artifact", "retrieval.get", "readable"] as const;
+export const ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS = 160;
 
 export const ENTITY_LIST_RUNTIME_FORMATS = ["text", "json", "yaml"] as const;
 export const ENTITY_LIST_RUNTIME_BOUNDS = {
@@ -80,6 +83,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
       { name: "status", flag: "--status STATUS", values: "free_text" },
     ],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["status", "phase"],
+    descriptionFields: ["what", "summary"],
     exampleArguments: "state progress list --limit 20",
   }),
   decisions: family({
@@ -91,6 +96,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
     bareRead: "alias",
     filters: [{ name: "topic", flag: "--topic TEXT", values: "free_text" }],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["confidence", "satisfaction.state"],
+    descriptionFields: ["question", "choice", "summary"],
     exampleArguments: "state decisions list --limit 20",
   }),
   health: family({
@@ -102,6 +109,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
     bareRead: "correction",
     filters: [{ name: "dimension", flag: "--dimension DIMENSION", values: "free_text" }],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["trajectory"],
+    descriptionFields: ["summary", "dimensions"],
     exampleArguments: "state health list --limit 20",
     bareRecoveryArguments: "state health list --limit 20",
   }),
@@ -120,6 +129,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
       },
     ],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["header.status"],
+    descriptionFields: ["header.title", "what"],
     exampleArguments: "state plan list --status open --limit 20",
     bareRecoveryArguments: "state plan list --status open --limit 20",
   }),
@@ -134,6 +145,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
     filters: [],
     familyIdentifier: { syntax: "PLAN_ID", required: false },
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["status"],
+    descriptionFields: ["name"],
     exampleArguments: "state plan tasks list --limit 20",
     bareRecoveryArguments: "state plan tasks list --limit 20",
   }),
@@ -146,6 +159,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
     bareRead: "correction",
     filters: [],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["header.status"],
+    descriptionFields: ["header.title", "objective.description"],
     exampleArguments: "state objective list --limit 20",
     bareRecoveryArguments: "state objective list --limit 20",
   }),
@@ -160,6 +175,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
     filters: [],
     familyIdentifier: { syntax: "--objective ID", required: true },
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["status"],
+    descriptionFields: ["label", "hypothesis", "conclusion"],
     exampleArguments: "state experiments list --objective qjtrmnpvka --limit 20",
     bareRecoveryArguments: "state objective list --limit 20",
   }),
@@ -174,7 +191,9 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
       { name: "severity", flag: "--severity SEVERITY", values: "free_text" },
       { name: "status", flag: "--status STATUS", values: "free_text" },
     ],
-    summaryFields: ["id", "artifact", "public_order", "readiness", "actionability", "queue_rank", "reconciliation", "retrieval.get"],
+    summaryFields: ["id", "artifact", "public_order", "readiness", "actionability", "queue_rank", "reconciliation", "retrieval.get", "readable"],
+    metadataFields: ["status", "severity"],
+    descriptionFields: ["title", "description"],
     exampleArguments: "state todo list --severity critical --ids-only --limit 20",
   }),
   docs: family({
@@ -189,6 +208,8 @@ export const ENTITY_LIST_RUNTIME_REGISTRY = {
       { name: "status", flag: "--status STATUS", values: "free_text" },
     ],
     summaryFields: COMMON_SUMMARY_FIELDS,
+    metadataFields: ["status"],
+    descriptionFields: ["document"],
     exampleArguments: "state docs list --limit 20",
     bareRecoveryArguments: "state docs list --limit 20",
   }),

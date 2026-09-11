@@ -1,0 +1,13 @@
+id: szgardnony
+artifact: progress
+record:
+  timestamp: 2026-09-11 11:49
+  type: fix
+  phase: build
+  what: Bounded state lists expose source-backed readable descriptions and metadata across all nine existing list families, with explicit absent and excerpt availability.
+  context:
+    intent: Restore readable bounded state listings for approved task xiqppvoinm; leave startup repair and lifecycle evaluation to their owners.
+  discovered: "Summary rows must keep record and top-level detail markers omitted: exposing partial values caused existing startup to mistake summary health for full records. Readable source-detail metadata is separate."
+  verified: "Projection/contract checks: 80 tests passed. Family checks: 273 passed. Typecheck and build passed. Local default TODO listing retained opybnibysh's saved title and critical severity; llavvlpcmb used its saved question and firm confidence without a title. Local 100-row TODO listing retained all rows within 32768 bytes and explicitly omitted readable at the minimum tier. Exact gets, field selection and cursor continuation worked."
+  next: Startup repair must explicitly consume readable metadata and availability or request selected fields. Minimum-tier rows cannot supply descriptive metadata; missing values must not become normal, open or satisfied defaults. Package verification and task lifecycle remain coordinator-owned.
+  publication_order: 388

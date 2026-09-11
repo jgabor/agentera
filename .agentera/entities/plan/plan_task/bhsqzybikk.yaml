@@ -1,0 +1,26 @@
+id: bhsqzybikk
+artifact: plan
+record:
+  name: Verify local and bundled compatibility
+  depends_on:
+    - xiqppvoinm
+    - ontonmdflp
+    - kagmbptqxz
+  status: complete
+  acceptance:
+    - GIVEN built and isolated bundled executables WHEN equivalent fixtures run THEN readable data, conventions, and failure behavior agree.
+    - GIVEN noninteractive consumers WHEN regression checks run THEN machine references, selection, and read-only behavior remain compatible.
+    - GIVEN byte-pressure degradation WHEN readable fields disappear THEN row cardinality, minimum identity, available-detail pointers, omission metadata, cursor behavior, and bounds survive.
+    - GIVEN glyph loss, duplicate names, or missing descriptions WHEN inspected THEN text and identity remain unambiguous.
+    - GIVEN required verification owners WHEN gates fail THEN completion remains blocked without publication.
+  plan: jhqiinmpma
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Previously passing gates omit description-only TODO and identity-preserving long-reference acceptance cases; correction and owner/development rerun required.
+    provenance:
+      attempt_id: readability-correction-verification-1
+      source: "Coordinator inspected final development evidence: all11gates passed, source/package owners and42activation checks; final inventories4423runnable source/26package tests. New audit regression cases and inventory/source-size owners pass; progress lmpqxfqkqf."
+      recorded_at: 2026-09-11 15:35
+      writer_command: agentera state plan record-evaluation

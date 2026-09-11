@@ -1,0 +1,14 @@
+id: lmpqxfqkqf
+artifact: progress
+record:
+  timestamp: 2026-09-11 15:31
+  type: fix
+  phase: build
+  what: Completed required verification for the human-reference correction after synchronizing changelog scalar locations and extracting the brief byte-budget helpers without changing behavior.
+  context:
+    intent: Finish the accepted corrections for plan jhqiinmpma while leaving evaluation and lifecycle closeout to the coordinator.
+    constraints: Two revised user-facing changelog notes and 147 verified +2 scalar-region relocations retained unchanged. No new exemptions, lifecycle, evaluation, health, satisfaction, version, publication or Git mutation. Earlier failure evidence, including wewuffmeuo, remains immutable.
+    scope: Move byte measurement, budget comparison, fixed-point accounting and the budget error to briefByteBudget.ts; preserve existing public exports, identity fixes and all bounds.
+  verified: "All 11 gates PASS in corepack pnpm exec vp run verify:development; source and constructed/extracted package owners passed, with 42 activation checks. Final owner-mode collection inventories confirm 4423 runnable source tests across 263 files and 26 package tests across 3 files; the existing Darwin-only skip policy is unchanged. Narrow monolith/brief/startup/projection checks: 55 tests PASS. briefOrientation.ts is 989 lines by the owner counting rule, below the unchanged 1000-line cap. Inventory owner has zero diagnostics, no new declarations, and all authority bytes except the 147 region values unchanged. Checkout build PASS. Final local smoke: 17 outcomes PASS, including exact selectors, expected invalid-selector failure, Unicode decision/task/TODO references and byte-identical entity/fixture reads. TODO eeplkgxtyp now has record.description excerpt (18371 to 20244 list bytes); audit decision retains label, ID, confidence and satisfaction-unavailable text (19258 to 19176 bytes). Long task/TODO capsules: 19942/19295 bytes. Bare/status/discuss/build: 11373/22157/51208/41582 bytes within unchanged caps. State and changelog validation, compact and diff checks passed. Evidence: /tmp/opencode/jhqiinmpma-structure-development-final.log, -development-evidence.json, -counts-final.json, -targeted.log, -inventory.json and -smoke.json (same jhqiinmpma-structure prefix)."
+  next: Coordinator may inspect the final passing evidence and perform its own evaluation/closeout. No plan or task status, evaluation record, or decision satisfaction was changed by this correction.
+  publication_order: 394

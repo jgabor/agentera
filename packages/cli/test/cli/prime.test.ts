@@ -832,7 +832,16 @@ describe("orkestrera orchestration_context task_queue", () => {
         },
       });
     }
-    expect(payload.decision_attention).toBeNull();
+    expect(payload.decision_attention).toMatchObject({
+      entries: [
+        {
+          id: "ssssssssss",
+          title: "Compacted decision evidence",
+          state: "open",
+          review_needed: true,
+        },
+      ],
+    });
 
     const exact = capture((io) => main(["node", "agentera", "state", "decisions", "get", "--id", fixture.fullDecisionId, "--format", "json"], io));
     expect(exact.rc, exact.err || exact.out).toBe(0);

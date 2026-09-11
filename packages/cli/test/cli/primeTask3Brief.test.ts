@@ -25,6 +25,7 @@ import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { BriefBudgetError, briefByteGate, briefOrientationPayload, briefUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/briefOrientation.js";
 import { emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
+import { humanReference } from "../../src/capabilities/humanReferences.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 
@@ -294,6 +295,36 @@ describe("Task 3 AC4: omitted rich state has named recovery without raw artifact
 });
 
 describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures", () => {
+  it.each(["decision", "task", "todo"] as const)("retains bounded %s action meaning even in the irreducible brief", (family) => {
+    const state = family === "decision" ? "confidence firm; satisfaction unavailable" : "pending";
+    const object = humanReference(family, "Readable 漢😀 ".repeat(100), "aaaaaaaaaa", state);
+    const payload = {
+      next_action: {
+        id: "aaaaaaaaaa",
+        artifact: family === "decision" ? "decisions" : family === "task" ? "plan" : "todo",
+        object,
+        reason: "r".repeat(200),
+        capability: "build",
+        phase: "build",
+        alternatives: [],
+      },
+    };
+    let irreducible = false;
+    for (const budgetBytes of [12000, 2000, 1500, 1000, 900, 800, 700]) {
+      try {
+        const result = briefOrientationPayload(payload, { budgetBytes });
+        const action = result.next_action as Record<string, string>;
+        expect(action.object).toBe(object);
+        expect(action.id).toBe("aaaaaaaaaa");
+        expect(briefUtf8Bytes(result)).toBeLessThanOrEqual(budgetBytes);
+        if (Array.from(action.reason).length === 32) irreducible = true;
+      } catch (error) {
+        if (!(error instanceof BriefBudgetError)) throw error;
+      }
+    }
+    expect(irreducible, "exercise the 32-point fallback, not only the normal presenter").toBe(true);
+  });
+
   it("briefByteGate accepts a small payload (bytes ≤ budget)", () => {
     const small = { hello: "world" };
     const result = briefByteGate(small, PRIME_BRIEF_MAX_UTF8_BYTES);
@@ -319,6 +350,43 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(brief.projection, "returning fixture brief is ok").toBe("ok");
     const bytes = briefUtf8Bytes(payload);
     expect(bytes, "ok brief is within budget").toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+  });
+
+  it("keeps readable docs summaries without claiming omitted records are full detail", () => {
+    returningFixture();
+    const { payload } = capturePrime();
+    for (const readable of [
+      {
+        text: "Packaging guide",
+        source: "record.document",
+        availability: "included",
+        metadata: { status: "current" },
+        detail_availability: null,
+      },
+      undefined,
+    ]) {
+      const result = briefOrientationPayload({
+        ...payload,
+        docs: {
+          exists: true,
+          status: "summary_only",
+          indexed_documents: 1,
+          entries: [
+            {
+              id: "abcdefghij",
+              artifact: "docs",
+              ...(readable ? { readable } : {}),
+              retrieval: { get: "agentera state docs get --id abcdefghij" },
+            },
+          ],
+        },
+      }) as any;
+      expect(result.docs.source_contract.detail_availability).toBe("summary");
+      expect(result.docs.entries[0].record).toBeUndefined();
+      expect(result.docs.entries[0].readable).toEqual(readable);
+      expect(result.docs.entries[0].retrieval.get).toContain("state docs get --id abcdefghij");
+      expect(briefUtf8Bytes(result)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+    }
   });
 
   it("briefOrientationPayload returns projection=degraded when projected brief exceeds budget", () => {

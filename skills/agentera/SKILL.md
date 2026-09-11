@@ -32,6 +32,18 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ---
 
+## Human references
+
+Follow `protocol.yaml#HUMAN_REFERENCES`, also served in every capability's
+instructions. Lead with existing meaningful titles or faithful content summaries;
+no saved title is required. Missing descriptions and status/confidence remain
+explicitly unavailable. Structured human references use ⛋ Decision, ≡ Plan,
+□ Task, and → TODO with textual status/confidence. Keep exact IDs in every
+entity list row, action target, and duplicate-name disambiguation; omit unnecessary
+narrative IDs. Expand human protocol codes inline or omit them. Preserve machine
+IDs, enums, selectors, and relationships. Glyph loss loses no meaning. Other
+families use text only; existing capability/status/severity/flow glyphs are unchanged.
+
 ## Bootstrap
 
 Run one pre-cutover `@next` call for orientation. It is read-only in fresh, v2,

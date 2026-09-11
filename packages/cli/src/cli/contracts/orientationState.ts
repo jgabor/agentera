@@ -64,6 +64,7 @@ export interface DocsSummary {
 }
 
 export interface ProgressSummary {
+  detail_omission?: JsonObject;
   exists: boolean;
   status?: string;
   absence_reason?: string;
@@ -101,6 +102,7 @@ export interface HealthSummary {
 }
 
 export interface ObjectiveSummary {
+  detail_omission?: JsonObject;
   id?: JsonValue;
   artifact?: JsonValue;
   exists: boolean;
@@ -159,9 +161,13 @@ export interface ReadinessHint {
 export interface DecisionFollowUp {
   object: string;
   title: string;
+  id?: string;
 }
 
 export interface DecisionReviewEntry {
+  review_needed?: boolean;
+  detail_availability?: string;
+  retrieval?: JsonValue;
   id: string;
   artifact: string;
   title: string;

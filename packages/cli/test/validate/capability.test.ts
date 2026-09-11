@@ -9,11 +9,47 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { buildProtocolValueLookup, checkDeprecation, checkPrimitiveReferences, checkTriggerEnrichment, collectSchemaGroups, loadCapabilitySchemaContract, validateCapability } from "../../src/validate/capability.js";
 import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
+import { HUMAN_REFERENCE_LABELS, HUMAN_REFERENCE_INSTRUCTIONS, humanReference, withHumanReferences } from "../../src/capabilities/humanReferences.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const CONTRACT_PATH = path.join(REPO_ROOT, "skills", "agentera", "capability_schema_contract.yaml");
 const PROTOCOL_PATH = path.join(REPO_ROOT, "skills", "agentera", "protocol.yaml");
+
+describe("shared human references", () => {
+  it("binds all served capabilities and the public skill to the protocol labels", () => {
+    vi.stubEnv(BOOTSTRAP_SOURCE_ROOT_ENV, REPO_ROOT);
+    const protocol = YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8"));
+    expect(HUMAN_REFERENCE_LABELS).toEqual(protocol.HUMAN_REFERENCES.labels);
+    expect(Object.keys(HUMAN_REFERENCE_LABELS)).toEqual(["decision", "plan", "task", "todo"]);
+    const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
+    for (const label of Object.values(protocol.HUMAN_REFERENCES.labels)) expect(skill).toContain(label);
+    for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
+    expect(CAPABILITY_INSTRUCTIONS.status).not.toContain("PLAN Task N:");
+  });
+
+  it("uses content without title metadata and preserves identity and meaning after glyph loss", () => {
+    for (const family of Object.keys(HUMAN_REFERENCE_LABELS) as Array<keyof typeof HUMAN_REFERENCE_LABELS>) {
+      const first = humanReference(family, "Keep bounded reads", "aaaaaaaaaa", "in_progress");
+      const second = humanReference(family, "Keep bounded reads", "bbbbbbbbbb", "in_progress");
+      expect(first).toBe(`Keep bounded reads · ${HUMAN_REFERENCE_LABELS[family]} aaaaaaaaaa · in progress`);
+      expect(second).toContain("bbbbbbbbbb");
+      expect(first.replace(/[⛋≡□→]/gu, "")).toContain(`${HUMAN_REFERENCE_LABELS[family].slice(2)} aaaaaaaaaa · in progress`);
+      expect(humanReference(family, " ", undefined, undefined)).toBe(`description unavailable · ${HUMAN_REFERENCE_LABELS[family]} ID unavailable · status/confidence unavailable`);
+    }
+  });
+
+  it("omits redundant human protocol citations but leaves machine examples and inline selectors exact", () => {
+    const machine = "```yaml\nconfidence: DL2\nrelationship: aaaaaaaaaa\n```";
+    const rendered = withHumanReferences(`provisional (DL2); severity arrows (VT5-VT8).\n${machine}\nUse \`DL2\` as a selector.\nFinding severity per protocol SF1-SF3; cap to CS4 or below.\n\`\`\`text\nwarning (SF2, confidence 70+); confidence (0-100, protocol: CS1-CS5).\n\`\`\``);
+    expect(rendered).toContain("provisional; severity arrows.");
+    expect(rendered).toContain(machine);
+    expect(rendered).toContain("Use `DL2` as a selector.");
+    expect(rendered).toContain("finding severity (critical, warning, info); cap to weak evidence (30-49) or below.");
+    expect(rendered).toContain("warning (confidence 70+); confidence (0-100).");
+  });
+});
 
 function dedent(text: string): string {
   const lines = text.replace(/^\n/, "").split("\n");

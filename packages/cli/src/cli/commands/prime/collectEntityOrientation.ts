@@ -21,6 +21,53 @@ import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "..
 import { projectCurrentGlossaryCaveats } from "../../../state/progressGlossaryCaveat.js";
 import { glossaryCaveatContract } from "../../../registries/glossaryCaveatContract.js";
 import { renderTodoPublicRecord } from "../../todoMarkdown.js";
+import type { EntityListSelectorInput } from "../../../state/entityListProjection.js";
+
+/** Retry only the same bounded page, never traverse or perform per-row gets. */
+function startupFields(read: (selector?: EntityListSelectorInput) => JsonObject, fields: string[]): JsonObject {
+  const original = read();
+  if ((original.projection as JsonObject | undefined)?.detail === "full") return original;
+  let selected: JsonObject;
+  try {
+    try {
+      selected = read({ fields: fields.join(",") });
+    } catch (error) {
+      // Optional paths differ across current and compacted records. Let the
+      // existing selector validator own which paths exist in this snapshot.
+      if (!(error instanceof StateRetrievalFailure) || error.body.error.class !== "invalid_request" || !error.body.error.message.startsWith("unsupported record field")) throw error;
+      const available = fields.filter((field) => error.body.error.valid_values?.includes(field));
+      if (!available.length) return original;
+      selected = read({ fields: available.join(",") });
+    }
+  } catch (error) {
+    if (error instanceof StateRetrievalFailure && error.body.error.class === "unsupported_state" && error.body.error.message.startsWith("selected fields cannot fit")) return original;
+    throw error;
+  }
+  const previous = new Map(entries(original).map((entry) => [entry.id, entry]));
+  return {
+    ...selected,
+    entries: entries(selected).map((entry) => ({ ...previous.get(entry.id), ...entry })),
+  };
+}
+
+function readable(entry: JsonObject | undefined): JsonObject {
+  return entry?.readable && typeof entry.readable === "object" && !Array.isArray(entry.readable) ? entry.readable : {};
+}
+
+function description(entry: JsonObject | undefined, ...fields: string[]): string {
+  const value = record(entry);
+  for (const field of fields) if (typeof value[field] === "string" && String(value[field]).trim()) return String(value[field]);
+  return typeof readable(entry).text === "string" ? String(readable(entry).text) : "Description unavailable";
+}
+
+function decisionReference(entry: JsonObject, prefix = ""): string {
+  const value = record(entry);
+  return humanReference("decision", description(entry, "question", "choice", "summary"), entry.id, `confidence ${value.confidence ?? "unavailable"}; satisfaction ${(value.satisfaction as JsonObject | undefined)?.state ?? "unavailable"}`, { prefix, maxCodePoints: prefix ? 200 : 110 });
+}
+
+function fullSourceRecord(entry: JsonObject): boolean {
+  return (entry.detail_availability ?? readable(entry).detail_availability) === "full" && Object.keys(record(entry)).length > 0;
+}
 
 function entries(payload: JsonObject): JsonObject[] {
   return Array.isArray(payload.entries) ? payload.entries.filter((entry): entry is JsonObject => Boolean(entry) && typeof entry === "object" && !Array.isArray(entry)) : [];
@@ -187,33 +234,58 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const glossaryCaveatProjection = projectCurrentGlossaryCaveats(discovery.entities, caveatContract);
   const invalidProgress = (entity: (typeof discovery.entities)[number]): boolean => (entity.artifact === "progress" || ["progress_cycle", "progress_summary"].includes(entity.boundary ?? "")) && entity.classification !== "valid";
   const progressDiscovery = discovery.entities.some(invalidProgress) ? { ...discovery, entities: discovery.entities.filter((entity) => !invalidProgress(entity)) } : discovery;
-  const progressList = listProgressEntities(projectRoot, 10, {}, undefined, {
-    sourceRoot,
-    format: "json",
-    discovery: progressDiscovery,
-  });
-  const decisionList = listDecisionEntities(projectRoot, 10, undefined, undefined, {
-    sourceRoot,
-    format: "json",
-    discovery,
-  });
-  const healthList = listHealthEntities(projectRoot, 10, undefined, undefined, {
-    sourceRoot,
-    format: "json",
-    discovery,
-  });
-  const planList = listPlanEntities(projectRoot, 2, undefined, {
-    sourceRoot,
-    format: "json",
-    statuses: ["open", "active"],
-    discovery,
-  });
-  const objectiveList = listObjectiveEntities(projectRoot, 2, undefined, {
-    sourceRoot,
-    format: "json",
-    statuses: ["open", "active"],
-    discovery,
-  });
+  const progressList = startupFields(
+    (selector) =>
+      listProgressEntities(projectRoot, 10, {}, undefined, {
+        sourceRoot,
+        format: "json",
+        discovery: progressDiscovery,
+        selector,
+      }),
+    ["what", "next", "verified"],
+  );
+  const decisionList = startupFields(
+    (selector) =>
+      listDecisionEntities(projectRoot, 10, undefined, undefined, {
+        sourceRoot,
+        format: "json",
+        discovery,
+        selector,
+      }),
+    ["question", "choice", "summary", "confidence", "satisfaction.state", "satisfaction.review_needed"],
+  );
+  const healthList = startupFields(
+    (selector) =>
+      listHealthEntities(projectRoot, 10, undefined, undefined, {
+        sourceRoot,
+        format: "json",
+        discovery,
+        selector,
+      }),
+    ["date", "trajectory", "grades"],
+  );
+  const planList = startupFields(
+    (selector) =>
+      listPlanEntities(projectRoot, 2, undefined, {
+        sourceRoot,
+        format: "json",
+        statuses: ["open", "active"],
+        discovery,
+        selector,
+      }),
+    ["header"],
+  );
+  const objectiveList = startupFields(
+    (selector) =>
+      listObjectiveEntities(projectRoot, 2, undefined, {
+        sourceRoot,
+        format: "json",
+        statuses: ["open", "active"],
+        discovery,
+        selector,
+      }),
+    ["header", "metric.description"],
+  );
   const closedObjectiveList = listObjectiveEntities(projectRoot, 1, undefined, {
     sourceRoot,
     format: "json",
@@ -221,14 +293,13 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     discovery,
   });
   const todoList = listTodoDocsEntities(projectRoot, "todo", 20, undefined, { status: "open" }, { sourceRoot, format: "json", discovery });
-  const docsList = listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json", discovery });
+  const docsList = startupFields((selector) => listTodoDocsEntities(projectRoot, "docs", 20, undefined, {}, { sourceRoot, format: "json", discovery, selector }), ["document", "path", "last_updated", "status"]);
 
   const progressEntries = entries(progressList);
   const healthEntries = entries(healthList);
   const decisionEntries = entries(decisionList);
-  const fullProgressEntries = progressEntries.filter((entry) => entry.detail_availability === "full");
-  const fullHealthEntries = healthEntries.filter((entry) => entry.detail_availability === "full");
-  const fullDecisionEntries = decisionEntries.filter((entry) => entry.detail_availability === "full");
+  const fullProgressEntries = progressEntries.filter(fullSourceRecord);
+  const fullHealthEntries = healthEntries.filter(fullSourceRecord);
   const progressHistory = degradedHistory("progress", discovery.entities.filter((entry) => entry.boundary === "progress_summary").length);
   const decisionHistory = degradedHistory("decisions", discovery.entities.filter((entry) => entry.boundary === "decision_summary").length);
   const healthHistory = degradedHistory("health", discovery.entities.filter((entry) => entry.boundary === "health_summary").length);
@@ -249,17 +320,29 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   const openPlanCandidateIds = discovery.entities.filter((entry) => entry.boundary === "plan" && entry.classification === "valid" && entry.id && ["open", "active"].includes(entityPlanStatus(entry))).map((entry) => entry.id!);
   const selectedPlan = selected(planEntries, "plan", openPlanCandidateIds, sourceRoot);
   const taskPage = selectedPlan
-    ? listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, {
-        sourceRoot,
-        format: "json",
-        discovery,
-      })
+    ? startupFields(
+        (selector) =>
+          listPlanTaskEntities(projectRoot, String(selectedPlan.id), 100, undefined, {
+            sourceRoot,
+            format: "json",
+            discovery,
+            selector,
+          }),
+        ["name", "status", "depends_on", "plan"],
+      )
     : null;
   const taskEntries = (taskPage ? entries(taskPage) : []).map((entry): JsonObject => ({
     ...record(entry),
     id: entry.id,
     artifact: entry.artifact,
     provenance: entry.provenance,
+    ...(!entry.record
+      ? {
+          detail_availability: "omitted",
+          retrieval: entry.retrieval,
+          readable: entry.readable ?? null,
+        }
+      : {}),
   }));
   const allTaskEntries = selectedPlan
     ? discovery.entities
@@ -279,7 +362,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     return counts;
   }, {});
   const publicTaskEntries = taskEntries.slice(0, STARTUP_ARRAY_LIMIT);
-  const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length;
+  const taskByteOmissions = publicTaskEntries.filter((entry) => entry.detail_availability === "omitted").length;
+  const taskDetailOmitted = allTaskEntries.length > publicTaskEntries.length || taskByteOmissions > 0;
   const taskRetrieval: JsonObject = selectedPlan
     ? {
         list: preCutoverCommand(`state plan tasks list ${String(selectedPlan.id)} --limit 100`),
@@ -293,8 +377,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
         active: true,
         id: selectedPlan.id,
         artifact: selectedPlan.artifact,
-        status: String(header(selectedPlan).status ?? "open"),
-        title: String(header(selectedPlan).title ?? ""),
+        status: String(header(selectedPlan).status ?? "unavailable"),
+        title: String(header(selectedPlan).title ?? readable(selectedPlan).text ?? "Description unavailable"),
         tasks: publicTaskEntries,
         complete: taskStatusCounts.complete ?? 0,
         superseded: taskStatusCounts.superseded ?? 0,
@@ -307,10 +391,11 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
           total: allTaskEntries.length,
           returned_count: publicTaskEntries.length,
           omitted_count: allTaskEntries.length - publicTaskEntries.length,
+          ...(taskByteOmissions ? { detail_omitted_count: taskByteOmissions } : {}),
           omission_reason: taskDetailOmitted ? (taskPage?.omitted === true ? taskPage.omission_reason : "startup_detail_capacity") : "none",
           retrieval: taskRetrieval,
         },
-        diagnostics: [],
+        diagnostics: selectedPlan.record ? [] : [{ detail_availability: "omitted", retrieval: selectedPlan.retrieval }],
       }
     : {
         exists: false,
@@ -342,9 +427,20 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
     : progressEntries.length
       ? {
           exists: true,
-          status: "degraded_history",
+          status: progressHistory ? "degraded_history" : "summary_only",
           cycle_count: Number((progressList.counts as JsonObject | undefined)?.total ?? progressEntries.length),
-          degraded_history: progressHistory!,
+          ...(progressHistory ? { degraded_history: progressHistory } : {}),
+          ...(progressFullCount > 0
+            ? {
+                detail_omission: {
+                  detail_availability: "omitted",
+                  retrieval: {
+                    list: preCutoverCommand("state progress list --limit 20"),
+                    get: preCutoverCommand("state progress get --id ID"),
+                  },
+                },
+              }
+            : {}),
         }
       : { exists: false, status: "missing", cycle_count: 0 };
 
@@ -359,9 +455,17 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
         active: true,
         id: activeObjective.id,
         artifact: activeObjective.artifact,
-        title: String(header(activeObjective).title ?? ""),
-        status: String(header(activeObjective).status ?? "open"),
+        title: String(header(activeObjective).title ?? readable(activeObjective).text ?? "Description unavailable"),
+        status: String(header(activeObjective).status ?? "unavailable"),
         metric: String((objectiveRecord.metric as JsonObject | undefined)?.description ?? ""),
+        ...(!activeObjective.record
+          ? {
+              detail_omission: {
+                detail_availability: "omitted",
+                retrieval: activeObjective.retrieval,
+              },
+            }
+          : {}),
         experiments: entries(
           listExperimentEntities(projectRoot, String(activeObjective.id), 20, undefined, {
             sourceRoot,
@@ -375,13 +479,16 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
 
   const completeTodoEntities = projectTodoReadEntities(projectRoot, sourceRoot, discovery);
   const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
+  // This same authoritative read already owns queue readiness and total counts.
+  // Join only the bounded list's selected IDs; do not reread entities or paginate.
+  const todoRecords = new Map(completeTodoEntities.map((entry) => [entry.id, entry.record]));
   const todoItems = todoEntries.map((entry) => {
-    const todo = record(entry);
+    const todo = todoRecords.get(String(entry.id)) ?? {};
     return {
       id: String(entry.id),
       artifact: String(entry.artifact),
-      severity: String(todo.severity ?? "normal"),
-      status: String(todo.status ?? "open"),
+      severity: String(todo.severity ?? "unavailable"),
+      status: String(todo.status ?? "unavailable"),
       kind: typeof todo.kind === "string" ? todo.kind : null,
       target_version: typeof todo.target_version === "string" ? todo.target_version : null,
       title: typeof todo.title === "string" ? todo.title : null,
@@ -389,6 +496,8 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
       acceptance: Array.isArray(todo.acceptance) ? todo.acceptance : [],
       release_blocker: todo.release_blocker === true,
       text: renderTodoPublicRecord(todo),
+      readiness: todo.readiness ?? null,
+      ...(Object.keys(todo).length ? {} : { detail_availability: "unavailable", retrieval: entry.retrieval }),
     };
   });
   const todoCounts = issueCounts(completeTodoEntities.filter((entry) => entry.record.status === "open").map((entry) => ({ severity: String(entry.record.severity ?? "normal") })));
@@ -401,14 +510,14 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   };
   const docs: DocsSummary = {
     exists: docsEntries.length > 0,
-    status: docsEntries.length ? "available" : "missing",
+    status: docsEntries.length ? (docsEntries.every((entry) => entry.record) ? "available" : "summary_only") : "missing",
     indexed_documents: Number((docsList.counts as JsonObject | undefined)?.total ?? docsEntries.length),
     entries: docsEntries,
   };
 
-  const reviewEntries = fullDecisionEntries.filter((entry) => {
+  const reviewEntries = decisionEntries.filter((entry) => {
     const satisfaction = record(entry).satisfaction as JsonObject | undefined;
-    return satisfaction?.review_needed === true || satisfaction?.state === "open";
+    return !satisfaction?.state || satisfaction.review_needed === true || satisfaction.state === "open";
   });
   const decisionAttention: DecisionReviewAttention | null = reviewEntries.length
     ? {
@@ -418,20 +527,24 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
         entries: reviewEntries.slice(0, 3).map((entry) => ({
           id: String(entry.id),
           artifact: String(entry.artifact),
-          title: String(record(entry).question ?? "Decision"),
-          state: String((record(entry).satisfaction as JsonObject | undefined)?.state ?? "open"),
+          title: description(entry, "question", "choice", "summary"),
+          state: String((record(entry).satisfaction as JsonObject | undefined)?.state ?? "unavailable"),
+          review_needed: true,
           source: entry.provenance ?? null,
+          retrieval: entry.retrieval,
+          ...(record(entry).satisfaction ? {} : { detail_availability: entry.record ? "unavailable" : "omitted" }),
         })),
         max_entries: 3,
-        bounded: reviewEntries.length > 3,
-        attention: `${reviewEntries.length} decision(s) require review`,
+        bounded: reviewEntries.length > 3 || Number((decisionList.counts as JsonObject | undefined)?.remaining ?? 0) > 0,
+        attention: decisionReference(reviewEntries[0], `Review needed (${reviewEntries.length}): `),
       }
     : null;
   const firstDecision = reviewEntries[0];
   const decision = firstDecision
     ? {
-        object: String(firstDecision.id),
-        title: String(record(firstDecision).question ?? "Decision review"),
+        id: String(firstDecision.id),
+        object: decisionReference(firstDecision),
+        title: description(firstDecision, "question", "choice", "summary"),
       }
     : null;
 
@@ -464,3 +577,4 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   rememberPlanTaskIndex(result.plan as unknown as JsonObject, allTaskEntries);
   return result;
 }
+import { humanReference } from "../../../capabilities/humanReferences.js";

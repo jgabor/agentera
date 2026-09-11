@@ -1,0 +1,25 @@
+id: kagmbptqxz
+artifact: plan
+record:
+  name: Apply shared meaning-first references and glyphs
+  depends_on:
+    - xiqppvoinm
+    - ontonmdflp
+  status: complete
+  acceptance:
+    - GIVEN human references WHEN produced THEN existing content explains meaning without mandatory saved titles.
+    - GIVEN typed references WHEN rendered THEN agreed entity glyphs accompany explicit labels and textual status/confidence.
+    - GIVEN entity lists, action targets, or duplicate names WHEN rendered THEN exact IDs remain visible; ordinary narrative may omit them.
+    - GIVEN human-facing protocol codes WHEN presented THEN plain meanings appear inline or unnecessary codes disappear; machine identifiers remain unchanged.
+    - GIVEN missing glyphs WHEN references are read THEN explicit text preserves all meaning.
+  plan: jhqiinmpma
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: humanReferences.ts:9-13 appends identity after unrestricted content; collectEntityOrientation.ts:64-66 and orientationOutput.ts:193-195 truncate labels, IDs, and metadata on valid long references.
+    provenance:
+      attempt_id: readability-correction-references-1
+      source: "Coordinator resolution of independent audit finding2: long decision/task/TODO and Unicode references retain labels, exact IDs and textual metadata; unchanged caps;17local smoke outcomes and final all11gates; progress lmpqxfqkqf."
+      recorded_at: 2026-09-11 15:35
+      writer_command: agentera state plan record-evaluation

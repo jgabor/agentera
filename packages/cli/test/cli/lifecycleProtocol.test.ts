@@ -354,7 +354,7 @@ describe("final lifecycle protocol", () => {
     });
     expect(orientation.plan).not.toHaveProperty("tasks");
     expect(orientation.next_action).toMatchObject({
-      object: "PLAN Task ?: Ready outside projection",
+      object: "Ready outside projection · □ Task zzzzzzzzzz · pending",
       capability: "orchestrate",
       id: readyId,
       artifact: "plan",

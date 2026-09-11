@@ -295,6 +295,27 @@ describe("final entity retrieval public-contract parity", () => {
 
   it.each([
     [
+      "invented TODO metadata source",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.todo.metadata_fields = ["priority"];
+      },
+      ".todo.metadata_fields",
+    ],
+    [
+      "invented decision description source",
+      (value: any) => {
+        value.entity_target.public_retrieval.list_help.families.decisions.description_fields = ["title"];
+      },
+      ".decisions.description_fields",
+    ],
+    [
+      "readable excerpt bound drift",
+      (value: any) => {
+        value.entity_target.public_retrieval.policy.envelope.bounded_summary_projection.readable_description.max_code_points = 161;
+      },
+      ".readable_description",
+    ],
+    [
       "removed docs family",
       (value: any) => {
         delete value.entity_target.public_retrieval.commands.docs;

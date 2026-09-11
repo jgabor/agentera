@@ -3,6 +3,7 @@ import type { OrientationState } from "../contracts/orientationState.js";
 import { corpusCoverageAttention } from "./corpusCoverage.js";
 import { firstPresent } from "../stateQuery.js";
 import { TODO_SEVERITY_ORDER } from "../todoSeverity.js";
+import { humanReference } from "../../capabilities/humanReferences.js";
 
 export function buildOrientationAttention(state: OrientationState): string[] {
   const { project_integration: projectIntegration, health, plan, decision_attention: decisionAttention, glossary_caveat_attention: glossaryCaveatAttention, corpus_coverage: corpusCoverage, todo_items: todoItems, todo_reconciliation: todoReconciliation } = state;
@@ -16,7 +17,7 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   }
   const skillDivergenceSignals = (state.app.signals ?? []).filter((s) => s.kind === "skill_root_divergence");
   for (const signal of skillDivergenceSignals) {
-    attention.push(`degraded: skill-root divergence — ${signal.message ?? "a recognized skill root is below expected"}; run \`npx -y agentera@next upgrade --dry-run --channel development\` to preview repair (D78)`);
+    attention.push(`degraded: skill-root divergence — ${signal.message ?? "a recognized skill root is below expected"}; run \`npx -y agentera@next upgrade --dry-run --channel development\` to preview repair`);
   }
   const integrationAttention = projectIntegrationAttention(projectIntegration);
   const hasAppIntegration = (projectIntegration.phases?.app.counts.total ?? 0) > 0;
@@ -45,13 +46,23 @@ export function buildOrientationAttention(state: OrientationState): string[] {
   if (glossaryCaveatAttention) attention.push(glossaryCaveatAttention);
   const pending = plan.first_pending;
   if (pending && typeof pending === "object" && !Array.isArray(pending)) {
-    const title = firstPresent(pending, ["name", "title"], "pending task");
-    attention.push(`normal: PLAN Task ${pending.number ?? "?"}: ${title}`);
+    const title = firstPresent(pending, ["name", "title"], "");
+    attention.push(
+      humanReference("task", title, pending.id, pending.status, {
+        prefix: "normal: ",
+        maxCodePoints: 200,
+      }),
+    );
   }
   if (decisionAttention !== null) attention.push(String(decisionAttention.attention));
   if (!(pending && typeof pending === "object" && !Array.isArray(pending)) && todoItems.length > 0) {
     const firstTodo = [...todoItems].sort((a, b) => (TODO_SEVERITY_ORDER[String(a.severity)] ?? 2) - (TODO_SEVERITY_ORDER[String(b.severity)] ?? 2))[0];
-    attention.push(`${String(firstTodo.severity)}: TODO: ${String(firstTodo.text)}`);
+    attention.push(
+      humanReference("todo", firstTodo.text, firstTodo.id, firstTodo.status, {
+        prefix: `${String(firstTodo.severity)}: `,
+        maxCodePoints: 200,
+      }),
+    );
   }
   return attention;
 }

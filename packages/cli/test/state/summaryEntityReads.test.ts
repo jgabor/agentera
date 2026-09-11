@@ -15,6 +15,7 @@ import { appendHealthEntity, getHealthEntity, listHealthEntities } from "../../s
 import { appendProgressEntity, getProgressEntity, listProgressEntities } from "../../src/state/progressEntities.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { projectedListSnapshot } from "../../src/state/listCursor.js";
+import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -262,7 +263,7 @@ describe("summary entity ordinary reads", () => {
     });
   });
 
-  it("hashes the exact composed decision list projection and contract", () => {
+  it("hashes the composed source projection and contract before bounded readable additions", () => {
     const root = project();
     mixed(root);
     const listed = listDecisionEntities(root, 20, undefined, undefined, {
@@ -275,12 +276,13 @@ describe("summary entity ordinary reads", () => {
       filters: listed.filters,
       source: listed.source,
       source_contract: listed.source_contract,
-      entries: listed.entries,
+      entries: listed.entries.map(({ readable: _readable, ...entry }: any) => entry),
     };
     expect(listed.entries.find((entry: any) => entry.id === "bbbbbbbbbb")).toMatchObject({
       effective_sha256: expect.any(String),
       provenance: { revisions: [], satisfaction: null },
       retrieval: { get: expect.any(String) },
+      readable: { source: "record.question", availability: "included" },
     });
     expect(listed.snapshot.id).toBe(projectedListSnapshot(projection));
     const changed = structuredClone(projection);
@@ -382,7 +384,7 @@ describe("summary entity ordinary reads", () => {
     }
   });
 
-  it("reports oversized current health as summary-only with exact typed recovery", () => {
+  it("reads current health metadata through bounded fields when unrelated detail is oversized", () => {
     const root = project();
     for (let index = 0; index < 10; index++) {
       appendHealthEntity(
@@ -405,25 +407,130 @@ describe("summary entity ordinary reads", () => {
     expect(status.rc, status.err || status.out).toBe(0);
     const response = JSON.parse(status.out);
     const payload = response.capability_context.context.status_context;
-    expect(response.capability_context.startup).toMatchObject({ outcome: "degraded" });
+    expect(response.capability_context.startup).toMatchObject({ outcome: "ok" });
     expect(payload.health).toEqual({
       exists: true,
-      status: "summary_only",
-      id: null,
-      grade: null,
-      worst: null,
-      trajectory: null,
+      status: "available",
+      id: "jjjjjjjjjj",
+      grade: "A",
+      worst: ["architecture_alignment", "A", 0],
+      trajectory: "stable",
       degrading: false,
-      detail_availability: "omitted",
-      omitted: true,
-      omitted_count: 10,
-      omission_reason: "startup_health_detail",
-      retrieval: {
-        list: "npx -y agentera@next state health list --limit 20",
-        get: "npx -y agentera@next state health get --id ID",
-      },
     });
     expect(Buffer.byteLength(status.out, "utf8")).toBeLessThanOrEqual(22_500);
+  });
+
+  it("retains decision meaning and missing-satisfaction review pressure after bounded field selection", () => {
+    const root = project();
+    for (let index = 0; index < 10; index++) {
+      appendDecisionEntity(
+        request(root, "decisions", "append", {
+          date: "2026-07-17",
+          question: `Choose readable authority ${index}?`,
+          context: "Current detail",
+          alternatives: { chosen: "canonical entities" },
+          choice: "canonical entities",
+          reasoning: "x".repeat(20_000),
+          confidence: "firm",
+        }),
+        { id: String.fromCharCode(97 + index).repeat(10), sourceRoot: SOURCE_ROOT },
+      );
+    }
+    expect((listDecisionEntities(root, 10, undefined, undefined, { sourceRoot: SOURCE_ROOT }) as any).projection.detail).toBe("summary");
+    const oriented = collectEntityOrientation(root, SOURCE_ROOT);
+    expect(oriented.decision).toMatchObject({
+      id: "aaaaaaaaaa",
+      object: "Choose readable authority 0? · ⛋ Decision aaaaaaaaaa · confidence firm; satisfaction unavailable",
+    });
+    expect(oriented.decisionAttention).toMatchObject({
+      count: 10,
+      bounded: true,
+      entries: [
+        {
+          id: "aaaaaaaaaa",
+          title: "Choose readable authority 0?",
+          state: "unavailable",
+          review_needed: true,
+          detail_availability: "unavailable",
+        },
+        {
+          id: "bbbbbbbbbb",
+          title: "Choose readable authority 1?",
+          state: "unavailable",
+          review_needed: true,
+        },
+        {
+          id: "cccccccccc",
+          title: "Choose readable authority 2?",
+          state: "unavailable",
+          review_needed: true,
+        },
+      ],
+    });
+    const bare = cli(root, ["prime", "--format", "json"]);
+    expect(bare.rc, bare.err || bare.out).toBe(0);
+    const entry = JSON.parse(bare.out).decision_attention.entries[0];
+    expect(entry).toMatchObject({
+      title: "Choose readable authority 0?",
+      state: "unavailable",
+      review_needed: true,
+    });
+    expect(entry.retrieval.get).toContain("state decisions get --id aaaaaaaaaa");
+    expect(Buffer.byteLength(bare.out)).toBeLessThanOrEqual(12_288);
+  });
+
+  it("keeps compacted satisfaction caveats visible even beside a saved satisfied label", () => {
+    const root = project();
+    summary(root, "decisions", "eeeeeeeeee", "Saved meaning requires confirmation", {
+      state: "user_confirmed_satisfied",
+      review_needed: true,
+    });
+    const bare = cli(root, ["prime", "--format", "json"]);
+    expect(bare.rc, bare.err || bare.out).toBe(0);
+    expect(JSON.parse(bare.out).decision_attention.entries[0]).toMatchObject({
+      id: "eeeeeeeeee",
+      title: "Saved meaning requires confirmation",
+      state: "user_confirmed_satisfied",
+      review_needed: true,
+    });
+  });
+
+  it("reports gaps rather than full current records when selected startup fields also exceed the budget", () => {
+    const root = project();
+    for (let index = 0; index < 10; index++) {
+      appendProgressEntity(
+        request(root, "progress", "append", {
+          type: "fix",
+          phase: "build",
+          what: "x".repeat(20_000),
+          context: { intent: "oversized source" },
+        }),
+        { id: `p${String.fromCharCode(97 + index).repeat(9)}`, sourceRoot: SOURCE_ROOT },
+      );
+      appendHealthEntity(request(root, "health", "append", { ...audit(), trajectory: "x".repeat(20_000) }), {
+        id: `h${String.fromCharCode(97 + index).repeat(9)}`,
+        sourceRoot: SOURCE_ROOT,
+      });
+    }
+    const oriented = collectEntityOrientation(root, SOURCE_ROOT);
+    expect(oriented.progress).toMatchObject({
+      exists: true,
+      status: "summary_only",
+      detail_omission: { detail_availability: "omitted" },
+    });
+    expect(oriented.progress.latest).toBeUndefined();
+    expect(oriented.health).toMatchObject({
+      exists: true,
+      status: "summary_only",
+      omitted: true,
+      omitted_count: 10,
+    });
+    const status = cli(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(status.rc, status.err || status.out).toBe(0);
+    const payload = JSON.parse(status.out).capability_context.context.status_context;
+    expect(payload.progress.detail_omission.retrieval.get).toContain("state progress get --id ID");
+    expect(payload.health.retrieval.get).toContain("state health get --id ID");
+    expect(Buffer.byteLength(status.out)).toBeLessThanOrEqual(22_500);
   });
 
   it("keeps canonical full and compacted history evidence in bare prime", () => {
@@ -464,7 +571,16 @@ describe("summary entity ordinary reads", () => {
     const compactedPrime = cli(compactedRoot, ["prime", "--format", "json"]);
     expect(compactedPrime.rc, compactedPrime.err || compactedPrime.out).toBe(0);
     const compactedPayload = JSON.parse(compactedPrime.out);
-    expect(compactedPayload.decision_attention).toBeNull();
+    expect(compactedPayload.decision_attention).toMatchObject({
+      entries: [
+        {
+          id: "eeeeeeeeee",
+          title: "retained decision history",
+          state: "open",
+          review_needed: true,
+        },
+      ],
+    });
     for (const artifact of ["progress", "decisions", "health"]) {
       const history = compactedPayload.history[artifact];
       expect(history).toMatchObject({

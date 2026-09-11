@@ -39,7 +39,7 @@ describe("orientation: pure helpers", () => {
     const plan = { first_pending: { number: 3, name: "Wire prime" } };
     const action = selectStatusNextAction(plan, {}, {}, [], null, true);
     expect(action).toEqual({
-      object: "PLAN Task 3: Wire prime",
+      object: "Wire prime · □ Task ID unavailable · status/confidence unavailable",
       capability: "orchestrate",
       reason: "first pending plan task",
     });
@@ -445,7 +445,7 @@ describe("selectStatusReadiness", () => {
       first_pending: { number: 7, name: "Wire prime JSON" },
     };
     const hint = selectStatusReadiness(plan, { exists: false }, noObjective, [], null, false);
-    expect(hint.recommended.object).toContain("PLAN Task");
+    expect(hint.recommended.object).toContain("□ Task");
     expect(hint.recommended.capability).toBe("orchestrate");
     expect(hint.recommended.phase).toBe("build");
     expect(hint.alternatives.length).toBeGreaterThan(0);
@@ -484,7 +484,7 @@ describe("selectStatusReadiness", () => {
     const health: HealthSummary = { exists: true, degrading: true, worst: ["tests", "D", 3] };
     const hint = selectStatusReadiness(plan, health, noObjective, [], null, false);
     expect(hint.recommended.capability).toBe("orchestrate");
-    expect(hint.recommended.object).toContain("PLAN Task");
+    expect(hint.recommended.object).toContain("□ Task");
     expect(hint.alternatives.some((alt) => alt.capability === "audit")).toBe(true);
     assertProtocolPhases(hint);
   });

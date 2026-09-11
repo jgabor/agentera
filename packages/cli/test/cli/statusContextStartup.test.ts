@@ -14,6 +14,7 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { formatNextAction } from "../../src/cli/orientation.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
 import { startupAggregation } from "../../src/cli/capabilityContext/startupAggregation.js";
@@ -172,6 +173,95 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
 }
 
 describe("status capability self-contained startup", () => {
+  it.each(["decision", "task", "todo"] as const)("keeps long Unicode %s identity and textual state through attention, actions and text output", (family) => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const description = "Readable 漢😀 ".repeat(100);
+    const id = "aaaaaaaaaa";
+    const label = { decision: "⛋ Decision", task: "□ Task", todo: "→ TODO" }[family];
+    if (family === "todo") writeTodoEntity(id, "critical", "open", description, readyTodo("build", "Scoped fix", 1));
+    else if (family === "task") {
+      writeProjectFile(
+        ".agentera/entities/plan/plan/bbbbbbbbbb.yaml",
+        YAML.stringify({
+          id: "bbbbbbbbbb",
+          artifact: "plan",
+          record: {
+            header: {
+              title: "Long task fixture",
+              status: "open",
+              level: "full",
+              created: "2026-09-11",
+            },
+            what: "Test references",
+            why: "Keep identity",
+            scope: { included: ["References"], excluded: ["Lifecycle changes"] },
+          },
+        }),
+      );
+      writeProjectFile(
+        `.agentera/entities/plan/plan_task/${id}.yaml`,
+        YAML.stringify({
+          id,
+          artifact: "plan",
+          record: {
+            plan: "bbbbbbbbbb",
+            name: description,
+            status: "pending",
+            depends_on: [],
+            acceptance: ["Keep exact identity"],
+          },
+        }),
+      );
+    } else
+      writeProjectFile(
+        `.agentera/entities/decisions/decision/${id}.yaml`,
+        YAML.stringify({
+          id,
+          artifact: "decisions",
+          record: {
+            date: "2026-09-11",
+            question: description,
+            context: "Long reference fixture",
+            alternatives: [{ name: "yes", status: "chosen" }],
+            choice: "yes",
+            reasoning: "Keep identity",
+            confidence: "firm",
+          },
+        }),
+      );
+
+    for (const context of ["status", undefined] as const) {
+      let out = "";
+      let err = "";
+      expect(cmdPrime({ command: "prime", context, format: "json", home, installRoot: appHome }, { out: (text) => (out += text), err: (text) => (err += text) }), err).toBe(0);
+      const payload = JSON.parse(out);
+      const state = context ? statusState(payload) : payload;
+      const attention = state.attention.find((text: string) => text.includes(`${label} ${id}`));
+      expect(attention).toBeDefined();
+      const action = [state.next_action, ...state.next_action.alternatives].find((entry: any) => entry.id === id);
+      expect(action).toMatchObject({
+        id,
+        artifact: family === "decision" ? "decisions" : family === "task" ? "plan" : "todo",
+      });
+      for (const text of [attention, action.object]) {
+        expect(text).toContain("Readable 漢😀");
+        expect(text).toContain(`${label} ${id}`);
+        expect(text).not.toContain("\uFFFD");
+        expect(text.replace(/[⛋□→]/gu, "")).toContain(label.slice(2));
+        expect(Array.from(text).length).toBeLessThanOrEqual(200);
+        if (family === "decision") {
+          expect(text).toContain("confidence firm");
+          expect(text).toContain("satisfaction unavailable");
+        } else expect(text).toContain(family === "task" ? "pending" : text === attention ? "open" : "actionable");
+      }
+      expect(Buffer.byteLength(out)).toBeLessThanOrEqual(context ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : 12000);
+      expect(err).toBe("");
+      const actionLine = formatNextAction(action);
+      expect(actionLine).toContain(`${label} ${id}`);
+      expect(actionLine).toContain(family === "decision" ? "satisfaction unavailable" : family === "task" ? "pending" : "actionable");
+    }
+  });
+
   it("bounds unsafe inactive diagnosis without copying private recovery detail", () => {
     const sentinel = "PRIVATE_STATUS_STARTUP_TODO";
     const ids = seedUnsafeInactiveTodos(161, sentinel);
@@ -434,11 +524,11 @@ describe("status capability self-contained startup", () => {
 
     expect(result.rc).toBe(0);
     expect(state.todo).toMatchObject({ critical: 0, degraded: 0, normal: 1, annoying: 0 });
-    expect(state.attention).toContain("normal: TODO: Ship open fix");
+    expect(state.attention).toContain("normal: Ship open fix · → TODO aaaaaaaabb · open");
     expect(state.attention.join("\n")).not.toContain("Resolved critical");
     expect(state.attention.join("\n")).not.toContain("Resolved degraded");
     expect(state.next_action).toMatchObject({
-      object: "TODO aaaaaaaabb: Ship open fix",
+      object: "Ship open fix · → TODO aaaaaaaabb · actionable",
       capability: "build",
     });
   });
@@ -465,9 +555,9 @@ describe("status capability self-contained startup", () => {
       annoying: 0,
       detail: { total: 23, returned: 20, omitted: 3 },
     });
-    expect(state.attention).toContain("critical: TODO: Critical open");
+    expect(state.attention).toContain("critical: Critical open · → TODO zzzzzzzzzz · open");
     expect(state.next_action).toMatchObject({
-      object: "TODO zzzzzzzzzz: Critical open",
+      object: "Critical open · → TODO zzzzzzzzzz · actionable",
       capability: "build",
     });
 

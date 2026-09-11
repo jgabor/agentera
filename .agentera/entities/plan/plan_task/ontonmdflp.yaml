@@ -1,0 +1,23 @@
+id: ontonmdflp
+artifact: plan
+record:
+  name: Restore truthful startup context
+  depends_on:
+    - xiqppvoinm
+  status: complete
+  acceptance:
+    - GIVEN titled critical TODOs WHEN startup is requested THEN descriptions and authoritative severity, status, and readiness are preserved.
+    - GIVEN decisions requiring review WHEN startup is requested THEN their readable meaning and existing review pressure remain visible.
+    - GIVEN unavailable or budget-limited records WHEN startup is requested THEN gaps and truthful retrieval guidance remain explicit without false normal, open, or satisfied defaults.
+    - GIVEN unchanged project state WHEN startup reads complete THEN state remains unmodified and existing output bounds hold.
+  plan: jhqiinmpma
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: readability-startup-1
+      source: "Coordinator acceptance review: 288 targeted tests, typecheck/build, local authoritative TODO/readiness and decision review checks, read-only checks and all four output caps; verified progress igbihcnzio. Independent audit pending."
+      recorded_at: 2026-09-11 12:24
+      writer_command: agentera state plan record-evaluation

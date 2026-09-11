@@ -4,7 +4,7 @@ import { StateRetrievalFailure } from "./directRetrieval.js";
 import { serializedProjectionBytes } from "./projectionPolicy.js";
 import { shellQuoteArgument } from "../core/shell.js";
 import { entityListFamily, entityListValidValues } from "./entityRetrievalHelp.js";
-import type { EntityListRuntimeFamilyKey } from "./entityListRuntimeRegistry.js";
+import { ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS, ENTITY_LIST_RUNTIME_REGISTRY, type EntityListRuntimeFamilyKey } from "./entityListRuntimeRegistry.js";
 
 export interface EntityListSelectorInput {
   idsOnly?: boolean;
@@ -123,6 +123,43 @@ function identityEntry(entry: JsonObject, family: ReturnType<typeof entityListFa
   return result;
 }
 
+function readableEntry(entry: JsonObject, family: ReturnType<typeof entityListFamily>): JsonObject {
+  const record = mapping(entry.record) ? entry.record : {};
+  const detailAvailability = entry.detail_availability ?? null;
+  const metadata: JsonObject = {};
+  for (const field of ENTITY_LIST_RUNTIME_REGISTRY[family.key].metadataFields) {
+    const value = selectedValue(record, field);
+    if (value !== undefined) assignSelected(metadata, field, value);
+  }
+  for (const field of ENTITY_LIST_RUNTIME_REGISTRY[family.key].descriptionFields) {
+    const source = selectedValue(record, field);
+    const value = Array.isArray(source) && source.every((item) => typeof item === "string") ? source.join(", ") : source;
+    if (typeof value !== "string" || !value.trim()) continue;
+    // Only the added human-readable excerpt is shortened; machine record values stay exact.
+    const points = Array.from(value);
+    return {
+      ...entry,
+      readable: {
+        detail_availability: detailAvailability,
+        metadata,
+        text: points.slice(0, ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS).join(""),
+        source: `record.${field}`,
+        availability: points.length > ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS ? "excerpt" : "included",
+      },
+    };
+  }
+  return {
+    ...entry,
+    readable: {
+      text: null,
+      source: null,
+      availability: "unavailable",
+      metadata,
+      detail_availability: detailAvailability,
+    },
+  };
+}
+
 function projectEntry(entry: JsonObject, selector: ResolvedEntityListSelector, family: ReturnType<typeof entityListFamily>): JsonObject {
   const fields = selector.mode === "default" ? family.summaryFields : family.minimumFields;
   const identity = identityEntry(entry, family, fields);
@@ -195,7 +232,8 @@ function normalize(response: JsonObject, entries: JsonObject[], selector: Resolv
 
 export function projectEntityList(response: JsonObject, selector: ResolvedEntityListSelector, options: EntityListProjectionOptions): JsonObject {
   const family = entityListFamily(options.family);
-  const fullEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
+  const rawEntries = Array.isArray(response.entries) ? response.entries.filter(mapping) : [];
+  const fullEntries = selector.mode === "default" ? rawEntries.map((entry) => readableEntry(entry, family)) : rawEntries;
   const selectedEntries =
     selector.mode === "default"
       ? fullEntries.map((entry) => ({

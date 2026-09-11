@@ -6,8 +6,13 @@
  */
 export function statusStartupInstructions(canonical: string): string {
   const replacements: Array<[string, string]> = [
+    [
+      "**Holistic Entry Junction. Orient, Route, Activate**\n\nSingle entry point to the agentera suite. Detects fresh vs returning, delivers a situational briefing, routes to the right capability. Same path on first install and the 100th session.",
+      "Read-only orientation and capability routing for fresh and returning projects.",
+    ],
     ["Glyph: **⌂** (SG1). Status reads suite state through `agentera prime` and writes nothing.", "Glyph: **⌂** (SG1). Status reads its startup capsule through `agentera prime --context status` and writes nothing."],
     ["Build the dashboard from `agentera prime` output.", "Build the dashboard from `capability_context.context.status_context` in the status startup response."],
+    ["Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.", "For entity targets, follow the shared human-reference rules; retain exact IDs. Other objects include `OBJECTIVE: <metric>` and `VISION refresh`."],
     ["Use the `mode` field from `agentera prime` to detect fresh vs returning:", "Use the `mode` field from `capability_context.context.status_context` to detect fresh vs returning:"],
     [
       "- todo open items → select the highest-severity open item, then route by shape: narrow one-cycle todo items suggest ⧉ build; contract-shaped, multi-surface, dependency-heavy, migration, schema, metadata, validation, or acceptance-risky todo items suggest ≡ plan first. Prefer items that unlock product evidence or future plans.",

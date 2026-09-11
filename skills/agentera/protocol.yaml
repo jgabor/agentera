@@ -98,6 +98,24 @@ GROUP_PREFIXES:
   SKILL_GLYPHS: SG
   PHASES: PH
 
+HUMAN_REFERENCES:
+  description: >-
+    Human conversation, dashboards, lists, and newly written artifacts lead with
+    existing meaningful titles or faithful content summaries, never a lookup-only
+    identifier. Titles are optional; absent descriptions are explicitly unavailable.
+    Structured human references use the labels below and textual status/confidence
+    (unavailable when unknown). Keep exact IDs in every entity list row, action
+    target, and duplicate-name disambiguation; omit unnecessary narrative IDs.
+    Expand human protocol codes inline or omit unnecessary codes. Machine IDs,
+    enums, selectors, and relationships remain unchanged. Glyphs are supplementary:
+    removing them loses no meaning. Other entity families retain text labels only.
+    Existing capability, status, severity, and flow glyph meanings are unchanged.
+  labels:
+    decision: "⛋ Decision"
+    plan: "≡ Plan"
+    task: "□ Task"
+    todo: "→ TODO"
+
 CONFIDENCE_SCALE:
   1:
     id: CS1

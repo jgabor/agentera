@@ -202,7 +202,7 @@ describe("prime glossary caveat attention", () => {
     expect(result.rc, result.err).toBe(0);
     const attention = JSON.parse(result.out).attention as string[];
     expect(attention.filter((item) => item === REVIEW)).toHaveLength(1);
-    expect(attention.some((item) => item.includes("TODO: Unrelated attention"))).toBe(true);
+    expect(attention.some((item) => item.includes("Unrelated attention · → TODO"))).toBe(true);
     expect(projection().currentCount).toBe(1);
   });
 

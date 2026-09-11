@@ -121,6 +121,9 @@ entity_target:
       families:
         progress:
           command_tokens: [progress]
+          description_fields: [what, summary]
+          metadata_fields: [status, phase]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: alias
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
@@ -128,12 +131,18 @@ entity_target:
           example: npx -y agentera@next state progress list --limit 20
         decisions:
           command_tokens: [decisions]
+          description_fields: [question, choice, summary]
+          metadata_fields: [confidence, satisfaction.state]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: alias
           filters:
             - { flag: --topic TEXT, name: topic, values: free_text }
           example: npx -y agentera@next state decisions list --limit 20
         health:
           command_tokens: [health]
+          description_fields: [summary, dimensions]
+          metadata_fields: [trajectory]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state health list --limit 20
           filters:
@@ -141,6 +150,9 @@ entity_target:
           example: npx -y agentera@next state health list --limit 20
         plans:
           command_tokens: [plan]
+          description_fields: [header.title, what]
+          metadata_fields: [header.status]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state plan list --status open --limit 20
           filters:
@@ -148,6 +160,9 @@ entity_target:
           example: npx -y agentera@next state plan list --status open --limit 20
         plan_tasks:
           command_tokens: [plan, tasks]
+          description_fields: [name]
+          metadata_fields: [status]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state plan tasks list --limit 20
           family_identifier:
@@ -158,12 +173,18 @@ entity_target:
           example: npx -y agentera@next state plan tasks list --limit 20
         objective:
           command_tokens: [objective]
+          description_fields: [header.title, objective.description]
+          metadata_fields: [header.status]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state objective list --limit 20
           filters: []
           example: npx -y agentera@next state objective list --limit 20
         experiments:
           command_tokens: [experiments]
+          description_fields: [label, hypothesis, conclusion]
+          metadata_fields: [status]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state objective list --limit 20
           family_identifier:
@@ -178,7 +199,9 @@ entity_target:
           filters:
             - { flag: --severity SEVERITY, name: severity, values: free_text }
             - { flag: --status STATUS, name: status, values: free_text }
-          summary_fields: [id, artifact, public_order, readiness, actionability, queue_rank, reconciliation, retrieval.get]
+          description_fields: [title, description]
+          metadata_fields: [status, severity]
+          summary_fields: [id, artifact, public_order, readiness, actionability, queue_rank, reconciliation, retrieval.get, readable]
           summary_field_notes:
             public_order:
               description: Markdown-owned one-based order within the item's public section, or null before reconciliation activation.
@@ -208,6 +231,9 @@ entity_target:
           example: npx -y agentera@next state todo list --severity critical --ids-only --limit 20
         docs:
           command_tokens: [docs]
+          description_fields: [document]
+          metadata_fields: [status]
+          summary_fields: [id, artifact, retrieval.get, readable]
           bare_read: correction
           bare_recovery: npx -y agentera@next state docs list --limit 20
           filters:
@@ -261,6 +287,34 @@ entity_target:
             One-based position in the complete canonically ordered TODO queue
             before request filters. It is computed from the read snapshot and is
             never persisted or used to reorder TODO.md.
+          readable_description:
+            max_code_points: 160
+            fields: [text, source, availability, metadata, detail_availability]
+            availability_values: [included, excerpt, unavailable]
+            semantics: >-
+              Default full and summary rows add readable, never persisted or
+              selected by --fields. Use the first nonblank string or nonempty
+              string-array in the family's ordered description_fields inventory;
+              join string arrays with comma-space. source is its record dot path.
+              text is at most 160 Unicode code points, without invented suffixes;
+              excerpt means the source text continues in the exact entity, not
+              that missing historical detail can be recovered. Missing descriptions
+              have null text/source and unavailable, with no description recovery
+              promise. Existing record scalars are never shortened or decorated.
+              readable.detail_availability copies source detail_availability or is
+              null when not declared. It describes the source, never the row's
+              projected detail. A compacted summary does not imply full historical
+              detail exists. Existing top-level detail_availability remains omitted
+              from summary rows, as does record, so summary rows cannot masquerade
+              as full records to existing consumers.
+              Minimum-tier rows may omit readable and metadata under the existing
+              deterministic degradation contract. Exact-get pointers always retrieve
+              entities, not a promise of absent descriptions or hidden full records.
+              metadata copies the family's metadata_fields from the source record,
+              preserving nested paths, names, types and values; missing metadata
+              stays absent, not inferred. This is a bounded selection, never a full
+              record: summary rows still omit record. Minimum-tier omission of
+              readable also omits this metadata; consumers must not infer defaults.
           optional_detail_degradation:
             status: degraded
             reason: optional_detail_byte_budget
@@ -2245,6 +2299,25 @@ projections:
       Preserve degraded or blocked compatibility and omission metadata in
       source_contract; do not fall back to raw archive traversal merely to fill
       an omitted field.
+    entity_record_consumption: >-
+      Default list readable metadata is not a full record. Startup may select
+      required record fields from the same bounded page through existing list
+      selectors. Optional paths are intersected once with the selector validator's
+      available paths; byte rejection retains the original bounded page and an
+      explicit gap. At most three reads of the same page are allowed: default,
+      selected fields, and one optional-path correction. No continuation traversal
+      or per-row exact-get fallback is used. All reads share the existing discovery.
+      TODO detail joins only page-selected IDs to the authoritative TODO records
+      already required for readiness and counts, then applies startup bounds.
+    startup_gaps: >-
+      Omitted records never imply normal severity, open status, or satisfied
+      decisions. Progress and objective detail_omission mappings carry omitted
+      detail and entity retrieval; plans retain diagnostics and task omission
+      counts. Missing decision satisfaction remains review pressure with an
+      unavailable state, not a synthesized open or satisfied state. Decision review
+      entries retain review_needed, available meaning, source gaps and entity
+      retrieval in the brief. Compacted history cannot become a current progress
+      or health record. Existing row, scalar, array and whole-output limits apply.
 
 api:
   namespace: agentera state

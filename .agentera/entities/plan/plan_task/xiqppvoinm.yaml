@@ -1,0 +1,24 @@
+id: xiqppvoinm
+artifact: plan
+record:
+  name: Restore readable bounded state listings
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN every existing list family WHEN listed THEN source-backed readable content and applicable status/confidence accompany stable IDs.
+    - GIVEN missing source content WHEN listed THEN unavailability is explicit without invented summaries or promised detail.
+    - GIVEN compacted or omitted content WHEN listed THEN detail recovery is offered only when available.
+    - GIVEN duplicate names or byte pressure WHEN listed THEN identity, cardinality, degradation metadata, and cursor guarantees survive.
+    - GIVEN existing structured consumers WHEN selecting fields THEN names, types, meanings, and selection behavior remain compatible.
+  plan: jhqiinmpma
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: entityListRuntimeRegistry.ts:196 uses title only; live description-only TODO eeplkgxtyp is falsely unavailable.
+    provenance:
+      attempt_id: readability-correction-listings-1
+      source: "Coordinator resolution of independent audit finding1: description-only TODO fallback verified in source/full-summary/package cases and live eeplkgxtyp; final all11 development gates and progress lmpqxfqkqf."
+      recorded_at: 2026-09-11 15:35
+      writer_command: agentera state plan record-evaluation

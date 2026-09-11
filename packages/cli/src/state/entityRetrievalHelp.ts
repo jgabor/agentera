@@ -1,7 +1,17 @@
 import type { JsonObject } from "../core/jsonValue.js";
 import { projectEntityDevelopmentValue } from "../core/developmentInvocation.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
-import { ENTITY_LIST_RUNTIME_FAMILIES, ENTITY_LIST_RUNTIME_BOUNDS, ENTITY_LIST_RUNTIME_FORMATS, ENTITY_LIST_RUNTIME_REGISTRY, ENTITY_LIST_RUNTIME_SELECTORS, runtimeEntityFamilyForHelpArgs, runtimeEntityListFamilyForHelpArgs, type EntityListRuntimeFamilyKey } from "./entityListRuntimeRegistry.js";
+import {
+  ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS,
+  ENTITY_LIST_RUNTIME_FAMILIES,
+  ENTITY_LIST_RUNTIME_BOUNDS,
+  ENTITY_LIST_RUNTIME_FORMATS,
+  ENTITY_LIST_RUNTIME_REGISTRY,
+  ENTITY_LIST_RUNTIME_SELECTORS,
+  runtimeEntityFamilyForHelpArgs,
+  runtimeEntityListFamilyForHelpArgs,
+  type EntityListRuntimeFamilyKey,
+} from "./entityListRuntimeRegistry.js";
 import { loadStateStorageAuthority } from "./stateStorageAuthority.js";
 
 export const ENTITY_LIST_HELP_SCHEMA_VERSION = "agentera.entityListHelp.v1";
@@ -220,6 +230,10 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
   if (typeof policy.authority_boundary !== "string" || policy.authority_boundary.trim() === "") errors.push("entity_target.public_retrieval.policy.authority_boundary");
   const envelope = requireMapping(policy, "envelope", "entity_target.public_retrieval.policy", errors);
   const projection = requireMapping(envelope, "bounded_summary_projection", "entity_target.public_retrieval.policy.envelope", errors);
+  const readable = mapping(projection.readable_description);
+  if (readable.max_code_points !== ENTITY_LIST_DESCRIPTION_MAX_CODE_POINTS || !sameStrings(readable.fields, ["text", "source", "availability", "metadata", "detail_availability"]) || !sameStrings(readable.availability_values, ["included", "excerpt", "unavailable"])) {
+    errors.push("entity_target.public_retrieval.policy.envelope.bounded_summary_projection.readable_description");
+  }
   if (!sameStrings(projection.minimum_fields, ["id", "artifact", "retrieval.get"])) errors.push("entity_target.public_retrieval.policy.envelope.bounded_summary_projection.minimum_fields");
   const familyMinimumFields = requireMapping(projection, "family_minimum_fields", "entity_target.public_retrieval.policy.envelope.bounded_summary_projection", errors);
   exactKeys(familyMinimumFields, ["todo"], [], "entity_target.public_retrieval.policy.envelope.bounded_summary_projection.family_minimum_fields", errors);
@@ -279,7 +293,9 @@ export function validateEntityListHelp(value: Record<string, unknown>): string[]
     const family = mapping(families[key]);
     const command = mapping(commands[key]);
     exactKeys(command, ["list", "get"], [], `entity_target.public_retrieval.commands.${key}`, errors);
-    exactKeys(family, ["command_tokens", "bare_read", "filters", "example"], ["bare_recovery", "family_identifier", "summary_fields", "summary_field_notes"], prefix, errors);
+    exactKeys(family, ["command_tokens", "bare_read", "filters", "example", "description_fields", "metadata_fields"], ["bare_recovery", "family_identifier", "summary_fields", "summary_field_notes"], prefix, errors);
+    if (!sameStrings(family.description_fields, runtime.descriptionFields)) errors.push(`${prefix}.description_fields`);
+    if (!sameStrings(family.metadata_fields, runtime.metadataFields)) errors.push(`${prefix}.metadata_fields`);
     if (family.bare_read !== "alias" && family.bare_read !== "correction") errors.push(`${prefix}.bare_read`);
     if (family.bare_read !== runtime.bareRead) errors.push(`${prefix}.bare_read.runtime_parity`);
     if (family.bare_read === "correction" && family.bare_recovery !== runtime.projection.bareRecovery) errors.push(`${prefix}.bare_recovery`);

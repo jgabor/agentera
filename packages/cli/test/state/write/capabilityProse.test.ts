@@ -13,6 +13,7 @@ import discussInstructions from "../../../src/capabilities/discuss/instructions.
 import orchestrateInstructions from "../../../src/capabilities/orchestrate/instructions.js";
 import planInstructions from "../../../src/capabilities/plan/instructions.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../../src/capabilities/index.js";
+import { withHumanReferences } from "../../../src/capabilities/humanReferences.js";
 import { preCutoverInstructionBody } from "../../../src/cli/preCutoverCommand.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
@@ -261,7 +262,7 @@ describe("producer capability writer integration", () => {
   });
 
   it("keeps the source capability index aligned with plan instructions", () => {
-    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(preCutoverInstructionBody(planInstructions));
+    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(withHumanReferences(preCutoverInstructionBody(planInstructions)));
   });
 
   it("publishes the documented full plan YAML through the typed writer", () => {

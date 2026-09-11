@@ -9,6 +9,7 @@ import YAML from "yaml";
 
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
+import { withHumanReferences } from "../../src/capabilities/humanReferences.js";
 import { preCutoverInstructionBody } from "../../src/cli/preCutoverCommand.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
@@ -167,7 +168,7 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
+      const expected = withHumanReferences(preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical));
       surfaces.push([`${modulePath} raw instructions`, raw]);
       surfaces.push([`${modulePath} served instructions`, expected]);
       expect(expected, `${capability} served instructions`).toBe(served);
@@ -1381,7 +1382,7 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical);
+      const expected = withHumanReferences(preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical));
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);
