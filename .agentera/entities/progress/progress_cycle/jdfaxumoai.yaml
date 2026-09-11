@@ -1,0 +1,13 @@
+id: jdfaxumoai
+artifact: progress
+record:
+  timestamp: 2026-09-11 23:30
+  type: fix
+  phase: build
+  what: "Corrected swpcnrkxwl: selected-response sizes did not prove full-default startup budgets."
+  context:
+    intent: Correct the specific default-budget evidence claim for Plan jkjumxccjp without rewriting history.
+    constraints: One authorized accuracy correction only; no lifecycle, evaluation, health, satisfaction, staging, commit or publication changes. Coordinator owns closure.
+  discovered: The sizes claimed in swpcnrkxwl and the integration handoff came from prime --context CAPABILITY --fields capability_context. That selection omitted default shared_skill and bypassed the default Status gate; it did not establish full-default fit. Audit observed default Status fail at 22746 bytes over 22500; this correction reproduced 22749 on the reopened task state. The complete defaults, raw stdout including newline, require independent measurement for all twelve capabilities.
+  verified: "Prior covered test results remain valid for their unchanged behavior: the historical 11-gate development PASS in 372717 ms and 42 activation checks do not cover the missed full-default cases or contradictory review counts. Current targeted checks establish rejection correspondence at new publication, coherent create/read behavior and served current-worktree freshness guidance; they do not prove host-agent compliance. Final post-append default observations and the required final-input development gate are reported in the correction handoff, not retroactively attributed to the prior record."
+  publication_order: 397

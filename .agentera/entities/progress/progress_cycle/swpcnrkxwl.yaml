@@ -1,0 +1,14 @@
+id: swpcnrkxwl
+artifact: progress
+record:
+  timestamp: 2026-09-11 22:47
+  type: fix
+  phase: build
+  what: "Integrated proportionate execution and evidence reuse for Plan jkjumxccjp: shared served guidance, optional-progress task evidence, reviewed zero-finding plans, bounded startup recovery, and maintainer workflow reuse. Updated the Unreleased note without changing historical scalar bindings."
+  context:
+    intent: Verify delivery for Task wwwvjiycra using coordinator-reviewed predecessor evidence and required final gates.
+    constraints: No commits, staging, pushes, publication, versions, lifecycle evaluation/status, health or satisfaction changes. Preserve required host gates and typed writer authority.
+    scope: Final integration and documentation only; plan taxonomy and broader capability progress tracking remain excluded.
+  verified: "Node 24.20.0 / pnpm 10.30.3: root vp check passes with six existing warnings; vp run verify:development passes all 11 gates, including source, extracted package, generated overlap, typecheck, build, stress, performance resource safety, capacity, compact, capability contract and activation conjunction. Independent observers preserve module/registry/served equality with shared rules. Packaged regression accepts reviewed zero findings, rejects unresolved findings before effects, and retains no-progress handoff without semantic verdict. Existing source owners cover oversized Plan retrieval and negative evidence cases. Rebuilt live capsules all fit unchanged byte/token limits; Plan 37832 bytes/8323 tokens, Status 22468/5274. Changelog validation and Markdown lint pass. Tests establish contracts, not host-agent compliance."
+  next: Coordinator owns one independent audit and limited artifact-freshness/lifecycle/health closure. Plan and final task remain open; satisfaction remains user-owned. No further feature work is authorized.
+  publication_order: 396

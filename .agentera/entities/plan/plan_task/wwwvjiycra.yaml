@@ -1,0 +1,25 @@
+id: wwwvjiycra
+artifact: plan
+record:
+  name: Verify delivery and synchronize project state
+  depends_on:
+    - vhizfocgse
+    - xdbizvvnbu
+    - tzeikopkoe
+  status: complete
+  acceptance:
+    - GIVEN final inputs WHEN relevant checks run THEN validators, served instructions, and extracted bundles agree within existing bounds.
+    - GIVEN prior passing checks WHEN final verification is selected THEN only invalidated or uncovered work repeats alongside mandatory gates.
+    - GIVEN verified delivery WHEN state and documentation close THEN only required project truth changes and satisfaction remains user-owned.
+    - GIVEN unresolved required failures WHEN closing THEN limitations remain visible and completion is withheld.
+  plan: jkjumxccjp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Prior passing gates omitted full default startup envelope, contradictory review-count cases, and no-commit freshness. Completion withheld until scoped corrections and relevant verification pass.
+    provenance:
+      attempt_id: execution-integration-correction-1
+      source: "Coordinator inspected final correction evidence: all 11 development gates pass with 42 activation checks, complete default CLI responses and extracted regressions; 143 targeted and 101 related checks pass. State/changelog/compact checks pass, real index untouched, and correction progress jdfaxumoai preserves the earlier selected-response evidence limitation."
+      recorded_at: 2026-09-11 23:45
+      writer_command: agentera state plan record-evaluation

@@ -11,6 +11,9 @@ description: >-
 Load this skill before changing verification policy, diagnosing a gate, or
 working on generated output and package construction.
 
+Ordinary tests and verification mentions do not require `agentera-release`;
+load it only for a release-specific need covered by its trigger.
+
 ## Environment
 
 - Use the Node.js 24 LTS version pinned in `.node-version`.
@@ -29,7 +32,7 @@ working on generated output and package construction.
 | Typecheck | `pnpm -C packages/cli run typecheck` |
 | Build | `pnpm -C packages/cli build` |
 | Compact gate | `node packages/cli/dist/bin/agentera.js check compact` |
-| Capability contract | Run the contract command below after build. |
+| Capability contract | Run the contract command below with a current build. |
 | Package dry run | `pnpm -C packages/cli run pack:dry-run` |
 
 ```bash
@@ -37,7 +40,10 @@ node packages/cli/dist/bin/agentera.js check validate \
   capability-contract
 ```
 
-Build before invoking the local compiled CLI or the compact gate.
+Use a current local build for the compiled CLI and compact gate. Build when
+relevant source, build configuration, dependencies or bundled inputs change, or
+the artifact is absent; otherwise reuse it across invocations. A published CLI
+does not verify changed local behavior.
 
 ## Verification lanes
 
@@ -147,14 +153,22 @@ its parent-owned root through barrier B and removes it in the DAG-level
 ## Behavioral verification
 
 Run the narrowest relevant check first, then broaden according to impact.
-Verification must include both structure and observable behavior:
+Apply `skills/agentera/protocol.yaml#OPERATING_RULES`: passing evidence remains
+applicable only while task/scope, inputs, environment and coverage match. Run
+checks for concrete gaps, relevant invalidation and mandatory gates, not merely
+because work crossed a handoff. Missing, stale or unrelated evidence is not PASS;
+reuse never bypasses configured hooks, CI or trust-boundary requirements.
+
+For changed or unverified work, cover relevant structure and observable behavior:
 
 1. Inspect the diff against the requested scope.
-2. Run targeted tests or validation.
-3. Run typecheck and build when source or package behavior can change.
-4. Invoke the realistic CLI entry point against representative state.
-5. Run broader package, compact, or release gates when the change crosses
-   those boundaries.
+2. Run targeted tests or validation for uncovered or invalidated behavior.
+3. Run required typecheck and ensure a current build when source or package
+   behavior can change.
+4. Invoke the realistic local CLI against representative state when CLI behavior
+   needs verification; prose-only work uses relevant documentation checks.
+5. Run broader package, compact, or release gates when required by the affected
+   boundary, without treating narrower evidence as broader qualification.
 
 Do not weaken tests to pass a gate. Report exact commands, results, and any
 unverified boundary.

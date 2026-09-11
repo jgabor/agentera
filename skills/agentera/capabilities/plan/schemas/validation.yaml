@@ -24,9 +24,9 @@ VALIDATION:
     id: V3
     rule: adversarial_review_required
     description: >-
-      Full plans MUST undergo adversarial review. The critic MUST find at
-      least one issue. "Looks good" is not acceptable. Skip level and
-      light plans are exempt.
+      Full plans MUST undergo adversarial review. Zero findings is valid
+      after real review; never invent findings or hide genuine issues or
+      incomplete acceptance. Skip level and light plans are exempt.
     severity: critical
     checks:
       - "Adversarial review ran for full plans"
@@ -34,12 +34,12 @@ VALIDATION:
     id: V4
     rule: plan_final_state_sync
     description: >-
-      Every full plan MUST end with a "final state sync" task that depends
-      on all prior tasks. This ensures aggregate plan-level CHANGELOG.md,
-      PROGRESS.md, and TODO.md updates.
+      Full plans MUST cover required closeout in delivery tasks or, only
+      when needed, a separate task with the relevant dependencies. No extra
+      synchronization task is mandatory when delivery already covers closeout.
     severity: critical
     checks:
-      - "Full plan has final state sync task as last task"
+      - "Required closeout is covered without redundant bookkeeping tasks"
   5:
     id: V5
     rule: test_proportionality_target
@@ -66,13 +66,13 @@ VALIDATION:
     id: V7
     rule: full_plan_unknowns_required
     description: >-
-      Every full plan MUST surface at least one planning-time known-unknown
+      Full plans MUST surface genuine consequential planning-time unknowns
       in the `unknowns:` field. Each entry MUST include question,
-      affects_task, and resolve_by. Skip level and light plans are exempt
-      because they do not decompose work into interdependent tasks.
+      affects_task, and resolve_by. An absent or empty list is valid when
+      no such uncertainty remains; never invent or conceal unknowns.
     severity: warning
     checks:
-      - "Full plans have a non-empty `unknowns:` list"
+      - "Genuine consequential unknowns remain explicit; no minimum count"
       - "Each unknown entry has question, affects_task, resolve_by fields"
   8:
     id: V8

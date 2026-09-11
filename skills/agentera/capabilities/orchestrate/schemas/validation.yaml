@@ -18,9 +18,15 @@ VALIDATION:
       Every completed task MUST be verified by audit before being marked
       complete. The orchestrator MUST NOT skip evaluation. This rule verifies
       the instructions contain the must-not-skip-evaluation safety rail.
+      Evaluation may use adequate attributed task/worker evidence without
+      optional progress. A latest progress pointer alone is not task proof.
+      Reuse applicable passing checks; missing, stale, unrelated or insufficient
+      evidence never establishes PASS, and mandatory gates remain binding.
     severity: critical
     checks:
       - "orchestrate instructions contains MUST NOT skip evaluation"
+      - "Optional progress absence alone does not fail adequate task evidence"
+      - "Evidence must match task, relevant inputs, environment and coverage"
   3:
     id: V3
     rule: retry_budget_enforced

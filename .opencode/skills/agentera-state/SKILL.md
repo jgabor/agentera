@@ -13,7 +13,9 @@ updates must preserve writer authority and land with the substantive change.
 
 ## Read authority
 
-Read project state through the CLI before reading artifacts directly:
+When state knowledge is needed, read through the CLI before direct artifact
+reads. Reuse known state while relevant state is unchanged; refresh only missing
+or invalidated context. These are need-driven recipes, not a mandatory sequence:
 
 ```bash
 npx -y agentera@next prime
@@ -55,6 +57,19 @@ capability. Never modify `.agentera/vision.yaml` outside a vision capability or
 an explicit vision task.
 
 ## Commit format
+
+For an authorized commit-only request on unchanged, already reviewed and
+verified work, reuse applicable evidence under
+`skills/agentera/protocol.yaml#OPERATING_RULES`. Confirm intended scope and
+evidence applicability, stage only intended changes, run configured hooks, then
+check the commit result and remaining worktree state. Do not restart Build,
+repeat a full review, add a scanner, or force orientation solely to commit.
+Higher-priority host inspection requirements still apply; this narrow path does
+not override them. Changed or unverified work needs the relevant review and
+checks; hook changes to content require reassessing affected evidence.
+
+Keep same-commit state integrity below and leave lifecycle closeout to its
+assigned owner. Satisfaction is user-only; never infer or write it for the user.
 
 Use Conventional Commits:
 

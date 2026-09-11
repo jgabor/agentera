@@ -4,17 +4,18 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       One full cycle completed. Work was selected, implemented, and verified
-      against the project's test/build suite. Required artifact updates
-      preceded the cycle's single conventional commit. They include TODO,
-      changelog, and plan updates. Progress is present for policy-required
-      cases and optional for allowed durable outcomes.
+      against acceptance criteria using applicable passing evidence and any
+      required additional checks. Required artifact updates precede a single
+      conventional commit only when explicitly authorized; otherwise report
+      completion without committing. Progress is present for policy-required
+      cases and optional for allowed durable outcomes. Stop at accepted scope.
     exit_signal: complete
   2:
     id: E2
     condition: flagged
     description: >-
       The cycle completed but with notable issues. Possible causes:
-      verification passed but with warnings, the committed work is narrower
+      verification passed but with warnings, the completed work is narrower
       than intended due to scope reduction, or durable discoveries recorded in
       progress state suggest the next cycle may face blockers.
     exit_signal: flagged
@@ -23,8 +24,8 @@ EXIT_CONDITIONS:
     condition: stuck
     description: >-
       Cannot complete a cycle because VISION.md does not exist and the
-      vision bootstrap cannot proceed without the user, every available work item
-      is blocked, or the verification suite is broken and cannot be fixed
+      vision bootstrap cannot proceed without the user, the scoped work
+      is blocked, or required verification is broken and cannot be fixed
       within the cycle's scope.
     exit_signal: stuck
   4:

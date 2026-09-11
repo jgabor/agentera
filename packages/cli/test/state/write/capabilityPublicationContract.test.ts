@@ -93,6 +93,22 @@ function selectedAdviceRoute(capability: keyof typeof sources, text: string, eve
 }
 
 describe("capability advice and plan publication contracts", () => {
+  it("serves proportionate Plan requirements without weakening review or approval", () => {
+    for (const text of [planInstructions, served("plan")]) {
+      expect(text).toContain("zero findings is a valid result");
+      expect(text).toContain("No redundant synchronization task is required");
+      expect(text).toContain("Never invent or conceal uncertainty");
+      expect(text).toContain("Report genuine issues and incomplete acceptance explicitly");
+      expect(text).toContain("omit `unknowns:` or use `unknowns: []`");
+      expect(text).toContain("omit `rejected:` or use `rejected: []`");
+      expect(text).toContain("Plan MUST NOT skip adversarial review for full plans");
+      expect(text).toContain("After approval, serialize the complete plan once");
+      expect(text).toContain("Never edit entity paths directly");
+      expect(text).toContain("Three levels: skip");
+      expect(text).not.toMatch(/MUST (?:find issues|identify at least one issue)|every full plan (?:ends with a final state sync|surfaces at least one)/);
+    }
+  });
+
   it("keeps source and served consumers on one startup and distinct later advice routes", () => {
     for (const capability of Object.keys(sources) as Array<keyof typeof sources>) {
       for (const text of [sources[capability], served(capability)]) {
@@ -137,16 +153,16 @@ describe("capability advice and plan publication contracts", () => {
 
   it("publishes normally once and reuses one explicit-preview input", () => {
     for (const text of [planInstructions, served("plan")]) {
-      expect(text).toContain("Normal publication is a one-call workflow");
-      expect(text).toContain("Explicit preview or review is a reusable-input workflow");
-      expect(text).toContain("Approval or effect confirmation is trust-boundary multi-phase");
-      expect(text).toContain("Structured input remains required");
+      expect(text).toContain("Reuse unchanged input for preview/review");
+      expect(text).toContain("Bind approval or effect confirmation to first-phase evidence");
+      expect(text).toContain("reject stale/changed input");
+      expect(text).toContain("Complete caller content or authority still requires structured input");
       expect(text).toMatch(/exactly one `(?:agentera|npx -y agentera@next) state plan create --input PATH` call/);
-      expect(text).toContain("do not run standalone lint or dry-run first on the normal path");
-      expect(text).toContain("run the same create command with `--dry-run`");
-      expect(text).toContain("referencing that unchanged PATH without reserializing its content");
-      const stale = text.replace("that unchanged PATH without reserializing its content", "newly serialized content");
-      expect(stale).not.toContain("referencing that unchanged PATH without reserializing its content");
+      expect(text).toContain("No standalone lint or dry-run first normally");
+      expect(text).toContain("For explicitly requested preview, serialize once, add `--dry-run`");
+      expect(text).toContain("publish the unchanged PATH without reserialization");
+      const stale = text.replace("unchanged PATH without reserialization", "newly serialized content");
+      expect(stale).not.toContain("publish the unchanged PATH without reserialization");
     }
   });
 

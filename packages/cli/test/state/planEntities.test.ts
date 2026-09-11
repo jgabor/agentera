@@ -322,6 +322,175 @@ afterEach(() => {
 });
 
 describe("plan and task entity authority", () => {
+  function reviewedPlan(): Record<string, any> {
+    const input = plan("Reviewed delivery", true) as Record<string, any>;
+    Object.assign(input.header, {
+      level: "full",
+      reviewed: "2026-09-11",
+      critic_issues: "0 found, 0 addressed, 0 dismissed",
+    });
+    input.design = "Deliver the change, then verify and close out within the delivery tasks.";
+    input.overall_acceptance = "GIVEN delivery WHEN verified THEN the approved behavior and required closeout hold.";
+    return input;
+  }
+
+  it.each(["absent", "empty", "dismissed"])("publishes and reads coherent reviewed full plans with rejected=%s", (rejected) => {
+    const root = project();
+    const input = reviewedPlan();
+    if (rejected === "empty") Object.assign(input, { unknowns: [], rejected: [], surprises: [] });
+    if (rejected === "dismissed") {
+      input.header.critic_issues = "2 found, 1 addressed, 1 dismissed";
+      input.rejected = [
+        {
+          issue: "Separate synchronization task requested.",
+          rationale: "Delivery task already includes closeout.",
+        },
+      ];
+    }
+    const result = capture(root, ["state", "plan", "create", "--input", planInput(root, "reviewed", false, input), "--format", "json"]);
+    expect(result.rc, result.out || result.err).toBe(0);
+    const created = JSON.parse(result.out);
+    expect(created.id).toMatch(/^[a-z]{10}$/);
+    expect(created.record.header).toMatchObject({
+      reviewed: "2026-09-11",
+      critic_issues: input.header.critic_issues,
+    });
+    expect(created.record.header).not.toHaveProperty("id");
+    expect(created.tasks).toHaveLength(2);
+    expect(created.tasks[1].record.depends_on).toEqual([created.tasks[0].id]);
+    for (const task of created.tasks) {
+      expect(task.record.plan).toBe(created.id);
+      expect(task.record).not.toHaveProperty("number");
+    }
+    const read = capture(root, ["state", "plan", "get", "--id", created.id, "--format", "json"]);
+    expect(read.rc, read.out || read.err).toBe(0);
+    expect(JSON.parse(read.out).entry.record).toEqual(created.record);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("retains historical read and state-validation compatibility for review evidence", () => {
+    const root = project();
+    const result = capture(root, ["state", "plan", "create", "--input", planInput(root, "historical", false, reviewedPlan())]);
+    expect(result.rc, result.out || result.err).toBe(0);
+    const created = JSON.parse(result.out);
+    const file = path.join(root, ".agentera/entities/plan/plan", `${created.id}.yaml`);
+    const entity = loadYamlMapping(fs.readFileSync(file, "utf8")) as any;
+    // Seed legacy evidence in a disposable fixture only; readers must not apply
+    // the new-publication correspondence requirement retroactively.
+    entity.record.rejected = [{ issue: "Historical rejection", rationale: "Retained original review evidence" }];
+    fs.writeFileSync(file, dumpYamlMapping(entity));
+    const read = capture(root, ["state", "plan", "get", "--id", created.id]);
+    expect(read.rc, read.out || read.err).toBe(0);
+    expect(JSON.parse(read.out).entry.record).toEqual(entity.record);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it.each([
+    [
+      "zero count with dismissal evidence",
+      (input: Record<string, any>) => {
+        input.rejected = [
+          {
+            issue: "Separate synchronization task requested.",
+            rationale: "Delivery task already includes closeout.",
+          },
+        ];
+      },
+      "dismissed count",
+    ],
+    [
+      "dismissed count with empty evidence",
+      (input: Record<string, any>) => {
+        input.header.critic_issues = "1 found, 0 addressed, 1 dismissed";
+        input.rejected = [];
+      },
+      "dismissed count",
+    ],
+    [
+      "dismissed count with absent evidence",
+      (input: Record<string, any>) => {
+        input.header.critic_issues = "1 found, 0 addressed, 1 dismissed";
+      },
+      "dismissed count",
+    ],
+    [
+      "unreviewed",
+      (input: Record<string, any>) => {
+        delete input.header.reviewed;
+      },
+      "reviewed",
+    ],
+    [
+      "malformed review",
+      (input: Record<string, any>) => {
+        input.header.critic_issues = "Looks good";
+      },
+      "critic_issues",
+    ],
+    [
+      "unaddressed finding",
+      (input: Record<string, any>) => {
+        input.header.critic_issues = "1 found, 0 addressed, 0 dismissed";
+      },
+      "addressed + dismissed",
+    ],
+    [
+      "malformed unknown collection",
+      (input: Record<string, any>) => {
+        input.unknowns = {};
+      },
+      "must be a list",
+    ],
+    [
+      "incomplete unknown",
+      (input: Record<string, any>) => {
+        input.unknowns = [{ question: "Does the delivery satisfy the requirement?" }];
+      },
+      "affects_task",
+    ],
+    [
+      "incomplete dismissal",
+      (input: Record<string, any>) => {
+        input.header.critic_issues = "1 found, 0 addressed, 1 dismissed";
+        input.rejected = [{ issue: "The scope is too narrow" }];
+      },
+      "rationale",
+    ],
+    [
+      "incomplete acceptance",
+      (input: Record<string, any>) => {
+        input.tasks[0].acceptance = [];
+      },
+      "acceptance",
+    ],
+    [
+      "missing dependency",
+      (input: Record<string, any>) => {
+        input.tasks[1].depends_on = [99];
+      },
+      "99",
+    ],
+    [
+      "cyclic dependency",
+      (input: Record<string, any>) => {
+        input.tasks[0].depends_on = [2];
+      },
+      "circular",
+    ],
+  ] as const)("rejects %s in a zero-quota full plan before effects", (_label, mutate, diagnostic) => {
+    const root = project();
+    const input = reviewedPlan();
+    mutate(input);
+    const result = capture(root, ["state", "plan", "create", "--input", planInput(root, "invalid-reviewed", false, input), "--format", "json"]);
+    expect(result.rc).not.toBe(0);
+    expect(result.out + result.err).toContain(diagnostic);
+    expect(validateEntityState(root).entityCount).toBe(0);
+    if (diagnostic === "dismissed count") {
+      expect(fs.readdirSync(path.join(root, ".agentera"))).toEqual(["state-mode.yaml"]);
+      expect(fs.readFileSync(path.join(root, ".agentera/state-mode.yaml"), "utf8")).toBe(VALID_MARKER);
+    }
+  });
+
   it("explains task mutations with bare IDs in entity mode", () => {
     const root = project();
     for (const verb of ["update", "set-status", "supersede", "record-evaluation"]) {

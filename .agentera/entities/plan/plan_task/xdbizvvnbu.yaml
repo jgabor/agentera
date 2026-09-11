@@ -1,0 +1,23 @@
+id: xdbizvvnbu
+artifact: plan
+record:
+  name: Remove artificial planning requirements
+  depends_on:
+    - vhizfocgse
+  status: complete
+  acceptance:
+    - GIVEN a reviewed full plan with zero findings and no unknowns WHEN submitted THEN it is accepted if otherwise valid.
+    - GIVEN real issues, unknowns, or incomplete acceptance WHEN reviewed THEN they remain explicit rather than being hidden for completion.
+    - GIVEN closeout already covered by delivery tasks WHEN planning THEN no separate synchronization task is required.
+    - GIVEN existing plans and mutations WHEN read or validated THEN identity, ownership, approval, and dependency contracts remain compatible.
+  plan: jkjumxccjp
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: New-plan publication accepts zero dismissed with one rejected entry, and one dismissed with an empty rejected list. Reconcile declared dismissals with rejection evidence without invalidating historical reads.
+    provenance:
+      attempt_id: planning-requirements-correction-1
+      source: "Coordinator verified correction writer results: all three contradictory dismissal cases reject with unchanged project snapshots; coherent zero/absent/empty and nonzero dismissal cases publish and read successfully. Historical read/migration compatibility preserved. Evidence: /tmp/opencode/jkjumxccjp-correction-writers.log and final development gate."
+      recorded_at: 2026-09-11 23:45
+      writer_command: agentera state plan record-evaluation

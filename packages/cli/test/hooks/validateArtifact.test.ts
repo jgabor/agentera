@@ -4,6 +4,7 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { ArtifactSchemaValidator, loadSchema } from "../../src/hooks/validateArtifact/index.js";
+import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { cleanupFixtureProject, useFixtureProject } from "../helpers/useFixtureProject.js";
 
 let tmp: string;
@@ -77,7 +78,40 @@ describe("ArtifactSchemaValidator", () => {
     expect(new ArtifactSchemaValidator().validateExplicit("PLAN.md", p, tmp).some((violation) => violation.includes("circular dependency chain") && violation.includes("PV4"))).toBe(true);
   });
 
-  it("accepts required full-plan unknowns and rejected critic findings", () => {
+  it.each([false, true])("accepts a reviewed zero-finding full plan with optional collections empty=%s", (empty) => {
+    const p = path.join(tmp, "plan.yaml");
+    fs.writeFileSync(
+      p,
+      dumpYamlMapping({
+        header: {
+          level: "full",
+          created: "2026-09-11",
+          reviewed: "2026-09-11",
+          status: "open",
+          title: "Reviewed plan",
+          critic_issues: "0 found, 0 addressed, 0 dismissed",
+        },
+        what: "Deliver the approved change.",
+        why: "Meet the requested behavior.",
+        design: "Deliver and verify within one cycle.",
+        scope: { included: ["delivery"], excluded: ["unrelated work"] },
+        overall_acceptance: "GIVEN delivery WHEN verified THEN the requested behavior holds.",
+        ...(empty ? { unknowns: [], rejected: [], surprises: [] } : {}),
+        tasks: [
+          {
+            number: 1,
+            name: "Deliver and close out",
+            status: "pending",
+            depends_on: [],
+            acceptance: ["GIVEN delivery WHEN verified THEN required closeout is current"],
+          },
+        ],
+      }),
+    );
+    expect(new ArtifactSchemaValidator().validateExplicit("PLAN.md", p, tmp)).toEqual([]);
+  });
+
+  it("accepts genuine full-plan unknowns and rejected critic findings", () => {
     const p = path.join(tmp, "plan.yaml");
     fs.writeFileSync(
       p,

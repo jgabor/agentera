@@ -9,12 +9,32 @@ import { boundStartupValue } from "../../state/startupProjection.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 import { startupAggregation } from "./startupAggregation.js";
 import type { GlossaryAdvice } from "../../analytics/glossaryAdviceResolution.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
+import { planTaskIndex } from "../planTaskIndex.js";
+import { truncateContextText } from "./slim.js";
 
 export function slimPlanState(plan: JsonObject): JsonObject {
   const firstPending = plan.first_pending;
+  const indexedTasks = new Map(planTaskIndex(plan).map((task) => [task.id, task]));
   const tasks = asList(plan.tasks)
     .filter((task): task is JsonObject => Boolean(task) && typeof task === "object" && !Array.isArray(task))
-    .map(taskRef);
+    .map((task) => {
+      if (task.detail_availability !== "omitted") return taskRef(task);
+      // Reuse the already-loaded exact graph (or retained readable metadata)
+      // when list detail was omitted; never invent a pending status. A short
+      // name excerpt leaves room for the existing task_omission retrieval.
+      const exact = indexedTasks.get(task.id);
+      const ref = exact && exact.detail_availability !== "omitted" ? taskRef(exact) : null;
+      const readable = task.readable as JsonObject | null | undefined;
+      const metadata = readable?.metadata as JsonObject | null | undefined;
+      return {
+        id: task.id ?? null,
+        artifact: task.artifact ?? "plan",
+        name: truncateContextText(ref?.name ?? readable?.text ?? null, 32),
+        status: ref?.status ?? metadata?.status ?? null,
+        detail_availability: "omitted",
+      };
+    });
   return {
     exists: Boolean(plan.exists),
     active: Boolean(plan.active),
@@ -110,13 +130,39 @@ export function genericSlimStartupContext(capability: string, context: JsonObjec
   }
   if (capability === "research") return { research_context: { write_boundaries: ["todo", "vision"] } };
   if (capability === "plan") {
+    // Like Audit/Document, Plan needs bounded TODO detail, not a second rich
+    // backlog. Keep the existing summary counts and recover omitted rows via CLI.
+    const todo = slimTodoState(todoItems);
+    if (todoItems.length > 3) {
+      todo.entries = todoItems.slice(0, 3).map((item) => {
+        const summary: JsonObject = {};
+        for (const key of ["id", "artifact", "title", "text", "severity", "status", "kind", "target_version", "release_blocker"]) {
+          if (key in item) summary[key] = item[key];
+        }
+        return {
+          ...summary,
+          detail_availability: item.detail_availability ?? "summary",
+          omitted_fields: Object.keys(item).filter((key) => !(key in summary) && !["detail_availability", "retrieval"].includes(key)),
+          retrieval: item.retrieval ?? (typeof item.id === "string" ? { get: preCutoverCommand(`state todo get --id ${item.id}`) } : { list: preCutoverCommand("state todo list --status open --limit 20") }),
+        };
+      });
+      todo.omission = {
+        omitted: true,
+        omitted_count: todoItems.length - 3,
+        omission_reason: "startup_detail_capacity",
+        retrieval: {
+          list: preCutoverCommand("state todo list --status open --limit 20"),
+          get: preCutoverCommand("state todo get --id ID"),
+        },
+      };
+    }
     return {
       planning_context: {
         startup_contract: context.startup_contract ?? null,
         plan: slimPlanState(plan),
         docs: docsState,
         health: slimHealthState(health),
-        todo: slimTodoState(todoItems),
+        todo,
         progress: slimProgressState(progress),
       },
     };

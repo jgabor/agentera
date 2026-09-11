@@ -4,10 +4,13 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
+import { encode } from "gpt-tokenizer/model/gpt-5";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
+import { OPERATING_INSTRUCTIONS } from "../../src/capabilities/operatingRules.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { buildOrientationJsonPayload, briefOrientationPayload, emitPrime } from "../../src/cli/commands/prime/orientationOutput.js";
 import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.js";
@@ -18,6 +21,7 @@ import { boundStartupValue, startupHistorySummary } from "../../src/state/startu
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, "references/artifacts/state-storage-authority.yaml");
+const OUTPUT_BUDGETS = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8")).surfaces;
 
 let tmp: string;
 let project: string;
@@ -194,6 +198,67 @@ describe("prime projection contract", () => {
     expect(JSON.parse(exact.out).entry.id).toBe(fixture.exactId);
   });
 
+  it.each(["active", "terminal", "no-progress"])("emits complete default capsules for all twelve capabilities with %s delivery state", (scenario) => {
+    createEntityAuthorityFixture(project, 25, authority());
+    const plans = path.join(project, ".agentera/entities/plan/plan");
+    for (const name of fs.readdirSync(plans)) {
+      const file = path.join(plans, name);
+      const entity = YAML.parse(fs.readFileSync(file, "utf8"));
+      if (entity.record.header.status !== "complete") continue;
+      entity.record.header.status = "open";
+      entity.record.header.title = "Plan: reviewed delivery with current uncommitted artifact changes";
+      fs.writeFileSync(file, dumpYamlMapping(entity));
+    }
+    const tasks = path.join(project, ".agentera/entities/plan/plan_task");
+    for (const name of fs.readdirSync(tasks)) {
+      const file = path.join(tasks, name);
+      const entity = YAML.parse(fs.readFileSync(file, "utf8"));
+      delete entity.record.superseded_by;
+      delete entity.record.superseded_reason;
+      entity.record.status = scenario === "terminal" ? "complete" : "in_progress";
+      fs.writeFileSync(file, dumpYamlMapping(entity));
+    }
+    if (scenario === "no-progress") {
+      fs.rmSync(path.join(project, ".agentera/entities/progress"), { recursive: true });
+      fs.rmSync(path.join(project, ".agentera/progress.yaml"));
+    }
+    for (const capability of CAPABILITY_NAMES) {
+      const result = capture((out, err) => main(["node", "agentera", "prime", "--context", capability], { out, err }));
+      expect(result.rc, `${scenario}/${capability}: ${result.err || result.out}`).toBe(0);
+      expect(result.err).toBe("");
+      expect(result.out.endsWith("\n")).toBe(true);
+      const payload = JSON.parse(result.out);
+      expect(Object.keys(payload).sort()).toEqual(["capability_context", "command", "outcome", "shared_skill"]);
+      expect(payload).toMatchObject({
+        command: "prime",
+        outcome: "ok",
+        shared_skill: expect.any(Object),
+      });
+      expect(payload.capability_context).toMatchObject({
+        schemaVersion: "agentera.capabilityContext.v1",
+        capability,
+        instructions: CAPABILITY_INSTRUCTIONS[capability],
+        startup: expect.any(Object),
+        context: expect.any(Object),
+      });
+      const budget = capability === "status" ? OUTPUT_BUDGETS.find((surface: any) => surface.id === "prime-status-context") : OUTPUT_BUDGETS.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability[capability];
+      expect(Buffer.byteLength(result.out), `${scenario}/${capability} raw stdout bytes`).toBeLessThanOrEqual(budget.byte_budget);
+      expect(encode(result.out).length, `${scenario}/${capability} raw stdout tokens`).toBeLessThanOrEqual(budget.token_budget);
+      const selected = capture((out, err) => main(["node", "agentera", "prime", "--context", capability, "--fields", "capability_context"], { out, err }));
+      expect(selected.rc, selected.err).toBe(0);
+      expect(JSON.parse(selected.out).capability_context).toEqual(payload.capability_context);
+      if (capability === "orchestrate") {
+        expect(payload.capability_context.context.plan.complete_plan).toBe(scenario === "terminal");
+        const prose = payload.capability_context.instructions;
+        expect(prose).toContain("current worktree content, including uncommitted changes");
+        expect(prose).toContain("Old commit dates alone do not establish staleness");
+        expect(prose).toContain("unchanged-but-valid artifacts need no touch");
+        expect(prose).toContain("Missing or contradictory content/evidence requires a cited gap");
+        expect(prose).not.toContain("git log -1 --format=%aI");
+      }
+    }
+  });
+
   it("reports omitted, unaddressable, ambiguous, and corrupt history with valid routes", () => {
     writeArtifact("decisions.yaml", ["decisions:", "  - summary: D7 explicit shorthand", "  - summary: D7+D8 compound shorthand", "  - summary: legacy decision without an identity", "    what: not emitted in startup detail", ""].join("\n"));
     const archiveDirectory = path.join(project, ".agentera", "archive", "decisions");
@@ -307,9 +372,13 @@ describe("prime projection contract", () => {
       expect(result.rc, label).toBe(0);
       outputs.push([label, result.out]);
     }
+    const manifest = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8"));
+    const budgets = manifest.surfaces.find((surface: { id: string }) => surface.id === "prime-capability-context").budget_by_capability;
     for (const capability of CAPABILITY_NAMES) {
       const result = capture((out, err) => cmdPrime({ command: "prime", context: capability, format: "json" }, { out, err }));
       expect(result.rc, `${capability}: ${result.err}`).toBe(0);
+      expect(Buffer.byteLength(result.out), capability).toBeLessThanOrEqual(budgets[capability].byte_budget);
+      expect(JSON.parse(result.out).capability_context.instructions, capability).toContain(OPERATING_INSTRUCTIONS);
       outputs.push([`context ${capability}`, result.out]);
     }
 

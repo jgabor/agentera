@@ -1,0 +1,24 @@
+id: vhizfocgse
+artifact: plan
+record:
+  name: Align shared guidance and execution boundaries
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN startup WHEN instructions load THEN every capability receives shared rules within existing output budgets.
+    - GIVEN applicable evidence WHEN work transfers THEN covered checks are reused; gaps trigger proportionate verification.
+    - GIVEN adequate task evidence WHEN optional progress is absent THEN evaluation does not fail solely for that absence.
+    - GIVEN consequential uncertainty WHEN work starts THEN a relevant probe precedes dependent implementation.
+    - GIVEN completed work without commit authorization WHEN reporting THEN success is allowed without committing; approved scope still bounds continuation.
+  plan: jkjumxccjp
+  evaluation:
+    attempt_count: 3
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Default Status emits 22746 bytes against 22500 and fails; prior 22490-byte evidence used selected fields. Terminal freshness still uses old commit dates and misclassifies verified uncommitted delivery.
+    provenance:
+      attempt_id: execution-guidance-correction-1
+      source: "Coordinator resolved audited startup/freshness findings from correction evidence: all 12 complete default responses retain required envelope fields and fit unchanged caps; terminal guidance accepts verified uncommitted content while retaining health/lifecycle ordering. Final 11-gate pass and exact default commands are in /tmp/opencode/jkjumxccjp-correction-development-final.log and jkjumxccjp-correction-live-final.log."
+      recorded_at: 2026-09-11 23:45
+      writer_command: agentera state plan record-evaluation

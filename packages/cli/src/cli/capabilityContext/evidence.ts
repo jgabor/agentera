@@ -422,7 +422,6 @@ export function auditEvidenceContext(capability: string | null, schemas: Record<
   const requiredState: Record<string, boolean> = {
     evaluation_target: evaluationTarget.status === "selected",
     plan_criteria: planCriteria.status === "available",
-    progress_verification: progressVerification.status === "available",
     docs_state: docsState.status === "available",
     health_state: healthState.status === "available",
     todo_state: todoState.status === "available",
@@ -456,7 +455,7 @@ export function auditEvidenceContext(capability: string | null, schemas: Record<
       complete_for_evidence_context: missingRequired.length === 0,
       caveated: stateCaveats.length > 0,
       raw_artifact_reads_required: false,
-      raw_artifact_read_policy: "Use this evidence_context and included status state first. Run listed routine/query CLI fallback commands " + "for missing or incomplete evidence state; raw artifact reads are last-resort diagnostics, not normal evaluation startup behavior.",
+      raw_artifact_read_policy: "Use this context and task/worker handoff evidence first. Completeness is not PASS; optional progress absence is not failure. Attribute evidence to the task before reuse. Use listed CLI fallbacks for relevant gaps; raw reads are last-resort diagnostics.",
       required_evidence_state: requiredState,
       missing_required_evidence_state: missingRequired,
       fallback_commands: fallbackCommands,

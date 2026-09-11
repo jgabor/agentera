@@ -112,6 +112,14 @@ surface_inventory:
   capability_instruction_files: current_canonical_instruction_files
 evaluator_handoff:
   status: implemented
+  evidence_policy: >-
+    Evaluate task acceptance against attributed task/worker handoff evidence and
+    applicable current observations. Progress is optional unless its typed writer
+    requires it; absence alone is not evaluation failure. A latest progress pointer
+    is not task attribution. Reuse passing evidence only when scope, inputs,
+    environment and coverage match. Missing, stale, unrelated or insufficient
+    evidence never establishes PASS. Context completeness and report-schema
+    validity are not semantic verdicts. Required gates remain binding.
   purpose: >-
     Define the inspektera evaluation report schema and citation requirements
     for orkestrera Step 3 Surface 2 delegations and post-plan health checks.

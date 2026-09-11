@@ -14,6 +14,7 @@ const tuples = await import(pathToFileURL(path.join(runtimeRoot, "dist/registrie
 const preCutover = await import(pathToFileURL(path.join(runtimeRoot, "dist/cli/preCutoverCommand.js")).href);
 const statusStartup = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/status/startupInstructions.js")).href);
 const humanReferences = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/humanReferences.js")).href);
+const operatingRules = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/operatingRules.js")).href);
 const runtime = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/index.js")).href);
 const routeModule = await import(pathToFileURL(path.join(runtimeRoot, "dist/cli/commands/capability.js")).href);
 const development = await import(pathToFileURL(path.join(runtimeRoot, "dist/core/developmentInvocation.js")).href);
@@ -29,7 +30,7 @@ for (const capability of capabilityIds) {
   const instructionBody = typeof module.servedInstructions === "function" ? module.servedInstructions() : module.default;
   if (typeof instructionBody !== "string") throw new Error(`runtime capability '${capability}' has no default instruction body`);
   const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
-  modules[capability] = humanReferences.withHumanReferences(preCutover.preCutoverInstructionBody(body));
+  modules[capability] = operatingRules.withOperatingRules(humanReferences.withHumanReferences(preCutover.preCutoverInstructionBody(body)));
 }
 
 const served = {};

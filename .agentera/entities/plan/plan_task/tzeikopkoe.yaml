@@ -1,0 +1,24 @@
+id: tzeikopkoe
+artifact: plan
+record:
+  name: Make maintainer workflows reuse applicable evidence
+  depends_on:
+    - vhizfocgse
+  status: complete
+  acceptance:
+    - GIVEN unchanged verified work WHEN commit is requested THEN only intended staging, configured hooks, and result checks are required.
+    - GIVEN a current build WHEN its executable is needed THEN unchanged relevant inputs do not require rebuilding.
+    - GIVEN ordinary testing WHEN skills are selected THEN mentioning verification alone does not trigger release procedures.
+    - GIVEN changed or unverified work WHEN commit is requested THEN relevant required checks remain enforceable.
+    - GIVEN existing state knowledge WHEN no relevant state changed THEN commit-only work does not force fresh orientation.
+  plan: jkjumxccjp
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: maintainer-reuse-1
+      source: "Coordinator accepted scoped worker evidence: AGENTS and state/verification skills align commit-only, build/state reuse and release-specific triggers; required host, hook and CI checks remain binding. Markdown lint and scoped diff checks passed; cold-start discovery contract passed with 12 unrelated cases intentionally skipped. Integrated audit remains pending."
+      recorded_at: 2026-09-11 22:15
+      writer_command: agentera state plan record-evaluation

@@ -98,6 +98,16 @@ GROUP_PREFIXES:
   SKILL_GLYPHS: SG
   PHASES: PH
 
+OPERATING_RULES:
+  instructions: |-
+    ## Execution rules
+
+    - Reuse passing evidence when task/scope, inputs, environment and coverage match. Recheck gaps, invalidation or mandatory gates; missing, stale or unrelated evidence never proves PASS.
+    - Test consequential unknowns narrowly before substantial dependent work.
+    - Add mechanisms only for concrete needs. Stop at accepted scope, even if blocked; new work/plans need authorization.
+
+    Project/host/trust gates, typed writers and explicit permissions remain binding. Guidance requires loading; not host enforcement.
+
 HUMAN_REFERENCES:
   description: >-
     Human conversation, dashboards, lists, and newly written artifacts lead with

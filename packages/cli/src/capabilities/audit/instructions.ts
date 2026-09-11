@@ -11,6 +11,8 @@ Health audits, decisions, progress cycles, plans, and plan tasks use entity auth
 
 Publish a completed audit with \`agentera state health append --input PATH\`.
 
+For scoped task evaluation, use attributed task/worker evidence and applicable observations; do not repeat covered verification just because the role changed. Optional progress absence is not failure, and an unrelated latest progress record is not task proof. Context completeness is not PASS. Preserve required terminal health publication and lifecycle gates.
+
 ## Workflow phases`,
   )
   .replaceAll("`.agentera/decisions.yaml`", "the decisions entity view")

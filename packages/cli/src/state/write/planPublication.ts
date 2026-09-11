@@ -26,6 +26,16 @@ function canonicalCreateLocalOrdinal(value: unknown): string | null {
 
 export function normalizeAndValidatePlanCreateInput(input: Record<string, unknown>): void {
   const header = isRecord(input.header) ? input.header : {};
+  // The schema owns review grammar/arithmetic. Correspondence is a new-publication
+  // requirement, not a retroactive restriction on historical reads or migration.
+  const dismissed = /\b(\d+)\s+dismissed\s*$/.exec(String(header.critic_issues ?? ""));
+  if (String(header.level ?? "").toLowerCase() === "full" && dismissed && Number(dismissed[1]) !== (Array.isArray(input.rejected) ? input.rejected.length : 0)) {
+    reject({
+      class: "schema_violation",
+      message: "plan create dismissed count must equal the number of rejected entries",
+      violations: ["header.critic_issues dismissed count must match rejected evidence; each entry requires issue and rationale"],
+    });
+  }
   if (header.id !== undefined) {
     reject({
       class: "schema_violation",

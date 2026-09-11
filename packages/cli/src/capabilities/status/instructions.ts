@@ -13,4 +13,4 @@ export default `${instructions
 
 ### Plan selection
 
-Render \`status_context.plan.id\` as the canonical selected plan identity. If competing open plans block startup, preserve the failure and its recovery verbatim. Do not infer predecessor or successor roles from a title or list order; only run \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID\` after canonical evidence establishes both roles.`;
+Render canonical \`status_context.plan.id\`. Preserve competing-plan failures and recovery verbatim. Never infer roles from titles or order; \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID\` requires canonical evidence for both roles.`;

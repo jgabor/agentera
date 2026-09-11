@@ -140,7 +140,9 @@ HEADER:
     required: false
     description: >-
       Summary of critic review findings. Format: 'N found, M addressed,
-      K dismissed'. Absent for light-level plans or pre-review state.
+      K dismissed', with nonnegative counts satisfying M + K = N. Zero
+      findings is valid after real review. Absent for light-level plans or
+      pre-review state; required when publishing a full plan.
   6:
     id: PH6
     field: revised
@@ -249,11 +251,12 @@ UNKNOWN:
     id: PU1
     field: entry
     type: map
-    required: true
+    required: false
     description: >-
       A planning-time question that can change whether downstream work remains
-      necessary as written. Full plans require at least one entry.
-    min_count: 1
+      necessary as written. Record genuine uncertainty; omit the list or use
+      an empty list when no consequential unknowns remain.
+    min_count: 0
   2:
     id: PU2
     field: question
@@ -281,10 +284,11 @@ REJECTED:
     id: PR1
     field: entry
     type: map
-    required: true
+    required: false
     description: >-
       A dismissed adversarial-review finding preserved with its rationale.
-    min_count: 1
+      Omit the list or use an empty list when no findings were dismissed.
+    min_count: 0
   2:
     id: PR2
     field: issue
@@ -463,7 +467,7 @@ VALIDATION:
     checks:
       - "design is present for full-level plans"
       - "reviewed is present for full-level plans"
-      - "critic_issues is present and records at least one found issue for full-level plans"
+      - "critic_issues is present with truthful nonnegative counts; zero findings is valid after full-plan review"
       - "each task has acceptance criteria for full-level plans"
   4:
     id: PV4

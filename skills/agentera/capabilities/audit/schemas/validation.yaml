@@ -69,7 +69,10 @@ VALIDATION:
       Audit evaluation startup MUST begin with `npx -y agentera@next prime --context
       audit` and use complete CLI `evidence_context` before
       bounded state list/get contracts for plan, progress, docs, health, TODO,
-      or decisions. Raw artifact access is diagnostic-only.
+      or decisions. Raw artifact access is diagnostic-only. Context completeness
+      is not a verdict. Adequate attributed task/worker evidence may support
+      evaluation without optional progress; an unrelated latest progress record
+      never proves the task. Reuse applicable checks without waiving required gates.
     severity: critical
     checks:
       - "Evidence context is requested through prime --context before bounded state list/get"

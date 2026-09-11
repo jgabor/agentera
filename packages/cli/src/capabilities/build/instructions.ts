@@ -37,9 +37,37 @@ Advice, tension, clarification, and caveat lifecycle never call \`agentera state
   .replaceAll("**Dual-write**: build maintains `.agentera/progress.yaml` and root `CHANGELOG.md`.", "Build conditionally records entity progress through the typed writer and maintains root `CHANGELOG.md` separately.")
   .replaceAll("`.agentera/health.yaml` findings", "Health findings returned by `agentera state health list`")
   .replace("If `.agentera/plan.yaml` has `header.status: complete` and every task is complete", "If the selected plan entity is complete and every related task entity is complete")
-  .replace("orient through log, exit signal reported", "orient through commit, exit signal reported")
+  .replace("orient through log, exit signal reported", "orient through report, commit only if authorized")
   .replace("Steps: orient, select, research, plan, dispatch, verify, commit, log.", "Steps: orient, select, research, plan, dispatch, verify, log, commit.")
-  .replace("implemented, verified, committed, artifacts updated", "implemented, verified, artifacts updated, committed")
+  .replace("implemented, verified, committed, artifacts updated", "implemented, verified, required artifacts updated; committed only if explicitly authorized")
+  .replace("Choose **one** focused increment. No backlog; decide by reasoning about the gap between vision and codebase, weighted against known issues.", "Execute the authorized task when one is assigned. Otherwise choose **one** focused increment within the user's requested scope; do not open an unrelated backlog.")
+  .replace("Carry unresolved unknowns forward in the progress entry's `context.unknowns` field.", "Report unresolved unknowns in the handoff; include them in `context.unknowns` only when progress is written under its policy.")
+  .replace(
+    /### Step 3: Seek inspiration[\s\S]*?### Step 4: Plan/,
+    `### Step 3: Resolve uncertainty
+
+Use applicable evidence first. Research external approaches only for a concrete knowledge gap or project requirement; a small local probe may answer the question better. Resolve consequential assumptions before dependent implementation, or report the blocker.
+
+### Step 4: Plan`,
+  )
+  .replace(
+    /### Step 5: Dispatch[\s\S]*?### Step 7: Commit/,
+    `### Step 5: Implement or delegate
+
+Implement directly unless delegation or worktree isolation serves a concrete need or project requirement. Use the host's worker facility, not capability-name CLI commands. Creating a worktree never authorizes a commit, branch change or merge.
+
+Assign one verification owner. Give any worker the exact task, acceptance, constraints, unresolved unknowns and applicable prior evidence. Require scoped implementation and a handoff naming changed inputs, checks/commands, results, environment, coverage and remaining gaps. Note unrelated bugs without fixing them.
+
+### Step 6: Verify
+
+Check the diff against scope. Establish structural correctness and observe changed behavior through the relevant entrypoint on realistic inputs. Use applicable passing worker evidence rather than rerunning covered checks; the parent checks attribution and coverage. Run only uncovered or invalidated checks plus mandatory project/host/trust gates. A fresh build is needed before local runtime observation when relevant inputs changed.
+
+If verification fails, diagnose and fix within scope, then repeat affected checks. A blocker does not authorize other work.
+
+**N/A path**: If the cycle has no runnable behavior change, use an applicable allowlisted tag: \`docs-only\`, \`refactor-no-behavior-change\`, \`chore-dep-bump\`, \`chore-build-config\`, \`test-only\`. Explain which acceptance criteria the evidence covers; N/A is not a substitute for required checks.
+
+### Step 7: Commit`,
+  )
   .replace(
     /### Step 7: Commit[\s\S]*?Then stop\. One cycle complete\./,
     `### Step 7: Log
@@ -57,7 +85,7 @@ TODO.md Resolved compaction follows the 10/40/50 cap via the validate-artifact h
 
 ### Step 8: Commit
 
-Commit once with a conventional commit message: \`type(scope): summary\`.
+Commit once only with explicit authorization, using \`type(scope): summary\`. Without authorization, report verified scoped completion without committing; leave lifecycle writes to their assigned owner.
 
 Types: \`feat\`, \`fix\`, \`docs\`, \`refactor\`, \`chore\`, \`test\`. Include implementation, tests, and all required artifact updates. MUST NOT commit partial or broken work.
 
@@ -71,9 +99,13 @@ Then stop. One cycle complete.`,
   )
   .replace(
     "1. Log blocker in TODO.md with context and decision needed\n2. Log skipped attempt in progress.yaml\n3. Pick different work and complete a full cycle on that instead",
-    "1. Log a durable blocker in TODO.md with context and the decision needed\n2. Apply the typed progress writer guidance; do not record attempt-only detail when no durable project truth changed\n3. Pick different work and complete a full cycle on that instead",
+    "1. Surface the scoped blocker and the decision needed; record required durable state through its owner\n2. Apply the typed progress writer guidance; do not record attempt-only detail when no durable project truth changed\n3. Stop. Do not pick unrelated work; further scope needs authorization",
   )
   .replace(
     "Before reporting any status, inspect the last 3 entries in progress.yaml. If all 3 record failed cycles, stop, log the failure pattern to TODO.md, and surface to the user. Do not attempt a 4th consecutive cycle on the same failing problem.",
     "Do not reconstruct attempt or retry history from progress. Plan evaluation owns task attempts, and qualification or publication receipts own release attempts. Use those authorities when explicit retry state is available; absence of retry state is not evidence of a progress record.",
-  );
+  )
+  .replace("- MUST NOT bypass the project's test/lint/build suite.", "- MUST NOT bypass mandatory project/host test, lint, build or trust gates. Applicable evidence reuse does not waive them.")
+  .replace("all work blocked, or verification suite broken", "scoped work blocked, or required verification broken")
+  .replace("In Step 3 (Seek inspiration), search for external approaches. For deeper analysis, use `/agentera research <url>`.", "When Step 3 needs external evidence, use `/agentera research <url>` for deeper analysis.")
+  .replace("Run ⛶ audit every 5-10 cycles.", "Request a periodic ⛶ audit only for a concrete health concern or project requirement.");

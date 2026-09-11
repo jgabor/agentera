@@ -65,6 +65,22 @@ describe("evaluator handoff contract loader", () => {
     const errors = validateEvaluationReport(report, contract);
     expect(errors, JSON.stringify(errors)).toEqual([]);
   });
+
+  it("accepts task/worker evidence without progress but still requires report evidence", () => {
+    const report = {
+      schemaVersion: EVALUATOR_HANDOFF_REPORT_SCHEMA_VERSION,
+      rows: [
+        {
+          criterion: "Scoped invalid-input handling",
+          status: "PASS",
+          evidence: "Worker for Task keknfvovnh: invalid-input regression passed on current scoped inputs under Node 24; observed rejection and unchanged valid-input behavior.",
+        },
+      ],
+    };
+    // This proves report shape, not semantic truth or host compliance.
+    expect(validateEvaluationReport(report, contract)).toEqual([]);
+    expect(validateEvaluationReport({ ...report, rows: [{ ...report.rows[0], evidence: "" }] }, contract)).not.toEqual([]);
+  });
 });
 
 describe("inspektera evaluation report citation regression", () => {

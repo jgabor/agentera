@@ -16,7 +16,9 @@ VALIDATION:
     rule: one_cycle_per_invocation
     description: >-
       Build executes exactly one cycle per invocation. After logging required
-      artifacts (Step 7) and committing once (Step 8), the capability MUST stop.
+      artifacts (Step 7) and reporting completion (Step 8), the capability MUST stop.
+      Commit once only with explicit authorization; verified scoped work can
+      complete without it. A blocker does not authorize unrelated work.
       The typed progress_write_policy determines whether the cycle appends zero
       or one progress record. Multiple cycles require separate invocations or an
       explicit user request.
@@ -26,6 +28,8 @@ VALIDATION:
       - "Durable outcomes needed by future work may append one verified record"
       - "Required glossary caveats and plan-completion sweeps append one verified record"
       - "Attempt-only cycles with no durable project truth append no record"
+      - "No commit without explicit authorization; completion does not require one"
+      - "Completed or blocked scoped work does not start unrelated work"
   3:
     id: V3
     rule: no_remote_push

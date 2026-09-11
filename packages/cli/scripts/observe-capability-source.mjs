@@ -27,6 +27,7 @@ try {
   const preCutover = await import(pathToFileURL(path.join(dist, "cli/preCutoverCommand.js")).href);
   const statusStartup = await import(pathToFileURL(path.join(dist, "capabilities/status/startupInstructions.js")).href);
   const humanReferences = await import(pathToFileURL(path.join(dist, "capabilities/humanReferences.js")).href);
+  const operatingRules = await import(pathToFileURL(path.join(dist, "capabilities/operatingRules.js")).href);
   const capabilityIds = tuples.ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability")
     .map((tuple) => tuple.surface_id)
     .sort();
@@ -36,7 +37,7 @@ try {
     const instructionBody = typeof module.servedInstructions === "function" ? module.servedInstructions() : module.default;
     if (typeof instructionBody !== "string") throw new Error(`source capability '${capability}' has no default instruction body`);
     const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
-    modules[capability] = humanReferences.withHumanReferences(preCutover.preCutoverInstructionBody(body));
+    modules[capability] = operatingRules.withOperatingRules(humanReferences.withHumanReferences(preCutover.preCutoverInstructionBody(body)));
   }
   const runtime = await import(pathToFileURL(path.join(dist, "capabilities/index.js")).href);
   const routes = await import(pathToFileURL(path.join(dist, "cli/commands/capability.js")).href);

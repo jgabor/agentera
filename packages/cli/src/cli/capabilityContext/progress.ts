@@ -17,7 +17,7 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
       verified: null,
       verification_summary: null,
       latest_progress_verification_pointer: null,
-      caveats: ["No progress cycles are recorded in CLI progress state."],
+      caveats: ["No progress cycles are recorded; use task/worker evidence when progress is optional."],
     };
   }
   const latest = progress.latest && typeof progress.latest === "object" && !Array.isArray(progress.latest) ? progress.latest : {};
@@ -30,7 +30,7 @@ export function progressVerificationSummary(progress: JsonObject): JsonObject {
     if (latest[key] !== null && latest[key] !== undefined && latest[key] !== "") cycle[key] = latest[key];
   }
   const pointer = { ...source, cycle_number: latest.number ?? null, field: "verified" };
-  const caveats = verifiedPresent ? [] : ["Latest progress cycle has no non-empty verified evidence."];
+  const caveats = ["Latest progress is not task-attributed; establish relevance before using it as proof.", ...(verifiedPresent ? [] : ["Latest progress cycle has no non-empty verified evidence."])];
   const evidenceFields = verifiedPresent ? ["verified"] : [];
   return {
     status: "available",

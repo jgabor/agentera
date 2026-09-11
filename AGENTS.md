@@ -35,7 +35,7 @@ Load every matching skill before acting. Skill descriptions are intentionally
 explicit so runtime skill discovery can select them from user intent.
 
 - For npm publication, version changes, release metadata, package artifacts,
-  verification, approval, registry credentials, dist-tags, or replay, load
+  release verification/approval, registry credentials, dist-tags, or replay, load
   `agentera-release` from
   `.opencode/skills/agentera-release/SKILL.md`.
 - For capability instructions, schemas, triggers, protocol primitives,
@@ -53,6 +53,12 @@ explicit so runtime skill discovery can select them from user intent.
 If a runtime cannot auto-load project skills, read the matching `SKILL.md`
 directly before work. Keep canonical workflow detail in skills or their named
 authority documents, not in this bootstrap.
+
+Ordinary testing or a mention of verification does not trigger release
+procedures without a release-specific need. When loaded, Agentera guidance
+follows `skills/agentera/protocol.yaml#OPERATING_RULES`: reuse applicable passing
+evidence, probe consequential unknowns narrowly, and stop at accepted scope.
+Project/host/trust gates and explicit permissions remain binding.
 
 ## Project layout
 
@@ -77,7 +83,9 @@ docs/packaging/             Canonical packaging and release guide
 
 ## State authority
 
-Read project state through the CLI before direct artifact reads:
+Use CLI-first reads when state knowledge is needed; reuse existing knowledge
+while relevant state is unchanged. These are need-driven recipes, not a startup
+checklist; commit-only work does not itself require orientation:
 
 ```bash
 npx -y agentera@next prime
@@ -176,8 +184,9 @@ and recovery interface. Maintainer-only package and lane commands live in
 
 Project-state operations use the published development runtime,
 `npx -y agentera@next state ...`. Checks for changed local CLI behavior use
-`node packages/cli/dist/bin/agentera.js ...` only after `vp run build`; they do
-not use the published package.
+`node packages/cli/dist/bin/agentera.js ...` from a current `vp run build`; they
+do not use the published package. Reuse that build until relevant inputs change
+or the artifact is absent, rather than rebuilding before every invocation.
 
 Local hooks use native staged formatting/linting with partial-hunk preservation,
 import-related tests within the policy's positive fast `local` project, a small

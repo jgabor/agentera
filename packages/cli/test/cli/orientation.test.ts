@@ -281,6 +281,61 @@ describe("orientation: artifact summaries", () => {
     });
   });
 
+  it.each([false, true])("keeps task handoff usable without attributing latest progress to it (progress exists: %s)", (exists) => {
+    const task = {
+      id: "keknfvovnh",
+      artifact: "plan",
+      name: "Scoped fix",
+      status: "in_progress",
+      depends_on: [],
+      acceptance: ["Changed behavior rejects invalid input"],
+      evidence: ["Worker handoff: scoped invalid-input test passes on current inputs; Node 24; no uncovered criteria."],
+    };
+    const plan = {
+      id: "abcdefghij",
+      exists: true,
+      active: true,
+      status: "open",
+      complete_plan: false,
+      tasks: [task],
+    };
+    const progress = exists ? { exists, latest: { number: 99, verified: "Unrelated documentation task passed" } } : { exists };
+    const orchestration = orchestrationContext("orchestrate", plan, progress, { exists: true }, [], { exists: true }, { status: "valid" }, {});
+    expect(orchestration?.evaluator_handoff).toMatchObject({
+      task: { id: task.id },
+      acceptance_criteria: task.acceptance,
+      evidence_requirements: task.evidence,
+    });
+    expect(orchestration?.evaluator_handoff).not.toHaveProperty("verdict");
+    const todoPath = path.join(tmp, "TODO.md");
+    fs.writeFileSync(todoPath, "# TODO\n");
+    const audit = auditEvidenceContext(
+      "audit",
+      schema("todo", todoPath),
+      plan,
+      progress,
+      { exists: true },
+      [],
+      { exists: true },
+      { status: "valid" },
+      { status: "up_to_date" },
+      {
+        command: "state decisions list",
+        entries: [],
+        counts: { total: 0, returned: 0, remaining: 0 },
+      },
+    );
+    expect(audit?.source_contract).toMatchObject({
+      complete_for_evidence_context: true,
+      missing_required_evidence_state: [],
+    });
+    expect(audit?.progress_verification).toMatchObject({
+      status: exists ? "available" : "unavailable",
+      verified_present: exists,
+    });
+    expect(audit).not.toHaveProperty("verdict");
+  });
+
   it("normalizes a completed plan with pending tasks back to open", () => {
     const p = path.join(tmp, "plan.yaml");
     fs.writeFileSync(p, ["header:", "  title: Contradictory", "  status: complete", "tasks:", "  - number: 1", "    name: Still pending", "    status: pending", ""].join("\n"));

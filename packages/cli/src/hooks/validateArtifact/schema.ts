@@ -173,7 +173,8 @@ export function validateFieldConstraints(violations: string[], name: string, sco
 export function validateRequiredFields(violations: string[], name: string, schema: JsonObject, group: string, scope: JsonObject, p: string): void {
   for (const entry of iterGroupEntries(schema, group)) {
     const field = String(entry.field);
-    if (entry.parent || field === "entry") continue;
+    const planCollectionChild = name === "plan" && (group === "UNKNOWN" || group === "REJECTED") && entry.parent === `${group}.entry`;
+    if ((entry.parent && !planCollectionChild) || field === "entry") continue;
     if (entry.required) validateField(violations, name, scope, field, p);
     if (field in scope && !isEmptyRequired(scope[field])) {
       if (validateFieldType(violations, name, scope, entry, p)) {
@@ -252,10 +253,6 @@ export function validateFullPlanContract(data: JsonObject, violations: string[])
     validateField(violations, "plan", header, field, "header");
   }
   validateField(violations, "plan", data, "design", "");
-  const unknowns = data.unknowns;
-  if (!Array.isArray(unknowns) || unknowns.length === 0) {
-    violations.push("plan: full plans require at least one 'unknowns' entry");
-  }
   const criticIssues = header.critic_issues;
   if (!isEmptyRequired(criticIssues)) {
     const match = /^\s*(\d+)\s+found,\s*(\d+)\s+addressed,\s*(\d+)\s+dismissed\s*$/.exec(String(criticIssues));
@@ -263,7 +260,6 @@ export function validateFullPlanContract(data: JsonObject, violations: string[])
       violations.push("plan: header.critic_issues must match 'N found, M addressed, K dismissed'");
     } else {
       const [found, addressed, dismissed] = [match[1], match[2], match[3]].map((v) => parseInt(v, 10));
-      if (found < 1) violations.push("plan: header.critic_issues must record at least 1 found issue");
       if (addressed + dismissed !== found) {
         violations.push("plan: header.critic_issues counts must satisfy addressed + dismissed == found");
       }
@@ -318,7 +314,8 @@ export function validateSequences(data: JsonObject, schema: JsonObject, name: st
       violations.push(`${name}: '${key}' must be a list`);
       continue;
     }
-    if (seq.length === 0) {
+    const optionalPlanCollection = name === "plan" && (group === "UNKNOWN" || group === "REJECTED");
+    if (seq.length === 0 && !optionalPlanCollection) {
       violations.push(`${name}: '${key}' requires at least 1 entry`);
       continue;
     }

@@ -32,6 +32,10 @@ documentation after deterministic abstention; it learns that contract from the C
 
 ---
 
+Follow `protocol.yaml#OPERATING_RULES`, served with every capability: reuse
+applicable evidence, probe consequential unknowns early, and stop at accepted scope.
+Project/host requirements and permission boundaries remain binding.
+
 ## Human references
 
 Follow `protocol.yaml#HUMAN_REFERENCES`, also served in every capability's

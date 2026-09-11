@@ -63,7 +63,7 @@
   specialized checks remain in CI.
 - `agentera prime` now returns TODO state only through the canonical `todo`
   field. Requests for the retired `issues` field fail with one structured correction to `todo` instead of emitting a duplicate alias and warning.
-- Build progress logging now retains durable project outcomes, while release receipts remain authoritative for attempt evidence.
+- Shared execution guidance now reuses applicable verification, probes consequential unknowns early, and stops at approved scope without requiring an unauthorized commit. Adequate task evidence needs no separate progress record; Build progress retains durable outcomes, while release receipts own attempt evidence. Reviewed plans allow zero findings, no remaining unknowns, and closeout within delivery tasks. Crowded Plan startup preserves task status and exact retrieval while bounding TODO detail.
 - `agentera prime --context <capability> --format json` now returns one bounded
   startup availability projection with an `ok`, `degraded`, or `blocked`
   outcome. Deferred detail names its exact read command; writer payloads are

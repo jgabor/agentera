@@ -4,6 +4,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import YAML from "yaml";
+import { encode } from "gpt-tokenizer/model/gpt-5";
 import { describe, expect, inject, it } from "vitest";
 
 import { EXPECTED_PRODUCER_READINESS, runProducerReadinessWorkflow } from "../helpers/producerReadinessWorkflow.js";
@@ -213,6 +214,115 @@ function runResetWorkflow(bin: string, root: string) {
 }
 
 describe("npm distribution boundary", () => {
+  it("preserves zero-finding publication and no-progress shared guidance in the extracted runtime", () => {
+    const project = path.join(fixture.root, "proportionate-execution");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const run = (args: string[], input?: unknown) => {
+      const result = spawnSync(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), ...args], {
+        cwd: project,
+        env: packageEnvironment(),
+        encoding: "utf8",
+        input: input === undefined ? undefined : JSON.stringify(input),
+        timeout: 30_000,
+      });
+      return { result, payload: JSON.parse(result.stdout) };
+    };
+    const input = {
+      header: {
+        level: "full",
+        created: "2026-09-11",
+        status: "open",
+        title: "Reviewed delivery",
+        reviewed: "2026-09-11",
+        critic_issues: "0 found, 0 addressed, 0 dismissed",
+      },
+      what: "Deliver scoped behavior and required closeout.",
+      why: "Avoid artificial review quotas.",
+      scope: { included: ["Scoped delivery"], excluded: ["Unrelated work"] },
+      design: "Verify and close out within the delivery task.",
+      overall_acceptance: "GIVEN delivery WHEN verified THEN scoped behavior holds.",
+      unknowns: [],
+      rejected: [],
+      tasks: [
+        {
+          number: 1,
+          name: "Deliver and verify",
+          status: "in_progress",
+          acceptance: ["GIVEN input WHEN invalid THEN it rejects before effects"],
+          evidence: ["Worker handoff: invalid-input regression passes on current inputs."],
+        },
+      ],
+    };
+    const invalid = run(["state", "plan", "create", "--input", "-"], {
+      ...input,
+      header: { ...input.header, critic_issues: "1 found, 0 addressed, 0 dismissed" },
+    });
+    expect(invalid.result.status).not.toBe(0);
+    expect(fs.existsSync(path.join(project, ".agentera/entities"))).toBe(false);
+    const rejected = [
+      {
+        issue: "Separate synchronization task requested.",
+        rationale: "Delivery task already includes closeout.",
+      },
+    ];
+    for (const contradictory of [
+      { ...input, rejected },
+      { ...input, header: { ...input.header, critic_issues: "1 found, 0 addressed, 1 dismissed" } },
+    ]) {
+      const before = fs.readdirSync(path.join(project, ".agentera"));
+      const failed = run(["state", "plan", "create", "--input", "-"], contradictory);
+      expect(failed.result.status).not.toBe(0);
+      expect(failed.payload.error.class).toBe("schema_violation");
+      expect(failed.payload.error.message).toContain("dismissed count");
+      expect(fs.readdirSync(path.join(project, ".agentera"))).toEqual(before);
+      expect(fs.readFileSync(path.join(project, ".agentera/state-mode.yaml"), "utf8")).toBe("schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    }
+    const created = run(["state", "plan", "create", "--input", "-"], input);
+    expect(created.result.status, created.result.stdout + created.result.stderr).toBe(0);
+    expect(created.payload.record.header.critic_issues).toBe(input.header.critic_issues);
+    expect(created.payload.tasks).toHaveLength(1);
+    const budgets = YAML.parse(fs.readFileSync(path.join(CHECKOUT_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8")).surfaces;
+    for (const capability of Object.keys(budgets.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability)) {
+      const { result, payload } = run(["prime", "--context", capability]);
+      expect(result.status, result.stdout + result.stderr).toBe(0);
+      const budget = capability === "status" ? budgets.find((surface: any) => surface.id === "prime-status-context") : budgets.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability[capability];
+      expect(Object.keys(payload).sort()).toEqual(["capability_context", "command", "outcome", "shared_skill"]);
+      expect(payload.shared_skill).toEqual(expect.any(Object));
+      expect(result.stdout.endsWith("\n")).toBe(true);
+      expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(budget.byte_budget);
+      expect(encode(result.stdout).length).toBeLessThanOrEqual(budget.token_budget);
+      expect(payload.capability_context.instructions.match(/## Execution rules/g)).toHaveLength(1);
+      expect(payload.capability_context.instructions).toContain("explicit permissions remain binding");
+      expect(payload.capability_context.instructions).toContain("Stop at accepted scope, even if blocked");
+      if (capability === "orchestrate") {
+        expect(payload.capability_context.instructions).toContain("current worktree content, including uncommitted changes");
+        expect(payload.capability_context.instructions).toContain("unchanged-but-valid artifacts need no touch");
+        expect(payload.capability_context.instructions).not.toContain("git log -1 --format=%aI");
+        const handoff = payload.capability_context.context.orchestration_context.evaluator_handoff;
+        expect(handoff.acceptance_criteria).toEqual(input.tasks[0].acceptance);
+        expect(handoff.evidence_requirements).toEqual(input.tasks[0].evidence);
+        expect(handoff).not.toHaveProperty("verdict");
+      }
+      if (capability === "audit") {
+        const audit = payload.capability_context.context.evidence_context;
+        expect(audit.progress_verification.status).toBe("unavailable");
+        expect(audit.source_contract.missing_required_evidence_state).not.toContain("progress_verification");
+        expect(audit).not.toHaveProperty("verdict");
+      }
+    }
+    expect(fs.existsSync(path.join(project, ".agentera/entities/progress"))).toBe(false);
+    const coherent = run(["state", "plan", "create", "--force", "--input", "-"], {
+      ...input,
+      header: { ...input.header, critic_issues: "1 found, 0 addressed, 1 dismissed" },
+      rejected,
+    });
+    expect(coherent.result.status, coherent.result.stdout + coherent.result.stderr).toBe(0);
+    const read = run(["state", "plan", "get", "--id", coherent.payload.id]);
+    expect(read.result.status).toBe(0);
+    expect(read.payload.entry.record.rejected).toEqual(rejected);
+  });
+
   it("records deterministic, path-independent package construction from two roots", () => {
     expect(fixture.deterministicBytes).toMatchObject({
       packRuns: 2,

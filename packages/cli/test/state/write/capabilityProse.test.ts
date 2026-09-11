@@ -14,6 +14,7 @@ import orchestrateInstructions from "../../../src/capabilities/orchestrate/instr
 import planInstructions from "../../../src/capabilities/plan/instructions.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../../src/capabilities/index.js";
 import { withHumanReferences } from "../../../src/capabilities/humanReferences.js";
+import { withOperatingRules } from "../../../src/capabilities/operatingRules.js";
 import { preCutoverInstructionBody } from "../../../src/cli/preCutoverCommand.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
@@ -69,9 +70,9 @@ function servedBuildInstructions(): string {
 
 const BUILD_TERMINAL_ORDER_POLICIES = [
   {
-    current: "orient through commit, exit signal reported",
-    stale: "orient through log, exit signal reported",
-    violation: "cycle_must_end_through_commit",
+    current: "orient through report, commit only if authorized",
+    stale: "orient through commit, exit signal reported",
+    violation: "cycle_commit_must_be_conditional",
   },
   {
     current: "Steps: orient, select, research, plan, dispatch, verify, log, commit.",
@@ -79,8 +80,8 @@ const BUILD_TERMINAL_ORDER_POLICIES = [
     violation: "workflow_summary_must_log_before_commit",
   },
   {
-    current: "implemented, verified, artifacts updated, committed",
-    stale: "implemented, verified, committed, artifacts updated",
+    current: "implemented, verified, required artifacts updated; committed only if explicitly authorized",
+    stale: "implemented, verified, artifacts updated, committed",
     violation: "complete_exit_must_update_artifacts_before_commit",
   },
 ] as const;
@@ -158,6 +159,8 @@ describe("producer capability writer integration", () => {
       "Durable outcomes needed by future work may append one verified record",
       "Required glossary caveats and plan-completion sweeps append one verified record",
       "Attempt-only cycles with no durable project truth append no record",
+      "No commit without explicit authorization; completion does not require one",
+      "Completed or blocked scoped work does not start unrelated work",
     ]);
   });
 
@@ -171,7 +174,7 @@ describe("producer capability writer integration", () => {
     for (const [variant, text] of Object.entries(variants)) {
       expect(buildCycleOrderViolations(text), `${variant} valid order`).toEqual([]);
       expect(buildCycleOrderViolations(restoreOldCommitBeforeLogOrder(text)), `${variant} old Commit-before-Log order`).toContain("log_must_precede_commit");
-      expect(text, `${variant} single commit`).toContain("Commit once with a conventional commit message");
+      expect(text, `${variant} authorized single commit`).toContain("Commit once only with explicit authorization");
       for (const policy of BUILD_TERMINAL_ORDER_POLICIES) {
         expect(text, `${variant} terminal order`).toContain(policy.current);
         expect(text, `${variant} stale terminal order`).not.toContain(policy.stale);
@@ -186,8 +189,9 @@ describe("producer capability writer integration", () => {
     const exit = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/capabilities/build/schemas/exit.yaml"), "utf8")) as Record<string, any>;
 
     expect(validation.VALIDATION[2].description).toContain("logging required artifacts (Step 7)");
-    expect(validation.VALIDATION[2].description).toContain("committing once (Step 8)");
-    expect(exit.EXIT_CONDITIONS[1].description).toContain("updates preceded the cycle's single");
+    expect(validation.VALIDATION[2].description).toContain("reporting completion (Step 8)");
+    expect(validation.VALIDATION[2].description).toContain("Commit once only with explicit authorization");
+    expect(exit.EXIT_CONDITIONS[1].description).toContain("otherwise report completion without committing");
   });
 
   it("keeps orchestration delegation runtime-neutral", () => {
@@ -229,11 +233,20 @@ describe("producer capability writer integration", () => {
     expect(closure).toContain("agentera state health append --input PATH");
     expect(closure.indexOf("agentera state health append --input PATH")).toBeLessThan(closure.indexOf("agentera state plan set-plan-status --status complete"));
     expect(closure).toContain("WARN or FAIL requiring follow-up");
+    // A pre-plan commit can contain still-valid content or later uncommitted
+    // delivery. This is a served contract check, not host compliance evidence.
+    expect(closure).toContain("current worktree content, including uncommitted changes");
+    expect(closure).toContain("Old commit dates alone do not establish staleness");
+    expect(closure).toContain("unchanged-but-valid artifacts need no touch");
+    expect(closure).toContain("Missing or contradictory content/evidence requires a cited gap");
+    expect(closure).toContain("Delegate source inspection to Audit");
+    expect(closure).not.toContain("git log -1 --format=%aI");
     expect(closure).toContain("keep the plan open");
     expect(closure).not.toContain("run `agentera state plan archive");
     expect(orchestrateInstructions).toContain("During terminal-open closure only, Orchestrate may publish the limited typed health record");
     expect(orchestrateInstructions).not.toContain("changes plan lifecycle state only through `agentera state plan set-status ...`");
-    expect(orchestrateInstructions).toContain("**No plan in returned state**: bootstrap mode.");
+    expect(orchestrateInstructions).toContain("bootstrap only when plan creation is authorized");
+    expect(closure).toContain("Then stop; do not start another plan");
   });
 
   it("uses the writer as the final plan publication gate", () => {
@@ -262,7 +275,28 @@ describe("producer capability writer integration", () => {
   });
 
   it("keeps the source capability index aligned with plan instructions", () => {
-    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(withHumanReferences(preCutoverInstructionBody(planInstructions)));
+    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(withOperatingRules(withHumanReferences(preCutoverInstructionBody(planInstructions))));
+  });
+
+  it("replaces conflicting execution mandates on source and served surfaces", () => {
+    for (const text of [buildInstructions, servedBuildInstructions()]) {
+      expect(text).toContain("Assign one verification owner");
+      expect(text).toContain("Use applicable passing worker evidence rather than rerunning covered checks");
+      expect(text).toContain("small local probe");
+      expect(text).toContain("report verified scoped completion without committing");
+      expect(text).toContain("Stop. Do not pick unrelated work");
+      for (const obsolete of ["Spawn an implementation sub-agent in a git worktree", "then run the project's test/build suite", "Run the project's verification suite", "Run ⛶ audit every 5-10 cycles", "Pick different work and complete a full cycle", "Search for relevant external approaches before planning"])
+        expect(text).not.toContain(obsolete);
+    }
+    for (const text of [orchestrateInstructions, CAPABILITY_INSTRUCTIONS.orchestrate]) {
+      expect(text).toContain("Optional progress absence alone is not failure");
+      expect(text).toContain("Missing, stale, unrelated or insufficient evidence cannot PASS");
+      expect(text).toContain("A latest pointer alone is not attribution");
+      expect(text).toContain("Then stop; do not start another plan");
+      expect(text).toContain("MUST NOT skip evaluation");
+      for (const obsolete of ["Presence check from progress verification", "Missing or empty**: treat the task as a failed evaluation", "Verify the project's test/build suite still passes", "Commit your changes with a conventional commit message", "orchestrate invokes plan to create the next plan"])
+        expect(text).not.toContain(obsolete);
+    }
   });
 
   it("publishes the documented full plan YAML through the typed writer", () => {
@@ -283,6 +317,7 @@ describe("producer capability writer integration", () => {
       expect(published.rc, published.output).toBe(0);
 
       delete parsed.rejected;
+      parsed.header.critic_issues = "0 found, 0 addressed, 0 dismissed";
       const withoutRejections = path.join(omittedRoot, "without-rejections.yaml");
       fs.mkdirSync(path.join(omittedRoot, ".agentera"));
       fs.writeFileSync(path.join(omittedRoot, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");

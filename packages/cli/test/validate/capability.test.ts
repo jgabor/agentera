@@ -11,6 +11,7 @@ import { buildProtocolValueLookup, checkDeprecation, checkPrimitiveReferences, c
 import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { HUMAN_REFERENCE_LABELS, HUMAN_REFERENCE_INSTRUCTIONS, humanReference, withHumanReferences } from "../../src/capabilities/humanReferences.js";
+import { OPERATING_INSTRUCTIONS, withOperatingRules } from "../../src/capabilities/operatingRules.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -18,6 +19,21 @@ const CONTRACT_PATH = path.join(REPO_ROOT, "skills", "agentera", "capability_sch
 const PROTOCOL_PATH = path.join(REPO_ROOT, "skills", "agentera", "protocol.yaml");
 
 describe("shared human references", () => {
+  it("serves separate protocol-owned operating rules exactly once in every capability", () => {
+    vi.stubEnv(BOOTSTRAP_SOURCE_ROOT_ENV, REPO_ROOT);
+    const protocol = YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8"));
+    expect(OPERATING_INSTRUCTIONS).toBe(protocol.OPERATING_RULES.instructions);
+    expect(protocol.HUMAN_REFERENCES).not.toHaveProperty("instructions");
+    expect(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8")).toContain("protocol.yaml#OPERATING_RULES");
+    for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) {
+      expect(body.split(OPERATING_INSTRUCTIONS)).toHaveLength(2);
+      expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
+    }
+    const machine = "```yaml\nid: abcdefghij\nstatus: in_progress\n```";
+    expect(withOperatingRules(`# Test\n\n${machine}`)).toBe(`# Test\n\n${OPERATING_INSTRUCTIONS}\n\n${machine}`);
+    expect(withOperatingRules(machine)).toBe(`${OPERATING_INSTRUCTIONS}\n\n${machine}`);
+  });
+
   it("binds all served capabilities and the public skill to the protocol labels", () => {
     vi.stubEnv(BOOTSTRAP_SOURCE_ROOT_ENV, REPO_ROOT);
     const protocol = YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8"));

@@ -113,7 +113,7 @@ describe("state consumer matrix", () => {
       non_empty_evidence_fields: ["verified"],
       verified: "tests pass",
       verification_summary: "tests pass",
-      caveats: [],
+      caveats: ["Latest progress is not task-attributed; establish relevance before using it as proof."],
     });
   });
 });
