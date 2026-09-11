@@ -1,21 +1,10 @@
-output: [
-    # "meta",
-    "summary",
-    # "success",
-    "failure",
-    # "execution",
-    # "execution_out",
-    # "execution_info",
-    # "skips",
-  ]
+output: [summary, failure]
 
 pre-commit:
   commands:
     agentera-state:
       run: timeout --foreground 10s npx -y agentera@next check compact
-      glob:
-        - ".agentera/**"
-        - "TODO.md"
+      glob: [".agentera/**", "TODO.md"]
     py-ts-parity:
       run: bash packages/cli/scripts/py_ts_parity.sh --check --json
       glob:
@@ -24,37 +13,26 @@ pre-commit:
         - "packages/cli/scripts/generate-extract-corpus-parity.mjs"
         - "packages/cli/src/analytics/extractCorpus/**"
         - "packages/cli/test/analytics/extractCorpus*.test.ts"
-    docs:
-      run: timeout --foreground 10s bunx markdownlint --dot --fix --disable MD013 MD024 MD029 MD033 MD036 MD040 MD041 MD060 -- {staged_files}
-      stage_fixed: true
-      glob: "*.md"
-      exclude:
-        - "docs/plans/*.md"
-        - "skills/*/references/contract.md"
-        - "packages/cli/test/fixtures/v2-compaction-2.7.11/input/TODO.md"
-        - "packages/cli/test/fixtures/v2-compaction-2.7.11/output/TODO.md"
-    configs:
-      run: 'timeout --foreground 10s bash -c ''test -x node_modules/.bin/vp || { echo "error: project-local Vite+ is missing; run vp install" >&2; exit 1; }; node_modules/.bin/vp fmt --write "$@"'' -- {staged_files}'
-      stage_fixed: true
-      glob: "*.json"
-      exclude:
-        - "packages/cli/test/evidence/**"
-        - "references/**"
-    tests:
-      run: bash scripts/precommit-vitest.sh {staged_files}
+    staged:
+      priority: -1
+      # Explicit local path fails closed without bootstrap; recover with vp install.
+      # Native staging hides partial hunks and restores them; never stage_fixed.
+      run: ./node_modules/.bin/vp staged --hide-partially-staged
+    related:
+      run: ./node_modules/.bin/vp test related --run --project local --passWithNoTests {staged_files}
+      glob: ["packages/cli/src/*.{ts,js}", "packages/cli/src/**/*.{ts,js}", "packages/cli/test/*.{ts,js,mjs}", "packages/cli/test/**/*.{ts,js,mjs}"]
+    guards:
+      run: ./node_modules/.bin/vp test run --project guards
       glob:
-        - "packages/cli/**/*.ts"
-        - "packages/cli/package.json"
-        - "packages/cli/vite.config.ts"
-        - "packages/cli/vite.package.config.ts"
+        - "*.{json,jsonc,yaml,yml}"
+        - "*.config.{ts,js,mjs}"
         - "packages/cli/vitest.shared.ts"
-        - "packages/cli/scripts/*.mjs"
-        - "packages/cli/test/packaging/**"
-        - "references/analysis/verification-policy.yaml"
-        - "scripts/precommit-vitest.sh"
-        - "skills/**/*.{yaml,yml,md}"
-        - "references/**/*.{yaml,yml}"
-        - "registry.json"
-        - "protocol.yaml"
-        - ".lefthook.yml"
+        - "packages/cli/scripts/**"
+        - "packages/cli/test/**"
+        - "scripts/**"
+        - "skills/**"
+        - "references/**"
         - ".github/workflows/**"
+    typecheck:
+      run: ./node_modules/.bin/vp run typecheck
+      glob: ["*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc,yaml,yml}"]

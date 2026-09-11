@@ -1,0 +1,13 @@
+id: rfefueapod
+artifact: progress
+record:
+  timestamp: 2026-09-11 18:09
+  type: refactor
+  phase: build
+  what: Replace the pre-commit shell selector with native staged checks and policy-backed local, source, and guard projects.
+  context:
+    intent: Implement the approved configuration-first hook simplification with fast local checks and complete CI coverage.
+  discovered: Native related selection over the complete source owner made a core edit take over five minutes. The positive local subset retains relevant checks without moving slow source cases out of CI. Explicit staged priority is required because Lefthook otherwise ran validation before fixes.
+  verified: "All 11 development gates passed after the audit corrections, including 42 activation checks. Native discovery partitions 263 source-owned files exactly once: 27 local, 234 source remainder, and 2 guards; specialized owners remain intact. The 28 focused tests prove installed-hook ordering, partial TS/Markdown staging, root/nested paths, odd filenames, rename/deletion handling, missing-tool failure, fixture protection, and Git isolation. Final local samples including typecheck: core/text.ts selected 63 relevant tests in 3.02 seconds; authority changes retained 98 guard tests in 19.77 seconds. These are single samples with different coverage from the old fallback. Root vp check passed with zero errors and six existing warnings; typecheck and diff checks passed, and the real index remained unchanged."
+  next: "Use the local project for automatic related checks and the complete source owner for full verification. The legacy v2 pre-commit isolation TODO remains open: its separate three-path publication-bootstrap scenario was not established by this delivery. No commit, push, or publication is authorized by this cycle."
+  publication_order: 395

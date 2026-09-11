@@ -86,16 +86,26 @@ lefthook install
 Pre-commit runs:
 
 - State and TODO changes run `agentera check compact` within a 10-second budget.
-- Configuration formatting resolves `node_modules/.bin/vp` after bootstrap and
-  fails with `vp install` recovery if that project-local binary is missing; it
-  never falls back to a global `vp`.
-- Ordinary source changes run deterministic source-owned tests plus typecheck
-  within 60 seconds, with at most two Vitest workers.
-- Specialized and global owner surfaces route to `ci_owned`; the local hook
-  runs source-owned route guards while routine CI executes development safety;
-  explicit full qualification retains the `release` owners.
-- Markdown lint and supported configuration formatting each have a 10-second
-  budget. Py-TS parity runs only for its analytics inputs.
+- Project-local `vp staged --hide-partially-staged` formats/lints supported
+  TS/JS/config files and runs pinned local Markdown lint. Rules and byte-stable
+  exclusions live in native config. No `stage_fixed`: unstaged hunks must stay
+  unstaged. Native priority runs fixes before all validation readers. A missing
+  local binary fails; recover with `vp install`.
+- Native `related --run --project local` selects only the positive fast suite in
+  `verification-policy.yaml#local_source`, with two workers: core utilities,
+  registry contracts, argument parsing and capability-schema validation.
+  No related tests is a successful no-op, not an unrelated smoke fallback.
+- Root discovery partitions the source owner into `local`, `source` (remainder)
+  and `guards`, without duplicates. Run `vp run test` or
+  `corepack pnpm -C packages/cli run test:source` for the complete source owner.
+  Bootstrap, upgrade, lifecycle, integration and other fs/subprocess contracts
+  stay in full source CI; they are not automatic local-related coverage.
+- fs/script/config-only changes run the configured `guards` project. This is
+  deliberately limited local feedback, not proof of those artifacts' behavior.
+  Whole-project typecheck is separate. Py-TS parity retains its narrow inputs.
+- Routine CI executes development safety; explicit full qualification retains
+  every `release` owner. Native test/hook timeouts stay in test configuration;
+  the fast subset is bounded by membership, not a fixed runtime SLA.
 
 The staged hook never invokes release verification, performance, capacity, or
 package owners. Do not rely on summaries when `.lefthook.yml` has changed.

@@ -57,10 +57,10 @@
   temporary npm authentication only to forward mutation. Suite authority is unchanged.
 - Fixed the `@next` workflow startup so `actions/setup-node` does not require
   pnpm before Corepack installs the repository-pinned package manager.
-- Local staged verification now gives ordinary source changes targeted tests
-  and typecheck with two workers in at most 60 seconds. State and documentation
-  checks stay under 10 seconds, while specialized and global owners defer to
-  their authoritative CI conjunction instead of running a local release lane.
+- Local hooks now run native staged fixes before import-related tests from a
+  fast local subset, explicit authority guards, and whole-project typecheck.
+  Partial staging and fixture bytes are preserved; complete source and
+  specialized checks remain in CI.
 - `agentera prime` now returns TODO state only through the canonical `todo`
   field. Requests for the retired `issues` field fail with one structured correction to `todo` instead of emitting a duplicate alias and warning.
 - Build progress logging now retains durable project outcomes, while release receipts remain authoritative for attempt evidence.

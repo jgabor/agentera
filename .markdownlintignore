@@ -1,0 +1,12 @@
+docs/plans/**
+skills/*/references/contract.md
+packages/cli/test/**/fixtures/**
+packages/cli/test/evidence/**
+packages/cli/dist/**
+packages/cli/bundle/**
+**/node_modules/**
+**/*.generated.*
+.agentera/**
+TODO.md
+CHANGELOG.md
+references/**

@@ -530,15 +530,29 @@ The canonical policy compositions are:
 | `scheduled` | Source, stress, performance, capacity |
 | `release` | Source, stress, performance, capacity, package, certification |
 
-Pre-commit delegates composition to `verify-lane.mjs`. Ordinary source paths
-run deterministic source-owned files plus typecheck within a 60-second total
-budget and use at most two Vitest workers. State and documentation-only changes
-run only their relevant compact, schema, lint, or format checks within a
-10-second budget. Conservative authority and verification surfaces route to `ci_owned`; the hook runs source-owned route guards and does not execute a
-local release lane. Specialized test files retain their exact owner in the
-route result. Routine CI invokes check-only development safety once on
-pull requests and `main` pushes. Direct pushes to the configured development ref
-run the package verification workflow instead of routine CI.
+Pre-commit uses native staged checks and import-related source tests, not a
+changed-path routing script. Root native discovery contains disjoint `local`,
+`source` (remainder) and `guards` projects; all belong to the source owner. Native configurations
+derive membership from `verification-policy.yaml`, including the specialized
+owners selected by CI. The local `guards` project runs for authority and
+verification surfaces that an import graph cannot cover. File reads, computed
+imports and subprocesses do not imply related-test coverage. No related tests
+passes without a fallback. Automatic related selection uses only the positive
+`local_source` fast suite: core utilities, registry contracts, argument parsing
+and capability-schema tests. Bootstrap, upgrade, lifecycle, integration and
+other fs/subprocess contracts remain in the full source owner, not the local
+subset. Run `vp run test` or `corepack pnpm -C packages/cli run test:source` for
+all source tests; `--project source` alone selects only the remainder. Two local
+workers and native test/hook timeouts are configured, with whole-project
+typecheck separate; membership is bounded, not a runtime SLA.
+Project-local staged formatting/linting runs first by native priority,
+hides unstaged hunks and never uses
+Lefthook `stage_fixed`. Markdown uses a pinned local tool and config-owned rules
+and ignores. Byte-stable fixtures/evidence and typed-state output are not
+rewritten. Missing local tools fail; recover with `vp install`. Only network
+state compaction retains a 10-second watchdog; Python/TS parity stays narrowly
+triggered. The local hook never executes a specialized owner or release lane.
+The configured development-ref workflow invokes development safety once.
 Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,

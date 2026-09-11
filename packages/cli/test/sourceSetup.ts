@@ -30,3 +30,4 @@ declare module "vitest" {
     sourceBuildRoot: string;
   }
 }
+import "./gitSetup.ts";

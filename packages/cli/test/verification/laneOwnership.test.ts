@@ -629,7 +629,7 @@ describe("verification lane ownership", () => {
     expect(authority).toContain("The six test owners are");
     expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
     expect(authority).toContain("| `release` | Source, stress, performance, capacity, package, certification |");
-    expect(authority).toContain("Conservative authority and verification surfaces route to `ci_owned`");
+    expect(authority).toContain("The local `guards` project runs for authority");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
     expect(authority).toContain("Routine builds do not write `.agentera-generated`");
     expect(authority).toContain("multiply linked files");
@@ -657,7 +657,7 @@ describe("verification lane ownership", () => {
     expect(packageJson.scripts["test:performance:integration"]).toBe("node test/integration/performanceOwner.integration.mjs");
     expect(packageJson.scripts["test:capacity"]).toBe("node scripts/verify-lane.mjs capacity");
     expect(packageJson.scripts["verify:package"]).toBe("node scripts/verify-lane.mjs package");
-    expect(sourceConfig).toContain('globalSetup: ["./test/sourceSetup.ts"]');
+    expect(sourceConfig).toContain("projects: ownerProjects()");
     expect(sourceConfig).not.toContain('"./test/packaging/packageSetup.ts"');
     expect(runtimeIntegration).toContain("await createPackageFixture()");
     expect(runtimeIntegration).toContain("afterAll(() => cleanupPackageFixture?.())");

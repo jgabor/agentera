@@ -74,9 +74,25 @@ separate HOME, cache, npm configs, and report. A peer failure cancels only
 cancellable groups; generated-overlap settles without forced termination, and no
 reader barrier or receipt follows a batch, performance, or capacity failure.
 
-Pre-commit is a local feedback lane, not release verification. It runs exact
-source-owned tests and typecheck with at most two workers. Specialized and
-global surfaces are labeled `ci_owned`; required CI runs their authoritative
+Pre-commit is a local feedback lane, not release verification. Root native test
+discovery partitions source into disjoint `local`, `source` (remainder) and
+`guards` projects, all owned by source in `verification-policy.yaml`.
+`local_source` is the positive fast suite: all `core/` and `registries/` tests,
+`cli/argvParser.test.ts` and `validate/capability.test.ts`. It covers core
+utilities, registry contracts, argument parsing and capability-schema behavior;
+human-reference rendering exercises the imported Unicode text truncation path.
+Only this project runs import-related tests automatically, with at most two
+workers; no-tests passes without a substitute smoke test. Specialized owners
+are selected by the CI owner commands, not ordinary root discovery.
+The configured guard project covers fs/script/config-only triggers, not every
+behavior behind them. Computed imports, file reads and subprocesses are not
+import-graph dependencies. The remainder retains CLI integration, bootstrap,
+setup, upgrade, lifecycle, state/fs contracts, build, analytics, hooks, scripts
+and validation tests; none are removed from full source CI. Run `vp run test`
+or `corepack pnpm -C packages/cli run test:source` for the entire source owner;
+`vp test run --project source` alone intentionally selects only the remainder.
+Whole-project typecheck runs separately. Fast feedback is scoped by membership,
+not a fixed wall-time SLA. Required CI runs authoritative
 development safety through `vp run verify:development`; explicit full
 `vp run verify` retains historical certification and repeated performance.
 Only `allTestTypecheckViability.test.ts`, `formatterNormalizationReplay.test.ts`, and `pyTsParity.test.ts`
@@ -86,6 +102,14 @@ prerequisites are listed together in `docs/packaging/v3-packaging.md`.
 Development retains stress, capacity and all private-generation and
 package contracts, but its distinct success is not full qualification. The hook accepts no receipt
 or environment bypass.
+
+Native priority runs staged fixes before guards, related tests and typecheck.
+Native staged formatting/linting hides partial hunks instead of re-adding whole
+files. Markdown rules/ignores are checked in and use a pinned local tool.
+Evidence, fixtures, generated files and typed-state writer output are excluded
+from automatic rewriting. Global and worker setup remove Git's complete local
+environment variable set before nested fixture writes; workers retain the
+package working-directory contract even when tests are discovered from root.
 
 ## Classification key
 

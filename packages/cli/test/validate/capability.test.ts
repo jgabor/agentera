@@ -37,6 +37,10 @@ describe("shared human references", () => {
       expect(second).toContain("bbbbbbbbbb");
       expect(first.replace(/[⛋≡□→]/gu, "")).toContain(`${HUMAN_REFERENCE_LABELS[family].slice(2)} aaaaaaaaaa · in progress`);
       expect(humanReference(family, " ", undefined, undefined)).toBe(`description unavailable · ${HUMAN_REFERENCE_LABELS[family]} ID unavailable · status/confidence unavailable`);
+      // Exercise the imported text primitive at its actual rendering boundary.
+      const long = humanReference(family, "𐐀".repeat(200), "aaaaaaaaaa", "open");
+      const suffix = ` · ${HUMAN_REFERENCE_LABELS[family]} aaaaaaaaaa · open`;
+      expect(long).toBe(`${"𐐀".repeat(110 - Array.from(suffix).length - 1)}…${suffix}`);
     }
   });
 

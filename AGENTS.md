@@ -179,6 +179,13 @@ Project-state operations use the published development runtime,
 `node packages/cli/dist/bin/agentera.js ...` only after `vp run build`; they do
 not use the published package.
 
+Local hooks use native staged formatting/linting with partial-hunk preservation,
+import-related tests within the policy's positive fast `local` project, a small
+authority guard project, and separate typecheck. Root native discovery partitions
+the full source owner into `local`, `source` (remainder), and `guards` without duplication;
+full CI retains specialized owners. See the verification skill for coverage
+limits, fixture exclusions, and local-tool recovery.
+
 Run the narrowest relevant check first, then broaden according to impact. Load
 `agentera-verification` before changing gate policy, diagnosing a failed lane,
 or touching generated and packaged output.

@@ -22,7 +22,7 @@ describe("source worker policy", () => {
     expect(packageJson.scripts["test:source:local"]).toBe(`AGENTERA_VITEST_RUNNER_POLICY=${MEASURED_LOCAL_WORKER_POLICY} node scripts/verify-lane.mjs source`);
   });
 
-  it("keeps watch discovery in the CLI package with its source setup, not the root no-test config", () => {
+  it("discovers source tests from the package and workspace root with source setup", () => {
     const packageRoot = path.join(REPO_ROOT, "packages/cli");
     const packageJson = JSON.parse(fs.readFileSync(path.join(packageRoot, "package.json"), "utf8"));
     expect(packageJson.scripts["test:watch"]).toBe("pnpm exec vp test watch --config vite.config.ts");
@@ -40,13 +40,9 @@ describe("source worker policy", () => {
       });
       expect(result.error).toBeUndefined();
       const tests = JSON.parse(result.stdout);
-      if (workspaceRoot) {
-        expect(tests).toEqual([]);
-      } else {
-        expect(result.status, result.stderr).toBe(0);
-        expect(tests.length).toBeGreaterThan(0);
-        expect(tests.every((test: { file: string }) => test.file === path.join(packageRoot, "test/config/vitestShared.test.ts"))).toBe(true);
-      }
+      expect(result.status, result.stderr).toBe(0);
+      expect(tests.length).toBeGreaterThan(0);
+      expect(tests.every((test: { file: string; projectName: string }) => test.file === path.join(packageRoot, "test/config/vitestShared.test.ts") && test.projectName === "source")).toBe(true);
     }
   });
 

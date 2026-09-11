@@ -102,6 +102,8 @@ describe("toolchain baseline", () => {
     expect(baseline.selection.vite_plus.version).toBe("0.3.0");
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
     expect(workspace.catalog).toEqual({
+      lefthook: "2.1.12",
+      "markdownlint-cli": "0.48.0",
       "@typescript/typescript6": "6.0.2",
       oxfmt: "0.64.0",
       oxlint: "1.79.0",

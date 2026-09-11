@@ -24,6 +24,8 @@
   },
   "devDependencies": {
     "@typescript/typescript6": "catalog:",
+    "lefthook": "catalog:",
+    "markdownlint-cli": "catalog:",
     "oxfmt": "catalog:",
     "oxlint": "catalog:",
     "vite": "catalog:",

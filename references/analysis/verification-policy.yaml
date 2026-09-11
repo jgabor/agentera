@@ -24,6 +24,20 @@ inventory:
     - owner: package
       prefix: packages/cli/test/packaging/
 
+# Positive fast-feedback boundary: core utilities, registry contracts, argument
+# parsing and capability-schema validation. No bootstrap/lifecycle integration.
+# These native projects partition source; they do not change CI ownership.
+local_source:
+  - prefix: packages/cli/test/core/
+  - prefix: packages/cli/test/registries/
+  - path: packages/cli/test/cli/argvParser.test.ts
+  - path: packages/cli/test/validate/capability.test.ts
+
+# fs/config/script authority feedback, also source-owned in every CI policy.
+local_guards:
+  - packages/cli/test/verification/laneOwnership.test.ts
+  - packages/cli/test/release/routineCiOwnership.test.ts
+
 # Full-overlap validation accepts this governed YAML byte stream and the owner
 # command's JSON result-file bytes as its only evidence authorities. Parsed
 # objects are internal implementation details: callers cannot supply policy or
@@ -237,11 +251,10 @@ policies:
 # Therefore merge receives lock evidence through source, while scheduled also
 # executes the stress owner.
 
-# Pre-commit routing marks authority, verification, and specialized-owner
-# surfaces as ci_owned. The local hook runs only source-owned route guards and
-# typecheck; routine CI executes development safety, while explicit full release
-# qualification retains every owner including historical certification.
-# All other paths retain targeted source routing.
+# The diagnostic `verify-lane route` API retains conservative CI ownership.
+# It is not a local hook router: Lefthook uses native related tests plus the
+# configured local_guards subset. CI keeps complete development safety; explicit
+# full qualification retains every owner including historical certification.
 conservative_routing:
   exact:
     - .lefthook.yml
@@ -282,7 +295,7 @@ conservative_routing:
     - packages/cli/test/sourceSetup.ts
     - packages/cli/test/state/todoDocsEntities.test.ts
     - packages/cli/test/upgrade/upgradeEntityCutover.test.ts
-    - packages/cli/test/scripts/precommitVitest.test.ts
+    - packages/cli/test/scripts/nativeHooks.test.ts
     - packages/cli/test/helpers/sourceSubprocess.ts
     - packages/cli/test/helpers/runtimeBootstrapMatrix.ts
     - packages/cli/test/helpers/preCutoverBootstrapDispatcher.mjs
@@ -290,7 +303,7 @@ conservative_routing:
     - packages/cli/test/helpers/runtimeProofCliBoundary.mjs
     - packages/cli/test/integration/runtimeBootstrapMatrix.test.ts
     - references/analysis/verification-policy.yaml
-    - scripts/precommit-vitest.sh
+    - vite.config.ts
   prefixes:
     - .github/workflows/
     - packages/cli/test/capacity/
