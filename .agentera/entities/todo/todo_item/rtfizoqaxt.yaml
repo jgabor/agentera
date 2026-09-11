@@ -13,12 +13,16 @@ record:
     - Plan seltbrpsin can be replanned without weakening its publication trust boundary.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap"
+      status: resolved
+      order: 139
       severity: normal
-      status: open
-      order: 27
+  lifecycle:
+    operation: resolve
+    reason: Integrity-verified pinned bootstrap passes baseline and rejecting cases; hosted direct-push development validation preserves frozen installs, lifecycle restrictions, disabled caching, and the setup-free OIDC publisher.
+    date: 2026-09-11

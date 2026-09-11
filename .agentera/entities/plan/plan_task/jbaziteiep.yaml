@@ -7,11 +7,24 @@ record:
     - onqdqswcrj
     - oqpmgqzrnb
     - uovujxmdli
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the combined candidate WHEN required static, type, development, package, and migration checks run THEN they pass without relaxed budgets or product contracts.
     - GIVEN separate explicit integration and push authorization WHEN hosted direct-push validation executes THEN all migration scenarios gate candidate construction and publication; otherwise retain the unverified boundary.
     - GIVEN satisfied outcomes WHEN state reconciles THEN rtfizoqaxt and ehudiaaepe resolve, evidence and guidance agree, and compact passes.
     - GIVEN closeout WHEN full-qualification status is reported THEN vcrmaxuasq remains open and historical certification is not implied by development success.
   plan: newohpexum
-  evidence: Local corrected workflow, five scenarios, fail-closed injection and all 11 development gates passed. Existing dev.112 publication proves the prior pipeline only; new migration-gate hosted evidence is not yet available.
+  evidence:
+    - Hosted direct-push Actions run 34527789220 passed development qualification, fresh source build, all five migration scenarios, candidate validation, Trusted Publishing, and convergence to npm next 3.0.0-dev.113 with matching source identity.
+    - Bootstrap integrity and rejection proof, behavior-preserving lint reduction to eight warnings, and ninth-warning rejection passed independent audits. No PR requirement or publisher boundary change remains.
+    - TODOs rtfizoqaxt and ehudiaaepe are resolved. Progress oowjqpmcqd and current guidance agree; pinned build, compact, retained-reference validation, and invocation-inventory checks pass. vcrmaxuasq and clxxrzihnt remain open; full historical qualification is not claimed.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: orchestrate-newohpexum-closeout-1
+      source: Independent final-task and limited artifact-freshness audit PASS. Hosted direct-push run 34527789220 verifies all development and five migration checks before construction/publication to dev.113. Selected TODOs resolved; current guidance/progress/compact agree; vcrmaxuasq and clxxrzihnt remain open. No full historical or codebase-wide qualification claimed.
+      recorded_at: 2026-09-11 10:03
+      writer_command: agentera state plan record-evaluation

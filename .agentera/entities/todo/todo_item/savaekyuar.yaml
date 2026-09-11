@@ -11,4 +11,4 @@ record:
       description: "[feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`"
       severity: normal
       status: open
-      order: 15
+      order: 14

@@ -512,7 +512,7 @@ optimization, or performance certification. Machine-sensitive performance
 remains with its separate isolated owner. Assertions, two independent
 constructions, isolation, sequencing, and default workers are unchanged, as is
 the active 2,400,000 ms parent qualification deadline. These historical failed
-qualifications do not establish a new hosted pass; hosted closeout is pending.
+qualifications remain failed history; hosted development run [34527789220](https://github.com/jgabor/agentera/actions/runs/34527789220) passed and published `3.0.0-dev.113` to `@next`. Historical full re-certification remains open under `vcrmaxuasq`.
 The controlled shell timings include command-launch overhead, so they
 conservatively bound the owner process measured by `verify-lane.mjs`. An invalid
 limit fails before test execution. A successful test process that exceeds the

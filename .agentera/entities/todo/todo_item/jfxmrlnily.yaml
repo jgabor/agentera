@@ -10,7 +10,7 @@ record:
       description: "[fix:3.0.0] Recompute non-glossary profile provenance from each bounded signal generation"
       severity: normal
       status: open
-      order: 17
+      order: 16
   kind: fix
   target_version: 3.0.0
   requirements:

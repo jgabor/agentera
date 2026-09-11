@@ -22,4 +22,4 @@ record:
       description: "[chore] Review eight retained CLI lint diagnostics"
       severity: normal
       status: open
-      order: 29
+      order: 27

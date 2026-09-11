@@ -22,4 +22,4 @@ record:
       description: "[test:3.0.0] Re-certify historical all-test typecheck evidence"
       severity: normal
       status: open
-      order: 28
+      order: 26
