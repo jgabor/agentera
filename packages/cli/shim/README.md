@@ -52,13 +52,19 @@ This section applies only to the transitional 0.x stable shim. Prepare explicit
 metadata without reading npm, review and commit it, then verify one retained
 package artifact before its separately approved measured publication envelope:
 
+Run from the repository root after the
+[standalone Vite+ setup](../../../AGENTS.md#common-commands). Root `cli:*`
+wrappers preserve this shim's separate directory target outside the pnpm
+workspace; a workspace filter is not interchangeable. Retain all arguments,
+including literal `--`. These recipes do not grant publication approval.
+
 ```bash
-pnpm cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
+vp run cli:prepare:stable -- --target-version X.Y.Z --source-commit COMMIT
 # review and commit packages/cli/shim/package.json
-pnpm cli:qualify:source -- --candidate-dir /secure/external/agentera-package
-node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir /secure/external/agentera-package
-node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir /secure/external/agentera-package --approved-by NAME
-NPM_TOKEN=... pnpm cli:publish:qualified:stable -- --candidate-dir /secure/external/agentera-package --receipt-file /secure/external/qualified-publication-receipt.json --json
+vp run cli:qualify:source -- --candidate-dir /secure/external/agentera-package
+vp node packages/cli/scripts/release-qualification.mjs candidate --adapter stable --candidate-dir /secure/external/agentera-package
+vp node packages/cli/scripts/release-qualification.mjs approval --adapter stable --candidate-dir /secure/external/agentera-package --approved-by NAME
+NPM_TOKEN=... vp run cli:publish:qualified:stable -- --candidate-dir /secure/external/agentera-package --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
 
 The shared transaction requires an immutable artifact-bound approval and
@@ -87,8 +93,8 @@ npx -y agentera@<version> --version
 ## Development
 
 ```bash
-node packages/cli/shim/bin/agentera.mjs --version
-node packages/cli/shim/bin/agentera.mjs --help
+vp node packages/cli/shim/bin/agentera.mjs --version
+vp node packages/cli/shim/bin/agentera.mjs --help
 ```
 
 Suite version pin lives in `package.json` under `agentera.suiteVersion` / `agentera.gitRef`; npm `version` stays on the `0.0.x` line until 3.0.

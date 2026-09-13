@@ -1,0 +1,23 @@
+id: wzbktlfcvs
+artifact: plan
+record:
+  name: Make hook setup and execution independent of host tools
+  depends_on:
+    - ynypcdnoww
+  status: complete
+  acceptance:
+    - GIVEN installed dependencies WHEN documented Vite-only setup runs THEN Lefthook hooks install without global Lefthook.
+    - GIVEN supported launcher discovery without ambient JavaScript tools WHEN ordinary Git runs THEN pinned-runtime checks succeed.
+    - GIVEN sibling hook installation and installer-worktree removal WHEN a prepared worktree commits THEN its own tools run successfully.
+    - GIVEN partially staged edits WHEN hooks finish THEN unstaged hunks, existing check selection and unrelated worktree configuration remain unchanged.
+  plan: ziklyhasqe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: wzbktlfcvs-20260912-1
+      source: "Independent audit: Vite-mediated hook setup, pinned runtime from ordinary Git, installer-worktree removal, local ownership and partial staging passed disposable regressions."
+      recorded_at: 2026-09-12 00:33
+      writer_command: agentera state plan record-evaluation

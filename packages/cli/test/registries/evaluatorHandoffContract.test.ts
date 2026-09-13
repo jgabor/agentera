@@ -3,6 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { describe, expect, it } from "vitest";
+import { requireShellTools } from "../helpers/shellCommand.js";
 
 import { EVALUATOR_HANDOFF_REPORT_SCHEMA_VERSION, isValidCitation, loadEvaluatorHandoffContract, validateEvaluationReport, verifyWarnCitationAtLine } from "../../src/registries/evaluatorHandoffContract.js";
 
@@ -109,6 +110,7 @@ describe("inspektera evaluation report citation regression", () => {
     const warnRows = report.rows.filter((row: { status: string; citation?: string; verify_command?: string }) => String(row.status).toUpperCase() === "WARN" && row.citation?.includes(":") && row.verify_command);
     expect(warnRows.length).toBeGreaterThan(0);
     for (const row of warnRows) {
+      requireShellTools(["grep", "head"]);
       const result = verifyWarnCitationAtLine(row, REPO_ROOT);
       expect(result.ok, result.message).toBe(true);
     }

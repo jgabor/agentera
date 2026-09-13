@@ -4,6 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { useSourceAppHome } from "../helpers/managedAppStub.js";
 
 import { buildPrimeCapabilityContextPayload } from "../../src/cli/capabilityContext.js";
 import { main } from "../../src/cli/dispatch/index.js";
@@ -19,6 +20,8 @@ import { cmdQuery } from "../../src/cli/commands/query.js";
 import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 import { CHANGELOG_MAX_HEADING_BYTES, CHANGELOG_MAX_OUTPUT_BYTES, CHANGELOG_MAX_SOURCE_PATH_BYTES } from "../../src/state/changelog.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
+
+useSourceAppHome();
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 

@@ -4,6 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
+import { requireShellTools } from "../helpers/shellCommand.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const benchmark = fs.readFileSync(path.join(REPO_ROOT, "packages/cli/scripts/release-benchmark.mjs"), "utf8");
@@ -12,6 +13,34 @@ const assertions = fs.readFileSync(path.join(REPO_ROOT, "scripts/sandbox/assert-
 const scannerPath = path.join(REPO_ROOT, "scripts/sandbox/scan-python-leftovers.sh");
 
 describe("staged package migration contract", () => {
+  it.each(["grep", "head", "mkdir", "cp", "rm", "find"])("names unavailable %s only when its shell fixture requires it", (tool) => {
+    expect(() => requireShellTools([tool], { PATH: "" })).toThrow(`Shell fixture requires ${tool} on PATH`);
+  });
+
+  it.each(["grep", "find"])("does not report a clean scan when %s is unavailable", (missing) => {
+    requireShellTools(["bash", "grep", "find"]);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-scan-prerequisite-"));
+    try {
+      const bin = path.join(root, "bin");
+      fs.mkdirSync(bin);
+      const available = missing === "grep" ? "find" : "grep";
+      const located = spawnSync("/bin/sh", ["-c", 'command -v "$1"', "fixture", available], {
+        encoding: "utf8",
+      });
+      expect(located.status, located.stderr).toBe(0);
+      fs.symlinkSync(located.stdout.trim(), path.join(bin, available));
+      const result = spawnSync("/bin/bash", [scannerPath, root], {
+        encoding: "utf8",
+        env: { PATH: bin },
+      });
+      expect(result.status, result.stderr).toBe(2);
+      expect(result.stderr).toContain(`required tool unavailable on PATH: ${missing}`);
+      expect(result.stdout).not.toContain("scan-python-leftovers: ok");
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("derives the exact package pin only after staging", () => {
     expect(benchmark).toContain("AGENTERA_NPM_PIN: `${candidate.package}@${candidate.version}`");
     expect(benchmark).toMatch(/const candidateMigrationSmoke\s*=\s*adapterName === "development"/);
@@ -63,6 +92,7 @@ describe("staged package migration contract", () => {
   });
 
   it("ignores canonical retirement authorities but still rejects user-owned Python leftovers", () => {
+    requireShellTools(["bash", "grep", "find"]);
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-leftover-scan-"));
     const authority = path.join(root, "home/.local/share/agentera/references/adapters/runtime-retired-resources.yaml");
     const runtime = path.join(root, "home/.config/opencode/runtime.yaml");
@@ -85,6 +115,7 @@ describe("staged package migration contract", () => {
   });
 
   it("removes unowned shared Codex registration only from the clean fixture, retaining copied hooks", () => {
+    requireShellTools(["bash", "dirname", "mkdir", "cp", "rm"]);
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-migration-seed-"));
     try {
       for (const scenario of ["happy-path-clean", "stable-safety", "codex-plugin-vs-copied", "partial-only-runtime"]) {

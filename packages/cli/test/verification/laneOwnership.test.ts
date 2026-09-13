@@ -627,7 +627,7 @@ describe("verification lane ownership", () => {
     const packageJson = JSON.parse(fs.readFileSync(path.join(PACKAGE_ROOT, "package.json"), "utf8"));
     expect(authority).toContain("canonical authority for checkout generated output");
     expect(authority).toContain("The six test owners are");
-    expect(authority).toContain("| Performance | `pnpm -C packages/cli run test:performance`");
+    expect(authority).toContain("| Performance | `vp -C packages/cli run test:performance`");
     expect(authority).toContain("| `release` | Source, stress, performance, capacity, package, certification |");
     expect(authority).toContain("The local `guards` project runs for authority");
     expect(authority).toContain("Checkout `prepack` is a guard that rejects direct");
@@ -641,7 +641,7 @@ describe("verification lane ownership", () => {
     expect(releaseMetadata).not.toContain("at `prepack` time");
     expect(changelog).not.toContain("bundling app data at pack time via `prepack`");
     expect(shimReadme).toContain("../../../docs/packaging/v3-packaging.md");
-    expect(shimReadme).toContain("pnpm cli:publish:qualified:stable");
+    expect(shimReadme).toContain("vp run cli:publish:qualified:stable");
     expect(shimReadme).not.toMatch(/^npm (?:pack|publish)/m);
     expect(contributor).not.toContain("Staging directories encode their owner PID");
     expect(packageJson.scripts["generated:cleanup"]).toBeUndefined();

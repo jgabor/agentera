@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: PackageManifest registry
   path: references/adapters/package-registry.yaml
-  last_updated: 2026-05-06
+  last_updated: 2026-09-12
   status: current

@@ -1,0 +1,43 @@
+id: ziklyhasqe
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-11
+    status: complete
+    reviewed: 2026-09-11
+    critic_issues: 3 found, 3 addressed, 0 dismissed
+    revised: Require successful supported hook execution; bound prerequisite diagnostics to demonstrated tests; require a scope decision for unsupported optional tooling.
+    title: "Plan: Vite+-only contributor JavaScript toolchain"
+  what: Make Vite+ Agentera's sole contributor-facing JavaScript toolchain interface. Contributors install the supported Vite+ launcher and documented OS/Git prerequisites; Vite+ supplies Node and pnpm, and project dependencies supply Lefthook. No separate Node, Corepack, pnpm or Lefthook installation is required for the supported contributor journey.
+  why: Deliver the requested single-interface experience and the root-toolchain direction of provisional decision udusuvfkcj. Investigation proved clean dependency installation, checks, typecheck, build and CLI smoke through Vite+, including managed pnpm for existing child commands. Remaining gaps concern hook runtime discovery and test isolation, not replacing the package manager. Ten initial source failures passed targeted environmental controls; a single complete source pass remains required.
+  constraints: Retain Node 24.19.0, Vite+ 0.3.0, pnpm 10.30.3, locked dependencies, the esbuild-only dependency-script policy, uncached task execution and verification ownership. Preserve CI bootstrap integrity, npm packaging and the fixed publication boundary. Internal Vite-managed pnpm calls may remain. Preserve production missing-home diagnostics, partial staging and current-worktree tool ownership. Keep public Agentera invocation/state contracts unchanged. Add no version bump or publication. Default test proportionality is one passing and one failing case per changed boundary; runtime, worktree and staging variants require concrete failure-mode coverage. Reuse applicable evidence without substituting narrow checks for required gates.
+  scope:
+    included:
+      - Supported Linux contributor bootstrap, managed runtime and package-manager selection, stale or missing tool recovery, and existing root command ownership.
+      - Root and CLI contributor scripts, toolchain proof, .node-version, package.json, pnpm-workspace.yaml and pnpm-lock.yaml; retain pins and dependency authority rather than rewriting internal commands wholesale.
+      - Lefthook installation and execution, .lefthook.yml, staged configuration, and disposable hook/worktree regression fixtures; retain one hook owner.
+      - Source fixture isolation in doctor.test.ts, lifecycleProtocol.test.ts, prime.test.ts and todoDocsEntities.test.ts; keep intentionally missing-home diagnostics covered.
+      - Bounded prerequisite handling for evaluatorHandoffContract.test.ts, sandboxNpmCandidate.test.ts, retiredResourceDiagnostics.test.ts and upgradeOrchestrator.test.ts. Preserve their Unix-tool and historical-plugin requirements without adding a general preflight subsystem.
+      - Contributor setup, recovery and advanced command guidance in AGENTS.md, packages/cli/README.md, packages/cli/test/README.md, the verification skill and relevant packaging guide sections. Preserve stable-shim targeting and argument semantics.
+      - Optional .opencode tooling is limited to verifying and documenting a Vite-mediated invocation that preserves its separate npm manifest and lockfile. An unsupported result requires a user scope decision before claiming complete coverage; no unverified command or unmanaged-tool fallback may be advertised.
+      - Final fresh-environment qualification, required affected-boundary checks, documentation consistency and typed state closeout. Existing evidence informs coverage but does not prove changed behavior.
+    excluded:
+      - Removing Corepack from the CI integrity bootstrap or modifying the publication workflow, registry, credentials, package construction or OIDC publisher.
+      - Replacing Lefthook, Vitest, the verification DAG or internal package management; erasing historical or CI-internal pnpm/Corepack references.
+      - Merging the optional OpenCode dependency boundary into the root workspace or changing its runtime implementation.
+      - New platform CI, general shell portability, unrelated fixture cleanup, performance optimization, product behavior changes and release-version work.
+    deferred:
+      - Corepack-free CI bootstrap equivalence and hosted qualification remain separate work.
+      - macOS, Windows, ARM64, musl and fresh offline bootstrap remain outside the verified support claim.
+  design: Establish one supported entry point and its managed environment. Make hook execution and test fixtures independent of accidental host state while retaining their existing responsibilities. Align contributor guidance with the supported behavior, then qualify the complete journey. Keep internal package management and release security distinct from the contributor interface.
+  unknowns:
+    - question: Can ordinary Git invocations outside managed shells discover the pinned runtime and current-worktree tools after a sibling installs hooks and its installer worktree is removed?
+      affects_task: 2
+      resolve_by: Probe a disposable worktree pair before changing shared hooks, with the supported launcher available through documented discovery and no ambient JavaScript tools. Supported operation must succeed. If disproved, stop dependent work and obtain user approval for a revised contract; failure diagnostics cannot replace success.
+    - question: Can the supported Vite-mediated optional OpenCode command preserve the nested npm boundary without selecting or modifying the parent workspace?
+      affects_task: 4
+      resolve_by: Probe the exact supported version in a disposable nested fixture before documenting the command. Preserve both package authorities. If unsupported, request an explicit scope decision rather than migrating the optional runtime or claiming unverified coverage.
+  overall_acceptance: GIVEN the supported Vite+ launcher, documented Linux OS/Git prerequisites and a fresh contributor environment without ambient Node, pnpm or Corepack WHEN following the approved Vite-only setup, hook, verification and build journey THEN dependency installation, checks, typecheck, one complete source-owner run, build and built-CLI smoke pass without authority drift. Ordinary Git checks use the pinned runtime and current-worktree tools while preserving partial staging. Optional guidance is verified or returned for a user scope decision. CI trust and publication remain unchanged, and qualification reports failures truthfully.
+  surprises:
+    []

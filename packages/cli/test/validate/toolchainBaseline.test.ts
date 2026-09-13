@@ -99,6 +99,7 @@ describe("toolchain baseline", () => {
   });
 
   it("binds the executable integration proof to live project policy", () => {
+    expect(baseline.executable_proof.command).toBe("vp -C packages/cli run test:toolchain-baseline");
     expect(baseline.selection.vite_plus.version).toBe("0.3.0");
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
     expect(workspace.catalog).toEqual({

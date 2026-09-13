@@ -8,6 +8,13 @@ if [[ -z "$ROOT" || ! -d "$ROOT" ]]; then
   exit 2
 fi
 
+for tool in grep find; do
+  if ! command -v "$tool" >/dev/null 2>&1; then
+    echo "scan-python-leftovers: required tool unavailable on PATH: $tool" >&2
+    exit 2
+  fi
+done
+
 PATTERNS=(
   'validate_artifact\.py'
   'cursor_session_start\.py'
@@ -20,8 +27,8 @@ PATTERNS=(
 hits=0
 while IFS= read -r file; do
   case "$file" in
-    *.json|*.toml|*.js|*.md|*.yaml|*.yml|*.sh) ;;
-    *) continue ;;
+  *.json | *.toml | *.js | *.md | *.yaml | *.yml | *.sh) ;;
+  *) continue ;;
   esac
   for pattern in "${PATTERNS[@]}"; do
     if grep -qE "$pattern" "$file" 2>/dev/null; then

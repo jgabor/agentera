@@ -269,7 +269,7 @@ describe("package publication orchestration", () => {
       for (const block of developmentBlocks) expect(block).not.toContain("--target-version");
     }
 
-    expect(releaseSkill).toContain(["pnpm cli:prepare:stable -- \\", "  --target-version X.Y.Z --source-commit COMMIT"].join("\n"));
+    expect(releaseSkill).toContain(["vp run cli:prepare:stable -- \\", "  --target-version X.Y.Z --source-commit COMMIT"].join("\n"));
 
     for (const [label, instructions] of [
       ["release skill", releaseSkill],

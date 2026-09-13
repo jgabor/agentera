@@ -248,10 +248,12 @@ state, candidate projection, or publication result.
 
 ## Contributors
 
-Contributors use the Node.js 24 LTS version pinned in `.node-version` and pnpm
-10.30.3. Use the canonical daily Vite+ commands in
-[AGENTS.md](../../AGENTS.md). The commands below are maintainer recovery and
-generated-output checks, not a second daily command vocabulary.
+Use the standalone Vite+ 0.3.0 setup and recovery recipe in
+[AGENTS.md](../../AGENTS.md#common-commands). Vite+ supplies the pinned Node and
+pnpm; no separate JavaScript tool or Lefthook installation is needed. That guide
+also owns hook setup, optional nested npm dependencies, and platform/offline
+limits. The commands below select existing maintainer owners through Vite+;
+run them from the repository root.
 
 ### Generated-output ownership
 
@@ -262,14 +264,14 @@ authoritative. Routine builds update checkout `dist/` and `bundle/`, while
 release verification uses a private temporary build root.
 
 ```bash
-pnpm -C packages/cli test
-pnpm -C packages/cli run verify:package
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-pnpm -C packages/cli run verify:generated-overlap
-pnpm -C packages/cli run lint
+vp run test
+vp -C packages/cli run verify:package
+vp run typecheck
+vp run build
+vp -C packages/cli run verify:generated-overlap
+vp -C packages/cli run lint
 ```
 
-Use `pnpm -C packages/cli run pack:dry-run` to inspect the exact isolated
+Use `vp -C packages/cli run pack:dry-run` to inspect the exact isolated
 publication surface. Do not publish from a normal development or capability
 cycle.

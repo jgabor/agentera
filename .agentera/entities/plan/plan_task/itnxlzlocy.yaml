@@ -1,0 +1,25 @@
+id: itnxlzlocy
+artifact: plan
+record:
+  name: Publish one contributor command vocabulary
+  depends_on:
+    - ynypcdnoww
+    - wzbktlfcvs
+    - hmbjcitjrp
+  status: complete
+  acceptance:
+    - GIVEN contributor guidance WHEN following supported setup and recovery THEN no separate Node, Corepack, pnpm or Lefthook installation is required.
+    - GIVEN optional runtime guidance WHEN its verified command runs THEN nested npm and parent workspace authorities remain unchanged.
+    - GIVEN advanced verification or stable-shim commands WHEN Vite+ invokes them THEN target and argument semantics remain intact.
+    - GIVEN platform and offline limits WHEN guidance is read THEN verified support and CI-internal exceptions are explicit.
+  plan: ziklyhasqe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: itnxlzlocy-20260912-1
+      source: "Independent audit: contributor setup/recovery, verified nested npm isolation, stable-wrapper argument routing and explicit platform/offline/CI boundaries all passed; documentation lint and focused contract evidence accepted."
+      recorded_at: 2026-09-12 08:06
+      writer_command: agentera state plan record-evaluation

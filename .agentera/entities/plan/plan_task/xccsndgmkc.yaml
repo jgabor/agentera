@@ -1,0 +1,26 @@
+id: xccsndgmkc
+artifact: plan
+record:
+  name: Qualify onboarding and close out delivery
+  depends_on:
+    - ynypcdnoww
+    - wzbktlfcvs
+    - hmbjcitjrp
+    - itnxlzlocy
+  status: complete
+  acceptance:
+    - GIVEN fresh HOME and complete Git fixtures WHEN Vite+ installs THEN frozen dependency and lifecycle authority hold.
+    - GIVEN no ambient Node, pnpm or Corepack WHEN checks, typecheck, full source and build run THEN all pass, including CLI smoke.
+    - GIVEN separately launched Git WHEN staged checks run THEN managed-runtime, worktree-ownership and partial-staging guarantees pass.
+    - GIVEN accepted delivery WHEN closing the plan THEN documentation and state agree, required gates retain evidence, and unverified boundaries remain explicit.
+  plan: ziklyhasqe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: xccsndgmkc-20260912-1
+      source: "Final independent audit: fresh frozen install, 4422-test complete source PASS, checks/typecheck/build/local smoke, contract validation, 22-command hook proof and typed inventory reconciliation match current delivery fingerprints; Linux contributor scope only."
+      recorded_at: 2026-09-12 09:09
+      writer_command: agentera state plan record-evaluation

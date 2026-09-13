@@ -21,7 +21,7 @@ import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";
 import { STATUS_READY_TO_APPLY, STATUS_NO_CHANGES_NEEDED, UPGRADE_PREVIEW_SCHEMA } from "../../src/upgrade/compatibility.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 import { buildUpgradePlan, renderUpgradePlan, validateUpgradeApply } from "../../src/upgrade/upgradeOrchestrator.js";
-import { gitCommitArgs } from "../helpers/git.js";
+import { gitCommitArgs, historicalPluginFixture } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -652,12 +652,8 @@ describe("buildUpgradePlan", () => {
 
     const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
     fs.mkdirSync(path.dirname(plugin), { recursive: true });
-    const historical = spawnSync("git", ["show", "aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js"], {
-      cwd: REPO_ROOT,
-      encoding: null,
-    });
-    expect(historical.status).toBe(0);
-    fs.writeFileSync(plugin, historical.stdout);
+    const historical = historicalPluginFixture(REPO_ROOT);
+    fs.writeFileSync(plugin, historical);
     const observed = observeLifecyclePath(plugin, [home]);
     appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
       schemaVersion: LIFECYCLE_LEDGER_SCHEMA,
@@ -706,7 +702,7 @@ describe("buildUpgradePlan", () => {
     expect(noop.lifecycle?.status).toBe("noop");
     expect(renderUpgradePlan(noop)).not.toContain("restart OpenCode");
 
-    fs.writeFileSync(plugin, historical.stdout);
+    fs.writeFileSync(plugin, historical);
     const replacementObservation = observeLifecyclePath(plugin, [home]);
     appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(bundle), {
       schemaVersion: LIFECYCLE_LEDGER_SCHEMA,

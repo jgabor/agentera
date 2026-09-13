@@ -2,6 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
+import { historicalPluginFixture } from "../helpers/git.js";
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
@@ -115,6 +116,14 @@ function replayPreview(preview: string, expectedRoot: string, resourceId: string
 }
 
 describe("retired native resource doctor diagnostics", () => {
+  it("names the required historical plugin object when checkout history is unavailable", () => {
+    const root = path.join(home, "history-unavailable");
+    fs.mkdirSync(root);
+    const initialized = spawnSync("git", ["init", "--quiet", root], { encoding: "utf8" });
+    expect(initialized.status, initialized.error?.message ?? initialized.stderr).toBe(0);
+    expect(() => historicalPluginFixture(root)).toThrow("Historical plugin fixture requires git and repository object aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js");
+  });
+
   it("maps the independent exact retirement inventory to stale evidence and ID-scoped previews", () => {
     const contract = loadNativeResourceCleanupContract();
     const bodies = new Map<string, string[]>();
@@ -234,12 +243,7 @@ describe("retired native resource doctor diagnostics", () => {
   it("reports a proven plugin as pending automatic removal through normal upgrade in JSON and default text", () => {
     const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
     fs.mkdirSync(path.dirname(plugin), { recursive: true });
-    const historical = spawnSync("git", ["show", "aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js"], {
-      cwd: path.resolve(import.meta.dirname, "../../../.."),
-      encoding: null,
-    });
-    expect(historical.status).toBe(0);
-    fs.writeFileSync(plugin, historical.stdout);
+    fs.writeFileSync(plugin, historicalPluginFixture(path.resolve(import.meta.dirname, "../../../..")));
     const observed = observeLifecyclePath(plugin, [home]);
     appendLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(installRoot), {
       schemaVersion: LIFECYCLE_LEDGER_SCHEMA,

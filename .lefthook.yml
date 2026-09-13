@@ -1,4 +1,7 @@
 output: [summary, failure]
+# Resolve from the invoking worktree, never the worktree that installed hooks.
+# Setup after vp install: vp exec lefthook install
+lefthook: sh packages/cli/scripts/run-lefthook.sh
 
 pre-commit:
   commands:

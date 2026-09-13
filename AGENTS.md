@@ -162,9 +162,37 @@ editing files or checking credentials.
 
 ## Common commands
 
-Use the Node.js 24 LTS version pinned in `.node-version` and pnpm 10.30.3
-through Corepack. This is the canonical daily contributor vocabulary; run it
-from the repository root:
+Contributors use standalone Vite+ **0.3.0**, which supplies the Node.js version
+in `.node-version` and pnpm 10.30.3 from `package.json#packageManager`.
+No separate Node, Corepack, pnpm, or Lefthook installation is required.
+
+Obtain the standalone launcher from the trusted
+[Vite+ v0.3.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v0.3.0),
+not the Node-dependent project shim. The verified Linux x64 asset is
+`vp-x86_64-unknown-linux-gnu.tar.gz`; review the release provenance and checksum
+before extracting its executable into a user-owned directory on ordinary
+shell **and Git** `PATH`. Download/extraction tools are OS prerequisites, not
+provided by Vite+. Do not substitute an unpinned installer or an older global
+`vp`; `vp --version` must report 0.3.0 for the launcher and, after install, the
+local package. This contributor path is verified on Linux x64 only; macOS and
+Windows are not qualified by that evidence.
+
+From the repository root, first install (also dependency recovery):
+
+```bash
+vp --version
+vp env on
+vp install --frozen-lockfile
+vp exec lefthook install
+```
+
+`vp run bootstrap` repeats the frozen install only **after local dependencies
+exist**; it is not the fresh-checkout entrypoint. If the launcher is missing or
+old, restore the supported standalone executable on `PATH` first. If the frozen
+lock check fails, restore matching checked-in manifests and lockfile, then rerun
+the frozen install; do not bypass the lock check or install another manager.
+
+Daily commands, also from the repository root:
 
 ```bash
 vp install
@@ -172,19 +200,23 @@ vp check
 vp run typecheck
 vp run test
 vp run build
+vp run verify:development
 vp run verify
 ```
 
-The scripts are uncached. Hooks require the project-local Vite+ installed by
-`vp install` and fail with that recovery command when it is missing; a global
-`vp` is never used for hook formatting. pnpm remains the underlying authority
-and recovery interface. Maintainer-only package and lane commands live in
+The scripts are uncached and delegate to the existing CLI package owners.
+`vp run test` is the complete source owner; `vp run build` builds the CLI.
+Native `vp test` and `vp build` are not aliases for those scripts.
+`vp run verify:development` is routine development safety; `vp run verify` is
+full qualification, including repeated measurements and historical certification.
+pnpm remains the underlying workspace/lockfile authority, managed through Vite+.
+Maintainer-only package and lane commands live in
 `.opencode/skills/agentera-verification/SKILL.md` and
 `docs/packaging/v3-packaging.md`.
 
 Project-state operations use the published development runtime,
 `npx -y agentera@next state ...`. Checks for changed local CLI behavior use
-`node packages/cli/dist/bin/agentera.js ...` from a current `vp run build`; they
+`vp node packages/cli/dist/bin/agentera.js ...` from a current `vp run build`; they
 do not use the published package. Reuse that build until relevant inputs change
 or the artifact is absent, rather than rebuilding before every invocation.
 
@@ -194,6 +226,39 @@ authority guard project, and separate typecheck. Root native discovery partition
 the full source owner into `local`, `source` (remainder), and `guards` without duplication;
 full CI retains specialized owners. See the verification skill for coverage
 limits, fixture exclusions, and local-tool recovery.
+
+Lefthook is the sole hook owner; do not also run `vp hooks`. Its installed hook
+uses `packages/cli/scripts/run-lefthook.sh` from the invoking worktree, and Vite+
+supplies the managed runtime to that worktree's local tools. Formatting still
+uses project-local Vite+, never a global formatter. Git hooks are shared across
+linked worktrees, not isolated per worktree; each worktree needs its own
+`vp install --frozen-lockfile`. Restore launcher discovery and dependencies before
+rerunning `vp exec lefthook install` when hook setup needs repair.
+
+### Optional checkout-local runtime dependencies
+
+Only when optional `.opencode/` runtime code or tests need its declared types,
+and its npm manifest/lockfile are present, run from the repository root after
+the root install:
+
+```bash
+vp exec npm --prefix .opencode install --ignore-scripts --no-audit --no-fund
+```
+
+This Vite+ 0.3.0 recipe uses managed npm with the nested npm manifest and
+`package-lock.json`, without adopting it into pnpm or changing the parent
+workspace authorities. It is not part of root install. Keep that ignored,
+checkout-local dependency boundary outside the pnpm workspace and Agentera
+package; do not replace it with `vp install` in the nested directory.
+
+First use needs network access for uncached runtime, manager, and dependencies.
+Warm cached offline use is verified; an empty offline cache cannot provision
+Node. Optional npm `--offline` also requires its dependency artifacts locally.
+Vite+ does not supply the OS tools or Git history required by tests and hooks;
+see [test prerequisites](packages/cli/test/README.md#contributor-prerequisites).
+CI's trusted Corepack bootstrap, internal pnpm scripts, isolated npm package
+construction, and fixed OIDC publisher are separate authorities, not alternate
+contributor setup recipes. Consumer `npx -y agentera@next` is unchanged.
 
 Run the narrowest relevant check first, then broaden according to impact. Load
 `agentera-verification` before changing gate policy, diagnosing a failed lane,

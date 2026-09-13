@@ -13,6 +13,9 @@ import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { commandText } from "../../src/upgrade/upgradeCommands.js";
 import { semanticFindings } from "./retiredVocabulary.js";
+import { useSourceAppHome } from "../helpers/managedAppStub.js";
+
+useSourceAppHome();
 
 const roots: string[] = [];
 

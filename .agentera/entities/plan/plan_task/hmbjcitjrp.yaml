@@ -1,0 +1,23 @@
+id: hmbjcitjrp
+artifact: plan
+record:
+  name: Isolate source verification from contributor home state
+  depends_on:
+    - ynypcdnoww
+  status: complete
+  acceptance:
+    - GIVEN fresh HOME WHEN source fixtures run THEN default-app-home assumptions do not alter expected results.
+    - GIVEN intentionally missing app home WHEN diagnostic regressions run THEN production missing-home behavior remains covered.
+    - GIVEN unavailable historical fixtures or Unix utilities WHEN named affected checks run THEN they identify the specific prerequisite.
+    - GIVEN complete prerequisites WHEN the source owner runs THEN intended tests execute without added skips or weakened assertions.
+  plan: ziklyhasqe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: hmbjcitjrp-20260912-1
+      source: "Independent audit: fresh-HOME ownership, preserved missing-home diagnostics and explicit prerequisite failures passed; 272 distinct tests across nine files, no skips, with corrected suite rerun."
+      recorded_at: 2026-09-12 00:33
+      writer_command: agentera state plan record-evaluation

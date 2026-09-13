@@ -1,0 +1,23 @@
+id: ynypcdnoww
+artifact: plan
+record:
+  name: Establish Vite-only bootstrap and command ownership
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN supported Vite+ and OS prerequisites WHEN bootstrap runs THEN pinned Node, pnpm and locked dependencies are supplied.
+    - GIVEN absent or conflicting host tools WHEN contributor commands run THEN managed versions win without separately installed Corepack.
+    - GIVEN unmet pin or dependency authority WHEN bootstrap runs THEN it fails with actionable Vite-only recovery.
+    - GIVEN existing task entrypoints WHEN Vite+ invokes them THEN arguments, working directories, uncached gates and release boundaries remain unchanged.
+  plan: ziklyhasqe
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: ynypcdnoww-20260911-1
+      source: "Independent audit: four bootstrap acceptance criteria passed; native Vite provisioning, conflict traps, frozen-lock rejection, and wrapper semantics verified."
+      recorded_at: 2026-09-12 00:18
+      writer_command: agentera state plan record-evaluation

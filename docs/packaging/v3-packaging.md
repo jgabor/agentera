@@ -10,6 +10,28 @@ Agentera v3 has one distribution boundary: the self-contained `agentera` npm
 package used by `npx -y agentera@next`. Native runtime packages, editor
 packages, and the former Bun single-binary surface are retired.
 
+## Contributor command entrypoints
+
+Complete the standalone Vite+ 0.3.0 setup in
+[AGENTS.md](../../AGENTS.md#common-commands) before using this guide's maintainer
+commands. Run them from the repository root. That authority owns launcher and
+dependency recovery, Lefthook setup, the optional nested npm recipe, and the
+Linux x64/offline support limits; Vite+ does not provide OS tools or Git history.
+See [test prerequisites](../../packages/cli/test/README.md#contributor-prerequisites).
+
+Use `vp run cli:*` for the named root release wrappers and `vp -C packages/cli
+run <script>` for advanced CLI owners. `vp node` supplies managed Node to direct
+maintainer helpers. Keep the documented targets and arguments, including literal
+`--`, unchanged. Stable wrappers target `packages/cli/shim`, which is outside
+the pnpm workspace; do not replace them with workspace filters. Native
+`vp test`/`vp build` are not aliases for `vp run test`/`vp run build`.
+
+The scripts still delegate internally to pnpm. CI's trusted Corepack bootstrap,
+isolated npm package construction, and the fixed OIDC publisher are separate
+authorities and remain unchanged. These contributor commands neither replace
+those mechanisms nor grant release or registry-mutation permission. Consumer
+`npx -y agentera@next` remains unchanged.
+
 ## Package layout
 
 `packages/cli/package.json` publishes `dist/` and `bundle/`:
@@ -118,23 +140,23 @@ cannot issue new source authority. A valid downloaded source receipt is reused
 without running an owner.
 
 ```bash
-pnpm cli:ready:dev -- \
+vp run cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT --json
 # outcome: paused; state: awaiting_metadata_review
 
 # Update, review, and commit packages/cli/package.json separately.
-pnpm cli:prepare:dev -- \
+vp run cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT
 
-pnpm cli:ready:dev -- \
+vp run cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT \
   --metadata-commit METADATA_COMMIT --json
 # outcome: ready; state: ready_for_approval
 
-pnpm cli:prepare:dev -- \
+vp run cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT --check
 ```
@@ -283,7 +305,7 @@ changes metadata. Maintainers can also run the check directly without running
 gates or writing repository or artifact state:
 
 ```bash
-node packages/cli/scripts/release-qualification.mjs source-check \
+vp node packages/cli/scripts/release-qualification.mjs source-check \
   --candidate-dir /secure/external/agentera-package --json
 ```
 
@@ -306,7 +328,7 @@ For the manual recovery path, readiness returning `ready` still requires a
 separate explicit approval against the same external directory:
 
 ```bash
-pnpm cli:approve:dev -- --candidate-dir /secure/external/agentera-package --approved-by NAME
+vp run cli:approve:dev -- --candidate-dir /secure/external/agentera-package --approved-by NAME
 ```
 
 Package verification validates that source receipt, runs release-metadata,
@@ -382,7 +404,7 @@ command is emergency recovery only, after the same artifact-bound approval and
 retained package artifact are established:
 
 ```bash
-NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
+NPM_TOKEN=... vp run cli:publish:qualified:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
@@ -428,7 +450,7 @@ Run the non-mutating package verification benchmark from an external directory:
 
 ```bash
 mkdir /secure/external/agentera-verification-benchmark
-pnpm cli:benchmark:qualification -- --adapter development \
+vp run cli:benchmark:qualification -- --adapter development \
   --candidate-root /secure/external/agentera-verification-benchmark --json
 ```
 
@@ -458,12 +480,12 @@ independent:
 
 | Owner | Entry point | Owns |
 | ----- | ----------- | ---- |
-| Source | `pnpm -C packages/cli test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
-| Stress | `pnpm -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
-| Performance | `pnpm -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
-| Capacity | `pnpm -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
-| Package | `pnpm -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
-| Certification | `pnpm -C packages/cli run test:certification` | Historical all-test compiler viability, formatter normalization replay, and parity re-pin proof, including tamper rejection. Only the three explicitly named policy files belong here; behavioral product parity remains source-owned. Mandatory in full qualification, omitted from routine development. |
+| Source | `vp run test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Stress | `vp -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
+| Performance | `vp -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
+| Capacity | `vp -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
+| Package | `vp -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
+| Certification | `vp -C packages/cli run test:certification` | Historical all-test compiler viability, formatter normalization replay, and parity re-pin proof, including tamper rejection. Only the three explicitly named policy files belong here; behavioral product parity remains source-owned. Mandatory in full qualification, omitted from routine development. |
 
 Build is a separate generated-output participant, not a test owner. Routine
 builds synchronize staged output into checkout `dist/` and `bundle/`; release
@@ -541,7 +563,7 @@ passes without a fallback. Automatic related selection uses only the positive
 `local_source` fast suite: core utilities, registry contracts, argument parsing
 and capability-schema tests. Bootstrap, upgrade, lifecycle, integration and
 other fs/subprocess contracts remain in the full source owner, not the local
-subset. Run `vp run test` or `corepack pnpm -C packages/cli run test:source` for
+subset. Run `vp run test` or `vp -C packages/cli run test:source` for
 all source tests; `--project source` alone selects only the remainder. Two local
 workers and native test/hook timeouts are configured, with whole-project
 typecheck separate; membership is bounded, not a runtime SLA.
@@ -564,15 +586,15 @@ For check-only diagnosis, run the complete non-publishing release verification
 from the repository root:
 
 ```bash
-pnpm -C packages/cli run verify:release
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check compact
-node packages/cli/dist/bin/agentera.js check validate \
+vp run verify
+vp run typecheck
+vp run build
+vp node packages/cli/dist/bin/agentera.js check compact
+vp node packages/cli/dist/bin/agentera.js check validate \
   capability-contract
-node packages/cli/dist/bin/agentera.js check validate \
+vp node packages/cli/dist/bin/agentera.js check validate \
   release-metadata
-pnpm -C packages/cli run pack:dry-run
+vp -C packages/cli run pack:dry-run
 ```
 
 This diagnostic verification is not a step before or after `cli:ready:dev` in a
@@ -622,7 +644,7 @@ Full qualification remains explicitly reachable without a scheduled workflow:
 # Restore the historical certification prerequisites below first.
 vp run verify
 # Focused historical certification diagnosis (not full qualification):
-pnpm -C packages/cli run test:certification
+vp -C packages/cli run test:certification
 ```
 
 Full qualification still executes all five cold repetitions, stress, capacity,
@@ -650,7 +672,7 @@ Historical certification prerequisites (required together):
   compiler/tool dependencies. Missing inputs or changed replay diagnostics
   remain failures; development success is not historical certification.
 
-`pnpm -C packages/cli run verify:generated-overlap` starts the exact public
+`vp -C packages/cli run verify:generated-overlap` starts the exact public
 source, package, and build owners concurrently. The build owner writes one
 source-identified immutable tree under the coordinator's private temporary
 root. Release readers and activation evidence use that explicit root. No
@@ -658,7 +680,7 @@ checkout generation pointer, lease, retention, or cleanup protocol participates.
 
 ## Checkout generated output
 
-Routine `pnpm -C packages/cli build` constructs `dist/` and `bundle/` in an OS
+Routine `vp run build` constructs `dist/` and `bundle/` in an OS
 temporary directory. It then synchronizes those trees into the checkout. The
 synchronizer adds missing files, replaces files whose bytes or executable mode
 changed, and removes stale files. It does not rewrite unchanged files, so an
@@ -673,7 +695,7 @@ checkout `dist/bin/agentera.js` is the compiled regular executable, not a
 generation launcher. Routine builds do not write `.agentera-generated`.
 
 To inspect the publication tarball surface, use
-`pnpm -C packages/cli run pack:dry-run`. Add `-- --json` or `-- --verbose` when
+`vp -C packages/cli run pack:dry-run`. Add `-- --json` or `-- --verbose` when
 the complete file manifest is needed. Direct checkout `npm pack` remains
 rejected because package construction owns the publication inputs.
 

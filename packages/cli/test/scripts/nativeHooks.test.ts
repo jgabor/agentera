@@ -36,6 +36,8 @@ function fixture() {
   ok(root, "git", ["config", "commit.gpgsign", "false"]);
   ok(root, "git", ["config", "core.hooksPath", ".git/hooks"]);
   fs.symlinkSync(path.join(repo, "node_modules"), path.join(root, "node_modules"), "dir");
+  fs.copyFileSync(path.join(repo, ".node-version"), path.join(root, ".node-version"));
+  write(root, "packages/cli/scripts/run-lefthook.sh", fs.readFileSync(path.join(repo, "packages/cli/scripts/run-lefthook.sh"), "utf8"));
   write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt })};\n`);
   for (const file of [".markdownlint.json", ".markdownlintignore"]) fs.copyFileSync(path.join(repo, file), path.join(root, file));
   write(root, ".gitignore", "node_modules\n");
@@ -128,7 +130,7 @@ describe("native hook boundaries", () => {
         name: "hook-fixture",
         private: true,
         type: "module",
-        scripts: { typecheck: "tsc -p tsconfig.json --noEmit && node trace.cjs typecheck" },
+        scripts: { typecheck: "tsc6 -p tsconfig.json --noEmit && node trace.cjs typecheck" },
       }),
     );
     write(

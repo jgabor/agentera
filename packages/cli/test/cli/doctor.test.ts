@@ -7,6 +7,9 @@ import { describe, expect, it, vi } from "vitest";
 import { cmdDoctor, renderDoctorStatus } from "../../src/cli/commands/doctor.js";
 import { main } from "../../src/cli/dispatch.js";
 import * as smokeChecks from "../../src/setup/smokeChecks.js";
+import { platformDefaultAppHome, useSourceAppHome } from "../helpers/managedAppStub.js";
+
+useSourceAppHome();
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
   rc: number;
@@ -72,6 +75,13 @@ describe("cli doctor", () => {
     expect(payload.shared_skill.path).toContain(".agents/skills/agentera");
     expect(payload).not.toHaveProperty("runtime_lifecycle");
     expect(JSON.stringify(payload)).not.toContain("bundle");
+  });
+
+  it("retains missing_bundle diagnostics when the fixture default app home is absent", () => {
+    fs.rmSync(platformDefaultAppHome(os.homedir()), { recursive: true });
+    const { rc, out } = capture((io) => cmdDoctor({ format: "json" }, io));
+    expect(rc).not.toBe(0);
+    expect(JSON.parse(out).signals).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "missing_bundle" })]));
   });
 
   it("defaults the public doctor route to its JSON payload", () => {

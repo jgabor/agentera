@@ -26,6 +26,7 @@
 
 ### Changed
 
+- Contributor setup and recovery use standalone Vite+ 0.3.0 without separate Node, Corepack, pnpm, or Lefthook installs. Hooks use the invoking worktree's tools; optional OpenCode dependencies retain their separate npm lockfile.
 - Standardized contributor setup, checks, tests, and builds on workspace-root Vite+, delegating product commands to `packages/cli/package.json`; CI bootstrap now verifies installer integrity, migration checks block direct-push publication, and lint debt is reduced without changing pnpm lockfile authority.
 - Retired external integrations now use a complete, authority-backed ownership inventory. Exact managed markers declare ownership for declared Codex descriptors, OpenCode agents, and OpenCode commands; removing the marker opts out, and marker text in unrelated resources does not qualify. Full and focused cleanup remain preview- and approval-gated, preserve unsafe or unowned resources, and prune declared empty directories without removing host namespaces.
 - The unified Trusted Publisher workflow now routes `@next` from the single checked-in `ci.developmentPush.ref` authority on default `main` and separates candidate construction through an immutable artifact. The entire checkout-free, action-free publication job has OIDC capability and runs only fixed reviewed workflow logic; fixed guard children strip OIDC, and the fixed lifecycle-disabled publish child is the only child intentionally passed the request variables. It preserves deterministic allocation with `GITHUB_RUN_NUMBER + 89`.

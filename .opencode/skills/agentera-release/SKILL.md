@@ -134,23 +134,23 @@ artifact. A workstation can run performance diagnostics, but cannot issue a new
 source receipt.
 
 ```bash
-pnpm cli:ready:dev -- \
+vp run cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT --json
 # Update, review, and commit packages/cli/package.json separately.
-pnpm cli:prepare:dev -- \
+vp run cli:prepare:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT
-pnpm cli:ready:dev -- \
+vp run cli:ready:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --source-commit SOURCE_COMMIT \
   --metadata-commit METADATA_COMMIT --json
-pnpm cli:approve:dev -- \
+vp run cli:approve:dev -- \
   --candidate-dir /secure/external/agentera-package --approved-by NAME
-pnpm cli:benchmark:qualification -- \
+vp run cli:benchmark:qualification -- \
   --adapter development \
   --candidate-root /secure/external/agentera-verification-benchmark --json
-NPM_TOKEN=... pnpm cli:publish:qualified:dev -- \
+NPM_TOKEN=... vp run cli:publish:qualified:dev -- \
   --candidate-dir /secure/external/agentera-package \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
@@ -189,7 +189,7 @@ version or `gitRef`. The same check can be invoked directly without rerunning
 gates:
 
 ```bash
-node packages/cli/scripts/release-qualification.mjs source-check \
+vp node packages/cli/scripts/release-qualification.mjs source-check \
   --candidate-dir /secure/external/agentera-package --json
 ```
 
@@ -221,10 +221,10 @@ build job has no OIDC permission. Its dependent publication job uses the
 The stable shim uses the same package flow and remains on `@latest`:
 
 ```bash
-pnpm cli:prepare:stable -- \
+vp run cli:prepare:stable -- \
   --target-version X.Y.Z --source-commit COMMIT
 # Review and commit packages/cli/shim/package.json.
-NPM_TOKEN=... pnpm cli:publish:qualified:stable -- \
+NPM_TOKEN=... vp run cli:publish:qualified:stable -- \
   --candidate-dir /secure/external/agentera-package \
   --receipt-file /secure/external/qualified-publication-receipt.json --json
 ```
@@ -234,15 +234,15 @@ NPM_TOKEN=... pnpm cli:publish:qualified:stable -- \
 Run from the repository root:
 
 ```bash
-pnpm -C packages/cli run verify:release
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check compact
-node packages/cli/dist/bin/agentera.js check validate \
+vp run verify
+vp run typecheck
+vp run build
+vp node packages/cli/dist/bin/agentera.js check compact
+vp node packages/cli/dist/bin/agentera.js check validate \
   capability-contract
-node packages/cli/dist/bin/agentera.js check validate \
+vp node packages/cli/dist/bin/agentera.js check validate \
   release-metadata
-pnpm -C packages/cli run pack:dry-run
+vp -C packages/cli run pack:dry-run
 ```
 
 `verify:release` is the canonical source, stress, performance, capacity, and

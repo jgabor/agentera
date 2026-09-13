@@ -1,9 +1,43 @@
 import fs from "node:fs";
+import os from "node:os";
 import path from "node:path";
+import { afterEach, beforeEach } from "vitest";
 
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 
 export const MANAGED_APP_SCRIPT_PATH = path.join("app", "scripts", "agentera");
+
+/** Source invocation owns the app; these tests need only an empty default user-state root. */
+export function useSourceAppHome(): void {
+  let home: string;
+  let previous: Record<string, string | undefined>;
+  beforeEach(() => {
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-home-"));
+    const env = {
+      HOME: home,
+      XDG_DATA_HOME: path.join(home, ".local", "share"),
+      XDG_CONFIG_HOME: path.join(home, ".config"),
+      AGENTERA_HOME: undefined,
+      AGENTERA_DEFAULT_INSTALL_ROOT: undefined,
+      AGENTERA_PROFILE_DIR: undefined,
+      OPENCODE_CONFIG_DIR: undefined,
+    };
+    previous = {};
+    for (const [key, value] of Object.entries(env)) {
+      previous[key] = process.env[key];
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    fs.mkdirSync(platformDefaultAppHome(home), { recursive: true });
+  });
+  afterEach(() => {
+    for (const [key, value] of Object.entries(previous)) {
+      if (value === undefined) delete process.env[key];
+      else process.env[key] = value;
+    }
+    fs.rmSync(home, { recursive: true, force: true });
+  });
+}
 
 export const PYTHON_SHEBANG = "#!/usr/bin/env python3";
 export const NODE_SHEBANG = "#!/usr/bin/env node";

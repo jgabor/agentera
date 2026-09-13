@@ -16,27 +16,32 @@ load it only for a release-specific need covered by its trigger.
 
 ## Environment
 
-- Use the Node.js 24 LTS version pinned in `.node-version`.
-- Use pnpm 10.30.3 through Corepack.
-- `.opencode/` may keep an ignored, checkout-local npm dependency boundary when
-  its runtime code or tests require `@opencode-ai/plugin` types. Its manifest
-  and lockfile stay outside the root pnpm workspace and Agentera npm package.
+- Follow `AGENTS.md#common-commands`: standalone Vite+ 0.3.0 manages the pinned
+  Node.js and pnpm 10.30.3, without separately installing Node, Corepack, pnpm,
+  or Lefthook. First install is `vp env on` then `vp install --frozen-lockfile`;
+  `vp run bootstrap` requires existing local dependencies.
+- Use that guide's tested `vp exec npm --prefix .opencode install` recipe and
+  flags only for optional checkout-local runtime dependencies. Its npm manifest
+  and lockfile remain outside the root pnpm workspace and Agentera npm package.
+- Linux x64 is the verified contributor platform. Warm caches permit offline
+  use; an empty offline cache cannot download the runtime. OS tools and Git
+  history are separate prerequisites listed in `packages/cli/test/README.md`.
 - Run contributor commands from the repository root unless noted.
 
 ## Common gates
 
 | Purpose | Command |
 | --- | --- |
-| CLI source tests | `pnpm -C packages/cli test` |
-| Package boundary | `pnpm -C packages/cli run verify:package` |
-| Typecheck | `pnpm -C packages/cli run typecheck` |
-| Build | `pnpm -C packages/cli build` |
-| Compact gate | `node packages/cli/dist/bin/agentera.js check compact` |
+| CLI source tests | `vp run test` |
+| Package boundary | `vp -C packages/cli run verify:package` |
+| Typecheck | `vp run typecheck` |
+| Build | `vp run build` |
+| Compact gate | `vp node packages/cli/dist/bin/agentera.js check compact` |
 | Capability contract | Run the contract command below with a current build. |
-| Package dry run | `pnpm -C packages/cli run pack:dry-run` |
+| Package dry run | `vp -C packages/cli run pack:dry-run` |
 
 ```bash
-node packages/cli/dist/bin/agentera.js check validate \
+vp node packages/cli/dist/bin/agentera.js check validate \
   capability-contract
 ```
 
@@ -67,7 +72,7 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   scales and heap/output limits, not five repetitions; latency stays advisory.
   Its distinct development evidence is not full qualification or a receipt.
 - Explicit `vp run verify` remains full qualification: five cold repetitions and
-   historical certification as well as all development safety guards. The three
+  historical certification as well as all development safety guards. The three
   historical suites belong to `test:certification`, not source. See the packaging
   guide for the archived-history prerequisite. Certification failures stay visible.
 
@@ -83,11 +88,20 @@ coupling.
 
 ## Pre-commit hooks
 
-`.lefthook.yml` is authoritative. Install once with:
+`.lefthook.yml` is authoritative. After root dependencies exist, install with:
 
 ```bash
-lefthook install
+vp exec lefthook install
 ```
+
+The supported Lefthook override resolves `packages/cli/scripts/run-lefthook.sh`
+from the invoking worktree and uses standalone Vite+ on ordinary Git `PATH` to
+run local Lefthook with managed Node. No ambient Node/pnpm/Corepack/Lefthook is
+required. Do not install a second hook owner with `vp hooks`. Linked worktrees
+share installed Git hooks, but each needs its own dependencies. Missing Vite+
+requires restoring launcher discovery; missing local tools require
+`vp env on`, `vp install --frozen-lockfile`, then `vp exec lefthook install`.
+See `AGENTS.md` for the canonical setup and recovery boundary.
 
 Pre-commit runs:
 
@@ -103,7 +117,7 @@ Pre-commit runs:
   No related tests is a successful no-op, not an unrelated smoke fallback.
 - Root discovery partitions the source owner into `local`, `source` (remainder)
   and `guards`, without duplicates. Run `vp run test` or
-  `corepack pnpm -C packages/cli run test:source` for the complete source owner.
+  `vp -C packages/cli run test:source` for the complete source owner.
   Bootstrap, upgrade, lifecycle, integration and other fs/subprocess contracts
   stay in full source CI; they are not automatic local-related coverage.
 - fs/script/config-only changes run the configured `guards` project. This is
@@ -128,6 +142,12 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
+Internal pnpm scripts, CI's trusted Corepack bootstrap and fixed OIDC npm
+publisher remain unchanged; Vite+ is the contributor entrypoint, not a rewrite
+of those authorities. Use root `vp run cli:*` wrappers for named release tasks;
+stable wrappers retain the separate `packages/cli/shim` target outside the pnpm
+workspace. Keep forwarded arguments, including literal `--`, in their documented
+order. These commands do not grant release or registry-mutation permission.
 For a normal development push, CI allocates
 `3.0.0-dev.(GITHUB_RUN_NUMBER + 89)`: runs 1, 2, and 3 map to
 `3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`. This fixed offset preserves

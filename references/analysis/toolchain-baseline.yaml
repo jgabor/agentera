@@ -108,14 +108,16 @@ project_contract:
     setup_actions_allowed: false
 
 executable_proof:
-  command: pnpm -C packages/cli run test:toolchain-baseline
+  command: vp -C packages/cli run test:toolchain-baseline
   fixture: isolated temporary workspace; the checkout is not migrated
   coverage:
-    - reads packageManager and executes Corepack's pinned pnpm
+    - reads packageManager and executes Vite-managed pinned pnpm through standalone Vite+ 0.3.0
     - reads onlyBuiltDependencies through live pnpm config
     - installs exact root-local vite-plus 0.3.0 and defeats an earlier stale vp on PATH
     - accepts a matching frozen lockfile and rejects a changed manifest
     - executes the allowed esbuild install script and suppresses an unlisted install script
+    - rejects ambient Node, pnpm and Corepack ownership with executable traps
+    - preserves root bootstrap and child wrapper cwd, arguments, failure propagation and uncached execution
   timing: emitted as observations only; no threshold is asserted
   last_observation:
     environment: isolated Linux x64 workspace under Node 24.19.0

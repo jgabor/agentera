@@ -5,6 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import { afterEach, describe, expect, inject, it, vi } from "vitest";
+import { useSourceAppHome } from "../helpers/managedAppStub.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
@@ -37,6 +38,8 @@ import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.j
 import { loadStateStorageAuthority } from "../../src/state/stateStorageAuthority.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
+
+useSourceAppHome();
 
 const roots: string[] = [];
 const MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";

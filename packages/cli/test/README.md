@@ -9,20 +9,55 @@ Vitest proves **logic** with temp dirs and pinned fixtures. **Live-repo artifact
 and lefthook — not duplicated as vitest assertions against this checkout's `.agentera/` or
 `TODO.md`.
 
-| Layer                   | Proves                                                                                                                                                                                                                                                                | Entry point                                                                          |
-| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
-| Source Vitest           | Detailed hook/CLI behavior from fixtures and tmp project trees; runtime bootstrap uses one accepted and one rejected smoke per source/package representation. No checkout generated-output writes. A source test may compare the direct checkout bundle when present. | `pnpm -C packages/cli test`                                                          |
-| Performance owner       | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority                                                                                                                                                     | `pnpm -C packages/cli test:performance`                                              |
-| Capacity owner          | Large deterministic scale coverage that is too heavy for source correctness or performance timing                                                                                                                                                                     | `pnpm -C packages/cli test:capacity`                                                 |
-| Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface                                                                                                                                                            | `pnpm -C packages/cli test:performance:integration`                                  |
-| Package boundary        | Distribution-only checks from the canonical two-construction fixture, focused bundle safety, exact package inventory and integrity, path independence, and one extracted smoke                                                                                        | `pnpm -C packages/cli run verify:package`                                            |
-| Repo-state fixtures     | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)`                                                                                                                                                                                                | `packages/cli/test/fixtures/repo-state/`                                             |
-| Repo gate               | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50`                                                                                                                                                                                                       | `pnpm -C packages/cli build && node packages/cli/dist/bin/agentera.js check compact` |
-| Release gate            | Version-bearing surfaces and governed provenance aligned in the live checkout                                                                                                                                                                                         | `agentera check validate release-metadata`                                           |
+| Layer                   | Proves                                                                                                                                                                                                                                                                | Entry point                                                               |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| Source Vitest           | Detailed hook/CLI behavior from fixtures and tmp project trees; runtime bootstrap uses one accepted and one rejected smoke per source/package representation. No checkout generated-output writes. A source test may compare the direct checkout bundle when present. | `vp run test`                                                             |
+| Performance owner       | Machine-sensitive cold-process budgets on one worker, including one bounded evidence record with runner authority                                                                                                                                                     | `vp -C packages/cli run test:performance`                                 |
+| Capacity owner          | Large deterministic scale coverage that is too heavy for source correctness or performance timing                                                                                                                                                                     | `vp -C packages/cli run test:capacity`                                    |
+| Performance integration | Real supported owner command plus independent stdout-contract validation; scheduled/release policy surface                                                                                                                                                            | `vp -C packages/cli run test:performance:integration`                     |
+| Package boundary        | Distribution-only checks from the canonical two-construction fixture, focused bundle safety, exact package inventory and integrity, path independence, and one extracted smoke                                                                                        | `vp -C packages/cli run verify:package`                                   |
+| Repo-state fixtures     | Pinned `.agentera/` + `TODO.md` variants via `useFixtureProject(name)`                                                                                                                                                                                                | `packages/cli/test/fixtures/repo-state/`                                  |
+| Repo gate               | Committed `.agentera/*` and `TODO.md` within `uniform_10_40_50`                                                                                                                                                                                                       | `vp run build && vp node packages/cli/dist/bin/agentera.js check compact` |
+| Release gate            | Version-bearing surfaces and governed provenance aligned in the live checkout                                                                                                                                                                                         | `agentera check validate release-metadata`                                |
 
 Generated-output construction, consumers, package publication, and temporary-root
 lifecycle are defined once in the
 [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
+
+## Contributor prerequisites
+
+Use the standalone Vite+ 0.3.0 setup in
+[AGENTS.md](../../../AGENTS.md#common-commands), from the repository root. It
+supplies pinned Node and pnpm plus project-local test and hook tools; it does
+not supply the operating system or Git history. Linux x64 is the verified
+contributor environment, not a claim of macOS or Windows qualification.
+
+- Source tests and hook fixtures require `git`, `sh`, `bash`, `grep`, `head`,
+  `mkdir`, `cp`, `rm`, `find`, `dirname`, Python 3 (`python3`), and GNU `timeout`
+  on `PATH`. Vite+ does not install these OS tools. Git must support the local
+  fixture repositories and worktrees used by the tests.
+- Runtime fixtures own an empty default app home unless a test explicitly
+  supplies one. A contributor's installed Agentera app is not a prerequisite
+  and must not determine test outcomes.
+- The source historical-plugin fixture requires this repository object:
+
+  ```bash
+  git cat-file -e aa33870df05d53745ebad5351b8a352b7dad7780:.opencode/plugins/agentera.js
+  ```
+
+  If absent in a shallow checkout, obtain history from the trusted repository
+  remote with `git fetch --unshallow origin`, then repeat the check. If that
+  remote cannot supply it, restore it from a trusted retained checkout or Git
+  bundle. Do not reset the working tree, replace the fixture with current
+  plugin code, or skip the test. This source prerequisite is separate from
+  the additional archived-history requirements for full qualification below.
+
+- First provisioning needs network for uncached Node, pnpm, and dependencies.
+  Warm cached offline execution is verified; an empty offline runtime cache
+  cannot download Node. Optional nested npm dependencies are separate from root
+  install; use only the root guide's recipe and retain their npm lockfile.
+
+## Verification ownership
 
 Performance stdout is not JSON-only: normal Vitest text surrounds exactly one
 whole-line `agentera.entityAuthorityPerformanceEvidence.v1` JSON record. Consumers
@@ -89,7 +124,7 @@ behavior behind them. Computed imports, file reads and subprocesses are not
 import-graph dependencies. The remainder retains CLI integration, bootstrap,
 setup, upgrade, lifecycle, state/fs contracts, build, analytics, hooks, scripts
 and validation tests; none are removed from full source CI. Run `vp run test`
-or `corepack pnpm -C packages/cli run test:source` for the entire source owner;
+or `vp -C packages/cli run test:source` for the entire source owner;
 `vp test run --project source` alone intentionally selects only the remainder.
 Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative

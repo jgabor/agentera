@@ -73,9 +73,9 @@ npx -y agentera@next check validate capability-contract
 When modifying CLI source, build before invoking the local runtime:
 
 ```bash
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check validate \
+vp run typecheck
+vp run build
+vp node packages/cli/dist/bin/agentera.js check validate \
   capability-contract
 ```
 
