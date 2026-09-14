@@ -64,6 +64,57 @@ function corrupt(relative: string, mutate: (value: any) => void) {
 }
 
 describe("purpose-owned report/check/recovery static guidance", () => {
+  it("reuses report authority mappings within a request and reads them again for the next request", () => {
+    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", root);
+    const pathname = path.join(root, "references/artifacts/glossary-entry-contract.yaml");
+    const reads = vi.spyOn(fs, "readFileSync");
+    const args = ["report", "explain", "--operation", "summary", "--section", "usage"];
+    const first = query(args);
+    expect(first.code).toBe(0);
+    // One comment-preserving document read and one shared mapping read, even
+    // though multiple validators and projections consume the same contract.
+    expect(reads.mock.calls.filter(([file]) => String(file) === pathname)).toHaveLength(2);
+    reads.mockClear();
+    expect(query(args).out).toBe(first.out);
+    expect(reads.mock.calls.filter(([file]) => String(file) === pathname)).toHaveLength(2);
+  });
+
+  it.each(["missing", "corrupt"])("does not retain a report authority across a %s request", (failure) => {
+    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", root);
+    const pathname = path.join(root, "references/artifacts/glossary-entry-contract.yaml");
+    const args = ["report", "explain", "--operation", "summary", "--section", "usage"];
+    const first = query(args);
+    expect(first.code).toBe(0);
+    const original = fs.readFileSync.bind(fs);
+    const reads = vi.spyOn(fs, "readFileSync").mockImplementation(((file: any, ...options: any[]) => {
+      if (String(file) !== pathname) return (original as any)(file, ...options);
+      if (failure === "missing") throw Object.assign(new Error("Missing authority"), { code: "ENOENT" });
+      return "invalid: [";
+    }) as any);
+    expect(query(args)).toMatchObject({ code: 1, value: { error: { class: "schema_violation" } } });
+    reads.mockRestore();
+    expect(query(args).out).toBe(first.out);
+  });
+
+  it("discards populated mappings when a later report authority fails", () => {
+    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", root);
+    const entry = path.join(root, "references/artifacts/glossary-entry-contract.yaml");
+    const evidence = path.join(root, "references/analysis/evidence-tier-authority.yaml");
+    const original = fs.readFileSync.bind(fs);
+    let unavailable = true;
+    const reads = vi.spyOn(fs, "readFileSync").mockImplementation(((file: any, ...options: any[]) => {
+      if (unavailable && String(file) === evidence) throw Object.assign(new Error("Missing evidence authority"), { code: "ENOENT" });
+      return (original as any)(file, ...options);
+    }) as any);
+    const args = ["report", "explain", "--operation", "summary", "--section", "usage"];
+    expect(query(args).code).toBe(1);
+    expect(reads.mock.calls.filter(([file]) => String(file) === entry)).toHaveLength(2);
+    reads.mockClear();
+    unavailable = false;
+    expect(query(args).code).toBe(0);
+    expect(reads.mock.calls.filter(([file]) => String(file) === entry)).toHaveLength(2);
+  });
+
   it("describes the actual summary and refresh output variants, not Profile Full inputs", () => {
     const summary = read(["report", "explain", "--operation", "summary", "--section", "output"]);
     const analysis = analyzeCorpus({

@@ -3,6 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import YAML from "yaml";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import { withReadOnlyYamlMappingCache } from "../../core/yaml.js";
 import { guidanceDetail, guidanceQuote, GuidanceInputError, type GuidanceSection } from "../guidanceDetail.js";
 import { emitInvalidInput } from "../errors.js";
 import { reportDetailSections } from "./reportDetail.js";
@@ -66,6 +67,12 @@ export function operationIndex(authority: ServiceAuthority, base: string, operat
 }
 
 export function runServiceDetail(owner: ServiceOwner, argv: string[], io: { out?: (text: string) => void; err?: (text: string) => void }): number {
+  // Validators share immutable mappings within this request. The next command
+  // must read its selected authorities again, including after a failed request.
+  return withReadOnlyYamlMappingCache(() => runServiceDetailRequest(owner, argv, io));
+}
+
+function runServiceDetailRequest(owner: ServiceOwner, argv: string[], io: { out?: (text: string) => void; err?: (text: string) => void }): number {
   let base = `npx -y agentera@next ${owner} ${owner === "report" || owner === "check" ? "explain" : "--explain"}`;
   const syntax = `${base}${owner === "doctor" || owner === "app-home" ? "" : " [--operation OP]"}${owner === "check" ? " [--target T]" : ""} [--section S] [--limit 1..100] [--cursor C] [--format json]`;
   if (argv.includes("--help") || argv.includes("-h")) {

@@ -11,6 +11,7 @@ import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendi
 import { validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
+import { writeVerificationTimingProfile } from "./verification-timing.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package", "certification"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -239,6 +240,7 @@ function normalizedSelection(owner, state, forwarded) {
   const selectedFiles = files.length > 0 ? files : state.files.filter((file) => state.assignments.get(file) === owner);
   return {
     argv: [...options, ...selectedFiles.map(runnerPath)],
+    files: selectedFiles,
   };
 }
 
@@ -332,6 +334,9 @@ async function runOwner(owner, state, forwarded = [], profile = "full") {
       })
     : spawnSync("vp", args, options);
   const elapsedMs = Math.ceil(Number(process.hrtime.bigint() - startedAt) / 1_000_000);
+  // Capture diagnostic timings before the authoritative result drops them.
+  // Failed owners can also leave useful reports; this never changes their exit.
+  writeVerificationTimingProfile({ resultFile: resultChannel, owner, wallMs: elapsedMs, files: selection.files, repoRoot: root });
   if (timingFile) console.log(packageTimingSummary(completePackageTimings(timingFile, elapsedMs)));
   if (timingRoot) fs.rmSync(timingRoot, { recursive: true, force: true });
   if (owner === "performance" && progress.timeout && (result.error || result.status !== 0)) console.error(`${progress.summary(elapsedMs, "verify-lane/process.hrtime.bigint")}\n${progress.timeout}`);

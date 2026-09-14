@@ -14,6 +14,7 @@ import { deriveLatencyAdvisory, measurementProfile, normalizedLatencyAdvisory, p
 import YAML from "yaml";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
+import { createVerificationProgress, createOverlapProgressForwarder } from "./verification-progress.mjs";
 import "./source-loader-register.mjs";
 
 const { loadPackagePublicationModel } = await import("../src/registries/packagePublication.ts");
@@ -429,6 +430,8 @@ export function defaultStartSourceOwner(specification) {
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
+  const ownerProgress = createVerificationProgress("qualification", specification.name);
+  const overlapProgress = specification.name === "generated-overlap" ? createOverlapProgressForwarder() : undefined;
   const outputLimit = 1024 * 1024;
   let stdout = "";
   const progress = createPerformanceProgressReader();
@@ -444,6 +447,7 @@ export function defaultStartSourceOwner(specification) {
     stream.write(chunk);
   });
   child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    overlapProgress?.feed(chunk);
     if (specification.name === "performance") progress.feed(chunk, "stderr");
     stderr = capture(stderr, chunk);
     stream.write(chunk);
@@ -467,10 +471,12 @@ export function defaultStartSourceOwner(specification) {
   );
   const promise = new Promise((resolve, reject) => {
     child.on("error", (error) => {
+      ownerProgress.complete("failed");
       reject(sourceProcessFailure(specification.name, error.message, cancelled ? "cancelled" : "failed"));
     });
     child.on("close", (code, signal) => {
       closed = true;
+      ownerProgress.complete(timedOut ? "failed" : cancelled ? "cancelled" : code === 0 ? "passed" : "failed");
       clearTimeout(timeout);
       if (forceTimer) clearTimeout(forceTimer);
       stream.end();
@@ -495,7 +501,7 @@ function normalizedOwnerFailure(handle, error) {
   return {
     name: error?.owner ?? handle.name,
     status: error?.sourceStatus ?? "failed",
-    detail: sourceDiagnostic(error instanceof Error ? error.message : error),
+    detail: sourceDiagnostic(error?.overlapDetail ?? (error instanceof Error ? error.message : error)),
   };
 }
 

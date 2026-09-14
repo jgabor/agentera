@@ -9,6 +9,7 @@
 /docs/*
 !/docs/README.md
 !/docs/cli-coverage-contract.md
+!/docs/verification-performance.md
 !/docs/qualification-2026-09-13-task12.json
 !/docs/packaging/
 

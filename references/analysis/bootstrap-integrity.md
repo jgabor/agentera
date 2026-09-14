@@ -82,8 +82,8 @@ The helper creates fresh homes, stores, caches and empty npm configs, installs
 the integrity-bound pnpm, and runs the unchanged frozen lockfile with store
 integrity checking. `verify-development` and `build-development` retain
 `--ignore-scripts`. The contributor allowlist variant remains locally proven,
-not a separate hosted gate. No dependency cache is restored or saved; authoritative
-Vite task `cache: false` settings and the eleven development gates are unchanged.
+not a separate hosted gate. No dependency cache is restored or saved; the
+task-result-cache prohibition and the eleven development gates are unchanged.
 
 After successful installation, a private bin directory exposes the selected
 Node, npm/npx from that same trusted distribution, a pnpm launcher with the explicit
@@ -138,8 +138,9 @@ unchanged lockfile into a representative TypeScript library fixture. It does
 not duplicate the checkout, qualify the whole Agentera build, or reuse its
 `node_modules`. The build invokes `node_modules/vite-plus/bin/vp` explicitly
 with no global tools on PATH and asserts the emitted module's exported value.
-There is no task cache in this direct build; existing authoritative `cache:
-false` settings are untouched.
+There is no task cache in this direct build. Root package-script wrappers remain
+uncached under `toolchain-baseline.yaml#project_contract.no_task_result_cache`;
+the Vite configuration does not define cached tasks.
 
 The proof also uses trusted host `/bin/tar` and `/bin/gzip` solely to construct
 a valid malicious test archive, never to execute downloaded bootstrap code.

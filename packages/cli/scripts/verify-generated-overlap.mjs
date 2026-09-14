@@ -11,6 +11,7 @@ import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSour
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { readPackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
+import { createVerificationProgress } from "./verification-progress.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultPackageRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -25,6 +26,21 @@ function overlapFailure(message) {
   error.owner = "generated-overlap";
   error.sourceStatus = "failed";
   return error;
+}
+
+function boundedPackageTimingSummary(timings, maxCharacters) {
+  const full = packageTimingSummary(timings);
+  if (full.length <= maxCharacters) return full;
+  const selected = {};
+  // Retain complete JSON and prioritize total/setup/residual attribution over
+  // individual setup phases if unusually large values exhaust the budget.
+  const priority = ["wall_ms", "setup_ms", "outside_setup_residual_ms", "setup_incomplete_ms", ...Object.keys(timings)];
+  for (const key of new Set(priority)) {
+    if (timings[key] === undefined) continue;
+    const candidate = { ...selected, [key]: timings[key] };
+    if (packageTimingSummary(candidate).length <= maxCharacters) selected[key] = timings[key];
+  }
+  return packageTimingSummary(selected);
 }
 
 export function generatedOverlapParticipantEnvironment(name, environment = process.env) {
@@ -188,7 +204,9 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
     detached: process.platform !== "win32",
     stdio: ["ignore", "pipe", "pipe"],
   });
+  const progress = createVerificationProgress("overlap", name);
   let closed = false;
+  let cancelled = false;
   let forceTimer;
   let stdout = "";
   let stderr = "";
@@ -203,6 +221,7 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
   });
   const cancel = () => {
     if (closed) return;
+    cancelled = true;
     killGroup(child, "SIGTERM");
     forceTimer ??= setTimeout(
       () => {
@@ -212,9 +231,13 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
     );
   };
   const promise = new Promise((resolve, reject) => {
-    child.on("error", reject);
+    child.on("error", (error) => {
+      progress.complete("failed");
+      reject(error);
+    });
     child.on("close", (code, signal) => {
       closed = true;
+      progress.complete(cancelled ? "cancelled" : code === 0 ? "passed" : "failed");
       if (forceTimer) clearTimeout(forceTimer);
       stream.end();
       if (code === 0) {
@@ -226,6 +249,7 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
         });
       } else {
         let failures = "";
+        let firstFailure = "";
         const resultFile = path.join(root, `${name}.json`);
         try {
           const report = JSON.parse(fs.readFileSync(resultFile, "utf8"));
@@ -233,31 +257,39 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
             .filter((suite) => suite.status === "failed")
             .slice(0, 5)
             .map((suite) => {
-              const assertions = (suite.assertionResults ?? [])
+              const assertionDetails = (suite.assertionResults ?? [])
                 .filter((assertion) => assertion.status === "failed")
                 .slice(0, 3)
                 .map(
                   (assertion) =>
-                    `${assertion.fullName ?? assertion.title} [${stripVTControlCharacters(String(assertion.failureMessages?.[0] ?? "no detail"))
+                    `${stripVTControlCharacters(String(assertion.fullName ?? assertion.title))
+                      .replace(/\s+/g, " ")
+                      .slice(0, 120)} [${stripVTControlCharacters(String(assertion.failureMessages?.[0] ?? "no detail"))
                       .replace(/\s+/g, " ")
                       .slice(0, 240)}]`,
-                )
-                .join(" | ");
+                );
               const detail =
-                assertions ||
+                assertionDetails.join(" | ") ||
                 stripVTControlCharacters(String(suite.message || "no detail"))
                   .replaceAll(repoRoot, "<repository>")
                   .replaceAll(os.homedir(), "<home>")
                   .replaceAll(os.tmpdir(), "<tmp>")
                   .replace(/\s+/g, " ")
                   .slice(0, 240);
-              return `${path.relative(repoRoot, suite.name)}: ${detail}`;
+              const file = path.relative(repoRoot, suite.name);
+              // File identity precedes assertion prose, including very long titles.
+              firstFailure ||= `${file}: ${assertionDetails[0] ?? detail}`;
+              return `${file}: ${detail}`;
             })
             .join("; ");
         } catch {
           failures = "";
         }
-        reject(overlapFailure(`${name} overlap command failed with exit ${code ?? signal ?? "unknown"}; tail: ${(stderr || stdout).trim() || "no output"}; failures: ${failures || "unavailable"}`));
+        const outcome = `${name} overlap command failed with exit ${code ?? signal ?? "unknown"}`;
+        const error = overlapFailure(`${outcome}; tail: ${(stderr || stdout).trim() || "no output"}; failures: ${failures || "unavailable"}`);
+        // Preserve the first actionable failure independently of reporter tails.
+        error.overlapDetail = `${outcome}; ${firstFailure ? `failures: ${firstFailure}` : `tail: ${(stderr || stdout).trim() || "no output"}`}`;
+        reject(error);
       }
     });
   });
@@ -492,9 +524,21 @@ export async function runGeneratedOverlap(options = {}) {
     }
     if (now() >= handoffDeadline) primaryFailure.handoffDeadlineExceeded = true;
     const timings = readPackageTimings(path.join(root, "package.json.timings.json"));
-    // Append after raw tails: the parent retains the last 1,000 characters.
-    // Copy before deleting the private overlap directory, including on failure.
-    if (Object.keys(timings).length > 0) primaryFailure.message += `; ${packageTimingSummary(timings)}`;
+    // Copy before cleanup. Reserve space for both timings and the cause because
+    // the parent bounds the whole diagnostic, not each field independently.
+    const timingSummary = Object.keys(timings).length > 0 ? packageTimingSummary(timings) : "";
+    if (timingSummary || primaryFailure.overlapDetail) {
+      const limit = contract.bounds.diagnosticCharacters;
+      const retainedTimings = timingSummary ? boundedPackageTimingSummary(timings, Math.floor(limit / 2)) : "";
+      // Leave room for the parent's owner/settlement context as well.
+      const available = Math.max(0, limit - retainedTimings.length - 200);
+      const detail = stripVTControlCharacters(primaryFailure.overlapDetail ?? primaryFailure.message)
+        .replaceAll(repoRoot, "<repository>")
+        .replaceAll(os.homedir(), "<home>")
+        .replaceAll(os.tmpdir(), "<tmp>")
+        .slice(0, available);
+      primaryFailure.message = retainedTimings ? `${retainedTimings}; ${detail}` : detail;
+    }
     throw primaryFailure;
   } finally {
     if (options.handleSignals !== false) process.removeListener("SIGTERM", onSigterm);

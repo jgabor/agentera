@@ -131,6 +131,7 @@
 
 ### Fixed
 
+- Fixed slow report and check explanations and recovery guidance by reusing parsed contracts within each request, with fresh reads on the next invocation.
 - Fixed same-ID writer lock contention so a competing committed entity returns
   the canonical duplicate-ID conflict instead of a generic lock timeout.
 - Fixed deprecated `prime --dashboard --fields` requests to return a typed

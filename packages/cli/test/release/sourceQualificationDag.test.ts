@@ -300,6 +300,53 @@ describe("source qualification DAG", () => {
     15_000,
   );
 
+  it("streams bounded overlap progress through both coordinators without changing stdout", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-progress-transport-"));
+    const childRoot = path.join(root, "overlap");
+    fs.mkdirSync(childRoot);
+    const stderr: string[] = [];
+    const write = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      stderr.push(String(chunk));
+      return true;
+    });
+    const script = `
+      import { startChild } from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/verify-generated-overlap.mjs"))};
+      const handle = startChild({
+        name: "source", repoRoot: ${JSON.stringify(REPO_ROOT)}, root: ${JSON.stringify(childRoot)},
+        barrier: ${JSON.stringify(path.join(childRoot, "barrier"))}, cleanupMarginMs: 1000,
+        now: () => performance.now(), sourceIdentity: ${JSON.stringify(sourceIdentity())},
+        command: [process.execPath, "-e", "console.error('private reporter noise'); process.stdout.write('child output');"]
+      });
+      await handle.promise;
+      process.stderr.write('AGENTERA_VERIFICATION_PROGRESS scope=overlap owner=/private/secret status=passed elapsedMs=1\\n');
+      process.stdout.write(JSON.stringify({status: 'pass'}));
+    `;
+    const handle = defaultStartSourceOwner({
+      name: "generated-overlap",
+      command: [process.execPath, "--input-type=module", "-e", script],
+      repo: REPO_ROOT,
+      environment: process.env,
+      reportFile: path.join(root, "report.log"),
+      timeoutMs: 10_000,
+      cancellable: true,
+    });
+    try {
+      const result = await handle.promise;
+      expect(JSON.parse(result.stdout)).toEqual({ status: "pass" });
+      const observed = stderr.join("");
+      expect(observed).toMatch(/scope=qualification owner=generated-overlap status=started elapsedMs=\d+/);
+      expect(observed).toMatch(/scope=overlap owner=source status=started elapsedMs=\d+/);
+      expect(observed).toMatch(/scope=overlap owner=source status=passed elapsedMs=\d+/);
+      expect(observed).toMatch(/scope=qualification owner=generated-overlap status=passed elapsedMs=\d+/);
+      expect(observed).not.toContain("private reporter noise");
+      expect(observed).not.toContain("/private/secret");
+    } finally {
+      handle.cancel();
+      write.mockRestore();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reserves workers for the long source participant without widening its peers", () => {
     const environment = {
       VITEST_MAX_WORKERS: "1",
@@ -774,7 +821,7 @@ describe("source qualification DAG", () => {
     }
   });
 
-  it("retains hook-only Vitest failures in the bounded, path-redacted conjunction diagnostic", async () => {
+  it.each(["hook", "assertion"])("retains %s Vitest failures and file identity in the bounded, path-redacted conjunction diagnostic", async (failureKind) => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-diagnostic-"));
     const report = {
       success: false,
@@ -782,7 +829,7 @@ describe("source qualification DAG", () => {
         {
           name: path.join(REPO_ROOT, "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts"),
           status: "failed",
-          assertionResults: [],
+          assertionResults: failureKind === "assertion" ? [{ status: "failed", fullName: "long assertion title ".repeat(1000), failureMessages: ["spawnSync node ETIMEDOUT"] }] : [],
           message: `Hook timed out in 500ms.\nIf this is a long-running hook, configure hookTimeout.\n${REPO_ROOT}/fixture.ts ${os.homedir()}/private-fixture.ts ${root}/setup.ts`,
         },
       ],
@@ -817,7 +864,7 @@ describe("source qualification DAG", () => {
       const detail = error.failures[0].detail;
       expect(detail.length).toBeLessThanOrEqual(RELEASE_CONTRACT.bounds.diagnosticCharacters);
       expect(detail).toContain("runtimeBootstrapMatrix.test.ts:");
-      expect(detail).toContain("Hook timed out in 500ms.");
+      expect(detail).toContain(failureKind === "hook" ? "Hook timed out in 500ms." : "spawnSync node ETIMEDOUT");
       expect(detail).not.toContain(REPO_ROOT);
       expect(detail).not.toContain(os.homedir());
       expect(detail).not.toContain(root);
@@ -878,7 +925,7 @@ describe("source qualification DAG", () => {
     }
   });
 
-  it.each(["budget", "process", "setup"])("retains bounded package timings after %s failure, cleanup and parent tail truncation", async (failure) => {
+  it.each(["budget", "process", "setup", "assertion", "long-timings"])("retains bounded package timings after %s failure, cleanup and parent tail truncation", async (failure) => {
     const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-timing-test-"));
     fs.mkdirSync(path.join(workRoot, "barrier"));
     const timings = {
@@ -900,8 +947,14 @@ describe("source qualification DAG", () => {
       setup_incomplete_ms: 80_185,
       wall_ms: 80_200,
     };
-    const expected = failure === "setup" ? partial : timings;
-    const reason = failure === "budget" ? "package owner exceeded its 60000ms wall-time budget (256090ms)" : "package overlap command failed with exit 1";
+    const longTimings = Object.fromEntries([...Object.keys(timings), "prepare_ms", "compare_ms", "fixture_ms", "setup_incomplete_ms"].map((key) => [key, Number.MAX_SAFE_INTEGER]));
+    const expected = failure === "setup" ? partial : failure === "long-timings" ? longTimings : timings;
+    const reason =
+      failure === "budget"
+        ? "package owner exceeded its 60000ms wall-time budget (256090ms)"
+        : failure === "assertion"
+          ? "package overlap command failed with exit 1; failures: test/packaging/staticDiscoveryQualification.test.ts: static traversal [spawnSync node ETIMEDOUT]"
+          : "package overlap command failed with exit 1";
     try {
       const operation = runGeneratedOverlap({
         contract: RELEASE_CONTRACT,
@@ -925,7 +978,7 @@ describe("source qualification DAG", () => {
             );
           return {
             name,
-            promise: name === "package" ? Promise.reject(ownerError("generated-overlap", `${reason}; ${"log noise ".repeat(1000)}`)) : Promise.resolve({}),
+            promise: name === "package" ? Promise.reject(Object.assign(ownerError("generated-overlap", `${failure === "assertion" ? "reporter output" : reason}; ${"log noise ".repeat(1000)}`), failure === "assertion" ? { overlapDetail: reason } : {})) : Promise.resolve({}),
             cancel: () => undefined,
           };
         },
@@ -936,7 +989,18 @@ describe("source qualification DAG", () => {
       expect(error.message).toContain(reason);
       expect(fs.existsSync(workRoot)).toBe(false);
       const retained = error.message.slice(-RELEASE_CONTRACT.bounds.diagnosticCharacters);
-      expect(retained).toContain(`package timings ms: ${JSON.stringify(expected)}`);
+      if (failure === "long-timings") {
+        const timingJson = retained.match(/package timings ms: (\{[^}]*\})/)?.[1];
+        expect(timingJson).toBeDefined();
+        const parsed = JSON.parse(timingJson!);
+        expect(parsed).toMatchObject({ wall_ms: Number.MAX_SAFE_INTEGER, setup_ms: Number.MAX_SAFE_INTEGER, outside_setup_residual_ms: Number.MAX_SAFE_INTEGER });
+        expect(Object.keys(parsed).length).toBeLessThan(Object.keys(expected).length);
+        expect(`package timings ms: ${timingJson}`.length).toBeLessThanOrEqual(RELEASE_CONTRACT.bounds.diagnosticCharacters / 2);
+      } else {
+        expect(retained).toContain(`package timings ms: ${JSON.stringify(expected)}`);
+      }
+      expect(retained).toContain(reason);
+      expect(error.message.length).toBeLessThanOrEqual(RELEASE_CONTRACT.bounds.diagnosticCharacters);
       expect(retained).not.toContain("private-secret");
       expect(retained).not.toContain("/private/fixture/path");
       expect(retained).not.toContain("identity_ms");
