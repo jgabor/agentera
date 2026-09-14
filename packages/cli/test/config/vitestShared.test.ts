@@ -118,11 +118,12 @@ describe("source worker policy", () => {
     }
   });
 
-  it("keeps GitHub Actions explicitly unmeasured", () => {
+  it("keeps the base policy unmeasured with an explicit overlap allocation", () => {
     const workflow = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8"));
     const sourceOwnerStep = workflow.jobs["verify-development"].steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
     expect(sourceOwnerStep.env).toEqual({
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
       AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
