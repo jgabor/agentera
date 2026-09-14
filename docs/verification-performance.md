@@ -152,8 +152,9 @@ qualification or a statistically stable performance estimate.
 Total elapsed comes from second-resolution shell timestamps. Participant times
 come from the overlap evidence. Two workers saved about eight seconds in the
 package participant but added about 258 seconds to the source participant.
-Keep the existing four-worker default. A hosted comparison is still needed
-before changing the allocation for the GitHub runner.
+This local pair did not justify changing the four-worker default. The hosted
+evidence below selects two source workers specifically for development CI;
+the local default remains four.
 
 An earlier two-worker trial failed the retained-reference inventory because this
 new document was initially placed under `references/analysis/`. That placement
@@ -215,8 +216,9 @@ SHA-256 values, continuation/detail counts, roots and maximum output sizes.
 
 These are local complete-traversal measurements, not hosted CI or individual
 cold CLI invocation timings. The bounded parse cache warms within each process;
-all file reads, validation, queries and comments remain covered. Hosted timeout
-and package-budget acceptance still need a run of the changed commit.
+all file reads, validation, queries and comments remain covered. These local
+results alone do not establish hosted timeout or package-budget acceptance;
+the hosted outcomes follow below.
 
 The changed standalone package owner passed all 41 tests in 84.891 s. All eleven
 partitions completed 4,463 queries, matching the earlier retained package run's
@@ -232,8 +234,25 @@ budget. Setup took 24.153 s, static discovery 229.448 s, and package verificatio
 The different CPU models prevent attributing the entire cross-run timing change
 to the cache.
 
-The next hosted diagnostic runs two source workers first, then four, on the same
-runner. It retains both outcomes and fails overall if either sample fails.
-This is one pair to resolve the missing allocation evidence, not a repeated
-performance qualification. Test coverage, owner budgets and deadlines remain
-unchanged. The production worker default is unchanged pending that evidence.
+[Run 34865454899](https://github.com/jgabor/agentera/actions/runs/34865454899)
+compared two source workers, then four, on the same four-vCPU AMD EPYC 9V74
+runner at `c9289d2c`. Both samples passed all 41 package assertions.
+
+| Source workers | Package wall time | Package budget | Source result | Total overlap |
+| --- | --- | --- | --- | --- |
+| 2 | 384.318 s | Passed | 4,716 passed, one declared skip | 1,468.799 s |
+| 4 | 602.081 s | Failed | Cancelled | 606.876 s to failure |
+
+Two workers reduced package wall time by 36.2%, with 130.682 s of budget
+headroom. The full source participant took 1,441.886 s. Four-worker cancellation
+means there is no successful four-worker total to compare with 24m29s for two
+workers. This pair supports the allocation needed to pass the existing gate;
+it is not a repeated performance qualification or proof of optimal throughput.
+
+Development CI now sets `AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS=2` only for
+its development verification step. The package owner stays at one worker,
+local defaults remain unchanged, and no owner budgets, deadlines, coverage,
+independent builds or package constructions change. The failed four-worker
+control keeps the diagnostic workflow's overall status red even though the
+two-worker overlap passed. The branch workflow now runs the complete development
+verification job to check the selected setting beyond generated overlap.

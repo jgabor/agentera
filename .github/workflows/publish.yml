@@ -87,6 +87,8 @@ jobs:
         timeout-minutes: 40
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+          # Leave CPU capacity for the independent package owner on this runner.
+          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
           VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}

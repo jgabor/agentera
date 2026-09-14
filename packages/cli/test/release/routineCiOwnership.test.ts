@@ -92,6 +92,7 @@ describe("routine CI owner DAG", () => {
     expect(step).toMatchObject({
       env: {
         AGENTERA_VITEST_RUNNER_POLICY: "unmeasured",
+        AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
         AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
         AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
       },

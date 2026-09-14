@@ -1,21 +1,21 @@
-# Temporary branch benchmark. Remove after the hosted comparison is recorded.
-name: Benchmark verification workers
-
+# Branch verification for the generated-overlap performance repair.
+name: Verify branch development safety
 on:
   push:
-    branches: [fix/generated-overlap]
-
-permissions:
-  contents: read
-
+    branches:
+      - fix/generated-overlap
 jobs:
-  compare:
+  verify-development:
+    name: Verify development source
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 45
+    permissions:
+      contents: read
     steps:
       - uses: actions/checkout@v5
         timeout-minutes: 1
         with:
+          ref: ${{ github.sha }}
           fetch-depth: 0
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f
         timeout-minutes: 1
@@ -25,64 +25,28 @@ jobs:
       - name: Verified bootstrap and frozen install
         timeout-minutes: 3
         run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
-      - name: Compare source allocations sequentially
-        timeout-minutes: 82
+      - name: Check static project policy
+        timeout-minutes: 1
+        run: vp check
+      - name: Verify development safety without receipt
+        timeout-minutes: 40
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
           VITEST_TEST_TIMEOUT_MS: "120000"
-        shell: bash
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+        run: vp run verify:development
+      - name: Build checkout CLI for migration
+        timeout-minutes: 1
+        run: vp run build
+      - name: Run v2→v3 migration scenarios
+        timeout-minutes: 2
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L1
         run: |
           set -euo pipefail
-          benchmark_root=$(mktemp -d "$RUNNER_TEMP/verification-workers.XXXXXX")
-          benchmark_diagnostics="$RUNNER_TEMP/verification-worker-diagnostics"
-          mkdir -m 700 "$benchmark_diagnostics"
-          vp exec node --input-type=module -e 'import os from "node:os"; console.log(JSON.stringify({node:process.version,cpu:os.cpus()[0]?.model,logicalCpus:os.cpus().length,availableParallelism:os.availableParallelism(),runner:process.env.RUNNER_NAME,os:process.env.RUNNER_OS,arch:process.env.RUNNER_ARCH,commit:process.env.GITHUB_SHA}));' | tee "$benchmark_diagnostics/runner.json"
-          benchmark_stop_ms=$(( $(date +%s) * 1000 + 80 * 60 * 1000 ))
-          benchmark_source_budget=$(vp exec node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.parse(fs.readFileSync("references/adapters/package-publication.json", "utf8")).benchmark.timeouts.sourceQualificationMs)')
-          benchmark_failed=0
-          # First establish whether reserving CPU for package work meets its budget.
-          # Keep both results even when an owner rejects a sample.
-          for benchmark_case in r1-w2 r1-w4; do
-            benchmark_workers=${benchmark_case##*-w}
-            benchmark_run="$benchmark_root/$benchmark_case"
-            mkdir -m 700 "$benchmark_run"
-            benchmark_status=0
-            benchmark_started_ms=$(date +%s%3N)
-            benchmark_case_deadline=$(( $(date +%s) * 1000 + benchmark_source_budget ))
-            if [ "$benchmark_case_deadline" -gt "$benchmark_stop_ms" ]; then benchmark_case_deadline=$benchmark_stop_ms; fi
-            env AGENTERA_SOURCE_DEADLINE_EPOCH_MS="$benchmark_case_deadline" AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS="$benchmark_workers" \
-              AGENTERA_GENERATED_OVERLAP_ROOT="$benchmark_run/retained" \
-              vp exec pnpm -C packages/cli run verify:generated-overlap \
-              > "$benchmark_run/stdout.log" || benchmark_status=$?
-            benchmark_wall_ms=$(( $(date +%s%3N) - benchmark_started_ms ))
-            vp exec node --input-type=module - "$benchmark_run" "$benchmark_case" "$benchmark_status" "$benchmark_wall_ms" "$benchmark_diagnostics" <<'NODE'
-          import fs from "node:fs";
-          import path from "node:path";
-          const [run, name, exitCode, wallMs, diagnostics] = process.argv.slice(2);
-          const records = fs.readFileSync(path.join(run, "stdout.log"), "utf8").split("\n").flatMap(line => { try { return [JSON.parse(line)]; } catch { return []; } });
-          const evidence = records.find(record => record.schemaVersion === "agentera.generatedOverlapEvidence.v1");
-          const profiles = {};
-          for (const owner of ["source", "package"]) {
-            try {
-              const profile = JSON.parse(fs.readFileSync(path.join(run, "retained", `${owner}.json.profile.json`), "utf8"));
-              fs.writeFileSync(path.join(diagnostics, `${name}-${owner}.profile.json`), JSON.stringify(profile), {mode:0o600});
-              profiles[owner] = {wallMs:profile.wallMs,slowSuites:profile.suites.filter(suite => suite.elapsedMs !== null).sort((a,b) => b.elapsedMs-a.elapsedMs).slice(0,8).map(({file,elapsedMs}) => ({file,elapsedMs}))};
-            } catch { profiles[owner] = null; }
-          }
-          const participants = evidence?.participants && Object.fromEntries(Object.entries(evidence.participants).map(([owner, {elapsedMs, files, tests, status, timings}]) => [owner, {elapsedMs, files, tests, status, timings}]));
-          const summary = {benchmarkCase:name,exitCode:Number(exitCode),wallMs:Number(wallMs),clock:"date-epoch-milliseconds",sourceIdentity:evidence?.source_identity,participants,profiles};
-          fs.writeFileSync(path.join(diagnostics, `${name}.json`), JSON.stringify(summary), {mode:0o600});
-          console.log(JSON.stringify(summary));
-          NODE
-            if [ "$benchmark_status" -ne 0 ]; then benchmark_failed=1; fi
+          for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
+            bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
           done
-          exit "$benchmark_failed"
-      - name: Retain timing diagnostics
-        if: always()
-        uses: actions/upload-artifact@v4
-        timeout-minutes: 1
-        with:
-          name: verification-worker-diagnostics
-          path: ${{ runner.temp }}/verification-worker-diagnostics/*.json
-          if-no-files-found: warn
-          retention-days: 1
