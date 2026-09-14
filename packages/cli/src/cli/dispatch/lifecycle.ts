@@ -303,6 +303,8 @@ export function runUpgrade(argv: string[], io: Io, _prog: string): number {
         });
       }
       args.legacyCleanup = selectedResource.id;
+    } else if (a === "--shared-skill") {
+      args.sharedSkill = true;
     } else if (a === "--reset-product-v1") {
       args.productV1Reset = true;
     } else if ((v = value("--authorization")) !== null) {

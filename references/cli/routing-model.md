@@ -2,9 +2,10 @@
 
 The portable shared skill and CLI use one hybrid cascade. Explicit routes and
 curated, globally unique literal phrases provide deterministic tiers; open-ended
-language remains host-owned. The normative protocol is
-[`hybrid-route-contract.yaml`](./hybrid-route-contract.yaml); this page is a
-reader-oriented model, not a second contract.
+language remains host-owned. Read the normative protocol through
+`npx -y agentera@next route explain --topic overview` and its exact section
+commands; this page is a reader-oriented model, not a second contract.
+Source provenance only: `references/cli/hybrid-route-contract.yaml`.
 
 Decision 76 remains in force for natural-language judgment. Decision mpulyomlyl supersedes it only for the curated literal fast path: there is still no scoring engine, no confidence threshold, and no borderline band. Legacy trigger patterns, regexes, thresholds, and bands do not route requests.
 
@@ -13,8 +14,8 @@ Decision 76 remains in force for natural-language judgment. Decision mpulyomlyl 
 1. **Bare `/agentera`.** With no added text, select status deterministically.
 2. **Explicit direct route.** A canonical capability name or primary alias uses
    the established direct-route grammar and passes its remaining text as topic.
-3. **Curated leading phrase.** Match one active phrase from
-   [`skills/agentera/route-phrases.yaml`](../../skills/agentera/route-phrases.yaml)
+3. **Curated leading phrase.** Match one active phrase served by
+   `npx -y agentera@next route explain --topic phrases`
    only when it is the exact normalized leading phrase. It selects that phrase's
    sole owner and preserves the original remainder as topic.
 4. **Deterministic abstention.** Every other request returns
@@ -28,6 +29,14 @@ The direct grammar has precedence over phrase matching. A phrase collision is a
 registry validation error, not a tie to resolve at runtime.
 
 ## Phase one: route request
+
+For request-free discovery, run `npx -y agentera@next route explain` and follow
+its topic actions (`overview`, `phrases`, `triggers`, `receipt`, `evaluation`).
+Phrases and triggers accept `--capability C`, including status. Every topic
+offers bounded `--section` and cursor actions for complete governing contracts;
+source paths are provenance, not required external reads. Static discovery does
+not classify an example request, invoke a host, run evaluation, validate a
+receipt or authorize startup. Request and receipt behavior below is unchanged.
 
 `agentera.route_request.v1` takes the transient original request. Its response
 is exactly one of:
@@ -147,7 +156,7 @@ model calls.
   conformance corpus; its tests verify the evaluator and protocol structure.
 - `skills/agentera/SKILL.md` remains the thin portable host integration surface.
 
-## Maintenance
+## Maintenance (source-only; not host recovery)
 
 - Maintainer: Agentera CLI maintainers
 - Source checkout root: `.`

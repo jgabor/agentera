@@ -170,6 +170,13 @@ private temporary root after success or failure. Release verification retains
 its parent-owned root through barrier B and removes it in the DAG-level
 `finally`. Never force-kill generated overlap during source verification.
 
+For the single-file host boundary, use the package-registry-selected host
+projection, not the internal skill tree. Verify exactly one regular `SKILL.md`
+and CLI-only discovery from an extracted package with isolated HOME; layout
+checks alone do not qualify complete workflows. The semantic/evidence map is
+`docs/cli-coverage-contract.md`; consumer lifecycle and platform limits live in
+`UPGRADE.md`. Never test conversion against a live home or prune symlink targets.
+
 ## Behavioral verification
 
 Run the narrowest relevant check first, then broaden according to impact.

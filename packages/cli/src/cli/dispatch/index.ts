@@ -15,6 +15,12 @@ import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
 import { enforceCompletedEntityCutover, migrationProject, requestedMigrationFailureFormat, requiresCompletedEntityCutover } from "../migrationRequired.js";
 import { enforceProductV1Eol } from "../productV1Eol.js";
+import { isSchemaDetailQuery } from "../commands/schemaDetail.js";
+import { isCapabilityDetailQuery, runCapabilityDetail } from "../commands/capabilityDetail.js";
+import { isStateExplainDetail, runStateExplainDetail } from "../commands/state/explainDetail.js";
+import { runRouteDetail } from "../commands/routeDetail.js";
+import { runServiceDetail } from "../commands/serviceDetail.js";
+import { isServiceDetailQuery, serviceDetailArgs, type ServiceOwner } from "../commands/serviceDetailQuery.js";
 
 function splitNestedSubcommand(argv: string[]): [string | undefined, string[]] {
   let subcommand: string | undefined;
@@ -42,6 +48,15 @@ export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const requestedArgs = argv.slice(2);
+  if (isServiceDetailQuery(requestedArgs)) {
+    return runServiceDetail(requestedArgs[0] as ServiceOwner, serviceDetailArgs(requestedArgs), io);
+  }
+  if (requestedArgs[0] === "route" && requestedArgs[1] === "explain") return runRouteDetail(requestedArgs.slice(2), io);
+  if (requestedArgs[0] === "prime" && isCapabilityDetailQuery(requestedArgs.slice(1)) && !requestedArgs.includes("--help") && !requestedArgs.includes("-h")) return runCapabilityDetail(requestedArgs.slice(1), io);
+  if (isStateExplainDetail(requestedArgs) && !requestedArgs.includes("--help") && !requestedArgs.includes("-h")) return runStateExplainDetail(requestedArgs[1], requestedArgs.slice(3), io);
+  // Static selected contracts must precede project EOL/cutover inspection and
+  // own their additive malformed-input exit contract, including format errors.
+  if (requestedArgs[0] === "schema" && isSchemaDetailQuery(requestedArgs.slice(1)) && !requestedArgs.includes("--help") && !requestedArgs.includes("-h")) return runSchema(requestedArgs.slice(1), io, "agentera schema");
   const governedArgs = applyOutputPolicy(requestedArgs, io);
   if (typeof governedArgs === "number") return governedArgs;
   const args = governedArgs;

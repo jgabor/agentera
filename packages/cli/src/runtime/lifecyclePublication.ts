@@ -341,7 +341,7 @@ export function verifyLifecycleResourceAtPublication(spec: LifecyclePublicationS
   });
 }
 
-export function publishLifecycleResource(spec: LifecyclePublicationSpec, action: "create" | "update", observation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook): LifecycleResourceIdentity {
+export function publishLifecycleResource(spec: LifecyclePublicationSpec, action: "create" | "update", observation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook, beforeCreatedFileWrite?: (identity: LifecycleResourceIdentity) => void): LifecycleResourceIdentity {
   return withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action }, hook, (_parentFd, targetPath) => {
     if (action === "create") {
       if (lstatMaybe(targetPath)) {
@@ -366,6 +366,7 @@ export function publishLifecycleResource(spec: LifecyclePublicationSpec, action:
       const fd = fs.openSync(targetPath, FILE_CREATE_FLAGS, 0o600);
       const created = identityOf(fs.fstatSync(fd, { bigint: true }));
       try {
+        beforeCreatedFileWrite?.(created);
         writeFileDescriptor(fd, Buffer.isBuffer(spec.content) ? spec.content : Buffer.from(spec.content as string));
         return created;
       } catch (error) {
@@ -401,6 +402,24 @@ export function publishLifecycleResource(spec: LifecyclePublicationSpec, action:
     } finally {
       fs.closeSync(fd);
     }
+  });
+}
+
+/** Move into a private, ledger-owned empty retention directory. Never follows the source. */
+export function retainLifecycleResource(spec: LifecyclePublicationSpec, observation: LifecyclePathObservation, retainedPath: string, retainedObservation: LifecyclePathObservation, hook?: LifecyclePublicationBoundaryHook): void {
+  withPinnedParent(observation, { operationId: spec.id, destination: spec.destination, action: "remove" }, hook, (sourceFd, sourcePath) => {
+    withPinnedParent(retainedObservation, { operationId: spec.id, destination: retainedPath, action: "create" }, undefined, (retainedFd, destination) => {
+      assertTargetIdentity(sourcePath, observation.identity, spec.kind);
+      const retention = fs.fstatSync(retainedFd);
+      if ((retention.mode & 0o777) !== 0o700 || retention.uid !== process.getuid?.()) throw new LifecyclePublicationError("retention directory must remain private to the publishing user");
+      if (spec.kind === "symlink" && fingerprintBytes(Buffer.from(fs.readlinkSync(sourcePath))) !== observation.fingerprint) throw new LifecyclePublicationError("legacy link changed before retention");
+      if (lstatMaybe(destination) || fs.readdirSync(procFdPath(retainedFd)).length !== 0) throw new LifecyclePublicationError("retention directory is no longer empty");
+      if (fs.fstatSync(sourceFd).dev !== fs.fstatSync(retainedFd).dev) throw new LifecyclePublicationError("host conversion requires retention on the same filesystem; preserve the installation for manual recovery");
+      fs.renameSync(sourcePath, destination);
+      fs.fsyncSync(sourceFd);
+      fs.fsyncSync(retainedFd);
+      assertTargetIdentity(destination, observation.identity, spec.kind);
+    });
   });
 }
 

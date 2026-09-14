@@ -1,0 +1,35 @@
+id: lknwkijlkw
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-13
+    status: complete
+    reviewed: 2026-09-13
+    critic_issues: 2 found, 2 addressed, 0 dismissed
+    title: "Plan: Single-file host skill with complete CLI access"
+  what: Deliver a host installation containing exactly one SKILL.md. Make all supported capability behavior, contracts, guidance, discovery, validation, and recovery available through the CLI without locating companion installation files.
+  why: Remove duplicated host-side authorities and installed-content drift while preserving one self-contained package, safe installation, and discoverable workflows. Improve purpose-owned interfaces instead of exposing a generic filesystem resource browser.
+  constraints: Preserve existing command meanings, JSON operational output, explicit JSON flag compatibility, narrow text exceptions, bounded output, privacy, consent, typed writers, and deterministic-routing plus host-semantic judgment. Keep one CLI package and shared bootstrap; add no native host registrations. Never prune through the installed directory symlink. Preserve unowned resources, runtime data, supported overrides, and project state. Keep migration-only rules out of current write contracts. No version bump, release, tag, push, or live-host change is authorized by this plan. Use current canonical authorities, not stale copies. Present this reviewed draft for explicit approval before canonical plan creation. Plan approval permits typed plan publication only; implementation and live-host conversion require their own explicit authorization.
+  scope:
+    included:
+      - "All 64 inventoried skill files: one bootstrap, three shared YAML authorities, twelve artifact schemas, and forty-eight capability schemas."
+      - Required referenced contracts and guidance, including glossary entry validation, worker handoffs, diagnostics, installation, recovery, and capability-authoring rules.
+      - Existing purpose-owned CLI surfaces, discovery and help, validation, reports, startup, routing, installation, refresh, upgrade, reset, diagnosis, packaging, documentation, and tests as required by the outcome.
+      - packages/cli/src, packages/cli/scripts, packages/cli/test, skills/agentera, and governing references and documentation; internal data paths may remain unchanged.
+      - Coordinate overlapping objective/experiment identity TODO bqbsplvlfz and project-versus-global-cleanup TODO zeyfnbqdov without duplicating work or claiming their unrelated acceptance.
+    excluded:
+      - A new package, native host integration, generic file-reader API, CLI-owned semantic model, or speculative contract service.
+      - Unrelated command renaming, capability levels, state redesign, global cleanup, verification-policy optimization, or retirement of supported migration.
+      - Automatic installation repair during read-only commands, unapproved host mutation, registry publication, or stable-channel cutover.
+    deferred:
+      - Optional relocation of canonical internal data solely to make the source directory one-file.
+      - Deletion of the old application installation and unrelated host resources.
+  design: First account for every supported information obligation and assign it to its existing behavioral owner. Complete discovery, execution, write, routing, and validation interfaces from those authorities, using bounded detail retrieval where needed. Then replace the host bootstrap with CLI-only guidance and separate its delivery from runtime data. Finish safe fresh and existing-host lifecycle behavior before qualifying the package and supported host workflows. Independent contract families may proceed concurrently; shared publication and installation changes remain ordered. Completeness means accessible semantics, not a verbatim endpoint per source file or an enlarged routine startup response.
+  overall_acceptance: GIVEN a supported host with only SKILL.md and the self-contained CLI package WHEN the host discovers and executes every supported capability and requests its governing details THEN behavior, contracts, guidance, validation, and recovery are available without companion-file reads. GIVEN an authorized fresh installation or owned legacy conversion WHEN it succeeds and is repeated THEN the host directory contains only SKILL.md, runtime and user data remain intact, and subsequent refresh, upgrade, reset, and diagnosis preserve that boundary.
+  unknowns:
+    []
+  rejected:
+    []
+  surprises:
+    []

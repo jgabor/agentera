@@ -254,7 +254,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     });
     if (status.status === APP_UP_TO_DATE) status.status = APP_REPAIR_NEEDED;
   }
-  const sharedSkill = diagnoseCanonicalSkill(home);
+  const sharedSkill = diagnoseCanonicalSkill(home, { sourceRoot, appHome: installRoot });
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {
     smokeReport = runNpmSmokeChecks(sourceRoot, process.env, {

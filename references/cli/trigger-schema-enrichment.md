@@ -5,12 +5,12 @@ defines the trigger-schema fields a host consults only after the CLI
 deterministically abstains, so it can make a semantic judgment and submit a
 receipt. The fields are documentation, not inputs to a routing engine.
 
-- **Authority path:** `references/cli/trigger-schema-enrichment.md`
-- **Schema contract:** `skills/agentera/capability_schema_contract.yaml` (the
+- **Authority path (source provenance only):** `references/cli/trigger-schema-enrichment.md`
+- **Schema contract (source provenance only):** `skills/agentera/capability_schema_contract.yaml` (the
   contract loader at `packages/cli/src/registries/capabilityContract.ts` consumes it)
-- **Trigger files:** `skills/agentera/capabilities/<name>/schemas/triggers.yaml`
-- **Scope:** The semantic phase of the two-phase route contract. See
-  `references/cli/hybrid-route-contract.yaml` for the authoritative precedence,
+- **Trigger files (source provenance only):** `skills/agentera/capabilities/<name>/schemas/triggers.yaml`
+- **Scope:** The semantic phase of the two-phase route contract. Read
+  `npx -y agentera@next route explain --topic overview` for the authoritative precedence,
   abstention, receipt validation, and startup authorization rules.
 
 ## Current boundary and obsolete layer numbering
@@ -20,7 +20,13 @@ the former Layer 4 into it. That layer numbering is obsolete; it is not another
 routing model. The hybrid route contract now has one deterministic request phase
 (bare, direct, and curated phrase selection) and one semantic receipt phase.
 
-Only a `semantic_required` response may expose these fields to a host. The host
+Static discovery through `npx -y agentera@next route explain --topic triggers`
+serves the complete intent documents, including status fallback, without a
+request or classification. Use `--capability C` to select a returned canonical
+capability and follow the returned section/continuation commands. Discovery
+does not authorize semantic judgment or startup.
+
+During request routing, only a `semantic_required` response exposes these fields to a host. The host
 uses them to choose `select`, `clarify`, or `no_match`, then submits the complete
 receipt. The CLI validates that receipt before authorizing capability startup.
 `priority` and `disambiguates_against` are advisory semantic-judgment context,
@@ -139,7 +145,7 @@ numeric fields' integer 0..100 range, while the loader accepts and discards
 their values. Do not add them to new active trigger entries. Their presence
 cannot change a natural-language classification.
 
-## Maintenance
+## Maintenance (source-only; not host recovery)
 
 - Maintainer: Agentera CLI maintainers
 - Source checkout root: `.`

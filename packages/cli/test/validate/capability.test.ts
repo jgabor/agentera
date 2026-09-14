@@ -24,7 +24,7 @@ describe("shared human references", () => {
     const protocol = YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8"));
     expect(OPERATING_INSTRUCTIONS).toBe(protocol.OPERATING_RULES.instructions);
     expect(protocol.HUMAN_REFERENCES).not.toHaveProperty("instructions");
-    expect(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8")).toContain("protocol.yaml#OPERATING_RULES");
+    expect(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8")).toContain("Follow the served operating rules and human-reference rules");
     for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) {
       expect(body.split(OPERATING_INSTRUCTIONS)).toHaveLength(2);
       expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
@@ -40,7 +40,8 @@ describe("shared human references", () => {
     expect(HUMAN_REFERENCE_LABELS).toEqual(protocol.HUMAN_REFERENCES.labels);
     expect(Object.keys(HUMAN_REFERENCE_LABELS)).toEqual(["decision", "plan", "task", "todo"]);
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
-    for (const label of Object.values(protocol.HUMAN_REFERENCES.labels)) expect(skill).toContain(label);
+    expect(skill).toContain("npx -y agentera@next schema --protocol");
+    expect(skill).toContain("Follow the served operating rules and human-reference rules");
     for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
     expect(CAPABILITY_INSTRUCTIONS.status).not.toContain("PLAN Task N:");
   });

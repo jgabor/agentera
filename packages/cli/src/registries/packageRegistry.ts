@@ -16,7 +16,7 @@ const REQUIRED_FIELDS: Record<string, string[]> = {
   identity: ["id", "name", "skill_path", "expected_capabilities"],
   version_authority: ["persisted_authority", "selector", "access_interface", "future_authority_change_requires"],
   version_surfaces: ["surfaces"],
-  bundle_surfaces: ["directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
+  bundle_surfaces: ["host_skill", "directories", "files", "generated_files", "skip_parts", "skip_suffixes"],
   bootstrap_command_authority: ["scanned_formats", "scalar_classifications", "emitted_producers", "constructor_non_producers"],
   docs_targets: ["version_files_source", "version_files", "index_targets"],
   release_policy: ["semver_policy_source", "version_bump_required_for_interface_only_change", "release_publication_in_scope"],
@@ -343,6 +343,25 @@ function validateVersionSurfaces(prefix: string, value: JsonObject, root: string
 
 function validateBundleSurfaces(prefix: string, value: JsonObject): string[] {
   const errors: string[] = [];
+  const host = value.host_skill;
+  if (!isMapping(host)) {
+    errors.push(`${prefix}.host_skill must be an object`);
+  } else {
+    errors.push(...validateRequiredObjectFields(`${prefix}.host_skill`, host, ["source", "path"]));
+    errors.push(...validateBundlePath(`${prefix}.host_skill`, "host-skill", host.path));
+    if (host.source !== "skills/agentera/SKILL.md") errors.push(`${prefix}.host_skill.source must select skills/agentera/SKILL.md`);
+    if (typeof host.path === "string") {
+      for (const field of ["directories", "files", "generated_files"]) {
+        if (!Array.isArray(value[field])) continue;
+        for (const entry of value[field]) {
+          if (!isMapping(entry) || typeof entry.path !== "string") continue;
+          if (entry.path === host.path || entry.path.startsWith(`${host.path}/`) || host.path.startsWith(`${entry.path}/`)) {
+            errors.push(`${prefix}.host_skill.path overlaps ${field} path ${entry.path}`);
+          }
+        }
+      }
+    }
+  }
   const ids = new Map<string, string>();
   const paths = new Map<string, string>();
   for (const field of ["directories", "files"]) {

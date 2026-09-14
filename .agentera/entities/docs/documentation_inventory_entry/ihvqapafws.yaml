@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: V3 packaging guide
   path: docs/packaging/v3-packaging.md
-  last_updated: 2026-09-12
+  last_updated: 2026-09-13
   status: current

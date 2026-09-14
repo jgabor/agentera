@@ -1,0 +1,24 @@
+id: ktgiuwlejl
+artifact: plan
+record:
+  name: Complete capability execution and shared guidance
+  depends_on:
+    - oictawfmvh
+    - jjkousfilv
+  status: complete
+  acceptance:
+    - GIVEN each of twelve capabilities WHEN started THEN instructions, permissions, read/write qualifications, applicable checks, exit conditions, and required protocol guidance are available through CLI responses.
+    - GIVEN bounded startup WHEN detail is deferred THEN an exact CLI action supplies it before use without raw-file fallback or a whole-contract dump.
+    - GIVEN mutable state availability WHEN it changes THEN static behavior remains discoverable and completeness does not falsely claim state availability or permission.
+    - GIVEN canonical rule changes WHEN served THEN no stale installed commit, review-count, progress, or continuation requirement overrides them.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/cli/commands/capabilityDetail.ts:77 selected authority skips primitive-reference validation; invalid_exit is emitted as valid guidance though existing validator rejects it
+    provenance:
+      attempt_id: single-file-capability-2
+      source: "audit ses_f64a9dd5dffeMwysciX54Ro5LE accepted after resolve ses_f64a5c7adfferdKrPW44h9gyEx: selected primitive refs checked, invalid exit1 canonical exit0 unrelated docs unread;77tests,typecheck,build,local contract checks pass"
+      recorded_at: 2026-09-13 17:24
+      writer_command: agentera state plan record-evaluation

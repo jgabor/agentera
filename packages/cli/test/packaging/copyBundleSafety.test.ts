@@ -84,6 +84,8 @@ describe("copy-bundle filesystem safety", () => {
       const result = runCopyBundle(root);
       expect(result.status, `package copy boundary failed:\n${result.stderr}`).toBe(0);
       expect(fs.readFileSync(path.join(root, "packages/cli/bundle/skills/agentera/SKILL.md"), "utf8")).toBe("# Fixture\n");
+      expect(fs.readdirSync(path.join(root, "packages/cli/bundle/host/agentera"))).toEqual(["SKILL.md"]);
+      expect(fs.readFileSync(path.join(root, "packages/cli/bundle/host/agentera/SKILL.md"), "utf8")).toBe("# Fixture\n");
       expect(fs.existsSync(path.join(root, "packages/cli/bundle/references/artifacts/state-storage-authority.yaml"))).toBe(true);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
@@ -95,6 +97,36 @@ describe("copy-bundle filesystem safety", () => {
     try {
       const state = protectedState(root);
       expectBoundaryFailure(root, state, 'source id "skills" path "skills" is missing');
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects omitted, broadened, and overlapping host selections before side effects", () => {
+    for (const host of [undefined, { source: "skills/agentera", path: "host/agentera" }, { source: "skills/agentera/SKILL.md", path: "../outside" }, { source: "skills/agentera/SKILL.md", path: "skills/agentera" }]) {
+      const root = stageFakeRepo();
+      try {
+        mutateRegistry(root, (registry) => {
+          registry.records[0].bundle_surfaces.host_skill = host;
+        });
+        expectBoundaryFailure(root, protectedState(root), "host_skill");
+      } finally {
+        fs.rmSync(root, { recursive: true, force: true });
+      }
+    }
+  });
+
+  it("uses the registry-selected host directory and refuses a missing selected file", () => {
+    const root = stageFakeRepo();
+    try {
+      mutateRegistry(root, (registry) => {
+        registry.records[0].bundle_surfaces.host_skill.path = "delivery/shared";
+      });
+      expect(runCopyBundle(root).status).toBe(0);
+      expect(fs.readdirSync(path.join(root, "packages/cli/bundle/delivery/shared"))).toEqual(["SKILL.md"]);
+      expect(fs.existsSync(path.join(root, "packages/cli/bundle/host/agentera"))).toBe(false);
+      fs.unlinkSync(path.join(root, "skills/agentera/SKILL.md"));
+      expectBoundaryFailure(root, protectedState(root), 'source id "host-skill" path "skills/agentera/SKILL.md" is missing');
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }

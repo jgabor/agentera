@@ -317,8 +317,10 @@ function briefSharedSkill(sharedSkill: unknown, maxChars = BRIEF_SCALAR_MAX_CHAR
   const out = pick(sharedSkill, ["name", "status", "source", "gap"]);
   const message = boundedString(sharedSkill.message, maxChars);
   if (message !== undefined) out.message = message;
-  const details = boundedStringList(sharedSkill.details, 3, maxChars);
-  if (details !== undefined) out.details = details;
+  if (Array.isArray(sharedSkill.details) && sharedSkill.details.length) {
+    out.detail_availability = "summary";
+    out.detail_command = preCutoverCommand("prime --fields shared_skill");
+  }
   return out;
 }
 

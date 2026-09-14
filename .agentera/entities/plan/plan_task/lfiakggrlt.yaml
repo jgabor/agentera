@@ -1,0 +1,23 @@
+id: lfiakggrlt
+artifact: plan
+record:
+  name: Separate host delivery from runtime packaging
+  depends_on:
+    - ycnzeejhze
+  status: complete
+  acceptance:
+    - GIVEN the constructed package WHEN host content is selected THEN it contains exactly SKILL.md while the runtime retains every required contract and compiled capability.
+    - GIVEN an extracted package outside the checkout WHEN commands execute THEN no external Agentera data installation or source-tree access is required.
+    - GIVEN package authorities and guidance WHEN verified THEN there is still one package, coherent version identity, and no native descriptors or new ad hoc release surface.
+    - GIVEN generated and extracted distributions WHEN compared THEN affected contract content agrees and existing internal runtime paths remain compatible.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: single-file-package-1
+      source: "audit ses_f642f8cd3ffeG6dOXqpUpmkhq6: task8 PASS exacthostpayload retainedruntime isolatedextraction parity/census;sourceidentity matched prior evidence; no installation qualification claimed"
+      recorded_at: 2026-09-13 19:31
+      writer_command: agentera state plan record-evaluation

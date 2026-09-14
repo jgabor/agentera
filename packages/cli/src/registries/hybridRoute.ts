@@ -162,7 +162,7 @@ function routeReceiptContract(contract: Record<string, unknown>, semanticCapsule
   };
 }
 
-function phrasesFrom(root: string, contract: CapabilitySchemaContract): Phrase[] {
+export function phrasesFrom(root: string, contract: CapabilitySchemaContract): Phrase[] {
   const raw = readMapping(root, "skills/agentera/route-phrases.yaml");
   const entries = raw.phrases;
   if (!Array.isArray(entries)) throw new HybridRouteRegistryError(["route phrase registry phrases must be a list"]);

@@ -202,7 +202,7 @@ describe("repository-native retirement inventory", () => {
     }
   });
 
-  it("closes normal entrypoints to exact migration, cleanup, and ownership edges", () => {
+  it("closes normal entrypoints to exact static guidance, shared-skill, migration, cleanup, and ownership edges", () => {
     const files = sourceFiles();
     const edges = files
       .flatMap((file) => {
@@ -217,8 +217,22 @@ describe("repository-native retirement inventory", () => {
     expect(edges).toEqual([
       "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/cli/commands/doctor.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
+      // Static recovery imports only the four contract loaders, not executors.
+      "packages/cli/src/cli/commands/recoveryDetail.ts -> packages/cli/src/runtime/lifecycleAdapterContract.ts",
+      "packages/cli/src/cli/commands/recoveryDetail.ts -> packages/cli/src/runtime/lifecycleAuthority.ts",
+      "packages/cli/src/cli/commands/recoveryDetail.ts -> packages/cli/src/runtime/lifecycleOperationContract.ts",
+      "packages/cli/src/cli/commands/recoveryDetail.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/cli/dispatch/lifecycle.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/migrate/v2HandoffManifest.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      // The separately approved one-file host route reuses ownership/publication
+      // machinery; this is not a return of native adapter installation.
+      "packages/cli/src/setup/hostSkillConversion.ts -> packages/cli/src/runtime/lifecycleOperations.ts",
+      "packages/cli/src/setup/hostSkillConversion.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/setup/hostSkillConversion.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/setup/hostSkillLifecycle.ts -> packages/cli/src/runtime/lifecycleOperations.ts",
+      "packages/cli/src/setup/hostSkillLifecycle.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
+      "packages/cli/src/setup/hostSkillLifecycle.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/setup/sharedSkill.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
@@ -229,6 +243,7 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/lifecycleUpgrade.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/migrationPublication.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      "packages/cli/src/upgrade/productV1Reset.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/productV1Reset.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/productV1ResetAuthority.ts -> packages/cli/src/runtime/lifecycleAuthority.ts",
       "packages/cli/src/upgrade/retiredResourceDiagnostics.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
@@ -247,10 +262,10 @@ describe("repository-native retirement inventory", () => {
       ]),
     );
     expect(referenceOwners).toEqual({
-      "references/adapters/runtime-lifecycle-authority.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/upgrade/productV1ResetAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
-      "references/adapters/runtime-lifecycle-adapters.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts"],
-      "references/adapters/runtime-lifecycle-operation-contract.yaml": ["packages/cli/src/runtime/lifecycleOperations.ts"],
-      "references/adapters/runtime-retired-resources.yaml": ["packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
+      "references/adapters/runtime-lifecycle-authority.yaml": ["packages/cli/src/cli/commands/recoveryDetail.ts", "packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/upgrade/productV1ResetAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
+      "references/adapters/runtime-lifecycle-adapters.yaml": ["packages/cli/src/cli/commands/recoveryDetail.ts", "packages/cli/src/runtime/lifecycleAuthority.ts"],
+      "references/adapters/runtime-lifecycle-operation-contract.yaml": ["packages/cli/src/cli/commands/recoveryDetail.ts", "packages/cli/src/runtime/lifecycleOperations.ts"],
+      "references/adapters/runtime-retired-resources.yaml": ["packages/cli/src/cli/commands/recoveryDetail.ts", "packages/cli/src/runtime/lifecycleAuthority.ts", "packages/cli/src/validate/activationConjunction.ts"],
     });
 
     for (const file of files) {

@@ -18,6 +18,9 @@ const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const EMPTY_PERSONAL_GLOSSARY = ["<!-- agentera:personal-glossary:start -->", "## Glossary", "", "```json", '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}', "```", "<!-- agentera:personal-glossary:end -->"].join("\n");
 
 type BundleSurfaces = {
+  host_skill: { source: string; path: string };
+  skip_parts: string[];
+  skip_suffixes: string[];
   directories: Array<{ path: string }>;
   files: Array<{ path: string }>;
   generated_files: Array<{ path: string }>;
@@ -31,7 +34,7 @@ function isContained(root: string, candidate: string): boolean {
 }
 
 function unclassifiedManifestPaths(files: Iterable<string>, surfaces: BundleSurfaces): string[] {
-  const allowedBundleFiles = new Set([...surfaces.files.map(({ path: ownedPath }) => `bundle/${ownedPath}`), ...surfaces.generated_files.map(({ path: ownedPath }) => `bundle/${ownedPath}`)]);
+  const allowedBundleFiles = new Set([`bundle/${surfaces.host_skill.path}/SKILL.md`, ...surfaces.files.map(({ path: ownedPath }) => `bundle/${ownedPath}`), ...surfaces.generated_files.map(({ path: ownedPath }) => `bundle/${ownedPath}`)]);
   const allowedBundleDirectories = surfaces.directories.map(({ path: ownedPath }) => `bundle/${ownedPath}/`);
   return [...files].filter((file) => {
     if (NPM_METADATA_FILES.has(file) || file.startsWith("dist/")) return false;
@@ -42,6 +45,7 @@ function unclassifiedManifestPaths(files: Iterable<string>, surfaces: BundleSurf
 
 function validateDistributionInventory(files: Set<string>, surfaces: BundleSurfaces): void {
   const required = ["dist/bin/agentera.js", "bundle/.agentera-npx-bundle.json", "bundle/registry.json", "bundle/skills/agentera/SKILL.md", "bundle/references/artifacts/state-storage-authority.yaml"];
+  required.push(`bundle/${surfaces.host_skill.path}/SKILL.md`);
   const missing = required.filter((file) => !files.has(file));
   const unclassified = unclassifiedManifestPaths(files, surfaces);
   if (missing.length > 0 || unclassified.length > 0) {
@@ -208,12 +212,99 @@ function runResetWorkflow(bin: string, root: string) {
       unrelatedPreserved: fs.readFileSync(path.join(project, "keep.txt"), "utf8"),
       profileRemoved: !fs.existsSync(profile),
       canonicalSkillInstalled: fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md")),
-      canonicalSkillLinked: fs.realpathSync(path.join(home, ".agents", "skills", "agentera")) === fs.realpathSync(path.join(install, "skills", "agentera")),
+      canonicalSkillOneFile: !fs.lstatSync(path.join(home, ".agents", "skills", "agentera")).isSymbolicLink() && JSON.stringify(fs.readdirSync(path.join(home, ".agents", "skills", "agentera"))) === JSON.stringify(["SKILL.md"]),
     },
   };
 }
 
 describe("npm distribution boundary", () => {
+  it("delivers exactly one host file while retaining standalone runtime contracts", () => {
+    const bundle = path.join(fixture.packageRoot, "bundle");
+    const registryPath = "references/adapters/package-registry.yaml";
+    const registry = YAML.parse(fs.readFileSync(path.join(bundle, registryPath), "utf8"));
+    const surfaces = registry.records[0].bundle_surfaces as BundleSurfaces;
+    const host = surfaces.host_skill;
+    const selected = path.join(bundle, host.path);
+    expect(fs.readdirSync(selected)).toEqual(["SKILL.md"]);
+    expect(fs.lstatSync(path.join(selected, "SKILL.md")).isFile()).toBe(true);
+    const sourceBytes = fs.readFileSync(path.join(CHECKOUT_ROOT, host.source));
+    expect(fs.readFileSync(path.join(selected, "SKILL.md"))).toEqual(sourceBytes);
+    expect(fs.readFileSync(path.join(fixture.constructionRoot, "bundle", host.path, "SKILL.md"))).toEqual(sourceBytes);
+    expect(fs.readFileSync(path.join(bundle, registryPath))).toEqual(fs.readFileSync(path.join(CHECKOUT_ROOT, registryPath)));
+    const files = new Set(fixture.manifest.files.map((entry) => entry.path));
+    for (const extra of ["plugin.json", "agents/build.toml", "protocol.yaml"]) {
+      expect(() => validateDistributionInventory(new Set([...files, `bundle/${host.path}/${extra}`]), surfaces)).toThrow("unclassified=");
+    }
+    const omitted = new Set(files);
+    omitted.delete(`bundle/${host.path}/SKILL.md`);
+    expect(() => validateDistributionInventory(omitted, surfaces)).toThrow("missing=");
+    // Every retained runtime input, rather than a handpicked schema subset.
+    for (const directory of surfaces.directories) {
+      for (const entry of fs.readdirSync(path.join(CHECKOUT_ROOT, directory.path), {
+        recursive: true,
+        withFileTypes: true,
+      })) {
+        if (!entry.isFile()) continue;
+        const source = path.join(entry.parentPath, entry.name);
+        const relative = path.relative(CHECKOUT_ROOT, source);
+        if (relative.split(path.sep).some((part) => surfaces.skip_parts.includes(part)) || surfaces.skip_suffixes.some((suffix) => relative.endsWith(suffix))) continue;
+        expect(fs.readFileSync(path.join(bundle, relative)), relative).toEqual(fs.readFileSync(source));
+      }
+    }
+    const manifest = JSON.parse(fs.readFileSync(path.join(fixture.packageRoot, "package.json"), "utf8"));
+    const suite = JSON.parse(fs.readFileSync(path.join(bundle, "registry.json"), "utf8")).skills[0];
+    expect(manifest.agentera.suiteVersion).toBe(suite.version);
+    expect(sourceBytes.toString()).toMatch(new RegExp(`version: ["']?${suite.version.replaceAll(".", "\\.")}["']?`));
+    // Remove the fixture's checkout dependency link for this standalone smoke.
+    const modules = path.join(fixture.packageRoot, "node_modules");
+    const link = fs.readlinkSync(modules);
+    const dependencies = Object.keys(manifest.dependencies).map((name) => ({
+      name,
+      source: fs.realpathSync(path.join(modules, name)),
+    }));
+    fs.unlinkSync(modules);
+    fs.mkdirSync(modules);
+    try {
+      expect(isContained(CHECKOUT_ROOT, fixture.root)).toBe(false);
+      const installedHost = path.join(fixture.root, "isolated-home/.agents/skills/agentera");
+      fs.mkdirSync(installedHost, { recursive: true });
+      fs.copyFileSync(path.join(selected, "SKILL.md"), path.join(installedHost, "SKILL.md"));
+      expect(fs.readdirSync(installedHost)).toEqual(["SKILL.md"]);
+      for (const dependency of dependencies) fs.cpSync(dependency.source, path.join(modules, dependency.name), { recursive: true });
+      const queries = [["schema", "--protocol"], ["schema", "--capability-contract"], ["schema", "--artifact", "plan"], ["route", "explain", "--topic", "triggers"], ...suite.capabilities.map((name: string) => ["prime", "--context", name, "--detail", "instructions"])];
+      for (const args of queries) {
+        const outputs = [fixture.constructionRoot, fixture.packageRoot].map((root) => {
+          const result = spawnSync(process.execPath, [path.join(root, "dist/bin/agentera.js"), ...args], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
+          expect(result.status, `${args.join(" ")}\n${result.stderr}\n${result.stdout}`).toBe(0);
+          return JSON.parse(result.stdout);
+        });
+        expect(outputs[1]).toEqual(outputs[0]);
+      }
+      const protocol = path.join(bundle, "skills/agentera/protocol.yaml");
+      const original = fs.readFileSync(protocol);
+      try {
+        for (const tamper of ["missing", "corrupt"]) {
+          if (tamper === "missing") fs.unlinkSync(protocol);
+          else fs.writeFileSync(protocol, "OPERATING_RULES: [invalid");
+          const result = spawnSync(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), "schema", "--protocol"], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
+          expect(result.status, result.stdout).toBe(1);
+        }
+      } finally {
+        fs.writeFileSync(protocol, original);
+      }
+      console.log(
+        JSON.stringify({
+          hostDelivery: selected,
+          tarballSha256: fixture.deterministicBytes.sha256,
+          runtimeQueries: queries.length,
+          standaloneDependencies: dependencies.map(({ name }) => name),
+        }),
+      );
+    } finally {
+      fs.rmSync(modules, { recursive: true, force: true });
+      fs.symlinkSync(link, modules, "dir");
+    }
+  });
   it("preserves zero-finding publication and no-progress shared guidance in the extracted runtime", () => {
     const project = path.join(fixture.root, "proportionate-execution");
     fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
@@ -644,6 +735,15 @@ describe("npm distribution boundary", () => {
       files: ["state-mode.yaml"],
     });
     for (const { bytes } of observations) expect(bytes).toBeLessThanOrEqual(32_768);
+    process.stdout.write(
+      JSON.stringify({
+        evidence: "selected-term-startup-boundary",
+        node: process.version,
+        bytes: observations.map(({ bytes }) => bytes),
+        instructionSha256: createHash("sha256").update(observations[0].instructions).digest("hex"),
+        budget: 32_768,
+      }) + "\n",
+    );
 
     const helps = bins.map((bin) => spawnSync(process.execPath, [bin, "prime", "--help"], { encoding: "utf8" }).stdout);
     expect(helps[1]).toBe(helps[0]);
@@ -812,7 +912,7 @@ describe("npm distribution boundary", () => {
       unrelatedPreserved: "user owned\n",
       profileRemoved: true,
       canonicalSkillInstalled: true,
-      canonicalSkillLinked: true,
+      canonicalSkillOneFile: true,
     });
   });
 });

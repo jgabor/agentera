@@ -38,6 +38,7 @@ import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.j
 import { loadStateStorageAuthority } from "../../src/state/stateStorageAuthority.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
+import { explainedOperationCommand, explainedOperationSection } from "../helpers/operationDetail.js";
 
 useSourceAppHome();
 
@@ -266,9 +267,10 @@ function ownerCorrectionInput(root: string, ids: readonly string[]): Record<stri
     .split(/\r?\n/)
     .flatMap((line, index) => (line.trimStart().startsWith("- [") ? [index + 1] : []));
   expect(sourceLines).toHaveLength(ids.length);
+  const example = explainedOperationSection("todo", "correct-owners").input;
   return {
-    schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,
-    owners: ids.map((id, index) => ({ id, source_line: sourceLines[index] })),
+    ...example,
+    owners: ids.map((id, index) => ({ ...example.owners[0], id, source_line: sourceLines[index] })),
   };
 }
 
@@ -620,10 +622,11 @@ describe("TODO item and documentation inventory entity authority", () => {
     const create = (title: string) => todo(root, title).id as string;
     const first = create("First batch item");
     const second = create("Second batch item");
+    const example = explainedOperationSection("todo", "update", "input.batch").example;
     const input = {
-      schema_version: "agentera.todoUpdateBatch.v1",
+      ...example,
       updates: [
-        { id: first, patch: { title: "First updated item" } },
+        { ...example.updates[0], id: first },
         { id: second, patch: { title: "Second updated item" } },
       ],
     };
@@ -640,9 +643,9 @@ describe("TODO item and documentation inventory entity authority", () => {
     const applied = capture(root, ["state", "todo", "update", "--input", "-", "--effect-sha256", preview.json.effect_sha256, "--yes", "--format", "json"], input);
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.reconciliation.transaction_id).toEqual(expect.any(String));
-    expect(applied.json.records.map((entry: any) => entry.record.title)).toEqual(["First updated item", "Second updated item"]);
+    expect(applied.json.records.map((entry: any) => entry.record.title)).toEqual([example.updates[0].patch.title, "Second updated item"]);
     const markdown = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
-    expect(markdown).toContain("First updated item");
+    expect(markdown).toContain(example.updates[0].patch.title);
     expect(markdown).toContain("Second updated item");
   });
 
@@ -650,7 +653,12 @@ describe("TODO item and documentation inventory entity authority", () => {
     const root = project();
     const first = todo(root, `${verb} first`).id as string;
     const second = todo(root, `${verb} second`).id as string;
-    const input = transitionBatchInput(verb, [first, second]);
+    const example = explainedOperationSection("todo", verb, "input.batch").example;
+    const member = verb === "resolve" ? "resolutions" : "transitions";
+    const input = {
+      ...example,
+      [member]: [first, second].map((id) => ({ ...example[member][0], id })),
+    };
     const preview = capture(root, ["state", "todo", verb, "--input", "-", "--dry-run", "--format", "json"], input);
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json).toMatchObject({
@@ -668,7 +676,7 @@ describe("TODO item and documentation inventory entity authority", () => {
       const record = capture(root, ["state", "todo", "get", "--id", id, "--format", "json"]).json.entry.record;
       expect(record.lifecycle.operation).toBe(verb);
       if (verb === "resolve") expect(record.status).toBe("resolved");
-      else expect(record.severity).toBe("degraded");
+      else expect(record.severity).toBe(example[member][0].severity);
     }
   });
 
@@ -923,32 +931,23 @@ describe("TODO item and documentation inventory entity authority", () => {
 
   it("previews, applies, and replays an atomic TODO create batch with local references", () => {
     const root = project();
+    const example = explainedOperationSection("todo", "create", "input.batch").example;
     const input = {
-      schema_version: "agentera.todoCreateBatch.v1",
+      ...example,
       creates: [
         {
           local_ref: "foundation",
           record: {
+            ...example.creates[0].record,
             title: "Batch foundation",
-            kind: "feat",
-            target_version: "3.0.0",
-            severity: "normal",
-            requirements: [],
-            acceptance: [],
-            release_blocker: false,
             readiness: readinessInput({ queue_rank: 1 }),
           },
         },
         {
           local_ref: "dependent",
           record: {
+            ...example.creates[0].record,
             title: "Batch dependent",
-            kind: "feat",
-            target_version: "3.0.0",
-            severity: "normal",
-            requirements: [],
-            acceptance: [],
-            release_blocker: false,
             readiness: readinessInput({
               dependencies: [{ local_ref: "foundation" }],
               queue_rank: 2,
@@ -2929,7 +2928,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     });
     expect(files(root)).toEqual(beforePreview);
 
-    const preview = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+    const preview = capture(root, explainedOperationCommand("todo", "activate", 0));
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json.activation).toMatchObject({
       counts: { matched: 0, converted: 1, retained: 1, conflicting: 0 },
@@ -2947,11 +2946,14 @@ describe("TODO item and documentation inventory entity authority", () => {
 
     expect(capture(root, ["state", "todo", "activate", "--format", "json"]).rc).toBe(2);
     expect(files(root)).toEqual(beforePreview);
-    const staleApply = capture(root, ["state", "todo", "activate", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    const staleApply = capture(root, explainedOperationCommand("todo", "activate", 1, { EFFECT_SHA256: "a".repeat(64) }));
     expect(staleApply.rc).toBe(2);
     expect(staleApply.json.error.message).toContain("changed after preview");
     expect(files(root)).toEqual(beforePreview);
-    const applied = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
+    const applyArgs = explainedOperationCommand("todo", "activate", 1, {
+      EFFECT_SHA256: preview.json.activation.effect_sha256,
+    });
+    const applied = capture(root, applyArgs);
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.activation).toEqual(preview.json.activation);
     expect(applied.json.reconciliation.targets).toBe(preview.json.reconciliation.targets);
@@ -2972,7 +2974,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(arbitraryReplay.rc).toBe(2);
     expect(arbitraryReplay.json.error.message).toContain("does not match the authorized effect");
     expect(files(root)).toEqual(activeBytes);
-    const legitimateReplay = capture(root, ["state", "todo", "activate", "--effect-sha256", preview.json.activation.effect_sha256, "--yes", "--format", "json"]);
+    const legitimateReplay = capture(root, applyArgs);
     expect(legitimateReplay.rc, legitimateReplay.err || legitimateReplay.out).toBe(0);
     expect(legitimateReplay.json).toMatchObject({
       activation: { effect_sha256: preview.json.activation.effect_sha256 },
@@ -3004,7 +3006,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     const { root, ids, entityBytes, markdown } = damagedActiveProject();
     const before = files(root);
 
-    const preview = capture(root, ["state", "todo", "repair", "--dry-run", "--format", "json"]);
+    const preview = capture(root, explainedOperationCommand("todo", "repair", 0));
 
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json.repair).toMatchObject({
@@ -3019,11 +3021,14 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(preview.json.apply_command).toContain("state todo repair --effect-sha256");
     expect(files(root)).toEqual(before);
 
-    const staleApply = capture(root, ["state", "todo", "repair", "--effect-sha256", "a".repeat(64), "--yes", "--format", "json"]);
+    const staleApply = capture(root, explainedOperationCommand("todo", "repair", 1, { EFFECT_SHA256: "a".repeat(64) }));
     expect(staleApply.rc).toBe(2);
     expect(staleApply.json.error.message).toContain("changed after preview");
     expect(files(root)).toEqual(before);
-    const applied = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+    const applyArgs = explainedOperationCommand("todo", "repair", 1, {
+      EFFECT_SHA256: preview.json.repair.effect_sha256,
+    });
+    const applied = capture(root, applyArgs);
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.repair).toEqual(preview.json.repair);
     const repaired = fs.readFileSync(path.join(root, "TODO.md"), "utf8");
@@ -3046,7 +3051,7 @@ describe("TODO item and documentation inventory entity authority", () => {
     });
     expect(capture(root, ["check", "validate", "state", "--cwd", root, "--format", "json"]).rc).toBe(0);
     const stable = files(root);
-    const replay = capture(root, ["state", "todo", "repair", "--effect-sha256", preview.json.repair.effect_sha256, "--yes", "--format", "json"]);
+    const replay = capture(root, applyArgs);
     expect(replay.rc, replay.err || replay.out).toBe(0);
     expect(replay.json.operation.idempotent_replay).toBe(true);
     expect(files(root)).toEqual(stable);
@@ -3375,7 +3380,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(bounded.json.error.violations.at(-1)).toBe("22 additional input violations omitted");
     expect(files(root)).toEqual(before);
 
-    const preview = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--dry-run", "--format", "json"], input);
+    const preview = capture(root, explainedOperationCommand("todo", "correct-owners", 0, { "owner-mapping.yaml": "-" }), input);
 
     expect(preview.rc, preview.err || preview.out).toBe(0);
     expect(preview.json).toMatchObject({
@@ -3397,7 +3402,11 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     expect(preview.json.correction.diagnosis.items).toHaveLength(20);
     expect(files(root)).toEqual(before);
 
-    const applied = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+    const applyArgs = explainedOperationCommand("todo", "correct-owners", 1, {
+      "owner-mapping.yaml": "-",
+      EFFECT_SHA256: preview.json.correction.effect_sha256,
+    });
+    const applied = capture(root, applyArgs, input);
 
     expect(applied.rc, applied.err || applied.out).toBe(0);
     expect(applied.json.correction).toEqual(preview.json.correction);
@@ -3426,7 +3435,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
     });
     expect(capture(root, ["check", "validate", "state", "--format", "json"]).rc).toBe(0);
     const stable = files(root);
-    const replay = capture(root, ["state", "todo", "correct-owners", "--input", "-", "--effect-sha256", preview.json.correction.effect_sha256, "--yes", "--format", "json"], input);
+    const replay = capture(root, applyArgs, input);
     expect(replay.rc, replay.err || replay.out).toBe(0);
     expect(replay.json).toMatchObject({
       correction: { effect_sha256: preview.json.correction.effect_sha256 },
@@ -3436,6 +3445,7 @@ mutateTodoDocsEntity({ artifact: "todo", spec: operationSpec("todo", "repair"), 
   });
 
   it("rejects invalid correction states, evidence, reopened work, and stale effects before writes", () => {
+    expect(explainedOperationSection("todo", "correct-owners", "constraints_effects_replay").join(" ")).toContain("mappings that reopen a resolved entity reject");
     const safe = preactivationProject();
     const safeInput = {
       schema_version: TODO_OWNER_CORRECTION_INPUT_VERSION,

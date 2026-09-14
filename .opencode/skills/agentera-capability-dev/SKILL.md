@@ -94,6 +94,14 @@ Do not validate only source prose. Verification must cover source, generated,
 and extracted package surfaces when the change can affect bundling or runtime
 parity. Load `.opencode/skills/agentera-verification/SKILL.md` for those gates.
 
+The host projection contains only `SKILL.md`; source schemas are internal CLI
+data, not host companions. Serve required semantics through the purpose-owned
+interfaces mapped in `docs/cli-coverage-contract.md`: follow section and
+continuation commands, preserve complete nested guidance, and keep provenance
+paths informational. Authoring detail is `schema --capability-contract`;
+capability detail is `prime --context <name> --detail KIND`. Do not add a parallel
+registry or teach installed-file reads as recovery.
+
 ## Helper policy
 
 `npx -y agentera@next ...` is the documented entry point until v3 is promoted

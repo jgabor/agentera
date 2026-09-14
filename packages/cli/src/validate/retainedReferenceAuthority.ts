@@ -5,6 +5,7 @@ import { resolvePath } from "../core/paths.js";
 import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMappingFile } from "../core/yaml.js";
 import { validateStructuredInputInventory } from "../registries/structuredInputInventory.js";
+import { braceEnd, parenthesisEnd, splitArguments } from "./retainedReferenceSyntax.js";
 
 const AUTHORITY_RELATIVE_PATH = "references/meta/retained-reference-authority.yaml";
 const LIVE_ROOTS = ["references", "skills/agentera/references"] as const;
@@ -80,92 +81,6 @@ function sourceWithoutComments(source: string): string {
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-}
-
-function braceEnd(source: string, opening: number): number | null {
-  let depth = 0;
-  let quote = "";
-  let escaped = false;
-  for (let index = opening; index < source.length; index += 1) {
-    const character = source[index]!;
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === quote) quote = "";
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === "{") depth += 1;
-    if (character === "}") {
-      depth -= 1;
-      if (depth === 0) return index + 1;
-    }
-  }
-  return null;
-}
-
-function parenthesisEnd(source: string, opening: number): number | null {
-  let depth = 0;
-  let quote = "";
-  let escaped = false;
-  for (let index = opening; index < source.length; index += 1) {
-    const character = source[index]!;
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === quote) quote = "";
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === "(") depth += 1;
-    if (character === ")") {
-      depth -= 1;
-      if (depth === 0) return index;
-    }
-  }
-  return null;
-}
-
-function splitArguments(source: string): string[] {
-  const argumentsList: string[] = [];
-  let start = 0;
-  let round = 0;
-  let square = 0;
-  let curly = 0;
-  let quote = "";
-  let escaped = false;
-  for (let index = 0; index < source.length; index += 1) {
-    const character = source[index]!;
-    if (quote) {
-      if (escaped) escaped = false;
-      else if (character === "\\") escaped = true;
-      else if (character === quote) quote = "";
-      continue;
-    }
-    if (character === '"' || character === "'" || character === "`") {
-      quote = character;
-      continue;
-    }
-    if (character === "(") round += 1;
-    else if (character === ")") round -= 1;
-    else if (character === "[") square += 1;
-    else if (character === "]") square -= 1;
-    else if (character === "{") curly += 1;
-    else if (character === "}") curly -= 1;
-    else if (character === "," && round === 0 && square === 0 && curly === 0) {
-      argumentsList.push(source.slice(start, index).trim());
-      start = index + 1;
-    }
-  }
-  const finalArgument = source.slice(start).trim();
-  if (finalArgument) argumentsList.push(finalArgument);
-  return argumentsList;
 }
 
 function namedCalls(source: string, names: readonly string[]): Array<{ name: string; argumentsList: string[] }> {
@@ -246,6 +161,10 @@ function importedSymbols(root: string, modulePath: string, source: string): Map<
       const parsed = /^\s*([A-Za-z_$][A-Za-z0-9_$]*)(?:\s+as\s+([A-Za-z_$][A-Za-z0-9_$]*))?\s*$/u.exec(item);
       if (parsed) imports.set(parsed[2] ?? parsed[1]!, { module: importedModule, symbol: parsed[1]! });
     }
+  }
+  for (const match of source.matchAll(/\(\s*await\s+import\s*\(\s*["']([^"']+)["']\s*\)\s*\)\s*\.\s*([A-Za-z_$][A-Za-z0-9_$]*)\s*\(/gu)) {
+    const importedModule = resolveImportedModule(root, modulePath, match[1]!);
+    if (importedModule) imports.set(match[2]!, { module: importedModule, symbol: match[2]! });
   }
   return imports;
 }
@@ -440,6 +359,12 @@ function reachableProductionModules(root: string): Set<string> {
     reachable.add(modulePath);
     const source = sourceWithoutComments(fs.readFileSync(absolute, "utf8"));
     for (const match of source.matchAll(/(?:import|export)\s+(?:[^"']*?\s+from\s+)?["']([^"']+)["']/gu)) {
+      const dependency = resolveImportedModule(root, modulePath, match[1]!);
+      if (dependency && !reachable.has(dependency)) pending.push(dependency);
+    }
+    // Static literal lazy imports are production dependencies too. Do not infer
+    // paths from expressions or emitted guidance strings.
+    for (const match of source.matchAll(/\bimport\s*\(\s*["']([^"']+)["']\s*\)/gu)) {
       const dependency = resolveImportedModule(root, modulePath, match[1]!);
       if (dependency && !reachable.has(dependency)) pending.push(dependency);
     }

@@ -40,10 +40,48 @@ export function finalizeStatusCapabilityContextPayload(payload: Record<string, u
   delete capabilityContext.app;
   // status_context already carries the canonical bounded plan projection.
   delete context.plan;
+  // Startup carries host-health facts, not the repeated diagnostic narrative
+  // and repair procedure. Keep the exact, home-scoped read-only preview as the
+  // continuation; full diagnostics still live in doctor and explicit prime
+  // --fields shared_skill. Do not trim instructions or static detail actions.
+  const { message: _message, path: _path, details: _details, ...sharedSkill } = state.shared_skill;
+  payload.shared_skill = { ...sharedSkill, detail_availability: "summary" };
+  // The instructions are already delivered in full. Repeating their loader
+  // paths, provenance and first-read explanation is not dashboard state.
+  const firstRead = context.first_invocation_read as Record<string, unknown> | undefined;
+  if (firstRead)
+    context.first_invocation_read = {
+      value: firstRead.value,
+      startup_command: firstRead.startup_command,
+      runtime_enforcement: firstRead.runtime_enforcement,
+    };
   context.status_context = buildStatusContextState(state, command, {
     budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES,
     degradedMode: "status_routing",
   });
+  // Unsafe TODO ownership is already the blocking recommendation. The risk
+  // IDs and exact correction remain here; defer repeated reconciliation
+  // accounting and lower-ranked suggestions through existing sparse reads.
+  const startup = capabilityContext.startup as Record<string, unknown>;
+  const reconciliation = startup.todo_reconciliation as Record<string, unknown> | undefined;
+  if (reconciliation?.state === "unsafe_inactive") {
+    const { counts: _counts, apply_command: _apply, ...summary } = reconciliation;
+    startup.todo_reconciliation = {
+      ...summary,
+      detail_availability: "summary",
+      detail_command: preCutoverCommand("prime --fields startup"),
+    };
+    const status = context.status_context as Record<string, unknown>;
+    const next = status.next_action as Record<string, unknown>;
+    const alternatives = next.alternatives as unknown[];
+    if (alternatives.length) {
+      next.alternatives = [];
+      next.alternatives_omission = {
+        omitted_count: alternatives.length,
+        retrieval: preCutoverCommand("prime --fields next_action"),
+      };
+    }
+  }
   return payload;
 }
 

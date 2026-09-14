@@ -31,13 +31,16 @@ export function printTopLevelHelp(): string {
       ...CAPABILITY_ROUTING_NAMES.map((name) => `${name.padEnd(19)} Route to ${name} capability guidance`),
     ]),
     ...lines("User commands:", [
-      "upgrade             Preview or apply app/project migration and explicit legacy cleanup",
+      "upgrade             Preview or apply shared-skill delivery, migration, or legacy cleanup",
       "app-home            Resolve the platform Agentera app-home path",
       "doctor              Check Agentera CLI, app, and shared-skill status",
       "report              Privacy-gated usage analytics",
       "--version           Print the installed Agentera CLI version",
     ]),
     ...lines("Maintainer commands:", ["check               Validation, verification, lint, and repository compaction gates"]),
+    "Static discovery: schema; prime --context NAME --detail KIND; state ARTIFACT explain;",
+    "                  route explain; report explain; check explain; upgrade --explain.",
+    "Follow returned section and next_command actions. Discovery grants no execution permission.",
     "options:",
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
@@ -48,28 +51,33 @@ export function printTopLevelHelp(): string {
 
 export function printUpgradeHelp(): string {
   return [
+    "Static guidance: npx -y agentera@next upgrade --explain [--operation OP] [--section S] [--limit N] [--cursor C]",
     "usage: agentera upgrade [-h] [--project PROJECT] [--install-root INSTALL_ROOT]",
     "                        [--home HOME] [--channel {stable,development}]",
     "                        [--legacy-cleanup RESOURCE_ID] [--reset-product-v1]",
     "                        [--authorization TOKEN]",
     "                        [--only {artifacts,runtime,cleanup}] [--dry-run] [--yes]",
-    "                        [--force] [--verify] [--format {text,json}]",
+    "                        [--force] [--verify] [--format FORMAT]",
+    `usage: ${preCutoverCommand("upgrade --shared-skill [--home HOME] [--install-root APP]")}`,
+    "                        [--dry-run | --yes [--authorization TOKEN]] [--format FORMAT]",
     "",
     "options:",
     "  -h, --help            show this help message and exit",
     "  --project PROJECT     Project directory whose .agentera artifacts should be migrated",
     "  --install-root PATH   Agentera app home to inspect or update",
-    "  --home HOME           Home directory for shared-skill detection and explicit native resource cleanup",
+    "  --home HOME           Home directory for shared-skill detection/install and explicit native resource cleanup",
+    "  --shared-skill        Isolated one-file install/refresh or owned legacy conversion; default preview",
+    "                       No project/channel/migration/reset/cleanup/force/verify flags; unowned extras block apply.",
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
     "  --legacy-cleanup ID   Select one authority-declared retired leaf ID or historical alias",
     "  --reset-product-v1    Preview or authorize the bounded destructive product-v1 reset",
-    "  --authorization TOKEN Bind product-v1 apply to the exact reviewed preview scope",
+    "  --authorization TOKEN Bind legacy host conversion or product-v1 reset --yes to its exact reviewed preview",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
-    "  --yes                 Explicitly approve migration, selected cleanup, or an authorized product-v1 reset",
+    "  --yes                 Explicitly approve the selected host, migration, cleanup or authorized reset effects",
     "  --force               Replace only where the migration contract explicitly permits it",
     "  --verify              Verify the current install; full v2-to-v3 apply verifies state and startup automatically",
-    "  --format {text,json}  Structured output format",
+    "  --format FORMAT      JSON output (only json; default)",
     "",
     "v2-to-v3 development upgrade (one-way):",
     '  Optional preview: npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run',
@@ -78,9 +86,18 @@ export function printUpgradeHelp(): string {
     "  Cross-major apply is always full: --only cannot be used; there is no rollback, restore, or non-Git workflow.",
     "",
     "active integration:",
-    "  Agentera uses the shared skill at ~/.agents/skills/agentera plus the CLI.",
+    "  Agentera uses ~/.agents/skills/agentera/SKILL.md only; runtime contracts remain inside the CLI package.",
+    "  Shared-skill preview: npx -y agentera@next upgrade --shared-skill --dry-run",
+    "  Fresh/owned refresh requires explicit home approval:",
+    "    npx -y agentera@next upgrade --shared-skill --yes",
+    "  Owned legacy conversion also requires --authorization TOKEN from its exact reviewed preview.",
+    "  Apply requires Linux /proc/self/fd publication; legacy retention must be on the same filesystem.",
+    "  Conversion supports at most 4096 owned entries including the root; retains the old link/tree and journal.",
+    "  Never prune a symlink target. Unowned/changed resources require separately approved manual recovery.",
+    "  Project-only migration does not authorize global cleanup or host conversion; no history/trust/publication effects.",
+    "  Full repair details: npx -y agentera@next upgrade --explain --operation install",
     "  Current runtime selectors and native plugin, hook, agent, command, descriptor, and marketplace writes are retired.",
-    "  Full preview reports every present declared leaf and empty-directory outcome; eligible leaves apply independently.",
+    "  Explicit app/global cleanup scope reports declared leaves; eligible leaves apply independently.",
     `  Native resource cleanup preview: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run")}`,
     `  Native resource cleanup apply:   ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --yes")}`,
     "",
@@ -92,7 +109,8 @@ export function printUpgradeHelp(): string {
 
 export function printAppHomeHelp(): string {
   return [
-    "usage: agentera app-home [-h] [--install-root PATH] [--home HOME] [--format {text,json}]",
+    "Static guidance: npx -y agentera@next app-home --explain [--section S] [--limit N] [--cursor C]",
+    "usage: agentera app-home [-h] [--install-root PATH] [--home HOME] [--format FORMAT]",
     "",
     "Resolve the Agentera app-home path for agent/bootstrap callers.",
     "",
@@ -100,15 +118,16 @@ export function printAppHomeHelp(): string {
     "  -h, --help            show this help message and exit",
     "  --install-root PATH   Explicit Agentera app home to resolve",
     "  --home HOME           Home directory for platform default resolution",
-    "  --format {text,json}  Structured output format",
+    "  --format FORMAT      JSON output (only json; default)",
   ].join("\n");
 }
 
 export function printDoctorHelp(): string {
   return [
+    "Static guidance: npx -y agentera@next doctor --explain [--section S] [--limit N] [--cursor C]",
     "usage: agentera doctor [-h] [--install-root PATH] [--home HOME] [--project PROJECT]",
     "                       [--expected-version VERSION] [--expect-command CMD] [--retired-resource ID]",
-    "                       [--smoke] [--allow-live-model] [--format {text,json}]",
+    "                       [--smoke] [--allow-live-model] [--format FORMAT]",
     "",
     "options:",
     "  -h, --help              show this help message and exit",
@@ -120,7 +139,7 @@ export function printDoctorHelp(): string {
     "  --retired-resource ID   Read-only exact retired-resource diagnostic preview",
     "  --smoke                 Run bounded offline smoke checks (no live model calls by default)",
     "  --allow-live-model      Record permission for future live model smoke probes",
-    "  --format {text,json}    Structured output format",
+    "  --format FORMAT        JSON output (only json; default)",
     "",
     "Reports read-only app, project-state, shared-skill, and CLI evidence, plus retired-resource diagnostics.",
   ].join("\n");
@@ -142,6 +161,12 @@ function recordFamilyReadSection(command: string): string[] {
 }
 
 export function printStateHelp(sub?: string): string {
+  const help = stateHelp(sub);
+  if (sub && !verbsForArtifact(sub).length) return help;
+  return `${help}\nStatic operation detail: agentera state ${sub ?? "<artifact>"} explain --verb VERB --section detail\nDetail pages: --limit 1..100 (default 20), --cursor TOKEN; follow returned semantic section commands. No project or write consent is read.`;
+}
+
+function stateHelp(sub?: string): string {
   const stateCommands = stateCommandNames();
   if (sub === "plan") {
     return [
@@ -167,7 +192,7 @@ export function printStateHelp(sub?: string): string {
     return [
       ...recordFamilyReadSection("experiments"),
       "       agentera state experiments publish --objective ID [--id ID] --input EXPERIMENT.yaml",
-      "       (publish also accepts --dry-run and --format text)",
+      "       (publish also accepts --dry-run and --format FORMAT; only json, the default)",
       "",
       "Publish is the validated mutation authority and atomically writes one schema-valid experiment.",
       "A byte-equivalent identity retry is idempotent; collisions and pre-publication failures preserve current bytes.",
@@ -268,7 +293,7 @@ export function printStateHelp(sub?: string): string {
       "",
       "options:",
       "  -h, --help            show this help message and exit",
-      "  --format FORMAT       Output format: text, json, or yaml",
+      "  --format FORMAT       JSON output (only json; default)",
     ].join("\n");
   }
   return [`usage: agentera state [-h] {${stateCommands.join(",")}} ...`, "", "Routine artifact reads, writes, and advanced artifact query.", "Discover typed writes: agentera state <artifact> explain", "Discover all verbs: agentera state <artifact> explain --all"].join("\n");
@@ -299,7 +324,7 @@ export function printStateListHelp(family: EntityListFamilyHelp): string {
     "Bounds and formats:",
     `  limit: minimum ${family.bounds.minimum}, default ${family.bounds.default}, maximum ${family.bounds.maximum}`,
     `  serialized output: at most ${family.bounds.maxUtf8Bytes} UTF-8 bytes; rows and scalar values are not partially returned`,
-    `  formats: ${family.formats.join(", ")}`,
+    "  formats: json (default)",
     "",
     "Examples:",
     `  ${family.example}`,
@@ -317,7 +342,7 @@ export function printStateGetHelp(family: EntityListFamilyHelp): string {
     "",
     "Selectors and formats:",
     "  --id ID              required bare ten-letter canonical identity",
-    `  --format FORMAT       ${family.formats.join(", ")}`,
+    "  --format FORMAT       JSON output (only json; default)",
     "",
     `List identities: ${family.example}`,
     `Exact get:       ${family.get}`,
@@ -330,7 +355,7 @@ export function stateCommandNames(): string[] {
 
 export function printCheckHelp(sub?: string): string {
   if (sub === "verify") {
-    return ["usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--format text|json] [options]", "", "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;", "use the stable Python line for smoke maintainer harnesses."].join("\n");
+    return ["usage: agentera check verify [-h] eval {skills,semantic,routing,glossary} [--format FORMAT] [options]", "", "Evaluation verify gates. Smoke verify is retired on the npm self-contained CLI;", "use the stable Python line for smoke maintainer harnesses."].join("\n");
   }
   if (sub === "validate") {
     return [
@@ -344,27 +369,27 @@ export function printCheckHelp(sub?: string): string {
   }
   if (sub === "durability") {
     return [
-      "usage: agentera check durability [-h] [--project PATH] [--artifact ARTIFACT]",
-      "                                [--number N|--id ID] [--limit N] --format {text,json,yaml}",
+      "usage: agentera check durability [-h] --artifact ARTIFACT --id ID",
+      "                                [--project PATH] [--limit N] [--format FORMAT]",
       "",
-      "Read-only local archive and optional reachable Git durability evidence.",
+      "Read-only local entity and optional reachable Git durability evidence.",
       "This is an explicit migration/readiness diagnostic, not ordinary retrieval grammar.",
+      "--number is rejected in current entity mode, even alongside a valid ID.",
       "Git is never required for local state writes and no remote is contacted.",
       "",
       "options:",
       "  -h, --help            show this help message and exit",
       "  --project PATH        Project directory to inspect",
-      "  --artifact ARTIFACT   progress, decisions, or health",
-      "  --number N            Positive archive entry number; requires --artifact",
-      "  --id ID                Bare canonical entity ID after cutover; requires --artifact",
-      "  --limit N             Bound returned archive entries (maximum 100)",
-      "  --format FORMAT       Output format: text, json, or yaml",
+      "  --artifact ARTIFACT   Required: decisions, docs, experiments, health, objective, plan, progress, todo",
+      "  --id ID               Required: bare ten-lowercase-letter entity ID from its state list",
+      "  --limit N             Validated integer (1-100); returns one entity, not a paginated archive list",
+      "  --format FORMAT       JSON output (only json; default)",
     ].join("\n");
   }
   if (sub) {
     return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
   }
-  return ["usage: agentera check [-h] {validate,verify,lint,compact,durability} ...", "", "Validation, verification, lint, and repository compaction gates."].join("\n");
+  return ["usage: agentera check [-h] {validate,verify,lint,compact,durability} ...", "Static guidance: npx -y agentera@next check explain [--operation OP] [--target T] [--section S] [--limit N] [--cursor C]", "", "Validation, verification, lint, and repository compaction gates."].join("\n");
 }
 
 export function printReportHelp(): string {
@@ -373,7 +398,8 @@ export function printReportHelp(): string {
   const candidateDecision = personalGlossaryCandidateDecisionContract();
   const reviewRecords = personalGlossaryReviewRecordsContract();
   return [
-    "usage: agentera report [-h] [--format {text,json}] [--project VALUE] [--sources {active,all}]",
+    "usage: agentera report [-h] [--format FORMAT] [--project VALUE] [--sources {active,all}]",
+    "Static guidance: npx -y agentera@next report explain [--operation OP] [--section S] [--limit N] [--cursor C]",
     "                       | agentera report refresh [--dry-run|--consent local-history]",
     "                         [--import-source claude]",
     "                         [--no-<runtime> ...] [--accept-coverage-gap]",
@@ -447,21 +473,26 @@ export function printReportHelp(): string {
 
 export function printPrimeHelp(): string {
   return [
-    "usage: agentera prime [-h] [--format {text,json,yaml}] [--context CAPABILITY]",
+    "usage: agentera prime [-h] [--format FORMAT] [--context CAPABILITY]",
     "                       [--input FILE|-] [--term-input FILE|-] [--guidance] [--dashboard] [--orientation] [--fields FIELDS]",
+    "       agentera prime --context CAPABILITY --detail instructions|artifacts|validation|exit|worker [--section SECTION] [--limit N] [--cursor C] [--format FORMAT]",
     "",
     "Composite orientation briefing, capability startup context, or static guidance.",
     "",
     "options:",
     "  -h, --help            show this help message and end",
-    "  --format FORMAT       Output format: text, json, or yaml",
+    "  --format FORMAT       Only json (default); --guidance remains the static text exception",
     "  --context CAPABILITY  Emit startup context for a capability (e.g. plan)",
+    "  --detail DETAIL       Static instructions|artifacts|validation|exit|worker; requires --context; no startup or project reads",
+    "  --section SECTION     Exact semantic selector returned by the selected detail index",
+    "  --limit N --cursor C  Static detail pages: default 20, range 1..100, at most 32768 UTF-8 bytes",
+    "                        Detail rejects startup inputs, field filters, dashboard aliases and --guidance; JSON only",
     "  --input FILE|-         Transient agentera.buildExecutionRequest.v1 input; valid only with --context build",
     "  --term-input FILE|-    Private no-review selected-term input; valid only with --context discuss, plan, or build",
     "  --guidance            Emit static routing guidance",
     "  --dashboard           Deprecated status-capsule alias; incompatible with --fields",
     "  --orientation         Deprecated dashboard alias; incompatible with --fields",
-    "  --fields FIELDS       Comma-separated field filter for JSON/YAML output",
+    "  --fields FIELDS       Comma-separated field filter for startup JSON output",
     "",
     "Dashboard consumers must use `npx -y agentera@next prime --context status` and read capability_context.context.status_context.",
     "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
@@ -470,26 +501,31 @@ export function printPrimeHelp(): string {
 
 export function printSchemaHelp(): string {
   return [
-    "usage: agentera schema [-h] [--format {json,yaml}]",
+    "usage: agentera schema [-h] [--format FORMAT]",
+    "       agentera schema (--artifact A | --protocol | --capability-contract) [--section S] [--limit N] [--cursor CURSOR] [--format FORMAT]",
     "",
     "Runtime CLI and schema introspection.",
     "Includes the state_writer operation matrix and per-artifact write_interface metadata.",
+    "Static contracts: --artifact A | --protocol | --capability-contract (JSON only; no project or installed skill needed).",
+    "Follow returned --section S commands for complete nested semantics, source notes and governing qualifications.",
+    "--limit 1..100 (default 20); --cursor CURSOR follows exact next_command, at most 32768 UTF-8 bytes per page.",
+    "Static detail exits: 0 available, 64 invalid selection/cursor, 1 invalid runtime authority. Never writes state.",
     "",
     "options:",
     "  -h, --help            show this help message and exit",
-    "  --format FORMAT       Output format: json or yaml",
+    "  --format FORMAT       JSON output (only json; default)",
   ].join("\n");
 }
 
 export function printCapabilityHelp(capability: string): string {
   return [
-    `usage: agentera ${capability} [-h] [--format {text,json,yaml}]`,
+    `usage: agentera ${capability} [-h] [--format FORMAT]`,
     "",
     `Route to ${capability} capability guidance (not a full capability runner).`,
     "",
     "options:",
     "  -h, --help            show this help message and exit",
-    "  --format FORMAT       Output format: text, json, or yaml",
+    "  --format FORMAT       JSON output (only json; default)",
     "",
     `Startup context: ${preCutoverCommand(`prime --context ${capability}`)}`,
   ].join("\n");
@@ -505,6 +541,8 @@ export function printRouteHelp(): string {
   return [
     `usage: ${preCutoverCommand("route <request|receipt> --input PATH")}`,
     `       ${preCutoverCommand("route evaluate")}`,
+    `       ${preCutoverCommand("route explain [--topic overview|phrases|triggers|receipt|evaluation] [--capability C] [--section S] [--limit N] [--cursor C] [--format FORMAT]")}`,
+    "Static explain is request-free and state-independent; phrases/triggers accept a canonical capability, including status. Follow returned section and continuation commands for complete contracts. Operational flags are rejected.",
     "",
     "Route one transient request or validate one semantic host receipt through the shared hybrid contract.",
     "Request text is accepted only from the structured YAML or JSON input document, never argv.",
@@ -558,7 +596,7 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printCheckHelp("verify");
     case "--version":
     case "version":
-      return "usage: agentera --version [--format {text,json}]\n\nPrint the installed Agentera CLI version.\n";
+      return "usage: agentera --version\n\nPrint the installed Agentera CLI version as text; no format selector.\n";
     default:
       if ((CAPABILITY_ROUTING_NAMES as readonly string[]).includes(command)) {
         return printCapabilityHelp(command);

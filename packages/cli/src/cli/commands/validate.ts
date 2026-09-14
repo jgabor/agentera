@@ -31,7 +31,8 @@ import { scanConfirmedVariantViolations } from "../../validate/glossaryVariantGu
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
-export const VALIDATE_FAMILY_NAMES = ["cross-capability", "app-home-contract", "vocabularyAuthority", "retained-references", "activation-conjunction", "selfAudit", "release-metadata", "capability", "capability-contract", "artifact", "state"] as const;
+import { VALIDATE_FAMILY_NAMES } from "./checkCatalog.js";
+export { VALIDATE_FAMILY_NAMES } from "./checkCatalog.js";
 
 /** Source-only validation must not appear as a packaged CLI capability. */
 export function advertisedValidateFamilyNames(): readonly string[] {

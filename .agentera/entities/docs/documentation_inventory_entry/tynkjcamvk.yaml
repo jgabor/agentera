@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Agentera verification maintainer skill
   path: .opencode/skills/agentera-verification/SKILL.md
-  last_updated: 2026-09-12
+  last_updated: 2026-09-13
   status: current

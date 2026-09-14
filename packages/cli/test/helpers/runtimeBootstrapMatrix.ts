@@ -8,6 +8,7 @@ import { expect } from "vitest";
 
 import { preCutoverCommand } from "../../src/cli/preCutoverCommand.js";
 import { DEVELOPMENT_CHILD_PATH } from "../../src/core/developmentInvocation.js";
+import { runHostSkillLifecycle } from "../../src/setup/hostSkillLifecycle.js";
 import { commandText, fullEntityUpgradePreviewCommand } from "../../src/upgrade/upgradeCommands.js";
 import { BOOTSTRAP_ACCEPTED_SPECS, BOOTSTRAP_PROJECT_STATE_IDS, BOOTSTRAP_REJECTION_SPECS, BOOTSTRAP_RUNTIME_IDS, bootstrapMatrixAuthority } from "../../src/validate/bootstrapAuthority.js";
 import type { PackageFixture } from "../packaging/packageSetup.js";
@@ -533,15 +534,21 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
       cache: path.join(matrixRoot, `${runtime} npm cache ${DANGER}`),
       state: path.join(matrixRoot, `${runtime} state ${DANGER}`),
       tmp: path.join(matrixRoot, `${runtime} command temp ${DANGER}`),
-      appHome: path.join(runtimeRoot, "bundle"),
+      appHome: path.join(home, ".local/share/agentera"),
       maliciousBin: path.join(home, "user-owned-bin"),
     };
     for (const directory of Object.values(paths)) fs.mkdirSync(directory, { recursive: true });
     const userOwnedExecutable = path.join(paths.maliciousBin, "agentera-runtime-user-owned-proof");
     fs.writeFileSync(userOwnedExecutable, "#!/bin/sh\nexit 99\n", { mode: 0o755 });
     const skill = path.join(home, ".agents/skills/agentera");
-    fs.mkdirSync(path.dirname(skill), { recursive: true });
-    fs.cpSync(path.join(runtimeRoot, "bundle/skills/agentera"), skill, { recursive: true });
+    const install = runHostSkillLifecycle({
+      home,
+      appHome: paths.appHome,
+      sourceRoot: path.join(runtimeRoot, "bundle"),
+      apply: true,
+    });
+    expect(install.status, JSON.stringify(install)).toBe("success");
+    expect(fs.readdirSync(skill)).toEqual(["SKILL.md"]);
     seedDecoys(home);
     seedDecoys(paths.cache);
     seedDecoys(paths.tmp);
@@ -652,7 +659,7 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
       const primePayload = JSON.parse(prime.stdout);
       const expectedOutcome = projectState === "v3" ? "ok" : "blocked";
       const expectedCutoverState = projectState === "clean" ? "unknown" : projectState === "v2" ? "legacy" : projectState;
-      expect(primePayload.capability_context.startup.outcome).toBe(expectedOutcome);
+      expect(primePayload.capability_context.startup.outcome, JSON.stringify(primePayload)).toBe(expectedOutcome);
       expect(Buffer.byteLength(prime.stdout, "utf8")).toBeLessThanOrEqual(25_000);
       expect(primePayload.capability_context.startup.state_cutover).toMatchObject({
         project_state: expectedCutoverState,

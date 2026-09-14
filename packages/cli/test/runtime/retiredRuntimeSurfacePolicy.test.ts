@@ -7,11 +7,8 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { describe, expect, it } from "vitest";
 import YAML from "yaml";
 
-import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../src/capabilities/index.js";
+import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath, servedInstructions } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
-import { withHumanReferences } from "../../src/capabilities/humanReferences.js";
-import { withOperatingRules } from "../../src/capabilities/operatingRules.js";
-import { preCutoverInstructionBody } from "../../src/cli/preCutoverCommand.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
 import {
@@ -25,6 +22,7 @@ import {
   DESCRIPTIVE_GRAMMAR_PRODUCTION_COUNT,
   NEGATION_GRAMMAR_PRODUCTION_COUNT,
   scanBootstrapAuthority,
+  normalizedScalarSha256,
 } from "../helpers/retiredStartupGuidance.js";
 
 const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
@@ -123,7 +121,7 @@ function commandAuthorityPackageFixture(sourceRoot: string): string {
 
 function decodeRawCapabilityModule(relativePath: string): string {
   const source = read(relativePath);
-  const literal = source.match(/JSON\.parse\(\s*String\.raw`([\s\S]*?)`,?\s*\);/);
+  const literal = source.match(/JSON\.parse\(\s*String\.raw`([^`]*?)`/);
   expect(literal, `${relativePath} instruction literal`).not.toBeNull();
   return JSON.parse(literal![1]) as string;
 }
@@ -159,7 +157,7 @@ function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void 
 }
 
 describe("retired runtime current-surface policy", () => {
-  it("keeps complete raw and served startup guidance free of retired fields", async () => {
+  it("keeps complete effective and served guidance free of retired native support", async () => {
     const skill = read("skills/agentera/SKILL.md");
     const surfaces: Array<[string, string]> = [["skills/agentera/SKILL.md", skill]];
 
@@ -169,14 +167,16 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = withOperatingRules(withHumanReferences(preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical)));
-      surfaces.push([`${modulePath} raw instructions`, raw]);
+      const expected = servedInstructions(capability === "status" ? statusStartupInstructions(canonical) : canonical);
+      // Historical literals transformed by the module are not current guidance;
+      // check the complete effective export, including its contract-access tail.
+      surfaces.push([`${modulePath} effective instructions`, canonical]);
       surfaces.push([`${modulePath} served instructions`, expected]);
       expect(expected, `${capability} served instructions`).toBe(served);
     }
 
     for (const [surface, guidance] of surfaces) {
-      expect(retiredStartupGuidanceViolations(guidance), `${surface} retired startup fields`).toEqual([]);
+      expect(currentSupportViolations(guidance), `${surface} retired native support`).toEqual([]);
     }
   });
 
@@ -1179,10 +1179,70 @@ describe("retired runtime current-surface policy", () => {
     expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation)).toContain("emitted_producer_omitted");
   });
 
-  it("fails closed on a dynamic constructor consumer", () => {
+  it("keeps reviewed prose anchored to unique unchanged content rather than shifted line numbers", () => {
+    const text = "- Historical release added `agentera prime --context status`.";
+    const declaration = {
+      path: "history.md",
+      region: "line:1",
+      category: "argument_bearing" as const,
+      classification: "exact_exemption" as const,
+      normalized_sha256: normalizedScalarSha256(text),
+      reason: "This exact historical fixture is descriptive release evidence, not execution guidance.",
+    };
+    const scan = (body: string, file = "history.md") => scanBootstrapAuthority(file, body, [declaration], true);
+    expect(scan(text).diagnostics).toEqual([]);
+    expect(scan("# History\n\n" + text).diagnostics).toEqual([]);
+    expect([...scan("# History\n\n" + text).usedDeclarations]).toEqual(["history.md\u0000line:1"]);
+    for (const body of [text.replace("status", "plan"), "# History\n" + text + "\n" + text, "# History\n```bash\n" + text + "\n```", "Run agentera destroy --yes\n"]) {
+      expect(scan(body).diagnostics.length, body).toBeGreaterThan(0);
+    }
+    expect(scan(text, "different.md").diagnostics.length).toBeGreaterThan(0);
+    expect(scanBootstrapAuthority("history.yaml", 'value: "' + text + '"', [{ ...declaration, path: "history.yaml" }], true).diagnostics.length).toBeGreaterThan(0);
+  });
+
+  it("discovers literal import consumers transitively and still requires each producer classification", () => {
     const root = commandAuthorityFixture();
     fs.writeFileSync(path.join(root, "packages/cli/src/emitted/dynamic.ts"), ['const commands = await import("../cli/preCutoverCommand.js");', 'commands.preCutoverCommand("prime");'].join("\n"));
+    fs.writeFileSync(path.join(root, "packages/cli/src/emitted/entry.ts"), 'await import("./dynamic.js");');
+    const diagnostics = registryBootstrapAuthorityInventory(root).diagnostics;
+    expect(
+      diagnostics
+        .filter(({ violation }) => violation === "emitted_producer_omitted")
+        .map(({ path }) => path)
+        .sort(),
+    ).toEqual(["packages/cli/src/emitted/dynamic.ts", "packages/cli/src/emitted/entry.ts"]);
+    expect(diagnostics.map(({ violation }) => violation)).not.toContain("constructor_closure_dynamic_consumer");
+    const registryPath = path.join(root, "references/adapters/package-registry.yaml");
+    const registry = YAML.parse(fs.readFileSync(registryPath, "utf8"));
+    for (const name of ["dynamic", "entry"])
+      registry.records[0].bootstrap_command_authority.emitted_producers.push({
+        path: `packages/cli/src/emitted/${name}.ts`,
+        reason: `Reviewed ${name} literal-import fixture producer.`,
+      });
+    fs.writeFileSync(registryPath, YAML.stringify(registry));
+    expect(registryBootstrapAuthorityInventory(root).diagnostics).toEqual([]);
+  });
+
+  it.each([
+    'const target = "../cli/preCutoverCommand.js"; await import(target);',
+    "await import(`../cli/${name}.js`);",
+    'await import("../cli/" + "preCutoverCommand.js");',
+    'await import("yaml");',
+    'await import("./missing.js");',
+    'await import("../cli/preCutoverCommand.js", { with: { type: "json" } });',
+    'require("../cli/preCutoverCommand.js");',
+  ])("fails closed on opaque or unresolved module consumption: %s", (body) => {
+    const root = commandAuthorityFixture();
+    fs.writeFileSync(path.join(root, "packages/cli/src/emitted/dynamic.ts"), body);
     expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation)).toContain("constructor_closure_dynamic_consumer");
+  });
+
+  it("fails closed when a literal import has ambiguous repository resolution", () => {
+    const root = commandAuthorityFixture();
+    fs.mkdirSync(path.join(root, "packages/cli/src/emitted/ambiguous"));
+    for (const name of ["ambiguous.ts", "ambiguous/index.ts"]) fs.writeFileSync(path.join(root, "packages/cli/src/emitted", name), "export {};\n");
+    fs.writeFileSync(path.join(root, "packages/cli/src/emitted/entry.ts"), 'await import("./ambiguous");');
+    expect(registryBootstrapAuthorityInventory(root).diagnostics.map(({ violation }) => violation)).toContain("constructor_closure_ambiguous_import");
   });
 
   it("rejects an unused scalar classification and a stale producer classification", () => {
@@ -1383,7 +1443,7 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = withOperatingRules(withHumanReferences(preCutoverInstructionBody(capability === "status" ? statusStartupInstructions(canonical) : canonical)));
+      const expected = servedInstructions(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);

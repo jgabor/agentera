@@ -515,33 +515,41 @@ export function checkPrimitiveReferences(capDir: string, protocolPath: string, c
 
   for (const yamlFile of listSchemaFiles(schemasDir, "*.yaml")) {
     const data = loadSchemaFile(yamlFile);
-    for (const [groupName, groupData] of Object.entries(data)) {
-      if (!isMapping(groupData)) {
+    errors.push(...checkSchemaPrimitiveReferences(data, lookup, contract));
+  }
+
+  return errors;
+}
+
+/** Check one parsed schema without reading other capability authorities. */
+export function checkSchemaPrimitiveReferences(data: JsonObject, lookup: Record<string, Set<string>>, contract: CapabilitySchemaContract): string[] {
+  const errors: string[] = [];
+  for (const [groupName, groupData] of Object.entries(data)) {
+    if (!isMapping(groupData)) {
+      continue;
+    }
+    for (const [key, entry] of Object.entries(groupData)) {
+      if (!isNumericKey(key) || !isMapping(entry)) {
         continue;
       }
-      for (const [key, entry] of Object.entries(groupData)) {
-        if (!isNumericKey(key) || !isMapping(entry)) {
+      const entryId = entry.id ?? `${groupName}.${key}`;
+      for (const [fieldName, protocolGroups] of Object.entries(contract.primitiveReferences.fields)) {
+        if (!(fieldName in entry)) {
           continue;
         }
-        const entryId = entry.id ?? `${groupName}.${key}`;
-        for (const [fieldName, protocolGroups] of Object.entries(contract.primitiveReferences.fields)) {
-          if (!(fieldName in entry)) {
-            continue;
+        const value = entry[fieldName];
+        const valuesToCheck = Array.isArray(value) ? value : [value];
+        for (const v of valuesToCheck) {
+          let resolved = false;
+          for (const pg of protocolGroups) {
+            if (pg in lookup && lookup[pg].has(v as string)) {
+              // cast: parsed schema/protocol IO data
+              resolved = true;
+              break;
+            }
           }
-          const value = entry[fieldName];
-          const valuesToCheck = Array.isArray(value) ? value : [value];
-          for (const v of valuesToCheck) {
-            let resolved = false;
-            for (const pg of protocolGroups) {
-              if (pg in lookup && lookup[pg].has(v as string)) {
-                // cast: parsed schema/protocol IO data
-                resolved = true;
-                break;
-              }
-            }
-            if (!resolved) {
-              errors.push(`[error]: ${entryId} field ${fieldName}=${valueRepr(v)} ` + `does not resolve to any protocol primitive ` + `in groups ${pyListRepr(protocolGroups)}`);
-            }
+          if (!resolved) {
+            errors.push(`[error]: ${entryId} field ${fieldName}=${valueRepr(v)} ` + `does not resolve to any protocol primitive ` + `in groups ${pyListRepr(protocolGroups)}`);
           }
         }
       }

@@ -17,6 +17,7 @@ import { personalGlossaryReviewRecordsContract } from "../../registries/glossary
 import { describeArtifactSchemaFields } from "../../registries/artifactSchemaProjection.js";
 import { advertisedValidateFamilyNames } from "./validate.js";
 import { SCHEMA_TOP_LEVEL_COMMANDS } from "../dispatch/projections.js";
+import { schemaDetailDiscovery } from "./schemaDetail.js";
 
 export interface TransitionalTopLevelAlias {
   legacy: string;
@@ -103,7 +104,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   verify: "Deprecated alias for check verify. Run bounded verification families.",
   stats: "Deprecated alias for report. Read or refresh privacy-gated usage analytics.",
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
-  upgrade: "Preview or apply one-way app and project-state migration.",
+  upgrade: "Preview or apply one-way app and project-state migration or isolated one-file shared-skill installation.",
   doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
 };
 function availableStructuredFields(command: string): string[] {
@@ -128,8 +129,8 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   lint: ["artifact", "file", "text", "strict", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
-  upgrade: ["project", "install_root", "home", "only", "dry_run", "yes", "force", "channel"],
-  schema: ["format"],
+  upgrade: ["project", "install_root", "home", "only", "dry_run", "yes", "force", "channel", "shared_skill"],
+  schema: ["format", "artifact", "protocol", "capability-contract", "section", "limit", "cursor"],
 };
 
 function integrationAuthorityPath(): string {
@@ -224,6 +225,7 @@ function describeArtifactSchemas(schemasDir: string, schemas: Record<string, Sch
       producer: meta.producer ?? "unknown",
       consumers: meta.consumers ?? "unknown",
       write_interface: writeInterface,
+      detail_command: `npx -y agentera@next schema --artifact ${name}`,
       fields: describeArtifactSchemaFields(schema),
     });
     if (!hasMeta) {
@@ -275,6 +277,14 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
   return {
     schemaVersion: "agentera.schema.v1",
     command,
+    static_details: schemaDetailDiscovery(),
+    service_details: {
+      report: "npx -y agentera@next report explain",
+      check: "npx -y agentera@next check explain",
+      upgrade: "npx -y agentera@next upgrade --explain",
+      doctor: "npx -y agentera@next doctor --explain",
+      app_home: "npx -y agentera@next app-home --explain",
+    },
     status: gaps.length > 0 ? "incomplete" : "ok",
     source: {
       integration_authority: authorityPath,

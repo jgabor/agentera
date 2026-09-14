@@ -64,8 +64,12 @@ describe("prime GPT-5 token budget", () => {
       expect(rc).toBe(0);
       expect(err).toBe("");
       expect(out).not.toContain(temporaryRoot);
-      expect(JSON.parse(out)).toMatchObject({ command: "prime", app_home: { status: "up_to_date", source: "bundled app" }, app: { status: "up_to_date" } });
-      expect(result.violations).toEqual([]);
+      expect(JSON.parse(out)).toMatchObject({
+        command: "prime",
+        app_home: { status: "up_to_date", source: "bundled app" },
+        app: { status: "up_to_date" },
+      });
+      expect(result.violations, JSON.stringify(result)).toEqual([]);
     } finally {
       process.chdir(previousCwd);
       for (const [key, value] of Object.entries(previous)) {

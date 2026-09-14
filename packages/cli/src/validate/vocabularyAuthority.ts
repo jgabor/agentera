@@ -46,7 +46,7 @@ function rejectedLifecycleStatusValues(authority: JsonObject): Set<string> {
   return new Set([...deprecated, ...nonLifecycleVerbs].map(String));
 }
 
-function validateLifecycleAuthority(root: string): string[] {
+export function validateLifecycleAuthority(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/app-lifecycle-vocabulary.yaml");
   let authority: JsonObject;
@@ -142,7 +142,7 @@ function validateLifecycleAuthority(root: string): string[] {
   return errors;
 }
 
-function validateUpdateChannelsAuthority(root: string): string[] {
+export function validateUpdateChannelsAuthority(root: string): string[] {
   const errors: string[] = [];
   const p = authorityPath(root, "references/cli/update-channels.yaml");
   let authority: JsonObject;

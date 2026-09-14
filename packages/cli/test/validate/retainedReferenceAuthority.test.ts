@@ -94,6 +94,14 @@ function rewrite(root: string, authority: Record<string, any>): void {
 }
 
 describe("retained reference authority", () => {
+  it("follows a literal lazy entrypoint call but not unused exports", () => {
+    const { root } = fixture();
+    write(root, "packages/cli/src/bin/agentera.ts", '(await import("../dispatch.js")).main();\n');
+    write(root, "packages/cli/src/dispatch.ts", ['import { loadCurrent } from "./current.js";', 'import { loadMigration } from "./migration.js";', 'import { validateManifest } from "./validator.js";', "export function main() { loadCurrent(); loadMigration(); validateManifest(); }"].join("\n"));
+    expect(validateRetainedReferenceAuthority(root)).toEqual([]);
+    write(root, "packages/cli/src/bin/agentera.ts", 'await import("../dispatch.js");\n');
+    expect(validateRetainedReferenceAuthority(root)).toContain("references/current.yaml: consumers[0].symbol is not reachable from a production CLI or package-script entrypoint");
+  });
   it("passes a source checkout with current, migration-only, runbook, historical, and delete entries", () => {
     const { root } = fixture();
     expect(isRetainedReferenceSourceCheckout(root)).toBe(true);

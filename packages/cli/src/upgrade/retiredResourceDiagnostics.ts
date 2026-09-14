@@ -115,7 +115,7 @@ function namesFor(definition: RetiredResourceDiagnosticDefinition): string[] {
   return definition.id.includes("{name}") || definition.destinations.some((item) => item.includes("{name}")) ? definition.names : [""];
 }
 
-export function diagnoseRetiredResources(opts: { home: string; project: string; installRoot: string; resourceId?: string | null; contract?: NativeResourceCleanupContract; env?: Record<string, string | undefined>; sourceRoot?: string | null }): RetiredResourceDiagnosis {
+export function diagnoseRetiredResources(opts: { home: string; project: string; installRoot: string; resourceId?: string | null; contract?: NativeResourceCleanupContract; env?: Record<string, string | undefined>; sourceRoot?: string | null; projectOnly?: boolean }): RetiredResourceDiagnosis {
   const contract = opts.contract ?? loadNativeResourceCleanupContract();
   const selected = opts.resourceId ? resolveRetiredResourceDiagnosticId(opts.resourceId, contract) : null;
   if (opts.resourceId && !selected) {
@@ -129,6 +129,7 @@ export function diagnoseRetiredResources(opts: { home: string; project: string; 
       const id = definition.id.replace("{name}", name);
       if (selected && id !== selected.id) continue;
       for (const destination of definition.destinations) {
+        if (opts.projectOnly && !destination.startsWith("{project}/")) continue;
         const pathname = expandRetiredResourcePath(destination, roots, name || null);
         const observation = observeDestination(pathname, definition, contract.diagnosticMaximumFileBytes);
         if (!observation) continue;

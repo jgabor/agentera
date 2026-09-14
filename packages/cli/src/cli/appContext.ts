@@ -49,7 +49,19 @@ export function activeAppModel(env: Record<string, string | undefined> = process
       runtimeRoot: sourceRoot,
     };
   }
-  if (!env.AGENTERA_HOME && !env.AGENTERA_DEFAULT_INSTALL_ROOT && isNpxBundleRoot(sourceRoot)) {
+  if (isNpxBundleRoot(sourceRoot)) {
+    // Durable ownership/profile data is not runtime contract data. In particular,
+    // a one-file host install must not hide the npm package's retained schemas.
+    if (env.AGENTERA_HOME || env.AGENTERA_DEFAULT_INSTALL_ROOT) {
+      const selected = resolveActiveAppModel(null, { home: os.homedir(), env });
+      return {
+        ...selected,
+        activeBundleRoot: sourceRoot,
+        authoritativeRoot: sourceRoot,
+        skillRoot: path.join(sourceRoot, "skills", "agentera"),
+        runtimeRoot: sourceRoot,
+      };
+    }
     return {
       appHome: sourceRoot,
       appHomeSource: "bundled app",

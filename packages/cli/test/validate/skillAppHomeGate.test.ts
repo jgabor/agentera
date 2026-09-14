@@ -8,7 +8,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
 const SKILL = path.join(REPO_ROOT, "skills", "agentera", "SKILL.md");
 const SKILL_TEXT = fs.readFileSync(SKILL, "utf8");
-const BOOTSTRAP = SKILL_TEXT.match(/^## Bootstrap\s*$([\s\S]*?)(?=^### Upgrade from v2 to v3 development\s*$)/m)?.[1] ?? "";
+const BOOTSTRAP = SKILL_TEXT.match(/^## Bootstrap and routing\s*$([\s\S]*?)(?=^## Read the governing details\s*$)/m)?.[1] ?? "";
 
 describe("SKILL.md bootstrap contract", () => {
   it("documents agentera prime as the single bootstrap entry point", () => {

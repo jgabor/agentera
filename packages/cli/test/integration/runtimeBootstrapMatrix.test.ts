@@ -29,6 +29,7 @@ import {
   createSourceOwnerEvidence,
   finalizePackageOwnerEvidence,
   installRetainedPackageSnapshot,
+  loadSourceCapabilityInstructions,
   observeCurrentPackageArtifact,
   observationDigest,
   OWNER_EVIDENCE_MAX_BYTES,
@@ -75,6 +76,57 @@ function rootEntries(paths: ProtectedRootPaths): Array<readonly [string, string]
 }
 
 describe("source-owned runtime bootstrap integration", () => {
+  it("reobserves startup producers independently of reader HOME and disposable project paths", () => {
+    const observations = ["first", "second"].map((name) => {
+      const project = path.join(fixture.root, `startup-reobserve-${name}`);
+      fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+      fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      const result = spawnSync(process.execPath, [path.join(CHECKOUT_ROOT, "packages/cli/scripts/observe-runtime-artifact.mjs"), fixture.constructionRoot, project, "package-smoke"], {
+        cwd: project,
+        env: {
+          ...process.env,
+          HOME: path.join(project, "reader-home"),
+          AGENTERA_HOME: path.join(project, "reader-app"),
+          AGENTERA_PROFILE_DIR: path.join(project, "reader-profile"),
+        },
+        encoding: "utf8",
+        timeout: 30_000,
+      });
+      expect(result.status, result.stderr).toBe(0);
+      const producers = JSON.parse(result.stdout).capabilities.startupProducers;
+      expect(JSON.stringify(producers)).not.toContain(project);
+      expect(producers).toContainEqual({
+        path: "$.shared_skill.preview_command",
+        value: "npx -y agentera@next upgrade --shared-skill --home /tmp/agentera-bootstrap-evidence/home --dry-run",
+      });
+      return producers;
+    });
+    expect(observations[1]).toEqual(observations[0]);
+  });
+  it("preserves all 12 served capability bodies across source, constructed, and extracted observers", { timeout: 120_000 }, () => {
+    const source = loadSourceCapabilityInstructions(CHECKOUT_ROOT);
+    expect(Object.keys(source.modules)).toHaveLength(12);
+    expect(source.modules).toEqual(source.runtimeRegistry);
+    for (const body of Object.values(source.modules)) {
+      expect(body).toContain("## Current contract access");
+    }
+    const project = path.join(fixture.root, "capability-observer-project");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (const runtimeRoot of [fixture.constructionRoot, fixture.packageRoot]) {
+      const result = spawnSync(process.execPath, [path.join(CHECKOUT_ROOT, "packages/cli/scripts/observe-runtime-artifact.mjs"), runtimeRoot, project], {
+        cwd: project,
+        encoding: "utf8",
+        timeout: 120_000,
+      });
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      const { capabilities } = JSON.parse(result.stdout);
+      expect(capabilities.modules).toEqual(source.modules);
+      expect(capabilities.runtimeRegistry).toEqual(source.modules);
+      expect(capabilities.served).toEqual(source.modules);
+    }
+  });
+
   it("rejects protected-root and execution-registry origin mutations against fixed authorities", () => {
     expect(PROTECTED_ROOT_IDENTIFIERS).toEqual(["project", "home", "shared_skill", "install", "package", "package_artifact", "cache", "temporary", "absence"]);
     expect(PROTECTED_ROOT_AUTHORITY_COUNT).toBe(9);
@@ -309,7 +361,8 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(() => readContentAddressedPackageIdentity(path.join(retainedProbe, "missing-identity"))).toThrow(/package identity is missing/);
     fs.rmSync(retainedProbe, { recursive: true, force: true });
 
-    expect(activationEvidenceManifestViolations(manifest, manifest)).toEqual([]);
+    const manifestViolations = activationEvidenceManifestViolations(manifest, manifest);
+    expect(manifestViolations, manifestViolations.join("\n")).toEqual([]);
 
     let sourceObservations = 0;
     let generatedObservations = 0;

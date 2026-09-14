@@ -1,6 +1,7 @@
 import { cmdLint, LintArgs } from "../commands/lint.js";
 import { cmdCompact, CompactArgs } from "../commands/compact.js";
 import { cmdSchema } from "../commands/schema.js";
+import { isSchemaDetailQuery, runSchemaDetail } from "../commands/schemaDetail.js";
 import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, cmdValidateArtifact, cmdValidateState, isDelegatedValidateFamily, VALIDATE_FAMILY_NAMES, cmdValidateActivationConjunction } from "../commands/validate.js";
 import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
@@ -317,6 +318,7 @@ export function runValidate(argv: string[], io: Io, _prog: string): number {
 }
 
 export function runSchema(argv: string[], io: Io, _prog: string): number {
+  if (isSchemaDetailQuery(argv)) return runSchemaDetail(argv, io);
   let format = "json";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];

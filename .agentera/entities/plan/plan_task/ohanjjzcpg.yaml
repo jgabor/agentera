@@ -1,0 +1,23 @@
+id: ohanjjzcpg
+artifact: plan
+record:
+  name: Support safe single-file installation and diagnosis
+  depends_on:
+    - lfiakggrlt
+  status: complete
+  acceptance:
+    - GIVEN an empty supported host location WHEN explicitly installed through the CLI THEN exactly one SKILL.md and no nested directories or sidecars are present.
+    - GIVEN a healthy installation WHEN diagnosed or refreshed THEN bootstrap shape, compatibility, and runtime health are distinguished and the one-file boundary is preserved.
+    - GIVEN unowned files, extras, unsafe paths, or changed ownership WHEN encountered THEN they are preserved with bounded explicit recovery, not silently deleted to claim success.
+    - GIVEN installation interruption or retry WHEN recovered THEN publication is safe, repeatable, and does not leave an unusable bootstrap or mutate unrelated state.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/setup/hostSkillLifecycle.ts:226-231 delegates pending_create identity-null recovery to generic matching-content adoption;actual SIGKILL before creation plus foreign matching file/directory leads ownership claim and later overwrite
+    provenance:
+      attempt_id: single-file-install-2
+      source: "audit ses_f641945aeffeiD8e49guwUL6a5 accepted after resolve ses_f641492a1ffeTc7HOiM9Pto4xF: identity-null foreign resources blocked,16SIGKILLrecoveryprobes pass;updated diagnostic fixtures185tests6suitesPASS;typecheck/build passed"
+      recorded_at: 2026-09-13 20:06
+      writer_command: agentera state plan record-evaluation

@@ -20,6 +20,7 @@ export function useSourceAppHome(): void {
       AGENTERA_HOME: undefined,
       AGENTERA_DEFAULT_INSTALL_ROOT: undefined,
       AGENTERA_PROFILE_DIR: undefined,
+      PROFILERA_PROFILE_DIR: undefined,
       OPENCODE_CONFIG_DIR: undefined,
     };
     previous = {};

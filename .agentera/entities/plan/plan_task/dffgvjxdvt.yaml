@@ -1,0 +1,25 @@
+id: dffgvjxdvt
+artifact: plan
+record:
+  name: Close profile and remaining operational guidance gaps
+  depends_on:
+    - oictawfmvh
+    - jjkousfilv
+    - uihlacvttp
+  status: complete
+  acceptance:
+    - GIVEN Profile prepares glossary entries WHEN using only CLI guidance THEN complete construction meanings, fields, and constraints are discoverable before effects; validation success or failure alone is insufficient.
+    - GIVEN glossary advice, review, candidate, and publication flows WHEN discovered THEN required shapes and consent, privacy, and replay rules are complete without exposing personal definitions.
+    - GIVEN the coverage map's remaining report, check, diagnostic, and recovery obligations WHEN requested THEN their owners supply guidance and runnable corrections rather than installation-file lookups.
+    - GIVEN read-only discovery or validation WHEN run THEN profile, project, host, and registry state remain unchanged.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/cli/commands/checkDetail.ts:64-65,187-218 omits lint/compact/durability output and exit semantics;205-209 durability usage contradicts required artifact+id and rejected number
+    provenance:
+      attempt_id: single-file-operations-2
+      source: "audit ses_f64587028ffevVcVKpg1HmUJnZ accepted after resolve ses_f6468304bfferi7XDhp91wwcBZ: durability selector parity and complete lint/compact/durability result semantics;79tests,14guardedqueries,typecheck/build PASS; other criteria reused"
+      recorded_at: 2026-09-13 18:56
+      writer_command: agentera state plan record-evaluation

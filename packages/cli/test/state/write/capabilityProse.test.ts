@@ -275,7 +275,10 @@ describe("producer capability writer integration", () => {
   });
 
   it("keeps the source capability index aligned with plan instructions", () => {
-    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(withOperatingRules(withHumanReferences(preCutoverInstructionBody(planInstructions))));
+    const base = withOperatingRules(withHumanReferences(preCutoverInstructionBody(planInstructions)));
+    expect(CAPABILITY_INSTRUCTIONS.plan.slice(0, base.length)).toBe(base);
+    expect(CAPABILITY_INSTRUCTIONS.plan.slice(base.length)).toMatch(/^\n\n## Current contract access\n/);
+    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("Typed entity readers/writers override historical aggregate-path write advice");
   });
 
   it("replaces conflicting execution mandates on source and served surfaces", () => {

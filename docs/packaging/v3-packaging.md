@@ -44,6 +44,7 @@ agentera-<version>.tgz
     └── bundle/
         ├── .agentera-npx-bundle.json
         ├── registry.json
+        ├── host/agentera/SKILL.md
         ├── skills/agentera/
         └── references/
 ```
@@ -58,6 +59,29 @@ constructed `dist/bin/agentera.js` is a regular executable file with mode
 `0755`; package verification rejects a missing or non-executable bin. Published
 `dist/` omits source maps so package bytes do not disclose or depend on the
 checkout or isolated construction path.
+
+### Host delivery selection
+
+`references/adapters/package-registry.yaml#records[0].bundle_surfaces.host_skill`
+selects the host delivery directory, relative to `bundle/`, and its canonical
+source. Construction copies only that source as `SKILL.md` into the selected
+directory (currently `bundle/host/agentera/`). Its recursive inventory is exactly
+one regular file; no native descriptors or runtime companions are selected.
+The copy is byte-identical, not a new version authority or another package.
+
+The shared-skill lifecycle selects this directory through the package registry,
+not `identity.skill_path`: the latter remains the internal runtime data path.
+All existing `bundle/skills/agentera/`, reference contracts and compiled
+capabilities remain available at their existing paths. Do not prune that tree
+to make the host payload one-file or add another delivery/version registry.
+
+`upgrade --shared-skill` owns fresh installation, owned refresh and explicitly
+authorized legacy conversion. Migration and reset do not recreate a full-tree
+host link. [UPGRADE.md](../../UPGRADE.md#one-file-shared-skill-installation-and-repair)
+owns consumer commands, Linux apply requirements, same-filesystem retention,
+ownership, scope and manual recovery. Construction and checks never authorize
+live-home changes. Qualify host-only discovery from an extracted package and
+isolated HOME; a correct package layout alone is not complete workflow evidence.
 
 ## Preparation, verification, and publication
 

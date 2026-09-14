@@ -568,7 +568,9 @@ describe("final entity retrieval public-contract parity", () => {
       expect(help.out).toContain(`usage: ${family.syntax}`);
       expect(help.out).toContain(`Summary fields:\n  ${family.summaryFields.join(", ")}`);
       expect(help.out).toContain(`limit: minimum ${family.bounds.minimum}, default ${family.bounds.default}, maximum ${family.bounds.maximum}`);
-      expect(help.out).toContain(`formats: ${family.formats.join(", ")}`);
+      // Family serializers retain internal legacy formats; the public CLI's
+      // shared output policy permits JSON only and advertises that boundary.
+      expect(help.out).toContain("formats: json (default)");
       expect(help.out).toContain(family.example);
       for (const filter of family.filters) expect(help.out).toContain(filter.flag);
 

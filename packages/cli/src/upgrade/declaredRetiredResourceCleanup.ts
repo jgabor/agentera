@@ -113,6 +113,7 @@ export function planDeclaredRetiredResourceCleanupItems(ctx: MigrationContext, r
     env: ctx.env,
     sourceRoot: ctx.sourceRoot,
     resourceId: selectedResourceId,
+    projectOnly: ctx.projectOnly,
   });
   return diagnosis.resources.flatMap((resource) =>
     resource.evidence.paths.flatMap((source) => {

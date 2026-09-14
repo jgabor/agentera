@@ -202,6 +202,8 @@ export interface MigrationContext {
   channel?: string | null;
   env?: Record<string, string | undefined>;
   installAppContentIfMissing?: boolean;
+  /** Project recovery does not inspect or mutate global installations/resources. */
+  projectOnly?: boolean;
 }
 
 export interface DryRunMigrationResult {
@@ -448,6 +450,13 @@ function listManagedBundlePreview(managedAppRoot: string, limit = 20): string[] 
 }
 
 export function planCleanupPhase(ctx: MigrationContext): MigrationPhase {
+  if (ctx.projectOnly) {
+    const declared = planDeclaredRetiredResourceCleanupItems(ctx);
+    const represented = new Set(declared.flatMap((item) => (item.source ? [item.source] : [])));
+    const agents = [...planLegacyAgentCleanupItems(ctx), ...planLegacyCapabilityAgentCleanupItems(ctx)].filter((item) => !item.source || !represented.has(item.source));
+    const leaves = [...declared, ...agents];
+    return summarizePhase("cleanup", [...leaves, ...planLegacyDirectoryCleanupItems(ctx, leaves)], "Project-scoped recovery; global cleanup requires an explicit resource selection or --install-root scope.");
+  }
   const appHome = resolvePath(ctx.appHome);
   const packageInternalAppRoot = Boolean(ctx.sourceRoot && appHome === resolvePath(ctx.sourceRoot));
   const roots = doctorRoots(appHome);

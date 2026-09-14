@@ -72,8 +72,10 @@ describe("installed SKILL.md v3 English routing (B6-2, defect #4)", () => {
     it("routes English capability names and exposes no Swedish /agentera routes", () => {
       const text = fs.readFileSync(REPO_SKILL, "utf8");
       assertV3EnglishSkillMd(text, "repo SKILL.md");
-      expect(text).toContain("packages/cli/src/capabilities");
-      expect(text).toContain("/agentera plan");
+      expect(text).toContain("/agentera <capability>");
+      expect(text).toContain("npx -y agentera@next prime --context <capability>");
+      expect(text).toContain("capability_context.instructions");
+      expect(text).not.toContain("packages/cli/src/capabilities");
       expect(text).not.toContain("/agentera planera");
     });
   });

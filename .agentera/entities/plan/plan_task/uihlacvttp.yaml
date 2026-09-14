@@ -1,0 +1,24 @@
+id: uihlacvttp
+artifact: plan
+record:
+  name: Complete typed operation explanations
+  depends_on:
+    - oictawfmvh
+    - jjkousfilv
+  status: complete
+  acceptance:
+    - GIVEN every supported writer operation WHEN explained THEN accepted input, nested constraints, defaults, ownership, preconditions, replay behavior, examples, and recovery are fully discoverable.
+    - GIVEN an example built only from explanation WHEN validated THEN it satisfies the same contract enforced by the actual operation without guessing hidden fields.
+    - GIVEN unauthorized, invalid, stale, or legacy-shaped input WHEN checked THEN existing rejection and no-effect guarantees remain intact.
+    - GIVEN state explanation requests WHEN invoked THEN they do not mutate records, expand consent, or misrepresent capability-owned singleton editing as typed writes.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/state/write/operationDetail.ts:104-148 complete-plan create/replace input description omits accepted tasks[].evidence and tasks[].blocked_reason retained by planEntities writer; audit fixture demonstrates roundtrip
+    provenance:
+      attempt_id: single-file-writers-2
+      source: "audit ses_f64c8ecc8ffef3idxeZ8Ik5Bjx accepted after resolve ses_f64d75ceeffexv7Gpc6c3LZOxo correction: create/replace evidence and blocked_reason discoverable and roundtrip;96tests,typecheck,build,audit repro PASS; other audit criteria reused"
+      recorded_at: 2026-09-13 16:56
+      writer_command: agentera state plan record-evaluation

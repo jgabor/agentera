@@ -81,7 +81,8 @@ describe("cli doctor", () => {
     fs.rmSync(platformDefaultAppHome(os.homedir()), { recursive: true });
     const { rc, out } = capture((io) => cmdDoctor({ format: "json" }, io));
     expect(rc).not.toBe(0);
-    expect(JSON.parse(out).signals).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "missing_bundle" })]));
+    expect(JSON.parse(out).appHome).toBe(platformDefaultAppHome(os.homedir()));
+    expect(JSON.parse(out).signals, out).toEqual(expect.arrayContaining([expect.objectContaining({ kind: "missing_bundle" })]));
   });
 
   it("defaults the public doctor route to its JSON payload", () => {

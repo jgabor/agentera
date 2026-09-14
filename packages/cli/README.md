@@ -2,8 +2,8 @@
 
 Native TypeScript CLI for Agentera 3.0, published as
 [`agentera`](https://www.npmjs.com/package/agentera). The npm package is
-self-contained: compiled commands live in `dist/`; the canonical shared skill,
-its schemas, required references, and `registry.json` live in `bundle/`. It
+self-contained: compiled commands live in `dist/`; the one-file host projection,
+internal schemas, required references, and `registry.json` live in `bundle/`. It
 ships no host-native plugin, hook, command, agent, descriptor, or marketplace
 surface.
 
@@ -14,10 +14,11 @@ npx -y agentera@next prime --context status
 npx -y agentera@next doctor
 ```
 
-The first command is the one-call pre-cutover bootstrap. Clean, v2, and
-partially migrated projects return bounded `blocked` output with the exact full
-entity-upgrade command in `state_cutover.recovery_command`; v3 returns `ok`
-unless health state makes it `degraded`. Every recovery command remains on
+The first command is the one-call pre-cutover bootstrap. A fresh Git project is
+`fresh_uninitialized`; `prime --context plan` and the first typed Plan create
+provide initialization. Recognized v2 uses full entity-upgrade recovery;
+partial, corrupt and unknown state remains blocked behind read-only recovery.
+V3 returns `ok` unless health state makes it `degraded`. Every recovery command remains on
 `@next`, and an `ok` outcome needs no fallback or second dashboard call. Served
 capability instructions and bundled startup schemas use that same exact
 development-channel executable. Package verification parses every registry-owned
@@ -65,9 +66,20 @@ state and Agentera-owned operational fields without an intermediate activation.
 ## Shared-skill integration
 
 Agentera uses one portable integration: the Agentera CLI plus the shared skill
-at `~/.agents/skills/agentera`. Normal upgrade previews and applies app/project
-migration only. It has no current-runtime selector and does not create native
-runtime resources.
+at `~/.agents/skills/agentera/SKILL.md`, with no host companions. Use
+`upgrade --shared-skill` for isolated one-file installation, owned refresh or
+authorized legacy conversion. The [upgrade guide](../../UPGRADE.md#one-file-shared-skill-installation-and-repair)
+owns preview/apply, ownership, retention and platform limits. App/project
+migration is separate; it has no current-runtime selector and creates no native
+runtime resources. Without explicit app/global scope, migration remains
+project-only.
+
+Discover contracts through `schema`, `prime --context NAME --detail KIND`,
+`state ARTIFACT explain`, `route explain`, `report explain`, `check explain`
+and `upgrade --explain`; follow their returned section/continuation commands.
+Static details do not require installed companions, acquire state or grant
+execution consent. See the [CLI coverage contract](../../docs/cli-coverage-contract.md)
+for the semantic map and remaining qualification boundary.
 
 ```bash
 npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run

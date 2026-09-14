@@ -1,0 +1,24 @@
+id: lbyqdjxbua
+artifact: plan
+record:
+  name: Align user and maintainer guidance with the delivered boundary
+  depends_on:
+    - ohanjjzcpg
+    - auidevbhyk
+  status: complete
+  acceptance:
+    - GIVEN help, bootstrap, upgrade documentation, and maintainer guidance WHEN followed THEN commands match the delivered interfaces and clearly separate host content from runtime data.
+    - GIVEN user-facing repair advice WHEN displayed THEN it states effects, preserved resources, approval requirements, and non-effects without recommending symlink-target pruning.
+    - GIVEN touched documentation and project records WHEN delivery closes THEN they describe the accepted change without unrelated TODO closure, redundant synchronization, or internal changelog bookkeeping.
+    - GIVEN version policy WHEN reviewed THEN suite metadata stays on the governed 3.0.0 line and no publication or metadata-only bump is inferred.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/cli/help.ts:441-454 durability help still advertises optional artifact/id and rejected --number unlike delivered executor and check explain
+    provenance:
+      attempt_id: single-file-docs-2
+      source: "audit ses_f63da6912ffeeQVVWDdQqTiPno accepted after resolve ses_f63d64934ffeLsjMIDVLhMTPAM: durability help parity45tests PASS,freshbuild/runtime help+invalid selectors correct;otherdocs criteria reused"
+      recorded_at: 2026-09-13 21:10
+      writer_command: agentera state plan record-evaluation

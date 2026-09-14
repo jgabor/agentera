@@ -151,8 +151,8 @@ export function planDeclaredCopilotHookItem(filePath: string, project: string, r
   return item;
 }
 
-function planCodexItems(items: MigrationPhaseItem[], home: string, project: string): void {
-  for (const root of [project, home]) {
+function planCodexItems(items: MigrationPhaseItem[], home: string, project: string, projectOnly = false): void {
+  for (const root of projectOnly ? [project] : [project, home]) {
     const hooksPath = path.join(root, ".codex", "hooks", "codex-hooks.json");
     if (isFile(hooksPath)) {
       pushRetireHookItem(items, "codex", hooksPath, root);
@@ -160,11 +160,12 @@ function planCodexItems(items: MigrationPhaseItem[], home: string, project: stri
   }
 }
 
-function planCursorItems(items: MigrationPhaseItem[], home: string, project: string): void {
+function planCursorItems(items: MigrationPhaseItem[], home: string, project: string, projectOnly = false): void {
   for (const [root, hooksPath] of [
     [project, path.join(project, ".cursor", "hooks.json")],
     [home, path.join(home, ".cursor", "hooks.json")],
   ] as const) {
+    if (projectOnly && root !== project) continue;
     if (isFile(hooksPath)) {
       pushRetireHookItem(items, "cursor", hooksPath, root);
     }
@@ -307,10 +308,12 @@ export function planRuntimeMigrationItems(ctx: MigrationContext): MigrationPhase
   void ctx.env;
   const items: MigrationPhaseItem[] = [];
 
-  planCodexItems(items, home, project);
-  planCursorItems(items, home, project);
-  planStaleCommandCleanupItems(ctx, items);
-  planStaleSkillCleanupItems(ctx, items);
+  planCodexItems(items, home, project, ctx.projectOnly);
+  planCursorItems(items, home, project, ctx.projectOnly);
+  if (!ctx.projectOnly) {
+    planStaleCommandCleanupItems(ctx, items);
+    planStaleSkillCleanupItems(ctx, items);
+  }
   items.push({
     status: "noop",
     action: "configure",

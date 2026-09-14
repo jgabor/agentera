@@ -50,8 +50,14 @@ export interface RuntimeOperationSpec {
 export const RUNTIME_WRITE_VERBS = ["append", "update", "amend", "set-status", "supersede", "set-plan-status", "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "correct-owners", "set-severity", "resolve", "reopen", "explain"] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
-// Retain eager contract validation even though no operation consumes the old field list.
-loadTodoReadinessContract();
+// Validate when writer contracts are consumed, not when static instruction
+// helpers import command projections. Unrelated detail must not read TODO data.
+let readinessValidated = false;
+function validateReadiness(): void {
+  if (readinessValidated) return;
+  loadTodoReadinessContract();
+  readinessValidated = true;
+}
 
 const f = (flag: string, field: string, kind: RuntimeFieldKind, options: Omit<RuntimeOperationField, "flag" | "field" | "kind"> = {}): RuntimeOperationField => ({
   flag,
@@ -498,10 +504,12 @@ function cloneOperation(spec: RuntimeOperationSpec): RuntimeOperationSpec {
 }
 
 export function runtimeOperationSpecs(): RuntimeOperationSpec[] {
+  validateReadiness();
   return RUNTIME_OPERATIONS.map(cloneOperation);
 }
 
 export function runtimeOperationSpec(artifact: string, verb: string): RuntimeOperationSpec | null {
+  validateReadiness();
   const spec = RUNTIME_OPERATIONS.find((candidate) => candidate.artifact === artifact && candidate.verb === verb);
   return spec ? cloneOperation(spec) : null;
 }

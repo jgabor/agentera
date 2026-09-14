@@ -124,6 +124,8 @@ export interface LifecycleApplyResult {
 export interface LifecycleApplyOptions {
   persistLedger?: (ledger: LifecycleOwnershipLedger) => void;
   beforePublication?: LifecyclePublicationBoundaryHook;
+  /** Persist a newly created file's identity before its first byte (process-death recovery). */
+  checkpointFileCreation?: boolean;
 }
 
 export class LifecycleOperationError extends Error {
@@ -633,7 +635,17 @@ export function applyLifecycleOperations(plan: LifecycleOperationPlan, options: 
         } else if (current.action !== "create" && current.action !== "update") {
           throw new LifecycleOperationError(`${current.action} has no safe publication implementation`);
         } else {
-          publishedIdentity = publishLifecycleResource(spec, current.action, observation, options.beforePublication);
+          publishedIdentity = publishLifecycleResource(
+            spec,
+            current.action,
+            observation,
+            options.beforePublication,
+            options.checkpointFileCreation
+              ? (identity) => {
+                  ledger = publishLedger(withRecord(ledger, { ...nextManagedRecord(spec, identity), status: "pending_create" }, spec.id), options.persistLedger);
+                }
+              : undefined,
+          );
         }
         if (current.action === "create" && publishedIdentity) {
           const publishedPending: LifecycleOwnershipRecord = {

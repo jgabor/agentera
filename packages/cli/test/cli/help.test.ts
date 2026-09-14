@@ -42,9 +42,34 @@ describe("cli help", () => {
     expect(text).toContain("~/.agents/skills/agentera");
     expect(text).toContain("--legacy-cleanup RESOURCE_ID");
     expect(text).toContain("Current runtime selectors");
-    expect(text).toContain("--format {text,json}");
+    expect(text).toContain("--format FORMAT");
+    expect(text).toContain("only json; default");
     expect(text).toContain("--verify");
     expect(text).not.toContain("--restore");
+  });
+
+  it("documents the separate approved one-file lifecycle and retained-data boundary", () => {
+    const { rc, out } = capture((io) => main(["node", "agentera", "upgrade", "--help"], io));
+    expect(rc).toBe(0);
+    expect(out).toContain("upgrade --shared-skill --dry-run");
+    expect(out).toContain("upgrade --shared-skill --yes");
+    expect(out).toContain("Owned legacy conversion also requires --authorization TOKEN");
+    expect(out).toContain("Linux /proc/self/fd");
+    expect(out).toContain("same filesystem");
+    expect(out).toContain("4096 owned entries including the root");
+    expect(out).toContain("retains the old link/tree and journal");
+    expect(out).toContain("Never prune a symlink target");
+    expect(out).toContain("Project-only migration does not authorize global cleanup or host conversion");
+    expect(out).not.toContain("Preserves and blocks legacy links/trees");
+  });
+
+  it("advertises only the output selectors accepted at the dispatch boundary", () => {
+    for (const args of [["upgrade"], ["app-home"], ["doctor"], ["schema"], ["report"], ["vision"], ["check", "verify"], ["check", "validate"], ["state", "query"], ["state", "docs", "list"], ["state", "docs", "get"], ["state", "experiments"]]) {
+      const { rc, out } = capture((io) => main(["node", "agentera", ...args, "--help"], io));
+      expect(rc, args.join(" ")).toBe(0);
+      expect(out).not.toMatch(/--format[^\n]*(?:text|yaml)|formats:.*(?:text|yaml)/);
+    }
+    expect(printCommandHelp("--version", [])).not.toContain("--format");
   });
 
   it("points state help at the live writer discovery contract", () => {

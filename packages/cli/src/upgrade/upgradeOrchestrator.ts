@@ -272,6 +272,7 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
 
   const projectLock = acquireUpgradeLock(project, "project");
   try {
+    if (!args.installRoot && !args.legacyCleanup) return buildUpgradePlanUnlocked(args, home, project, [projectLock.path]);
     const runtimeLock = acquireUpgradeLock(home, "runtime");
     try {
       return buildUpgradePlanUnlocked(args, home, project, [projectLock.path, runtimeLock.path]);
@@ -441,6 +442,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
     };
   }
   const phaseFilter = selectedPhases(args.only);
+  const projectOnly = !args.installRoot || Boolean(args.only?.every((phase) => phase === "artifacts"));
   const migrationCtx = {
     appHome: installRoot,
     project,
@@ -450,6 +452,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
     channel: args.channel ?? null,
     env,
     installAppContentIfMissing: false,
+    projectOnly,
   };
   const pendingRuntimeSync = pendingRuntimeMigrationItems(migrationCtx).length > 0;
   const pendingPlanLifecycleMigration = hasPendingPlanLifecycleMigration(project);
@@ -501,7 +504,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
     resourceCleanup: "opencode.plugin.agentera",
     automaticRetirement: true,
   };
-  let lifecycle = runLifecycleUpgrade(lifecycleArgs);
+  let lifecycle = projectOnly ? null : runLifecycleUpgrade(lifecycleArgs);
 
   const plannedPhases = [
     ...phases,
@@ -543,7 +546,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
   }
 
   if (!migrationPreview && entityPhase) phases.push(entityPhase);
-  if (args.yes && !entityPreflightBlocked) {
+  if (args.yes && !entityPreflightBlocked && !projectOnly) {
     lifecycle = runLifecycleUpgrade({ ...lifecycleArgs, apply: true });
   }
   if (lifecycle) phases.push(lifecyclePhase(lifecycle));

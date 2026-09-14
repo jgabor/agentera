@@ -9,11 +9,8 @@ import { emitInvalidInput } from "../errors.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
-export const VERIFY_FAMILIES = ["eval"] as const;
-export const RETIRED_VERIFY_FAMILIES = ["smoke"] as const;
-export const VERIFY_TARGETS: Record<string, string[]> = {
-  eval: ["skills", "semantic", "routing", "glossary"],
-};
+import { VERIFY_FAMILIES, RETIRED_VERIFY_FAMILIES, VERIFY_TARGETS } from "./checkCatalog.js";
+export { VERIFY_FAMILIES, RETIRED_VERIFY_FAMILIES, VERIFY_TARGETS } from "./checkCatalog.js";
 export const VERIFY_FORMATS = ["text", "json"] as const;
 export const VERIFY_DIAGNOSTIC_LINE_LIMIT = 20;
 

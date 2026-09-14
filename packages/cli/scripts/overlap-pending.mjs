@@ -4,6 +4,7 @@ import path from "node:path";
 
 import ts from "@typescript/typescript6";
 import YAML from "yaml";
+import { verificationPolicyErrors, verificationPendingContract } from "../src/registries/verificationPolicy.ts";
 
 const MAX_DIAGNOSTIC_BYTES = 8192;
 const MIN_DIAGNOSTIC_BYTES = 1024;
@@ -14,17 +15,6 @@ const MAX_ISSUES = 100;
 const MAX_SOURCE_BYTES = 2 * 1024 * 1024;
 const MAX_SERIALIZED_BYTES = 2 * 1024 * 1024;
 const REPORT_AGGREGATES = ["numTotalTestSuites", "numPassedTestSuites", "numFailedTestSuites", "numPendingTestSuites", "numTotalTests", "numPassedTests", "numFailedTests", "numPendingTests", "numTodoTests"];
-const FIXED_PENDING = Object.freeze({
-  owner: "source",
-  path: "packages/cli/test/build/generatedOutputPublication.test.ts",
-  suite: "generated generation publication",
-  title: "reads one real Darwin process identity independently of caller locale and timezone",
-  status: "skipped",
-  executesOn: "darwin",
-});
-const POLICY_KEYS = ["max_diagnostic_utf8_bytes", "allowed_pending_assertion"];
-const PENDING_KEYS = ["owner", "path", "suite", "title", "status", "executes_when"];
-const EXECUTION_KEYS = ["platform"];
 
 class OverlapContractError extends Error {}
 
@@ -232,148 +222,8 @@ function validateParsedPolicy(value, label = "verification") {
   }
 }
 
-function policyObject(value, issues, label) {
-  if (!isObject(value) || isArray(value)) {
-    addIssue(issues, `${label} must be one object`);
-    return Object.create(null);
-  }
-  return value;
-}
-
-function policyArray(value, issues, label) {
-  if (!isArray(value)) {
-    addIssue(issues, `${label} must be an array`);
-    return [];
-  }
-  return dataArray(value, issues, label);
-}
-
-function policyString(value, issues, label) {
-  if (typeof value !== "string" || value.length === 0) addIssue(issues, `${label} must be a nonempty string`);
-}
-
-function optionalPolicyString(value, issues, label) {
-  if (value !== undefined) policyString(value, issues, label);
-}
-
-function stringEntries(value, issues, label) {
-  for (const [key, entry] of Object.entries(policyObject(value, issues, label))) {
-    policyString(key, issues, `${label} key`);
-    policyString(entry, issues, `${label}.${key}`);
-  }
-}
-
 function validateConsumedPolicy(policy) {
-  const issues = [];
-  const inventory = policyObject(dataProperty(policy, "inventory", issues, "verification"), issues, "verification.inventory");
-  for (const field of ["root", "suffix"]) {
-    policyString(dataProperty(inventory, field, issues, "verification.inventory"), issues, `verification.inventory.${field}`);
-  }
-  const defaultOwner = dataProperty(inventory, "default_owner", issues, "verification.inventory", {
-    optional: true,
-  });
-  if (defaultOwner !== undefined && defaultOwner !== null) policyString(defaultOwner, issues, "verification.inventory.default_owner");
-  for (const [index, rule] of policyArray(dataProperty(inventory, "rules", issues, "verification.inventory"), issues, "verification.inventory.rules").entries()) {
-    const label = `verification.inventory.rules[${index}]`;
-    const entry = policyObject(rule, issues, label);
-    policyString(dataProperty(entry, "owner", issues, label), issues, `${label}.owner`);
-    optionalPolicyString(dataProperty(entry, "path", issues, label, { optional: true }), issues, `${label}.path`);
-    optionalPolicyString(dataProperty(entry, "prefix", issues, label, { optional: true }), issues, `${label}.prefix`);
-    const evidenceProducer = dataProperty(entry, "evidence_producer", issues, label, {
-      optional: true,
-    });
-    if (evidenceProducer !== undefined && typeof evidenceProducer !== "boolean") addIssue(issues, `${label}.evidence_producer must be a boolean`);
-  }
-
-  const owners = policyObject(dataProperty(policy, "owners", issues, "verification"), issues, "verification.owners");
-  for (const [owner, definition] of Object.entries(owners)) {
-    const label = `verification.owners.${owner}`;
-    const entry = policyObject(definition, issues, label);
-    for (const field of ["config", "correction"]) {
-      policyString(dataProperty(entry, field, issues, label), issues, `${label}.${field}`);
-    }
-    const forwarding = dataProperty(entry, "forwarding", issues, label, { optional: true });
-    if (forwarding !== undefined) {
-      const forwardingEntry = policyObject(forwarding, issues, `${label}.forwarding`);
-      stringEntries(
-        dataProperty(forwardingEntry, "safe_options", issues, `${label}.forwarding`, {
-          optional: true,
-        }) ?? {},
-        issues,
-        `${label}.forwarding.safe_options`,
-      );
-      stringEntries(
-        dataProperty(forwardingEntry, "forbidden_options", issues, `${label}.forwarding`, {
-          optional: true,
-        }) ?? {},
-        issues,
-        `${label}.forwarding.forbidden_options`,
-      );
-    }
-    const integration = dataProperty(entry, "integration", issues, label, { optional: true });
-    if (integration !== undefined) {
-      const integrationEntry = policyObject(integration, issues, `${label}.integration`);
-      policyString(dataProperty(integrationEntry, "path", issues, `${label}.integration`), issues, `${label}.integration.path`);
-      for (const [index, command] of policyArray(dataProperty(integrationEntry, "command", issues, `${label}.integration`), issues, `${label}.integration.command`).entries()) {
-        policyString(command, issues, `${label}.integration.command[${index}]`);
-      }
-    }
-    const execution = dataProperty(entry, "execution", issues, label, { optional: true });
-    if (execution !== undefined) {
-      const executionEntry = policyObject(execution, issues, `${label}.execution`);
-      for (const field of ["workers", "wall_time_budget_ms"]) {
-        const value = dataProperty(executionEntry, field, issues, `${label}.execution`, {
-          optional: true,
-        });
-        if (value !== undefined && (!Number.isSafeInteger(value) || value < 1)) {
-          addIssue(issues, `${label}.execution.${field} must be a positive safe integer`);
-        }
-      }
-    }
-    const evidence = dataProperty(entry, "evidence", issues, label, { optional: true });
-    if (evidence !== undefined) {
-      const evidenceEntry = policyObject(evidence, issues, `${label}.evidence`);
-      for (const field of ["schema_version", "authority", "stdout_format"]) {
-        policyString(dataProperty(evidenceEntry, field, issues, `${label}.evidence`), issues, `${label}.evidence.${field}`);
-      }
-      const maxBytes = dataProperty(evidenceEntry, "max_utf8_bytes", issues, `${label}.evidence`);
-      if (!Number.isSafeInteger(maxBytes) || maxBytes < 1) addIssue(issues, `${label}.evidence.max_utf8_bytes must be a positive safe integer`);
-    }
-  }
-
-  for (const [index, mixed] of policyArray(dataProperty(policy, "mixed_files", issues, "verification"), issues, "verification.mixed_files").entries()) {
-    const label = `verification.mixed_files[${index}]`;
-    const entry = policyObject(mixed, issues, label);
-    for (const field of ["path", "primary_owner", "separation_target"]) {
-      policyString(dataProperty(entry, field, issues, label), issues, `${label}.${field}`);
-    }
-  }
-
-  const policies = policyObject(dataProperty(policy, "policies", issues, "verification"), issues, "verification.policies");
-  for (const [name, ownersForPolicy] of Object.entries(policies)) {
-    for (const [index, owner] of policyArray(ownersForPolicy, issues, `verification.policies.${name}`).entries()) {
-      policyString(owner, issues, `verification.policies.${name}[${index}]`);
-    }
-  }
-
-  const routing = dataProperty(policy, "conservative_routing", issues, "verification", {
-    optional: true,
-  });
-  if (routing !== undefined) {
-    const routingEntry = policyObject(routing, issues, "verification.conservative_routing");
-    for (const field of ["exact", "prefixes"]) {
-      for (const [index, entry] of policyArray(
-        dataProperty(routingEntry, field, issues, "verification.conservative_routing", {
-          optional: true,
-        }) ?? [],
-        issues,
-        `verification.conservative_routing.${field}`,
-      ).entries()) {
-        policyString(entry, issues, `verification.conservative_routing.${field}[${index}]`);
-      }
-    }
-  }
-
+  const issues = verificationPolicyErrors(policy);
   if (issues.length > 0) {
     throw contractError("verification policy consumed schema is invalid", issues, "restore every verification-policy.yaml collection and field consumed by verify-lane to its documented YAML shape");
   }
@@ -425,30 +275,6 @@ function dataProperty(object, key, issues, label, { optional = false } = {}) {
     return undefined;
   }
   return descriptor.value;
-}
-
-function ownKeys(object, issues, label) {
-  if (!isObject(object) || isArray(object)) {
-    addIssue(issues, `${label} must be one object, not ${isArray(object) ? "an array" : render(object)}`);
-    return [];
-  }
-  try {
-    return Reflect.ownKeys(object);
-  } catch (error) {
-    addIssue(issues, `${label} keys cannot be inspected: ${render(error)}`);
-    return [];
-  }
-}
-
-function exactKeys(object, expected, issues, label) {
-  const keys = ownKeys(object, issues, label);
-  const expectedSet = new Set(expected);
-  for (const key of keys) {
-    if (typeof key !== "string" || !expectedSet.has(key)) addIssue(issues, `${label} has unsupported key ${render(key)}`);
-  }
-  for (const key of expected) {
-    if (!keys.includes(key)) addIssue(issues, `${label}.${key} is missing`);
-  }
 }
 
 function dataArray(value, issues, label) {
@@ -526,38 +352,11 @@ function pendingIdentity(authority) {
 }
 
 function parsePendingAuthority(overlapAuthority) {
-  const issues = [];
-  exactKeys(overlapAuthority, POLICY_KEYS, issues, "overlap");
-  const maxDiagnosticBytes = dataProperty(overlapAuthority, "max_diagnostic_utf8_bytes", issues, "overlap");
-  const declaration = dataProperty(overlapAuthority, "allowed_pending_assertion", issues, "overlap");
-  exactKeys(declaration, PENDING_KEYS, issues, "overlap.allowed_pending_assertion");
-  const execution = dataProperty(declaration, "executes_when", issues, "overlap.allowed_pending_assertion");
-  exactKeys(execution, EXECUTION_KEYS, issues, "overlap.allowed_pending_assertion.executes_when");
-  const fields = {
-    owner: dataProperty(declaration, "owner", issues, "overlap.allowed_pending_assertion"),
-    path: dataProperty(declaration, "path", issues, "overlap.allowed_pending_assertion"),
-    suite: dataProperty(declaration, "suite", issues, "overlap.allowed_pending_assertion"),
-    title: dataProperty(declaration, "title", issues, "overlap.allowed_pending_assertion"),
-    status: dataProperty(declaration, "status", issues, "overlap.allowed_pending_assertion"),
-    executesOn: dataProperty(execution, "platform", issues, "overlap.allowed_pending_assertion.executes_when"),
-  };
-  if (!Number.isSafeInteger(maxDiagnosticBytes) || maxDiagnosticBytes < MIN_DIAGNOSTIC_BYTES || maxDiagnosticBytes > MAX_DIAGNOSTIC_BYTES) {
-    addIssue(issues, `overlap.max_diagnostic_utf8_bytes=${render(maxDiagnosticBytes)} must be a safe integer from ${MIN_DIAGNOSTIC_BYTES} through ${MAX_DIAGNOSTIC_BYTES}`);
-  }
-  for (const [field, expected] of Object.entries(FIXED_PENDING)) {
-    if (fields[field] !== expected) addIssue(issues, `${field}=${render(fields[field])}; expected ${render(expected)}`);
-  }
-  if (fields.path === FIXED_PENDING.path && (path.isAbsolute(fields.path) || path.posix.normalize(fields.path) !== fields.path || fields.path.includes(".."))) {
-    addIssue(issues, `path=${render(fields.path)} must be the canonical repository-relative source path`);
-  }
+  const { issues, authority } = verificationPendingContract(overlapAuthority, render);
   if (issues.length > 0) {
     throw contractError("overlap authority is invalid", issues, "restore the closed overlap schema with the one canonical source/Darwin/skipped declaration and max_diagnostic_utf8_bytes no greater than 8192 in references/analysis/verification-policy.yaml");
   }
-  return Object.freeze({
-    ...fields,
-    name: `${fields.suite} ${fields.title}`,
-    maxDiagnosticBytes,
-  });
+  return authority;
 }
 
 function pendingAuthority(policyYaml) {

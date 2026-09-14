@@ -1,0 +1,24 @@
+id: xpgwtqtpur
+artifact: plan
+record:
+  name: Qualify complete CLI access from a one-file host
+  depends_on:
+    - lbyqdjxbua
+  status: complete
+  acceptance:
+    - GIVEN an extracted package, isolated HOME, and only SKILL.md WHEN every mapped workflow and detail path is exercised THEN required information is available with no companion or checkout reads.
+    - GIVEN fresh, existing, interrupted, unsafe, and override-selected installations WHEN lifecycle scenarios run THEN one-file success, ownership preservation, and runtime compatibility are proven.
+    - GIVEN supported host discovery WHEN invoked THEN each claimed host has smoke evidence; unavailable hosts remain explicit qualification blockers, not inferred passes.
+    - GIVEN changed interfaces and package surfaces WHEN relevant source, typecheck, build, package, contract, compact, and development gates pass THEN coverage is closed with bounded output and privacy evidence.
+    - GIVEN proportional testing WHEN cases are selected THEN reuse existing evidence, add one pass and one failure per unit, and expand only for distinct ownership, replay, privacy, or boundary risks.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: docs/qualification-2026-09-13-task12.json:158 Cursor ACP session/new returned -32000 Authentication required; skillRecognition=false and cliRetrieval=false. Required four-host acceptance incomplete. Engineering 11-gate qualification PASS; not a demonstrated product defect.
+    provenance:
+      attempt_id: single-file-qualification-2
+      source: "audit ses_f636a6eb7ffeu73afW301W5MNr resumed: Cursor recognition and harness CLI retrieval PASS 25589bytes3parts unchangedinstructionhash;fourhosts and engineering11gatesPASS;reconstructedtarball binding distinct verified; no model/tool/liveconfig effects"
+      recorded_at: 2026-09-14 10:56
+      writer_command: agentera state plan record-evaluation

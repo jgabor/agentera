@@ -605,7 +605,7 @@ describe("verification lane ownership", () => {
     expect(inventory.counts.total).toBeGreaterThan(190);
     expect(inventory.counts).toMatchObject({ stress: 1, performance: 1, capacity: 4 });
     expect(inventory.files.source).toHaveLength(inventory.counts.source);
-    expect(inventory.files.package).toEqual(["packages/cli/test/packaging/coldProcessScheduler.test.ts", "packages/cli/test/packaging/copyBundleSafety.test.ts", "packages/cli/test/packaging/packageVerification.test.ts"]);
+    expect(inventory.files.package).toEqual(["packages/cli/test/packaging/coldProcessScheduler.test.ts", "packages/cli/test/packaging/copyBundleSafety.test.ts", "packages/cli/test/packaging/packageVerification.test.ts", "packages/cli/test/packaging/staticDiscoveryQualification.test.ts"]);
     expect(inventory.files.source).toEqual(expect.arrayContaining(["packages/cli/test/integration/runtimeBootstrapMatrix.test.ts"]));
     expect(inventory.integrations).toEqual({
       performance: "packages/cli/test/integration/performanceOwner.integration.mjs",

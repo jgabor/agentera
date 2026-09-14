@@ -176,11 +176,17 @@ function discoverEmittedProducerPaths(root: string): {
         correction: `Make ${specifier} resolve to one TypeScript module.`,
       });
     }
-    return matches[0] ?? null;
+    return matches.length === 1 ? matches[0] : null;
   };
 
   const reverse = new Map<string, Set<string>>();
   let edgeCount = 0;
+  const addEdge = (file: string, target: string): void => {
+    const consumers = reverse.get(target) ?? new Set<string>();
+    consumers.add(file);
+    reverse.set(target, consumers);
+    edgeCount += 1;
+  };
   for (const [file, source] of sources) {
     if (source.parseDiagnostics.length > 0)
       diagnostics.push({
@@ -192,13 +198,17 @@ function discoverEmittedProducerPaths(root: string): {
       });
     const visitDynamic = (node: ts.Node): void => {
       if (ts.isCallExpression(node) && (node.expression.kind === ts.SyntaxKind.ImportKeyword || (ts.isIdentifier(node.expression) && node.expression.text === "require"))) {
-        diagnostics.push({
-          path: path.relative(root, file).split(path.sep).join("/"),
-          location: { structured_path: "$" },
-          candidate: null,
-          violation: "constructor_closure_dynamic_consumer",
-          correction: "Replace dynamic module consumption with a static import or re-export so constructor closure is inspectable.",
-        });
+        const literal = node.arguments.length === 1 && ts.isStringLiteral(node.arguments[0]) ? node.arguments[0].text : null;
+        const target = node.expression.kind === ts.SyntaxKind.ImportKeyword && literal ? resolveModule(file, literal) : null;
+        if (target) addEdge(file, target);
+        else
+          diagnostics.push({
+            path: path.relative(root, file).split(path.sep).join("/"),
+            location: { structured_path: "$" },
+            candidate: null,
+            violation: "constructor_closure_dynamic_consumer",
+            correction: "Use a static import/re-export or one literal import() resolving to exactly one repository TypeScript module; opaque, external, unresolved and require() consumption cannot prove constructor closure.",
+          });
       }
       ts.forEachChild(node, visitDynamic);
     };
@@ -207,10 +217,7 @@ function discoverEmittedProducerPaths(root: string): {
       if ((!ts.isImportDeclaration(statement) && !ts.isExportDeclaration(statement)) || !statement.moduleSpecifier || !ts.isStringLiteral(statement.moduleSpecifier)) continue;
       const target = resolveModule(file, statement.moduleSpecifier.text);
       if (!target) continue;
-      const consumers = reverse.get(target) ?? new Set<string>();
-      consumers.add(file);
-      reverse.set(target, consumers);
-      edgeCount += 1;
+      addEdge(file, target);
     }
   }
   if (edgeCount > 20_000)

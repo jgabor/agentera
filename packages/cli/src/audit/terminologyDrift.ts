@@ -223,7 +223,7 @@ export function validateTerminologyProposal(value: unknown): TerminologyProposal
   return { proposal: violations.length === 0 ? expected : null, violations };
 }
 
-function confidenceFloor(): number {
+export function confidenceFloor(): number {
   const protocol = loadYamlMappingFile(path.join(resolveSourceRoot(), "skills", "agentera", "protocol.yaml"));
   const scale = protocol.CONFIDENCE_SCALE as Record<string, { range?: unknown }>;
   const range = scale?.["3"]?.range;

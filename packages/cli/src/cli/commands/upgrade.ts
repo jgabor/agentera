@@ -4,6 +4,11 @@ import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 import { applyProductV1Reset, previewProductV1Reset } from "../../upgrade/productV1Reset.js";
+import os from "node:os";
+import { expanduser, resolvePath } from "../../core/paths.js";
+import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
+import { runHostSkillLifecycle } from "../../setup/hostSkillLifecycle.js";
+import { emitInvalidInput } from "../errors.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -26,6 +31,7 @@ export interface UpgradeArgs {
   format?: string;
   productV1Reset?: boolean;
   authorization?: string | null;
+  sharedSkill?: boolean;
 }
 
 /** Canonical stable-channel update entry point. */
@@ -78,6 +84,38 @@ function entityAuthorityConfirmedActive(project: string): boolean {
 export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
+  if (args.sharedSkill) {
+    if (args.project || args.channel || args.expectedVersion || args.only?.length || args.force || args.runtime || args.legacyCleanup || args.verify || args.productV1Reset || (args.yes && args.dryRun)) {
+      return emitInvalidInput(io, {
+        format: args.format === "text" ? "text" : "json",
+        body: {
+          class: "invalid_request",
+          message:
+            "--shared-skill is isolated from app/project migration, reset and cleanup. Use --dry-run (or omit apply flags) for preview, or --yes with explicit user approval. Legacy conversion also requires the preview's --authorization token; only --home, --install-root, --authorization and --format may be combined.",
+        },
+      });
+    }
+    const home = resolvePath(expanduser(args.home ?? os.homedir()));
+    const sourceRoot = resolveSourceRootStrict();
+    const [appHome] = resolveDoctorInstallRoot(args.installRoot ?? null, { home, sourceRoot });
+    const result = runHostSkillLifecycle({
+      home,
+      appHome,
+      sourceRoot,
+      apply: args.yes === true,
+      authorization: args.authorization,
+    });
+    out(args.format === "text" ? `${result.status}: ${result.reason}\nPath: ${result.path}\n${"authorization" in result ? JSON.stringify(result, null, 2) + "\n" : ""}Recovery: ${result.recovery}\n` : JSON.stringify(result, null, 2) + "\n");
+    return result.status === "non_success" ? 1 : 0;
+  }
+  if (args.authorization && !args.productV1Reset)
+    return emitInvalidInput(io, {
+      format: args.format === "text" ? "text" : "json",
+      body: {
+        class: "invalid_request",
+        message: "--authorization is scoped to --shared-skill conversion or --reset-product-v1; it does not authorize app/project migration or cleanup.",
+      },
+    });
   const orchestratorArgs = toOrchestratorArgs(args);
 
   if (args.productV1Reset) {

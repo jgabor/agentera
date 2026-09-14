@@ -258,6 +258,6 @@ describe("strict package publication model", () => {
       mutate((copy) => {
         copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64);
       }),
-    ).toThrow(/9aec9840ff12190bca7206b4175d35c5615428c971375bed1b327d604338a348/);
+    ).toThrow(/db2297238b3936eb03028054269469e1a897a50da554347768962c25fe8160f5/);
   });
 });

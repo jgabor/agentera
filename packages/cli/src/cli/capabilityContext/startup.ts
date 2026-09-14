@@ -158,7 +158,7 @@ export function genericSlimStartupContext(capability: string, context: JsonObjec
     }
     return {
       planning_context: {
-        startup_contract: context.startup_contract ?? null,
+        startup_contract: slimPlanStartupContract(context.startup_contract as JsonObject | undefined),
         plan: slimPlanState(plan),
         docs: docsState,
         health: slimHealthState(health),
@@ -177,6 +177,21 @@ export function genericSlimStartupContext(capability: string, context: JsonObjec
       },
     };
   return {};
+}
+
+function slimPlanStartupContract(contract: JsonObject | undefined): JsonObject | null {
+  if (!contract) return null;
+  // Full instructions are already in this response. Keep the workflow markers,
+  // not a second copy of its orientation, permission and handoff prose. The
+  // static section retains every field, including historical seam commentary.
+  const keys = ["schemaVersion", "status", "canonical_surface", "bounded", "instructions_runtime_read_required", "planning"];
+  return {
+    ...Object.fromEntries(keys.map((key) => [key, contract[key]])),
+    detail_availability: "summary",
+    omitted_fields: Object.keys(contract).filter((key) => !keys.includes(key)),
+    detail_command: preCutoverCommand("prime --context plan --detail instructions --section startup_contract"),
+    read_before_reliance: true,
+  };
 }
 
 export function slimCapabilityContext(
@@ -202,7 +217,19 @@ export function slimCapabilityContext(
   Object.assign(contextPayload, genericSlimStartupContext(capability, context, plan, docs, progress, health, todoItems));
   contextPayload.plan = slimPlanState(plan);
   const firstRead = context.first_invocation_read;
-  if (firstRead !== null && firstRead !== undefined) contextPayload.first_invocation_read = firstRead;
+  if (firstRead !== null && firstRead !== undefined) {
+    const metadata = firstRead as JsonObject;
+    // As in Status, loader provenance is not startup state. Instructions remain
+    // complete, and the invocation obligation/enforcement stay explicit.
+    contextPayload.first_invocation_read =
+      capability === "plan"
+        ? {
+            value: metadata.value,
+            startup_command: metadata.startup_command,
+            runtime_enforcement: metadata.runtime_enforcement,
+          }
+        : firstRead;
+  }
   if (bespokeContexts) {
     for (const [name, value] of Object.entries(bespokeContexts)) {
       if (value !== null && value !== undefined) contextPayload[name] = slimBespokeContext(name, value as JsonObject);
@@ -216,6 +243,15 @@ export function slimCapabilityContext(
     startup: startupAggregation(context, health, cutover, todoReconciliation),
     context: boundStartupValue(contextPayload) as JsonObject,
     instructions: CAPABILITY_INSTRUCTIONS[capability] ?? "",
+    guidance_details: {
+      instructions: preCutoverCommand(`prime --context ${capability} --detail instructions`),
+      artifacts: preCutoverCommand(`prime --context ${capability} --detail artifacts`),
+      validation: preCutoverCommand(`prime --context ${capability} --detail validation`),
+      exit: preCutoverCommand(`prime --context ${capability} --detail exit`),
+      protocol: preCutoverCommand("schema --protocol"),
+      worker: preCutoverCommand(`prime --context ${capability} --detail worker`),
+      scope: "Read applicable static details before acting; startup availability is not permission or whole-contract completeness.",
+    },
   };
 }
 
@@ -244,6 +280,12 @@ export function buildPrimeCapabilityContextPayload(state: OrientationState, capa
     shared_skill: stateDict.shared_skill,
     capability_context: slimCapabilityContext(capabilityName, state.mode, appHome, bundlePublic as unknown as JsonObject, stateDict.plan as JsonObject, stateDict.docs as JsonObject, stateDict.progress as JsonObject, stateDict.health as JsonObject, state.todo_items, bespoke, cutover, todoReconciliation),
   };
+  if (capabilityName === "plan") {
+    // Match the existing Status summary: keep health/ownership facts and the
+    // exact home-scoped preview, defer repeated diagnostic/repair narrative.
+    const { message: _message, path: _path, details: _details, ...summary } = state.shared_skill;
+    payload.shared_skill = { ...summary, detail_availability: "summary" };
+  }
   if (glossaryAdvice !== null) (payload.capability_context as JsonObject).glossary_advice = glossaryAdvice as unknown as JsonObject;
   return payload;
 }

@@ -25,11 +25,12 @@ function fixture(): string {
   return root;
 }
 
-function snapshot(root: string): string {
+function snapshot(root: string, ignored: string[] = []): string {
   const hash = createHash("sha256");
   const visit = (directory: string): void => {
     for (const entry of fs.readdirSync(directory, { withFileTypes: true }).sort((a, b) => a.name.localeCompare(b.name))) {
       const target = path.join(directory, entry.name);
+      if (ignored.includes(path.relative(root, target))) continue;
       hash.update(path.relative(root, target)).update(entry.isDirectory() ? "directory" : "file");
       if (entry.isDirectory()) visit(target);
       else hash.update(fs.readFileSync(target));
@@ -64,6 +65,59 @@ afterEach(() => {
 });
 
 describe("product v1 EOL execution gate", () => {
+  it("binds reset host removal and one-file delivery to broad approval without traversing the old link", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-host-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-app-"));
+    const legacy = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-legacy-"));
+    roots.push(home, install, legacy);
+    fs.writeFileSync(path.join(legacy, "SKILL.md"), "old runtime");
+    fs.writeFileSync(path.join(legacy, "user-data"), "retain");
+    const host = path.join(home, ".agents/skills/agentera");
+    fs.mkdirSync(path.dirname(host), { recursive: true });
+    fs.symlinkSync(legacy, host);
+    const options = { project, home, installRoot: install, env: {} };
+    const preview = previewProductV1Reset(options);
+    expect(preview.deletions.flatMap((item) => item.targets)).toContainEqual(
+      expect.objectContaining({
+        path: host,
+        entries: [
+          expect.objectContaining({
+            type: "symlink",
+            link_target: legacy,
+            identity: expect.any(Object),
+          }),
+        ],
+      }),
+    );
+    expect(preview.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]).toMatchObject({ path: host, delivery: { files: ["SKILL.md"] } });
+    fs.unlinkSync(host);
+    fs.symlinkSync(path.join(legacy, "other"), host);
+    expect(() => applyProductV1Reset(options, preview.authorization)).toThrow(/scope changed/);
+    expect(fs.existsSync(path.join(project, ".agentera/PROGRESS.md"))).toBe(true);
+    fs.unlinkSync(host);
+    fs.symlinkSync(legacy, host);
+    const approved = previewProductV1Reset(options);
+    expect(applyProductV1Reset(options, approved.authorization).status).toBe("complete");
+    expect(fs.lstatSync(host).isSymbolicLink()).toBe(false);
+    expect(fs.readdirSync(host)).toEqual(["SKILL.md"]);
+    expect(fs.readFileSync(path.join(legacy, "user-data"), "utf8")).toBe("retain");
+    expect(fs.readFileSync(path.join(legacy, "SKILL.md"), "utf8")).toBe("old runtime");
+  });
+
+  it("reset refuses copied host extras before any reset effects", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-extras-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-app-"));
+    roots.push(home, install);
+    const host = path.join(home, ".agents/skills/agentera");
+    fs.mkdirSync(host, { recursive: true });
+    fs.writeFileSync(path.join(host, "SKILL.md"), "legacy");
+    fs.writeFileSync(path.join(host, "private-extra"), "retain");
+    const before = [snapshot(project), snapshot(home), snapshot(install)];
+    expect(() => previewProductV1Reset({ project, home, installRoot: install, env: {} })).toThrow(/preserves full copied host trees/);
+    expect([snapshot(project), snapshot(home), snapshot(install)]).toEqual(before);
+  });
   it("blocks ordinary read-only and stateful commands with the future reset workflow without mutation", () => {
     const root = fixture();
     const before = snapshot(root);
@@ -166,7 +220,8 @@ describe("product v1 EOL execution gate", () => {
       expect(classifyProjectState(root).state).toBe("fresh_uninitialized");
       expect(fs.existsSync(profile)).toBe(false);
       expect(fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md"))).toBe(true);
-      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(fs.realpathSync(path.join(install, "skills", "agentera")));
+      expect(fs.lstatSync(path.join(home, ".agents", "skills", "agentera")).isSymbolicLink()).toBe(false);
+      expect(fs.readdirSync(path.join(home, ".agents", "skills", "agentera"))).toEqual(["SKILL.md"]);
     } finally {
       if (previousProfile === undefined) delete process.env.AGENTERA_PROFILE_DIR;
       else process.env.AGENTERA_PROFILE_DIR = previousProfile;
@@ -317,12 +372,14 @@ describe("product v1 EOL execution gate", () => {
       expect(fs.statSync(config).mode & 0o7777).toBe(0o640);
       expect(fs.readFileSync(config, "utf8")).toBe(["[plugins.unrelated]", 'command = "keep-me"', "", "[plugins.after] # adjacent unrelated section", 'command = "keep-after"', "", "[shell_environment_policy.set]", 'KEEP = "yes"', ""].join("\n"));
       expect(fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md"))).toBe(true);
-      expect(fs.realpathSync(path.join(home, ".agents", "skills", "agentera"))).toBe(fs.realpathSync(path.join(install, "skills", "agentera")));
+      expect(fs.lstatSync(path.join(home, ".agents", "skills", "agentera")).isSymbolicLink()).toBe(false);
+      expect(fs.readdirSync(path.join(home, ".agents", "skills", "agentera"))).toEqual(["SKILL.md"]);
       if (interruptedEffect === "initialize:fresh-v3") {
         const canonicalInstall = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-fresh-install-"));
         roots.push(canonicalInstall);
         applyAppContentRefresh(canonicalInstall, resolveSourceRoot());
-        expect(snapshot(install)).toBe(snapshot(canonicalInstall));
+        expect(fs.readdirSync(path.join(install, ".agentera"))).toEqual(["runtime-lifecycle"]);
+        expect(snapshot(install, [".agentera"])).toBe(snapshot(canonicalInstall, [".agentera"]));
       }
     }
   });

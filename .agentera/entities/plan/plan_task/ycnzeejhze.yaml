@@ -1,0 +1,27 @@
+id: ycnzeejhze
+artifact: plan
+record:
+  name: Make the host bootstrap independently usable
+  depends_on:
+    - jjkousfilv
+    - uihlacvttp
+    - ktgiuwlejl
+    - cqfhqxdxcl
+    - dffgvjxdvt
+  status: complete
+  acceptance:
+    - GIVEN only SKILL.md WHEN loaded THEN the host can bootstrap, route, discover details, follow recovery, and respect permissions without any sibling file.
+    - GIVEN all served instructions and examples WHEN followed THEN no required relative reference or installed-schema lookup remains, including Vision and Profile paths.
+    - GIVEN missing CLI capability or incompatible guidance WHEN encountered THEN the host reports supported recovery without guessing, silently falling back, or changing its installation.
+    - GIVEN the bootstrap and detailed guidance WHEN compared THEN the bootstrap remains small and contains no duplicated full capability, schema, or phrase registry.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: single-file-bootstrap-1
+      source: "audit ses_f6442e1f2ffe5MgtlElELi3Kn3: all task7 criteria PASS;261focusedtests,typecheck/build,31onefilehostsmokes,contract and compact evidence;all12servedprose inspected"
+      recorded_at: 2026-09-13 19:10
+      writer_command: agentera state plan record-evaluation

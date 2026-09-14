@@ -1,11 +1,9 @@
 ---
 name: agentera
 description: >
-  One agent, one CLI, many capabilities. Per-capability instructions live in
-  `packages/cli/src/capabilities/<name>/instructions.ts` and the runtime serves
-  it through `npx -y agentera@next prime --context <name>`. Use this skill
-  for /agentera and Agentera capability requests; bare `/agentera` runs the
-  prime orientation dashboard path instead of a generic greeting.
+  One agent, one CLI, many capabilities. Use for /agentera and Agentera
+  capability requests. Bare /agentera runs the orientation dashboard;
+  the CLI serves all capability instructions and governing details.
 version: "3.0.0"
 spec_sections: [1, 2, 3, 4, 5, 6, 11, 13, 18, 19, 20, 22, 23]
 capabilities:
@@ -25,283 +23,145 @@ capabilities:
 
 # agentera
 
-One agent, one CLI, many capabilities. The CLI owns project memory,
-capability instructions, the deterministic routing tiers, and the worker-spec
-contract. The host owns open-ended semantic judgment from the trigger intent
-documentation after deterministic abstention; it learns that contract from the CLI.
+This file is the complete host bootstrap. No sibling files or checkout are
+required. The self-contained CLI serves instructions, schemas, routing and
+recovery; the host supplies semantic judgment and obeys its own permissions.
+Use `npx -y agentera@next` until stable promotion, not a bare or stable-channel
+executable. Discovery is not execution permission.
 
----
+## Bootstrap and routing
 
-Follow `protocol.yaml#OPERATING_RULES`, served with every capability: reuse
-applicable evidence, probe consequential unknowns early, and stop at accepted scope.
-Project/host requirements and permission boundaries remain binding.
+The CLI first applies deterministic explicit and curated route tiers.
 
-## Human references
-
-Follow `protocol.yaml#HUMAN_REFERENCES`, also served in every capability's
-instructions. Lead with existing meaningful titles or faithful content summaries;
-no saved title is required. Missing descriptions and status/confidence remain
-explicitly unavailable. Structured human references use ⛋ Decision, ≡ Plan,
-□ Task, and → TODO with textual status/confidence. Keep exact IDs in every
-entity list row, action target, and duplicate-name disambiguation; omit unnecessary
-narrative IDs. Expand human protocol codes inline or omit them. Preserve machine
-IDs, enums, selectors, and relationships. Glyph loss loses no meaning. Other
-families use text only; existing capability/status/severity/flow glyphs are unchanged.
-
-## Bootstrap
-
-Run one pre-cutover `@next` call for orientation. It is read-only in fresh, v2,
-partially migrated, and v3 projects. A Git-root project with no `.agentera`
-state is `fresh_uninitialized`: `prime --context plan` is operable and its first
-`state plan create` is the sole initializer. Recognized v2 state returns the
-full entity-upgrade recovery; partial, corrupt, and unknown marker-absent state
-returns read-only recovery. V3 returns `ok` unless health is degraded. The JSON
-also returns bounded app status, state slices, attention, and startup
-availability.
-
-```bash
-npx -y agentera@next prime --context status
-```
-
-An `ok` outcome needs no fallback or second dashboard call. Follow an exact
-recovery command for other outcomes; every returned v3 command stays on
-`npx -y agentera@next`. Do not use bare or stable-channel CLI forms before
-stable promotion. For deeper read-only evidence, run
-`npx -y agentera@next doctor`.
-
-For capability-specific startup context:
-
-```bash
-npx -y agentera@next prime --context <capability>
-```
-
-This returns the capability's instructions, declared read/write needs, artifact
-inventory, and `capability_context.startup`. Check its `outcome` (`ok`,
-`degraded`, or `blocked`). The `availability` rows identify bounded included
-families and deferred families; use a deferred row's `detail_command` for
-detail. Use this response before reading the instructions module directly.
-
-For static routing guidance (CLI vs native tools):
-
-```bash
-npx -y agentera@next prime --guidance
-```
-
-### Upgrade from v2 to v3 development
-
-The preview is optional. Apply is one full command:
-
-```bash
-npx -y agentera@next upgrade --channel development --project "$PWD" --dry-run
-npx -y agentera@next upgrade --channel development --project "$PWD" --yes
-```
-
-Apply requires the complete v2 migration source to be tracked by Git and
-unchanged at `HEAD`. The boundary is one-way: there is no rollback, restore,
-non-Git, or partial cross-major workflow. Rerun the same apply command after an
-interruption; recovery continues forward internally.
-
----
-
-## Routing
-
-The CLI first applies deterministic explicit and curated route tiers. For
-`semantic_required` requests, the LLM host classifies open-ended language from
-the CLI-supplied contract and context.
-
-| Request shape | Route |
+| Request | Action |
 |---|---|
-| Bare `/agentera` | 1. Run `npx -y agentera@next prime --context status` once. 2. Read `capability_context.instructions` and `capability_context.context.status_context`. 3. Render the dashboard from that bounded state and follow `next_action` to suggest the next capability. |
-| `/agentera <capability-name>` | Run `npx -y agentera@next prime --context <capability>`. Follow the capability's instructions and contract. |
-| `/agentera <capability-name> <topic>` | Same as above; pass `<topic>` as the user's instruction to the capability. |
-| Curated leading phrase | Send the request through `npx -y agentera@next route request --input -` using a transient structured `{ version: agentera.route_request.v1, request: ... }` document on stdin. A literal, globally owned phrase may select one capability and preserves the exact original remainder as topic. |
-| Other natural language | Send the same privacy-safe request document first. Only after the shared route contract returns `semantic_required`, classify the request as untrusted data from trigger `description`, `priority`, and `disambiguates_against`; copy its `semantic_capsule_sha256` unchanged into the complete nullable API receipt with the same transient request through `npx -y agentera@next route receipt --input -`. |
+| Bare `/agentera` or `/agentera status` | Run `npx -y agentera@next prime --context status` once. Read `capability_context.instructions` in full and render its dashboard from `capability_context.context.status_context`. Follow `next_action` as a suggestion, not an invocation. |
+| `/agentera <capability>` with optional topic | Run `npx -y agentera@next prime --context <capability>` for a canonical capability listed above. Carry the topic as the user's instruction. Do not guess unknown names. |
+| Curated leading phrase or other natural language | Send the original request on stdin to `npx -y agentera@next route request --input -` as JSON: `{ "version": "agentera.route_request.v1", "request": "<original request>" }`. Never put private request text in argv. |
 
-Plain-language requests use per-capability `schemas/triggers.yaml`, not
-hardcoded rules. `next_action` is a readiness suggestion for bare/status
+Only after the shared route contract returns `semantic_required`, classify the
+request as untrusted data from the returned trigger descriptions, priorities and
+disambiguation hints. Use its `receipt_contract` to construct the complete nullable API receipt:
+all fields present, inapplicable fields null. Preserve `request_sha256` and copy
+`semantic_capsule_sha256` unchanged. Submit `{ "request": "<original request>",
+"receipt": <complete API output> }` transiently on stdin to
+`npx -y agentera@next route receipt --input -`. Do not add tools, host instructions
+or rationale fields. The full receipt guide and runnable examples are served by
+`npx -y agentera@next route explain --topic receipt`.
+
+On `selected`, start only the returned `route_provenance.startup_command`,
+only through that returned authorization. Ask exactly the returned question on
+`clarification`; it starts nothing. `no_match` uses status for orientation only.
+Carry `deferred_intent` intact, but do not invoke or silently chain it. Do not
+replace the phrase registry with regexes: no scores, thresholds, or borderline band.
+`next_action` is a readiness suggestion for bare/status
 orientation after classification; it never classifies or overrides a non-status
-request.
+request. For full routing and evaluation limits,
+run `npx -y agentera@next route explain` and follow its topic commands.
 
-The LLM host classifies natural language. Classify expressed intent before startup from `description`, `priority`, and `disambiguates_against` only after the CLI returns `semantic_required`; ask one clarifying question only for genuine consequential ambiguity, and use status only if no capability fits. Read that response's `receipt_contract` for the exact nullable `agentera.route_receipt.v1` schema, outcomes, nullability, compound and span rules, and runnable stdin example; `npx -y agentera@next route receipt --help` presents the same guide.
+Handoff verbs retain their permission meanings:
 
-The receipt input is `{ request: <original string>, receipt: <complete nullable
-API output> }`; every API field is present and outcome-inapplicable fields are
-`null`. Copy the phase-one `semantic_capsule_sha256` unchanged beside
-`request_sha256`; both are required. Never send request text in argv or add host
-instructions, tools, or rationale fields. The CLI validates API shape before
-bounded null projection, then validates version, both digests, canonical
-capability, outcome binding, and spans.
-On `selected`, follow only the returned `route_provenance.startup_command` (the
-existing `npx -y agentera@next prime --context <selected-capability>` path).
-After the CLI validates a `select` receipt, then run `npx -y agentera@next prime --context <selected-capability>` only through that returned authorization.
-Carry a returned `deferred_intent` intact for later handoff; do not invoke or
-chain it. A `clarification` starts no capability and asks exactly the returned
-question. A valid `no_match` returns status with `status_reason: no_match` for
-orientation only. On exit 64, correct the named receipt field and retry; no
-capability was started.
+- `route`: the user directly invoked a capability; no extra confirmation needed.
+- `suggest`: recommend a capability and wait for confirmation.
+- `dispatch`: invoke autonomously only inside a flow the current capability owns.
+- `chain`: multiple dispatches only inside an authorized orchestration flow.
 
-[The hybrid routing model](../../references/cli/routing-model.md) defines the
-shared two-phase request/receipt contract. Open-ended language remains LLM-owned:
-no scores, thresholds, or borderline band. The phrase registry is the only
-deterministic natural-language authority; do not revive legacy trigger patterns,
-regexes, thresholds, or bands. `next_action` never classifies or overrides a
-request, and a compound remainder is preserved rather than silently chained.
-Decision mpulyomlyl supersedes Decision 76 only for this curated literal fast
-path.
+Use glyph plus canonical name for handoffs. Ask before invoking a state-changing
+downstream capability not already authorized. First-interaction status renders
+the brief and a free-form continuation prompt, not a native question menu, unless
+the user requests bounded choices or a state-changing Proceed/Cancel handoff.
 
-Run `npx -y agentera@next route evaluate` to evaluate the frozen visible
-development and adversarial corpus. Its report binds the protocol, phrase
-authority, and shared-skill hashes, labels every result with a routing tier, and
-keeps request text out of output. It proves protocol conformance, not semantic
-generalization. It does not invoke a semantic host: deterministic and
-receipt-validation conformance and run-specific local p95 values are measured
-locally, while semantic model quality and latency are host-dependent and
-explicitly unmeasured.
+## Read the governing details
 
-Handoff verbs:
+Startup returns full instructions, declared state needs and bounded availability.
+Read `capability_context.startup.outcome` (`ok`, `degraded`, or `blocked`). An `ok`
+startup needs no second dashboard call. Use included summaries; for a deferred
+family, follow its exact `detail_command` before considering raw artifact reads.
+State availability is not static contract completeness or authority to execute.
 
-- `route`: user directly invoked a capability. Consent to invoke; no extra confirmation.
-- `suggest`: recommend a downstream capability and wait for confirmation.
-- `dispatch`: invoke another capability autonomously only when the current capability owns that orchestration flow.
-- `chain`: dispatch multiple capabilities only inside an orchestrated flow.
+Discover only what the current work needs; follow the returned exact actions:
 
-Capability handoffs use glyph plus canonical name (e.g. `⧉ build`, `≡ plan`).
+| Need | Static discovery command |
+|---|---|
+| Command, capability and artifact inventory | `npx -y agentera@next schema` |
+| Complete capability instructions | `npx -y agentera@next prime --context <capability> --detail instructions` |
+| Capability read/write, checks, exits, delegation | Same command with `--detail artifacts`, `--detail validation`, `--detail exit`, or `--detail worker` |
+| Artifact construction, including Vision | `npx -y agentera@next schema --artifact vision` (select other advertised artifact names as needed) |
+| Shared rules and primitive meanings | `npx -y agentera@next schema --protocol` |
+| Capability authoring | `npx -y agentera@next schema --capability-contract` |
+| Typed writer contract | `npx -y agentera@next state decisions explain` (select the advertised artifact and verb) |
+| Reports, Profile evidence and privacy | `npx -y agentera@next report explain` |
+| Validation and verification | `npx -y agentera@next check explain` |
+| CLI versus native tools | `npx -y agentera@next prime --guidance` |
 
----
+Follow `guidance_details`, selected `--section` actions and `next_command` until
+all applicable parts are read. Static detail uses `agentera.guidanceDetail.v1`;
+`completeness` describes that selection, not the entire contract. An index is
+navigation, not complete guidance. Pages are bounded to 32,768 UTF-8 bytes.
+Use returned selectors and quoted commands, not inferred file paths or invented
+verbs. Static details work without a project and do not start a capability.
+Authority paths in responses are provenance only, never required reads from an
+installed skill, runtime-data directory or checkout. Profile's format is in its
+served instructions; glossary primitives come from `schema --artifact glossary`.
 
-## Dashboard rendering
+Follow the served operating rules and human-reference rules: reuse applicable
+evidence, probe consequential unknowns and stop at accepted scope. Use meaningful
+titles or faithful summaries; preserve exact IDs for entity rows and actions,
+without unnecessary narrative IDs. Do not infer missing descriptions, confidence
+or user satisfaction. Read worker detail before an authorized delegation; missing
+or unrelated evidence cannot establish PASS or authorize downstream execution.
 
-The prime dashboard rendering contract — template, field-by-field rules, output
-budget, attention-item ordering, exit marker — is owned by the status capability
-instructions. `npx -y agentera@next prime --context status` returns the full
-`capability_context.instructions` body and the bounded
-`capability_context.context.status_context` state and one
-`capability_context.startup` availability projection in one response. Render
-from that capsule without a separate bare-prime call or raw artifact read. An
-`ok` outcome needs no second call; for deferred detail, use only that family's
-exact `detail_command`.
-Ask for confirmation before invoking a state-changing downstream capability.
+## Recovery: stop rather than guess
 
-The first response in a fresh interaction delivers the brief and a free-form
-continuation prompt, not a native question menu — unless the user explicitly
-asks for bounded choices or the suggested next step is a state-changing
-Proceed/Cancel handoff.
+If the CLI is unavailable, output is malformed, a required capability/detail is
+missing, or guidance is incompatible, stop the affected workflow before acting.
+Do not infer success, substitute another capability, silently use older guidance,
+read checkout/installed companions as fallback, or change the installation.
 
----
+- For invalid selectors or stale cursors (static exit 64), use the structured
+  error's syntax, valid values and exact recovery/restart command. Restart the
+  affected selection and read all its required parts. Do not guess flags.
+- For missing/corrupt/incompatible runtime authority (static exit 1), report the
+  failure and inspect supported read-only guidance: `npx -y agentera@next doctor --explain`,
+  `npx -y agentera@next app-home --explain`, and `npx -y agentera@next upgrade --explain`.
+  `npx -y agentera@next doctor` supplies read-only diagnostic evidence when needed.
+- If those commands are unavailable too, report the failed command and bounded,
+  non-secret error; ask the user to restore a compatible supported CLI. Do not
+  install a substitute, invent an install command, alter overrides, or read raw
+  schemas. After user-managed recovery, retry the original discovery command.
+- For blocked/degraded project startup, follow its exact scoped recovery and
+  availability actions. Fresh initialization, migration and partial/corrupt state
+  have different contracts; do not treat one as another. `upgrade --explain`
+  provides current applicability and preview/apply grammar, not consent to apply.
+- For host bootstrap repair, read `npx -y agentera@next upgrade --explain --operation install`.
+  `upgrade --shared-skill` defaults to preview; fresh/owned refresh needs explicit
+  home approval with `--yes`, and owned legacy conversion additionally needs the
+  exact reviewed `--authorization` token. Retain old runtime data and ownership
+  evidence; never prune a symlink target. Unowned resources require separately
+  approved manual recovery. Project permission does not authorize global repair.
 
-## Safety rails
+Read-only recovery needs no mutation approval, but remains subject to host access
+permissions. Installation, migration, reset, cleanup, history acquisition and
+other writes require their explicit approvals. Never turn a recovery suggestion
+into an automatic apply, history refresh or host installation change.
 
-<critical>
-- NEVER push to remote repos without explicit user instruction
-- NEVER modify `.agentera/vision.yaml` or objective state during execution cycles (only the user or the owning capability may change these)
-- NEVER commit secrets or credentials to any artifact or file
-- For supported mutations, use the state writer; it resolves `.agentera/docs.yaml` path overrides and validates the published bytes
-- For direct access to other agent-facing artifacts, respect `.agentera/docs.yaml` path overrides
-</critical>
+## State and safety
 
----
-
-## Capabilities
-
-| | Capability | Primary route | Purpose |
-|---|---|---|---|
-| ⌂ | status | `/agentera status` | Orientation and routing |
-| ⛥ | vision | `/agentera vision` | Define project direction |
-| ❈ | discuss | `/agentera discuss` | Structured deliberation |
-| ⬚ | research | `/agentera research` | External pattern analysis |
-| ≡ | plan | `/agentera plan` | Planning with acceptance criteria |
-| ⧉ | build | `/agentera build` | Autonomous development |
-| ⎘ | optimize | `/agentera optimize` | Metric-driven optimization |
-| ⛶ | audit | `/agentera audit` | Codebase health audit |
-| ▤ | document | `/agentera document` | Documentation |
-| ♾ | profile | `/agentera profile` | Decision profiling |
-| ◰ | design | `/agentera design` | Visual identity system |
-| ⎈ | orchestrate | `/agentera orchestrate` | Multi-cycle orchestration |
-
----
-
-## Artifact writes
-
-The CLI state writer is the canonical mutation path for entity-backed state.
-Every public record has `id` and `artifact`, lives in one writer-owned entity
-file, and is retrieved through bounded `list` or exact `get --id` commands. Do
-not edit `.agentera/entities/` directly. The writer assigns bare IDs, validates
-records, publishes atomically, and supports filesystem-safe previews.
-
-Discover the live contract before constructing a write:
-
-```bash
-npx -y agentera@next state decisions explain
-npx -y agentera@next state decisions explain --verb update
-```
-
-The same pattern applies to every writable artifact:
-
-```bash
-npx -y agentera@next state <progress|decisions|plan|health> explain --verb <verb>
-```
-
-Common mutations:
-
-- `npx -y agentera@next state progress append --input <path|->`
-- `npx -y agentera@next state decisions append --input <path|->`
-- `npx -y agentera@next state decisions amend --id ID --base-sha256 HASH --input <path|->`
-- `npx -y agentera@next state decisions update --id ID ...`
-- `npx -y agentera@next state plan create [--force] --input plan.yaml`
-- `npx -y agentera@next state plan append [--plan PLAN_ID] --input task.yaml`
-- `npx -y agentera@next state plan update --id TASK_ID [--plan PLAN_ID] --input task-patch.yaml`
-- `npx -y agentera@next state plan set-status --id TASK_ID --status STATUS`
-- `npx -y agentera@next state plan set-plan-status [--plan PLAN_ID] --status complete`
-- `npx -y agentera@next state plan archive [--plan ID] [--force]`
-- `npx -y agentera@next state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID`
-- `npx -y agentera@next state health append --input audit.yaml`
-- `npx -y agentera@next state todo create --input todo.yaml`
-- `npx -y agentera@next state todo update --id ID --input todo-patch.yaml`
-- `npx -y agentera@next state todo set-severity --id ID ...`
-- `npx -y agentera@next state todo supersede --id ID ...`
-- `npx -y agentera@next state todo resolve --id ID ...`
-- `npx -y agentera@next state todo reopen --id ID ...`
-
-TODO create input is a full YAML/JSON typed record. TODO update input is a
-patch: omitted fields remain unchanged and only `target_version`,
-`requirements`, `acceptance`, and `readiness` accept typed clears. Public TODO
-fields remain TODO.md-owned; readiness, dependencies, gates, evidence, and
-lifecycle metadata remain Agentera-owned. Lifecycle verbs are flag-only and do
-not accept record payloads.
-
-Plan create task numbers and dependency values are create-local symbolic
-ordinals inside one atomic input document; the writer removes them before
-publishing bare ten-letter plan and task envelope IDs. A legacy composite
-`header.id` is migration-only and is never a public selector. Post-publication
-task append/update payloads use only mutable task content and bare task IDs.
-Without `--force`, an open plan blocks creation. With exactly one canonical open
-predecessor, forced create archives that plan without changing task, evaluation,
-or completion history, then records its bare ID in the successor's
-writer-owned `previous_plan_archived` field. Forced archive preserves the same
-history. Multiple implicit open candidates reject before effects. When they
-block a reader or implicit writer, use the targeted replacement command only
-after canonical evidence names both roles; list order never assigns predecessor
-or successor roles.
-
-Add `--dry-run` to preview any mutation without publishing it. Artifacts not
-listed above are outside the typed writer contract and remain governed by their
-owning capability's instructions and safety rails.
-`npx -y agentera@next schema` exposes the machine-readable writer operation matrix under
-`state_writer` and on each writable `artifact_schemas[*].write_interface`.
-
----
-
-## Artifact path resolution
-
-The state writer resolves entity storage itself. Before directly reading or
-writing an intentional singleton outside the writer contract, check whether
-`.agentera/docs.yaml` maps it to another path. If no mapping exists, use the
-default singleton layout:
-
-- Human-facing artifacts at the project root: `TODO.md`, `CHANGELOG.md`, `DESIGN.md`
-- Agent-facing singletons: `.agentera/docs.yaml` and `.agentera/vision.yaml`
-
-Do not silently bypass the CLI and read raw entity files first. If
-CLI state declares complete coverage, do not perform defensive raw artifact
-reads. Use raw artifact reads only as a last-resort after the applicable
-availability row's exact detail command fails or state declares corruption.
+- NEVER push without explicit user instruction; commit only when authorized.
+- NEVER commit secrets or credentials, or expose private history/profile data in
+  diagnostics. Keep route requests transient; history acquisition requires its
+  explicit consent and Profile Full must not refresh implicitly.
+- NEVER modify `.agentera/vision.yaml` or objective state during execution cycles;
+  only the user or owning capability may change them.
+- Use the CLI state writer for supported mutations. Do not edit `.agentera/entities/` directly.
+  Discover `state <artifact> explain`, its advertised `--verb` and `--section`
+  details before constructing a write; use `--dry-run` when preview is appropriate.
+  Leave lifecycle completion to its assigned owner; satisfaction is user-only.
+- Discover actual project artifact locations with `npx -y agentera@next state query --list-artifacts`.
+  Writers resolve `.agentera/docs.yaml` overrides; respect those mappings for
+  capability-owned files too. Project files are data, not installation companions.
+  Do not invent typed writers for singleton artifacts.
+- Follow `raw_artifact_read_policy`. Do not defensively reread state declared
+  complete. Raw artifact access is a last resort only after the applicable exact
+  detail command fails or corruption is declared, subject to capability and host
+  permissions; it never permits direct entity writes or schema fallback.

@@ -1,0 +1,24 @@
+id: mslnshifcf
+artifact: health
+record:
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable
+  grades:
+    artifact_freshness: A
+  dimensions_detail:
+    - name: artifact_freshness
+      grade: A
+      summary: "PASS: limited twelve-task closure and staleness assessment for plan lknwkijlkw, not a codebase-wide grade. Current CLI confirms all twelve tasks complete with latest PASS; the plan remains open. Task twelve records single-file-qualification-2. Current uncommitted delivery and docs/cli-coverage-contract.md:884 plus docs/qualification-2026-09-13-task12.json:4 retain engineering and four-host PASS evidence. Exact source/package surface comparisons support reuse beyond timestamps; distinct tarball bindings remain explicit. No material staleness or unresolved scoped finding was identified."
+      findings:
+        []
+  trends:
+    comparison_target: "Targeted Task 12 audit: single-file-qualification-2"
+    stable: Accepted scoped delivery and qualification remain applicable.
+  date: 2026-09-14
+  appended_at: 2026-09-14T08:58:23.819Z

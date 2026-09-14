@@ -334,8 +334,8 @@
               "sha256": "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681"
             },
             "package": {
-              "count": 69,
-              "sha256": "05ad83d5af2d0038d377bb6af7a45448bbe5bc68bbddeec1441873c8d24e41e1"
+              "count": 78,
+              "sha256": "1aea805b38d67c31f6e7517a12d5435493dbc9ff843cdde54741cb4159fc62e3"
             },
             "bootstrap": {
               "count": 34,
@@ -343,8 +343,8 @@
             }
           },
           "total": {
-            "count": 307,
-            "sha256": "9aec9840ff12190bca7206b4175d35c5615428c971375bed1b327d604338a348"
+            "count": 316,
+            "sha256": "db2297238b3936eb03028054269469e1a897a50da554347768962c25fe8160f5"
           }
         }
       },

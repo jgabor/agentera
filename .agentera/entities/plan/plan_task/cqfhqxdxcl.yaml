@@ -1,0 +1,24 @@
+id: cqfhqxdxcl
+artifact: plan
+record:
+  name: Complete routing and worker-handoff discovery
+  depends_on:
+    - oictawfmvh
+    - jjkousfilv
+  status: complete
+  acceptance:
+    - GIVEN route discovery WHEN inspected THEN phrases, trigger intents, disambiguation, fallback, aliases, normalization, precedence, and receipt requirements are available without manufacturing a request.
+    - GIVEN deterministic selection or semantic abstention WHEN routing runs THEN existing selection, digests, spans, privacy, and host-classification boundaries remain unchanged.
+    - GIVEN a delegated capability or evaluator handoff WHEN prepared through CLI guidance THEN worker inputs, outputs, evidence, consent, and failure obligations are discoverable without external contract reads.
+    - GIVEN invalid or stale receipts and handoffs WHEN submitted THEN rejection precedes unauthorized execution and includes actionable recovery.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/cli/commands/routeDetail.ts:223-225 selected receipt authority omits cli_seam validation; missing command/input/output/exit-code seam returns complete guidance exit0 although operational loader rejects it
+    provenance:
+      attempt_id: single-file-routing-2
+      source: "audit ses_f648a63d3ffeFTmCIhqgSuOTSs accepted after resolve ses_f648614daffe9vNl3RHTrYiVS3: receipt seam validated;49tests,10 rebuilt source/bundle probes,typecheck/build/lint PASS; all other audit criteria reused; pause before task6 for reboot"
+      recorded_at: 2026-09-13 17:58
+      writer_command: agentera state plan record-evaluation

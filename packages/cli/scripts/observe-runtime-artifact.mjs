@@ -13,8 +13,6 @@ if (!fs.existsSync(path.join(runtimeRoot, "dist/bin/agentera.js"))) throw new Er
 const tuples = await import(pathToFileURL(path.join(runtimeRoot, "dist/registries/activationTuples.js")).href);
 const preCutover = await import(pathToFileURL(path.join(runtimeRoot, "dist/cli/preCutoverCommand.js")).href);
 const statusStartup = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/status/startupInstructions.js")).href);
-const humanReferences = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/humanReferences.js")).href);
-const operatingRules = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/operatingRules.js")).href);
 const runtime = await import(pathToFileURL(path.join(runtimeRoot, "dist/capabilities/index.js")).href);
 const routeModule = await import(pathToFileURL(path.join(runtimeRoot, "dist/cli/commands/capability.js")).href);
 const development = await import(pathToFileURL(path.join(runtimeRoot, "dist/core/developmentInvocation.js")).href);
@@ -30,16 +28,27 @@ for (const capability of capabilityIds) {
   const instructionBody = typeof module.servedInstructions === "function" ? module.servedInstructions() : module.default;
   if (typeof instructionBody !== "string") throw new Error(`runtime capability '${capability}' has no default instruction body`);
   const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
-  modules[capability] = operatingRules.withOperatingRules(humanReferences.withHumanReferences(preCutover.preCutoverInstructionBody(body)));
+  modules[capability] = runtime.servedInstructions(body);
 }
 
 const served = {};
 let statusPayload = null;
+// Observe one fixed state shape, not the coordinator/reader's different HOME
+// and app/profile roots. These paths belong to this disposable project and need
+// not exist: prime is a reader. Preserve the selected packaged authority.
+const observationHome = path.join(cwd, "observation-home");
+const observationEnv = Object.fromEntries(Object.entries(process.env).filter(([key]) => !/^(?:AGENTERA_|PROFILERA_|XDG_|APPDATA$|LOCALAPPDATA$|USERPROFILE$)/.test(key)));
+Object.assign(observationEnv, {
+  HOME: observationHome,
+  AGENTERA_HOME: path.join(observationHome, "app"),
+  AGENTERA_PROFILE_DIR: path.join(observationHome, "profile"),
+  AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.join(runtimeRoot, "bundle"),
+});
 const servedCapabilityIds = observationMode === "package-smoke" ? ["status"] : capabilityIds;
 for (const capability of servedCapabilityIds) {
   const result = spawnSync(process.execPath, [path.join(runtimeRoot, "dist/bin/agentera.js"), "prime", "--context", capability], {
     cwd,
-    env: { ...process.env, AGENTERA_BOOTSTRAP_SOURCE_ROOT: path.join(runtimeRoot, "bundle") },
+    env: observationEnv,
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
     timeout: 30_000,
@@ -53,7 +62,17 @@ for (const capability of servedCapabilityIds) {
 
 function commandValues(value, current = "$", output = []) {
   if (typeof value === "string") {
-    if (value.startsWith("npx -y agentera@next ")) output.push({ path: current, value });
+    if (value.startsWith("npx -y agentera@next ")) {
+      if (current === "$.shared_skill.preview_command") {
+        // Compare exact emitted grammar before replacing only the fixture-owned
+        // home argument. This is semantic evidence, not a runnable user receipt;
+        // flags/owners/other paths must never be normalized away.
+        const expected = upgrade.commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", observationHome, "--dry-run"]);
+        if (value !== expected) throw new Error("shared-skill preview differs from the fixture's exact scoped command");
+        value = upgrade.commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", "/tmp/agentera-bootstrap-evidence/home", "--dry-run"]);
+      }
+      output.push({ path: current, value });
+    }
   } else if (Array.isArray(value)) value.forEach((entry, index) => commandValues(entry, `${current}[${index}]`, output));
   else if (value && typeof value === "object") for (const [key, child] of Object.entries(value)) if (key !== "instructions") commandValues(child, `${current}.${key}`, output);
   return output;

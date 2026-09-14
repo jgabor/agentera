@@ -462,8 +462,9 @@ VALIDATION:
     rule: full_level_requirements
     severity: error
     description: >-
-      Full-level plans must have: design, reviewed, parseable non-zero
-      critic_issues, and acceptance criteria on each task.
+      Full-level plans must have: design, reviewed, parseable truthful
+      nonnegative critic_issues counts, and acceptance criteria on each task.
+      Zero findings is valid after full-plan review.
     checks:
       - "design is present for full-level plans"
       - "reviewed is present for full-level plans"
@@ -704,6 +705,8 @@ LIFECYCLE_CONTRACT:
       - skills/agentera/capabilities/*/schemas/*.yaml
       - skills/agentera/capability_schema_contract.yaml
     adapters:
+      - packages/cli/src/bin/agentera.ts
+      - packages/cli/src/cli/commands/recoveryDetail.ts
       - references/**/*.yaml
       - packages/cli/src/registries/*.ts
       - packages/cli/src/state/retrievalAuthority.ts

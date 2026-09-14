@@ -26,10 +26,11 @@ Run that from a git project. In an editor runtime, invoke `/agentera`
 (`$agentera` in Codex) for the rendered status dashboard.
 
 This is the pre-cutover bootstrap. One `@next` call returns the status
-instructions, a bounded startup outcome, and any exact recovery command. Clean,
-v2, and partially migrated projects return `blocked` with
-`state_cutover.recovery_command` set to the full development-channel entity
-upgrade. A v3 project returns `ok` when no independent health degradation
+instructions, a bounded startup outcome, and any exact recovery command. A fresh
+Git project is `fresh_uninitialized`: `prime --context plan` is operable and its
+first typed `state plan create` initializes state. Recognized v2 uses the full
+development-channel entity upgrade; partial, corrupt or unknown state stays
+blocked behind read-only recovery. A v3 project returns `ok` when no independent health degradation
 applies and needs no fallback or second dashboard call. Do not substitute bare
 or stable-channel CLI forms; those can resolve stable v2 until promotion.
 
@@ -43,12 +44,21 @@ npx -y agentera@next doctor
 ## Runtime integration
 
 Agentera 3.0 uses one portable integration for compatible runtimes: the shared
-skill at `~/.agents/skills/agentera` plus the Agentera CLI. No OpenCode gate or
-`hook` command replaces the retired plugin. Normal `upgrade` automatically
-previews and removes a proven Agentera-installed copy of that plugin, with no
-separate cleanup selector. It preserves unproven files for manual review. See
-[UPGRADE.md](./UPGRADE.md) for the distinct one-way v2 migration and the
-explicit cleanup route for other retired native resources.
+skill at `~/.agents/skills/agentera/SKILL.md` plus the Agentera CLI. The host
+directory contains only that file; runtime schemas and references stay inside
+the package. Preview installation or owned refresh with
+`npx -y agentera@next upgrade --shared-skill --dry-run`. Apply requires explicit
+approval; owned legacy conversion also requires the reviewed authorization token.
+See [UPGRADE.md](./UPGRADE.md#one-file-shared-skill-installation-and-repair) for
+commands, Linux apply limits, retention and manual unowned recovery. No route
+prunes through a host symlink or automatically repairs during diagnosis.
+
+No OpenCode gate or `hook` command replaces the retired plugin. Project-only
+migration does not mutate global host resources. App/global retirement requires
+explicit scope and ownership; unproven files remain for manual review. The
+upgrade guide separates shared-skill repair, one-way v2 migration and cleanup.
+Approved app/global migration retires a proven historical OpenCode plugin with
+no separate cleanup selector; unproven resources remain for manual review.
 
 `doctor` reports read-only app, project-state, shared-skill, and CLI evidence.
 `prime`, status, and project-integration output use the app/project recommendation
@@ -68,6 +78,21 @@ npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --yes
 Historical Claude transcripts are excluded by default. A local import requires
 explicit `--import-source claude` consent, records historical provenance, and
 does not create an active runtime identity.
+
+## CLI-only discovery
+
+Start with `npx -y agentera@next schema` for the command and contract inventory.
+Use `schema --artifact NAME`, `schema --protocol`, or
+`schema --capability-contract` for construction and authoring details;
+`prime --context NAME --detail instructions|artifacts|validation|exit|worker`
+selects capability guidance. `route explain`, `report explain`, `check explain`
+and `upgrade --explain` expose their purpose-owned contracts.
+
+Follow returned section selectors and `next_command` until the needed detail is
+complete. Pages are bounded; an index is not the whole contract. Static detail
+works without project state and grants no execution, history or mutation consent.
+Operational output defaults to JSON (the format selector also accepts JSON); help,
+version and `prime --guidance` are text exceptions without format selectors.
 
 ## Project state
 

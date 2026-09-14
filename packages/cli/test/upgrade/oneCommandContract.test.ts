@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 
 import { printUpgradeHelp } from "../../src/cli/help.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
+import { runServiceDetail } from "../../src/cli/commands/serviceDetail.js";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const APPLY = 'npx -y agentera@next upgrade --channel development --project "$PWD" --yes';
@@ -24,11 +25,42 @@ describe("v2-to-v3 one-command guidance", () => {
   it("keeps help, upgrade guidance, skill guidance, and authority on one public contract", () => {
     const help = printUpgradeHelp();
     const guide = section("UPGRADE.md", "## Upgrading v2 to v3 development channel");
-    const skill = section("skills/agentera/SKILL.md", "### Upgrade from v2 to v3 development");
+    const skill = section("skills/agentera/SKILL.md", "## Recovery: stop rather than guess");
     const authority = YAML.parse(fs.readFileSync(path.join(ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     const schema = JSON.stringify(buildSchemaPayload());
 
-    for (const surface of [help, guide, skill]) {
+    // The one-file bootstrap delegates migration grammar to bounded CLI
+    // discovery rather than embedding a second copy under an old heading.
+    expect(skill).toContain("npx -y agentera@next upgrade --explain");
+    expect(skill).toContain("not consent to apply");
+    let index = "";
+    expect(runServiceDetail("upgrade", [], { out: (text) => (index += text) })).toBe(0);
+    const operationsCommand = JSON.parse(index).items.find((item: any) => item.name === "operations").content.detail_command;
+    expect(operationsCommand).toBe("npx -y agentera@next upgrade --explain --section 'operations' --limit 20");
+    let operations = "";
+    expect(
+      runServiceDetail("upgrade", ["--section", "operations", "--limit", "20"], {
+        out: (text) => (operations += text),
+      }),
+    ).toBe(0);
+    const operation = JSON.parse(operations).items[0].content.find((item: any) => item.operation === "migrate");
+    expect(operation.command).toBe("npx -y agentera@next upgrade --explain --operation 'migrate'");
+    let detail = "";
+    expect(
+      runServiceDetail("upgrade", ["--operation", "migrate", "--section", "usage"], {
+        out: (text) => (detail += text),
+      }),
+    ).toBe(0);
+    const migration = JSON.parse(detail).items[0].content;
+    expect(migration.preview).toBe(DRY_RUN);
+    expect(migration.apply).toBe(APPLY);
+    expect(migration.applicability).toMatch(/Forward-only v2-to-v3/);
+    expect(migration.applicability).toContain("Git worktree");
+    expect(migration.applicability).toContain("tracked, unchanged v2 source at HEAD");
+    expect(migration.applicability).toContain("No rollback, restore, non-Git apply or partial --only");
+    expect(migration.recovery).toContain("Full apply automatically verifies state and startup");
+    expect(migration.recovery).toContain("Never infer completion from partial effects");
+    for (const surface of [help, guide]) {
       expect(surface).toContain(APPLY);
       expect(surface).toContain(DRY_RUN);
       expect(surface).toMatch(/tracked by Git|Git worktree/);
@@ -61,8 +93,8 @@ describe("v2-to-v3 one-command guidance", () => {
 
   it("keeps current cleanup narratives native while preserving Claude-specific examples and history", () => {
     const activeIntegration = section("UPGRADE.md", "## Active integration");
-    expect(activeIntegration).toContain("no\ncurrent-runtime selector or installation behavior");
-    expect(activeIntegration).toContain("only automatic\nnative-resource operation is bounded retirement of the proven historical\nOpenCode plugin");
+    expect(activeIntegration).toContain("Normal `upgrade` has no current-runtime selector");
+    expect(activeIntegration).toMatch(/only automatic native-resource operation is bounded retirement of the proven\s+historical OpenCode plugin during approved app\/global migration/);
     expect(activeIntegration).not.toContain("no\ncurrent-runtime selector or native-resource operation set");
     const currentUpgradeNarratives = [activeIntegration, section("UPGRADE.md", "## Verification and recovery"), section("UPGRADE.md", "## Mutation ownership"), section("CHANGELOG.md", "## [Unreleased]")];
 

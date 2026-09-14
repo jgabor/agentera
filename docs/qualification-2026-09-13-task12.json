@@ -1,0 +1,223 @@
+{
+  "status": "engineering_and_four_host_qualification_pass",
+  "scope": "Task 12 resolution evidence, not a release receipt or lifecycle closeout",
+  "latestCursorQualification": {
+    "status": "pass",
+    "authorization": "User authorized using existing Cursor authentication for this bounded check; no login, account/config or live host-skill change.",
+    "command": "PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp node /tmp/opencode/task12-cursor-auth-smoke.mjs --network-discovery",
+    "nativeCommand": "/bin/cursor-agent acp",
+    "version": "2026.08.25-3e8eec8",
+    "protocolVersion": 1,
+    "requests": [
+      {"id":1,"method":"initialize","params":{"protocolVersion":1,"clientCapabilities":{"fs":{"readTextFile":false,"writeTextFile":false},"terminal":false},"clientInfo":{"name":"agentera-qualification","version":"1"}}},
+      {"id":2,"method":"session/new","params":{"cwd":"/tmp/work/project","mcpServers":[]}}
+    ],
+    "responses": [{"id":1,"success":true},{"id":2,"success":true}],
+    "notification": {
+      "method":"session/update",
+      "sessionUpdate":"available_commands_update",
+      "commandCount":21,
+      "agentera":{"name":"agentera","description":"One agent, one CLI, many capabilities. Use for /agentera and Agentera capability requests. Bare /agentera runs the orientation dashboard; the CLI serves all capability instructions and governing details.\n (user skill)"}
+    },
+    "recognition": {
+      "path":"/tmp/work/home/.agents/skills/agentera/SKILL.md",
+      "successfulNativeOpenatCount":2,
+      "hostDirectoryEntries":["SKILL.md"],
+      "skillSha256":"c283d3265563dd423e8768f5cc5461fa72bc3b9447388835414fcec1d337a33d",
+      "proof":"Native available-command notification plus successful exact-path opens traced inside the sandbox; not binary presence or an authentication flag."
+    },
+    "isolation": {
+      "filesystem":"Read-only system root; live /home, /root and /tmp hidden; only disposable work and home writable; extracted package mounted read-only.",
+      "authentication":"Only the pre-existing Cursor auth file was bound read-only at the isolated native auth path. Harness did not read, print, hash or copy credential content. No auth environment variables inherited.",
+      "authMetadataUnchanged":true,
+      "network":"Disabled attempt passed initialization but session/new failed with -32603 before discovery. Successful retry enabled network for native session initialization/discovery. Background native metadata traffic was not URL-audited; no model prompt or generation request was issued.",
+      "modelPrompts":0,
+      "toolRequests":0,
+      "loginOrAuthenticateRequests":0,
+      "rawOutputPolicy":"RPC/native stderr remained in memory and only allowlisted discovery metadata was persisted. Temporary openat path-only trace was reduced to the exact skill-open count then removed; no credential contents were traced.",
+      "nativeStderrBytes":0,
+      "termination":"stdin closed after available_commands_update; harness SIGTERM ended the isolated process. Success is based on RPC/discovery and retrieval assertions, not process exit 0."
+    },
+    "retrieval": {
+      "scope":"Harness-run CLI in the same isolated Cursor home/project, not model-driven tool execution.",
+      "command":"node /tmp/package/dist/bin/agentera.js prime --context plan --detail instructions --section instructions",
+      "exit":0,
+      "bytes":25589,
+      "parts":3,
+      "completeness":{"mode":"detail","total":3,"returned":3,"omitted":0,"offset":0,"complete":true},
+      "next_command":null,
+      "instructionSha256":"d833fbca180301f253558cab4e8a8f34bbfaae9f2490197016802c99846b029d"
+    },
+    "artifactApplicability": {
+      "qualifiedTarballSha256":"92250e80ffc12e1a91e07856eb83b2153a59a1de66e0ea93114f5aa64988ca90",
+      "reconstructedTarballSha256":"32b2b5aa73ac272a254bbcb5145391fd425726bfb2bb15cef0a0e88adc7c9e15",
+      "wholeTarballByteIdentity":false,
+      "constructionCommand":"PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp exec pnpm -C packages/cli exec node /tmp/opencode/task12-cursor-package.mjs",
+      "constructionOwner":"scripts/pack-package.mjs --output-dir DISPOSABLE_ROOT --json; no direct npm pack, install, publish or version mutation",
+      "sourceIdentity":{"schemaVersion":"agentera.generatedBuildSource.v1","commit":"6248919d4216dd38bb80c1f87e95e5a54bc69624","tree":"ea84b675fb52acf4ebd9976a3021e6bbd3297382","files":7416,"workingTreeSha256":"bb9621047c7f8106cda92edd7a132efe4265044d80a950820caa1a725dc51a92","identitySha256":"d4737f25568f724b012121c5107fd43ff87974e18e80d95dcf0f59e65ba27ec3"},
+      "evidence":"The qualified tarball was cleaned by its owning command. Reconstruction used current inputs. Post-qualification filesystem inventory showed only the qualification documents and coordinator-owned task state newer than the passing gate; no source, runtime authority, test or toolchain input changed. This corroborates retained session evidence, not a cryptographic whole-checkout equivalence claim. Exact SKILL bytes match source/package/prior smokes and reconstructed complete instruction bytes match the recorded hash.",
+      "reuse":"Retain the actual 11-gate 450.760s engineering pass and three earlier native host smokes for their applicable unchanged inputs. No broad gate or other host rerun; old receipts retain their original tarball bindings."
+    },
+    "lifecycle":"Missing host criterion passed; coordinator still owns targeted audit and task/health/plan closeout. No lifecycle state mutated."
+  },
+  "latestEngineeringQualification": {
+    "command": "PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp run verify:development",
+    "exit": 0,
+    "schemaVersion": "agentera.developmentConjunction.v1",
+    "profile": "development",
+    "gate_identity": "3ab21825846b02bd8a08db21c6fc6261b44e6d4a9d2e9c5228e0170268912f55",
+    "status": "pass",
+    "gate_count": 11,
+    "gates": [
+      {"name":"source","phase":"batch-a","outcome":"passed","elapsedMs":302363,"origin":"generated-overlap"},
+      {"name":"stress","phase":"batch-a","outcome":"passed","elapsedMs":30586,"origin":"stress"},
+      {"name":"performance","phase":"performance-barrier","outcome":"passed","elapsedMs":12762,"origin":"performance"},
+      {"name":"capacity","phase":"capacity-barrier","outcome":"passed","elapsedMs":63926,"origin":"capacity"},
+      {"name":"package","phase":"batch-a","outcome":"passed","elapsedMs":355106,"origin":"generated-overlap"},
+      {"name":"generated-overlap","phase":"batch-a","outcome":"passed","elapsedMs":364758,"origin":"generated-overlap"},
+      {"name":"typecheck","phase":"batch-a","outcome":"passed","elapsedMs":703,"origin":"typecheck"},
+      {"name":"build","phase":"batch-a","outcome":"passed","elapsedMs":13643,"origin":"generated-overlap"},
+      {"name":"compact","phase":"barrier-b","outcome":"passed","elapsedMs":1966,"origin":"compact"},
+      {"name":"capability-contract","phase":"barrier-b","outcome":"passed","elapsedMs":347,"origin":"capability-contract"},
+      {"name":"activation-conjunction","phase":"barrier-b","outcome":"passed","elapsedMs":9227,"origin":"activation-conjunction"}
+    ],
+    "execution": {
+      "strategy":"parallel-overlap-dag",
+      "deadlineMs":2400000,
+      "elapsedMs":450760,
+      "batchAElapsedMs":364759,
+      "performanceElapsedMs":12762,
+      "capacityElapsedMs":63926,
+      "barrierBElapsedMs":9234,
+      "unattributedElapsedMs":79,
+      "reconciled":true,
+      "generation":"25c38fe46b609252ab502a718459987855ad3c15f4792d7353958b6e106f219b",
+      "leasesAfterBarrier":0
+    },
+    "activationEvidence": {
+      "digest":"91d46c7745dfb0bbdb615be61ad240b1cf8986f88b11e7be0e4e182a43fa8541",
+      "checks":42,
+      "path":"private-build/25c38fe46b609252ab502a718459987855ad3c15f4792d7353958b6e106f219b/activation-evidence.json",
+      "packageIdentity": {
+        "schemaVersion":"agentera.activationPackageIdentity.v1",
+        "identityDigest":"f58e11c1412ce3d0a44e42df1f7ebf0faf5d7225d1df036d7f4da07740a252ea",
+        "packageArtifact":{"filename":"agentera-3.0.0-dev.84.tgz","integrity":"sha512-2F2EWKK45kPw8BOK/nTxv5EbGQ8WikRl0ZGtQM2h3xtT3L+SsWO39P4Fhqj02MiaiXFQPjommLwjGEe82Y1FTw==","shasum":"ebf922f58938b4cfdb8ad808a161babedc766eeb","tarballSha256":"92250e80ffc12e1a91e07856eb83b2153a59a1de66e0ea93114f5aa64988ca90"},
+        "extractedTree":{"count":596,"digest":"62cacec9ffe9d239e08f1f8930da10b4df29411f591fdaf8a4e1a5dcd34eb90f"},
+        "tarballTree":{"count":595,"digest":"e187daafe2ba9adb8997e9a8bbbc86eef372c5418d3a8d1df2285978db342017"},
+        "packageArtifactObservationDigest":"cca9d4bd37e9833bde38946d4468848d9daafca574f8467eb3b02bf5ad280cd6",
+        "packageEvidenceDigest":"728a63eaaabf4d9d38812f407c20dd91db8bd290324b7862cb2e1fa8a7f69dd6"
+      },
+      "childEvidence": {
+        "source":"source-owner-4ed00491f351a0e178c91bb49ee747626b8c94d190b29bb3d2d4f2f706e081e9.json",
+        "package":"package-owner-728a63eaaabf4d9d38812f407c20dd91db8bd290324b7862cb2e1fa8a7f69dd6.json",
+        "packageIdentity":"package-identity-f58e11c1412ce3d0a44e42df1f7ebf0faf5d7225d1df036d7f4da07740a252ea.json",
+        "generatedDigest":"2871338538de93303e42a9a5e69b39efeffe901c17dd76990a4706e40529b245"
+      },
+      "pathLimit":"Parent-owned private build and child evidence paths are temporary and cleaned by the owning command. This durable record preserves the emitted identities, not a retained tarball or release receipt."
+    },
+    "first_failure":null,
+    "side_effects":{"receipt":false,"candidate":false,"registry":false,"activation":false,"publication":false},
+    "applicability": {
+      "package":"Source, registry, plan schema and observer inputs changed; the owning development command rebuilt and reran the complete package owner, including extracted traversal. Earlier detailed traversal counts remain historical, not measurements for this tarball.",
+      "hosts":"Reuse Codex/OpenCode/Copilot native recognition and instruction retrieval evidence below: SKILL.md, capability instruction modules, full serving adapter, CLI entry point and selected instruction-detail implementation are unchanged in this continuation. Fresh source/generated/extracted parity passes in the latest conjunction. The earlier native runs remain bound to their original tarball; no native rerun or byte-identical whole-package claim is made.",
+      "cursor":"Authentication required remains independently blocking. No login, credential inspection, inherited authentication, model call, live config change or new host run occurred.",
+      "scope":"Engineering qualification is audit-ready. No task, plan or health closure; no full historical certification or publication qualification claimed."
+    }
+  },
+  "package": {
+    "command": "PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp exec pnpm -C packages/cli run verify:package",
+    "exit": 0,
+    "filesPassed": 4,
+    "testsPassed": 41,
+    "wallMs": 293722,
+    "budgetMs": 515000,
+    "node": "v24.19.0",
+    "sourceIdentity": {
+      "schemaVersion": "agentera.generatedBuildSource.v1",
+      "commit": "6248919d4216dd38bb80c1f87e95e5a54bc69624",
+      "tree": "ea84b675fb52acf4ebd9976a3021e6bbd3297382",
+      "files": 7414,
+      "workingTreeSha256": "b188736859558663b441118ab06ddad8da8bdaf4f1f33c499ef11263f4924b11",
+      "identitySha256": "cc9a8643f8e6b01b0f36a3495f49828e612b6782f803fec2e639efa6d57a66c9"
+    },
+    "tarballSha256": "950db40bbf54fa5fb216570507db07198d31166a37dbeb47e24bf2588be63c9f",
+    "selectedTermStartup": {
+      "command": "prime --context plan --term-input FILE --format json",
+      "constructedBytes": 31148,
+      "extractedBytes": 31088,
+      "budgetBytes": 32768,
+      "instructionSha256": "d833fbca180301f253558cab4e8a8f34bbfaae9f2490197016802c99846b029d",
+      "adviceOutcome": "no_applicable_entry",
+      "selectedTermEchoed": false,
+      "projectFilesAfter": ["state-mode.yaml"]
+    },
+    "staticDiscovery": {
+      "partitionsPassed": 11,
+      "queries": 4457,
+      "detailPages": 3999,
+      "continuations": 115,
+      "maxBytes": 29337,
+      "capabilityDetailPairs": 60,
+      "owners": 9,
+      "partitions": [
+        {"owner":"schema","queries":1388,"details":1282,"continuations":29,"maxBytes":29337,"commandSha256":"e280240ab5c76a7e3dcf4b9081e4865b8ba726c4322c7f999e3154310256c883","semanticSha256":"68e230473ed00ff60ccaa10c72a4713894aaafbde9a1819623a2426e2311bac3"},
+        {"owner":"prime","queries":348,"details":276,"continuations":2,"maxBytes":26721,"commandSha256":"18ececbf2a511c423fcc05b255c5515949a90f9cb808d61f419440b79465669c","semanticSha256":"986fa8327814f5dbdca9d6596d55c8ae3ea70f58b6a7e7ad3badae16158e8aa6"},
+        {"owner":"state","queries":103,"details":54,"continuations":0,"maxBytes":16455,"commandSha256":"eeab75ebcac0840eed19d0db4a99a6a0cdceedcef45d501cf065ed327136bd94","semanticSha256":"8550884b63ac3dc5d1a3ef896cba6932d0c33bb673df2d61eee03653198e6ede"},
+        {"owner":"route","queries":94,"details":83,"continuations":0,"maxBytes":12016,"commandSha256":"1ece31e35c1c9a50078bd435fadcafade45b7d6f26a4a267bc8eab04778e7346","semanticSha256":"a67bc368dabd0fdd409a8b32ba651f1aeb3b715725df8e9775681916cad82317"},
+        {"owner":"report:0","queries":372,"details":341,"continuations":10,"maxBytes":26108,"commandSha256":"77732ef7aa01da620f6613663200c2a528a872aa4cf7f270cc781f88d0244a3a","semanticSha256":"096a9434b212253c7f1503f8ee1d44c93bc65a611ddaf5c92c1328ae7db561a0"},
+        {"owner":"report:1","queries":447,"details":410,"continuations":12,"maxBytes":26100,"commandSha256":"d1949cad1c9594269b49de3e523f6013177eff62612a6054b354d3f671a2910a","semanticSha256":"16493601db61c409af0ef06e0e2cbfbbe2f711eeda102adc21f5924bdd5ee6d6"},
+        {"owner":"report:2","queries":77,"details":70,"continuations":2,"maxBytes":26048,"commandSha256":"9be4007481e8f253a9116c7a2054c00016f3a059133d4792de371fdbd5d8430f","semanticSha256":"c9c5eaa18e9f264550616c47e79b38b8a1ab291f8886bdd23d74216c8e0e5e69"},
+        {"owner":"check","queries":143,"details":100,"continuations":0,"maxBytes":14345,"commandSha256":"274dd5a83d14d99ce48d28ff945037bc13793d9b0ff50c2aaeacfa7b3f3b4faa","semanticSha256":"540b5b8830e4b50f104cd30d3053e239447bad6352c643756a203a839318fcec"},
+        {"owner":"upgrade","queries":1230,"details":1146,"continuations":50,"maxBytes":10534,"commandSha256":"33d378df9a4562cd85b57750daa36dfe99f44ff07cfd91f188249127e2d0f438","semanticSha256":"fe6a4c431ac76e2cd1ed3eceaf74afe07c01fe55245033099bc14d3c3207ff92"},
+        {"owner":"doctor","queries":253,"details":236,"continuations":10,"maxBytes":10510,"commandSha256":"390aacb60bd3cd830000d0e2e67726f183a5dce9e384c36ae7f699465f2a6f4a","semanticSha256":"2a40b6074463438913d1a480e49e0ad7511b08c588bef55c95f9c4d4c16c1849"},
+        {"owner":"app-home","queries":2,"details":1,"continuations":0,"maxBytes":2248,"commandSha256":"3ffc193028e180105fc760af8da3664033e42c23d16b10e32b772f22fb29e624","semanticSha256":"a0987ff1aab003b580a41552b8bd3b68d797aa9c607de2cdc40e7fe21bfeda2f"}
+      ]
+    }
+  },
+  "targetedSource": {
+    "command": "PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp exec pnpm -C packages/cli run test:source -- packages/cli/test/cli/capabilityDetail.test.ts packages/cli/test/cli/prime.test.ts",
+    "exit": 0,
+    "filesPassed": 2,
+    "testsPassed": 54,
+    "durationSeconds": 9.43
+  },
+  "development": {
+    "command": "PATH=/tmp/opencode/vp-commit-6dgl38ms:$PATH vp run verify:development",
+    "exit": 1,
+    "schemaVersion": "agentera.developmentConjunction.v1",
+    "gateIdentity": "3ab21825846b02bd8a08db21c6fc6261b44e6d4a9d2e9c5228e0170268912f55",
+    "gateCount": 11,
+    "elapsedMs": 304114,
+    "firstFailure": "generated-overlap",
+    "owner": "packages/cli/scripts/verify-generated-overlap.mjs#runGeneratedOverlap",
+    "completed": ["stress", "typecheck"],
+    "sourceFailure": "packages/cli/test/runtime/retiredRuntimeSurfacePolicy.test.ts:190,945",
+    "bootstrapInventoryDiagnostics": 498,
+    "diagnosticGroups": {"CHANGELOG.md":481,"README.md":3,"dynamicConsumers":5,"omittedProducers":8,"missingProducer":1},
+    "sideEffects": {"receipt":false,"candidate":false,"registry":false,"activation":false,"publication":false}
+  },
+  "hosts": {
+    "skillSha256": "c283d3265563dd423e8768f5cc5461fa72bc3b9447388835414fcec1d337a33d",
+    "isolation": "bwrap: read-only root; hidden /home, /root, /tmp; disposable HOME/CODEX_HOME/XDG roots; clearenv; unshare-net and unshare-pid; only disposable work writable",
+    "cliRetrieval": {
+      "scope": "Harness-run CLI retrieval in each recognized host's same disposable home, not model-driven tool execution",
+      "command": "node /tmp/package/dist/bin/agentera.js prime --context plan --detail instructions --section instructions",
+      "hosts": ["codex", "opencode", "copilot"],
+      "exit": 0,
+      "bytes": 25589,
+      "parts": 3,
+      "omitted": 0,
+      "nextCommand": null,
+      "instructionSha256": "d833fbca180301f253558cab4e8a8f34bbfaae9f2490197016802c99846b029d",
+      "tarballSha256": "950db40bbf54fa5fb216570507db07198d31166a37dbeb47e24bf2588be63c9f"
+    },
+    "codex": {"version":"0.154.0","command":"/bin/codex app-server --listen stdio://","rpc":["initialize","initialized","skills/list"],"result":"agentera, user scope, enabled true, exact isolated SKILL.md path, no skill errors","processExit":0},
+    "opencode": {"version":"1.18.30","command":"/bin/opencode debug skill","exit":0,"result":"agentera and complete body from exact isolated SKILL.md path"},
+    "copilot": {"version":"1.0.83","command":"/bin/copilot skill list --json","exit":0,"result":"agentera, personal-agents source, exact isolated skill directory, enabled true","limit":"Fresh-home discovery only; historical live disabled configuration was neither read nor changed."},
+    "cursor": {"desktopVersion":"3.20.17","agentVersion":"2026.08.25-3e8eec8","command":"/bin/cursor-agent acp","initialize":"protocolVersion 1; cursor_login advertised","sessionNewError":{"code":-32000,"message":"Authentication required"},"processTermination":"SIGKILL after bounded 20-second wait following stdin EOF","skillRecognition":false,"cliRetrieval":false,"approvalBoundary":"No authenticate, login, prompt, credential lookup or live installation attempted."}
+  },
+  "remaining": [
+    "No engineering or four-host qualification criterion remains blocked. Coordinator-owned targeted audit and lifecycle closeout are separate and were not performed.",
+    "Full verification and historical certification are not required for this routine task and remain unclaimed."
+  ]
+}

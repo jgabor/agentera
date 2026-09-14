@@ -1,8 +1,8 @@
 # Upgrade and migration
 
-Agentera 3.0 uses one upgrade command for app/project migration and explicit
-native Agentera resource cleanup. Preview and apply are separate operations.
-Current runtime installation and repair are not upgrade operations.
+Agentera 3.0 uses purpose-separated upgrade routes for shared-skill delivery,
+app/project migration, and explicit retired-resource cleanup. Preview and apply
+are separate operations. Agentera does not install or configure host runtimes.
 
 Before the npm stable dist-tag promotion, select the development npm channel. The stable npm
 channel remains on 2.x until that promotion; upgrade does not publish
@@ -13,21 +13,112 @@ or retag packages.
 Agentera has one active integration contract:
 
 ```text
-~/.agents/skills/agentera + agentera CLI
+~/.agents/skills/agentera/SKILL.md + agentera CLI
 ```
 
 Normal `prime`, `doctor`, `schema`, help, and project-integration output reports
-that shared skill and CLI/app/project state. Normal `upgrade` has no
-current-runtime selector or installation behavior. Its only automatic
-native-resource operation is bounded retirement of the proven historical
-OpenCode plugin described below. It creates no current plugin, hook, agent,
+that shared skill and CLI/app/project state. The host directory contains exactly
+one regular `SKILL.md`; schemas, references and compiled capabilities remain
+internal to the self-contained CLI package. Static discovery does not read host
+companions or require a checkout. Normal `upgrade` has no current-runtime selector.
+Declared retired resources are considered only in their selected cleanup scope,
+as described below. It creates no current plugin, hook, agent,
 command, descriptor, or marketplace file and does not run runtime package
 managers, authentication, enablement, or trust operations.
+
+The only automatic native-resource operation is bounded retirement of the proven
+historical OpenCode plugin during approved app/global migration; no separate
+cleanup selector is needed. Project-only migration never changes global resources.
 
 Passing `--runtime` fails before mutation. Remove `--runtime`, ensure the runtime
 can read `~/.agents/skills/agentera`, and invoke the CLI directly. The supported
 v2 migration and native Agentera resource cleanup routes below are separate from
 normal active integration.
+
+## One-file shared-skill installation and repair
+
+Discover the current contract without inspecting or changing an installation:
+
+```bash
+npx -y agentera@next upgrade --explain --operation install
+npx -y agentera@next upgrade --explain --operation refresh
+npx -y agentera@next doctor --explain
+```
+
+Follow returned section and continuation commands for applicable details. For a
+fresh host or an owned one-file refresh, preview first and obtain explicit user
+approval before applying:
+
+```bash
+npx -y agentera@next upgrade --shared-skill --dry-run
+npx -y agentera@next upgrade --shared-skill --yes
+```
+
+Without `--yes`, `--shared-skill` defaults to read-only preview. It writes only
+the selected one-file host projection and its external app-home ownership state,
+not project state or internal runtime contracts. Matching current content is a
+no-op; refreshing changed content requires recorded ownership. A matching name
+or matching bytes alone never authorize adoption or replacement.
+
+`--home HOME` selects the host home; `--install-root APP` selects the app home
+holding the ownership journal. Keep both selections unchanged between preview
+and apply. This route cannot be combined with project, channel, migration phase,
+reset, cleanup, force or verification flags. Project write permission is not
+permission to change global host content.
+
+### Owned legacy conversion
+
+The same route can convert a ledger-owned full-tree symlink or copied tree:
+
+```bash
+npx -y agentera@next upgrade --shared-skill --home HOME --install-root APP --dry-run
+npx -y agentera@next upgrade --shared-skill --home HOME --install-root APP --yes --authorization TOKEN
+```
+
+Use the exact authorization token from the reviewed preview, not a manufactured
+token. It binds the source selection and bytes, host parents, scope, and each
+legacy ownership record, filesystem identity and fingerprint. Review the exact
+affected paths, per-entry ownership, retained locations and resulting one-file
+shape before approval. Every entry of a copied tree must have whole-resource
+ownership; the bounded inventory supports at most **4096 entries, including the
+root**. Unowned extras, changed bytes, hard links and ambiguous evidence block
+conversion rather than being discarded.
+
+Conversion moves the old link or tree into the selected app home's
+`runtime-lifecycle/host-conversion-<digest>/legacy` retention directory on the
+**same filesystem**. It does not follow a symlink or delete its target. The
+ownership journal stays outside the host payload. Successful conversion leaves
+exactly one regular `SKILL.md` in the host directory; runtime contracts, old
+target data, profiles and project state outside the selected scope stay intact.
+There is no automatic pruning of retained content.
+
+Host apply requires Linux with safe `/proc/self/fd` directory-relative
+publication; unsupported platforms fail closed. This is an apply limitation,
+not a claim that diagnostic preview or npm invocation requires Linux.
+
+After interruption, retry the same approved command, including the same home,
+app home and conversion token. Completed work converges to no-op. Changed
+source, scope or ownership invalidates approval; inspect a new preview before
+new approval. Ambiguous or changed retained evidence requires manual recovery,
+not a new token to bypass the blocker. Preserve the journal and retained data.
+
+### Diagnosis and unowned recovery
+
+`doctor` and `prime` never repair automatically. Shared-skill diagnostics
+separate shape (`missing`, `one_file`, `extra_entries`, `legacy_symlink`,
+`invalid_bootstrap`, `wrong_type`, `unsafe_path`), compatibility, freshness,
+runtime authority and ownership. Package health does not prove host trust or
+project readiness. Use `app-home --explain` for override/resolution semantics;
+repair an invalid selected runtime authority rather than silently falling back
+to a different installed copy.
+
+If ownership cannot be proven, preserve the reported resource and journal for
+manual review. With separate user approval, move only the reviewed conflicting
+host directory or link aside, then preview a fresh install. Never recursively
+delete the host namespace, prune through a symlink, delete its target, or erase
+ownership evidence to force success. Shared-skill repair does not migrate
+projects, clean other runtimes, acquire history, enable trust, install native
+integrations, publish packages or change dist-tags.
 
 ## Preview and apply
 
@@ -89,16 +180,26 @@ apply command.
 
 ## Native Agentera resource cleanup
 
-Full upgrade previews every declared retired external Agentera leaf and removes
-each independently eligible owned leaf after approval. Restart OpenCode after a
+Project migration without explicit `--install-root` is project-scoped: it does
+not enumerate global cleanup blockers or mutate global resources. App/global
+cleanup requires explicit `--install-root APP` scope, or the focused
+`--legacy-cleanup RESOURCE_ID` route and its matching ownership evidence. Neither
+scope authorizes shared-skill conversion; use its separate route above.
+
+Within an explicitly selected app/global scope, full upgrade previews every
+declared retired external Agentera leaf and removes each independently eligible
+owned leaf after approval. Restart OpenCode after a
 successful plugin removal. The shared skill plus CLI remains the supported integration.
 No OpenCode gate or `hook` command replaced the retired plugin.
 
 Cleanup is a distinct resource route, not a host selection. Codex, Cursor,
 OpenCode, and Copilot remain supported through the canonical shared skill and
-CLI. Accepted smoke evidence records that Codex and Cursor loaded Agentera's
+CLI. Prior accepted smoke evidence records that Codex and Cursor loaded Agentera's
 skill instructions, OpenCode listed the canonical skill, and Copilot's listed
-canonical skill is intentionally disabled.
+canonical skill is intentionally disabled. Those observations predate the final
+one-file-host qualification; they are not current-candidate host smoke evidence.
+The four-host evidence gaps remain explicit in
+[the qualification record](docs/cli-coverage-contract.md#supported-host-evidence--still-blocked).
 
 Use the development package's separate preview and apply commands below with
 one declared native Agentera resource ID.
@@ -245,6 +346,13 @@ state. Review `irreversible_loss`, every deletion, and every recreation in the
 preview before applying it. Do not use the reset for v2 projects. Supported v2
 state continues to use the one-way v2-to-v3 preview and apply commands above.
 
+Reset approval binds the selected one-file bootstrap source and any listed host
+removal/recreation. It unlinks an approved host symlink without traversing its
+target, or removes approved one-file leaves non-recursively, then publishes the
+one-file projection. Full copied host trees or unowned extras require separately
+approved conversion or manual recovery first. Reset does not recreate a
+full-tree link; unlisted targets remain outside its destructive scope.
+
 Partial, corrupt, and unknown marker-absent state is not an automatic mutation
 input. `state migrate`, `state backfill`, projection repair, v1 conversion,
 restore, and downgrade are unsupported.
@@ -267,15 +375,21 @@ replacement. It never adopts user-owned resources.
 
 ## Maintainer verification
 
-Release preparation does not publish, tag, or push:
+Use the pinned Vite+ contributor setup in [AGENTS.md](./AGENTS.md#common-commands)
+and the [verification skill](./.opencode/skills/agentera-verification/SKILL.md).
+Checks use a current local build, not the published package:
 
 ```bash
-pnpm -C packages/cli test
-pnpm -C packages/cli run typecheck
-pnpm -C packages/cli build
-node packages/cli/dist/bin/agentera.js check validate capability-contract
-node packages/cli/dist/bin/agentera.js check validate release-metadata
+vp run typecheck
+vp run build
+vp node packages/cli/dist/bin/agentera.js check validate capability-contract
 ```
+
+Reuse a current build until relevant inputs change. Run targeted checks before
+the broader owners appropriate to the change. Package and release qualification
+belong to the [packaging guide](./docs/packaging/v3-packaging.md); neither checks
+nor preparation authorize a version bump, live-home mutation, commit, push,
+publication or tag change.
 
 ## Mutation ownership
 

@@ -17,6 +17,7 @@ import { buildExplain } from "../../src/state/write/explain.js";
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { entityListFamily } from "../../src/state/entityRetrievalHelp.js";
+import { explainedOperationSection } from "../helpers/operationDetail.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -323,21 +324,21 @@ afterEach(() => {
 
 describe("plan and task entity authority", () => {
   function reviewedPlan(): Record<string, any> {
-    const input = plan("Reviewed delivery", true) as Record<string, any>;
-    Object.assign(input.header, {
-      level: "full",
-      reviewed: "2026-09-11",
-      critic_issues: "0 found, 0 addressed, 0 dismissed",
-    });
-    input.design = "Deliver the change, then verify and close out within the delivery tasks.";
-    input.overall_acceptance = "GIVEN delivery WHEN verified THEN the approved behavior and required closeout hold.";
-    return input;
+    return explainedOperationSection("plan", "create").full_input;
   }
 
-  it.each(["absent", "empty", "dismissed"])("publishes and reads coherent reviewed full plans with rejected=%s", (rejected) => {
+  it.each(["absent", "empty", "dismissed", "unknown"])("publishes and reads coherent reviewed full plans with optional evidence=%s", (rejected) => {
     const root = project();
     const input = reviewedPlan();
     if (rejected === "empty") Object.assign(input, { unknowns: [], rejected: [], surprises: [] });
+    if (rejected === "unknown")
+      input.unknowns = [
+        {
+          question: "Do the examples match the writer?",
+          affects_task: 2,
+          resolve_by: "Preview each returned example through its writer.",
+        },
+      ];
     if (rejected === "dismissed") {
       input.header.critic_issues = "2 found, 1 addressed, 1 dismissed";
       input.rejected = [
@@ -352,7 +353,7 @@ describe("plan and task entity authority", () => {
     const created = JSON.parse(result.out);
     expect(created.id).toMatch(/^[a-z]{10}$/);
     expect(created.record.header).toMatchObject({
-      reviewed: "2026-09-11",
+      reviewed: input.header.reviewed,
       critic_issues: input.header.critic_issues,
     });
     expect(created.record.header).not.toHaveProperty("id");
@@ -419,6 +420,20 @@ describe("plan and task entity authority", () => {
         delete input.header.reviewed;
       },
       "reviewed",
+    ],
+    [
+      "missing review summary",
+      (input: Record<string, any>) => {
+        delete input.header.critic_issues;
+      },
+      "critic_issues",
+    ],
+    [
+      "missing full design",
+      (input: Record<string, any>) => {
+        delete input.design;
+      },
+      "design",
     ],
     [
       "malformed review",
@@ -1077,7 +1092,7 @@ describe("plan and task entity authority", () => {
   it("creates a successor through targeted replacement and treats only logical input equality as replay", () => {
     const root = project();
     const predecessor = create(root, "create replacement predecessor", true);
-    const input = planInput(root, "targeted created successor", true);
+    const input = planInput(root, "targeted created successor", true, explainedOperationSection("plan", "replace").full_input);
     const predecessorPlan = path.join(root, `.agentera/entities/plan/plan/${predecessor.id}.yaml`);
     const predecessorTask = path.join(root, `.agentera/entities/plan/plan_task/${predecessor.tasks[0].id}.yaml`);
     const predecessorTaskBytes = fs.readFileSync(predecessorTask, "utf8");
@@ -1508,10 +1523,10 @@ finally { process.chdir(cwd); }
     const root = project();
     const created = create(root, "append replay");
     const payload = {
-      name: "Retryable task",
+      ...explainedOperationSection("plan", "append").input,
       depends_on: [created.tasks[0].id],
-      acceptance: ["GIVEN one logical input WHEN retried THEN one entity remains"],
     };
+    expect(explainedOperationSection("plan", "append", "constraints_effects_replay").join(" ")).toContain("same-name task with identical logical input is a no-effect replay");
     const first = appendTask(root, created.id, payload);
     const retry = appendTask(root, created.id, payload);
     expect(retry.id).toBe(first.id);

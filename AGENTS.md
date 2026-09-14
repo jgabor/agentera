@@ -295,6 +295,13 @@ or touching generated and packaged output.
 
 - The published v3 package is self-contained under `packages/cli/bundle/` and
   does not require a checkout or `AGENTERA_HOME`.
+- The installed host projection is exactly one `SKILL.md`; runtime contracts
+  remain inside the CLI package. Use purpose-owned static detail commands, not
+  host companion reads. `docs/cli-coverage-contract.md` maps those interfaces.
+- `upgrade --shared-skill` is separate from project migration and defaults to
+  preview. Follow `UPGRADE.md#one-file-shared-skill-installation-and-repair` for
+  approval, owned conversion, retained data and Linux apply limits. Never prune
+  a host symlink target or infer global permission from project scope.
 - Prefer `agentera check validate`; top-level `agentera validate` is a migration
   alias.
 - Use `agentera prime` for status and typed `agentera state` commands for

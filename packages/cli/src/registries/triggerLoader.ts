@@ -132,7 +132,7 @@ function buildTriggerEntry(key: string, raw: JsonObject, capability: string, con
   };
 }
 
-function buildCapabilityTriggers(capability: string, contract: CapabilitySchemaContract, sourceRoot: string): CompiledCapabilityTriggers {
+export function buildCapabilityTriggers(capability: string, contract: CapabilitySchemaContract, sourceRoot: string): CompiledCapabilityTriggers {
   const filePath = triggersYamlPath(capability, sourceRoot);
   const data = readTriggersYaml(filePath);
   const triggersGroup = data.TRIGGERS;

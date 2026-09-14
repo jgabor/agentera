@@ -1,0 +1,23 @@
+id: oictawfmvh
+artifact: plan
+record:
+  name: Establish the complete CLI coverage contract
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the existing inventory WHEN obligations are mapped THEN all 64 files and required referenced guidance have an owning interface, exact discovery path, and acceptance evidence.
+    - GIVEN each command family WHEN reviewed for necessary context THEN uncovered install, report, validation, worker, and recovery obligations join the same coverage map, not an unrelated feature backlog.
+    - GIVEN contradictory or legacy text WHEN classified THEN current semantics are consistent, historical material stays explicitly migration-only, and the plan review-count contradiction is resolved.
+    - GIVEN selected detail interfaces WHEN documented THEN their bounded responses, error behavior, state independence, and compatibility are fixed before dependent work.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: single-file-coverage-1
+      source: "audit ses_f65155dd8ffeHtKOXKMh7QmIt3: all four criteria PASS; coverage map and critic consistency tests, targeted plan tests, build, typecheck and capability-contract evidence accepted"
+      recorded_at: 2026-09-13 15:20
+      writer_command: agentera state plan record-evaluation

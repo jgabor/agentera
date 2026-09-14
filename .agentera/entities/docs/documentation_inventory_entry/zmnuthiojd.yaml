@@ -1,0 +1,7 @@
+id: zmnuthiojd
+artifact: docs
+record:
+  document: Complete CLI coverage contract
+  path: docs/cli-coverage-contract.md
+  last_updated: 2026-09-13
+  status: current

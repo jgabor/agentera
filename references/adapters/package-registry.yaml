@@ -27,6 +27,9 @@ records:
           path: skills/agentera/SKILL.md
           selector: frontmatter.version
     bundle_surfaces:
+      host_skill:
+        source: skills/agentera/SKILL.md
+        path: host/agentera
       directories:
         - id: skills
           path: skills
@@ -76,6 +79,10 @@ records:
         - yaml
         - json
       scalar_classifications:
+        # Markdown line locations are hints: the scanner can relocate an exact
+        # unique normalized whole-prose scalar within its named file. Changed or
+        # duplicated content, shell-fence moves and structured selectors do not
+        # inherit that classification. Digests/categories/reasons remain binding.
         - {"path":"references/adapters/product-v1-reset.yaml","region":"$[\"scope_inventory\"][5][\"targets\"][0]","category":"argument_bearing","classification":"exact_exemption","normalized_sha256":"4ac60a94fded6f1dbddfeca40ce8e2e4d122a204239102d233f431ff6ba37e05","reason":"Reset inventory target is an authority selector for package reconstruction, not executable guidance."}
         - {"path":"skills/agentera/SKILL.md","region":"#frontmatter[\"name\"]","category":"identity_only","classification":"bounded_descriptive","normalized_sha256":"d94efe66795f3ab7f3e26cf770f9c8018e55bd85ca967e180dc9c797c82fb846","reason":"Frontmatter package name only; the exact scalar has no arguments or execution context."}
         - {"path":"skills/agentera/capabilities/build/schemas/validation.yaml","region":"$[\"VALIDATION\"][\"9\"][\"checks\"][1]","category":"argument_bearing","classification":"exact_exemption","normalized_sha256":"c68a1705cf8b0b5c3db2c04d034b0c00bc02bbe8a8f7f3c803ca49168f0ac2f5","reason":"Negative Build validation oracle forbids the unsupported capability command; it does not direct execution."}
@@ -278,6 +285,22 @@ records:
         - {"path":"references/cli/update-channels.yaml","region":"$[\"channels\"][\"stable\"][\"resolution\"][\"git\"][\"update_command\"]","category":"other_vocabulary","classification":"exact_exemption","normalized_sha256":"f04157f879236e341352a572ccc2b7d6e20a41f3152306fbcc6f4be3ff069e51","reason":"Stable-channel resolver metadata stores the exact uvx argv source as one structured scalar."}
         - {"path":"references/cli/update-channels.yaml","region":"$[\"channels\"][\"development\"][\"resolution\"][\"npm\"][\"update_command\"]","category":"other_vocabulary","classification":"exact_exemption","normalized_sha256":"6014cb13fa18e26c1e356cfd73db98be5a60039955eb5c857a5e05b3b18b62a3","reason":"Development-channel resolver metadata stores the exact npm package prefix consumed as structured data."}
       emitted_producers:
+        - path: packages/cli/src/cli/commands/capabilityDetail.ts
+          reason: Static capability details emit complete compiled guidance and exact bounded section actions, covered by source reconstruction and extracted traversal.
+        - path: packages/cli/src/cli/commands/checkDetail.ts
+          reason: Check explanations publish dispatched target contracts and correction commands, covered by source checks and extracted traversal.
+        - path: packages/cli/src/cli/commands/recoveryDetail.ts
+          reason: Recovery explanations publish scoped preview and apply grammar without executing it, covered by lifecycle detail and extracted traversal tests.
+        - path: packages/cli/src/cli/commands/reportDetail.ts
+          reason: Report explanations publish operation contracts and privacy qualifications, covered by report detail and extracted traversal tests.
+        - path: packages/cli/src/cli/commands/serviceDetail.ts
+          reason: The static service dispatcher publishes report and recovery guidance with bounded correction output and read-side effect checks.
+        - path: packages/cli/src/cli/commands/state/explainDetail.ts
+          reason: Typed operation detail exposes writer-owned input and effect contracts with exact section commands and bounded recovery.
+        - path: packages/cli/src/cli/commands/workerDetail.ts
+          reason: Worker details project compiled delegation instructions and evaluator contracts through the capability detail owner.
+        - path: packages/cli/src/state/write/operationDetail.ts
+          reason: Writer contract projection serves complete operation semantics and executable examples verified against writer authorities.
         - path: packages/cli/src/capabilities/index.ts
           reason: Complete capability bodies and startup commands pass through the shared pre-cutover constructors and source/package output scans.
         - path: packages/cli/src/cli/prime-blob.ts

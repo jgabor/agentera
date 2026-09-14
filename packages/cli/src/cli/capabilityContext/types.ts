@@ -13,27 +13,57 @@ function canonicalListCommand(key: EntityListRuntimeFamilyKey): string {
 }
 
 export const STATE_FAMILY_FALLBACK_COMMANDS: Record<string, string> = {
-  plan: canonicalListCommand("plans"),
-  docs: canonicalListCommand("docs"),
-  progress: canonicalListCommand("progress"),
-  health: canonicalListCommand("health"),
-  todo: canonicalListCommand("todo"),
-  decisions: canonicalListCommand("decisions"),
+  // Resolve authority only when selected, inside the caller's error boundary.
+  // Static detail imports must not open authority files at module load time.
+  get plan() {
+    return canonicalListCommand("plans");
+  },
+  get docs() {
+    return canonicalListCommand("docs");
+  },
+  get progress() {
+    return canonicalListCommand("progress");
+  },
+  get health() {
+    return canonicalListCommand("health");
+  },
+  get todo() {
+    return canonicalListCommand("todo");
+  },
+  get decisions() {
+    return canonicalListCommand("decisions");
+  },
   changelog: preCutoverCommand("state query changelog"),
-  objective: canonicalListCommand("objective"),
-  experiments: preCutoverCommandFromBare(entityListFamily("experiments").syntax),
+  get objective() {
+    return canonicalListCommand("objective");
+  },
+  get experiments() {
+    return preCutoverCommandFromBare(entityListFamily("experiments").syntax);
+  },
 };
 
 export const STATE_FAMILY_LIST_COMMANDS: Record<string, string> = {
-  progress: canonicalListCommand("progress"),
-  decisions: canonicalListCommand("decisions"),
-  health: canonicalListCommand("health"),
+  get progress() {
+    return canonicalListCommand("progress");
+  },
+  get decisions() {
+    return canonicalListCommand("decisions");
+  },
+  get health() {
+    return canonicalListCommand("health");
+  },
 };
 
 export const STATE_FAMILY_GET_COMMANDS: Record<string, string> = {
-  progress: entityListFamily("progress").get,
-  decisions: entityListFamily("decisions").get,
-  health: entityListFamily("health").get,
+  get progress() {
+    return entityListFamily("progress").get;
+  },
+  get decisions() {
+    return entityListFamily("decisions").get;
+  },
+  get health() {
+    return entityListFamily("health").get;
+  },
 };
 export const STARTUP_ENVELOPE_STATE_FAMILIES = new Set(["plan", "docs", "progress", "health", "todo", "objective", "benchmark_context"]);
 

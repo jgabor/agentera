@@ -1057,6 +1057,33 @@ export function scanBootstrapAuthority(sourcePath: string, content: string, decl
   const classifications: AuthorityScanResult["classifications"] = [];
   const usedDeclarations = new Set<string>();
   const byKey = new Map(declarations.filter(({ path }) => path === sourcePath).map((entry) => [declarationKey(entry.path, entry.region), entry]));
+  // A prose line number is a location hint, not the reviewed content's identity.
+  // Relocate only a unique, unchanged whole scalar within the same Markdown
+  // file. Never transfer a prose classification into a shell fence or a
+  // structured selector; ambiguous copies and changed text remain unclassified.
+  const proseByDigest = new Map<string, ScalarSurface[]>();
+  for (const surface of parsed.surfaces) {
+    if (!surface.markdown || surface.fencedShell || !/^line:\d+$/u.test(surface.region)) continue;
+    const digest = normalizedScalarSha256(surface.value);
+    proseByDigest.set(digest, [...(proseByDigest.get(digest) ?? []), surface]);
+  }
+  const declarationsByDigest = new Map<string, ScalarClassificationDeclaration[]>();
+  for (const declaration of byKey.values()) {
+    if (!/^line:\d+$/u.test(declaration.region)) continue;
+    const digest = declaration.normalized_sha256;
+    declarationsByDigest.set(digest, [...(declarationsByDigest.get(digest) ?? []), declaration]);
+  }
+  const relocated: Array<[string, ScalarClassificationDeclaration]> = [];
+  for (const declaration of byKey.values()) {
+    if (!/^line:\d+$/u.test(declaration.region)) continue;
+    const candidates = proseByDigest.get(declaration.normalized_sha256);
+    if (candidates?.length !== 1 || declarationsByDigest.get(declaration.normalized_sha256)?.length !== 1) continue;
+    byKey.delete(declarationKey(sourcePath, declaration.region));
+    relocated.push([declarationKey(sourcePath, candidates[0].region), declaration]);
+  }
+  // Remove old positions before assigning new ones: an insertion can put an
+  // unrelated scalar at a formerly reviewed line without changing either body.
+  for (const [key, declaration] of relocated) byKey.set(key, declaration);
   const discovered = parsed.surfaces.map((surface) => ({
     surface,
     spans: discoverInvocationSpans(surface),
@@ -1071,8 +1098,8 @@ export function scanBootstrapAuthority(sourcePath: string, content: string, decl
   for (const { surface, spans: scalarSpans } of discovered) {
     if (scalarSpans.length === 0) continue;
     spans.push(...scalarSpans);
-    const declaration = byKey.get(declarationKey(sourcePath, surface.region));
     const digest = normalizedScalarSha256(surface.value);
+    const declaration = byKey.get(declarationKey(sourcePath, surface.region));
     const category = scalarCategory(surface, scalarSpans);
     const noncanonical = scalarSpans.filter((span) => !(exactDevelopment(span) || developmentVocabulary(surface, span)) && !stableAuthority.allowed.has(span.identity));
     const isMeasuredScalar = noncanonical.length > 0;

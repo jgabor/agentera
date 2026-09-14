@@ -59,7 +59,7 @@ function exposedFields(artifact: WritableArtifact, verb: string, spec: NonNullab
     ...(field.kind === "date" ? { format: "YYYY-MM-DD" } : {}),
     ...(field.kind === "datetime" ? { format: "YYYY-MM-DD HH:MM" } : {}),
     ...(field.flag === "--timestamp" ? { default: "now" } : {}),
-    ...(field.flag === "--date" ? { default: "today" } : {}),
+    ...(field.flag === "--date" && !field.required ? { default: "today" } : {}),
   }));
 }
 
@@ -89,7 +89,7 @@ function inputProjection(spec: NonNullable<ReturnType<typeof operationSpec>>): R
   };
 }
 
-export function buildExplain(artifact: WritableArtifact, projectRoot: string, requestedVerb?: string | null): Record<string, unknown> {
+export function buildExplain(artifact: WritableArtifact, projectRoot: string, requestedVerb?: string | null, staticDetail = false): Record<string, unknown> {
   const verb = (requestedVerb ?? defaultVerb(artifact)) as Exclude<WriteVerb, "explain">;
   const spec = operationSpec(artifact, verb);
   const grammar = loadMutationGrammar();
@@ -109,7 +109,7 @@ export function buildExplain(artifact: WritableArtifact, projectRoot: string, re
     command: `state ${artifact} explain`,
     requested_verb: verb,
     artifact,
-    path: pathFor(artifact, verb, projectRoot),
+    path: staticDetail && artifact === "glossary" ? record.defaultPath : pathFor(artifact, verb, projectRoot),
     verbs: verbsForArtifact(artifact),
     contract_digest: grammar.contractDigest,
     mutation_class: declaration.mutationClass,
@@ -238,14 +238,15 @@ export function buildExplain(artifact: WritableArtifact, projectRoot: string, re
   }
   result.guidance = decisionsGuidance(artifact, verb, artifact === "health", true);
   result.example = exampleFor(artifact, verb);
+  result.detail_command = `npx -y agentera@next state ${artifact} explain --verb ${verb} --section detail`;
   return result;
 }
 
-export function buildExplainAll(artifact: WritableArtifact, projectRoot: string): Record<string, unknown> {
+export function buildExplainAll(artifact: WritableArtifact, projectRoot: string, staticDetail = false): Record<string, unknown> {
   const grammar = loadMutationGrammar();
   const operations = verbsForArtifact(artifact)
     .filter((verb): verb is Exclude<WriteVerb, "explain"> => verb !== "explain")
-    .map((verb) => buildExplain(artifact, projectRoot, verb));
+    .map((verb) => buildExplain(artifact, projectRoot, verb, staticDetail));
   return {
     schemaVersion: "agentera.stateWriteExplainAll.v1",
     command: `state ${artifact} explain --all`,
@@ -255,6 +256,7 @@ export function buildExplainAll(artifact: WritableArtifact, projectRoot: string)
     verbs: operations.map((operation) => operation.requested_verb),
     operations,
     parity_matrix: mutationParityMatrix([artifact]),
+    detail_command: `npx -y agentera@next state ${artifact} explain --all --section detail`,
   };
 }
 

@@ -1,7 +1,7 @@
 id: rkwzbrnawr
 artifact: docs
 record:
-  document: Agentera skill dispatcher
+  document: Agentera host bootstrap
   path: skills/agentera/SKILL.md
-  last_updated: 2026-08-03
+  last_updated: 2026-09-13
   status: current

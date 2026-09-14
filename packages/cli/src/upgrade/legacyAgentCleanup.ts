@@ -85,6 +85,7 @@ function planDeclaredAgentItems(ctx: MigrationContext, select: (resourceId: stri
     installRoot: ctx.appHome,
     env: ctx.env,
     sourceRoot: ctx.sourceRoot,
+    projectOnly: ctx.projectOnly,
   });
   return diagnosis.resources
     .filter((resource) => resource.ownershipMode === "managed_marker_regular_file" && select(resource.id))
@@ -135,6 +136,7 @@ export function legacyAgentScanTargets(ctx: MigrationContext): LegacyAgentScanTa
   };
 
   push("cursor", path.join(project, ".cursor", "agents"));
+  if (ctx.projectOnly) return targets;
   push("cursor", path.join(home, ".cursor", "agents"));
   const configuredOpenCode = opencodeConfigDir(home, env);
   push("opencode", path.join(configuredOpenCode, "agents"));
@@ -217,6 +219,7 @@ function declaredLegacyDirectories(ctx: MigrationContext): Array<{ resourceId: s
   });
   const seen = new Set<string>();
   return contract.directoryResources
+    .filter((resource) => !ctx.projectOnly || resource.destination.startsWith("{project}/"))
     .map((resource) => ({
       resourceId: resource.id,
       directory: expandRetiredResourcePath(resource.destination, roots),

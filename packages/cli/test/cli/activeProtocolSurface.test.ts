@@ -117,7 +117,8 @@ describe("public runtime vocabulary", () => {
     expect(routingVocabulary).toContain("only after deterministic routing returns `semantic_required`");
     expect(routingVocabulary).toContain("receipt the CLI validates before startup");
     expect(enrichment).toContain("Current boundary and obsolete layer numbering");
-    expect(enrichment).toContain("Only a `semantic_required` response may expose these fields to a host.");
+    expect(enrichment).toContain("During request routing, only a `semantic_required` response exposes these fields to a host.");
+    expect(enrichment).toContain("does not authorize semantic judgment or startup.");
     expect(enrichment).not.toContain("Authority for Layer 3 LLM-native capability routing.");
     expect(enrichment).not.toContain("clear intent routes directly");
     expect(descriptionExample).toContain("disambiguates_against:");

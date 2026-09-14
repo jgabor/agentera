@@ -26,6 +26,7 @@
 
 ### Changed
 
+- Host installation now contains only `SKILL.md`; capability contracts and recovery guidance are available through bounded CLI discovery. `upgrade --shared-skill` previews installation or owned refresh, and explicitly authorized legacy conversion retains old data without pruning symlink targets.
 - Contributor setup and recovery use standalone Vite+ 0.3.0 without separate Node, Corepack, pnpm, or Lefthook installs. Hooks use the invoking worktree's tools; optional OpenCode dependencies retain their separate npm lockfile.
 - Standardized contributor setup, checks, tests, and builds on workspace-root Vite+, delegating product commands to `packages/cli/package.json`; CI bootstrap now verifies installer integrity, migration checks block direct-push publication, and lint debt is reduced without changing pnpm lockfile authority.
 - Retired external integrations now use a complete, authority-backed ownership inventory. Exact managed markers declare ownership for declared Codex descriptors, OpenCode agents, and OpenCode commands; removing the marker opts out, and marker text in unrelated resources does not qualify. Full and focused cleanup remain preview- and approval-gated, preserve unsafe or unowned resources, and prune declared empty directories without removing host namespaces.

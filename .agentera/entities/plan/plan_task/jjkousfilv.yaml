@@ -1,0 +1,23 @@
+id: jjkousfilv
+artifact: plan
+record:
+  name: Complete artifact and shared-contract discovery
+  depends_on:
+    - oictawfmvh
+  status: complete
+  acceptance:
+    - GIVEN discovery alone WHEN an artifact or shared contract is selected THEN complete fields, nesting, descriptions, bounds, conventions, readiness, lifecycle, and authoring semantics are accessible.
+    - GIVEN twelve artifact schemas and protocol primitives WHEN details are requested THEN no governing section is silently omitted and legacy shapes are not current write instructions.
+    - GIVEN no project, corrupt project state, or unavailable host companions WHEN static contracts are requested THEN retrieval stays read-only and independent of project initialization.
+    - GIVEN invalid selectors or bounded omissions WHEN returned THEN structured errors or exact continuation commands replace paths requiring filesystem reads.
+  plan: lknwkijlkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: packages/cli/src/cli/commands/schemaDetail.ts:166 protocol selection lacks existing structural/transition validation; audit fixture with absent required groups and undefined successor returns exit 0 as governing_contract instead of structured exit 1
+    provenance:
+      attempt_id: single-file-schema-2
+      source: "audit ses_f64ff0957ffeIR4ydy2fhTEQIO accepted with bounded correction verified by resolve ses_f64fabdc9ffeDissvNP1nweaGT: malformed protocol now structured exit1, canonical exit0;60 tests,typecheck,build pass; other audit criteria remain applicable"
+      recorded_at: 2026-09-13 15:53
+      writer_command: agentera state plan record-evaluation

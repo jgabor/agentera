@@ -111,6 +111,34 @@ afterEach(() => {
 });
 
 describe("buildUpgradePlan", () => {
+  it("project-only recovery excludes global blockers and mutation until matching global scope is selected", () => {
+    const project = copyFixture("v2-yaml-project", path.join(tmp, "project-only"));
+    initializeGit(project);
+    applyPreparedEntityCutover(prepareEntityCutoverForUpgrade(project, REPO_ROOT));
+    const plugin = path.join(home, ".config/opencode/plugins/agentera.js");
+    fs.mkdirSync(path.dirname(plugin), { recursive: true });
+    fs.writeFileSync(plugin, "user-owned collision");
+    const host = path.join(home, ".agents/skills/agentera");
+    fs.mkdirSync(path.dirname(host), { recursive: true });
+    fs.symlinkSync(path.join(REPO_ROOT, "skills/agentera"), host);
+    const identity = fs.lstatSync(host).ino;
+    const preview = buildUpgradePlan({ home, project, channel: "development", dryRun: true });
+    expect(preview.lifecycle).toBeNull();
+    expect(JSON.stringify(preview.phases)).not.toContain(plugin);
+    const applied = buildUpgradePlan({ home, project, channel: "development", yes: true });
+    expect(applied.lifecycle).toBeNull();
+    expect(fs.readFileSync(plugin, "utf8")).toBe("user-owned collision");
+    expect(fs.lstatSync(host).ino).toBe(identity);
+    const global = buildUpgradePlan({
+      home,
+      project,
+      installRoot: REPO_ROOT,
+      channel: "development",
+      dryRun: true,
+    });
+    expect(global.lifecycle?.status).toBe("non_success");
+    expect(JSON.stringify(global.lifecycle)).toContain(plugin);
+  });
   it("ignores an inherited OpenCode config override outside an explicitly selected home", () => {
     const project = copyFixture("v2-yaml-project", path.join(tmp, "selected-project"));
     initializeGit(project);
@@ -1155,7 +1183,8 @@ describe("buildUpgradePlan", () => {
       only: ["artifacts"],
     });
 
-    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities", "lifecycle"]);
+    expect(plan.phases.map((p) => p.name)).toEqual(["detect", "artifacts", "entities"]);
+    expect(plan.lifecycle).toBeNull();
     expect(plan.phases.some((p) => p.name === "runtime")).toBe(false);
     expect(plan.phases.some((p) => p.name === "cleanup")).toBe(false);
   });

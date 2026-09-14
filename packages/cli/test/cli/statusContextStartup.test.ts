@@ -14,6 +14,8 @@ import YAML from "yaml";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
+import { main } from "../../src/cli/dispatch.js";
 import { formatNextAction } from "../../src/cli/orientation.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
@@ -173,6 +175,66 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
 }
 
 describe("status capability self-contained startup", () => {
+  it("defers host diagnostics to the exact read-only preview without losing health facts or instructions", () => {
+    const result = runStatus();
+    expect(result.rc, result.err).toBe(0);
+    const summary = result.payload.shared_skill;
+    let detail = "";
+    expect(cmdPrime({ fields: "shared_skill", home, installRoot: appHome }, { out: (text) => (detail += text) })).toBe(0);
+    const full = JSON.parse(detail).shared_skill;
+    for (const key of ["name", "status", "source", "gap", "shape", "compatibility", "freshness", "ownership", "runtime_authority", "preview_command"]) expect(summary[key]).toEqual(full[key]);
+    expect(summary.detail_availability).toBe("summary");
+    for (const key of ["message", "path", "details"]) {
+      expect(summary).not.toHaveProperty(key);
+      expect(full).toHaveProperty(key);
+    }
+    const host = path.join(home, ".agents", "skills", "agentera");
+    expect(fs.existsSync(host)).toBe(false);
+    let preview = "";
+    expect(
+      main(["node", "agentera", ...summary.preview_command.split(" ").slice(3)], {
+        out: (text) => (preview += text),
+      }),
+    ).toBe(0);
+    expect(JSON.parse(preview).status).toBe("pending");
+    expect(fs.existsSync(host)).toBe(false);
+    expect(result.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
+    expect(result.payload.capability_context.context.first_invocation_read).toEqual({
+      value: "prime_context",
+      startup_command: "npx -y agentera@next prime --context status",
+      runtime_enforcement: true,
+    });
+  });
+
+  it("keeps unsafe ownership risks and recovery while sparse continuations recover omitted accounting and alternatives", () => {
+    seedUnsafeInactiveTodos(TODO_ACTIVATION_RISK_LIMIT);
+    const result = runStatus();
+    expect(result.rc, result.err).toBe(0);
+    const summary = result.payload.capability_context.startup.todo_reconciliation;
+    const next = statusState(result.payload).next_action;
+    const retrieve = (command: string) => {
+      let out = "";
+      expect(
+        main(["node", "agentera", ...command.split(" ").slice(3)], {
+          out: (text) => (out += text),
+        }),
+      ).toBe(0);
+      return JSON.parse(out);
+    };
+    const full = retrieve(summary.detail_command).startup.todo_reconciliation;
+    expect(summary.detail_availability).toBe("summary");
+    for (const key of ["state", "status", "risks", "preview_command", "recovery_command"]) expect(summary[key]).toEqual(full[key]);
+    expect(summary).not.toHaveProperty("counts");
+    expect(full.counts).toBeDefined();
+    expect(full.apply_command).toContain("--effect-sha256 EFFECT_SHA256 --yes");
+    const fullNext = retrieve(next.alternatives_omission.retrieval).next_action;
+    expect(next.alternatives).toEqual([]);
+    expect(next.alternatives_omission.omitted_count).toBe(fullNext.alternatives.length);
+    expect(next.reason).toBe(fullNext.reason);
+    expect(result.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
+    expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+  });
+
   it.each(["decision", "task", "todo"] as const)("keeps long Unicode %s identity and textual state through attention, actions and text output", (family) => {
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const description = "Readable 漢😀 ".repeat(100);
@@ -393,7 +455,7 @@ describe("status capability self-contained startup", () => {
 
     const capsule = result.payload.capability_context;
     const state = statusState(result.payload);
-    expect(typeof capsule.instructions).toBe("string");
+    expect(capsule.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
     expect(capsule.instructions).toContain("capability_context.instructions");
     expect(capsule.instructions).toContain("capability_context.context.status_context");
     expect(capsule.instructions).toContain("⌂ status · <status>");

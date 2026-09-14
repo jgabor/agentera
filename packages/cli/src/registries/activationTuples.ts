@@ -88,6 +88,43 @@ const decodedCatalog = gunzipSync(Buffer.from(CATALOG, "base64")).toString("utf8
 const emittedReasons = JSON.parse(gunzipSync(Buffer.from(EMITTED_REASON_CATALOG, "base64")).toString("utf8")) as Record<string, string>;
 const rawTuples = JSON.parse(decodedCatalog.slice(decodedCatalog.indexOf("[", 2)).replace(/,\s*]$/, "]")) as ActivationCanonicalTuple[];
 const addedTuples: ActivationCanonicalTuple[] = [
+  // Reviewed static-detail producer additions. Keep these literals independent
+  // of the mutable registry so mismatches still fail activation qualification.
+  ...(
+    [
+      ["packages/cli/src/cli/commands/capabilityDetail.ts", "Static capability details emit complete compiled guidance and exact bounded section actions, covered by source reconstruction and extracted traversal."],
+      ["packages/cli/src/cli/commands/checkDetail.ts", "Check explanations publish dispatched target contracts and correction commands, covered by source checks and extracted traversal."],
+      ["packages/cli/src/cli/commands/recoveryDetail.ts", "Recovery explanations publish scoped preview and apply grammar without executing it, covered by lifecycle detail and extracted traversal tests."],
+      ["packages/cli/src/cli/commands/reportDetail.ts", "Report explanations publish operation contracts and privacy qualifications, covered by report detail and extracted traversal tests."],
+      ["packages/cli/src/cli/commands/serviceDetail.ts", "The static service dispatcher publishes report and recovery guidance with bounded correction output and read-side effect checks."],
+      ["packages/cli/src/cli/commands/state/explainDetail.ts", "Typed operation detail exposes writer-owned input and effect contracts with exact section commands and bounded recovery."],
+      ["packages/cli/src/cli/commands/workerDetail.ts", "Worker details project compiled delegation instructions and evaluator contracts through the capability detail owner."],
+      ["packages/cli/src/state/write/operationDetail.ts", "Writer contract projection serves complete operation semantics and executable examples verified against writer authorities."],
+    ] as const
+  ).map(([path, reason]): ActivationCanonicalTuple => ({
+    class: "package",
+    surface_id: `emitted:${path}`,
+    owner_path: "packages/cli/src/registries/packageRegistry.ts",
+    owner_symbol_or_selector: "loadRegistry",
+    owner_selector: path,
+    semantic_selector_if_any: JSON.stringify({
+      path,
+      selector: null,
+      format: null,
+      classification: null,
+      reason,
+    }),
+    canonical_correction: "pnpm -C packages/cli run verify:package",
+  })),
+  {
+    class: "package",
+    surface_id: "bundle:host-skill",
+    owner_path: "packages/cli/src/registries/packageRegistry.ts",
+    owner_symbol_or_selector: "loadRegistry",
+    owner_selector: "host/agentera",
+    semantic_selector_if_any: '{"path":"host/agentera","source":"skills/agentera/SKILL.md","selector":null,"format":null,"classification":null,"reason":null}',
+    canonical_correction: "pnpm -C packages/cli run verify:package",
+  },
   {
     class: "reference",
     surface_id: "references/analysis/bootstrap-integrity.md",
@@ -313,15 +350,15 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777",
     },
     package: {
-      count: 69,
-      sha256: "896bb31a16d3ee2c089ab93ed8b61ae9b571ec908be75aebc478eedf626c5e9c",
+      count: 78,
+      sha256: "00395767f4a25372073ddf2ccd48ec9e0134c5cbe5910a5f9990e51657b636c1",
     },
     bootstrap: {
       count: 34,
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 307, sha256: "763c53c96638a5f40611a187cadaf37823d5b43234bbcbda438f7d55032f3804" },
+  total: { count: 316, sha256: "8dfd7934b2fabd8ae3b723030c568316596bc729e2245dfc0f2af646c5a6d56b" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

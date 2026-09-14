@@ -8,6 +8,7 @@ export interface ActivationPackageDescriptor {
 export function packageSemanticSelector(entry: any): string {
   return JSON.stringify({
     path: entry.path,
+    ...(entry.source === undefined ? {} : { source: entry.source }),
     selector: entry.selector ?? null,
     format: entry.format ?? null,
     classification: entry.classification ?? null,
@@ -17,6 +18,11 @@ export function packageSemanticSelector(entry: any): string {
 
 export function packageDescriptors(record: any): ActivationPackageDescriptor[] {
   return [
+    {
+      id: "bundle:host-skill",
+      entry: record.bundle_surfaces.host_skill,
+      selector: "records[agentera].bundle_surfaces.host_skill",
+    },
     ...record.version_surfaces.surfaces.map((entry: any) => ({
       id: `version:${String(entry.id)}`,
       entry,

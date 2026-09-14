@@ -11,6 +11,8 @@ import { defaultAppHome } from "../state/installRoot.js";
 import { classifyProjectState } from "../state/stateMode.js";
 import { applyAppContentRefresh } from "./appContentRefresh.js";
 import { loadProductV1ResetAuthority } from "./productV1ResetAuthority.js";
+import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../setup/hostSkillLifecycle.js";
+import { observeLifecyclePath, removeLifecycleResource, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 
 export interface ProductV1ResetOptions {
   project?: string | null;
@@ -24,6 +26,7 @@ interface ScopePath {
   type: "absent" | "directory" | "file" | "symlink" | "other";
   sha256?: string;
   link_target?: string;
+  identity?: { device: string; inode: string };
 }
 
 export interface ProductV1ResetScopeTarget {
@@ -33,6 +36,7 @@ export interface ProductV1ResetScopeTarget {
   selector?: { kind: "contains" | "key"; value: string };
   entries?: ScopePath[];
   file_state?: { type: "absent" | "file"; sha256?: string };
+  delivery?: { sourceRoot: string; fingerprint: string; files: string[] };
 }
 
 export interface ProductV1ResetDependencies {
@@ -171,7 +175,18 @@ function expandTemplate(template: string, roots: Record<string, string>): string
 }
 
 function runtimeTargets(roots: Record<string, string>, contract: NativeResourceCleanupContract): ProductV1ResetScopeTarget[] {
-  const targets: ProductV1ResetScopeTarget[] = [];
+  const skill = hostSkillPath(roots.runtime_home!);
+  const observed = observeLifecyclePath(skill, [roots.runtime_home!]);
+  if (observed.unsafeReason || !["missing", "symlink", "directory"].includes(observed.kind)) throw new Error("Unsafe reset host destination; preserve it for manual recovery.");
+  if (observed.kind === "directory" && fs.readdirSync(skill).some((name) => name !== "SKILL.md")) throw new Error("Reset preserves full copied host trees and unowned extras. First preview and explicitly approve upgrade --shared-skill conversion, or perform separately approved manual recovery.");
+  const targets: ProductV1ResetScopeTarget[] = [
+    {
+      declared: "{home}/.agents/skills/agentera",
+      operation: "remove_path",
+      path: skill,
+      entries: hostSnapshot(skill, roots.runtime_home!),
+    },
+  ];
   for (const resource of contract.diagnosticResources) {
     const names = resource.names.length > 0 ? resource.names : [null];
     for (const name of names)
@@ -208,6 +223,14 @@ function runtimeTargets(roots: Record<string, string>, contract: NativeResourceC
     });
   }
   return targets;
+}
+
+function hostSnapshot(skill: string, home: string): ScopePath[] {
+  return snapshot(skill).map((entry) => {
+    const observed = observeLifecyclePath(entry.path, [home]);
+    if (observed.unsafeReason || observed.kind === "other" || (observed.kind === "file" && fs.lstatSync(entry.path).nlink !== 1)) throw new Error("Unsafe reset host entry; preserve it for manual recovery.");
+    return { ...entry, ...(observed.identity ? { identity: observed.identity } : {}) };
+  });
 }
 
 function evidence(project: string, installRoot: string, manifest: string): string[] {
@@ -262,7 +285,19 @@ export function previewProductV1Reset(options: ProductV1ResetOptions = {}, depen
       id: item.id,
       owner: item.owner,
       root: rootFor(item.boundedRoot),
-      targets: item.targets.map((declared) => ({ declared })),
+      targets: item.targets.map((declared) => ({
+        declared,
+        ...(item.id === "runtime.canonical-skill"
+          ? {
+              path: hostSkillPath(roots.runtime_home!),
+              delivery: {
+                sourceRoot: resolveSourceRoot(),
+                fingerprint: loadHostSkillSource(resolveSourceRoot()).fingerprint,
+                files: ["SKILL.md"],
+              },
+            }
+          : {}),
+      })),
     }));
   const unsigned = {
     schemaVersion: "agentera.productV1ResetPreview.v1" as const,
@@ -449,12 +484,12 @@ function removeSelectors(target: string, selectors: NonNullable<ProductV1ResetSc
 }
 
 function sameScopePath(left: ScopePath, right: ScopePath): boolean {
-  return left.path === right.path && left.type === right.type && left.sha256 === right.sha256 && left.link_target === right.link_target;
+  return left.path === right.path && left.type === right.type && left.sha256 === right.sha256 && left.link_target === right.link_target && JSON.stringify(left.identity) === JSON.stringify(right.identity);
 }
 
 function validateRemovePath(target: ProductV1ResetScopeTarget, exact: boolean): void {
   const approved = target.entries ?? [];
-  const current = snapshot(target.path!);
+  const current = target.declared === "{home}/.agents/skills/agentera" ? hostSnapshot(target.path!, path.resolve(target.path!, "../../..")) : snapshot(target.path!);
   if (current.length === 1 && current[0]!.type === "absent") {
     if (exact && !(approved.length === 1 && approved[0]!.type === "absent")) throw new Error(`reset retry target changed after approval: ${target.path}`);
     return;
@@ -529,18 +564,23 @@ function loadResetJournal(options: ProductV1ResetOptions, authorization: string,
 
 function initializeFreshV3(scope: ProductV1ResetValidatedScope): void {
   const sourceRoot = resolveSourceRoot();
+  const delivery = scope.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]?.delivery;
+  if (!delivery || delivery.sourceRoot !== sourceRoot || delivery.fingerprint !== loadHostSkillSource(sourceRoot).fingerprint) throw new Error("Reset one-file delivery authority changed; preserve the reset journal and review recovery.");
   applyAppContentRefresh(scope.roots.install_root!, sourceRoot);
-  const skill = path.join(scope.roots.runtime_home!, ".agents", "skills", "agentera");
-  assertContained(scope.roots.runtime_home!, skill);
-  fs.rmSync(skill, { recursive: true, force: true });
-  fs.mkdirSync(path.dirname(skill), { recursive: true });
-  fs.symlinkSync(path.join(scope.roots.install_root!, "skills", "agentera"), skill);
+  const installed = runHostSkillLifecycle({
+    home: scope.roots.runtime_home!,
+    appHome: scope.roots.install_root!,
+    sourceRoot,
+    apply: true,
+  });
+  if (installed.status === "non_success") throw new Error(`Reset one-file delivery requires recovery: ${installed.reason}`);
   if (classifyProjectState(scope.roots.project!, sourceRoot).state !== "fresh_uninitialized") {
     throw new Error("canonical fresh-v3 project initialization did not produce fresh_uninitialized state");
   }
 }
 
 export function applyProductV1Reset(options: ProductV1ResetOptions, authorization: string, dependencies: ProductV1ResetDependencies = {}): ProductV1ResetResult {
+  if (!secureLifecycleRemovalAvailable()) throw new Error("Reset one-file delivery requires Linux safe publication; nothing changed.");
   const roots = resolvedRoots(options);
   let { journal, retry } = loadResetJournal(options, authorization, dependencies, roots.project!);
   if (JSON.stringify(journal.preview.roots) !== JSON.stringify(roots)) {
@@ -551,6 +591,8 @@ export function applyProductV1Reset(options: ProductV1ResetOptions, authorizatio
     dependencies.afterEffect?.("journal");
   }
   const scope = validatedScope(journal.preview);
+  const delivery = scope.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]?.delivery;
+  if (!delivery || delivery.sourceRoot !== resolveSourceRoot() || delivery.fingerprint !== loadHostSkillSource(resolveSourceRoot()).fingerprint) throw new Error("Reset one-file delivery authority changed; preserve the journal and review recovery before further effects.");
   if (journal.stage !== "complete") validateRetryState(journal);
 
   if (journal.stage === "prepared") journal = setJournalStage(roots.project!, journal, "deleting");
@@ -561,7 +603,15 @@ export function applyProductV1Reset(options: ProductV1ResetOptions, authorizatio
         if (target.path) assertContained(targetRoot, target.path);
         if (target.operation === "remove_path" && target.path) {
           if (retry) validateRemovePath(target, false);
-          fs.rmSync(target.path, { recursive: true, force: true });
+          if (target.path === hostSkillPath(scope.roots.runtime_home!)) {
+            for (const entry of [...hostSnapshot(target.path, scope.roots.runtime_home!)].reverse()) {
+              if (entry.type === "absent") continue;
+              if (!(target.entries ?? []).some((approved) => JSON.stringify(approved) === JSON.stringify(entry))) throw new Error("Reset host changed after approval; preserve it for manual recovery.");
+              const observed = observeLifecyclePath(entry.path, [scope.roots.runtime_home!]);
+              if (observed.kind !== "directory" && observed.kind !== "file" && observed.kind !== "symlink") throw new Error("Reset host entry changed before removal.");
+              removeLifecycleResource({ id: "reset.host-skill", destination: entry.path, kind: observed.kind }, observed);
+            }
+          } else fs.rmSync(target.path, { recursive: true, force: true });
           dependencies.afterEffect?.(`delete:${deletion.id}:${target.declared}`);
         }
       }

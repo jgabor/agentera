@@ -58,6 +58,7 @@ function loadBundleEntries() {
     return {
       directories: record.bundle_surfaces.directories,
       files: record.bundle_surfaces.files,
+      hostSkill: record.bundle_surfaces.host_skill,
     };
   } catch (error) {
     const detail = error instanceof Error ? error.message : String(error);
@@ -173,6 +174,13 @@ function preflight(entries) {
     reserveDestination(entry, entry.path, destination, "file");
     files.push({ source, destination });
   }
+
+  const hostSource = resolveSource({ id: "host-skill" }, entries.hostSkill.source, "file");
+  const hostDirectory = path.resolve(bundleRoot, entries.hostSkill.path);
+  reserveDestination({ id: "host-skill" }, entries.hostSkill.path, hostDirectory, "directory");
+  const hostDestination = path.join(hostDirectory, "SKILL.md");
+  reserveDestination({ id: "host-skill" }, entries.hostSkill.source, hostDestination, "file");
+  files.push({ source: hostSource, destination: hostDestination });
 
   const generated = {
     marker: path.join(bundleRoot, ".agentera-npx-bundle.json"),

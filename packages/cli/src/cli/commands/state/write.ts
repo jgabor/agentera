@@ -26,6 +26,7 @@ import {
 } from "../../../state/write/index.js";
 import { inspectTodoUpdateBatch } from "../../../state/todoUpdateBatch.js";
 import { inspectTodoCreateBatch } from "../../../state/todoCreateBatch.js";
+import { isStateExplainDetail, runStateExplainDetail } from "./explainDetail.js";
 
 interface ParsedWrite {
   artifact: WritableArtifact;
@@ -420,6 +421,7 @@ function explainArgs(argv: string[]): {
 }
 
 export function runStateWrite(artifactRaw: string, argv: string[], io: Io): number {
+  if (isStateExplainDetail(["state", artifactRaw, ...argv])) return runStateExplainDetail(artifactRaw, argv.slice(1), io);
   const out = io.out ?? ((text: string) => process.stdout.write(text));
   const err = io.err ?? ((text: string) => process.stderr.write(text));
   const detectedFormat = formatFromArgv(argv);
