@@ -39,7 +39,10 @@ jobs:
           vp exec node --input-type=module -e 'import os from "node:os"; console.log(JSON.stringify({node:process.version,cpu:os.cpus()[0]?.model,logicalCpus:os.cpus().length,availableParallelism:os.availableParallelism(),runner:process.env.RUNNER_NAME,os:process.env.RUNNER_OS,arch:process.env.RUNNER_ARCH,commit:process.env.GITHUB_SHA}));' | tee "$benchmark_diagnostics/runner.json"
           benchmark_stop_ms=$(( $(date +%s) * 1000 + 80 * 60 * 1000 ))
           benchmark_source_budget=$(vp exec node --input-type=module -e 'import fs from "node:fs"; console.log(JSON.parse(fs.readFileSync("references/adapters/package-publication.json", "utf8")).benchmark.timeouts.sourceQualificationMs)')
-          for benchmark_case in r1-w4 r1-w2 r2-w2 r2-w4 r3-w4 r3-w2; do
+          benchmark_failed=0
+          # First establish whether reserving CPU for package work meets its budget.
+          # Keep both results even when an owner rejects a sample.
+          for benchmark_case in r1-w2 r1-w4; do
             benchmark_workers=${benchmark_case##*-w}
             benchmark_run="$benchmark_root/$benchmark_case"
             mkdir -m 700 "$benchmark_run"
@@ -71,8 +74,9 @@ jobs:
           fs.writeFileSync(path.join(diagnostics, `${name}.json`), JSON.stringify(summary), {mode:0o600});
           console.log(JSON.stringify(summary));
           NODE
-            if [ "$benchmark_status" -ne 0 ]; then exit "$benchmark_status"; fi
+            if [ "$benchmark_status" -ne 0 ]; then benchmark_failed=1; fi
           done
+          exit "$benchmark_failed"
       - name: Retain timing diagnostics
         if: always()
         uses: actions/upload-artifact@v4

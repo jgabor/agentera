@@ -222,3 +222,18 @@ The changed standalone package owner passed all 41 tests in 84.891 s. All eleven
 partitions completed 4,463 queries, matching the earlier retained package run's
 command and semantic hashes. Static discovery took 31.129 s; package construction
 setup took 2.964 s. These are local isolated-owner timings, not hosted results.
+
+[Run 34864062466](https://github.com/jgabor/agentera/actions/runs/34864062466)
+tested the parse-cache change in `d6a82cad` on a four-vCPU AMD EPYC 9V74 runner.
+All 41 package tests passed, including schema and upgrade discovery. The package
+owner still rejected its 597.031 s wall time against the unchanged 515-second
+budget. Setup took 24.153 s, static discovery 229.448 s, and package verification
+324.037 s. Source was cancelled at 599.283 s; there is no source pass evidence.
+The different CPU models prevent attributing the entire cross-run timing change
+to the cache.
+
+The next hosted diagnostic runs two source workers first, then four, on the same
+runner. It retains both outcomes and fails overall if either sample fails.
+This is one pair to resolve the missing allocation evidence, not a repeated
+performance qualification. Test coverage, owner budgets and deadlines remain
+unchanged. The production worker default is unchanged pending that evidence.
