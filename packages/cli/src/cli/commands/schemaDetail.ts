@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import YAML from "yaml";
+import { loadReadOnlyYamlAuthorityFile, withReadOnlyYamlMappingCache } from "../../core/yaml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { ARTIFACT_PROTOCOL_PATHS } from "../../registries/artifactProtocolIds.js";
 import { validateContractBootstrap } from "../../registries/capabilityContract.js";
@@ -32,6 +32,10 @@ export const schemaDetailDiscovery = () => ({
 
 /** Selected static branch: only shipped contract data, never app/home/project readers. */
 export function runSchemaDetail(argv: string[], io: { out?: (text: string) => void; err?: (text: string) => void }): number {
+  return withReadOnlyYamlMappingCache(() => runSchemaDetailRequest(argv, io));
+}
+
+function runSchemaDetailRequest(argv: string[], io: { out?: (text: string) => void; err?: (text: string) => void }): number {
   let baseCommand = PREFIX;
   try {
     const args: Record<string, string | boolean> = {};
@@ -65,9 +69,9 @@ export function runSchemaDetail(argv: string[], io: { out?: (text: string) => vo
     };
     const hash = createHash("sha256");
     const add = (relative: string, namespace?: string) => {
-      const text = fs.readFileSync(path.join(root, relative), "utf8");
-      hash.update(relative).update(text);
       if (!relative.endsWith(".yaml")) {
+        const text = fs.readFileSync(path.join(root, relative), "utf8");
+        hash.update(relative).update(text);
         sections.push({
           name: namespace!,
           content: text,
@@ -76,10 +80,8 @@ export function runSchemaDetail(argv: string[], io: { out?: (text: string) => vo
         });
         return;
       }
-      const doc = YAML.parseDocument(text);
-      if (doc.errors.length || doc.warnings.length) throw new Error("Invalid authority YAML.");
-      const content: unknown = doc.toJS();
-      if (!content || typeof content !== "object" || Array.isArray(content) || !Object.keys(content).length) throw new Error("Authority must be a nonempty mapping.");
+      const { text, value: content, comments: authorityComments } = loadReadOnlyYamlAuthorityFile(path.join(root, relative));
+      hash.update(relative).update(text);
       const mapping = content as JsonObject;
       if (!namespace) {
         const meta = mapping.meta as JsonObject | undefined;
@@ -110,30 +112,11 @@ export function runSchemaDetail(argv: string[], io: { out?: (text: string) => vo
         });
         qualifications.writing_command = `${baseCommand} --section writing`;
       }
-      if (doc.commentBefore)
-        comments.push({
-          section: namespace ?? null,
-          placement: "before_document",
-          text: doc.commentBefore,
-        });
-      YAML.visit(doc, {
-        Node(_key, node, ancestors) {
-          const keys: string[] = namespace ? [namespace] : [];
-          ancestors.forEach((ancestor, i) => {
-            if (YAML.isPair(ancestor)) keys.push(encodeURIComponent(String(ancestor.key)).replaceAll(".", "%2E"));
-            else if (YAML.isSeq(ancestor)) keys.push(String(ancestor.items.indexOf(ancestors[i + 1] ?? node)));
-          });
-          const section = keys.join(".") || null;
-          if (node.commentBefore) comments.push({ section, placement: "before", text: node.commentBefore });
-          if (node.comment) comments.push({ section, placement: "after", text: node.comment });
-        },
-      });
-      if (doc.comment)
-        comments.push({
-          section: namespace ?? null,
-          placement: "after_document",
-          text: doc.comment,
-        });
+      for (const comment of authorityComments) {
+        const keys = comment.path.map((key) => encodeURIComponent(key).replaceAll(".", "%2E"));
+        if (namespace) keys.unshift(namespace);
+        comments.push({ section: keys.join(".") || null, placement: comment.placement, text: comment.text });
+      }
       if (namespace)
         sections.push({
           name: namespace,

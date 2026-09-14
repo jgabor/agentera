@@ -14,10 +14,14 @@ resource and capacity owners, followed by concurrent validation readers.
   warm-cache path skips its download-integrity check. Each overlap participant
   also gets isolated npm and XDG state.
 - Vitest's filesystem module cache is enabled in `packages/cli/vitest.shared.ts`.
-- Static report/check/recovery commands share immutable YAML mappings within one
-  synchronous request. A new request reads current authorities again, including
-  after failure. Comment-preserving parsing, validation, cursor binding, and
-  independent package construction remain in place.
+- Static schema/report/check/recovery commands reuse immutable YAML values and
+  comment locations by exact source contents. The parse cache retains at most
+  64 entries and 2 MiB of source text. Every invocation still reads current
+  authority bytes and runs contract validation, including after failure. Changes
+  to values or comments invalidate reuse; missing or unreadable files still fail.
+  Legacy mapping validators reuse these parses only inside an explicit read-only
+  request. Ordinary mutable mapping callers retain their existing behavior.
+  Cursor binding and independent package construction remain in place.
 
 Do not cache the whole overlap result or reuse one construction as both inputs
 to the package determinism check. Those changes would skip the behavior under
@@ -175,5 +179,46 @@ results or removing their independent cases.
 Package static discovery took 155.726 s and package verification took 56.318 s.
 Package setup was only 4.436 s of its 220.054 s inner wall time. Static discovery
 therefore remains the largest package test after request-scoped YAML reuse.
-These measurements preserve all 4,457 traversal queries, the two independent
+These measurements preserve all 4,463 traversal queries, the two independent
 package constructions, and the private overlap build.
+
+## Hosted follow-up
+
+[Run 34859417832](https://github.com/jgabor/agentera/actions/runs/34859417832)
+tested commit `0ccf1dfb435cd3a9d4e69be921cd47b9795d173a` on a four-vCPU Intel Xeon
+Platinum 8573C runner. The first four-worker sample failed after 854.253 s.
+Schema and upgrade discovery each reached the 110-second subprocess timeout;
+all three report partitions passed. Package tests recorded 39 passes and two
+failures. The source participant was cancelled and the five remaining samples
+did not run, so this does not establish a hosted worker allocation comparison.
+
+The package profile recorded 849.980 s wall time, of which setup took 22.041 s.
+Static discovery took 538.647 s and the other package-verification suite took
+271.223 s. This was a subprocess timeout failure, not merely a wall-budget
+rejection; the unchanged 515-second package acceptance budget also remains to
+be met by a successful hosted run.
+
+Local CPU profiles identify repeated YAML parsing in schema and upgrade
+discovery and repeated comment-path traversal in schema. Content-based parse
+reuse addresses this work without caching file observations, validation results,
+whole queries, test results or package constructions.
+
+One serial local comparison used separate baseline and changed distributions,
+the same pinned Node 24.19.0 runtime, and a fresh process for each traversal.
+Both distributions completed every query with identical command and semantic
+SHA-256 values, continuation/detail counts, roots and maximum output sizes.
+
+| Traversal | Queries | Before | After |
+| --- | --- | --- | --- |
+| Schema | 1,388 | 45.437 s | 1.197 s |
+| Upgrade | 1,235 | 25.529 s | 3.802 s |
+
+These are local complete-traversal measurements, not hosted CI or individual
+cold CLI invocation timings. The bounded parse cache warms within each process;
+all file reads, validation, queries and comments remain covered. Hosted timeout
+and package-budget acceptance still need a run of the changed commit.
+
+The changed standalone package owner passed all 41 tests in 84.891 s. All eleven
+partitions completed 4,463 queries, matching the earlier retained package run's
+command and semantic hashes. Static discovery took 31.129 s; package construction
+setup took 2.964 s. These are local isolated-owner timings, not hosted results.

@@ -198,6 +198,28 @@ describe("selected static schema contracts", () => {
     expect(query(next.map((value) => (value === "--protocol" ? "--capability-contract" : value))).rc).toBe(64);
   });
 
+  it("invalidates cached comments and cursors and revalidates changed authority metadata", () => {
+    const next = commandArgs(query(["--protocol", "--limit", "1"]).payload.next_command);
+    const file = path.join(root, "skills/agentera/protocol.yaml");
+    const read = fs.readFileSync.bind(fs);
+    let change = "comment";
+    vi.spyOn(fs, "readFileSync").mockImplementation(((selected: any, ...args: any[]) => {
+      const text = (read as any)(selected, ...args);
+      if (String(selected) !== file) return text;
+      if (change === "comment") return `${text}\n# Fresh cached-authority comment\n`;
+      const value = YAML.parse(text);
+      value.meta.version = "9.9.9";
+      return YAML.stringify(value);
+    }) as typeof fs.readFileSync);
+    expect(query(next).rc).toBe(64);
+    expect(query(["--protocol", "--section", "source_notes"]).out).toContain("Fresh cached-authority comment");
+    change = "metadata";
+    expect(query(["--protocol"]).rc).toBe(1);
+    expect(query(["--protocol"]).rc).toBe(1);
+    vi.restoreAllMocks();
+    expect(query(["--protocol"]).rc).toBe(0);
+  });
+
   it("rejects parseable versioned protocol guidance with missing groups and an undefined phase successor", () => {
     const dir = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-static-invalid-protocol-"));
     temporary.push(dir);

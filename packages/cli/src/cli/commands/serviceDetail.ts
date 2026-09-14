@@ -1,9 +1,8 @@
 import fs from "node:fs";
 import path from "node:path";
 import { createHash } from "node:crypto";
-import YAML from "yaml";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import { withReadOnlyYamlMappingCache } from "../../core/yaml.js";
+import { loadReadOnlyYamlAuthorityFile, withReadOnlyYamlMappingCache } from "../../core/yaml.js";
 import { guidanceDetail, guidanceQuote, GuidanceInputError, type GuidanceSection } from "../guidanceDetail.js";
 import { emitInvalidInput } from "../errors.js";
 import { reportDetailSections } from "./reportDetail.js";
@@ -28,23 +27,17 @@ export class ServiceAuthority {
   }
   yaml(relative: string, name: string, validate: (value: Record<string, unknown>, absolute: string) => void) {
     const absolute = path.join(this.root, relative);
-    const text = fs.readFileSync(absolute, "utf8");
-    const doc = YAML.parseDocument(text);
-    const value = doc.toJS();
-    if (doc.errors.length || doc.warnings.length || !value || typeof value !== "object" || Array.isArray(value) || !Object.keys(value).length) throw new Error("Invalid runtime authority.");
+    const { text, value, comments } = loadReadOnlyYamlAuthorityFile(absolute);
     validate(value, absolute);
     this.hash.update(relative).update(text);
     this.add(name, value, relative);
-    const comments: string[] = [];
-    YAML.visit(doc, (_key, node) => {
-      if (node && typeof node === "object") {
-        if ("commentBefore" in node && typeof node.commentBefore === "string") comments.push(node.commentBefore);
-        if ("comment" in node && typeof node.comment === "string") comments.push(node.comment);
-      }
-    });
-    if (doc.commentBefore) comments.unshift(doc.commentBefore);
-    if (doc.comment) comments.push(doc.comment);
-    if (comments.length) this.add(`${name}_notes`, comments, relative, "source_commentary_read_with_authority");
+    if (comments.length)
+      this.add(
+        `${name}_notes`,
+        comments.map((comment) => comment.text),
+        relative,
+        "source_commentary_read_with_authority",
+      );
     return value;
   }
   digest() {

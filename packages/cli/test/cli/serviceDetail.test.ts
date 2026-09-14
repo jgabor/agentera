@@ -361,11 +361,15 @@ describe("purpose-owned report/check/recovery static guidance", () => {
       ["upgrade", "--explain", "--operation", "cleanup"],
     ],
   ] as const)("fails closed on selected malformed governance: %s", (file, mutate, args) => {
+    expect(query([...args]).code).toBe(0);
     corrupt(file, mutate);
     const result = query([...args]);
     expect(result.code, result.out).toBe(1);
     expect(result.out).not.toContain("Error:");
     expect(result.value.error.class).toBe("schema_violation");
+    expect(query([...args]).code).toBe(1);
+    vi.restoreAllMocks();
+    expect(query([...args]).code).toBe(0);
   });
   it("does not open project/private stores or write during discovery", () => {
     vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", root);
