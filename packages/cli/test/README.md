@@ -97,8 +97,11 @@ Release source verification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence. It
 runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
 and the adversarial activation-evidence cases instead of repeating them in
-ordinary source verification. It
-runs beside isolated stress, typecheck and historical certification owners. After those batch owners
+ordinary source verification. Full runs reuse baseline capability observations
+for parity and compare fresh post-command protected-root snapshots with the
+runtime/state baseline. They retain all 190 matrix rows and nine protected roots.
+Standalone parity selections still execute the direct runtime observers.
+The overlap process runs beside isolated stress, typecheck and historical certification owners. After those batch owners
 pass and the private build settles, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner
 identity so CPU contention cannot invalidate its machine-sensitive evidence.
@@ -126,6 +129,8 @@ setup, upgrade, lifecycle, state/fs contracts, build, analytics, hooks, scripts
 and validation tests; none are removed from full source CI. Run `vp run test`
 or `vp -C packages/cli run test:source` for the entire source owner;
 `vp test run --project source` alone intentionally selects only the remainder.
+The full source owner uses one project and one transient runtime compilation.
+Root native discovery retains the three projects needed by local hooks.
 Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative
 development safety through `vp run verify:development`; explicit full

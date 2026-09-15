@@ -584,12 +584,16 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
         ["absence", absent],
       ] as const;
       assertProtectedRootAuthority(protectedRoots, protectedRootPaths);
+      // Fixture setup is complete for this runtime/state. The following sequence
+      // only reads protected roots; sentinels go to the separate evidence root.
+      // Compare a fresh post-operation snapshot to this baseline after every
+      // accepted command and rejection batch, without rereading it before each.
+      const protectedBaseline = snapshotsWithTiming(protectedRoots);
 
       const dispatch = (id: string, identity: { owner: string; source: string }, candidate: string, expected: { accepted: boolean; classification: string; exit?: number; argv?: string[] }): SpawnSyncReturns<string> => {
         const sentinel = path.join(evidenceRoot, `${evidenceSequence}-${runtime}-${projectState}-${id}.sentinel`);
         const environmentEvidence = `${sentinel}.environment.json`;
         evidenceSequence += 1;
-        const before = snapshotsWithTiming(protectedRoots);
         const commandStarted = performance.now();
         const result = spawnSync(process.execPath, [DISPATCHER, JSON.stringify(identity), candidate, runtimeRoot, project, sentinel, environmentEvidence], {
           cwd: project,
@@ -599,7 +603,7 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
         });
         timing.acceptedCommandMs += elapsedMs(commandStarted);
         const after = snapshotsWithTiming(protectedRoots);
-        expect(after, `${runtime}/${projectState}/${id} preservation`).toEqual(before);
+        expect(after, `${runtime}/${projectState}/${id} preservation`).toEqual(protectedBaseline);
         const childStarted = fs.existsSync(sentinel);
         expect(childStarted, `${runtime}/${projectState}/${id} child start`).toBe(expected.accepted);
         let classification = "accepted";
@@ -726,7 +730,6 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
       }
 
       const rejectionSpecs = REJECTION_EXECUTION_SPECS.filter(({ states }) => states.includes(projectState)).filter(({ id }) => !options.bounded || id === "reject-stable");
-      const rejectionBefore = snapshotsWithTiming(protectedRoots);
       const rejectionStarted = performance.now();
       const rejectionResult = spawnSync(
         process.execPath,
@@ -745,7 +748,7 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
       );
       timing.rejectedCommandMs += elapsedMs(rejectionStarted);
       const rejectionAfter = snapshotsWithTiming(protectedRoots);
-      expect(rejectionAfter, `${runtime}/${projectState}/rejections preservation`).toEqual(rejectionBefore);
+      expect(rejectionAfter, `${runtime}/${projectState}/rejections preservation`).toEqual(protectedBaseline);
       expect(rejectionResult.status, `${runtime}/${projectState}/rejections\n${rejectionResult.stderr}\n${rejectionResult.stdout}`).toBe(0);
       const rejectionObservations = JSON.parse(rejectionResult.stdout) as Array<{
         id: string;

@@ -227,6 +227,16 @@ describe("personal PROFILE.md glossary output", () => {
     ).toEqual(["é", "e\u0301"].sort());
   });
 
+  it("adds and refreshes entries in deterministic Unicode order", () => {
+    const pathname = profilePath();
+    for (const term of ["zeta term", "alpha term", "café", "cafe\u0301"]) update(pathname, [explicit({ term })]);
+    update(pathname, [explicit({ term: "alpha term", confidence: 91 })], "2026-07-02");
+    const entries = document(pathname).entries;
+    expect(entries.map((entry: any) => entry.term)).toEqual(["alpha term", "cafe\u0301", "café", "zeta term"]);
+    expect(new Set(entries.map((entry: any) => entry.term))).toHaveLength(4);
+    expect(entries[0]).toMatchObject({ term: "alpha term", confidence: 91 });
+  });
+
   it("is invariant to a project-glossary trap path", () => {
     const pathname = profilePath();
     const trap = path.join(path.dirname(pathname), ".agentera", "glossary.yaml");

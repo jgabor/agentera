@@ -249,6 +249,7 @@ describe("native hook boundaries", () => {
       const result = run(repo, vp, ["test", "list", "--filesOnly", "--json", "--config", owner === "package" ? "packages/cli/vite.package.config.ts" : "packages/cli/vite.config.ts"], { ...process.env, AGENTERA_VERIFICATION_OWNER: owner });
       expect(result.status, result.stderr).toBe(0);
       const files = JSON.parse(result.stdout) as { file: string; projectName: string }[];
+      if (owner === "source") expect([...new Set(files.map(({ projectName }) => projectName))]).toEqual(["source"]);
       const relative = files.map(({ file }) => path.relative(repo, file)).sort();
       expect(relative).toEqual(expected);
       all.push(...relative);

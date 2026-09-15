@@ -103,29 +103,6 @@ describe("source-owned runtime bootstrap integration", () => {
     });
     expect(observations[1]).toEqual(observations[0]);
   });
-  it("preserves all 12 served capability bodies across source, constructed, and extracted observers", { timeout: 120_000 }, () => {
-    const source = loadSourceCapabilityInstructions(CHECKOUT_ROOT);
-    expect(Object.keys(source.modules)).toHaveLength(12);
-    expect(source.modules).toEqual(source.runtimeRegistry);
-    for (const body of Object.values(source.modules)) {
-      expect(body).toContain("## Current contract access");
-    }
-    const project = path.join(fixture.root, "capability-observer-project");
-    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
-    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
-    for (const runtimeRoot of [fixture.constructionRoot, fixture.packageRoot]) {
-      const result = spawnSync(process.execPath, [path.join(CHECKOUT_ROOT, "packages/cli/scripts/observe-runtime-artifact.mjs"), runtimeRoot, project], {
-        cwd: project,
-        encoding: "utf8",
-        timeout: 120_000,
-      });
-      expect(result.status, result.stderr || result.stdout).toBe(0);
-      const { capabilities } = JSON.parse(result.stdout);
-      expect(capabilities.modules).toEqual(source.modules);
-      expect(capabilities.runtimeRegistry).toEqual(source.modules);
-      expect(capabilities.served).toEqual(source.modules);
-    }
-  });
 
   it("rejects protected-root and execution-registry origin mutations against fixed authorities", () => {
     expect(PROTECTED_ROOT_IDENTIFIERS).toEqual(["project", "home", "shared_skill", "install", "package", "package_artifact", "cache", "temporary", "absence"]);
@@ -288,20 +265,20 @@ describe("source-owned runtime bootstrap integration", () => {
     });
     const { evidence, packageIdentity } = finalized;
     const generation = fixture.sourceIdentity.identitySha256;
-    const generatedEvidence = await createGeneratedOwnerEvidence({
+    // Observe generated output through the real assembler once. Keep its mutable
+    // package input separate from the package evidence reused by later attacks.
+    const packageEvidenceInput = structuredClone(evidence);
+    const assembled = assembleAndValidateActivationEvidence({
       root: CHECKOUT_ROOT,
       generationRoot: fixture.constructionRoot,
       generation,
       productionInputs,
-    });
-    const manifest = createActivationEvidenceManifest({
-      root: CHECKOUT_ROOT,
-      generation,
       productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
       sourceEvidence,
-      generatedEvidence,
-      packageEvidence: evidence,
+      packageEvidence: packageEvidenceInput,
+      expectedPackageIdentity: packageIdentity,
     });
+    const manifest = assembled.manifest;
     return {
       productionInputs,
       sourceEvidence,
@@ -309,13 +286,15 @@ describe("source-owned runtime bootstrap integration", () => {
       packageIdentity,
       generation,
       manifest,
+      observerCalls: assembled.observerCalls,
+      packageEvidenceInput,
       summary,
       missingSurfaceResults,
     };
   }
 
   it.skipIf(!RELEASE_EVIDENCE_RUN)("assembles baseline release evidence from one immutable package fixture", { timeout: 240_000 }, async () => {
-    const { productionInputs, sourceEvidence, evidence, packageIdentity, generation, manifest, summary } = await releaseBaseline();
+    const { sourceEvidence, evidence, packageIdentity, manifest, observerCalls, packageEvidenceInput, summary } = await releaseBaseline();
     expect(summary).toBeDefined();
     expect(fixture.deterministicBytes.packRuns).toBe(2);
     const sourceOutput = process.env.AGENTERA_ACTIVATION_SOURCE_EVIDENCE_OUTPUT;
@@ -364,31 +343,60 @@ describe("source-owned runtime bootstrap integration", () => {
     const manifestViolations = activationEvidenceManifestViolations(manifest, manifest);
     expect(manifestViolations, manifestViolations.join("\n")).toEqual([]);
 
-    let sourceObservations = 0;
-    let generatedObservations = 0;
-    const mutablePackageEvidence = structuredClone(evidence);
-    const assembledResult = assembleAndValidateActivationEvidence({
-      root: CHECKOUT_ROOT,
-      generationRoot: fixture.constructionRoot,
-      generation,
-      productionInputs,
-      productionEvidence: collectActivationProductionEvidence(CHECKOUT_ROOT, productionInputs),
-      sourceEvidence,
-      packageEvidence: mutablePackageEvidence,
-      expectedPackageIdentity: packageIdentity,
-    });
-    sourceObservations += assembledResult.observerCalls.source;
-    generatedObservations += assembledResult.observerCalls.generated;
-    const assembled = assembledResult.manifest;
-    const packageRecord = mutablePackageEvidence.records["capability.extracted-modules"];
+    const packageRecord = packageEvidenceInput.records["capability.extracted-modules"];
     packageRecord.content = { attacker: true };
     packageRecord.observationDigest = observationDigest(packageRecord.content);
-    expect({ sourceObservations, generatedObservations }).toEqual({
-      sourceObservations: 1,
-      generatedObservations: 1,
-    });
-    expect(activationEvidenceManifestViolations(assembled, assembled)).toEqual([]);
-    expect(assembled.producers.package.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
+    expect(observerCalls).toEqual({ source: 1, generated: 1 });
+    expect(activationEvidenceManifestViolations(manifest, manifest)).toEqual([]);
+    expect(manifest.producers.package.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
+    expect(evidence.records["capability.extracted-modules"].content).not.toEqual({ attacker: true });
+  });
+
+  it("preserves all 12 served capability bodies across source, constructed, and extracted observers", { timeout: 120_000 }, async () => {
+    const source = loadSourceCapabilityInstructions(CHECKOUT_ROOT);
+    expect(Object.keys(source.modules)).toHaveLength(12);
+    expect(source.modules).toEqual(source.runtimeRegistry);
+    for (const body of Object.values(source.modules)) {
+      expect(body).toContain("## Current contract access");
+    }
+    // Full runs reach this assertion after baseline assembly. Reuse the exact
+    // independently observed bodies instead of spawning the same 24 CLI reads.
+    // A standalone selection retains its original direct runtime observers and
+    // never absorbs the matrix/baseline work into this assertion's timeout.
+    if (RELEASE_EVIDENCE_RUN && baseline) {
+      const { manifest } = await baseline;
+      const expected = {
+        identities: Object.keys(source.modules).sort(),
+        bodies: Object.fromEntries(Object.entries(source.modules).map(([id, body]) => [id, { sha256: createHash("sha256").update(body, "utf8").digest("hex"), bytes: Buffer.byteLength(body, "utf8") }])),
+      };
+      const observed = {
+        sourceModules: manifest.producers.source.records["capability.source-modules"].content,
+        sourceRegistry: manifest.producers.source.records["capability.source-runtime-registry"].content,
+        constructedModules: manifest.producers.generated.records["capability.generated-modules"].content,
+        constructedRegistry: manifest.producers.generated.records["capability.generated-runtime-registry"].content,
+        constructedServed: manifest.producers.generated.records["capability.generated-served"].content,
+        extractedModules: manifest.producers.package.records["capability.extracted-modules"].content,
+        extractedRegistry: manifest.producers.package.records["capability.extracted-runtime-registry"].content,
+        extractedServed: manifest.producers.source.records["capability.extracted-served"].content,
+      };
+      for (const [observer, bodies] of Object.entries(observed)) expect(bodies, observer).toEqual(expected);
+      return;
+    }
+    const project = path.join(fixture.root, "capability-observer-project");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    for (const runtimeRoot of [fixture.constructionRoot, fixture.packageRoot]) {
+      const result = spawnSync(process.execPath, [path.join(CHECKOUT_ROOT, "packages/cli/scripts/observe-runtime-artifact.mjs"), runtimeRoot, project], {
+        cwd: project,
+        encoding: "utf8",
+        timeout: 120_000,
+      });
+      expect(result.status, result.stderr || result.stdout).toBe(0);
+      const { capabilities } = JSON.parse(result.stdout);
+      expect(capabilities.modules).toEqual(source.modules);
+      expect(capabilities.runtimeRegistry).toEqual(source.modules);
+      expect(capabilities.served).toEqual(source.modules);
+    }
   });
 
   it.skipIf(!RELEASE_EVIDENCE_RUN)("rejects manifest mutations and re-signed artifact evidence", { timeout: 240_000 }, async () => {

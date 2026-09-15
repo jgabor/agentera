@@ -44,7 +44,7 @@ export const sharedTestConfig = {
 
 // Native discovery and CI consume the same membership authority. The local
 // fast behavior and guards are disjoint subsets of source, not new CI owners.
-export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ?? "source", workers = maxWorkers) {
+export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ?? "source", workers = maxWorkers, { partitionSource = false }: { partitionSource?: boolean } = {}) {
   const root = import.meta.dirname;
   const policy = YAML.parse(fs.readFileSync(path.resolve(root, "../../references/analysis/verification-policy.yaml"), "utf8"));
   if (!Object.hasOwn(policy.owners, owner)) throw new Error(`Unknown verification owner: ${owner}`);
@@ -72,5 +72,7 @@ export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ??
       ...(owner === "package" ? { maxWorkers: 1, testTimeout: 120_000 } : {}),
     },
   });
-  return owner === "source" ? [project("local", local, [...exclude, ...guards]), project("source", include, [...exclude, ...guards, ...local]), project("guards", guards, [])] : [project(owner, include, exclude)];
+  // Full source verification compiles its transient runtime once. Only root
+  // native discovery needs separate projects for fast local hooks and guards.
+  return owner === "source" && partitionSource ? [project("local", local, [...exclude, ...guards]), project("source", include, [...exclude, ...guards, ...local]), project("guards", guards, [])] : [project(owner, include, exclude)];
 }

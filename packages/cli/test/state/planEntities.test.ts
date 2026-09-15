@@ -114,24 +114,62 @@ function complete(root: string, title: string): any {
   expect(capture(root, ["state", "plan", "set-plan-status", "--plan", created.id, "--status", "complete", "--format", "json"]).rc).toBe(0);
   return created;
 }
+function completedReplacementFixture(root: string, title: string, evaluated = false): { planId: string; predecessor: string; replacement: string } {
+  const created = openPlanFixture(root, 0, title);
+  const predecessor = created.tasks[0]!.id;
+  const replacement = fixtureId(2);
+  const directory = path.join(root, ".agentera/entities/plan/plan_task");
+  fs.writeFileSync(
+    path.join(directory, `${predecessor}.yaml`),
+    dumpYamlMapping({
+      id: predecessor,
+      artifact: "plan",
+      record: { plan: created.id, name: "First", status: "blocked", depends_on: [], acceptance: ["GIVEN state WHEN written THEN it is canonical"] },
+    }),
+  );
+  fs.writeFileSync(
+    path.join(directory, `${replacement}.yaml`),
+    dumpYamlMapping({
+      id: replacement,
+      artifact: "plan",
+      record: {
+        plan: created.id,
+        name: "Completed replacement",
+        status: "complete",
+        depends_on: [],
+        acceptance: [],
+        ...(evaluated
+          ? {
+              evaluation: {
+                attempt_count: 1,
+                failure_count: 0,
+                last_verdict: "pass",
+                last_failure_evidence: null,
+                provenance: {
+                  attempt_id: "replacement-audit-1",
+                  source: "audit",
+                  recorded_at: "2026-07-17 12:00",
+                  writer_command: "agentera state plan record-evaluation",
+                },
+              },
+            }
+          : {}),
+      },
+    }),
+  );
+  return { planId: created.id, predecessor, replacement };
+}
 function persistedReplacement(root: string, title: string): { planId: string; predecessor: string; replacement: string } {
-  const created = create(root, title);
-  const predecessor = created.tasks[0].id;
-  const replacement = appendTask(root, created.id, {
-    name: "Completed replacement",
-    depends_on: [],
-    acceptance: [],
-  }).id;
-  expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", predecessor, "--status", "blocked", "--format", "json"]).rc).toBe(0);
-  expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
-  const predecessorPath = path.join(root, `.agentera/entities/plan/plan_task/${predecessor}.yaml`);
+  const fixture = completedReplacementFixture(root, title);
+  const predecessorPath = path.join(root, `.agentera/entities/plan/plan_task/${fixture.predecessor}.yaml`);
   const envelope = loadYamlMapping(fs.readFileSync(predecessorPath, "utf8"));
   const record = envelope.record as Record<string, unknown>;
   record.status = "superseded";
-  record.superseded_by = [replacement];
+  record.superseded_by = [fixture.replacement];
   record.superseded_reason = "Replacement closes the failed work.";
   fs.writeFileSync(predecessorPath, dumpYamlMapping(envelope));
-  return { planId: created.id, predecessor, replacement };
+  expect(validateEntityState(root).valid).toBe(true);
+  return fixture;
 }
 function fixtureId(index: number): string {
   let value = index;
@@ -1718,17 +1756,9 @@ finally { process.chdir(cwd); }
   it("serializes supersession against replacement reopening and plan archival", async () => {
     for (const action of ["reopen", "archive"] as const) {
       const root = project();
-      const created = create(root, `supersession ${action}`);
-      const blocked = created.tasks[0].id;
-      const replacement = appendTask(root, created.id, {
-        name: "Completed replacement",
-        depends_on: [],
-        acceptance: [],
-      }).id;
-      expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", blocked, "--status", "blocked", "--format", "json"]).rc).toBe(0);
-      expect(capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", replacement, "--attempt-id", "replacement-audit-1", "--verdict", "pass", "--provenance", "audit", "--format", "json"]).rc).toBe(0);
-      expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", replacement, "--status", "complete", "--format", "json"]).rc).toBe(0);
-      const outcomes = await concurrentLifecycle(root, created.id, blocked, replacement, action);
+      const { planId, predecessor: blocked, replacement } = completedReplacementFixture(root, `supersession ${action}`, true);
+      expect(validateEntityState(root).valid).toBe(true);
+      const outcomes = await concurrentLifecycle(root, planId, blocked, replacement, action);
       expect(outcomes.some(({ ok }) => ok)).toBe(true);
       if (action === "reopen") expect(outcomes.filter(({ ok }) => ok)).toHaveLength(1);
       expect(validateEntityState(root).valid).toBe(true);

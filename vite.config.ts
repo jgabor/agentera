@@ -39,6 +39,6 @@ export default defineConfig({
   test: {
     ...sharedTestConfig,
     maxWorkers: 2,
-    projects: ownerProjects("source", 2),
+    projects: ownerProjects("source", 2, { partitionSource: true }),
   },
 });

@@ -329,7 +329,10 @@ function indexedId(index: number): string {
     .join("");
 }
 
-function realisticTodoProject(count = 120): {
+function todoReadProject(
+  count: number,
+  options: { normalOpenCount?: number; resolvedCount?: number; largeStartupRecords?: boolean } = {},
+): {
   root: string;
   orderedIds: string[];
   criticalOpenIds: string[];
@@ -346,31 +349,33 @@ function realisticTodoProject(count = 120): {
   const orders = { critical: 0, normal: 0, resolved: 0 };
   for (let index = 0; index < count; index += 1) {
     const id = indexedId(index);
-    const resolved = index >= 100;
-    const severity = index < 70 || resolved ? "critical" : "normal";
+    const resolved = index >= count - (options.resolvedCount ?? 0);
+    const severity = index < count - (options.normalOpenCount ?? 0) - (options.resolvedCount ?? 0) || resolved ? "critical" : "normal";
     const section = resolved ? "resolved" : severity;
     const status = resolved ? "resolved" : "open";
     const order = ++orders[section];
-    const title = `Synchronize retrieval consumer ${String(index + 1).padStart(3, "0")}: ${"preserve deterministic bounded evidence and exact recovery without mutating project state; ".repeat(5).trim()}`;
+    const title = options.largeStartupRecords ? `Critical startup item ${index}` : `Retrieval item ${String(index + 1).padStart(3, "0")}`;
     const publicDescription = `[fix:3.0.0] ${title}`;
     const record = {
       kind: "fix",
       target_version: "3.0.0",
       title,
-      requirements: ["Retain every selected row", "Expose exact recovery"],
-      acceptance: ["No skipped or duplicated row across continuation"],
-      release_blocker: false,
+      requirements: options.largeStartupRecords ? ["x".repeat(4_000)] : ["Retain every selected row", "Expose exact recovery"],
+      acceptance: options.largeStartupRecords ? [] : ["No skipped or duplicated row across continuation"],
+      release_blocker: options.largeStartupRecords ?? false,
       severity,
       status,
-      readiness: {
-        capability: "build",
-        reason: "The bounded retrieval contract is ready for deterministic verification.",
-        dependencies: [],
-        blocked: null,
-        gate: null,
-        queue_rank: index + 1,
-        order_reason: "Exercise realistic ordered TODO state.",
-      },
+      readiness: options.largeStartupRecords
+        ? readinessInput({ queue_rank: index + 1 })
+        : {
+            capability: "build",
+            reason: "The bounded retrieval contract is ready for deterministic verification.",
+            dependencies: [],
+            blocked: null,
+            gate: null,
+            queue_rank: index + 1,
+            order_reason: "Exercise realistic ordered TODO state.",
+          },
       reconciliation: {
         schema_version: "agentera.todoReconciliation.v1",
         public: { present: true, description: publicDescription, severity, status, order },
@@ -1621,22 +1626,8 @@ describe("TODO item and documentation inventory entity authority", () => {
   });
 
   it("keeps titled critical TODO metadata and readiness when the default list omits records", () => {
-    const root = project();
-    const created: string[] = [];
-    for (let index = 0; index < 21; index++) {
-      const result = capture(root, ["state", "todo", "create", "--input", "-", "--format", "json"], {
-        kind: "fix",
-        target_version: "3.0.0",
-        title: `Critical startup item ${index}`,
-        requirements: ["x".repeat(4_000)],
-        acceptance: [],
-        release_blocker: true,
-        severity: "critical",
-        readiness: readinessInput({ queue_rank: index + 1 }),
-      });
-      expect(result.rc, result.err || result.out).toBe(0);
-      created.push(result.json.id);
-    }
+    // Retain the default-page overflow and large record bodies without repeating writer setup.
+    const { root, orderedIds: created } = todoReadProject(21, { largeStartupRecords: true });
     const before = files(root);
     const listed = capture(root, ["state", "todo", "list", "--format", "json"]);
     expect(listed.json.entries.every((entry: any) => !entry.record)).toBe(true);
@@ -2291,7 +2282,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   it(
     "binds TODO cursors to normalized limit and preserves exact unfiltered continuation",
     () => {
-      const { root, orderedIds } = realisticTodoProject(21);
+      const { root, orderedIds } = todoReadProject(21);
       const before = files(root);
       const cursorFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
       expect(cursorFirst.rc, cursorFirst.err || cursorFirst.out).toBe(0);
@@ -2343,9 +2334,9 @@ describe("TODO item and documentation inventory entity authority", () => {
   );
 
   it("preserves filtered TODO continuation and pre-filter queue rank", () => {
-    const { root, orderedIds } = realisticTodoProject();
+    const { root, orderedIds } = todoReadProject(8, { normalOpenCount: 5, resolvedCount: 1 });
     const before = files(root);
-    const first = capture(root, ["state", "todo", "list", "--severity", "normal", "--status", "open", "--ids-only", "--limit", "10", "--format", "json"]);
+    const first = capture(root, ["state", "todo", "list", "--severity", "normal", "--status", "open", "--ids-only", "--limit", "2", "--format", "json"]);
     expect(first.rc, first.err || first.out).toBe(0);
     const normalPages = [first.json];
     while (normalPages.at(-1).retrieval.continue) {
@@ -2354,14 +2345,14 @@ describe("TODO item and documentation inventory entity authority", () => {
       normalPages.push(next.json);
     }
     const normalEntries = normalPages.flatMap((page) => page.entries);
-    expect(normalPages).toHaveLength(3);
-    expect(normalEntries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(90));
-    expect(normalEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 30 }, (_, index) => index + 91));
+    expect(normalPages.map((page) => page.entries.length)).toEqual([2, 2, 1]);
+    expect(normalEntries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(3));
+    expect(normalEntries.map((entry: any) => entry.queue_rank)).toEqual(Array.from({ length: 5 }, (_, index) => index + 4));
     expect(files(root)).toEqual(before);
   });
 
   it("classifies TODO request-binding changes as cursor_invalid with current exact restart", () => {
-    const { root, orderedIds } = realisticTodoProject(40);
+    const { root, orderedIds } = todoReadProject(21);
     const before = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
@@ -2388,18 +2379,18 @@ describe("TODO item and documentation inventory entity authority", () => {
     expect(decodeListCursor(defaultFirst.json.next_cursor, root, authorityPath).limit).toBe(20);
     const explicitDefault = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "20", "--cursor", defaultFirst.json.next_cursor, "--format", "json"]);
     expect(explicitDefault.rc, explicitDefault.err || explicitDefault.out).toBe(0);
-    expect(explicitDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+    expect(explicitDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20));
     const explicitFirst = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "20", "--format", "json"]);
     const omittedDefault = capture(root, ["state", "todo", "list", "--ids-only", "--cursor", explicitFirst.json.next_cursor, "--format", "json"]);
     expect(omittedDefault.rc, omittedDefault.err || omittedDefault.out).toBe(0);
-    expect(omittedDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20, 40));
+    expect(omittedDefault.json.entries.map((entry: any) => entry.id)).toEqual(orderedIds.slice(20));
     expect(files(root)).toEqual(before);
   });
 
   it(
     "fails closed for malformed, signed legacy, signature, base64, and payload cursors",
     () => {
-      const { root, orderedIds } = realisticTodoProject(11);
+      const { root, orderedIds } = todoReadProject(11);
       const before = files(root);
       const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
       const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
@@ -2454,7 +2445,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   );
 
   it("rejects signed invalid TODO limits and preserves YAML and text cursor errors", () => {
-    const { root } = realisticTodoProject(20);
+    const { root } = todoReadProject(11);
     const before = files(root);
     const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
     const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);
@@ -2486,7 +2477,7 @@ describe("TODO item and documentation inventory entity authority", () => {
   it(
     "reserves snapshot-unavailable for actual state loss and missing continuation identity",
     () => {
-      const { root, orderedIds } = realisticTodoProject(11);
+      const { root, orderedIds } = todoReadProject(11);
       const initial = files(root);
       const authorityPath = loadStateStorageAuthority(resolveSourceRoot()).authorityPath;
       const first = capture(root, ["state", "todo", "list", "--ids-only", "--limit", "10", "--format", "json"]);

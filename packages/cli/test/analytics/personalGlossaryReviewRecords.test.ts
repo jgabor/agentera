@@ -192,6 +192,55 @@ function dispose(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryC
   });
 }
 
+// Reopening tests share only canonical fixture bytes. Each case restores them into
+// its own profile directory before exercising the real replay and requeue paths.
+const disposedReviewFixtures = new Map<
+  "reject" | "defer",
+  {
+    projectionSha256: string;
+    reviewId: string;
+    signed: Record<string, unknown>;
+    bytes: string;
+  }
+>();
+
+function disposedReviewFixture(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryCandidateProjection, disposition: "reject" | "defer") {
+  let fixture = disposedReviewFixtures.get(disposition);
+  const pathname = personalGlossaryReviewRecordsPath(storage());
+  writeTrustedHost();
+  if (!fixture) {
+    const queued = queue(capsule, projection);
+    expect(queued.status).toBe("queued");
+    const signed = approval(queued.record!, disposition, { nonce: `reopen-${disposition}` });
+    const disposed = dispositionPersonalGlossaryReviewRecord({
+      ...storage(),
+      review_id: queued.record!.review_id,
+      receipt: receipt(capsule, projection),
+      approval: signed,
+      now: "2026-08-11T00:02:00.000Z",
+    });
+    expect(disposed).toMatchObject({ status: "disposed", record: { disposition } });
+    fixture = {
+      projectionSha256: projection.projection_sha256,
+      reviewId: queued.record!.review_id,
+      signed,
+      bytes: fs.readFileSync(pathname, "utf8"),
+    };
+    disposedReviewFixtures.set(disposition, fixture);
+  } else {
+    expect(projection.projection_sha256).toBe(fixture.projectionSha256);
+    fs.mkdirSync(path.dirname(pathname), { recursive: true, mode: 0o700 });
+    fs.writeFileSync(pathname, fixture.bytes, { encoding: "utf8", mode: 0o600 });
+  }
+  return {
+    ...storage(),
+    review_id: fixture.reviewId,
+    receipt: receipt(capsule, projection),
+    approval: structuredClone(fixture.signed),
+    now: "2026-08-11T00:02:00.000Z",
+  };
+}
+
 function legacyPendingRecord(record: PersonalGlossaryReviewRecord): Record<string, unknown> {
   const body = {
     schema_version: "agentera.personalGlossaryPendingReviewRecord.v1",
@@ -557,25 +606,13 @@ describe("personal glossary review-record persistence", () => {
   ] as const)("reopens a %s review when its %s changes after exact disposition replay", (disposition, change, reopenReason) => {
     const initial = candidate(12);
     const initialProjection = persist([initial]);
-    const queued = queue(initial, initialProjection);
-    writeTrustedHost();
-    const signed = approval(queued.record!, disposition, {
-      nonce: `reopen-${disposition}-${change}`,
-    });
-    const input = {
-      ...storage(),
-      review_id: queued.record!.review_id,
-      receipt: receipt(initial, initialProjection),
-      approval: signed,
-      now: "2026-08-11T00:02:00.000Z",
-    };
-    expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({
-      status: "disposed",
-      record: { disposition },
-    });
+    const input = disposedReviewFixture(initial, initialProjection, disposition);
+    const disposedBytes = fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8");
     expect(dispositionPersonalGlossaryReviewRecord(input)).toMatchObject({
       status: "unchanged_replay",
     });
+
+    expect(fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8")).toBe(disposedBytes);
 
     if (change === "policy") {
       const changed = candidate(12, generation, "agentera.personalGlossaryMiningPolicy.v2", "policy");

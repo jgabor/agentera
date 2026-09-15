@@ -553,11 +553,11 @@ describe("agentera report personal-glossary-publish", () => {
     expect(fs.readFileSync(profilePath(), "utf8")).toBe(bytesAfterLater);
   });
 
-  it("adds and refreshes authorized entries in deterministic Unicode order", () => {
+  it("publishes distinct composed and decomposed Unicode terms through the CLI", () => {
     writeProfile();
-    publishEvidence([record("zeta", "Actually, `zeta term` means the final value."), record("alpha", "Actually, `alpha term` means the initial value."), record("accent-a", "Actually, `café` means the composed value."), record("accent-b", "Actually, `café` means the decomposed value.")]);
+    publishEvidence([record("accent-a", "Actually, `café` means the composed value."), record("accent-b", "Actually, `café` means the decomposed value.")]);
     const mined = mineExplicitGlossaryCandidates({ tiersDir: tiersDir() });
-    expect(mined.candidates).toHaveLength(4);
+    expect(mined.candidates).toHaveLength(2);
     const projection = persist(mined.candidates.map((candidate) => candidate.capsule));
     const authorized = mined.candidates.map(({ capsule }) => {
       const receipt = receiptFor(capsule, projection);
@@ -569,8 +569,8 @@ describe("agentera report personal-glossary-publish", () => {
       });
 
     const entries = section().entries as Array<Record<string, unknown>>;
-    expect(entries.map((entry) => entry.term)).toEqual(["alpha term", "café", "café", "zeta term"]);
-    expect(new Set(entries.map((entry) => entry.term))).toHaveLength(4);
+    expect(entries.map((entry) => entry.term)).toEqual(["café", "café"]);
+    expect(new Set(entries.map((entry) => entry.term))).toHaveLength(2);
   });
 
   it("rejects a changed meaning that conflicts with an established profile entry before effects", () => {
