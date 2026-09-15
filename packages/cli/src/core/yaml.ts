@@ -3,15 +3,22 @@ import fs from "node:fs";
 
 import YAML from "yaml";
 
-const MAX_MAPPING_CACHE_ENTRIES = 64;
+const MAX_AUTHORITY_CACHE_ENTRIES = 64;
 const MAX_AUTHORITY_CACHE_BYTES = 2 * 1024 * 1024;
 type AuthorityComment = { path: string[]; placement: string; text: string };
 type ReadOnlyAuthority = { value: Record<string, unknown>; comments: AuthorityComment[] };
 // Pure parse results only. File reads and contract validation are never cached.
 const authorityCache = new Map<string, ReadOnlyAuthority>();
 let authorityCacheBytes = 0;
-type CachedMapping = { digest: string; value: Record<string, unknown> };
-type MappingCache = { entries: Map<string, CachedMapping>; readOnly: boolean };
+type SharedMapping = { digest: string; value: Record<string, unknown>; bytes: number };
+// Process-lifetime reuse of immutable parses, invalidated by per-path content
+// digest. Read-only scopes share the frozen canonical value; every other
+// caller receives a private mutable clone with fresh-parse semantics.
+const sharedMappings = new Map<string, SharedMapping>();
+let sharedMappingBytes = 0;
+const MAX_SHARED_MAPPING_ENTRIES = 32;
+const MAX_SHARED_MAPPING_BYTES = 4 * 1024 * 1024;
+type MappingCache = { entries: Map<string, Record<string, unknown>>; readOnly: boolean };
 let activeMappingCache: MappingCache | null = null;
 
 /** Run synchronous work with a bounded, content-invalidated YAML mapping cache. */
@@ -68,7 +75,7 @@ export function loadReadOnlyYamlAuthorityFile(file: string): ReadOnlyAuthority &
   freezeYamlValue(parsed);
   const size = Buffer.byteLength(text);
   if (size <= MAX_AUTHORITY_CACHE_BYTES) {
-    while (authorityCache.size >= MAX_MAPPING_CACHE_ENTRIES || authorityCacheBytes + size > MAX_AUTHORITY_CACHE_BYTES) {
+    while (authorityCache.size >= MAX_AUTHORITY_CACHE_ENTRIES || authorityCacheBytes + size > MAX_AUTHORITY_CACHE_BYTES) {
       const oldest = authorityCache.keys().next().value!;
       authorityCache.delete(oldest);
       authorityCacheBytes -= Buffer.byteLength(oldest);
@@ -103,25 +110,37 @@ export function loadYamlMapping(text: string): Record<string, unknown> {
 /** Read `path` and parse it with {@link loadYamlMapping}. */
 export function loadYamlMappingFile(path: string): Record<string, unknown> {
   const cache = activeMappingCache;
-  if (cache === null) return loadYamlMapping(fs.readFileSync(path, "utf8"));
-  // One synchronous operation sees a stable frozen authority snapshot.
-  // A fresh scope still fingerprints its current bytes before reuse.
-  if (cache.readOnly) {
-    const cached = cache.entries.get(path);
-    if (cached) return cached.value;
+  // One synchronous read-only operation pins its authority snapshot: one read
+  // per path, however many validators and projections consume the mapping.
+  if (cache?.readOnly) {
+    const pinned = cache.entries.get(path);
+    if (pinned) return pinned;
   }
   const text = fs.readFileSync(path, "utf8");
   const digest = crypto.createHash("sha256").update(text).digest("hex");
-  // A digest check preserves fresh authority reads while avoiding repeated parses.
-  const cached = cache.entries.get(path);
-  if (cached?.digest === digest) return cache.readOnly ? cached.value : structuredClone(cached.value);
-  const value = loadYamlMapping(text);
-  if (cache.readOnly) freezeYamlValue(value);
-  cache.entries.set(path, { digest, value });
-  if (cache.entries.size > MAX_MAPPING_CACHE_ENTRIES) {
-    cache.entries.delete(cache.entries.keys().next().value!);
+  const shared = sharedMappings.get(path);
+  if (shared?.digest === digest) {
+    // Fresh bytes, reused immutable parse: read-only scopes share the frozen
+    // canonical value, every other caller receives a private mutable clone.
+    if (cache?.readOnly) cache.entries.set(path, shared.value);
+    return cache?.readOnly ? shared.value : structuredClone(shared.value);
   }
-  return cache.readOnly ? value : structuredClone(value);
+  const value = loadYamlMapping(text);
+  freezeYamlValue(value);
+  const bytes = Buffer.byteLength(text);
+  if (bytes <= MAX_SHARED_MAPPING_BYTES) {
+    const previous = sharedMappings.get(path);
+    if (previous) sharedMappingBytes -= previous.bytes;
+    while (sharedMappings.size >= MAX_SHARED_MAPPING_ENTRIES || (sharedMappings.size > 0 && sharedMappingBytes + bytes > MAX_SHARED_MAPPING_BYTES)) {
+      const oldest = sharedMappings.keys().next().value!;
+      sharedMappingBytes -= sharedMappings.get(oldest)!.bytes;
+      sharedMappings.delete(oldest);
+    }
+    sharedMappings.set(path, { digest, value, bytes });
+    sharedMappingBytes += bytes;
+  }
+  if (cache?.readOnly) cache.entries.set(path, value);
+  return cache?.readOnly ? value : structuredClone(value);
 }
 
 /** Parse arbitrary YAML (any root type). */
