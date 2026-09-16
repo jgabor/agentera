@@ -61,6 +61,63 @@ describe("loadYamlMapping", () => {
   });
 });
 
+describe("loadYamlMapping shared string cache", () => {
+  const largeText = `${Array.from({ length: 150 }, (_, i) => `key${String(i).padStart(3, "0")}: value ${i}`).join("\n")}\n`;
+
+  it("gives ordinary callers distinct mutable copies of a cached large mapping", () => {
+    const first = loadYamlMapping(largeText);
+    const second = loadYamlMapping(largeText);
+    expect(second).toEqual(first);
+    expect(second).not.toBe(first);
+    expect(() => {
+      first.key000 = "mutated";
+    }).not.toThrow();
+    expect(loadYamlMapping(largeText).key000).toBe("value 0");
+  });
+
+  it("shares one frozen value across loads in a read-only scope", () => {
+    withReadOnlyYamlMappingCache(() => {
+      const first = loadYamlMapping(largeText);
+      expect(Object.isFrozen(first)).toBe(true);
+      expect(loadYamlMapping(largeText)).toBe(first);
+    });
+  });
+
+  it("invalidates cached string parses by content", () => {
+    const changed = largeText.replace("value 0", "changed 0");
+    expect(loadYamlMapping(changed).key000).toBe("changed 0");
+    expect(loadYamlMapping(largeText).key000).toBe("value 0");
+  });
+
+  it("re-parses sub-threshold texts without caching", () => {
+    const smallText = "key: value\n";
+    withReadOnlyYamlMappingCache(() => {
+      const first = loadYamlMapping(smallText);
+      expect(Object.isFrozen(first)).toBe(false);
+      expect(loadYamlMapping(smallText)).not.toBe(first);
+    });
+  });
+
+  it("does not cache empty or non-mapping documents", () => {
+    const largeBlank = "   \n".repeat(600);
+    const first = loadYamlMapping(largeBlank);
+    expect(first).toEqual({});
+    expect(Object.isFrozen(first)).toBe(false);
+    expect(loadYamlMapping(largeBlank)).not.toBe(first);
+    const largeSequence = `${Array.from({ length: 300 }, (_, i) => `- item ${i}`).join("\n")}\n`;
+    expect(() => loadYamlMapping(largeSequence)).toThrow(/mapping/);
+    expect(() => loadYamlMapping(largeSequence)).toThrow(/mapping/);
+  });
+
+  it("stays correct and bounded beyond the cache entry limit", () => {
+    const texts = Array.from({ length: 40 }, (_, n) => `${Array.from({ length: 150 }, (_, i) => `k${n}_${String(i).padStart(3, "0")}: value ${i}`).join("\n")}\n`);
+    texts.forEach((text, n) => {
+      expect(loadYamlMapping(text)[`k${n}_000`]).toBe("value 0");
+    });
+    expect(loadYamlMapping(texts[0]).k0_000).toBe("value 0");
+  });
+});
+
 describe("dumpYamlMapping", () => {
   it("preserves insertion order and emits multiline prose as a literal block scalar", () => {
     const source = { first: 1, prose: "line one\nline two", last: ["value"] };

@@ -18,6 +18,18 @@ const sharedMappings = new Map<string, SharedMapping>();
 let sharedMappingBytes = 0;
 const MAX_SHARED_MAPPING_ENTRIES = 32;
 const MAX_SHARED_MAPPING_BYTES = 4 * 1024 * 1024;
+type SharedTextMapping = { value: Record<string, unknown>; bytes: number };
+// Process-lifetime reuse of immutable parses keyed by text digest. Static
+// authorities reach the parser as in-memory strings, so repeated parses of
+// unchanged text dominate CPU; the digest cache reuses those parses without
+// coupling to any file path. Read-only scopes share the frozen canonical
+// value; every other caller receives a private mutable clone with fresh-parse
+// semantics. Texts below MIN_SHARED_STRING_BYTES stay on the fresh-parse path.
+const sharedStringMappings = new Map<string, SharedTextMapping>();
+let sharedStringMappingBytes = 0;
+const MAX_SHARED_STRING_MAPPING_ENTRIES = 32;
+const MAX_SHARED_STRING_MAPPING_BYTES = 4 * 1024 * 1024;
+const MIN_SHARED_STRING_BYTES = 2048;
 type MappingCache = { entries: Map<string, Record<string, unknown>>; readOnly: boolean };
 let activeMappingCache: MappingCache | null = null;
 
@@ -86,6 +98,17 @@ export function loadReadOnlyYamlAuthorityFile(file: string): ReadOnlyAuthority &
   return { text, ...parsed };
 }
 
+function parseMappingText(text: string): Record<string, unknown> {
+  const parsed = YAML.parse(text);
+  if (parsed === null || parsed === undefined) {
+    return {};
+  }
+  if (typeof parsed !== "object" || Array.isArray(parsed)) {
+    throw new Error("YAML root must be a mapping");
+  }
+  return parsed as Record<string, unknown>;
+}
+
 /**
  * Parse YAML text as a mapping. Empty/whitespace-only documents return `{}`.
  * Non-mapping roots throw. Faithful port of `scripts/yaml_mapping.py`.
@@ -97,17 +120,31 @@ export function loadYamlMapping(text: string): Record<string, unknown> {
     const cached = authorityCache.get(text);
     if (cached) return cached.value;
   }
-  const parsed = YAML.parse(text);
-  if (parsed === null || parsed === undefined) {
-    return {};
+  const bytes = Buffer.byteLength(text);
+  if (bytes < MIN_SHARED_STRING_BYTES) return parseMappingText(text);
+  const digest = crypto.createHash("sha256").update(text).digest("hex");
+  const shared = sharedStringMappings.get(digest);
+  if (shared) return activeMappingCache?.readOnly ? shared.value : structuredClone(shared.value);
+  const value = parseMappingText(text);
+  // Empty documents keep their fresh, unfrozen `{}` semantics and never
+  // enter the cache; non-mapping roots already threw above.
+  if (Object.keys(value).length === 0) return value;
+  freezeYamlValue(value);
+  if (bytes <= MAX_SHARED_STRING_MAPPING_BYTES) {
+    const previous = sharedStringMappings.get(digest);
+    if (previous) sharedStringMappingBytes -= previous.bytes;
+    while (sharedStringMappings.size >= MAX_SHARED_STRING_MAPPING_ENTRIES || (sharedStringMappings.size > 0 && sharedStringMappingBytes + bytes > MAX_SHARED_STRING_MAPPING_BYTES)) {
+      const oldest = sharedStringMappings.keys().next().value!;
+      sharedStringMappingBytes -= sharedStringMappings.get(oldest)!.bytes;
+      sharedStringMappings.delete(oldest);
+    }
+    sharedStringMappings.set(digest, { value, bytes });
+    sharedStringMappingBytes += bytes;
   }
-  if (typeof parsed !== "object" || Array.isArray(parsed)) {
-    throw new Error("YAML root must be a mapping");
-  }
-  return parsed as Record<string, unknown>;
+  return activeMappingCache?.readOnly ? value : structuredClone(value);
 }
 
-/** Read `path` and parse it with {@link loadYamlMapping}. */
+/** Read `path` and parse it as a mapping with per-path content caching. */
 export function loadYamlMappingFile(path: string): Record<string, unknown> {
   const cache = activeMappingCache;
   // One synchronous read-only operation pins its authority snapshot: one read
@@ -125,7 +162,9 @@ export function loadYamlMappingFile(path: string): Record<string, unknown> {
     if (cache?.readOnly) cache.entries.set(path, shared.value);
     return cache?.readOnly ? shared.value : structuredClone(shared.value);
   }
-  const value = loadYamlMapping(text);
+  // Parse directly so file-loaded mappings are cached only under the path
+  // key, never a second time under the text digest.
+  const value = parseMappingText(text);
   freezeYamlValue(value);
   const bytes = Buffer.byteLength(text);
   if (bytes <= MAX_SHARED_MAPPING_BYTES) {

@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 - Fixed slow glossary publish, decision, and verify commands by reusing immutable parsed YAML authorities across requests while reading current authority bytes fresh for every request.
+- Fixed slow state and upgrade commands that read large authorities as in-memory text by reusing one immutable parse per distinct text; ordinary callers still receive a private mutable copy and read-only scopes still share one frozen value.
 - Entity references now use meaningful names and plain-language labels, with supplementary glyphs (⛋ Decision, ≡ Plan, □ Task, → TODO). Lists and action targets retain exact IDs; unavailable descriptions are explicit.
 - Startup context now preserves authoritative TODO severity and status and decision review context, rather than treating missing details as normal, open, or satisfied.
 - Unified configuration-as-code `@next` publication is live through `3.0.0-dev.93` using npm Trusted Publishing through GitHub OIDC; it rejects traditional npm credentials and fails closed when recovery would require `npm dist-tag`.
