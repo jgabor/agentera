@@ -300,7 +300,7 @@ or touching generated and packaged output.
   host companion reads. `docs/cli-coverage-contract.md` maps those interfaces.
 - `upgrade --shared-skill` is separate from project migration and defaults to
   preview. Follow `UPGRADE.md#one-file-shared-skill-installation-and-repair` for
-  approval, owned conversion, retained data and Linux apply limits. Never prune
+  approval, dedicated-directory conversion, retained data and Linux apply limits. Never prune
   a host symlink target or infer global permission from project scope.
 - Prefer `agentera check validate`; top-level `agentera validate` is a migration
   alias.

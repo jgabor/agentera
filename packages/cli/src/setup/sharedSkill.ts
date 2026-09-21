@@ -3,13 +3,15 @@ import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { resolveDoctorInstallRoot } from "../upgrade/appModel.js";
 import { commandText } from "../upgrade/upgradeCommands.js";
-import { observeLifecyclePath } from "../runtime/lifecyclePublication.js";
-import { hostSkillPath, isCompatibleHostSkill, loadHostSkillSource, runHostSkillLifecycle, HOST_SKILL_RECOVERY } from "./hostSkillLifecycle.js";
+import { observeLifecyclePath, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
+import { hostSkillPath, isCompatibleHostSkill, loadHostSkillSource, runHostSkillLifecycle } from "./hostSkillLifecycle.js";
 
 export const CANONICAL_SHARED_SKILL_PATH = "~/.agents/skills/agentera";
 
-export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: string; appHome?: string } = {}): JsonObject {
+export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: string; appHome?: string; env?: Record<string, string | undefined> } = {}): JsonObject {
+  home = path.resolve(home);
   const target = hostSkillPath(home);
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   let shape = "missing";
@@ -19,6 +21,7 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
   let ownership = "not_inspected";
   let message = "canonical shared Agentera bootstrap is missing";
   const details: string[] = [];
+  let upgradeOffer: JsonObject | null = null;
   let source: ReturnType<typeof loadHostSkillSource> | undefined;
   try {
     source = loadHostSkillSource(sourceRoot);
@@ -40,15 +43,29 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
         freshness = source ? (text === source.content ? "current" : "stale") : "unknown";
       }
     } else if (observed.kind !== "missing") shape = "wrong_type";
-    if (options.appHome && source) {
+    if (source) {
+      const [appHome] = resolveDoctorInstallRoot(options.appHome ?? null, {
+        home,
+        sourceRoot,
+        env: options.env,
+      });
       const preview = runHostSkillLifecycle({
         home,
-        appHome: options.appHome,
+        appHome,
         sourceRoot,
         apply: false,
       });
       ownership = preview.status === "non_success" ? "blocked" : shape === "missing" ? "absent" : "owned";
       if (ownership === "blocked") details.push(preview.reason);
+      if (shape !== "missing" && preview.status === "pending" && "authorization" in preview && typeof preview.authorization === "string") {
+        if (secureLifecycleRemovalAvailable())
+          upgradeOffer = {
+            question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
+            approval: "explicit_yes_only",
+            apply_command: commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", home, "--install-root", appHome, "--yes", "--authorization", preview.authorization]),
+          };
+        else details.push("Shared-skill updates require Linux safe publication; no update was offered or applied.");
+      }
     }
     message = `canonical shared Agentera bootstrap: ${shape}; compatibility: ${compatibility}; freshness: ${freshness}`;
   } catch {
@@ -56,7 +73,7 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
     message = "canonical shared Agentera bootstrap cannot be safely inspected";
   }
   const healthy = shape === "one_file" && compatibility === "compatible" && freshness === "current" && runtimeHealth === "available" && ownership !== "blocked";
-  if (!healthy || ownership === "blocked") details.push(HOST_SKILL_RECOVERY);
+  if (!healthy && !upgradeOffer) details.push("No supported update is offered. Nothing changed; do not broaden approval or move files manually.");
   const previewCommand = commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", home, ...(options.appHome ? ["--install-root", options.appHome] : []), "--dry-run"]);
   return {
     name: "canonical_skill",
@@ -72,5 +89,6 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
     runtime_authority: runtimeHealth,
     preview_command: previewCommand,
     details,
+    upgrade_offer: healthy ? null : upgradeOffer,
   };
 }

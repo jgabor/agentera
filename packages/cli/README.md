@@ -67,9 +67,12 @@ state and Agentera-owned operational fields without an intermediate activation.
 
 Agentera uses one portable integration: the Agentera CLI plus the shared skill
 at `~/.agents/skills/agentera/SKILL.md`, with no host companions. Use
-`upgrade --shared-skill` for isolated one-file installation, owned refresh or
-authorized legacy conversion. The [upgrade guide](../../UPGRADE.md#one-file-shared-skill-installation-and-repair)
-owns preview/apply, ownership, retention and platform limits. App/project
+`upgrade --shared-skill` for isolated one-file installation or approved replacement
+of the dedicated directory. `prime` and `doctor` offer outdated supported installs
+one Yes/No update question and the complete apply command; no historical journal
+or per-file approval is needed. Current installs have no offer. The
+[upgrade guide](../../UPGRADE.md#one-file-shared-skill-installation-and-repair)
+owns approval, retained data, retry and platform limits. App/project
 migration is separate; it has no current-runtime selector and creates no native
 runtime resources. Without explicit app/global scope, migration remains
 project-only.

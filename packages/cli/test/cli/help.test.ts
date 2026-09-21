@@ -53,11 +53,15 @@ describe("cli help", () => {
     expect(rc).toBe(0);
     expect(out).toContain("upgrade --shared-skill --dry-run");
     expect(out).toContain("upgrade --shared-skill --yes");
-    expect(out).toContain("Owned legacy conversion also requires --authorization TOKEN");
+    expect(out).toContain("shared_skill.upgrade_offer");
+    expect(out).toContain("Only explicit Yes runs that unchanged command");
+    expect(out).toContain("Legacy conversion requires --authorization TOKEN supplied by the CLI");
     expect(out).toContain("Linux /proc/self/fd");
     expect(out).toContain("same filesystem");
-    expect(out).toContain("4096 owned entries including the root");
-    expect(out).toContain("retains the old link/tree and journal");
+    expect(out).toContain("4096 entries including the root");
+    expect(out).toContain("retains the old link/tree and creates bookkeeping");
+    expect(out).toContain("No pre-existing journal or per-file approval is required");
+    expect(out).not.toContain("unowned extras block apply");
     expect(out).toContain("Never prune a symlink target");
     expect(out).toContain("Project-only migration does not authorize global cleanup or host conversion");
     expect(out).not.toContain("Preserves and blocks legacy links/trees");

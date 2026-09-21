@@ -1,3 +1,4 @@
+import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -6,6 +7,7 @@ import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../..
 import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath, readLifecycleOwnershipJournal } from "../../src/runtime/lifecycleOwnershipJournal.js";
 import { applyLifecycleOperations, createLifecycleOwnershipManifest, planLifecycleOperations, type LifecycleOperationSpec } from "../../src/runtime/lifecycleOperations.js";
 import { main } from "../../src/cli/dispatch.js";
+import { sourceModuleUrl, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 let temp: string, home: string, appHome: string, sourceRoot: string, target: string;
@@ -74,6 +76,15 @@ function owned(kind: "symlink" | "directory") {
     records: result.ownershipLedger.records.map((record) => ({ ...record, status: "legacy" })),
   });
 }
+function unrecorded(kind: "symlink" | "directory") {
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  if (kind === "symlink") fs.symlinkSync(path.join(sourceRoot, "skills/agentera"), target);
+  else {
+    write(path.join(target, "SKILL.md"), "legacy bootstrap");
+    write(path.join(target, "schemas/contract.yaml"), "legacy: retained\n");
+    write(path.join(target, "user-data"), "extra installation data");
+  }
+}
 beforeEach(() => {
   temp = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-host-conversion-"));
   home = path.join(temp, "home");
@@ -92,9 +103,9 @@ afterEach(() => {
   fs.rmSync(temp, { recursive: true, force: true });
 });
 
-describe("evidence-bound legacy host conversion", () => {
+describe("approval-bound dedicated host replacement", () => {
   it("CLI previews and applies only the exact host-scoped approval", () => {
-    owned("symlink");
+    unrecorded("symlink");
     const command = (tail: string[]) => {
       let output = "";
       const code = main(["node", "agentera", "upgrade", "--shared-skill", "--home", home, "--install-root", appHome, ...tail], { out: (text) => (output += text), err: (text) => (output += text) });
@@ -119,7 +130,7 @@ describe("evidence-bound legacy host conversion", () => {
   });
 
   it("recovers a move completed before its ownership relocation checkpoint", () => {
-    owned("directory");
+    unrecorded("directory");
     const approval = token(run());
     const rename = fs.renameSync;
     vi.spyOn(fs, "renameSync").mockImplementation((from, to) => {
@@ -184,32 +195,15 @@ describe("evidence-bound legacy host conversion", () => {
     expect(journal.ledger.records.some((record) => record.destination === retained && record.resourceId.startsWith("shared-skill.retained."))).toBe(true);
   });
 
-  it.each(["extra", "changed", "identity", "ambiguous", "unowned", "pending-null"])("rejects %s ownership before effects", (change) => {
+  it.each(["extra", "changed", "identity"])("rejects %s changes after approval before effects", (change) => {
     owned("directory");
     const preview = run();
-    const journalPath = lifecycleOwnershipJournalPath(appHome),
-      journal = readLifecycleOwnershipJournal(journalPath);
     if (change === "extra") write(path.join(target, "user-data"), "private");
     if (change === "changed") write(path.join(target, "schemas/contract.yaml"), "user change");
     if (change === "identity") {
       fs.renameSync(path.join(target, "SKILL.md"), path.join(temp, "old"));
       write(path.join(target, "SKILL.md"), "legacy bootstrap");
     }
-    if (change === "ambiguous")
-      appendLifecycleOwnershipJournal(journalPath, {
-        ...journal.ledger,
-        records: [...journal.ledger.records, { ...journal.ledger.records[0]!, resourceId: "duplicate" }],
-      });
-    if (change === "unowned") appendLifecycleOwnershipJournal(journalPath, { ...journal.ledger, records: [] });
-    if (change === "pending-null")
-      appendLifecycleOwnershipJournal(journalPath, {
-        ...journal.ledger,
-        records: journal.ledger.records.map((record) => ({
-          ...record,
-          status: "pending_create",
-          identity: null,
-        })),
-      });
     const before = snapshot();
     expect(run(true, token(preview)).status).toBe("non_success");
     expect(snapshot()).toEqual(before);
@@ -257,7 +251,7 @@ describe("evidence-bound legacy host conversion", () => {
   });
 
   it.each(["intent", "moved", "created"])("retries interrupted %s with the original approval only", (stage) => {
-    owned("directory");
+    unrecorded("directory");
     const approval = token(run());
     let interrupted = false;
     const first = run(true, approval, {
@@ -277,5 +271,159 @@ describe("evidence-bound legacy host conversion", () => {
     const resumed = run(true, approval);
     expect(resumed.status, JSON.stringify(resumed)).toBe("success");
     expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+  });
+
+  it.each(["symlink", "directory"] as const)("replaces an unrecorded %s only after approval and retains its entire contents", (kind) => {
+    unrecorded(kind);
+    const before = snapshot(),
+      original = snapshot(target),
+      runtime = snapshot(sourceRoot);
+    expect(readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(appHome)).state).toBe("absent");
+    const preview = run();
+    expect(preview.status, JSON.stringify(preview)).toBe("pending");
+    expect(run(true).status).toBe("non_success");
+    expect(run(true, "sha256:wrong").status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+    const result = run(true, token(preview));
+    expect(result.status, JSON.stringify(result)).toBe("success");
+    expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+    expect(fs.lstatSync(path.join(target, "SKILL.md")).isFile()).toBe(true);
+    expect(snapshot((result as { retained: { path: string } }).retained.path)).toEqual(original);
+    expect(snapshot(sourceRoot)).toEqual(runtime);
+    const after = snapshot();
+    expect(run(true, token(preview)).status).toBe("noop");
+    expect(run(true).status).toBe("noop");
+    expect(snapshot()).toEqual(after);
+  });
+
+  it("does not require historical records to match the approved directory", () => {
+    owned("directory");
+    write(path.join(target, "schemas/contract.yaml"), "modified");
+    write(path.join(target, "extra"), "unrecorded");
+    const preview = run();
+    expect(preview.status).toBe("pending");
+    expect(run(true, token(preview)).status).toBe("success");
+  });
+
+  it("creates bookkeeping internally when the selected app home is absent", () => {
+    unrecorded("symlink");
+    appHome = path.join(temp, "new-app");
+    const before = snapshot();
+    const preview = run();
+    expect(preview.status, JSON.stringify(preview)).toBe("pending");
+    expect(snapshot()).toEqual(before);
+    expect(run(true, token(preview)).status).toBe("success");
+    expect(readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(appHome)).state).toBe("clean");
+  });
+
+  it("rejects a changed retained snapshot during retry without touching the active installation", () => {
+    unrecorded("directory");
+    const preview = run(),
+      authorization = token(preview);
+    const stopped = run(true, authorization, {
+      beforePublication: (boundary) => {
+        if (boundary.operationId === "shared-skill.directory") throw new Error("interrupted before install");
+      },
+    });
+    expect(stopped.status).toBe("non_success");
+    write(path.join((preview as { retained: { path: string } }).retained.path, "new-data"), "changed after approval");
+    const before = snapshot();
+    expect(run(true, authorization).status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+  });
+
+  it.each(["retention", "directory", "file"])("retries SIGKILL after %s creation before its identity checkpoint", (stage) => {
+    unrecorded("directory");
+    const preview = run(),
+      authorization = token(preview);
+    const destination = stage === "retention" ? path.dirname((preview as { retained: { path: string } }).retained.path) : stage === "directory" ? target : path.join(target, "SKILL.md");
+    const killed = spawnSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "--eval",
+        `
+      import fs from "node:fs";
+      import path from "node:path";
+      import { runHostSkillLifecycle } from ${JSON.stringify(sourceModuleUrl("setup/hostSkillLifecycle.js"))};
+      const matches = (value) => {
+        try { return typeof value === "string" && path.join(fs.realpathSync(path.dirname(value)), path.basename(value)) === ${JSON.stringify(destination)}; }
+        catch { return false; }
+      };
+      const mkdir = fs.mkdirSync, open = fs.openSync;
+      fs.mkdirSync = function(value, ...rest) {
+        const result = mkdir.call(fs, value, ...rest);
+        if (matches(value)) process.kill(process.pid, "SIGKILL");
+        return result;
+      };
+      fs.openSync = function(value, flags, ...rest) {
+        const result = open.call(fs, value, flags, ...rest);
+        if (typeof flags === "number" && (flags & fs.constants.O_CREAT) && matches(value)) process.kill(process.pid, "SIGKILL");
+        return result;
+      };
+      runHostSkillLifecycle(${JSON.stringify({ home, appHome, sourceRoot, apply: true, authorization })});
+    `,
+      ],
+      { env: sourceSubprocessEnv(), encoding: "utf8", timeout: 30000 },
+    );
+    expect(killed.signal, killed.stderr).toBe("SIGKILL");
+    const before = snapshot();
+    expect(run(true, "sha256:wrong").status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+    const resumed = run(true, authorization);
+    expect(resumed.status, JSON.stringify(resumed)).toBe("success");
+    expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+    expect(fs.readFileSync(path.join(target, "SKILL.md"), "utf8")).toBe(loadHostSkillSource(sourceRoot).content);
+  });
+
+  it("previews and replaces a stale single file without adopting a current unrecorded install", () => {
+    write(path.join(target, "SKILL.md"), loadHostSkillSource(sourceRoot).content);
+    const before = snapshot();
+    expect(run().status).toBe("noop");
+    expect(run(true).status).toBe("noop");
+    expect(snapshot()).toEqual(before);
+    write(path.join(target, "SKILL.md"), "old bootstrap");
+    const preview = run();
+    expect(preview.status).toBe("pending");
+    expect(run(true).status).toBe("non_success");
+    expect(run(true, token(preview)).status).toBe("success");
+  });
+
+  it("preserves nested and chained symlink targets without following them", () => {
+    unrecorded("directory");
+    const outside = path.join(temp, "outside");
+    write(path.join(outside, "private"), "outside data");
+    fs.symlinkSync(outside, path.join(target, "companion-link"));
+    const before = snapshot(outside);
+    const preview = run();
+    expect(run(true, token(preview)).status).toBe("success");
+    expect(snapshot(outside)).toEqual(before);
+    const chain = path.join(temp, "chain");
+    fs.symlinkSync(outside, chain);
+    fs.renameSync(target, path.join(temp, "installed"));
+    fs.symlinkSync(chain, target);
+    const second = run();
+    expect(second.status, JSON.stringify(second)).toBe("pending");
+    expect(run(true, token(second)).status).toBe("success");
+    expect(fs.readlinkSync(chain)).toBe(outside);
+    expect(snapshot(outside)).toEqual(before);
+  });
+
+  it.each(["parent-link", "hard-link", "wrong-type", "overlap"])("rejects unsafe %s without effects", (kind) => {
+    unrecorded("directory");
+    if (kind === "parent-link") {
+      fs.renameSync(path.dirname(target), path.join(temp, "outside-skills"));
+      fs.symlinkSync(path.join(temp, "outside-skills"), path.dirname(target));
+    }
+    if (kind === "hard-link") fs.linkSync(path.join(target, "SKILL.md"), path.join(temp, "hard-link"));
+    if (kind === "wrong-type") {
+      fs.renameSync(target, path.join(temp, "saved"));
+      write(target, "not a directory");
+    }
+    if (kind === "overlap") appHome = path.join(target, "app");
+    const before = snapshot();
+    expect(run().status).toBe("non_success");
+    expect(run(true).status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
   });
 });

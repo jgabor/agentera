@@ -24,6 +24,7 @@ beforeEach(() => {
   for (const relative of ["registry.json", "references/adapters/package-registry.yaml", "skills/agentera/SKILL.md"]) write(path.join(sourceRoot, relative), fs.readFileSync(path.join(checkout, relative), "utf8"));
   current = fs.readFileSync(path.join(sourceRoot, "skills/agentera/SKILL.md"), "utf8");
   vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", sourceRoot);
+  vi.stubEnv("AGENTERA_HOME", appHome);
 });
 
 afterEach(() => {
@@ -56,8 +57,13 @@ function diagnose(options: Parameters<typeof diagnoseCanonicalSkill>[1] = {}) {
   return result;
 }
 
-function expectManualRecovery(result: ReturnType<typeof diagnoseCanonicalSkill>) {
-  expect(result.details).toEqual(expect.arrayContaining([expect.stringContaining("Preserve the reported destination and ownership journal."), expect.stringContaining("this route never deletes or adopts them"), expect.stringContaining("separate user approval")]));
+function expectOffer(result: ReturnType<typeof diagnoseCanonicalSkill>) {
+  expect(result.upgrade_offer, JSON.stringify(result)).toMatchObject({
+    question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
+    approval: "explicit_yes_only",
+    apply_command: expect.stringContaining("--yes --authorization "),
+  });
+  expect(result.details).toEqual([]);
 }
 
 describe("diagnoseCanonicalSkill", () => {
@@ -80,9 +86,10 @@ describe("diagnoseCanonicalSkill", () => {
       compatibility: "compatible",
       freshness: "current",
       runtime_authority: "available",
-      ownership: "not_inspected",
+      ownership: "owned",
       preview_command: `npx -y agentera@next upgrade --shared-skill --home ${homePath} --dry-run`,
       details: [],
+      upgrade_offer: null,
     });
   });
 
@@ -99,12 +106,12 @@ describe("diagnoseCanonicalSkill", () => {
       ownership: "absent",
       preview_command: `npx -y agentera@next upgrade --shared-skill --home ${homePath} --install-root ${appHome} --dry-run`,
     });
-    expectManualRecovery(result);
+    expect(result.upgrade_offer).toBeNull();
     expect(fs.existsSync(target())).toBe(false);
     expect(fs.existsSync(appHome)).toBe(false);
   });
 
-  it("preserves an existing unrelated target and requests manual review", () => {
+  it("offers approved replacement of the dedicated directory without changing its existing files", () => {
     const unrelated = path.join(target(), "SKILL.md");
     write(unrelated, "---\nname: unrelated\n---\n");
 
@@ -118,13 +125,13 @@ describe("diagnoseCanonicalSkill", () => {
       compatibility: "incompatible",
       freshness: "stale",
       runtime_authority: "available",
-      ownership: "blocked",
+      ownership: "owned",
     });
-    expectManualRecovery(result);
+    expectOffer(result);
     expect(fs.readFileSync(unrelated, "utf8")).toBe(before);
   });
 
-  posixIt("preserves an invalid symlink and requests manual review", () => {
+  posixIt("offers replacement of a legacy symlink without changing its target", () => {
     const unrelated = path.join(homePath, "unrelated-skill");
     fs.mkdirSync(unrelated);
     fs.writeFileSync(path.join(unrelated, "SKILL.md"), "---\nname: unrelated\n---\n");
@@ -140,9 +147,9 @@ describe("diagnoseCanonicalSkill", () => {
       compatibility: "unknown",
       freshness: "unknown",
       runtime_authority: "available",
-      ownership: "blocked",
+      ownership: "owned",
     });
-    expectManualRecovery(result);
+    expectOffer(result);
     expect(fs.lstatSync(target()).isSymbolicLink()).toBe(true);
     expect(fs.readlinkSync(target())).toBe(unrelated);
     expect(fs.readFileSync(path.join(unrelated, "SKILL.md"), "utf8")).toBe("---\nname: unrelated\n---\n");
@@ -161,7 +168,7 @@ describe("diagnoseCanonicalSkill", () => {
       freshness: "stale",
       runtime_authority: "available",
     });
-    expectManualRecovery(result);
+    expectOffer(result);
   });
 
   it("distinguishes compatible but stale host bytes from invalid runtime authority", () => {
@@ -174,7 +181,7 @@ describe("diagnoseCanonicalSkill", () => {
       freshness: "stale",
       runtime_authority: "available",
     });
-    expectManualRecovery(result);
+    expectOffer(result);
   });
 
   it("reports missing selected runtime authority without falling back to the checkout or repairing host bytes", () => {
@@ -190,21 +197,23 @@ describe("diagnoseCanonicalSkill", () => {
       ownership: "not_inspected",
     });
     expect(result.details).toContain("Repair the selected CLI distribution/runtime authority; host installation cannot repair package bytes.");
-    expectManualRecovery(result);
+    expect(result.upgrade_offer).toBeNull();
+    expect(result.details).toContain("No supported update is offered. Nothing changed; do not broaden approval or move files manually.");
   });
 
-  it("does not equate current compatible bytes with ownership when an app journal is inspected", () => {
+  it("does not offer or adopt an already current installation without a journal", () => {
     write(path.join(target(), "SKILL.md"), current);
     const result = diagnose({ appHome });
     expect(result).toMatchObject({
-      status: "warn",
+      status: "pass",
       shape: "one_file",
       compatibility: "compatible",
       freshness: "current",
       runtime_authority: "available",
-      ownership: "blocked",
+      ownership: "owned",
+      upgrade_offer: null,
     });
-    expectManualRecovery(result);
+    expect(result.details).toEqual([]);
     expect(fs.existsSync(appHome)).toBe(false);
   });
 });

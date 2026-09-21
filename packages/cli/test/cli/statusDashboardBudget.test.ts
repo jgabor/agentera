@@ -90,4 +90,36 @@ describe("status startup budget", () => {
     expect(capsule.context.status_context).not.toHaveProperty("todo_reconciliation");
     expect(briefUtf8Bytes(payload)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
   });
+
+  it("reserves the complete capsule for the primary action and upgrade offer before secondary suggestions", () => {
+    const offer = {
+      question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
+      approval: "explicit_yes_only",
+      apply_command: "npx -y agentera@next upgrade --shared-skill --home /tmp/home --install-root /tmp/app --yes --authorization sha256:" + "a".repeat(64),
+    };
+    const crowded = {
+      ...state,
+      shared_skill: { ...state.shared_skill, upgrade_offer: offer },
+      next_action: {
+        recommended: state.next_action.recommended,
+        alternatives: Array.from({ length: 8 }, () => ({
+          ...state.next_action.recommended,
+          object: "Secondary suggestion ".repeat(10),
+          reason: "Read the exact continuation for this lower-ranked suggestion. ".repeat(4),
+        })),
+      },
+    };
+    const payload = buildStatusCapabilityContextPayload(crowded) as Record<string, any>;
+    expect(briefUtf8Bytes(payload)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expect(payload.shared_skill.upgrade_offer).toEqual(offer);
+    expect(payload.capability_context.instructions).toBe((buildStatusCapabilityContextPayload(state) as Record<string, any>).capability_context.instructions);
+    expect(payload.capability_context.context.status_context.next_action).toMatchObject({
+      object: state.next_action.recommended.object,
+      alternatives: [],
+      alternatives_omission: {
+        omitted_count: 8,
+        retrieval: "npx -y agentera@next prime --fields next_action",
+      },
+    });
+  });
 });

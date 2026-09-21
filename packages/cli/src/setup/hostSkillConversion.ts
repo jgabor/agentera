@@ -9,7 +9,7 @@ import { hostSkillPath, loadHostSkillSource, runOneFileHostSkillLifecycle, type 
 const PREFIX = "shared-skill.conversion.";
 const RETAINED = "shared-skill.retained.";
 const RECOVERY =
-  "Preserve the host, retained data and ownership journal. Retry with the same --home, --install-root, --yes and --authorization token after interruption. Changed bytes, identities, source selection or scope require a new reviewed preview; ambiguous or unowned entries require manual recovery with separate approval. Never recursively remove the host namespace or prune a link target.";
+  "Preserve the host, retained data and operation journal. Retry with the same --home, --install-root, --yes and --authorization token after interruption. Changed bytes, identities, source selection or scope require review before further effects. Approval covers the dedicated Agentera installation, not its symlink targets or other host, app or project data.";
 const digest = (value: unknown) => createHash("sha256").update(JSON.stringify(value)).digest("hex");
 const inside = (root: string, candidate: string) => candidate === root || candidate.startsWith(root + path.sep);
 
@@ -17,7 +17,7 @@ export function hasPendingHostSkillConversion(appHome: string): boolean {
   return readLifecycleOwnershipJournal(lifecycleOwnershipJournalPath(appHome)).ledger.records.some((record) => record.resourceId.startsWith(PREFIX) && record.status === "pending_create");
 }
 
-/** Only a durable whole-resource record plus matching inode AND bytes proves legacy ownership. */
+/** Approval manages the dedicated installation as a whole; the journal records this operation, not historical ownership. */
 export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: LifecycleApplyOptions = {}) {
   const home = path.resolve(args.home),
     appHome = path.resolve(args.appHome),
@@ -44,14 +44,12 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
       const homeState = observeLifecyclePath(home, [path.parse(home).root]);
       if (homeState.unsafeReason || homeState.kind !== "directory") throw new Error("Home must be an existing safe directory.");
       const journal = readLifecycleOwnershipJournal(journalPath);
-      if (journal.state !== "clean") throw new Error("Legacy conversion requires a clean existing ownership journal; names and byte equality are not ownership.");
-      const markers = journal.ledger.records.filter((record) => record.resourceId.startsWith(PREFIX));
-      if (markers.length > 1) throw new Error("Ambiguous host conversion ownership; preserve all resources for manual recovery.");
+      if (!["absent", "clean"].includes(journal.state)) throw new Error(`Ownership journal is ${journal.state}; preserve it for explicit recovery.`);
+      const markers = journal.ledger.records.filter((record) => record.resourceId.startsWith(PREFIX) && (record.status === "pending_create" || args.authorization === `sha256:${record.resourceId.slice(PREFIX.length)}`));
+      if (markers.length > 1) throw new Error("Ambiguous host conversion operation; preserve all resources and report the blocked operation.");
       const marker = markers[0];
       const previousToken = marker?.resourceId.slice(PREFIX.length);
       if (previousToken && !/^[a-f0-9]{64}$/.test(previousToken)) throw new Error("Invalid conversion ownership record.");
-      const retainedPrefix = previousToken ? `${RETAINED}${previousToken}.` : "";
-      const originalRecords = journal.ledger.records.filter((record) => !record.resourceId.startsWith(PREFIX) && !record.resourceId.startsWith("shared-skill.retention."));
       const moved = marker && observeLifecyclePath(marker.destination, [appHome]).kind !== "missing";
       const root = moved ? marker.destination : target;
       if (marker && marker.destination !== path.join(path.dirname(journalPath), `host-conversion-${previousToken}`, "legacy")) throw new Error("Conversion retention scope does not match this app home.");
@@ -61,23 +59,22 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
         linkTarget?: string;
       }> = [];
       const visit = (at: string) => {
-        if (entries.length >= 4096) throw new Error("Legacy tree exceeds the supported conversion inventory; use manual recovery.");
+        if (entries.length >= 4096) throw new Error("Legacy tree exceeds the supported 4096-entry conversion inventory; no update is offered.");
         const relative = path.relative(root, at),
           destination = path.join(target, relative);
         const observed = observeLifecyclePath(at, [moved ? appHome : home]);
         if (observed.unsafeReason || !["directory", "file", "symlink"].includes(observed.kind)) throw new Error(`Unsafe or missing legacy entry: ${destination}`);
         if (observed.kind === "file" && fs.lstatSync(at).nlink !== 1) throw new Error(`Hard-linked legacy entry is not supported: ${destination}`);
-        const retainedRecords = moved ? originalRecords.filter((record) => record.destination === at && record.resourceId.startsWith(retainedPrefix)) : [];
-        const records = retainedRecords.length ? retainedRecords : originalRecords.filter((record) => record.destination === destination);
-        const record = records[0];
-        if (records.length !== 1 || !record || record.scope !== "whole" || !["managed", "legacy"].includes(record.status) || record.kind !== observed.kind || !sameLifecycleIdentity(record.identity ?? undefined, observed.identity) || record.fingerprint !== observed.fingerprint)
-          throw new Error(`Ownership missing, ambiguous or changed for ${destination}; preserve unowned extras and user changes for manual recovery.`);
         entries.push({
           relative,
           record: {
-            ...record,
+            resourceId: `shared-skill.snapshot.${digest(relative)}`,
             destination,
-            resourceId: retainedPrefix && record.resourceId.startsWith(retainedPrefix) ? record.resourceId.slice(retainedPrefix.length) : record.resourceId,
+            kind: observed.kind as LifecycleOwnershipRecord["kind"],
+            scope: "whole",
+            status: "managed",
+            identity: observed.identity!,
+            fingerprint: observed.fingerprint ?? null,
           },
           ...(observed.kind === "symlink" ? { linkTarget: fs.readlinkSync(at) } : {}),
         });
@@ -85,13 +82,16 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
       };
       visit(root);
       const legacy = entries[0]!;
-      if (fs.lstatSync(root).dev !== fs.statSync(path.dirname(journalPath)).dev) throw new Error("Host conversion requires retention on the same filesystem; use separately approved manual recovery.");
-      if (marker && (!sameLifecycleIdentity(marker.identity ?? undefined, legacy.record.identity ?? undefined) || marker.fingerprint !== previousToken)) throw new Error("Conversion marker does not match legacy ownership evidence.");
-      if (legacy.record.kind !== "symlink" && (legacy.record.kind !== "directory" || !entries.some((entry) => entry.relative === "SKILL.md" && entry.record.kind === "file"))) throw new Error("Supported copied installations must contain an owned regular SKILL.md.");
+      const retentionParent = observeLifecyclePath(path.dirname(journalPath), [path.parse(appHome).root]);
+      if (retentionParent.unsafeReason || !["missing", "directory"].includes(retentionParent.kind)) throw new Error("Retention parent must be a safe directory.");
+      const retentionDevice = retentionParent.identity?.device ?? retentionParent.directories.at(-1)?.identity.device;
+      if (legacy.record.identity?.device !== retentionDevice) throw new Error("Host conversion requires retention on the same filesystem; no update is offered.");
+      if (marker && (!sameLifecycleIdentity(marker.identity ?? undefined, legacy.record.identity ?? undefined) || marker.fingerprint !== previousToken)) throw new Error("Conversion marker does not match the approved installation snapshot.");
+      if (legacy.record.kind !== "symlink" && legacy.record.kind !== "directory") throw new Error("Supported installations must be a directory or symlink.");
       for (const [index, parent] of [path.join(home, ".agents"), path.join(home, ".agents/skills")].entries()) {
         const observed = observeLifecyclePath(parent, [home]);
         if (observed.unsafeReason || observed.kind !== "directory" || journal.ledger.records.some((record) => record.resourceId === `shared-skill.parent-${index}` && record.status === "pending_create" && !record.identity))
-          throw new Error("Host parent is unsafe or has no recorded publication identity; manual recovery required.");
+          throw new Error("Host parent is unsafe or has no recorded publication identity; approval cannot extend to repairing its parents.");
       }
       const parent = observeLifecyclePath(target, [home]);
       const token = digest({
@@ -106,13 +106,13 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
         parents: parent.directories,
         entries,
       });
-      if (previousToken && previousToken !== token) throw new Error("Conversion evidence changed after approval; preserve retained data and host for manual recovery.");
+      if (previousToken && previousToken !== token) throw new Error("Conversion evidence changed after approval; preserve retained data and host without broadening consent.");
       const retention = path.join(path.dirname(journalPath), `host-conversion-${token}`),
         retainedPath = path.join(retention, "legacy");
-      if (marker && observeLifecyclePath(retention, [appHome]).kind === "directory" && fs.readdirSync(retention).some((name) => name !== "legacy")) throw new Error("Retention directory has unowned extras; preserve them for manual recovery.");
+      if (marker && observeLifecyclePath(retention, [appHome]).kind === "directory" && fs.readdirSync(retention).some((name) => name !== "legacy")) throw new Error("Retention directory has unexpected extra entries; preserve them and report the blocked operation.");
       if (!marker && observeLifecyclePath(retention, [appHome]).kind !== "missing") throw new Error("Retention destination already exists without conversion ownership.");
       const targetRuntime = legacy.linkTarget === undefined ? null : path.resolve(path.dirname(target), legacy.linkTarget);
-      if (targetRuntime && (inside(target, targetRuntime) || inside(retention, targetRuntime) || inside(targetRuntime, target) || inside(targetRuntime, retention))) throw new Error("Legacy link target overlaps conversion output; manual recovery required.");
+      if (targetRuntime && (inside(target, targetRuntime) || inside(retention, targetRuntime) || inside(targetRuntime, target) || inside(targetRuntime, retention))) throw new Error("Legacy link target overlaps conversion output; no update is offered.");
       return {
         source,
         journal,
@@ -190,8 +190,6 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
         intent: "ensure" as const,
       };
       const ledger = current.journal.ledger;
-      const observedRetention = observeLifecyclePath(current.retention, [appHome]);
-      if (observedRetention.kind !== "missing" && ledger.records.some((record) => record.resourceId === retentionSpec.id && record.status === "pending_create" && !record.identity)) throw new Error("Retention directory exists without recorded creation identity; manual recovery required.");
       const plan = planLifecycleOperations({
         allowedRoots: [appHome],
         operations: [retentionSpec],
@@ -201,7 +199,7 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
       const applied = applyLifecycleOperations(plan, {
         persistLedger: (next) => save(next.records),
       });
-      if (applied.status !== "success") throw new Error("Retention directory ownership is blocked; preserve it for manual recovery.");
+      if (applied.status !== "success") throw new Error("Retention directory publication is blocked; preserve it and report the failed operation.");
       current = inspect();
       if (!current.moved) {
         const original = observeLifecyclePath(target, [home]);
@@ -221,11 +219,11 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
         );
       }
       current = inspect();
-      // Keep all positive ownership evidence, relocating only records for the retained tree.
-      const owned = new Set(current.entries.map((entry) => entry.record.resourceId));
+      // Preserve existing records for the moved namespace, then record the approved snapshot.
       const retainedPrefix = `${RETAINED}${current.token}.`;
+      const relocated = current.journal.ledger.records.some((entry) => entry.resourceId === retainedPrefix + current.entries[0]!.record.resourceId);
       const records = current.journal.ledger.records.map((record) =>
-        owned.has(record.resourceId)
+        !record.resourceId.startsWith(PREFIX) && inside(target, record.destination) && !relocated
           ? {
               ...record,
               resourceId: retainedPrefix + record.resourceId,
@@ -233,6 +231,15 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
             }
           : record,
       );
+      for (const entry of current.entries) {
+        const resourceId = retainedPrefix + entry.record.resourceId;
+        if (!records.some((record) => record.resourceId === resourceId))
+          records.push({
+            ...entry.record,
+            resourceId,
+            destination: path.join(current.retainedPath, entry.relative),
+          });
+      }
       if (JSON.stringify(records) !== JSON.stringify(current.journal.ledger.records)) save(records);
       // The one-file writer owns its own lock and its established partial-write recovery.
       releaseLifecycleOwnershipJournalLock(lock);
@@ -247,6 +254,7 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
             if (inspect().token !== preview.token) throw new Error("Conversion evidence changed before one-file publication.");
           },
         },
+        true,
       );
       if (installed.status === "non_success")
         return result("non_success", installed.reason, {
@@ -257,7 +265,7 @@ export function runHostSkillConversion(args: HostSkillLifecycleArgs, options: Li
       inspect();
       const completed = readLifecycleOwnershipJournal(journalPath).ledger.records;
       if (completed.some((record) => record.resourceId === PREFIX + preview.token && record.status !== "managed")) save(completed.map((record) => (record.resourceId === PREFIX + preview.token ? { ...record, status: "managed" } : record)));
-      return result(installed.status === "noop" && preview.marker?.status === "managed" ? "noop" : "success", "Only the approved host installation was converted; legacy data and ownership evidence are retained.", { ...details, approval: "approved", operations: installed.operations });
+      return result(installed.status === "noop" && preview.marker?.status === "managed" ? "noop" : "success", "Only the approved host installation was converted; legacy data and operation evidence are retained.", { ...details, approval: "approved", operations: installed.operations });
     } finally {
       if (lock) releaseLifecycleOwnershipJournalLock(lock);
     }

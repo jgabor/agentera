@@ -46,11 +46,12 @@ npx -y agentera@next doctor
 Agentera 3.0 uses one portable integration for compatible runtimes: the shared
 skill at `~/.agents/skills/agentera/SKILL.md` plus the Agentera CLI. The host
 directory contains only that file; runtime schemas and references stay inside
-the package. Preview installation or owned refresh with
-`npx -y agentera@next upgrade --shared-skill --dry-run`. Apply requires explicit
-approval; owned legacy conversion also requires the reviewed authorization token.
+the package. For an outdated supported installation, `prime` and `doctor` return
+one update offer. Answer Yes once; the host runs the CLI-provided command without
+asking about technical details. No or no answer changes nothing. Older directories
+and symlinks need no historical ownership journal or per-file approval.
 See [UPGRADE.md](./UPGRADE.md#one-file-shared-skill-installation-and-repair) for
-commands, Linux apply limits, retention and manual unowned recovery. No route
+commands, Linux apply limits, retained data and bounded recovery. No route
 prunes through a host symlink or automatically repairs during diagnosis.
 
 No OpenCode gate or `hook` command replaces the retired plugin. Project-only

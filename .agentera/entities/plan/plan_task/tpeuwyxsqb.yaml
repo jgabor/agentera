@@ -1,0 +1,24 @@
+id: tpeuwyxsqb
+artifact: plan
+record:
+  name: Make skill replacement a supported installation operation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the inspected legacy symlink layout and no ownership journal WHEN an upgrade is previewed THEN it offers a supported upgrade rather than manual recovery, using the dedicated-directory management contract and explicit approval instead of historical ownership prerequisites.
+    - GIVEN an older skill directory containing companion files or extra entries WHEN the user approves its upgrade THEN the active installation contains only the current regular SKILL.md without per-file approval, and the CLI handles preservation, replacement, and bookkeeping internally.
+    - GIVEN a symlink installation WHEN it is upgraded THEN its target and all data outside the authorized installation scope remain unchanged.
+    - GIVEN an interrupted upgrade WHEN the same operation is retried under unchanged approval THEN it converges safely without manual file movement or fabricated ownership records.
+    - GIVEN a current installation or an unsafe destination WHEN an upgrade is attempted THEN the former is a no-op and the latter fails without modifying unrelated data. Verification uses temporary homes with one success and one rejection case per testable behavior, plus interruption and symlink cases because they exercise distinct filesystem risks.
+  plan: nmdizjtrei
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: tpeuwyxsqb-coordinator-1
+      source: "Coordinator acceptance/evidence review of code worker ses_f3b1efbf8ffefO8nkuqur6gRCS: 149 focused tests, typecheck, current build, and 17 isolated built-CLI invocations passed. Covers all five criteria including no-journal eligibility, extras, target preservation, SIGKILL retries, no-op and unsafe destinations. Integrated independent audit remains a plan-closeout gate."
+      recorded_at: 2026-09-21 19:02
+      writer_command: agentera state plan record-evaluation

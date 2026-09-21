@@ -1,0 +1,35 @@
+id: nmdizjtrei
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-21
+    status: complete
+    reviewed: 2026-09-21
+    critic_issues: 0 found, 0 addressed, 0 dismissed
+    title: "Plan: One-confirmation Agentera skill upgrades"
+  what: Let users approve an outdated Agentera skill upgrade with one ordinary confirmation. The CLI handles installation differences, replacement, recovery, and verification without manual filesystem repairs. Ask whether to update the installed skill, state that project files will not change, and accept yes or no. Yes runs the CLI-provided operation and verifies completion; no changes nothing; a current installation needs no question. Genuine failures receive short, actionable explanations with technical evidence available for troubleshooting.
+  why: The inspected installation is a legacy skill symlink with no ownership journal. Current conversion blocks before checking individual entries, forcing users to understand installation internals. Treat the dedicated skill directory as one managed installation so normal users can upgrade without proving its history.
+  constraints: Require explicit skill-upgrade approval and keep diagnostics read-only. Do not require per-file ownership proof or a historical journal. Preserve symlink targets, project files, profiles, sibling skills, and unrelated host settings. Preserve existing JSON output and supported commands except deliberately changed upgrade eligibility. Retain supported-platform limits and native-resource cleanup policy. This narrowly revises shared-skill ownership, not general cleanup authority. No live upgrade, publication, or push is authorized. Keep technical mechanics out of the default confirmation. Follow the existing JSON-output decision kicksvpwep; leave other resource classes governed by cleanup decision vawlbdsquq.
+  scope:
+    included:
+      - Fresh installation and upgrades from one-file, copied-tree, and symlink layouts.
+      - Legacy installations without an ownership journal, including the inspected installation.
+      - Whole-directory management of ~/.agents/skills/agentera/ and its equivalent under an explicitly selected home.
+      - Consistent discovery, approval, execution, retry, and verification through the existing CLI lifecycle.
+      - CLI guidance, host bootstrap, documentation, tests, user-facing changelog, and required delivery state closeout.
+      - Only startup-output corrections directly necessary to make the upgrade offer reachable within existing limits.
+    excluded:
+      - Project migration, unrelated native-resource cleanup, profile changes, and host configuration changes.
+      - Cross-platform expansion or a general startup redesign.
+      - Live-home upgrades, npm publication, version bumps, and pushes without separate authorization.
+      - Deleting or modifying symlink targets and requiring users to manage retained installation data.
+    deferred:
+      []
+  design: First make the installation lifecycle responsible for replacing the whole dedicated skill installation after approval, including legacy layouts lacking historical records. Then have diagnosis and startup expose a concise upgrade offer that an agent can execute and verify without manual repair steps. Finally qualify the complete interaction through the delivered runtime and align all guidance. Reuse working lifecycle behavior and remove ownership requirements that exist solely to prove individual companion files. Keep recovery and preservation internal while maintaining scope and consent boundaries.
+  overall_acceptance: GIVEN the inspected legacy installation without an ownership journal WHEN the user answers yes to one skill-upgrade confirmation THEN the installed skill is updated and verified without ownership terminology, manual filesystem operations, or additional questions about routine conversion mechanics, while project files and data outside the approved installation scope remain unchanged.
+  unknowns:
+    []
+  rejected:
+    []
+  surprises: ""

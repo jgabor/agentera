@@ -2,6 +2,14 @@ schema_version: agentera.lifecycleOperationContract.v1
 status: migration_only_contract
 decision: 92
 scope: runtime_neutral_filesystem_resources
+scope_note: The generic planner and native-resource cleanup retain the ledger rules below. Dedicated shared-skill replacement is the separate, explicitly approved exception described here.
+shared_skill_exception:
+  owner: packages/cli/src/setup/hostSkillConversion.ts
+  route: upgrade --shared-skill
+  destination: ~/.agents/skills/agentera or its selected --home equivalent
+  approval: Whole dedicated-directory management requires explicit approval; no historical journal or per-file ownership proof is required.
+  preservation: The CLI retains the replaced link or directory without following symlinks, publishes one regular current SKILL.md, and owns operation bookkeeping and retry.
+  boundaries: Approval does not cover symlink targets, other host directories, project state, or native cleanup. Linux safe publication and same-filesystem retention remain required.
 ownership:
   manifest_schema: agentera.lifecycleOwnershipManifest.v1
   ledger_schema: agentera.lifecycleOwnershipLedger.v1

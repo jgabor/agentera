@@ -96,7 +96,7 @@ describe("one-file host install and refresh", () => {
     expect(run().status).toBe("noop");
   });
 
-  it.each(["extra", "tree", "symlink", "dangling", "unowned", "modified", "replaced", "hardlink", "parent_symlink", "corrupt_journal"])("preserves and blocks %s without effects", (kind) => {
+  it.each(["extra", "tree", "symlink", "dangling", "unowned", "modified", "replaced", "hardlink", "parent_symlink", "corrupt_journal"])("preserves %s without conversion approval", (kind) => {
     if (["extra", "modified", "replaced", "hardlink", "corrupt_journal"].includes(kind)) expect(run().status).toBe("success");
     if (kind === "extra") write(path.join(target, "notes.txt"), "not owned");
     if (kind === "tree") {
@@ -120,8 +120,9 @@ describe("one-file host install and refresh", () => {
     }
     if (kind === "corrupt_journal") write(path.join(lifecycleOwnershipJournalPath(appHome), "unexpected.json"), "{}");
     const before = snapshot();
-    expect(run(false).status).toBe("non_success");
-    expect(run().status).toBe("non_success");
+    const unsafe = ["hardlink", "parent_symlink", "corrupt_journal"].includes(kind);
+    expect(run(false).status).toBe(kind === "unowned" ? "noop" : unsafe ? "non_success" : "pending");
+    expect(run().status).toBe(kind === "unowned" ? "noop" : "non_success");
     diagnoseCanonicalSkill(home, { sourceRoot, appHome });
     expect(snapshot()).toEqual(before);
   });
@@ -209,9 +210,9 @@ describe("one-file host install and refresh", () => {
         const before = snapshot();
         for (const apply of [false, true]) {
           const result = run(apply);
-          expect(result.status, JSON.stringify(result)).toBe("non_success");
-          expect(result.reason).toContain("no recorded publication identity");
-          expect(result.recovery).toContain("separate user approval");
+          const dedicated = [HOST_SKILL_FILE_ID, HOST_SKILL_DIRECTORY_ID].includes(id);
+          expect(result.status, JSON.stringify(result)).toBe(dedicated && !apply ? "pending" : "non_success");
+          expect(result.reason).toContain(dedicated ? "authorization" : "no recorded publication identity");
           expect(result.operations).toEqual([]);
           expect(snapshot()).toEqual(before);
           const after = fs.lstatSync(destination, { bigint: true });

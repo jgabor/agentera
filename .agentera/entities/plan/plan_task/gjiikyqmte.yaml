@@ -1,0 +1,24 @@
+id: gjiikyqmte
+artifact: plan
+record:
+  name: Qualify and document the complete experience
+  depends_on:
+    - tpeuwyxsqb
+    - sxfzrsnndf
+  status: complete
+  acceptance:
+    - GIVEN an isolated reproduction of the inspected installation including the OpenCode link through the shared skill location WHEN one upgrade is approved THEN both entry paths expose the new one-file skill and the old target remains untouched.
+    - GIVEN the packaged CLI without a checkout WHEN the same workflow runs THEN it provides the same upgrade and verification behavior.
+    - GIVEN current help, static guidance, and bootstrap instructions WHEN an agent follows them THEN it needs neither companion-file reads nor manual installation repairs. Documentation, user-facing changelog, and required state closeout accompany delivery rather than a separate bookkeeping cycle.
+    - GIVEN completed implementation WHEN focused tests, typecheck, build, relevant contract checks, and the development verification lane run THEN results support the claimed behavior and remaining failures are explicitly reported. Changed behavior is checked using the current local build. Default to one success and one rejection case per testable behavior, reusing applicable prior evidence and adding isolated end-to-end regression coverage for the original failure without changing the live home.
+  plan: nmdizjtrei
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: gjiikyqmte-final-audit-1
+      source: "Independent audit ses_f3ab7f981ffebiMKLzoHYmVhDv: all criteria across three tasks PASS; source/package chain, guidance and scoped artifact freshness verified. Qualified source identity and log/tarball hashes independently matched. 4747 source tests plus 42 package tests; final development 11/11 gates. Earlier OOM/bounded failures retained, not counted as passing evidence. Evidence index /tmp/opencode/gjiikyqmte-evidence/README.md."
+      recorded_at: 2026-09-21 20:49
+      writer_command: agentera state plan record-evaluation

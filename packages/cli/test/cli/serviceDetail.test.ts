@@ -15,6 +15,21 @@ import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSub
 import { validateFrozenGlossaryHoldout, validateFrozenGlossaryBehaviorFixture, loadGlossaryEvaluationBehaviorFixture } from "../../src/eval/glossaryEvaluation.js";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
+it("serves the dedicated-directory exception and one-confirmation workflow without weakening native cleanup", () => {
+  const boundaries = read(["upgrade", "--explain", "--operation", "install", "--section", "boundaries"]);
+  expect(boundaries.host_projection).toContain("No historical journal or per-file ownership proof is required");
+  expect(boundaries.host_projection).toContain("shared_skill.upgrade_offer");
+  expect(boundaries.host_projection).toContain("does not change ownership rules for other native-resource cleanup");
+  const usage = read(["upgrade", "--explain", "--operation", "install", "--section", "usage"]);
+  expect(usage.approval).toContain("only explicit Yes authorizes its unchanged apply_command");
+  expect(usage.legacy_conversion.retained).not.toContain("ledger-owned");
+  const cleanup = read(["upgrade", "--explain", "--operation", "cleanup", "--section", "usage"]);
+  expect(cleanup.recovery).toContain("Require matching marker/ledger/fingerprint ownership");
+  const authority = YAML.parse(fs.readFileSync(path.join(root, "references/adapters/runtime-lifecycle-operation-contract.yaml"), "utf8"));
+  expect(authority.shared_skill_exception.route).toBe("upgrade --shared-skill");
+  expect(authority.shared_skill_exception.boundaries).toContain("does not cover symlink targets");
+  expect(authority.ownership.removal_rule).toContain("matching whole-resource ledger identity and fingerprint");
+});
 afterEach(() => {
   vi.restoreAllMocks();
   vi.unstubAllEnvs();
@@ -91,7 +106,10 @@ describe("purpose-owned report/check/recovery static guidance", () => {
       if (failure === "missing") throw Object.assign(new Error("Missing authority"), { code: "ENOENT" });
       return "invalid: [";
     }) as any);
-    expect(query(args)).toMatchObject({ code: 1, value: { error: { class: "schema_violation" } } });
+    expect(query(args)).toMatchObject({
+      code: 1,
+      value: { error: { class: "schema_violation" } },
+    });
     reads.mockRestore();
     expect(query(args).out).toBe(first.out);
   });

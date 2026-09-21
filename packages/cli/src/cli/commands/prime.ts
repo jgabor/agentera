@@ -22,6 +22,7 @@ import { acquireGlossaryInputs } from "../../analytics/glossaryInputAcquisition.
 import { resolveStartupGlossaryAdvice } from "../capabilityContext/startupGlossaryAdvice.js";
 import { discoverSchemasDir } from "../appContext.js";
 import { registryArtifactPath } from "../orientation.js";
+import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -71,16 +72,18 @@ export function finalizeStatusCapabilityContextPayload(payload: Record<string, u
       detail_availability: "summary",
       detail_command: preCutoverCommand("prime --fields startup"),
     };
-    const status = context.status_context as Record<string, unknown>;
-    const next = status.next_action as Record<string, unknown>;
-    const alternatives = next.alternatives as unknown[];
-    if (alternatives.length) {
-      next.alternatives = [];
-      next.alternatives_omission = {
-        omitted_count: alternatives.length,
-        retrieval: preCutoverCommand("prime --fields next_action"),
-      };
-    }
+  }
+  const status = context.status_context as Record<string, unknown>;
+  const next = status.next_action as Record<string, unknown>;
+  const alternatives = next.alternatives as unknown[];
+  // Preserve the complete instructions, primary action and actionable host offer.
+  // Reuse the existing continuation for secondary suggestions under byte pressure.
+  if (alternatives.length && (reconciliation?.state === "unsafe_inactive" || briefUtf8Bytes(payload) > PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES)) {
+    next.alternatives = [];
+    next.alternatives_omission = {
+      omitted_count: alternatives.length,
+      retrieval: preCutoverCommand("prime --fields next_action"),
+    };
   }
   return payload;
 }

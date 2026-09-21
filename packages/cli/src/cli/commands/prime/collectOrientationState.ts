@@ -90,7 +90,11 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const decision = entity.decision;
   const decisionAttention = entity.decisionAttention;
   const corpusCoverage = corpusCoverageSummary(env, process.platform);
-  const sharedSkill = diagnoseCanonicalSkill(home);
+  const sharedSkill = diagnoseCanonicalSkill(home, {
+    sourceRoot,
+    appHome: opts.installRoot ?? undefined,
+    env,
+  });
   const projectIntegration = summarizeProjectIntegration({
     project,
     sourceRoot,

@@ -71,6 +71,21 @@ downstream capability not already authorized. First-interaction status renders
 the brief and a free-form continuation prompt, not a native question menu, unless
 the user requests bounded choices or a state-changing Proceed/Cancel handoff.
 
+## Shared-skill update offer
+
+Ordinary `prime` and JSON `doctor` may return `shared_skill.upgrade_offer`.
+When present, ask its `question` verbatim as one plain Yes/No confirmation:
+“Agentera’s installed skill needs an update. Update it now? Your project files will not change.”
+Only an explicit Yes authorizes its exact `apply_command`, subject to host
+permissions. No, silence or an absent offer means no update and no apply call.
+Do not ask another question about paths, tokens, retention or file inventories;
+the CLI supplies and checks the operation. Never invent or edit its command,
+refresh its token under old approval, or substitute a manual repair.
+Require exit 0 and JSON `status` of `success` or `noop` before reporting completion;
+the CLI verifies the resulting installation. On failure, report its bounded
+reason without claiming success or broadening consent. A current installation
+has no offer and needs no question. Project permission alone is not approval.
+
 ## Read the governing details
 
 Startup returns full instructions, declared state needs and bounded availability.
@@ -133,12 +148,8 @@ read checkout/installed companions as fallback, or change the installation.
   availability actions. Fresh initialization, migration and partial/corrupt state
   have different contracts; do not treat one as another. `upgrade --explain`
   provides current applicability and preview/apply grammar, not consent to apply.
-- For host bootstrap repair, read `npx -y agentera@next upgrade --explain --operation install`.
-  `upgrade --shared-skill` defaults to preview; fresh/owned refresh needs explicit
-  home approval with `--yes`, and owned legacy conversion additionally needs the
-  exact reviewed `--authorization` token. Retain old runtime data and ownership
-  evidence; never prune a symlink target. Unowned resources require separately
-  approved manual recovery. Project permission does not authorize global repair.
+- For host bootstrap updates, follow the shared-skill offer above. The CLI handles
+  preview, approval binding, retained data and recovery; never prune a symlink target.
 
 Read-only recovery needs no mutation approval, but remains subject to host access
 permissions. Installation, migration, reset, cleanup, history acquisition and

@@ -45,9 +45,21 @@ npx -y agentera@next upgrade --explain --operation refresh
 npx -y agentera@next doctor --explain
 ```
 
-Follow returned section and continuation commands for applicable details. For a
-fresh host or an owned one-file refresh, preview first and obtain explicit user
-approval before applying:
+Follow returned section and continuation commands for applicable details.
+Ordinary `prime` and `doctor` offer an update for an outdated supported install:
+
+> Agentera’s installed skill needs an update. Update it now? Your project files will not change.
+
+Answer **Yes** once to let the host run the exact CLI-provided
+`shared_skill.upgrade_offer.apply_command`. The CLI supplies the authorization,
+retains the old installation when replacement is needed, and verifies delivery.
+The host does not ask about tokens, paths, journals or individual files. No,
+silence, or an absent offer causes no update. A current installation has no offer.
+Success requires exit 0 and JSON `status` of `success` or `noop`, not merely an
+attempted command. An unrelated doctor warning does not negate a current shared
+skill, and shared-skill success does not resolve unrelated app/project warnings.
+
+A missing installation keeps the separate explicit install-preview route:
 
 ```bash
 npx -y agentera@next upgrade --shared-skill --dry-run
@@ -57,8 +69,8 @@ npx -y agentera@next upgrade --shared-skill --yes
 Without `--yes`, `--shared-skill` defaults to read-only preview. It writes only
 the selected one-file host projection and its external app-home ownership state,
 not project state or internal runtime contracts. Matching current content is a
-no-op; refreshing changed content requires recorded ownership. A matching name
-or matching bytes alone never authorize adoption or replacement.
+no-op, including an unrecorded current installation. Replacement requires explicit
+approval of the dedicated directory; it does not require historical per-file proof.
 
 `--home HOME` selects the host home; `--install-root APP` selects the app home
 holding the ownership journal. Keep both selections unchanged between preview
@@ -66,28 +78,31 @@ and apply. This route cannot be combined with project, channel, migration phase,
 reset, cleanup, force or verification flags. Project write permission is not
 permission to change global host content.
 
-### Owned legacy conversion
+### Dedicated-directory replacement
 
-The same route can convert a ledger-owned full-tree symlink or copied tree:
+The same route supports older symlinks and directories, including companions and
+extra files, without a pre-existing journal. For direct CLI use rather than the
+startup offer:
 
 ```bash
 npx -y agentera@next upgrade --shared-skill --home HOME --install-root APP --dry-run
 npx -y agentera@next upgrade --shared-skill --home HOME --install-root APP --yes --authorization TOKEN
 ```
 
-Use the exact authorization token from the reviewed preview, not a manufactured
-token. It binds the source selection and bytes, host parents, scope, and each
-legacy ownership record, filesystem identity and fingerprint. Review the exact
-affected paths, per-entry ownership, retained locations and resulting one-file
-shape before approval. Every entry of a copied tree must have whole-resource
-ownership; the bounded inventory supports at most **4096 entries, including the
-root**. Unowned extras, changed bytes, hard links and ambiguous evidence block
-conversion rather than being discarded.
+Use the CLI-provided authorization unchanged. Conversion binds source selection
+and bytes, host parents, scope, and a snapshot of the installation's identities
+and contents. Approval covers the whole dedicated `~/.agents/skills/agentera`
+directory (or its selected `--home` equivalent), not its symlink targets or other
+host directories. Files need no separate approval. Technical inventory remains
+in diagnostic preview; the ordinary question above is sufficient. The inventory
+supports at most **4096 entries, including the root**. Hard links, unsafe paths
+and changes after the offer fail closed. Other native-resource cleanup still
+requires its declared marker/ledger evidence; this exception does not weaken it.
 
 Conversion moves the old link or tree into the selected app home's
 `runtime-lifecycle/host-conversion-<digest>/legacy` retention directory on the
 **same filesystem**. It does not follow a symlink or delete its target. The
-ownership journal stays outside the host payload. Successful conversion leaves
+operation journal is created as needed outside the host payload. Successful conversion leaves
 exactly one regular `SKILL.md` in the host directory; runtime contracts, old
 target data, profiles and project state outside the selected scope stay intact.
 There is no automatic pruning of retained content.
@@ -97,12 +112,14 @@ publication; unsupported platforms fail closed. This is an apply limitation,
 not a claim that diagnostic preview or npm invocation requires Linux.
 
 After interruption, retry the same approved command, including the same home,
-app home and conversion token. Completed work converges to no-op. Changed
-source, scope or ownership invalidates approval; inspect a new preview before
-new approval. Ambiguous or changed retained evidence requires manual recovery,
-not a new token to bypass the blocker. Preserve the journal and retained data.
+app home and authorization. Completed work converges to no-op. A one-file offer
+binds its source and scope and cannot silently become a whole-directory conversion.
+Changed source, scope or conversion contents invalidate approval. Report the
+bounded failure; do not substitute a new token under old consent, move files
+manually, or fabricate historical ownership records. Preserve retained data and
+the operation journal when a genuine unsafe condition prevents continuation.
 
-### Diagnosis and unowned recovery
+### Diagnosis and bounded failures
 
 `doctor` and `prime` never repair automatically. Shared-skill diagnostics
 separate shape (`missing`, `one_file`, `extra_entries`, `legacy_symlink`,
@@ -112,11 +129,10 @@ project readiness. Use `app-home --explain` for override/resolution semantics;
 repair an invalid selected runtime authority rather than silently falling back
 to a different installed copy.
 
-If ownership cannot be proven, preserve the reported resource and journal for
-manual review. With separate user approval, move only the reviewed conflicting
-host directory or link aside, then preview a fresh install. Never recursively
-delete the host namespace, prune through a symlink, delete its target, or erase
-ownership evidence to force success. Shared-skill repair does not migrate
+An unsafe destination or invalid runtime authority has no actionable offer.
+Report its diagnostic reason without claiming success or broadening approval.
+Never prune through a symlink, delete its target, or erase operation evidence to
+force success. Shared-skill repair does not migrate
 projects, clean other runtimes, acquire history, enable trust, install native
 integrations, publish packages or change dist-tags.
 

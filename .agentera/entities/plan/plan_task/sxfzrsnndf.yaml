@@ -1,0 +1,24 @@
+id: sxfzrsnndf
+artifact: plan
+record:
+  name: Deliver the single-confirmation agent workflow
+  depends_on:
+    - tpeuwyxsqb
+  status: complete
+  acceptance:
+    - GIVEN an outdated supported installation WHEN ordinary startup or diagnosis runs THEN it returns a concise upgrade offer and enough structured information to perform the approved operation. Technical details remain in diagnostics rather than the default question.
+    - GIVEN that offer WHEN the user answers yes THEN the agent can complete and verify the skill upgrade without another implementation-detail question, constructing repair commands, or explaining internal records; the CLI handles internal preview and authorization mechanics.
+    - GIVEN a decline or no answer WHEN the interaction ends THEN no upgrade occurs.
+    - GIVEN unchanged successful completion WHEN diagnosis runs again THEN it reports the skill as current and does not repeat the offer.
+    - GIVEN changed upgrade scope or a genuine execution failure WHEN the operation cannot safely continue THEN it reports the problem accurately rather than broadening approval or claiming success. Verification covers offer, approval or decline, execution, and verification with one success and one rejection case per testable behavior. Full default startup output, not selected fields alone, must make the offer reachable within existing limits; fix directly blocking budget failures without a general redesign.
+  plan: nmdizjtrei
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: sxfzrsnndf-coordinator-1
+      source: "Coordinator evidence review of code worker ses_f3b1efbf8ffefO8nkuqur6gRCS: 174 targeted tests, typecheck, build, status/capability contracts and 21 isolated current-build CLI invocations passed. All five workflow criteria covered; full Status outputs 21960 and 22252 bytes below 22500. Final integrated independent audit remains required."
+      recorded_at: 2026-09-21 19:34
+      writer_command: agentera state plan record-evaluation

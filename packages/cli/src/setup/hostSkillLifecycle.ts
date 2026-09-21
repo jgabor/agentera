@@ -1,3 +1,4 @@
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { runHostSkillConversion, hasPendingHostSkillConversion } from "./hostSkillConversion.js";
@@ -13,7 +14,7 @@ export const HOST_SKILL_DIRECTORY_ID = "shared-skill.directory";
 export const HOST_SKILL_FILE_ID = "shared-skill.bootstrap";
 export const HOST_SKILL_REFRESH_BASE_ID = "shared-skill.refresh-base";
 export const HOST_SKILL_RECOVERY =
-  "Preserve the reported destination and ownership journal. Review changed ownership, extra entries or legacy links/trees manually; this route never deletes or adopts them. Retry the same approved command after interruption. If ownership cannot be proven, move only the reviewed conflicting host directory aside with separate user approval, then preview a fresh install. Never prune a link target or remove unrelated app/project data.";
+  "Preserve the installation and operation journal. Retry the exact approved command after interruption. A changed scope, source or unsafe destination must not broaden approval or be reported as success. Do not move files manually, prune symlink targets or change unrelated app/project data.";
 
 export function hostSkillPath(home: string): string {
   return path.join(path.resolve(home), ".agents", "skills", "agentera");
@@ -62,18 +63,21 @@ export interface HostSkillLifecycleArgs {
 }
 
 export function runHostSkillLifecycle(args: HostSkillLifecycleArgs, options: LifecycleApplyOptions = {}) {
+  if (args.authorization?.startsWith("one-file-sha256:")) return runOneFileHostSkillLifecycle(args, options);
   const target = hostSkillPath(args.home);
   const observed = observeLifecyclePath(target, [path.resolve(args.home)]);
   const legacy = !observed.unsafeReason && (observed.kind === "symlink" || (observed.kind === "directory" && fs.readdirSync(target).some((name) => name !== "SKILL.md")));
   if (args.authorization || legacy || hasPendingHostSkillConversion(args.appHome)) return runHostSkillConversion(args, options);
+  if (!observed.unsafeReason && observed.kind === "directory" && runOneFileHostSkillLifecycle({ ...args, apply: false }).status === "non_success") return runHostSkillConversion(args, options);
   return runOneFileHostSkillLifecycle(args, options);
 }
 
-export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, options: LifecycleApplyOptions = {}) {
+export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, options: LifecycleApplyOptions = {}, approvedReplacement = false) {
   const home = path.resolve(args.home);
   const target = hostSkillPath(home);
   const file = path.join(target, "SKILL.md");
   const journalPath = lifecycleOwnershipJournalPath(args.appHome);
+  let authorization: string | undefined;
   const result = (status: "pending" | "success" | "noop" | "non_success", reason: string, operations: unknown[] = []) => ({
     schemaVersion: "agentera.hostSkillLifecycle.v1" as const,
     mode: args.apply ? "apply" : "preview",
@@ -84,9 +88,24 @@ export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, optio
     reason,
     operations,
     recovery: HOST_SKILL_RECOVERY,
+    ...(authorization ? { authorization } : {}),
   });
   try {
     const source = loadHostSkillSource(args.sourceRoot);
+    // Bind startup approval to one-file delivery, the selected home/bookkeeping
+    // scope and source. Retries retain the same scope; they cannot convert a tree.
+    authorization = `one-file-sha256:${createHash("sha256")
+      .update(
+        JSON.stringify({
+          home,
+          appHome: path.resolve(args.appHome),
+          sourceRoot: path.resolve(args.sourceRoot),
+          source: source.source,
+          fingerprint: source.fingerprint,
+        }),
+      )
+      .digest("hex")}`;
+    if (args.authorization && args.authorization !== authorization) return result("non_success", "Shared-skill approval no longer matches the selected scope or source; nothing changed.");
     for (const destination of [target, journalPath]) {
       const relative = path.relative(path.resolve(args.sourceRoot), destination);
       if (!relative || (!relative.startsWith("..") && !path.isAbsolute(relative))) return result("non_success", "Host publication and ownership state must stay outside the internal runtime authority.");
@@ -102,21 +121,25 @@ export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, optio
       const journal = readLifecycleOwnershipJournal(journalPath);
       if (!["absent", "clean"].includes(journal.state)) throw new Error(`Ownership journal is ${journal.state}; preserve it for explicit recovery.`);
       const requireCreatedIdentity = (resourceId: string, kind: string) => {
+        if (approvedReplacement && [HOST_SKILL_DIRECTORY_ID, HOST_SKILL_FILE_ID].includes(resourceId)) return;
         // Intent persisted before create cannot prove who created an existing path.
         // Do not let the generic planner recover host ownership from bytes/shape.
         if (kind !== "missing" && journal.ledger.records.some((entry) => entry.resourceId === resourceId && entry.status === "pending_create" && !entry.identity))
-          throw new Error(`${resourceId} exists but its interrupted create has no recorded publication identity; preserve the destination and ownership journal for manual recovery with separate user approval.`);
+          throw new Error(`${resourceId} exists but its interrupted create has no recorded publication identity; preserve the destination and operation journal without broadening approval.`);
       };
       const directory = observeLifecyclePath(target, [home]);
       if (directory.unsafeReason) throw new Error(directory.unsafeReason);
       requireCreatedIdentity(HOST_SKILL_DIRECTORY_ID, directory.kind);
       if (!["missing", "directory"].includes(directory.kind)) throw new Error("Legacy link or wrong-type host destination is preserved; conversion is not supported by this route.");
-      if (directory.kind === "directory" && fs.readdirSync(target).some((name) => name !== "SKILL.md")) throw new Error("Host directory has extra entries; all entries are preserved. Legacy full-tree conversion requires separate approval and tooling.");
+      if (directory.kind === "directory" && fs.readdirSync(target).some((name) => name !== "SKILL.md")) throw new Error("Host directory has extra entries; the approved one-file operation cannot silently become whole-directory replacement.");
       const observedFile = observeLifecyclePath(file, [home]);
       if (observedFile.unsafeReason) throw new Error(observedFile.unsafeReason);
       requireCreatedIdentity(HOST_SKILL_FILE_ID, observedFile.kind);
       if (observedFile.kind === "file" && fs.lstatSync(file).nlink !== 1) throw new Error("Hard-linked bootstrap is preserved; whole-file ownership is unsafe.");
       const record = journal.ledger.records.find((entry) => entry.resourceId === HOST_SKILL_FILE_ID);
+      // An approved dedicated replacement can resume a create interrupted before
+      // its identity checkpoint. Native-resource cleanup authority is unchanged.
+      if (approvedReplacement && record?.status === "pending_create" && !record.identity && observedFile.kind === "file") record.identity = observedFile.identity!;
       if (record?.status === "pending_create" && observedFile.kind === "file" && observedFile.fingerprint !== source.fingerprint) {
         const partial = fs.readFileSync(file);
         const desired = Buffer.from(source.content);
@@ -157,6 +180,8 @@ export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, optio
       });
     };
     const preview = inspect();
+    if (fs.existsSync(file) && observeLifecyclePath(file, [home]).fingerprint === source.fingerprint && preview.operations.some((op) => op.action === "blocked_unowned") && preview.operations.every((op) => ["noop", "blocked_unowned"].includes(op.action)))
+      return result("noop", "Exactly one current regular SKILL.md; nothing changed.");
     const blockers = preview.operations.filter((op) => ["blocked_unowned", "action_required"].includes(op.action));
     if (blockers.length) return result("non_success", "Ownership or path review required; nothing was changed.", preview.operations);
     if (!args.apply) return result(preview.operations.every((op) => op.action === "noop") ? "noop" : "pending", "Read-only preview. Apply only with explicit user approval using --yes.", preview.operations);

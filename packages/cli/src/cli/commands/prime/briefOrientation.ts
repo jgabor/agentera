@@ -314,7 +314,7 @@ function briefAppHome(appHome: unknown): Record<string, unknown> {
 
 function briefSharedSkill(sharedSkill: unknown, maxChars = BRIEF_SCALAR_MAX_CHARS): Record<string, unknown> {
   if (!isObject(sharedSkill)) return {};
-  const out = pick(sharedSkill, ["name", "status", "source", "gap"]);
+  const out = pick(sharedSkill, ["name", "status", "source", "gap", "upgrade_offer"]);
   const message = boundedString(sharedSkill.message, maxChars);
   if (message !== undefined) out.message = message;
   if (Array.isArray(sharedSkill.details) && sharedSkill.details.length) {
