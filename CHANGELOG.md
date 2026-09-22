@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Development npm publication retains the original package for 7-day recovery; rerunning `Publish Agentera` confirms accepted uploads without rebuilding or resubmitting them.
 - `prime` and `doctor` now offer a one-confirmation update of `~/.agents/skills/agentera`, including older directories and symlinks without ownership records, while preserving project files and symlink targets.
 - Fixed slow glossary publish, decision, and verify commands by reusing immutable parsed YAML authorities across requests while reading current authority bytes fresh for every request.
 - Fixed slow state and upgrade commands that read large authorities as in-memory text by reusing one immutable parse per distinct text; ordinary callers still receive a private mutable copy and read-only scopes still share one frozen value.

@@ -1,0 +1,24 @@
+id: nsqoyynrez
+artifact: plan
+record:
+  name: Make registry observation tolerate delayed availability
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN an acknowledged package that initially returns absent or incomplete metadata WHEN matching package metadata and the expected tag become visible before the ten-minute observation deadline THEN verification succeeds without another publication. Polling and request durations are bounded, enclosing limits permit the full observation window, and fresh related version metadata is retrieved together where practical.
+    - GIVEN a temporary transport failure WHEN time remains THEN verification retries within the same deadline and records the failed observation.
+    - GIVEN incomplete observations versus explicitly conflicting integrity or source identity WHEN verification evaluates them THEN it retries the former and rejects the latter without changing registry state.
+    - GIVEN the observation deadline expires WHEN verification finishes THEN it reports publication acknowledged and availability unconfirmed, including elapsed time and useful last-observation details, rather than claiming the upload was rejected.
+    - GIVEN an exact candidate is already available or has been superseded by a newer development version WHEN verification runs THEN existing replay guarantees remain valid and no tag moves backward. Exercise the actual guard with controlled responses and time progression, targeting one success and one failure per behavior plus delayed-visibility, partial-metadata, and timeout-recovery sequences; no real publication is needed.
+  plan: jtaehzlyng
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: nsqoyynrez-coordinator-1
+      source: "Coordinator evidence review of code worker ses_f3a83b6a2ffeUgd16tmjlthhRV: actual fixed guard tested through 19 controlled scenarios, 25 targeted tests passed; typecheck, lint and diff checks passed. Covers ten-minute deadline, delayed/incomplete observations, transport errors, explicit conflicts and replay. Evidence /tmp/opencode/nsqoyynrez-evidence.md. Final independent integrated audit remains required."
+      recorded_at: 2026-09-21 21:50
+      writer_command: agentera state plan record-evaluation

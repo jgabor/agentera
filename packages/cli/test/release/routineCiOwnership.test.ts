@@ -76,14 +76,14 @@ function validateRoutineCiOwnership(candidate: any): void {
   expect(job).not.toHaveProperty("continue-on-error");
   expect(candidate.jobs["build-development"].needs).toBe("verify-development");
   expect(candidate.jobs["build-development"]).not.toHaveProperty("if");
-  expect(candidate.jobs["publish-development"].needs).toBe("build-development");
+  expect(candidate.jobs["publish-development"].needs).toEqual(["publication-state", "build-development"]);
 }
 
 describe("routine CI owner DAG", () => {
   it("runs the canonical check-only conjunction once on the authoritative performance runner", () => {
     expect(() => validateRoutineCiOwnership(workflow)).not.toThrow();
     expect(workflow.jobs["verify-development"]["runs-on"]).toBe("ubuntu-24.04");
-    expect(workflow.jobs["verify-development"].if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(workflow.jobs["verify-development"].if).toBe("needs.publication-state.outputs.mode == 'build'");
     expect(workflow.on).toEqual({ push: null });
     expect(fs.existsSync(path.join(REPO_ROOT, ".github/workflows/verify-changes.yml"))).toBe(false);
     expect(JSON.stringify(workflow)).not.toMatch(/setup-bun|setup-uv/);

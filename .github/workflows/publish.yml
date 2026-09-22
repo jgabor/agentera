@@ -58,9 +58,161 @@ jobs:
           fs.appendFileSync(process.env.GITHUB_OUTPUT, `selected=${selected}\nref=${configuredRef}\n`);
           NODE
 
-  verify-development:
+  publication-state:
     if: needs.route-development.outputs.selected == 'true'
     needs: route-development
+    name: Resolve original development candidate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 2
+    permissions:
+      actions: read
+    outputs:
+      mode: ${{ steps.history.outputs.mode }}
+    steps:
+      - &publication-history
+        name: Resolve trusted publication history
+        id: history
+        timeout-minutes: 1
+        env:
+          GH_TOKEN: ${{ github.token }}
+          API_URL_VALUE: ${{ github.api_url }}
+          REPOSITORY_VALUE: ${{ github.repository }}
+          RUN_ID_VALUE: ${{ github.run_id }}
+          RUN_NUMBER_VALUE: ${{ github.run_number }}
+          RUN_ATTEMPT_VALUE: ${{ github.run_attempt }}
+          EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
+        run: |
+          /usr/bin/python3 - <<'HISTORY'
+          import datetime, json, os, re, urllib.request
+
+          def fail(message):
+              raise SystemExit(f"Recovery evidence rejected: {message}; no rebuild or upload authorized")
+          def required(name):
+              return os.environ.get(name) or fail(f"missing {name}")
+          repository, api = required("REPOSITORY_VALUE"), required("API_URL_VALUE")
+          if repository != "jgabor/agentera" or api != "https://api.github.com":
+              fail("invalid API/repository binding")
+          run_id, number, attempt = [required(key) for key in ("RUN_ID_VALUE", "RUN_NUMBER_VALUE", "RUN_ATTEMPT_VALUE")]
+          if any(not re.fullmatch(r"[1-9][0-9]{0,9}", value) for value in (number, attempt)) or not re.fullmatch(r"[1-9][0-9]{0,19}", run_id):
+              fail("invalid run binding")
+          number, attempt = int(number), int(attempt)
+          sha = required("EXPECTED_GIT_REF_VALUE")
+          if not re.fullmatch(r"[0-9a-f]{40}", sha):
+              fail("invalid source binding")
+          class NoRedirect(urllib.request.HTTPRedirectHandler):
+              def redirect_request(self, *args):
+                  return None
+          opener = urllib.request.build_opener(NoRedirect)
+          base = f"{api}/repos/{repository}/actions/runs/{run_id}"
+          def read(suffix):
+              request = urllib.request.Request(base + suffix, headers={
+                  "Authorization": f"Bearer {required('GH_TOKEN')}", "Accept": "application/vnd.github+json",
+                  "X-GitHub-Api-Version": "2022-11-28", "User-Agent": "agentera-publication"})
+              with opener.open(request, timeout=10) as response:
+                  if response.status != 200:
+                      fail("GitHub history unavailable")
+                  body = response.read(1_048_577)
+              if len(body) > 1_048_576:
+                  fail("GitHub history too large")
+              return json.loads(body)
+          def timestamp(value):
+              if not isinstance(value, str):
+                  fail("missing timestamp")
+              return datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
+          run = read("")
+          if (run.get("id") != int(run_id) or run.get("run_number") != number or run.get("run_attempt") != attempt
+                  or run.get("head_sha") != sha or run.get("event") != "push" or run.get("path") != ".github/workflows/publish.yml"):
+              fail("run/source/workflow mismatch")
+          if datetime.datetime.now(datetime.timezone.utc) - timestamp(run.get("created_at")) > datetime.timedelta(days=7):
+              fail("seven-day recovery window expired")
+          document = read("/jobs?filter=all&per_page=100")
+          jobs = document.get("jobs")
+          if not isinstance(jobs, list) or document.get("total_count") != len(jobs) or len(jobs) >= 100:
+              fail("incomplete or excessive job history")
+          seen, uploads, acknowledged, uncertain, completed_publisher = set(), [], [], False, False
+          identities, upload_attempts = set(), set()
+          for job in jobs:
+              prior = job.get("run_attempt")
+              identity = (prior, job.get("name"))
+              if (type(prior) is not int or not 1 <= prior <= attempt or job.get("run_id") != int(run_id)
+                      or job.get("head_sha") != sha or identity in identities):
+                  fail("ambiguous job identity")
+              seen.add(prior)
+              identities.add(identity)
+              if job.get("name") not in {"Build and classify development candidate", "Publish development candidate to @next"}:
+                  continue
+              if job.get("conclusion") == "skipped":
+                  continue
+              steps = job.get("steps")
+              if prior == attempt and job.get("status") == "queued" and steps is None:
+                  continue
+              if not isinstance(steps, list) or len({step.get("name") for step in steps}) != len(steps):
+                  fail("missing or ambiguous step history")
+              expected_step = "Upload immutable development candidate" if job["name"] == "Build and classify development candidate" else "Publish exact tarball with Trusted Publishing"
+              if job.get("conclusion") != "skipped" and not (prior == attempt and job.get("status") in {"queued", "in_progress"}):
+                  if len([step for step in steps if step.get("name") == expected_step]) != 1:
+                      fail("missing upload step history")
+              for step in steps:
+                  if step.get("name") not in {"Upload immutable development candidate", "Publish exact tarball with Trusted Publishing"}:
+                      continue
+                  conclusion = step.get("conclusion")
+                  if conclusion == "success" and step.get("status") == "completed":
+                      if step["name"] == "Upload immutable development candidate":
+                          uploads.append(step)
+                          upload_attempts.add(prior)
+                      else:
+                          acknowledged.append(step)
+                  elif conclusion == "skipped" or (prior == attempt and step.get("status") == "queued"):
+                      pass
+                  else:
+                      uncertain = True
+              # A successful fixed publisher may have found exact/superseded replay.
+              if job.get("name") == "Publish development candidate to @next" and job.get("conclusion") == "success":
+                  completed_publisher = True
+                  guards = [step for step in steps if step.get("name") == "Recheck exact candidate and registry without OIDC" and step.get("conclusion") == "success"]
+                  if guards and not any(step.get("name") == "Publish exact tarball with Trusted Publishing" and step.get("conclusion") == "success" for step in steps):
+                      acknowledged.append(guards[0])
+          if any(prior not in seen for prior in range(1, attempt)):
+              fail("missing prior attempt history")
+          if upload_attempts and not acknowledged and any((prior, "Publish development candidate to @next") not in identities for prior in range(min(upload_attempts), attempt)):
+              fail("missing publisher history for original candidate")
+          if uncertain:
+              fail("upload outcome is ambiguous")
+          if completed_publisher and not acknowledged:
+              fail("successful publisher lacks acknowledgment evidence")
+          document = read("/artifacts?name=agentera-development-candidate&per_page=100")
+          artifacts = document.get("artifacts")
+          if not isinstance(artifacts, list) or document.get("total_count") != len(artifacts) or len(artifacts) > 1:
+              fail("ambiguous candidate artifacts")
+          artifact_id = ""
+          if not artifacts:
+              if uploads or acknowledged:
+                  fail("original candidate is missing")
+              mode = "build"
+          else:
+              artifact = artifacts[0]
+              artifact_id = artifact.get("id")
+              if (len(uploads) != 1 or type(artifact_id) is not int or not 0 < artifact_id <= 9_007_199_254_740_991
+                      or artifact.get("name") != "agentera-development-candidate" or artifact.get("expired") is not False
+                      or artifact.get("workflow_run", {}).get("id") != int(run_id)
+                      or artifact.get("workflow_run", {}).get("head_sha") != sha
+                      or not timestamp(uploads[0].get("started_at")) <= timestamp(artifact.get("created_at")) <= timestamp(uploads[0].get("completed_at"))):
+                  fail("candidate does not match original upload")
+              if any(timestamp(artifact.get("created_at")) > timestamp(step.get("started_at")) for step in acknowledged):
+                  fail("candidate postdates acknowledgment")
+              mode = "observe" if acknowledged else "publish"
+          if os.environ.get("REQUIRE_ACKNOWLEDGMENT") == "true" and mode != "observe":
+              fail("no successful submission or replay evidence")
+          # Same fixed 3.0.0 line and run offset as the candidate allocator.
+          version = f"3.0.0-dev.{number + 89}"
+          with open(required("GITHUB_OUTPUT"), "a") as output:
+              output.write(f"mode={mode}\nversion={version}\nartifact-id={artifact_id}\n")
+          print(f"{version}: {mode}; original candidate artifact={artifact_id or 'not yet built'}")
+          HISTORY
+
+  verify-development:
+    if: needs.publication-state.outputs.mode == 'build'
+    needs: publication-state
     name: Verify development source
     runs-on: ubuntu-24.04
     timeout-minutes: 45
@@ -115,23 +267,29 @@ jobs:
     timeout-minutes: 8
     permissions:
       contents: read
+      actions: read
     outputs:
       version: ${{ steps.version.outputs.value }}
       outcome: ${{ steps.classification.outputs.outcome }}
     steps:
+      - *publication-history
       - uses: actions/checkout@v5
+        if: steps.history.outputs.mode == 'build'
         timeout-minutes: 1
         with:
           ref: ${{ github.sha }}
       - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
+        if: steps.history.outputs.mode == 'build'
         timeout-minutes: 1
         with:
           node-version-file: .node-version
           package-manager-cache: false
       - name: Verified bootstrap and frozen install
+        if: steps.history.outputs.mode == 'build'
         timeout-minutes: 3
         run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
       - name: Allocate candidate development version
+        if: steps.history.outputs.mode == 'build'
         id: version
         timeout-minutes: 1
         run: |
@@ -144,6 +302,7 @@ jobs:
           printf 'value=%s\n' "${version}" >> "${GITHUB_OUTPUT}"
           printf 'Preparing %s from %s\n' "${version}" "${GITHUB_SHA}"
       - name: Build one isolated package tarball
+        if: steps.history.outputs.mode == 'build'
         timeout-minutes: 2
         run: |
           node packages/cli/scripts/pack-package.mjs \
@@ -151,6 +310,7 @@ jobs:
             --package-version "${{ steps.version.outputs.value }}" \
             --git-ref "${GITHUB_SHA}" --json
       - name: Validate, smoke, and classify the exact tarball
+        if: steps.history.outputs.mode == 'build'
         id: classification
         timeout-minutes: 1
         run: |
@@ -165,6 +325,7 @@ jobs:
           esac
           printf 'outcome=%s\n' "${outcome}" >> "${GITHUB_OUTPUT}"
       - name: Upload immutable development candidate
+        if: steps.history.outputs.mode == 'build'
         uses: actions/upload-artifact@v4
         timeout-minutes: 1
         with:
@@ -173,19 +334,21 @@ jobs:
             ${{ runner.temp }}/agentera-development/agentera-${{ steps.version.outputs.value }}.tgz
             ${{ runner.temp }}/agentera-development/publication-classification.json
           if-no-files-found: error
-          retention-days: 1
+          retention-days: 7
 
   publish-development:
-    if: needs.build-development.outputs.outcome == 'forward-publish' || needs.build-development.outputs.outcome == 'forward-retag'
-    needs: build-development
+    if: always() && !cancelled() && needs.publication-state.result == 'success' && (needs.publication-state.outputs.mode == 'publish' || (needs.publication-state.outputs.mode == 'build' && needs.build-development.result == 'success'))
+    needs: [publication-state, build-development]
     name: Publish development candidate to @next
     runs-on: ubuntu-24.04
-    timeout-minutes: 4
+    timeout-minutes: 6
     permissions:
       actions: read
       id-token: write
     steps:
-      - name: Select fixed runner toolchain
+      - *publication-history
+      - &fixed-toolchain
+        name: Select fixed runner toolchain
         timeout-minutes: 1
         run: |
           python_version="$(/usr/bin/python3 -c 'import platform; print(platform.python_version())')"
@@ -207,7 +370,8 @@ jobs:
             printf 'npm 11.5.1 or later is required, found %s\n' "${npm_version}" >&2
             exit 1
           fi
-      - name: Download and validate current-run candidate
+      - &download-candidate
+        name: Download and validate current-run candidate
         timeout-minutes: 1
         env:
           GH_TOKEN: ${{ github.token }}
@@ -215,9 +379,10 @@ jobs:
           REPOSITORY_VALUE: ${{ github.repository }}
           RUN_ID_VALUE: ${{ github.run_id }}
           RUNNER_TEMP_VALUE: ${{ runner.temp }}
-          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_VERSION_VALUE: ${{ steps.history.outputs.version }}
           EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
-          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+          EXPECTED_OUTCOME_VALUE: retained
+          EXPECTED_ARTIFACT_ID_VALUE: ${{ steps.history.outputs.artifact-id }}
         run: |
           /usr/bin/python3 - <<'PYTHON'
           import json, os, pathlib, re, stat, urllib.error, urllib.parse, urllib.request, zipfile
@@ -248,7 +413,7 @@ jobs:
               fail("invalid version binding")
           if not re.fullmatch(r"[0-9a-f]{40}", git_ref):
               fail("invalid source binding")
-          if outcome not in {"forward-publish", "forward-retag"}:
+          if outcome not in {"forward-publish", "forward-retag", "retained"}:
               fail("invalid outcome binding")
           token = required("GH_TOKEN")
           if not re.fullmatch(r"[A-Za-z0-9_.-]{1,4096}", token):
@@ -286,6 +451,8 @@ jobs:
               fail("expected exactly one current-run candidate artifact")
           artifact = artifacts[0]
           artifact_id = artifact.get("id")
+          if str(artifact_id) != required("EXPECTED_ARTIFACT_ID_VALUE"):
+              fail("artifact does not match trusted history")
           if type(artifact_id) is not int or artifact_id <= 0 or artifact_id > 9_007_199_254_740_991:
               fail("artifact ID is invalid or unbounded")
           expected_download = f"{api}/repos/{repository}/actions/artifacts/{artifact_id}/zip"
@@ -368,7 +535,8 @@ jobs:
                   target.chmod(0o600)
           archive.unlink()
           PYTHON
-      - name: Write fixed registry guard
+      - &fixed-registry-guard
+        name: Write fixed registry guard
         timeout-minutes: 1
         env:
           RUNNER_TEMP_VALUE: ${{ runner.temp }}
@@ -384,7 +552,7 @@ jobs:
           import fs from "node:fs";
           import path from "node:path";
 
-          const fail = (message) => { throw new Error(message); };
+          const fail = (message) => { throw Object.assign(new Error(message), { fatal: true }); };
           const registry = "https://registry.npmjs.org/";
           const required = (name) => process.env[name]?.trim() || fail(`missing ${name}`);
           const mode = required("GUARD_MODE");
@@ -407,7 +575,7 @@ jobs:
           }
           if (!/^[0-9]+\.[0-9]+\.[0-9]+-dev\.(?:0|[1-9][0-9]*)$/.test(expectedVersion)
             || !/^[0-9a-f]{40}$/.test(expectedGitRef)
-            || !["forward-publish", "forward-retag"].includes(expectedOutcome)
+            || !["forward-publish", "forward-retag", "retained"].includes(expectedOutcome)
             || !["pre", "post"].includes(mode)) fail("invalid guard inputs");
 
           const files = fs.readdirSync(artifactDir).sort();
@@ -427,7 +595,9 @@ jobs:
             || classification.package !== "agentera"
             || classification.version !== expectedVersion
             || classification.gitRef !== expectedGitRef
-            || classification.outcome !== expectedOutcome
+             || (expectedOutcome === "retained"
+               ? !["forward-publish", "forward-retag", "exact-replay", "superseded-replay"].includes(classification.outcome)
+               : classification.outcome !== expectedOutcome)
             || !/^sha512-[A-Za-z0-9+/]+={0,2}$/.test(classification.integrity)) {
             fail("publication classification does not match the workflow candidate");
           }
@@ -470,9 +640,12 @@ jobs:
             NPM_CONFIG_IGNORE_SCRIPTS: "true",
           };
 
+          let observationDeadline;
           function runNpm(args) {
+            const timeout = observationDeadline === undefined ? 10_000 : Math.min(30_000, observationDeadline - performance.now());
+            if (timeout <= 0) throw new Error("observation deadline reached");
             const result = spawnSync("npm", args, {
-              encoding: "utf8", env: npmEnvironment, stdio: ["ignore", "pipe", "pipe"], timeout: 10_000,
+              encoding: "utf8", env: npmEnvironment, stdio: ["ignore", "pipe", "pipe"], timeout: Math.ceil(timeout),
             });
             if (result.error) throw result.error;
             return result;
@@ -486,10 +659,11 @@ jobs:
           }
 
           function view(args) {
-            const result = runNpm(["view", ...args, "--json", `--registry=${registry}`]);
+            const result = runNpm(["view", ...args, "--json", `--registry=${registry}`,
+              "--prefer-online", "--fetch-retries=0", "--fetch-timeout=25000"]);
             const diagnostic = `${result.stderr}\n${result.stdout}`;
             if (result.status !== 0 && /(?:E404|404 Not Found|No match found)/i.test(diagnostic)) return null;
-            if (result.status !== 0) fail(`npm view failed: ${result.stderr.trim()}`);
+            if (result.status !== 0) throw new Error(`npm view failed: ${result.stderr.trim().slice(0, 1000)}`);
             return JSON.parse(result.stdout);
           }
           function scalar(value, label) {
@@ -510,13 +684,21 @@ jobs:
           }
           function inspectRegistry() {
             const tags = view(["agentera", "dist-tags"]);
-            if (!tags || typeof tags !== "object" || Array.isArray(tags)) fail("npm dist-tags must be an object");
-            const currentNext = scalar(tags.next, "npm next tag");
-            const publishedIntegrity = scalar(view([`agentera@${expectedVersion}`, "dist.integrity"]), "published integrity");
-            const publishedGitRef = scalar(view([`agentera@${expectedVersion}`, "agentera.gitRef"]), "published git ref");
-            const order = compare(parseVersion(expectedVersion, "candidate version"), parseVersion(currentNext, "npm next tag"));
+            if (tags !== null && (typeof tags !== "object" || Array.isArray(tags))) fail("npm dist-tags must be an object");
+            const currentNext = scalar(tags?.next, "npm next tag");
+            const metadata = view([`agentera@${expectedVersion}`, "dist.integrity", "agentera.gitRef"]);
+            const publishedIntegrity = scalar(metadata?.["dist.integrity"], "published integrity");
+            const publishedGitRef = scalar(metadata?.["agentera.gitRef"], "published git ref");
+            if ((publishedIntegrity !== null && publishedIntegrity !== integrity)
+              || (publishedGitRef !== null && publishedGitRef !== expectedGitRef)) {
+              fail("published version conflicts with candidate integrity or source");
+            }
             const exists = publishedIntegrity !== null || publishedGitRef !== null;
             const matches = publishedIntegrity === integrity && publishedGitRef === expectedGitRef;
+            if (mode === "post" && (!matches || currentNext === null)) {
+              return `incomplete: next=${currentNext ?? "absent"}, integrity=${publishedIntegrity === null ? "absent" : "matching"}, source=${publishedGitRef === null ? "absent" : "matching"}`;
+            }
+            const order = compare(parseVersion(expectedVersion, "candidate version"), parseVersion(currentNext, "npm next tag"));
             if (order === 0) {
               if (!matches) fail("npm next does not match candidate integrity and source");
               return "exact-replay";
@@ -537,31 +719,38 @@ jobs:
             fs.appendFileSync(required("GITHUB_OUTPUT"), `outcome=${outcome}\n`);
             console.log(`${classification.package}@${expectedVersion}: ${outcome}`);
           } else {
+            const started = performance.now();
+            observationDeadline = started + 600_000;
             let lastOutcome = "not observed";
-            for (let attempt = 1; attempt <= 6; attempt += 1) {
+            let attempt = 0;
+            while (performance.now() < observationDeadline) {
+              attempt += 1;
               try {
                 lastOutcome = inspectRegistry();
-                if (["exact-replay", "superseded-replay"].includes(lastOutcome)) {
+                if (performance.now() < observationDeadline && ["exact-replay", "superseded-replay"].includes(lastOutcome)) {
                   console.log(`${classification.package}@${expectedVersion}: registry converged as ${lastOutcome}`);
                   process.exit(0);
                 }
               } catch (error) {
-                if (/conflict|does not match/i.test(error.message)) throw error;
+                if (error.fatal) throw error;
                 lastOutcome = error.message;
               }
-              if (attempt < 6) await new Promise((resolve) => setTimeout(resolve, 3000));
+              console.log(JSON.stringify({ attempt, elapsedMs: Math.round(performance.now() - started), observation: lastOutcome }));
+              const remaining = observationDeadline - performance.now();
+              if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, Math.min(5000, remaining)));
             }
-            fail(`registry did not converge after npm publish: ${lastOutcome}`);
+            fail(`publication acknowledged; availability unconfirmed after ${Math.round(performance.now() - started)}ms (${attempt} observations): ${lastOutcome}`);
           }
           AGENTERA_GUARD
       - name: Recheck exact candidate and registry without OIDC
         id: registry-guard
+        if: steps.history.outputs.mode == 'publish'
         timeout-minutes: 1
         env:
           RUNNER_TEMP_VALUE: ${{ runner.temp }}
-          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_VERSION_VALUE: ${{ steps.history.outputs.version }}
           EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
-          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
+          EXPECTED_OUTCOME_VALUE: retained
         run: |
           if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
             || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
@@ -570,7 +759,7 @@ jobs:
             printf 'Invalid publication binding\n' >&2
             exit 1
           fi
-          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag|retained) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
           shopt -s nullglob
           node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
           if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then
@@ -592,11 +781,11 @@ jobs:
             EXPECTED_OUTCOME="${EXPECTED_OUTCOME_VALUE}" GITHUB_OUTPUT="${GITHUB_OUTPUT}" \
             node "${guard_file}"
       - name: Publish exact tarball with Trusted Publishing
-        if: steps.registry-guard.outputs.outcome == 'forward-publish'
+        if: steps.history.outputs.mode == 'publish' && steps.registry-guard.outputs.outcome == 'forward-publish'
         timeout-minutes: 1
         env:
           RUNNER_TEMP_VALUE: ${{ runner.temp }}
-          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_VERSION_VALUE: ${{ steps.history.outputs.version }}
           EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
           GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
           GITHUB_WORKFLOW_REF_VALUE: ${{ github.workflow_ref }}
@@ -662,24 +851,37 @@ jobs:
             NPM_CONFIG_CACHE="${guard_root}/cache" \
             NPM_CONFIG_AUDIT=false NPM_CONFIG_FUND=false NPM_CONFIG_IGNORE_SCRIPTS=true \
             npm publish "${tarball}" --access public --tag next --ignore-scripts --registry=https://registry.npmjs.org/
+  confirm-development:
+    if: always() && !cancelled() && needs.publication-state.result == 'success' && (needs.publication-state.outputs.mode == 'observe' || needs.publish-development.result == 'success')
+    needs: [publication-state, publish-development]
+    name: Confirm development availability (read-only)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      actions: read
+    env:
+      REQUIRE_ACKNOWLEDGMENT: "true"
+    steps:
+      - *publication-history
+      - *fixed-toolchain
+      - *download-candidate
+      - *fixed-registry-guard
       - name: Verify registry convergence without OIDC
-        if: steps.registry-guard.outputs.outcome == 'forward-publish'
-        timeout-minutes: 1
+        timeout-minutes: 11
         env:
           RUNNER_TEMP_VALUE: ${{ runner.temp }}
-          EXPECTED_VERSION_VALUE: ${{ needs.build-development.outputs.version }}
+          EXPECTED_VERSION_VALUE: ${{ steps.history.outputs.version }}
           EXPECTED_GIT_REF_VALUE: ${{ github.sha }}
-          EXPECTED_OUTCOME_VALUE: ${{ needs.build-development.outputs.outcome }}
-          GUARD_OUTCOME_VALUE: ${{ steps.registry-guard.outputs.outcome }}
+          EXPECTED_OUTCOME_VALUE: retained
         run: |
           if [[ ! "${RUNNER_TEMP_VALUE}" =~ ^/[A-Za-z0-9._/-]{1,1023}$ ]] || [[ "/${RUNNER_TEMP_VALUE}/" == *"/../"* ]] \
             || [[ ! "${EXPECTED_VERSION_VALUE}" =~ ^3\.0\.0-dev\.(0|[1-9][0-9]{0,9})$ ]] \
             || [[ ! "${EXPECTED_GIT_REF_VALUE}" =~ ^[0-9a-f]{40}$ ]] \
-            || [[ "${GUARD_OUTCOME_VALUE}" != "forward-publish" ]]; then
+             || [[ "${EXPECTED_OUTCOME_VALUE}" != "retained" ]]; then
             printf 'Invalid convergence binding\n' >&2
             exit 1
           fi
-          case "${EXPECTED_OUTCOME_VALUE}" in forward-publish|forward-retag) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
+          case "${EXPECTED_OUTCOME_VALUE}" in retained) ;; *) printf 'Invalid publication outcome\n' >&2; exit 1 ;; esac
           shopt -s nullglob
           node_bins=(/opt/hostedtoolcache/node/24.*/x64/bin)
           if [ "${#node_bins[@]}" -ne 1 ] || [[ ! "${node_bins[0]}" =~ ^/opt/hostedtoolcache/node/24\.[0-9]+\.[0-9]+/x64/bin$ ]]; then

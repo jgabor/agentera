@@ -1,0 +1,33 @@
+id: jtaehzlyng
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-21
+    status: complete
+    reviewed: 2026-09-21
+    critic_issues: 0 found, 0 addressed, 0 dismissed
+    title: "Plan: Reliable npm publication confirmation"
+  what: Handle delayed npm package availability without prematurely declaring publication failed or risking a second upload during recovery. Separate publication acknowledgement from confirmed availability, with bounded observation and verification-only retries of the original candidate.
+  why: Publication of 3.0.0-dev.128 was acknowledged with an explicit processing notice. Workflow run 35641842872 stopped registry verification approximately 29 seconds later. The correct package subsequently became publicly available without another publication. Current retry classification can mistake an acknowledged but temporarily invisible candidate for one that has never been submitted.
+  constraints: Preserve immutable candidate bytes, version, integrity, source identity, fixed reviewed publication logic, credential isolation, and existing safety gates. Never execute package code in privileged publication logic. Preserve exact and superseded replay; never move tags backward. Implement on a repair branch. Approval does not authorize commits, integration pushes, workflow reruns, or registry mutations. Retain the JSON operational-output contract and existing development version allocation. Do not treat temporary absence or missing recovery evidence as permission to submit an acknowledged candidate again.
+  scope:
+    included:
+      - Registry observation deadlines, retry classification, fresh metadata reads, and bounded diagnostics.
+      - Publication acknowledgement distinct from confirmed availability and verification-only recovery of the original candidate.
+      - Publication workflow, fixed registry guard, relevant publication authority, maintainer guidance, and regression tests.
+      - Original immutable candidate retention for the supported recovery window and required delivery state closeout.
+    excluded:
+      - Stable-release implementation, version bumps, registry retagging, or a new release framework.
+      - Changes to the skill-upgrade feature or the installed host skill.
+      - Live publication experiments, workflow reruns, commits, and pushes without separate authorization.
+      - Weakening credential isolation, privileged-code restrictions, artifact validation, or existing safety gates.
+    deferred:
+      []
+  design: Treat submission and availability confirmation as separate outcomes. First make observation tolerate temporary absence and incomplete evidence within a consistent deadline while rejecting confirmed conflicts. Then separate confirmation from successful publication so recovery observes the original acknowledged candidate rather than submitting it again. Preserve trustworthy acknowledgement evidence and the candidate for the supported recovery window. Expired or ambiguous evidence stops recovery safely. Keep this a targeted repair rather than introducing a new release framework.
+  overall_acceptance: GIVEN npm has acknowledged publication WHEN registry availability is delayed or verification is retried THEN Agentera only observes the original candidate and never uploads it again, confirming availability when evidence matches or reporting an explicit unconfirmed outcome when the deadline expires.
+  unknowns:
+    []
+  rejected:
+    []
+  surprises: ""

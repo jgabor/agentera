@@ -1,0 +1,21 @@
+id: nuaynjrmyl
+artifact: health
+record:
+  date: 2026-09-21
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: improving; sole delivery-scope documentation warning corrected, not a codebase-wide trend
+  grades:
+    artifact_freshness: B
+  dimensions_detail:
+    - name: artifact_freshness
+      grade: B
+      summary: "Terminal tasks nsqoyynrez and oswomrtulj in plan jtaehzlyng passed independent audit ses_f3a574312ffe6f9Dxm30K3Jyl5. Retain its scoped B freshness grade. Its sole stale permission description at docs/packaging/v3-packaging.md:394-395 was corrected and verified with Markdown lint and coordinator inspection before closure. Publication authority, workflow guidance, and CHANGELOG.md now match delivery. No unresolved freshness findings. Evidence: /tmp/opencode/oswomrtulj-evidence/README.md. This is limited plan-closeout evidence, not general codebase health or live publication qualification."
+      findings:
+        []
+  appended_at: 2026-09-21T20:35:43.407Z

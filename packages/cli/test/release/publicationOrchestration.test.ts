@@ -43,6 +43,21 @@ const githubProvenance = {
 
 const reviewedOidcPublicationSteps = [
   {
+    name: "Resolve trusted publication history",
+    id: "history",
+    "timeout-minutes": 1,
+    env: {
+      GH_TOKEN: "${{ github.token }}",
+      API_URL_VALUE: "${{ github.api_url }}",
+      REPOSITORY_VALUE: "${{ github.repository }}",
+      RUN_ID_VALUE: "${{ github.run_id }}",
+      RUN_NUMBER_VALUE: "${{ github.run_number }}",
+      RUN_ATTEMPT_VALUE: "${{ github.run_attempt }}",
+      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
+    },
+    run: "sha256:9bec0a197c5928f3c512b7ca43dea18bead1f4b789ac81c24097d9a15d2482fb",
+  },
+  {
     name: "Select fixed runner toolchain",
     "timeout-minutes": 1,
     run: "sha256:b42037a540db7481cbe7f5089a688a84e898adcdb24574078c98b475a476451f",
@@ -56,37 +71,39 @@ const reviewedOidcPublicationSteps = [
       REPOSITORY_VALUE: "${{ github.repository }}",
       RUN_ID_VALUE: "${{ github.run_id }}",
       RUNNER_TEMP_VALUE: "${{ runner.temp }}",
-      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_VERSION_VALUE: "${{ steps.history.outputs.version }}",
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
-      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+      EXPECTED_OUTCOME_VALUE: "retained",
+      EXPECTED_ARTIFACT_ID_VALUE: "${{ steps.history.outputs.artifact-id }}",
     },
-    run: "sha256:216d65323f86b2a9422ba4beeda4bb08eed4a09430918e1e9f15779306f3452f",
+    run: "sha256:f95f7a2cfc3a18e0b78211f7ef1eec0abf0ff83c99353c4799790369eef60926",
   },
   {
     name: "Write fixed registry guard",
     "timeout-minutes": 1,
     env: { RUNNER_TEMP_VALUE: "${{ runner.temp }}" },
-    run: "sha256:5453a66d3f3d54b196ff167e46c296bef362e5b2fd9e9709c28a56fc62f307df",
+    run: "sha256:38dd828f645b9361203999da5c2eb1cc43f9b28a83a5c82a3a1d85d5f9dac5ec",
   },
   {
     name: "Recheck exact candidate and registry without OIDC",
     id: "registry-guard",
+    if: "steps.history.outputs.mode == 'publish'",
     "timeout-minutes": 1,
     env: {
       RUNNER_TEMP_VALUE: "${{ runner.temp }}",
-      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_VERSION_VALUE: "${{ steps.history.outputs.version }}",
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
-      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+      EXPECTED_OUTCOME_VALUE: "retained",
     },
-    run: "sha256:fc39f6122768ad6895b5cbca8844102e7e95eabc8c39e2fe15305300afa08ceb",
+    run: "sha256:22335ed1d0603d7d8e890a4685163f259c145406c9f2a6367b42caf349095232",
   },
   {
     name: "Publish exact tarball with Trusted Publishing",
-    if: "steps.registry-guard.outputs.outcome == 'forward-publish'",
+    if: "steps.history.outputs.mode == 'publish' && steps.registry-guard.outputs.outcome == 'forward-publish'",
     "timeout-minutes": 1,
     env: {
       RUNNER_TEMP_VALUE: "${{ runner.temp }}",
-      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_VERSION_VALUE: "${{ steps.history.outputs.version }}",
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
       GUARD_OUTCOME_VALUE: "${{ steps.registry-guard.outputs.outcome }}",
       GITHUB_WORKFLOW_REF_VALUE: "${{ github.workflow_ref }}",
@@ -102,19 +119,6 @@ const reviewedOidcPublicationSteps = [
       GITHUB_RUN_ATTEMPT_VALUE: "${{ github.run_attempt }}",
     },
     run: "sha256:6efc8b29ff3a86b880675b7fffbe9e0c1317110a4a58c427e03194a9093c169f",
-  },
-  {
-    name: "Verify registry convergence without OIDC",
-    if: "steps.registry-guard.outputs.outcome == 'forward-publish'",
-    "timeout-minutes": 1,
-    env: {
-      RUNNER_TEMP_VALUE: "${{ runner.temp }}",
-      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
-      EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
-      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
-      GUARD_OUTCOME_VALUE: "${{ steps.registry-guard.outputs.outcome }}",
-    },
-    run: "sha256:3735be7aea3a55197d09de3c6123d0609ae5002db4cdccbbfe4b2ed8a5e6bbcc",
   },
 ];
 
@@ -335,7 +339,7 @@ describe("package publication orchestration", () => {
     expect(qualificationYaml).toContain("group: publish-agentera");
     expect(qualificationYaml).toContain("queue: max");
     expect(qualificationYaml).not.toContain("cancel-in-progress");
-    expect(qualificationYaml).not.toContain("github.run_number");
+    expect(qualificationYaml).toContain("RUN_NUMBER_VALUE: ${{ github.run_number }}");
     expect(qualificationYaml).toContain("GITHUB_RUN_NUMBER");
     expect(qualificationYaml).not.toContain("require('./packages/cli/package.json').version");
     expect(qualificationYaml).toContain("GITHUB_SHA");
@@ -374,8 +378,8 @@ describe("package publication orchestration", () => {
     const verification = workflow.jobs["verify-development"];
     expect(verification.permissions).toEqual({ contents: "read" });
     expect(verification.permissions).not.toHaveProperty("id-token");
-    expect(verification.needs).toBe("route-development");
-    expect(verification.if).toBe("needs.route-development.outputs.selected == 'true'");
+    expect(verification.needs).toBe("publication-state");
+    expect(verification.if).toBe("needs.publication-state.outputs.mode == 'build'");
     expect(verification["timeout-minutes"]).toBe(45);
     expect(verification.steps.find((step: { uses?: string }) => step.uses === "actions/checkout@v5").with.ref).toBe("${{ github.sha }}");
     expect(verification.steps.find((step: { name?: string }) => step.name === "Check static project policy").run).toBe("vp check");
@@ -385,7 +389,10 @@ describe("package publication orchestration", () => {
     expect(sourceVerification.run).toBe("vp run verify:development");
     expect(sourceVerification["timeout-minutes"] * 60_000).toBeGreaterThanOrEqual(publicationContract.benchmark.timeouts.sourceQualificationMs);
     expect(JSON.stringify(verification)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|upload-artifact|npm publish|id-token/i);
-    expect(workflow.jobs["build-development"].permissions).toEqual({ contents: "read" });
+    expect(workflow.jobs["build-development"].permissions).toEqual({
+      contents: "read",
+      actions: "read",
+    });
     expect(workflow.jobs["build-development"].permissions).not.toHaveProperty("id-token");
     expect(workflow.jobs["build-development"].needs).toBe("verify-development");
     expect(workflow.jobs["build-development"]).not.toHaveProperty("if");
@@ -393,7 +400,7 @@ describe("package publication orchestration", () => {
       actions: "read",
       "id-token": "write",
     });
-    expect(workflow.jobs["publish-development"].needs).toBe("build-development");
+    expect(workflow.jobs["publish-development"].needs).toEqual(["publication-state", "build-development"]);
     const buildSteps = workflow.jobs["build-development"].steps;
     const publishSteps = workflow.jobs["publish-development"].steps;
     const construction = buildSteps.find((step: { name?: string }) => step.name === "Build one isolated package tarball");
@@ -403,7 +410,7 @@ describe("package publication orchestration", () => {
     const upload = buildSteps.find((step: { uses?: string }) => step.uses === "actions/upload-artifact@v4");
     expect(upload.with).toMatchObject({
       name: "agentera-development-candidate",
-      "retention-days": 1,
+      "retention-days": 7,
     });
     expect(upload.with.path.trim().split("\n")).toEqual(["${{ runner.temp }}/agentera-development/agentera-${{ steps.version.outputs.value }}.tgz", "${{ runner.temp }}/agentera-development/publication-classification.json"]);
     const classification = buildSteps.find((step: { id?: string }) => step.id === "classification");
@@ -417,7 +424,7 @@ describe("package publication orchestration", () => {
     const writeGuard = publishSteps.find((step: { name?: string }) => step.name === "Write fixed registry guard");
     const guard = publishSteps.find((step: { id?: string }) => step.id === "registry-guard");
     const publish = publishSteps.find((step: { name?: string }) => step.name === "Publish exact tarball with Trusted Publishing");
-    const convergence = publishSteps.find((step: { name?: string }) => step.name === "Verify registry convergence without OIDC");
+    const convergence = workflow.jobs["confirm-development"].steps.find((step: { name?: string }) => step.name === "Verify registry convergence without OIDC");
     expect(publishSteps.every((step: { uses?: string }) => !step.uses)).toBe(true);
     expect(toolchain.run).toContain("/opt/hostedtoolcache/node/24.*/x64/bin");
     expect(toolchain.run).toContain("Exactly one preinstalled Node.js 24 toolchain is required");
@@ -428,9 +435,9 @@ describe("package publication orchestration", () => {
       REPOSITORY_VALUE: "${{ github.repository }}",
       RUN_ID_VALUE: "${{ github.run_id }}",
       RUNNER_TEMP_VALUE: "${{ runner.temp }}",
-      EXPECTED_VERSION_VALUE: "${{ needs.build-development.outputs.version }}",
+      EXPECTED_VERSION_VALUE: "${{ steps.history.outputs.version }}",
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
-      EXPECTED_OUTCOME_VALUE: "${{ needs.build-development.outputs.outcome }}",
+      EXPECTED_OUTCOME_VALUE: "retained",
     });
     for (const step of publishSteps) {
       expect(step.run ?? "").not.toContain("${{");
@@ -441,19 +448,7 @@ describe("package publication orchestration", () => {
       expect(syntax.status, `${step.name}: ${syntax.stderr}`).toBe(0);
     }
     const dynamicEnvironmentValues = new Set(publishSteps.flatMap((step: { env?: Record<string, string> }) => Object.values(step.env ?? {})));
-    expect([...dynamicEnvironmentValues]).toEqual(
-      expect.arrayContaining([
-        "${{ github.token }}",
-        "${{ github.api_url }}",
-        "${{ github.repository }}",
-        "${{ github.run_id }}",
-        "${{ runner.temp }}",
-        "${{ needs.build-development.outputs.version }}",
-        "${{ github.sha }}",
-        "${{ needs.build-development.outputs.outcome }}",
-        "${{ steps.registry-guard.outputs.outcome }}",
-      ]),
-    );
+    expect([...dynamicEnvironmentValues]).toEqual(expect.arrayContaining(["${{ github.token }}", "${{ github.api_url }}", "${{ github.repository }}", "${{ github.run_id }}", "${{ runner.temp }}", "${{ steps.history.outputs.version }}", "${{ github.sha }}", "retained", "${{ steps.registry-guard.outputs.outcome }}"]));
     expect(download.run).toContain("/actions/runs/{run_id}/artifacts?name={artifact_name}&per_page=100");
     expect(download.run).toContain('document.get("total_count") != 1');
     expect(download.run).toContain('artifact.get("workflow_run", {}).get("id") != int(run_id)');
@@ -511,8 +506,8 @@ describe("package publication orchestration", () => {
     }
     expect(guard.run).toContain("GUARD_MODE=pre");
     expect(convergence.run).toContain("GUARD_MODE=post");
-    expect(publish.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
-    expect(convergence.if).toBe("steps.registry-guard.outputs.outcome == 'forward-publish'");
+    expect(publish.if).toBe("steps.history.outputs.mode == 'publish' && steps.registry-guard.outputs.outcome == 'forward-publish'");
+    expect(convergence).not.toHaveProperty("if");
     expect(publish.run).toContain("env -i \\");
     expect(publish.run).toContain('GITHUB_ACTIONS="${GITHUB_ACTIONS}"');
     expect(publish.run).toContain('ACTIONS_ID_TOKEN_REQUEST_URL="${ACTIONS_ID_TOKEN_REQUEST_URL}"');
@@ -795,6 +790,7 @@ describe("package publication orchestration", () => {
             EXPECTED_VERSION_VALUE: "3.0.0-dev.90",
             EXPECTED_GIT_REF_VALUE: "a".repeat(40),
             EXPECTED_OUTCOME_VALUE: "forward-publish",
+            EXPECTED_ARTIFACT_ID_VALUE: "7",
             RUNNER_TEMP_VALUE: temp,
             NPM_MUTATION_MARKER: marker,
           },
@@ -924,6 +920,564 @@ describe("package publication orchestration", () => {
         const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail", "-c", `${step.run}\nnpm publish ignored`], { encoding: "utf8", env: environment });
         expect(result.status, result.stderr).not.toBe(0);
         expect(fs.existsSync(marker)).toBe(false);
+      }
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("routes full and failed-job reruns from actual trusted history without rebuilding or resubmitting", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const history = workflow.jobs["publication-state"].steps[0];
+    const source = history.run.match(/<<'HISTORY'\n([\s\S]*?)\n\s*HISTORY/)?.[1];
+    expect(source).toBeTruthy();
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-recovery-test-"));
+    const sha = "a".repeat(40);
+    const time = (seconds: number) => new Date(Date.now() - 3600000 + seconds * 1000).toISOString();
+    const step = (name: string, conclusion = "success", seconds = 10) => ({
+      name,
+      status: "completed",
+      conclusion,
+      started_at: time(seconds),
+      completed_at: time(seconds + 10),
+    });
+    const job = (name: string, steps: unknown[], conclusion = "success", attempt = 1) => ({
+      name,
+      steps,
+      conclusion,
+      status: "completed",
+      run_id: 42,
+      run_attempt: attempt,
+      head_sha: sha,
+    });
+    const upload = step("Upload immutable development candidate");
+    const build = job("Build and classify development candidate", [upload]);
+    const submitted = job("Publish development candidate to @next", [step("Publish exact tarball with Trusted Publishing", "success", 40)]);
+    const artifact = {
+      id: 7,
+      name: "agentera-development-candidate",
+      expired: false,
+      workflow_run: { id: 42, head_sha: sha },
+      created_at: time(15),
+    };
+    const run = {
+      id: 42,
+      run_number: 39,
+      run_attempt: 2,
+      head_sha: sha,
+      event: "push",
+      path: ".github/workflows/publish.yml",
+      created_at: time(0),
+    };
+    const execute = (
+      jobs: unknown[],
+      artifacts: unknown[],
+      options: {
+        attempt?: number;
+        ack?: boolean;
+        run?: object;
+        total?: number;
+        httpFailure?: boolean;
+      } = {},
+    ) => {
+      const output = path.join(root, "output");
+      fs.writeFileSync(output, "");
+      const responses = [
+        { ...run, run_attempt: options.attempt ?? 2, ...options.run },
+        { total_count: options.total ?? jobs.length, jobs },
+        { total_count: artifacts.length, artifacts },
+      ];
+      const harness = `
+import io, json, urllib.request
+responses = json.loads(${JSON.stringify(JSON.stringify(responses))})
+paths = ['', '/jobs?filter=all&per_page=100', '/artifacts?name=agentera-development-candidate&per_page=100']
+class Response(io.BytesIO):
+    status = 200
+class Opener:
+    def open(self, request, timeout):
+        assert request.get_method() == 'GET'
+        assert request.full_url == 'https://api.github.com/repos/jgabor/agentera/actions/runs/42' + paths.pop(0)
+        assert timeout == 10
+        assert request.get_header('Authorization') == 'Bearer test-token'
+        if ${options.httpFailure ? "True" : "False"}: raise OSError('temporary API failure')
+        return Response(json.dumps(responses.pop(0)).encode())
+urllib.request.build_opener = lambda *args: Opener()
+exec(compile(${JSON.stringify(source)}, 'fixed-history.py', 'exec'))
+assert not responses
+`;
+      const result = spawnSync("python3", ["-c", harness], {
+        encoding: "utf8",
+        timeout: 10000,
+        env: {
+          PATH: process.env.PATH!,
+          GH_TOKEN: "test-token",
+          API_URL_VALUE: "https://api.github.com",
+          REPOSITORY_VALUE: "jgabor/agentera",
+          RUN_ID_VALUE: "42",
+          RUN_NUMBER_VALUE: "39",
+          RUN_ATTEMPT_VALUE: String(options.attempt ?? 2),
+          EXPECTED_GIT_REF_VALUE: sha,
+          GITHUB_OUTPUT: output,
+          REQUIRE_ACKNOWLEDGMENT: String(options.ack ?? false),
+        },
+      });
+      const values = Object.fromEntries(
+        fs
+          .readFileSync(output, "utf8")
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => line.split("=")),
+      );
+      return { ...result, values };
+    };
+    // Evaluate the checked-in Actions conditions, not a separately modeled routing rule.
+    const condition = (expression: string, needs: object, steps: object = {}) =>
+      Function(
+        "needs",
+        "steps",
+        `return (${expression
+          .replaceAll("always()", "true")
+          .replaceAll("cancelled()", "false")
+          .replace(/\b(needs|steps)\.([\w-]+)/g, '$1["$2"]')})`,
+      )(needs, steps);
+    try {
+      const fakeToolchain = path.join(root, "node", "24.0.0", "x64", "bin");
+      fs.mkdirSync(fakeToolchain, { recursive: true });
+      const mutations = path.join(root, "npm-mutations");
+      fs.writeFileSync(path.join(fakeToolchain, "npm"), `#!/bin/sh\nprintf '%s\\n' "$*" >> "${mutations}"\nprintf '%s\\n' 'Your package is being processed and may take a few minutes to become available.' '+ agentera@3.0.0-dev.128'\n`, { mode: 0o755 });
+      const publisher = workflow.jobs["publish-development"].steps.find((candidate: { name?: string }) => candidate.name === "Publish exact tarball with Trusted Publishing");
+      const publish = (mode: string) => {
+        if (
+          !condition(
+            publisher.if,
+            {},
+            {
+              history: { outputs: { mode } },
+              "registry-guard": { outputs: { outcome: "forward-publish" } },
+            },
+          )
+        )
+          return;
+        return spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail"], {
+          encoding: "utf8",
+          input: publisher.run.replaceAll("/opt/hostedtoolcache/node/", `${root}/node/`),
+          env: {
+            PATH: process.env.PATH!,
+            RUNNER_TEMP_VALUE: root,
+            EXPECTED_VERSION_VALUE: "3.0.0-dev.128",
+            EXPECTED_GIT_REF_VALUE: sha,
+            GUARD_OUTCOME_VALUE: "forward-publish",
+            GITHUB_ACTIONS: "true",
+            ACTIONS_ID_TOKEN_REQUEST_URL: "https://token.actions.githubusercontent.com/request?id=1",
+            ACTIONS_ID_TOKEN_REQUEST_TOKEN: "test-oidc",
+            ...Object.fromEntries(Object.entries(githubProvenance).map(([key, value]) => [`${key}_VALUE`, value])),
+          },
+        });
+      };
+      const initial = publish("publish");
+      expect(initial?.status, initial?.stderr).toBe(0);
+      expect(initial?.stdout).toContain("being processed");
+      expect(execute([], [], { attempt: 1 }).values.mode).toBe("build");
+      expect(execute([job("Verify development source", [], "failure")], []).values.mode).toBe("build");
+      expect(execute([build], [artifact], { attempt: 1 }).values.mode).toBe("publish");
+      expect(execute([build, job(submitted.name, [step("Recheck exact candidate and registry without OIDC", "failure"), step("Publish exact tarball with Trusted Publishing", "skipped")], "failure")], [artifact]).values.mode).toBe("publish");
+      for (const original of [
+        submitted,
+        {
+          ...submitted,
+          conclusion: "failure",
+          steps: [...submitted.steps, step("Verify registry convergence without OIDC", "failure", 60)],
+        },
+        job(submitted.name, [step("Recheck exact candidate and registry without OIDC", "success", 40), step("Publish exact tarball with Trusted Publishing", "skipped", 50)]),
+      ]) {
+        const recovered = execute([build, original], [artifact]);
+        expect(recovered.status, recovered.stderr).toBe(0);
+        expect(recovered.values).toEqual({
+          mode: "observe",
+          version: "3.0.0-dev.128",
+          "artifact-id": "7",
+        });
+        expect(execute([build, original], [artifact], { ack: true }).status).toBe(0);
+        const skippedBuild = { ...build, run_attempt: 2, conclusion: "skipped", steps: undefined };
+        const skippedPublisher = {
+          ...submitted,
+          run_attempt: 2,
+          conclusion: "skipped",
+          steps: undefined,
+        };
+        expect(execute([skippedPublisher, skippedBuild, build, original], [artifact], { ack: true }).values.mode).toBe("observe");
+        expect(
+          execute([skippedPublisher, skippedBuild, build, original], [artifact], {
+            attempt: 3,
+            ack: true,
+          }).values.mode,
+        ).toBe("observe");
+        const needs = {
+          "publication-state": { result: "success", outputs: recovered.values },
+          "build-development": { result: "skipped" },
+          "publish-development": { result: "skipped" },
+        };
+        const effects: string[] = [];
+        if (condition(workflow.jobs["verify-development"].if, needs)) effects.push("source-build");
+        if (condition(workflow.jobs["publish-development"].if, needs)) effects.push("publisher");
+        if (condition(workflow.jobs["confirm-development"].if, needs)) effects.push("observation");
+        expect(effects).toEqual(["observation"]);
+        expect(
+          condition(workflow.jobs["confirm-development"].if, {
+            "publication-state": { result: "success", outputs: { mode: "build" } },
+            "publish-development": { result: "success" },
+          }),
+        ).toBe(true);
+        expect(publish(recovered.values.mode)).toBeUndefined();
+        for (const candidate of workflow.jobs["build-development"].steps.slice(1)) {
+          expect(condition(candidate.if, {}, { history: { outputs: recovered.values } }), candidate.name ?? candidate.uses).toBe(false);
+        }
+        // Failed-job retry can reuse stale dependency outputs. Its own history read
+        // must still suppress both preflight and npm publish after acknowledgment.
+        const steps = {
+          history: { outputs: recovered.values },
+          "registry-guard": { outputs: { outcome: "forward-publish" } },
+        };
+        for (const candidate of workflow.jobs["publish-development"].steps.filter((candidate: { if?: string }) => candidate.if)) {
+          expect(condition(candidate.if, {}, steps), candidate.name).toBe(false);
+        }
+      }
+      expect(fs.readFileSync(mutations, "utf8").trim().split("\n")).toEqual([`publish ${root}/agentera-development/agentera-3.0.0-dev.128.tgz --access public --tag next --ignore-scripts --registry=https://registry.npmjs.org/`]);
+      const failures = [
+        execute([build], [artifact]),
+        execute([build, job(submitted.name, [step("Publish exact tarball with Trusted Publishing", "skipped")], "failure"), job("Resolve original development candidate", [], "success", 2)], [artifact], { attempt: 3 }),
+        execute([build, submitted], []),
+        execute([build, submitted], [{ ...artifact, expired: true }]),
+        execute([build, submitted], [artifact, artifact]),
+        execute([build, submitted], [{ ...artifact, workflow_run: { id: 41, head_sha: sha } }]),
+        execute([build, submitted], [{ ...artifact, workflow_run: { id: 42, head_sha: "b".repeat(40) } }]),
+        execute([build, submitted], [{ ...artifact, created_at: time(80) }]),
+        execute([build, submitted], [artifact], { run: { created_at: "2020-01-01T00:00:00Z" } }),
+        execute([build, submitted], [artifact], { run: { head_sha: "b".repeat(40) } }),
+        execute([build, submitted], [artifact], { total: 101 }),
+        execute([build, submitted], [artifact], { httpFailure: true }),
+        execute([build, { ...submitted, steps: [] }], [artifact]),
+        execute(
+          [
+            build,
+            {
+              ...submitted,
+              steps: [step("Publish exact tarball with Trusted Publishing", "failure", 40)],
+            },
+          ],
+          [artifact],
+        ),
+        execute(
+          [
+            build,
+            {
+              ...submitted,
+              steps: [step("Publish exact tarball with Trusted Publishing", "cancelled", 40)],
+            },
+          ],
+          [artifact],
+        ),
+        execute([build, submitted, submitted], [artifact]),
+        execute([], [], { attempt: 2 }),
+        execute([build], [artifact], { ack: true }),
+        execute([], [artifact], { attempt: 1 }),
+      ];
+      for (const failed of failures) {
+        expect(failed.status, failed.stdout).not.toBe(0);
+        expect(failed.values).toEqual({});
+      }
+      expect(workflow.jobs["confirm-development"].permissions).toEqual({ actions: "read" });
+      expect(workflow.jobs["confirm-development"].env).toEqual({ REQUIRE_ACKNOWLEDGMENT: "true" });
+      for (const id of ["publication-state", "publish-development", "confirm-development"]) {
+        expect(workflow.jobs[id].steps[0]).toEqual(history);
+        expect(workflow.jobs[id].steps.every((candidate: { uses?: string }) => !candidate.uses)).toBe(true);
+      }
+      expect(workflow.jobs["confirm-development"].steps.slice(1, 4)).toEqual(workflow.jobs["publish-development"].steps.slice(1, 4));
+      expect(JSON.stringify(workflow.jobs["confirm-development"])).not.toMatch(/npm publish|id-token|packages\/cli\/scripts/);
+      expect(source).toContain(`number + ${publicationContract.ci.developmentPush.runNumberOffset}`);
+    } finally {
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("observes delayed publication through the actual fixed guard without registry mutations", () => {
+    const workflow = YAML.parse(qualificationYaml);
+    const job = workflow.jobs["publish-development"];
+    const step = job.steps.find((candidate: { name?: string }) => candidate.name === "Write fixed registry guard");
+    const source = step.run.match(/<<'AGENTERA_GUARD'\n([\s\S]*?)\n\s*AGENTERA_GUARD/)?.[1];
+    expect(source).toBeTruthy();
+    expect(workflow.jobs["confirm-development"]["timeout-minutes"]).toBeGreaterThan(11);
+    expect(workflow.jobs["confirm-development"].steps.find((candidate: { name?: string }) => candidate.name === "Verify registry convergence without OIDC")["timeout-minutes"]).toBe(11);
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-observation-test-"));
+    try {
+      const artifactDir = path.join(root, "agentera-development");
+      const packageDir = path.join(root, "source", "package");
+      fs.mkdirSync(artifactDir);
+      fs.mkdirSync(packageDir, { recursive: true });
+      const version = "3.0.0-dev.90";
+      const gitRef = "a".repeat(40);
+      fs.writeFileSync(path.join(packageDir, "package.json"), JSON.stringify({ name: "agentera", version, agentera: { gitRef } }));
+      const tarball = path.join(artifactDir, `agentera-${version}.tgz`);
+      expect(spawnSync("tar", ["-czf", tarball, "-C", path.join(root, "source"), "package"]).status).toBe(0);
+      const integrity = `sha512-${crypto.createHash("sha512").update(fs.readFileSync(tarball)).digest("base64")}`;
+      const classification = path.join(artifactDir, "publication-classification.json");
+      fs.writeFileSync(
+        classification,
+        JSON.stringify({
+          schemaVersion: "agentera.developmentPublicationClassification.v1",
+          outcome: "forward-publish",
+          package: "agentera",
+          version,
+          gitRef,
+          integrity,
+        }),
+      );
+      const guard = path.join(root, "agentera-publication-guard.mjs");
+      fs.writeFileSync(guard, source!);
+      const fakeToolchain = path.join(root, "node", "24.0.0", "x64", "bin");
+      fs.mkdirSync(fakeToolchain, { recursive: true });
+      const matching = { "dist.integrity": integrity, "agentera.gitRef": gitRef };
+      const exact = { tags: { next: version }, metadata: matching };
+      const older = { tags: { next: "3.0.0-dev.89" }, metadata: matching };
+      const absent = { tags: null, metadata: null };
+      const incomplete = { tags: { next: version }, metadata: { "dist.integrity": integrity } };
+      const cases = [
+        {
+          name: "retained-integrity-mismatch",
+          observations: [exact],
+          ok: false,
+          text: "tarball integrity does not match",
+          classificationChanges: { integrity: "sha512-YQ==" },
+          beforeObservation: true,
+        },
+        {
+          name: "retained-source-mismatch",
+          observations: [exact],
+          ok: false,
+          text: "classification does not match",
+          classificationChanges: { gitRef: "b".repeat(40) },
+          beforeObservation: true,
+        },
+        {
+          name: "retained-version-mismatch",
+          observations: [exact],
+          ok: false,
+          text: "classification does not match",
+          classificationChanges: { version: "3.0.0-dev.91" },
+          beforeObservation: true,
+        },
+        {
+          name: "retained-outcome-invalid",
+          observations: [exact],
+          ok: false,
+          text: "classification does not match",
+          classificationChanges: { outcome: "publish-again" },
+          beforeObservation: true,
+        },
+        {
+          name: "retained-exact-classification",
+          observations: [exact],
+          ok: true,
+          text: "exact-replay",
+          classificationChanges: { outcome: "exact-replay" },
+        },
+        {
+          name: "retained-superseded-classification",
+          observations: [{ ...exact, tags: { next: "3.0.0-dev.91" } }],
+          ok: true,
+          text: "superseded-replay",
+          classificationChanges: { outcome: "superseded-replay" },
+        },
+        {
+          name: "npm-error-partial-exact",
+          observations: [{ npmError: "E503 registry temporarily unavailable" }, incomplete, exact],
+          ok: true,
+          text: "exact-replay",
+          evidence: "E503",
+        },
+        {
+          name: "npm-error-deadline",
+          observations: [{ npmError: "ETIMEDOUT registry unavailable" }],
+          ok: false,
+          text: "npm view failed: ETIMEDOUT",
+        },
+        { name: "pre-exact", mode: "pre", observations: [exact], ok: true, text: "exact-replay" },
+        {
+          name: "pre-superseded",
+          mode: "pre",
+          observations: [{ ...exact, tags: { next: "3.0.0-dev.91" } }],
+          ok: true,
+          text: "superseded-replay",
+        },
+        {
+          name: "pre-retag-denied",
+          mode: "pre",
+          observations: [older],
+          ok: false,
+          text: "cannot run npm dist-tag",
+          fatal: true,
+        },
+        {
+          name: "pre-absent-older-denied",
+          mode: "pre",
+          observations: [{ tags: { next: "3.0.0-dev.91" }, metadata: null }],
+          ok: false,
+          text: "older candidate is absent",
+          fatal: true,
+        },
+        {
+          name: "absent-partial-exact",
+          observations: [absent, incomplete, exact],
+          ok: true,
+          text: "exact-replay",
+        },
+        {
+          name: "transport-exact",
+          observations: [{ error: "ETIMEDOUT" }, exact],
+          ok: true,
+          text: "exact-replay",
+          evidence: "ETIMEDOUT",
+        },
+        { name: "tag-lag-exact", observations: [older, exact], ok: true, text: "exact-replay" },
+        {
+          name: "late-exact",
+          observations: [...Array(118).fill(absent), exact],
+          ok: true,
+          text: "exact-replay",
+        },
+        { name: "exact", observations: [exact], ok: true, text: "exact-replay" },
+        {
+          name: "superseded",
+          observations: [{ ...exact, tags: { next: "3.0.0-dev.91" } }],
+          ok: true,
+          text: "superseded-replay",
+        },
+        {
+          name: "integrity-conflict",
+          observations: [{ ...exact, metadata: { "dist.integrity": "sha512-wrong" } }, exact],
+          ok: false,
+          text: "conflicts",
+          fatal: true,
+        },
+        {
+          name: "source-conflict",
+          observations: [{ ...exact, metadata: { "agentera.gitRef": "b".repeat(40) } }, exact],
+          ok: false,
+          text: "conflicts",
+          fatal: true,
+        },
+        { name: "partial-deadline", observations: [incomplete], ok: false, text: "source=absent" },
+        { name: "absent-deadline", observations: [absent], ok: false, text: "next=absent" },
+        {
+          name: "transport-deadline",
+          observations: [{ error: "ETIMEDOUT" }],
+          ok: false,
+          text: "ETIMEDOUT",
+        },
+        { name: "old-tag-deadline", observations: [older], ok: false, text: "forward-retag" },
+        {
+          name: "late-result",
+          observations: [exact],
+          ok: false,
+          text: "availability unconfirmed",
+          duration: 300000,
+        },
+      ];
+      for (const scenario of cases) {
+        fs.writeFileSync(
+          classification,
+          JSON.stringify({
+            schemaVersion: "agentera.developmentPublicationClassification.v1",
+            outcome: "forward-publish",
+            package: "agentera",
+            version,
+            gitRef,
+            integrity,
+            ...scenario.classificationChanges,
+          }),
+        );
+        const calls = path.join(root, "calls.jsonl");
+        fs.writeFileSync(calls, "");
+        const preload = path.join(root, "fake-npm.mjs");
+        fs.writeFileSync(
+          preload,
+          `
+          import cp from 'node:child_process';
+          import fs from 'node:fs';
+          import assert from 'node:assert/strict';
+          import { syncBuiltinESMExports } from 'node:module';
+          const realSpawn = cp.spawnSync;
+          const observations = ${JSON.stringify(scenario.observations)};
+          let now = 0, index = 0;
+          Object.defineProperty(globalThis, 'performance', { value: { now: () => now } });
+          globalThis.setTimeout = (fn, ms) => { assert(ms > 0 && ms <= 5000); now += ms; fn(); };
+          cp.spawnSync = (command, args, options) => {
+            if (command === 'tar') return realSpawn(command, args, options);
+            assert.equal(command, 'npm');
+            assert(options.timeout > 0 && options.timeout <= 30000);
+            if (${JSON.stringify(scenario.mode ?? "post")} === 'post' && args[0] !== '--version') assert(options.timeout <= 600000 - now);
+            assert(!Object.keys(options.env).some(key => /TOKEN|ACTIONS_ID|GITHUB_ACTIONS/.test(key)));
+            if (args[0] === '--version') return { status: 0, stdout: '11.19.0', stderr: '' };
+            assert.equal(args[0], 'view', 'no registry mutations permitted');
+            assert(args.includes('--prefer-online'));
+            assert(args.includes('--fetch-retries=0'));
+            assert(args.includes('--fetch-timeout=25000'));
+            fs.appendFileSync(${JSON.stringify(calls)}, JSON.stringify({args, timeout: options.timeout, now}) + '\\n');
+            const observation = observations[Math.min(index, observations.length - 1)];
+            const duration = ${scenario.duration ?? 1};
+            now += Math.min(duration, options.timeout);
+            if (duration >= options.timeout) return { error: new Error('ETIMEDOUT') };
+            if (observation.error) { index++; return { error: new Error(observation.error) }; }
+            if (observation.npmError) { index++; return { status: 1, stdout: '', stderr: observation.npmError }; }
+            let value;
+            if (args[1] === 'agentera') value = observation.tags;
+            else {
+              assert.deepEqual(args.slice(1, 4), ['agentera@${version}', 'dist.integrity', 'agentera.gitRef']);
+              value = observation.metadata; index++;
+            }
+            return value === null ? { status: 1, stdout: '', stderr: 'E404' } : { status: 0, stdout: JSON.stringify(value), stderr: '' };
+          };
+          syncBuiltinESMExports();
+        `,
+        );
+        fs.writeFileSync(path.join(fakeToolchain, "node"), `#!/bin/sh\nexec "${process.execPath}" --import "${preload}" "$@"\n`, { mode: 0o755 });
+        const wrapper = scenario.mode === "pre" ? job.steps.find((candidate: { id?: string }) => candidate.id === "registry-guard") : workflow.jobs["confirm-development"].steps.at(-1);
+        const result = spawnSync("bash", ["--noprofile", "--norc", "-e", "-o", "pipefail"], {
+          encoding: "utf8",
+          input: wrapper.run.replaceAll("/opt/hostedtoolcache/node/", `${root}/node/`),
+          timeout: 10000,
+          env: {
+            PATH: process.env.PATH!,
+            RUNNER_TEMP_VALUE: root,
+            GITHUB_OUTPUT: path.join(root, "github-output"),
+            EXPECTED_VERSION_VALUE: version,
+            EXPECTED_GIT_REF_VALUE: gitRef,
+            EXPECTED_OUTCOME_VALUE: "retained",
+            ACTIONS_ID_TOKEN_REQUEST_URL: "must-not-reach-guard",
+            ACTIONS_ID_TOKEN_REQUEST_TOKEN: "must-not-reach-guard",
+            GITHUB_ACTIONS: "true",
+            NPM_TOKEN: "must-not-reach-guard",
+          },
+        });
+        const output = result.stdout + result.stderr;
+        expect(result.status === 0, `${scenario.name}: ${output}`).toBe(scenario.ok);
+        expect(output, scenario.name).toContain(scenario.text);
+        if (scenario.evidence) expect(output).toContain(scenario.evidence);
+        const requests = fs
+          .readFileSync(calls, "utf8")
+          .trim()
+          .split("\n")
+          .filter(Boolean)
+          .map((line) => JSON.parse(line));
+        expect(requests.length).toBeLessThanOrEqual(240);
+        if (scenario.beforeObservation) expect(requests).toHaveLength(0);
+        else if (scenario.fatal) expect(requests).toHaveLength(2);
+        else if (!scenario.ok) {
+          expect(output).toContain("publication acknowledged; availability unconfirmed after 600000ms");
+          expect(output).toContain('"elapsedMs":');
+          expect(output).not.toContain("upload rejected");
+        }
       }
     } finally {
       fs.rmSync(root, { recursive: true, force: true });

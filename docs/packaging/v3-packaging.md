@@ -391,7 +391,8 @@ the numeric source run ID. The full `refs/heads/...` contract is the branch
 authority. This attestation and approval flow is not part of routine push
 publication from the configured development ref.
 
-Routine development publication gives the build job only `contents: read`.
+Routine development publication gives the build job `contents: read` and
+`actions: read`, but no OIDC permission.
 Classification has no credentials or OIDC. The dependent publication job has
 job-level `id-token: write`, checks out no repository source, downloads only the
 immutable same-run candidate artifact, and does not rebuild or execute package
@@ -409,7 +410,53 @@ superseded replay need neither credentials nor OIDC. A `forward-retag` fails
 closed because npm Trusted Publishing does not authorize `npm dist-tag`;
 recover with interactive npm 2FA or a later forward version. After a successful
 publish, the fixed credential-free guard waits for exact integrity, source SHA,
-and `@next` convergence without mutating a dist-tag.
+and `@next` convergence without mutating a dist-tag. Observation has a ten-minute
+monotonic deadline, with fresh reads, five-second polling, and requests bounded
+by both 30 seconds and the remaining deadline. Integrity and source are read
+together. Missing metadata and temporary transport failures are retried and
+logged; an explicitly conflicting integrity or source fails immediately.
+Deadline exhaustion reports publication acknowledged but availability unconfirmed,
+with elapsed time and the last observation, not an upload rejection. The
+11-minute observation step and separate 15-minute confirmation job allow this
+deadline and fixed setup overhead; the publication job has a six-minute limit.
+These limits apply to the fixed push-publication
+guard, not the separate manual publication coordinator.
+
+### Confirmation-only recovery
+
+Successful npm submission and registry availability are separate outcomes.
+The fixed publication job ends after npm acknowledges the upload (or preflight
+finds exact/superseded replay). A dependent confirmation job has only
+`actions: read`, no OIDC permission, and no upload or retag operation. npm's
+“being processed” message is a successful submission, not a reason to upload
+again. A confirmation failure leaves that submission evidence intact.
+
+The supported recovery window is **seven days from the original run's creation**.
+The same-run candidate artifact is retained for seven days. With separately
+authorized Actions recovery, either **Re-run failed jobs** or **Re-run all jobs**
+observes the original candidate after acknowledgment: no source qualification,
+candidate rebuild, second upload, or retag is needed. Full reruns resolve history
+before source/build routing; build and publisher jobs also resolve it themselves
+so stale dependency outputs in failed-job retries cannot authorize another build
+or upload. The observer still accepts exact and superseded replay and never
+moves `next` backward.
+
+Recovery reads GitHub's run, all-attempt job/step history, and the immutable
+candidate artifact. The original successful artifact-upload step, artifact ID,
+source SHA, run identity, and creation/acknowledgment times must agree. History
+must be complete and contain fewer than 100 jobs. A successful fixed npm step
+is acknowledgment even if a later step failed; successful fixed replay also
+permits observation. Registry absence is never acknowledgment evidence or
+permission to resubmit. A failure before npm was invoked may resume preflight
+against retained bytes; a failure before candidate upload may resume construction.
+
+Missing/expired artifacts, unavailable or incomplete history, duplicate evidence,
+identity mismatches, and interrupted or failed npm invocations without a known
+outcome stop safely. Do not delete evidence, rebuild replacement bytes, bump the
+candidate, or publish again to bypass that stop. Investigate read-only and obtain
+separate authorization for any external recovery action. A rerun executes the
+workflow from its original commit: older runs that predate these safeguards do
+not acquire them by being rerun.
 
 The immediate guard-to-publish sequence minimizes the registry race, and the
 package-global concurrency group prevents Agentera publication runs from racing

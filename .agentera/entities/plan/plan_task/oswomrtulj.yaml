@@ -1,0 +1,24 @@
+id: oswomrtulj
+artifact: plan
+record:
+  name: Separate publication from verification-only recovery
+  depends_on:
+    - nsqoyynrez
+  status: complete
+  acceptance:
+    - GIVEN npm acknowledged a candidate WHEN availability verification fails THEN the workflow distinguishes successful submission from unsuccessful confirmation. Credential-free confirmation is separate from successful publication, and trustworthy acknowledgement evidence remains bound to the original candidate retained for the supported recovery window.
+    - GIVEN that acknowledged candidate WHEN verification is retried, including through a workflow rerun, THEN only the original candidate is observed, with zero additional upload, retag, or candidate-rebuild operations.
+    - GIVEN missing, expired, ambiguous, or mismatched recovery evidence WHEN recovery is requested THEN it fails safely rather than manufacturing a replacement candidate or treating absence as permission to publish.
+    - GIVEN ordinary publication or verification-only recovery WHEN the workflow runs THEN credential isolation, immutable-artifact validation, and existing replay protections remain intact.
+    - GIVEN completed delivery WHEN workflow tests, relevant development gates, and documentation are checked THEN they agree on outcomes and recovery, including the original delayed-availability regression. Cover acknowledged-but-still-absent retries, failed-job and full-workflow reruns, conflicting evidence, and credential boundaries. Default to one success and one rejection per behavior; distinct retry entry paths justify additional cases. Update publication authority, maintainer guidance, and required state closeout with delivery.
+  plan: jtaehzlyng
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: oswomrtulj-final-audit-1
+      source: "Independent audit ses_f3a574312ffe6f9Dxm30K3Jyl5 passed both tasks and matched final file/log/build evidence: 85 targeted tests and 11/11 development gates. Only finding was stale build-job permissions prose; code worker corrected the single sentence, Markdown lint and diff checks passed, coordinator verified both read permissions and no OIDC. Evidence /tmp/opencode/oswomrtulj-evidence/README.md; pre-correction documentation hashes explicitly superseded by this sentence-only correction. No live Actions or registry effects tested."
+      recorded_at: 2026-09-21 22:35
+      writer_command: agentera state plan record-evaluation
