@@ -162,7 +162,7 @@ jobs:
                           upload_attempts.add(prior)
                       else:
                           acknowledged.append(step)
-                  elif conclusion == "skipped" or (prior == attempt and step.get("status") == "queued"):
+                  elif conclusion == "skipped" or (prior == attempt and step.get("status") in {"queued", "pending"}):
                       pass
                   else:
                       uncertain = True

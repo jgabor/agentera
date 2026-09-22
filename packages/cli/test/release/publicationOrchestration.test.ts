@@ -55,7 +55,7 @@ const reviewedOidcPublicationSteps = [
       RUN_ATTEMPT_VALUE: "${{ github.run_attempt }}",
       EXPECTED_GIT_REF_VALUE: "${{ github.sha }}",
     },
-    run: "sha256:9bec0a197c5928f3c512b7ca43dea18bead1f4b789ac81c24097d9a15d2482fb",
+    run: "sha256:6829ba198ba69de4d68848cc36276d307a0f57d8b51dc584cbcfbbac721c1a82",
   },
   {
     name: "Select fixed runner toolchain",
@@ -953,6 +953,27 @@ describe("package publication orchestration", () => {
     const upload = step("Upload immutable development candidate");
     const build = job("Build and classify development candidate", [upload]);
     const submitted = job("Publish development candidate to @next", [step("Publish exact tarball with Trusted Publishing", "success", 40)]);
+    // Runner records start Pending, then Start() sets InProgress and StartTime:
+    // https://github.com/actions/runner/blob/80bb1fb827fa44d489263061e71ef4adba7ad8cd/src/Runner.Worker/ExecutionContext.cs#L1338-L1347
+    // StepResult.status uses TimelineRecordState (the REST docs list queued instead).
+    const currentJob = (id: string, attempt = 1, status = "pending") => ({
+      ...job(workflow.jobs[id].name, [], "", attempt),
+      status: "in_progress",
+      conclusion: null,
+      started_at: time(30),
+      completed_at: null,
+      steps: [
+        { ...step("Set up job", "success", 30), number: 1 },
+        ...workflow.jobs[id].steps.map((candidate: { name?: string; uses?: string }, index: number) => ({
+          name: candidate.name ?? `Run ${candidate.uses}`,
+          number: index + 2,
+          status: index === 0 ? "in_progress" : status,
+          conclusion: null,
+          started_at: index === 0 ? time(40) : null,
+          completed_at: null,
+        })),
+      ],
+    });
     const artifact = {
       id: 7,
       name: "agentera-development-candidate",
@@ -1081,6 +1102,48 @@ assert not responses
       expect(execute([], [], { attempt: 1 }).values.mode).toBe("build");
       expect(execute([job("Verify development source", [], "failure")], []).values.mode).toBe("build");
       expect(execute([build], [artifact], { attempt: 1 }).values.mode).toBe("publish");
+      for (const status of ["pending", "queued"]) {
+        const currentBuild = execute([currentJob("build-development", 1, status)], [], {
+          attempt: 1,
+        });
+        const currentPublisher = execute([build, currentJob("publish-development", 1, status)], [artifact], { attempt: 1 });
+        expect(
+          [currentBuild, currentPublisher].map((result) => ({
+            status: result.status,
+            mode: result.values.mode,
+            error: result.stderr,
+          })),
+        ).toEqual([
+          { status: 0, mode: "build", error: "" },
+          { status: 0, mode: "publish", error: "" },
+        ]);
+        // A prior attempt's not-started representation is not permission to retry.
+        for (const failed of [execute([currentJob("build-development", 1, status)], []), execute([build, currentJob("publish-development", 1, status)], [artifact])]) {
+          expect(failed.stderr).toContain("upload outcome is ambiguous");
+          expect(failed.status).not.toBe(0);
+          expect(failed.values).toEqual({});
+        }
+      }
+      for (const id of ["build-development", "publish-development"]) {
+        for (const [status, conclusion] of [
+          ["in_progress", null],
+          ["completed", "failure"],
+          ["completed", "cancelled"],
+          ["completed", "timed_out"],
+          ["unknown", null],
+        ]) {
+          const current = currentJob(id);
+          const uploadName = id === "build-development" ? upload.name : submitted.steps[0].name;
+          const unsafe = {
+            ...current,
+            steps: current.steps.map((candidate) => (candidate.name === uploadName ? { ...candidate, status, conclusion, started_at: time(40) } : candidate)),
+          };
+          const failed = execute(id === "build-development" ? [unsafe] : [build, unsafe], id === "build-development" ? [] : [artifact], { attempt: 1 });
+          expect(failed.stderr).toContain("upload outcome is ambiguous");
+          expect(failed.status).not.toBe(0);
+          expect(failed.values).toEqual({});
+        }
+      }
       expect(execute([build, job(submitted.name, [step("Recheck exact candidate and registry without OIDC", "failure"), step("Publish exact tarball with Trusted Publishing", "skipped")], "failure")], [artifact]).values.mode).toBe("publish");
       for (const original of [
         submitted,
@@ -1099,6 +1162,12 @@ assert not responses
           "artifact-id": "7",
         });
         expect(execute([build, original], [artifact], { ack: true }).status).toBe(0);
+        for (const status of ["pending", "queued"]) {
+          const retry = execute([build, original, currentJob("build-development", 2, status), currentJob("publish-development", 2, status)], [artifact], { ack: true });
+          expect(retry.status, retry.stderr).toBe(0);
+          expect(retry.values.mode).toBe("observe");
+          expect(publish(retry.values.mode)).toBeUndefined();
+        }
         const skippedBuild = { ...build, run_attempt: 2, conclusion: "skipped", steps: undefined };
         const skippedPublisher = {
           ...submitted,
