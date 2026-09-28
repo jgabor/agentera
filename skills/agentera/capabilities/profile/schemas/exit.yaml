@@ -8,7 +8,9 @@ EXIT_CONDITIONS:
       glossary generation produced only current authorized explicit publication;
       remaining review work was queued or bounded for a question channel.
       Metadata changes were applied, prediction accuracy was assessed, and
-      changes were summarized.
+      changes were summarized. Any necessary refresh used explicitly approved
+      sources and continued in the same run under replacement approval; the prior
+      profile copy was retained and its accepted owned Glossary preserved.
     exit_signal: complete
   2:
     id: E2
@@ -19,7 +21,9 @@ EXIT_CONDITIONS:
       acceptance, extraction failed for one or more sources, prediction
       accuracy was below 3/5, or significant unresolved tensions were
       found. Full mode is also flagged when its existing consent-bound personal
-      glossary generation is unavailable, stale, degraded, or review-only.
+      glossary generation is unavailable, stale, degraded, or review-only. Partial
+      evidence/base publication is reported with remaining work, not discarded
+      or silently repeated with a broader source selection.
     exit_signal: flagged
   3:
     id: E3
@@ -33,6 +37,7 @@ EXIT_CONDITIONS:
     condition: waiting
     description: >-
       The user chose Validate mode but PROFILE.md lacks valid metadata,
-      a Full mode run needs user approval, or the requested mode is
+      a Full mode run needs source-acquisition or profile-replacement approval,
+      the approved source selection changed, or the requested mode is
       ambiguous.
     exit_signal: waiting

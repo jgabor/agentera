@@ -13,4 +13,4 @@ export default `${instructions
 
 ### Plan selection
 
-Render canonical \`status_context.plan.id\`. Preserve competing-plan failures and recovery verbatim. Never infer roles from titles or order; \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID\` requires canonical evidence for both roles.`;
+Render \`status_context.plan.id\`. Preserve competing-plan recovery; never infer roles from titles or list order. \`agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID\` requires evidence for both roles.`;

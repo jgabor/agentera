@@ -46,8 +46,8 @@ npx -y agentera@next doctor
 Agentera 3.0 uses one portable integration for compatible runtimes: the shared
 skill at `~/.agents/skills/agentera/SKILL.md` plus the Agentera CLI. The host
 directory contains only that file; runtime schemas and references stay inside
-the package. For an outdated supported installation, `prime` and `doctor` return
-one update offer. Answer Yes once; the host runs the CLI-provided command without
+the package. For a missing or outdated shared skill, `prime` and `doctor` return
+one installation or update offer. Answer Yes once; the host runs the CLI-provided command without
 asking about technical details. No or no answer changes nothing. Older directories
 and symlinks need no historical ownership journal or per-file approval.
 See [UPGRADE.md](./UPGRADE.md#one-file-shared-skill-installation-and-repair) for
@@ -58,8 +58,10 @@ No OpenCode gate or `hook` command replaces the retired plugin. Project-only
 migration does not mutate global host resources. App/global retirement requires
 explicit scope and ownership; unproven files remain for manual review. The
 upgrade guide separates shared-skill repair, one-way v2 migration and cleanup.
-Approved app/global migration retires a proven historical OpenCode plugin with
-no separate cleanup selector; unproven resources remain for manual review.
+Doctor distinguishes current runtime/skill health from retirement attention and
+offers exact focused cleanup for ownership-proven leaves, including a historical
+OpenCode plugin; unproven resources remain for manual review. The focused offer
+does not authorize full app migration.
 
 `doctor` reports read-only app, project-state, shared-skill, and CLI evidence.
 `prime`, status, and project-integration output use the app/project recommendation

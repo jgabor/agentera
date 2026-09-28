@@ -71,7 +71,7 @@ export function printUpgradeHelp(): string {
     "  --channel CHANNEL     Update channel: stable (2.x) or development (3.x npm)",
     "  --legacy-cleanup ID   Select one authority-declared retired leaf ID or historical alias",
     "  --reset-product-v1    Preview or authorize the bounded destructive product-v1 reset",
-    "  --authorization TOKEN Bind a shared-skill offer/conversion or product-v1 reset to its approved scope",
+    "  --authorization TOKEN Bind a shared-skill offer, focused cleanup offer or product-v1 reset to its approved scope",
     "  --only PHASE          Upgrade phase to include; may be repeated",
     "  --dry-run             Strict read-only preview; no files, locks, caches, native commands, or telemetry",
     "  --yes                 Explicitly approve the selected host, migration, cleanup or authorized reset effects",
@@ -103,10 +103,14 @@ export function printUpgradeHelp(): string {
     "  Explicit app/global cleanup scope reports declared leaves; eligible leaves apply independently.",
     `  Native resource cleanup preview: ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --dry-run")}`,
     `  Native resource cleanup apply:   ${preCutoverCommand("upgrade --legacy-cleanup RESOURCE_ID --yes")}`,
+    "  JSON doctor cleanup_offer lists only confirmed owned leaves. Ask its one question; Yes runs only its exact operations in order.",
+    "  Offered commands bind resource identities and bytes; changed evidence refuses. Re-diagnose remaining leaves after each operation.",
     "",
     "product-v1 reset (irreversible, no backup or restore):",
     `  Preview: ${preCutoverCommand("upgrade --reset-product-v1 --dry-run")}`,
-    `  Authorize: ${preCutoverCommand("upgrade --reset-product-v1 --yes --authorization TOKEN")}`,
+    "  Preview returns irreversible_loss, exact deletions/recreations, one question and the complete apply_command.",
+    "  Only explicit Yes runs that unchanged CLI-provided operation; No or silence makes no changes.",
+    "  Scope/source changes refuse. Retry the same approved operation after interruption; completion requires executor verification.",
   ].join("\n");
 }
 
@@ -145,6 +149,8 @@ export function printDoctorHelp(): string {
     "  --format FORMAT        JSON output (only json; default)",
     "",
     "Reports read-only app, project-state, shared-skill, and CLI evidence, plus retired-resource diagnostics.",
+    "JSON current_health separates current runtime and skill from cleanup_attention; cleanup_offer is a scoped leaf-only operation set.",
+    "The runtime package root is not durable user data. Aggregate status remains non-success while cleanup/manual-review blockers remain.",
   ].join("\n");
 }
 
@@ -458,10 +464,14 @@ export function printReportHelp(): string {
     "evidence, source, session, project, path, tool, or approval material. Terminal review metadata expires after 90 days through",
     "separate authenticated owner maintenance; reads never perform maintenance.",
     "",
+    "Profile generation metadata: agentera report profile-inputs",
+    "  Read configured destination, validity and bounded evidence status without content, acquisition or writes.",
     "Corpus extraction flags (report refresh with --consent local-history):",
     "  These flags deselect runtimes that would otherwise be included when their",
-    "  store exists. Full-mode profile runs a Coverage Audit first; skipping an",
-    "  available runtime flags the run until --accept-coverage-gap is passed.",
+    "  store exists. Profile Full reuses adequate bounded evidence, or refreshes",
+    "  explicitly selected sources within the same run after acquisition and",
+    "  non-glossary replacement approval. Skipped stores are not opened for history",
+    "  timestamps. Refresh flags skipped available runtimes until --accept-coverage-gap.",
     "  --no-codex            Skip codex even if ~/.codex/sessions exists",
     "  --no-opencode         Skip opencode even if the opencode.db store exists",
     "  --no-copilot          Skip github-copilot even if session-store.db exists",

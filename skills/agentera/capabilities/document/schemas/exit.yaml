@@ -4,8 +4,9 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       Documentation was written, updated, or audited successfully.
-      DOCS.md is current, and all drafted content received user
-      approval before writing.
+      Writes stayed within existing factual-work approval or one approval of
+      the disclosed patch set. Applied results were verified and affected
+      inventory records accurately reflect observed status through typed writers.
     exit_signal: complete
   2:
     id: E2
@@ -13,8 +14,8 @@ EXIT_CONDITIONS:
     description: >-
       Documentation tasks completed but gaps remain. Possible causes:
       some doc files could not be verified against code, coverage is
-      partial, or the audit found issues that were logged but not yet
-      fixed.
+      partial, inventory publication failed, or intent/unrelated findings were
+      surfaced separately without unapproved changes or automatic work creation.
     exit_signal: flagged
   3:
     id: E3

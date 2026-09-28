@@ -5,9 +5,12 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Documentation contract with conventions, artifact mapping, and
-      documentation index. Document writes and reads doc root, style
-      conventions, auto-generated doc tracking, project-local artifact mappings,
-      and a status index (current/stale/missing) for tracked docs. During
+      documentation inventory. Conventions and project-local mappings remain
+      separately approved singleton policy. Inventory entries use typed docs
+      list/get/create/update interfaces; update replaces a complete record by
+      bare ID, not a partial patch. Track current/stale/missing/intent/generated
+      from observed results, without directly editing entity files or adding
+      inventory to the mapping singleton. During
       closeout, Document consumes docs state through CLI `closeout_context`;
       raw reads are diagnostic-only for corruption or CLI-defect investigation.
   2:
@@ -52,8 +55,9 @@ ARTIFACTS:
     artifact: todo
     local_role: produces_and_consumes
     description: >-
-      Document writes to this when code diverges from docs (per DTC,
-      the code is wrong). Also reads for context during documentation work;
+      Document may write only when separately authorized to file work; a
+      documentation discrepancy does not itself authorize TODO creation.
+      Surface intent or unrelated findings separately instead. Reads for context;
       closeout blocker state is consumed through CLI `closeout_context` before
       any diagnostic-only raw TODO read.
   7:

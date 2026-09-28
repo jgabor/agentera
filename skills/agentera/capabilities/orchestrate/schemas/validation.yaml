@@ -22,6 +22,8 @@ VALIDATION:
       optional progress. A latest progress pointer alone is not task proof.
       Reuse applicable passing checks; missing, stale, unrelated or insufficient
       evidence never establishes PASS, and mandatory gates remain binding.
+      After interruption, an applicable persisted PASS permits only the remaining
+      completion transition without repeating verified work or evaluation.
     severity: critical
     checks:
       - "orchestrate instructions contains MUST NOT skip evaluation"
@@ -31,12 +33,16 @@ VALIDATION:
     id: V3
     rule: retry_budget_enforced
     description: >-
-      No task may be retried more than 2 times. After the second failure,
-      the task must be marked blocked. This rule verifies the retry budget
-      is stated in the instructions and safety rails.
+      The evaluation writer owns counts and blocks the task on its second
+      failed evaluation: one corrective retry after the first failure.
+      Interrupted writer calls replay the same attempt and result data;
+      genuinely new evaluations use new attempt IDs. Blocked history is
+      preserved and a user decision surfaced, never bypassed with more retries.
     severity: critical
     checks:
-      - "orchestrate instructions contains retry a task more than 2 times"
+      - "Second failed evaluation is writer-blocked, not an agent increment"
+      - "Persisted verdict resumes its eligible transition without another attempt"
+      - "Blocked tasks preserve history and require a decision before replacement work"
   4:
     id: V4
     rule: exit_marker_required

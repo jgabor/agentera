@@ -39,7 +39,8 @@ export function orchestrationContext(capability: string | null, plan: JsonObject
     if (reasons.length > 0) blocked.push({ ...orchestrationTaskSummary(task), blocked_reasons: reasons });
     else dependencyReady.push(orchestrationTaskSummary(task));
   }
-  const selected = dependencyReady.length > 0 ? dependencyReady[0] : null;
+  // Finish an eligible persisted evaluation before dispatching new work.
+  const selected = dependencyReady.find((task) => (task.evaluation_state as JsonObject | null)?.last_verdict === "pass") ?? dependencyReady.find((task) => task.status === "in_progress") ?? dependencyReady[0] ?? null;
   const planTasks = entityListFamily("plan_tasks");
   const queueCommand = plan.id ? preCutoverCommand(`state ${planTasks.commandTokens.join(" ")} list ${String(plan.id)} --limit 100`) : null;
   const queueRetrieval = queueCommand ? { list: queueCommand, restart: queueCommand, get: preCutoverCommandFromBare(planTasks.get) } : null;

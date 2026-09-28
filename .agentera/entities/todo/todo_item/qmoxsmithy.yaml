@@ -1,0 +1,27 @@
+id: qmoxsmithy
+artifact: todo
+record:
+  kind: task
+  target_version: null
+  title: Provide an ordinary-user glossary review and save workflow
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Assess whether the required external authenticated signer fits the supported one-file-skill plus CLI product before adding integration machinery.
+    - Establish whether a supported host already provides enrollment and signed user-action capture; distinguish a missing integration from an unsuitable baseline requirement.
+    - Let users review a bounded set of meanings with save, edit-and-save, reject, or later choices and receive a clear saved or deferred result without handling keys, receipts, or publication commands.
+    - Preserve meaning-specific user decisions, accepted glossary content, privacy, scope binding, and retry safety; generic consent must not substitute for semantic approval.
+    - Research anchors are packages/cli/README.md:235-242, personalGlossaryReviewRecordStorage.ts:666-695, personalGlossaryReviewRecords.ts:430-431, and personalGlossaryReviewRecords CLI recovery at :770-773. External-host support remains unverified; do not presume a new plugin, authentication service, or registry is necessary.
+  acceptance:
+    - GIVEN the supported baseline host and CLI WHEN the review workflow is designed THEN the trust boundary and an end-to-end user approval path are documented without an unexplained external signing prerequisite.
+    - GIVEN a bounded set of proposed meanings WHEN a user saves, corrects, rejects, or defers each meaning THEN the resulting saved or deferred state is explicit and unrelated meanings remain unchanged.
+    - GIVEN unavailable approval evidence or an interrupted operation WHEN the workflow cannot safely finish THEN it preserves existing data and provides actionable recovery without manufacturing user approval.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[task] Provide an ordinary-user glossary review and save workflow"
+      severity: normal
+      status: open
+      order: 28

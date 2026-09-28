@@ -63,7 +63,7 @@ export interface HostSkillLifecycleArgs {
 }
 
 export function runHostSkillLifecycle(args: HostSkillLifecycleArgs, options: LifecycleApplyOptions = {}) {
-  if (args.authorization?.startsWith("one-file-sha256:")) return runOneFileHostSkillLifecycle(args, options);
+  if (args.authorization?.startsWith("one-file-sha256:") || args.authorization?.startsWith("fresh-one-file-sha256:")) return runOneFileHostSkillLifecycle(args, options);
   const target = hostSkillPath(args.home);
   const observed = observeLifecyclePath(target, [path.resolve(args.home)]);
   const legacy = !observed.unsafeReason && (observed.kind === "symlink" || (observed.kind === "directory" && fs.readdirSync(target).some((name) => name !== "SKILL.md")));
@@ -92,9 +92,10 @@ export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, optio
   });
   try {
     const source = loadHostSkillSource(args.sourceRoot);
-    // Bind startup approval to one-file delivery, the selected home/bookkeeping
-    // scope and source. Retries retain the same scope; they cannot convert a tree.
-    authorization = `one-file-sha256:${createHash("sha256")
+    // Fresh approval cannot adopt a destination that appeared after the offer.
+    // Recorded publication identities still permit retries of our own creates.
+    const fresh = args.authorization?.startsWith("fresh-one-file-sha256:") || (!args.authorization && !args.apply && observeLifecyclePath(target, [home]).kind === "missing");
+    authorization = `${fresh ? "fresh-one-file" : "one-file"}-sha256:${createHash("sha256")
       .update(
         JSON.stringify({
           home,
@@ -127,13 +128,21 @@ export function runOneFileHostSkillLifecycle(args: HostSkillLifecycleArgs, optio
         if (kind !== "missing" && journal.ledger.records.some((entry) => entry.resourceId === resourceId && entry.status === "pending_create" && !entry.identity))
           throw new Error(`${resourceId} exists but its interrupted create has no recorded publication identity; preserve the destination and operation journal without broadening approval.`);
       };
+      const requireFreshIdentity = (resourceId: string, observed: ReturnType<typeof observeLifecyclePath>) => {
+        if (!fresh || observed.kind === "missing") return;
+        const record = journal.ledger.records.find((entry) => entry.resourceId === resourceId);
+        if (!record?.identity || record.destination !== (resourceId === HOST_SKILL_DIRECTORY_ID ? target : file) || record.identity.device !== observed.identity?.device || record.identity.inode !== observed.identity?.inode || (resourceId === HOST_SKILL_FILE_ID && record.fingerprint !== source.fingerprint))
+          throw new Error("Fresh-install destination appeared or changed after approval; preserve it and request a new diagnosis.");
+      };
       const directory = observeLifecyclePath(target, [home]);
       if (directory.unsafeReason) throw new Error(directory.unsafeReason);
+      requireFreshIdentity(HOST_SKILL_DIRECTORY_ID, directory);
       requireCreatedIdentity(HOST_SKILL_DIRECTORY_ID, directory.kind);
       if (!["missing", "directory"].includes(directory.kind)) throw new Error("Legacy link or wrong-type host destination is preserved; conversion is not supported by this route.");
       if (directory.kind === "directory" && fs.readdirSync(target).some((name) => name !== "SKILL.md")) throw new Error("Host directory has extra entries; the approved one-file operation cannot silently become whole-directory replacement.");
       const observedFile = observeLifecyclePath(file, [home]);
       if (observedFile.unsafeReason) throw new Error(observedFile.unsafeReason);
+      requireFreshIdentity(HOST_SKILL_FILE_ID, observedFile);
       requireCreatedIdentity(HOST_SKILL_FILE_ID, observedFile.kind);
       if (observedFile.kind === "file" && fs.lstatSync(file).nlink !== 1) throw new Error("Hard-linked bootstrap is preserved; whole-file ownership is unsafe.");
       const record = journal.ledger.records.find((entry) => entry.resourceId === HOST_SKILL_FILE_ID);

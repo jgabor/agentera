@@ -1,0 +1,23 @@
+id: idzluaimgc
+artifact: plan
+record:
+  name: Complete a consented profile refresh in one journey
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN inadequate evidence WHEN the user explicitly approves selected history sources and generated-profile replacement THEN Agentera refreshes evidence and regenerates the profile without a restart handoff.
+    - GIVEN sufficient valid evidence WHEN regeneration is requested THEN Agentera reuses it without unnecessary history acquisition.
+    - GIVEN an existing profile WHEN replacement is proposed and performed THEN Agentera discloses the non-glossary replacement, retains the prior copy, and preserves accepted glossary meanings. Meaning-specific review remains separate under existing rules; this task does not implement that workflow.
+    - GIVEN partial completion or interruption WHEN resuming THEN Agentera reuses valid completed work where possible, reports what remains, and keeps any reacquisition within the approved sources. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: idzluaimgc-coordinator-resume-1
+      source: "Coordinator inspected newly collected post-pause evidence: 92 Profile tests,4 coverage tests,typecheck/currentbuild/Profile contract and12 isolated built-CLI calls passed. Consent/synthesis/base publication explicitly scripted host fixtures. Original tmp logs unavailable, not claimed preserved. New index /tmp/opencode/gebglunpxa-evidence/task-idzluaimgc-resume/INDEX.md covers all4 criteria. Final integration and independent audit pending."
+      recorded_at: 2026-09-28 15:24
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,21 @@
+id: ktdytdofmt
+artifact: health
+record:
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable within this delivery; no codebase-wide trend assessed
+  grades:
+    artifact_freshness: A
+  dimensions_detail:
+    - name: artifact_freshness
+      grade: A
+      summary: "Plan gebglunpxa terminal tasks lccuvhnxep, tftwkfbjrh, bdgrffzbwj, idzluaimgc, jitkyykykx, uwcuzebbwq, and rfrlgrygnq passed independent audit ses_f16e52a24ffep3nQU708n5TKzC. Bootstrap, capability instructions, UPGRADE.md, docs/cli-coverage-contract.md, schemas, help, and CHANGELOG.md match current delivery. Source/build identities and eleven development gates were verified; no scoped staleness findings remain. Evidence: /tmp/opencode/gebglunpxa-evidence/integration/INDEX.md. Host decisions and synthesis are scripted fixtures, not live-model evidence. This is limited artifact-freshness closeout, not general codebase health or publication approval. Glossary-review TODO qmoxsmithy remains deferred."
+      findings:
+        []
+  date: 2026-09-28
+  appended_at: 2026-09-28T17:46:50.016Z

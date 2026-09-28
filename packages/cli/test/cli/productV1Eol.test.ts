@@ -12,6 +12,7 @@ import { loadNativeResourceCleanupContract } from "../../src/runtime/nativeResou
 import { applyProductV1Reset, authorizeProductV1Reset, previewProductV1Reset } from "../../src/upgrade/productV1Reset.js";
 import { classifyProjectState } from "../../src/state/stateMode.js";
 import { applyAppContentRefresh } from "../../src/upgrade/appContentRefresh.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 const roots: string[] = [];
 
@@ -199,17 +200,25 @@ describe("product v1 EOL execution gate", () => {
       expect(preview.deletions.every((item: { targets: unknown[] }) => item.targets.length > 0)).toBe(true);
       expect(preview.irreversible_loss).toHaveLength(4);
       expect(preview.authorization).toMatch(/^sha256:[0-9a-f]{64}$/);
+      expect(preview).toMatchObject({
+        approval: "explicit_yes_only",
+        question: expect.stringContaining("no backup or undo"),
+        apply_command: expect.stringContaining(`--project ${root}`),
+      });
+      expect(preview.apply_command).toContain(`--home ${home} --install-root ${install} --yes --authorization ${preview.authorization} --format json`);
+      expect(preview.apply_command).not.toContain("--channel");
       expect([snapshot(root), snapshot(home), snapshot(install), snapshot(profile)]).toEqual(before);
+      // Host No/silence does not invoke apply; preview alone never changes state.
 
       fs.writeFileSync(path.join(root, ".agentera", "new-state.yaml"), "changed: true\n");
       const changed = snapshot(root);
-      const stale = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--yes", "--authorization", preview.authorization, "--format", "json"]);
+      const stale = run(root, shellCommandArgs(preview.apply_command.replace(/^npx -y agentera@next /, "agentera ")));
       expect(stale.rc).toBe(2);
       expect(JSON.parse(stale.out).error.message).toContain("scope changed after preview");
       expect(snapshot(root)).toBe(changed);
 
       const freshPreview = JSON.parse(run(root, args).out);
-      const authorized = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--yes", "--authorization", freshPreview.authorization, "--format", "json"]);
+      const authorized = run(root, shellCommandArgs(freshPreview.apply_command.replace(/^npx -y agentera@next /, "agentera ")));
       expect(authorized.rc).toBe(0);
       expect(JSON.parse(authorized.out)).toMatchObject({
         status: "complete",
@@ -249,6 +258,43 @@ describe("product v1 EOL execution gate", () => {
     expect(alias.rc).toBe(2);
     expect(JSON.parse(alias.out).error.message).toContain("must not be a symbolic link");
     expect(fs.readFileSync(path.join(external, "keep.txt"), "utf8")).toBe("external\n");
+  });
+
+  it("refuses a changed reset destination and unrelated upgrade/cleanup flags under the old approval", () => {
+    const root = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-home-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
+    const other = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-other-"));
+    roots.push(home, install, other);
+    const preview = JSON.parse(run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--format", "json"]).out);
+    const offered = shellCommandArgs(preview.apply_command.replace(/^npx -y agentera@next /, "agentera "));
+    const before = [snapshot(root), snapshot(home), snapshot(install), snapshot(other)];
+    const changed = run(
+      root,
+      offered.map((arg: string) => (arg === install ? other : arg)),
+    );
+    expect(changed.rc).toBe(2);
+    expect(JSON.parse(changed.out).error.message).toContain("scope changed");
+    for (const flag of [["--channel", "development"], ["--legacy-cleanup", "codex.agent-descriptor.build"], ["--only", "cleanup"], ["--force"]]) {
+      const denied = run(root, [...offered, ...flag]);
+      expect(denied.rc).toBe(2);
+      expect(JSON.parse(denied.out).error.message).toContain("without other upgrade modes");
+    }
+    expect([snapshot(root), snapshot(home), snapshot(install), snapshot(other)]).toEqual(before);
+  });
+
+  it.each(["v2", "v3"])("does not offer a product-v1 reset for %s project state", (generation) => {
+    const root = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-home-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
+    roots.push(home, install);
+    fs.rmSync(path.join(root, ".agentera/PROGRESS.md"));
+    fs.writeFileSync(path.join(root, ".agentera", generation === "v3" ? "state-mode.yaml" : "progress.yaml"), generation === "v3" ? "schemaVersion: agentera.stateMode.v1\nmode: entities\n" : "schemaVersion: agentera.progress.v2\ncycles: []\n");
+    const before = [snapshot(root), snapshot(home), snapshot(install)];
+    const result = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--format", "json"]);
+    expect(result.rc).toBe(2);
+    expect(JSON.parse(result.out).error.message).toContain("requires declared product-v1 generation evidence");
+    expect([snapshot(root), snapshot(home), snapshot(install)]).toEqual(before);
   });
 
   it("authorizes only Agentera selectors inside shared Codex configuration", () => {

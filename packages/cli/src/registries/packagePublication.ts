@@ -91,15 +91,15 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
       sha256: "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681",
     },
     package: {
-      count: 78,
-      sha256: "1aea805b38d67c31f6e7517a12d5435493dbc9ff843cdde54741cb4159fc62e3",
+      count: 79,
+      sha256: "9e175555111092f3686ebca3b166814a07233929c270c12923a0b241398a68c2",
     },
     bootstrap: {
       count: 34,
       sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e",
     },
   },
-  total: { count: 316, sha256: "db2297238b3936eb03028054269469e1a897a50da554347768962c25fe8160f5" },
+  total: { count: 317, sha256: "7bc6b416268ad86e864f56df6783695c0ab86dac764d660a3bfe84e5ce546bcb" },
 });
 
 /** Each dimension names the production contract it observes independently. */

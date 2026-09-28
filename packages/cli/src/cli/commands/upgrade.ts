@@ -3,12 +3,14 @@ import { renderVerifySummary, verifyOneWayUpgrade, verifyUpgrade, type OneWayUpg
 import { detectStateMode } from "../../state/stateMode.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
-import { applyProductV1Reset, previewProductV1Reset } from "../../upgrade/productV1Reset.js";
+import { applyProductV1Reset, previewProductV1Reset, type ProductV1ResetPreview } from "../../upgrade/productV1Reset.js";
 import os from "node:os";
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { runHostSkillLifecycle } from "../../setup/hostSkillLifecycle.js";
 import { emitInvalidInput } from "../errors.js";
+import { diagnoseRetiredResources } from "../../upgrade/retiredResourceDiagnostics.js";
+import { commandText } from "../../upgrade/upgradeCommands.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -49,6 +51,7 @@ function toOrchestratorArgs(args: UpgradeArgs): UpgradeOrchestratorArgs {
     force: args.force ?? false,
     runtime: args.runtime ?? null,
     legacyCleanup: args.legacyCleanup ?? null,
+    cleanupAuthorization: args.legacyCleanup ? (args.authorization ?? null) : null,
   };
 }
 
@@ -108,12 +111,12 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     out(args.format === "text" ? `${result.status}: ${result.reason}\nPath: ${result.path}\n${"authorization" in result ? JSON.stringify(result, null, 2) + "\n" : ""}Recovery: ${result.recovery}\n` : JSON.stringify(result, null, 2) + "\n");
     return result.status === "non_success" ? 1 : 0;
   }
-  if (args.authorization && !args.productV1Reset)
+  if (args.authorization && !args.productV1Reset && !args.legacyCleanup)
     return emitInvalidInput(io, {
       format: args.format === "text" ? "text" : "json",
       body: {
         class: "invalid_request",
-        message: "--authorization is scoped to --shared-skill conversion or --reset-product-v1; it does not authorize app/project migration or cleanup.",
+        message: "--authorization is scoped to --shared-skill, --reset-product-v1 or a focused --legacy-cleanup offer; it does not authorize app/project migration.",
       },
     });
   const orchestratorArgs = toOrchestratorArgs(args);
@@ -121,7 +124,10 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
     const result = args.yes ? applyProductV1Reset(options, args.authorization ?? "") : previewProductV1Reset(options);
-    if (args.format === "json") out(JSON.stringify(result, null, 2) + "\n");
+    const preview = !args.yes ? (result as ProductV1ResetPreview) : null;
+    const applyCommand = preview ? commandText(["npx", "-y", "agentera@next", "upgrade", "--reset-product-v1", "--project", preview.roots.project!, "--home", preview.roots.runtime_home!, "--install-root", preview.roots.install_root!, "--yes", "--authorization", preview.authorization, "--format", "json"]) : null;
+    const question = "This permanently deletes every listed reset target, including any current data within those scopes, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?";
+    if (args.format === "json") out(JSON.stringify(preview ? { ...preview, approval: "explicit_yes_only", question, apply_command: applyCommand } : result, null, 2) + "\n");
     else if ("deletions" in result) {
       const lines = ["Product-v1 reset preview (no mutation)", `Authorization: ${result.authorization}`, "Roots:"];
       for (const [name, root] of Object.entries(result.roots)) lines.push(`  ${name}: ${root}`);
@@ -134,6 +140,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       lines.push("Recreations:");
       for (const item of result.recreations) for (const target of item.targets) lines.push(`  ${item.id}: ${target.declared} under ${item.root}`);
       lines.push("Irreversible loss:", ...result.irreversible_loss.map((loss) => `  ${loss}`));
+      lines.push("", `Question: ${question}`, `Apply only after explicit Yes: ${applyCommand}`);
       out(lines.join("\n") + "\n");
     } else out(`Product-v1 reset complete: ${result.authorization}\nFresh v3 state initialized.\n`);
     return 0;
@@ -244,7 +251,34 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   if ((args.format ?? "text") === "json") {
-    out(JSON.stringify(sortKeysDeep(plan), null, 2) + "\n");
+    let remainingCleanup: Record<string, unknown> | undefined;
+    if (orchestratorArgs.legacyCleanup && orchestratorArgs.cleanupAuthorization && orchestratorArgs.yes) {
+      const recoveryCommand = commandText(["npx", "-y", "agentera@next", "doctor", "--home", plan.home, "--project", plan.project, "--install-root", plan.appHome, "--format", "json"]);
+      try {
+        const diagnosis = diagnoseRetiredResources({
+          home: plan.home,
+          project: plan.project,
+          installRoot: plan.appHome,
+          sourceRoot: resolveSourceRootStrict(),
+        });
+        remainingCleanup = {
+          status: diagnosis.status,
+          resources: diagnosis.resources.map((resource) => ({
+            id: resource.id,
+            evidence: resource.evidence,
+          })),
+          omitted_resource_count: diagnosis.omittedResourceCount,
+          recovery_command: recoveryCommand,
+        };
+      } catch (error) {
+        remainingCleanup = {
+          status: "unavailable",
+          reason: (error as Error).message,
+          recovery_command: recoveryCommand,
+        };
+      }
+    }
+    out(JSON.stringify(sortKeysDeep(remainingCleanup ? { ...plan, remaining_cleanup: remainingCleanup } : plan), null, 2) + "\n");
   } else {
     out(renderUpgradePlan(plan));
   }

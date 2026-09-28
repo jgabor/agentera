@@ -23,6 +23,30 @@ When competing open plans block startup, do not infer predecessor or successor r
   .replace("task N · step M/5", "task ID · step M/5")
   .replace("N is the task number from the selected orchestration context task.", "ID is the bare ID from the selected orchestration context task.")
   .replace(
+    "### Step 1: Select task",
+    "### Step 1: Select task\n\nResume from recorded task status, `evaluation_state`, evidence and `retry_state`, not conversation counters. Startup prioritizes dependency-ready persisted PASS, then in-progress work. Use `agentera state plan tasks get --id ID` when summaries omit needed evidence. If its persisted PASS still covers the same task, acceptance, inputs and environment, go directly to Step 4's completion transition: do not re-delegate, re-evaluate or record a new attempt. Missing or invalidated evidence cannot complete the task; resolve only the cited gap under existing approval. A recorded first FAIL permits one corrective attempt; a second FAIL is writer-blocked and requires the decision below, not another retry.",
+  )
+  .replace(
+    "### Step 2: Delegate",
+    "### Step 2: Delegate\n\nProceed only within execution approval for the final plan. Save-and-execute approval already covers this unchanged handoff; do not ask again. Planning-only approval or material changes require execution approval. Mark the selected pending task in_progress through the typed writer before dispatch; never redispatch work awaiting only an eligible completion transition.",
+  )
+  .replace(
+    /### Step 4: Resolve[\s\S]*?### Step 5: Log and loop/,
+    `### Step 4: Resolve
+
+For a new evaluator verdict, persist it through \`agentera state plan record-evaluation --id ID --attempt-id ATTEMPT --verdict {pass,fail} --provenance SOURCE\`; FAIL also needs \`--failure-evidence\`. The writer owns all counts and blocking. If publication was interrupted, retry that exact attempt and result data, not a new evaluation. An already persisted verdict needs no second write.
+
+**Persisted PASS with applicable evidence**: run \`agentera state plan set-status --id ID --status complete\` if not already complete, then proceed to Step 5. After interruption, finish only this eligible transition; reuse verified work and evidence. A PASS label alone cannot substitute for missing or stale evidence.
+
+**Persisted first FAIL**: use the writer's failure evidence and provenance to re-delegate only the necessary correction to the same capability, then return to Step 3. A genuinely new evaluation gets a new stable attempt ID; never increment counts yourself.
+
+**Persisted second FAIL / blocked**: preserve status, evaluation counts, latest failure evidence and provenance. Do not reopen, reset, invent an extra attempt or retry around the writer. Surface the failure and required user decision: revise the plan, authorize replacement work, or leave it blocked. Replanning or replacement is not implicit consent. Other independently ready work may continue only within existing execution approval; blocked dependencies remain blocked.
+
+### Step 5: Log and loop`,
+  )
+  .replace("MUST NOT retry a task more than 2 times. After the second failure, mark blocked and move on.", "MUST NOT override writer-owned evaluation counts or blocking. The second failed evaluation blocks the task; preserve its history and surface the required decision, not another retry.")
+  .replace("Each task gets max 2 retries before being blocked.", "The writer blocks a task on its second failed evaluation (one corrective retry after the first failure).")
+  .replace(
     "- **No plan in returned state**: bootstrap mode. Delegate to research for vision-gap analysis, then plan for plan creation.",
     "- **No plan in returned state**: bootstrap only when plan creation is authorized; otherwise report waiting. Research first only for a concrete knowledge gap or project requirement, then delegate Plan.",
   )
@@ -84,5 +108,5 @@ If using \`progress_verification\`, establish that it belongs to this task and s
 
 ## Evaluation Retry State
 
-After every evaluator verdict, persist it with \`agentera state plan record-evaluation --id ID --attempt-id ATTEMPT --verdict {pass,fail} --provenance SOURCE\` before marking the task complete. A failed verdict also requires \`--failure-evidence\`. Reuse the same stable attempt ID after an interrupted retry; the writer owns attempt counts, retains the latest failure evidence and provenance, and blocks the task after its second failed evaluation. The writer's one terminal exception is recovery for persisted out-of-order replacement state: while the plan remains open, an unevaluated complete task named in a same-plan superseded predecessor's \`superseded_by\` may receive its first PASS only. This is not the normal workflow. Do not reconstruct retry state from conversation memory or modify decision satisfaction.
+Step 4 owns normal evaluation publication and resumption. Replay only the same interrupted writer operation with identical result data; a genuinely new evaluation uses a new attempt ID. The writer's one terminal exception is recovery for persisted out-of-order replacement state: while the plan remains open, an unevaluated complete task named in a same-plan superseded predecessor's \`superseded_by\` may receive its first PASS only. This is not the normal workflow. Do not reconstruct retry state from conversation memory or modify decision satisfaction.
 `;

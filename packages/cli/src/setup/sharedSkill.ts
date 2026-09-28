@@ -3,6 +3,7 @@ import path from "node:path";
 
 import type { JsonObject } from "../core/jsonValue.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolveDoctorInstallRoot } from "../upgrade/appModel.js";
 import { commandText } from "../upgrade/upgradeCommands.js";
 import { observeLifecyclePath, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
@@ -57,12 +58,16 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
       });
       ownership = preview.status === "non_success" ? "blocked" : shape === "missing" ? "absent" : "owned";
       if (ownership === "blocked") details.push(preview.reason);
-      if (shape !== "missing" && preview.status === "pending" && "authorization" in preview && typeof preview.authorization === "string") {
+      if (preview.status === "pending" && "authorization" in preview && typeof preview.authorization === "string") {
+        // Prime does not disclose private Profile roots. The unchanged token binds
+        // the resolved journal root even when the apply command selects it from env.
+        const profileRoot = resolveProfileDirOverride(options.env ?? process.env);
+        const includeAppHome = Boolean(options.appHome) || !profileRoot || path.resolve(profileRoot) !== path.resolve(appHome);
         if (secureLifecycleRemovalAvailable())
           upgradeOffer = {
-            question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
+            question: shape === "missing" ? "Agentera’s shared skill is missing. Install it now? Your project files will not change." : "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
             approval: "explicit_yes_only",
-            apply_command: commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", home, "--install-root", appHome, "--yes", "--authorization", preview.authorization]),
+            apply_command: commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", home, ...(includeAppHome ? ["--install-root", appHome] : []), "--yes", "--authorization", preview.authorization]),
           };
         else details.push("Shared-skill updates require Linux safe publication; no update was offered or applied.");
       }

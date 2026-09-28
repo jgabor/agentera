@@ -1,0 +1,13 @@
+id: nfhfzlqsne
+artifact: progress
+record:
+  timestamp: 2026-09-28 23:59
+  type: fix
+  phase: build
+  what: Fixed cleanup-offer environment propagation for custom OpenCode and XDG config roots.
+  context:
+    intent: Complete the scoped follow-up to plan gebglunpxa without reopening workflows.
+    constraints: Preserve ownership, stale-authorization protections, unrelated changes, and deferred glossary review.
+  verified: "46 focused tests, 32 current-built CLI calls, and a fresh 11/11 development run passed. Custom-only/combined configurations succeed unchanged; changed roots or bytes refuse. Independent review ses_f15fc2963ffeSW4Psb2ZOqqB3D: PASS. New evidence: /tmp/opencode/gebglunpxa-evidence/cleanup-env-fix/INDEX.md. Earlier qualification does not verify this fix."
+  next: Commit-ready after state checks; no commit, push, or live cleanup performed.
+  publication_order: 398

@@ -41,12 +41,22 @@ Advice, clarification, tension, and handoff intent are transient and never write
   .replaceAll("--number N", "--id ID")
   .replaceAll("--task N", "--id ID")
   .replace(
+    "### Step 4: Validate and publish",
+    "### Step 4: Validate and publish\n\nPresent the final reviewed plan for meaningful approval: save only or save and execute (Build for one task; Orchestrate for multiple). Prior intent cannot approve unseen bytes; a material scope, constraint or acceptance change requires renewed approval. No consent fields in plan state.",
+  )
+  .replace(
+    "- **Single-task plan**: suggest ⧉ build to execute and wait for confirmation.\n- **Full plan**: suggest ⎈ orchestrate to execute the entire plan and wait for confirmation.",
+    "After the writer confirms publication, carry explicit save-and-execute approval forward without another confirmation: start ⧉ build for one task or ⎈ orchestrate for multiple via `agentera prime --context build` or `agentera prime --context orchestrate`. Delegated Plan returns this handoff to its coordinator. Planning-only approval saves the plan and suggests the appropriate execution capability without starting it. Silence, failed publication or changed scope forbids execution. Git, global installation and history consent remain separate.",
+  )
+  .replace("Plan MUST NOT invoke build, optimize, or orchestrate without the user's explicit consent. Suggest, don't dispatch.", "Plan MUST NOT invoke execution without explicit consent for the final plan. Save-and-execute approval satisfies the handoff gate for that unchanged plan; otherwise suggest and wait.")
+  .replace("handoff suggested.", "approved execution started or a planning-only handoff suggested.")
+  .replace(
     "Optionally run `agentera check lint --artifact plan --file PATH --strict` for early draft feedback. The typed writer is the sole publication gate: it validates strict prose lint and schema against the final candidate before publishing.\n\nSave the approved complete plan document to temporary YAML/JSON input and run `agentera state plan create --input PATH` (or `--input -`). The writer validates the final bytes, archives a complete predecessor, injects lineage, and publishes to the docs-mapped path. Replacing an incomplete predecessor requires the approved `--force` override.",
-    "After approval, serialize the complete plan once to temporary YAML/JSON input. Normally run exactly one `agentera state plan create --input PATH` call; do not run standalone lint or dry-run first because the writer validates strict prose lint and schema on the final bytes. Only when the user explicitly requests preview, run that command with `--dry-run`, then publish from the same unchanged PATH. The writer archives a complete predecessor, injects lineage, and publishes to the docs-mapped path. Replacing an incomplete predecessor requires the approved `--force` override.",
+    "After approval, serialize the complete plan once to temporary YAML/JSON input. Call `agentera state plan create --input PATH` once; the writer validates strict prose lint and schema on final bytes. Only for an explicitly requested preview, use `--dry-run`, then publish the same unchanged PATH. The writer archives a complete predecessor and records lineage. Replacing an incomplete predecessor requires approved `--force`.",
   )
   .replace(
     "Archive completed plan entities with `agentera state plan archive`.",
-    "Archive completed plan entities with `agentera state plan archive`. With exactly one unfinished canonical predecessor, `agentera state plan create --force --input PATH` archives it unchanged, publishes the successor, and records its bare ID in the writer-owned `previous_plan_archived` field. `agentera state plan archive --force` likewise preserves unfinished task, evaluation, and completion history; multiple implicit open candidates reject before effects. When competing open plans block selection, do not infer roles from list order: use `agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID` only after canonical evidence establishes the complete recovery pair.",
+    "Archive completed plans with `agentera state plan archive`. `agentera state plan create --force --input PATH` archives one unfinished predecessor unchanged, publishes the successor, and records its ID in `previous_plan_archived`. `agentera state plan archive --force` preserves unfinished tasks, evaluations and completion history. Multiple implicit open plans reject; `agentera state plan replace --predecessor PREDECESSOR_ID --successor SUCCESSOR_ID` requires canonical evidence of both roles, not list order.",
   )
   .replace(
     "served via `planning_context.profile.path` — read directly when `status: loaded`; if missing or stale, proceed without persona grounding",

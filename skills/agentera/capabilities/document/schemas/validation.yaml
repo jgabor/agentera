@@ -4,24 +4,31 @@ VALIDATION:
     rule: user_approval_required
     description: >-
       Documentation MUST NOT be written or modified without explicit user
-      approval. Present drafts and get confirmation before writing.
-      This applies to all modes: intent-first, explore-and-generate,
-      update-and-verify, and first-run survey.
+      approval. Apply protocol OPERATING_RULES: existing authorization for
+      routine factual work covers one bounded in-scope patch set without
+      per-finding questions or another draft confirmation. If approval is
+      absent, disclose the factual changes, sources, paths, inventory updates
+      and exclusions and obtain one explicit approval for that set. No, silence,
+      planning-only requests or a changed disclosed set do not permit writes.
+      New intent, policy and conventions still require their own approval.
     severity: critical
     checks:
-      - "Draft presented to user before write"
-      - "Explicit approval received"
+      - "Existing factual-work approval carries through its bounded patch set"
+      - "One disclosed set is approved when permission is still needed"
+      - "No, silence, planning-only and changed-set cases do not infer consent"
   2:
     id: V2
     rule: dtc_code_wrong
     description: >-
-      Per DTC principle, if code diverges from documentation, the code
-      is wrong. Documentation MUST NOT be updated to match broken code.
-      The divergence MUST be documented as an issue in TODO.md instead.
+      Documentation MUST NOT rewrite intended behavior or product policy
+      merely to match broken code. Distinguish verified factual drift from
+      uncertain intent. Surface policy, product-intent and unrelated findings
+      separately; do not silently change them or create TODOs or other work
+      without separate authorization.
     severity: critical
     checks:
       - "Docs not updated to match broken code"
-      - "Divergences filed to TODO.md"
+      - "Intent and unrelated findings surfaced without automatic work creation"
   3:
     id: V3
     rule: evergreen_prose
@@ -47,10 +54,16 @@ VALIDATION:
     rule: verification_required
     description: >-
       In update-and-verify mode, every doc claim MUST be checked against
-      code. The verification step MUST NOT be skipped.
+      current authoritative evidence without guessing public product promises.
+      Check the applied patch set and report exact results and gaps. Use existing
+      typed docs writers and read back affected inventory records; do not mark
+      unverified claims current or invent project-wide audit/coverage metadata.
+      Inventory writers do not themselves edit or verify referenced documents.
     severity: critical
     checks:
       - "All doc claims verified against code in update mode"
+      - "Applied results and inventory status agree with observed verification"
+      - "Inventory uses complete records through typed create/update, not singleton edits"
   6:
     id: V6
     rule: read_before_generate

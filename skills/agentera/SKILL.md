@@ -71,20 +71,19 @@ downstream capability not already authorized. First-interaction status renders
 the brief and a free-form continuation prompt, not a native question menu, unless
 the user requests bounded choices or a state-changing Proceed/Cancel handoff.
 
-## Shared-skill update offer
+## Shared-skill installation or update offer
 
 Ordinary `prime` and JSON `doctor` may return `shared_skill.upgrade_offer`.
-When present, ask its `question` verbatim as one plain Yes/No confirmation:
+Ask its `question` verbatim once; a missing skill asks about installation, while
+an outdated installation asks:
 “Agentera’s installed skill needs an update. Update it now? Your project files will not change.”
-Only an explicit Yes authorizes its exact `apply_command`, subject to host
-permissions. No, silence or an absent offer means no update and no apply call.
-Do not ask another question about paths, tokens, retention or file inventories;
-the CLI supplies and checks the operation. Never invent or edit its command,
-refresh its token under old approval, or substitute a manual repair.
+Only explicit Yes runs the exact `apply_command` under host permissions.
+No, silence or an absent offer means no installation or update and no apply call.
+Do not ask about paths/tokens or change the command or approval scope. The CLI
+handles retention, checks and recovery; never invent a manual repair.
 Require exit 0 and JSON `status` of `success` or `noop` before reporting completion;
-the CLI verifies the resulting installation. On failure, report its bounded
-reason without claiming success or broadening consent. A current installation
-has no offer and needs no question. Project permission alone is not approval.
+on failure report the reason without broadening consent. Current means no offer;
+project permission alone is not home approval.
 
 ## Read the governing details
 
@@ -109,15 +108,12 @@ Discover only what the current work needs; follow the returned exact actions:
 | Validation and verification | `npx -y agentera@next check explain` |
 | CLI versus native tools | `npx -y agentera@next prime --guidance` |
 
-Follow `guidance_details`, selected `--section` actions and `next_command` until
-all applicable parts are read. Static detail uses `agentera.guidanceDetail.v1`;
-`completeness` describes that selection, not the entire contract. An index is
-navigation, not complete guidance. Pages are bounded to 32,768 UTF-8 bytes.
-Use returned selectors and quoted commands, not inferred file paths or invented
-verbs. Static details work without a project and do not start a capability.
-Authority paths in responses are provenance only, never required reads from an
-installed skill, runtime-data directory or checkout. Profile's format is in its
-served instructions; glossary primitives come from `schema --artifact glossary`.
+Follow `guidance_details`, selected `--section` and `next_command` to completion.
+`completeness` covers that selection only; an index is not full guidance. Static
+detail is bounded to 32,768 UTF-8 bytes and never starts a capability. Use
+returned selectors/quoted commands, not invented paths or verbs. Authority paths
+are provenance, not required companion reads. Profile format and glossary
+primitives come from its served instructions and `schema --artifact glossary`.
 
 Follow the served operating rules and human-reference rules: reuse applicable
 evidence, probe consequential unknowns and stop at accepted scope. Use meaningful
@@ -150,11 +146,15 @@ read checkout/installed companions as fallback, or change the installation.
   provides current applicability and preview/apply grammar, not consent to apply.
 - For host bootstrap updates, follow the shared-skill offer above. The CLI handles
   preview, approval binding, retained data and recovery; never prune a symlink target.
+- For an eligible product-v1 reset, review exact deletions, recreations and
+  irreversible loss: no backup or undo. Ask the preview's question once. Only
+  explicit Yes runs its unchanged `apply_command`; No/silence does nothing.
+  Retry the same approved operation after interruption; only verified `complete`
+  is success. Reset approval never covers ordinary update or cleanup.
 
-Read-only recovery needs no mutation approval, but remains subject to host access
-permissions. Installation, migration, reset, cleanup, history acquisition and
-other writes require their explicit approvals. Never turn a recovery suggestion
-into an automatic apply, history refresh or host installation change.
+Read-only recovery needs no mutation approval but remains subject to host access.
+Installation, migration, reset, cleanup and history acquisition each need explicit
+approval. Never turn a recovery suggestion into apply or history refresh.
 
 ## State and safety
 

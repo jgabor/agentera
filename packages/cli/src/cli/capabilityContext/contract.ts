@@ -96,7 +96,11 @@ export function planStartupContract(): JsonObject {
       completed_plan_archive_confirmation: PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
       artifact_mapping_source: STATE_FAMILY_FALLBACK_COMMANDS.docs,
     },
-    handoff_expectations: ["skip level suggests ⧉ build and waits for confirmation unless the user already asked to implement now", "single-task plans suggest ⧉ build and wait for confirmation", "full plans suggest ⎈ orchestrate and wait for confirmation"],
+    handoff_expectations: [
+      "skip level suggests ⧉ build and waits unless implementation is already requested",
+      "after final save-and-execute approval and successful publication, start ⧉ build for one task or ⎈ orchestrate for multiple tasks without another confirmation",
+      "planning-only approval suggests execution without starting it; silence, failed publication or material changes do not authorize execution; Git/global/history permissions remain separate",
+    ],
     unsupported_command_boundary: {
       capability_cli_commands_added: true,
       forbidden_examples: [],

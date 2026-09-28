@@ -191,15 +191,122 @@ describe("one-confirmation shared-skill startup offer", () => {
     expect(apply(offer, "Yes")!.payload.status).toBe("noop");
   });
 
-  it("does not label a missing installation as an outdated installed skill", () => {
+  it("offers a fresh installation once, with no effects for No, silence or preview", () => {
     const before = snapshot();
-    expect(capture(["prime"]).payload.shared_skill.upgrade_offer).toBeNull();
-    expect(capture(["doctor"]).payload.shared_skill).toMatchObject({
-      shape: "missing",
-      upgrade_offer: null,
-      preview_command: expect.stringContaining("upgrade --shared-skill"),
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    expect(offer).toMatchObject({
+      question: "Agentera’s shared skill is missing. Install it now? Your project files will not change.",
+      approval: "explicit_yes_only",
+      apply_command: expect.stringContaining("--authorization fresh-one-file-sha256:"),
     });
+    expect(capture(["doctor"]).payload.shared_skill.upgrade_offer).toEqual(offer);
+    expect(apply(offer, "No")).toBeNull();
+    expect(apply(offer)).toBeNull();
+    expect(
+      capture(
+        offer.apply_command
+          .split(" ")
+          .slice(3)
+          .filter((arg) => arg !== "--yes"),
+      ).payload.mode,
+    ).toBe("preview");
     expect(snapshot()).toEqual(before);
+    const projectBefore = snapshot(project);
+    expect(apply(offer, "Yes")!.payload.status).toBe("success");
+    expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+    expect(fs.lstatSync(path.join(target, "SKILL.md")).isFile()).toBe(true);
+    expect(fs.readFileSync(path.join(target, "SKILL.md"), "utf8")).toBe(loadHostSkillSource(repo).content);
+    expect(snapshot(project)).toEqual(projectBefore);
+    expect(capture(["prime"]).payload.shared_skill).toMatchObject({
+      status: "pass",
+      upgrade_offer: null,
+    });
+    expect(apply(offer, "Yes")!.payload.status).toBe("noop");
+  });
+
+  it("keeps a private Profile-selected journal root out of unrelated startup while binding the offered install", () => {
+    const privateRoot = path.join(temp, "PRIVATE_PROFILE_PATH");
+    write(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    vi.stubEnv("AGENTERA_HOME", undefined);
+    vi.stubEnv("AGENTERA_PROFILE_DIR", privateRoot);
+    vi.stubEnv("PROFILERA_PROFILE_DIR", privateRoot);
+    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", path.join(repo, "packages/cli/bundle"));
+    const startup = capture(["prime", "--context", "build"]);
+    expect(startup.code, startup.out + startup.err).toBe(0);
+    const offer = startup.payload.shared_skill.upgrade_offer;
+    expect(offer.approval).toBe("explicit_yes_only");
+    expect(offer.apply_command).not.toContain(privateRoot);
+    expect(startup.out).not.toContain("PRIVATE_PROFILE_PATH");
+    vi.stubEnv("AGENTERA_PROFILE_DIR", path.join(temp, "different-profile"));
+    const before = snapshot();
+    expect(apply(offer, "Yes")!.payload.status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+    vi.stubEnv("AGENTERA_PROFILE_DIR", privateRoot);
+    expect(apply(offer, "Yes")!.payload.status).toBe("success");
+    expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+  });
+
+  it.each(["empty", "current", "legacy", "symlink", "parent", "home", "app", "source"])("refuses fresh approval after %s changes without replacing data", (change) => {
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    if (change === "empty") fs.mkdirSync(target, { recursive: true });
+    if (change === "current") write(path.join(target, "SKILL.md"), loadHostSkillSource(repo).content);
+    if (change === "legacy") legacy();
+    if (change === "symlink" || change === "parent") {
+      const destination = change === "symlink" ? target : path.join(home, ".agents");
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+      fs.symlinkSync(project, destination);
+    }
+    if (change === "home") offer.apply_command = offer.apply_command.replace(home, path.join(temp, "different-home"));
+    if (change === "app") offer.apply_command = offer.apply_command.replace(app, path.join(temp, "different-app"));
+    if (change === "source") {
+      const source = path.join(temp, "runtime");
+      for (const relative of ["registry.json", "references/adapters/package-registry.yaml", "skills/agentera/SKILL.md"]) write(path.join(source, relative), fs.readFileSync(path.join(repo, relative), "utf8"));
+      vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", source);
+    }
+    const before = snapshot();
+    const result = apply(offer, "Yes")!;
+    expect(result.code).toBe(1);
+    expect(result.payload.status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+  });
+
+  it("retries fresh publication by recorded identity, refusing changed bytes on retry", () => {
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    const authorization = offer.apply_command.split(" ").at(-1);
+    const args = { home, appHome: app, sourceRoot: repo, apply: true, authorization };
+    expect(
+      runHostSkillLifecycle(args, {
+        beforePublication: (boundary) => {
+          if (boundary.operationId === "shared-skill.bootstrap") throw new Error("interrupted before file create");
+        },
+      }).status,
+    ).toBe("non_success");
+    expect(apply(offer, "Yes")!.payload.status).toBe("success");
+    fs.appendFileSync(path.join(target, "SKILL.md"), "\nUnapproved change\n");
+    const before = snapshot();
+    expect(apply(offer, "Yes")!.payload.status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+  });
+
+  it("refuses a destination appearing at the fresh publication boundary", () => {
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    const result = runHostSkillLifecycle(
+      {
+        home,
+        appHome: app,
+        sourceRoot: repo,
+        apply: true,
+        authorization: offer.apply_command.split(" ").at(-1),
+      },
+      {
+        beforePublication: (boundary) => {
+          if (boundary.operationId === "shared-skill.directory") write(path.join(target, "keep.txt"), "new data");
+        },
+      },
+    );
+    expect(result.status).toBe("non_success");
+    expect(fs.readdirSync(target)).toEqual(["keep.txt"]);
+    expect(fs.readFileSync(path.join(target, "keep.txt"), "utf8")).toBe("new data");
   });
 
   it("does not ask again for current bytes when only the final bookkeeping checkpoint was interrupted", () => {
@@ -269,6 +376,38 @@ describe("one-confirmation shared-skill startup offer", () => {
     expect(capture(["prime"]).payload.shared_skill.upgrade_offer).toBeNull();
   });
 
+  it("withholds fresh offers and refuses prior approval when safe publication is unavailable", () => {
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    const exists = fs.existsSync;
+    vi.spyOn(fs, "existsSync").mockImplementation((file) => (file === "/proc/self/fd" ? false : exists(file)));
+    const before = snapshot();
+    expect(capture(["doctor"]).payload.shared_skill.upgrade_offer).toBeNull();
+    expect(apply(offer, "Yes")!.payload.status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+  });
+
+  it("preserves a bootstrap appearing after our directory was published", () => {
+    const offer = capture(["prime"]).payload.shared_skill.upgrade_offer;
+    const result = runHostSkillLifecycle(
+      {
+        home,
+        appHome: app,
+        sourceRoot: repo,
+        apply: true,
+        authorization: offer.apply_command.split(" ").at(-1),
+      },
+      {
+        beforePublication: (boundary) => {
+          if (boundary.operationId === "shared-skill.bootstrap") write(path.join(target, "SKILL.md"), loadHostSkillSource(repo).content);
+        },
+      },
+    );
+    expect(result.status).toBe("non_success");
+    const before = snapshot();
+    expect(apply(offer, "Yes")!.payload.status).toBe("non_success");
+    expect(snapshot()).toEqual(before);
+  });
+
   it("reports a bounded failure with no actionable offer for an unsafe destination", () => {
     const outside = path.join(temp, "outside");
     fs.mkdirSync(outside);
@@ -284,7 +423,7 @@ describe("one-confirmation shared-skill startup offer", () => {
   it("keeps the host bootstrap on one plain confirmation and CLI-verified completion", () => {
     const text = fs.readFileSync(path.join(repo, "skills/agentera/SKILL.md"), "utf8");
     expect(text).toContain(question);
-    expect(text).toContain("No, silence or an absent offer means no update and no apply call");
+    expect(text).toContain("No, silence or an absent offer means no installation or update and no apply call");
     expect(text).toContain("Require exit 0 and JSON `status` of `success` or `noop`");
     expect(text).not.toContain("Unowned resources require separately");
   });

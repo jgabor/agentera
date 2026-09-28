@@ -1,0 +1,28 @@
+id: rfrlgrygnq
+artifact: plan
+record:
+  name: Verify complete journeys and align shipped guidance
+  depends_on:
+    - lccuvhnxep
+    - tftwkfbjrh
+    - bdgrffzbwj
+    - idzluaimgc
+    - jitkyykykx
+    - uwcuzebbwq
+  status: complete
+  acceptance:
+    - GIVEN each included user journey WHEN tested from request to outcome THEN Yes, No, silence, prior authorization, scope changes, and interruptions produce the expected behavior without invented consent. Test one success and one refusal per behavior, adding cases only for distinct consent, ownership, privacy, or interruption risks.
+    - GIVEN source and extracted packaged runtimes WHEN the same journeys are exercised without a checkout THEN behavior agrees and startup output remains within existing budgets.
+    - GIVEN completed changes WHEN help, bootstrap, instructions, schemas, and documentation are checked THEN they contain no contradictory restart, token-copying, or manual retry-count instructions.
+    - GIVEN qualification completes WHEN delivery is assessed THEN required checks and the independent audit support the claims, remaining gaps are explicit, and related state and changelog updates accompany delivery. This is cross-workflow qualification, not a separate bookkeeping task.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: rfrlgrygnq-final-audit-1
+      source: Independent audit ses_f16e52a24ffep3nQU708n5TKzC passed all7 tasks, no findings; artifact freshness A. Current source/build generation59a5536ddb0739f992cca35a1f80a2b28deb27ad4cfcb9320a7e31216ddd21ae independently matched. Final development11/11gates795942ms42activationchecks; constructed/extracted package and unchanged startup budgets passed. Host consent/synthesis explicitly scripted, not live model proof. Evidence /tmp/opencode/gebglunpxa-evidence/integration/INDEX.md; no live effects or publication qualification claimed.
+      recorded_at: 2026-09-28 19:46
+      writer_command: agentera state plan record-evaluation

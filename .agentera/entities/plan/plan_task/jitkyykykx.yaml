@@ -1,0 +1,23 @@
+id: jitkyykykx
+artifact: plan
+record:
+  name: Clarify doctor results and offer scoped cleanup
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a current CLI and skill with historical resources remaining WHEN diagnosed THEN the result distinguishes current health from cleanup attention and accurately distinguishes runtime-package and durable-data locations.
+    - GIVEN an exact set of confirmed cleanup-eligible resources WHEN an offer is presented THEN one understandable question covers that set and the CLI supplies the operations.
+    - GIVEN approval WHEN cleanup runs THEN only the offered proven-owned resources are removed; ambiguous resources, shared configuration, and symlink targets remain untouched and reported.
+    - GIVEN partial failure or changed ownership evidence WHEN recovering THEN Agentera reports the actual remaining state without broadening consent, hiding blockers, or silently performing migration. Preserve JSON compatibility and meaningful non-success signals; never claim entire host directories. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: jitkyykykx-coordinator-1
+      source: "Coordinator inspected new evidence: 100 targeted tests, typecheck/build/contracts and10 isolated built-CLI calls passed. Additive JSON health/cleanup distinction, bound exact leaf operations, stale-scope refusal and actual remaining-state evidence cover all4 criteria. Index /tmp/opencode/gebglunpxa-evidence/task-jitkyykykx/INDEX.md. Final integration/audit pending."
+      recorded_at: 2026-09-28 15:48
+      writer_command: agentera state plan record-evaluation

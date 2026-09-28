@@ -13,6 +13,7 @@ import { runPersonalGlossaryCandidateReadsCommand } from "../commands/personalGl
 import { runPersonalGlossaryDecisionCommand } from "../commands/personalGlossaryDecision.js";
 import { runPersonalGlossaryReviewRecordsCommand } from "../commands/personalGlossaryReviewRecords.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
+import { runProfileInputsCommand } from "../commands/profileInputs.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
@@ -496,6 +497,7 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     }
     return runGlossaryAdviceCommand(argv.slice(1), io);
   }
+  if (argv[0] === "profile-inputs" && prog === "agentera report") return runProfileInputsCommand(argv.slice(1), io);
   if (argv[0] === "profile-grounding") {
     if (prog !== "agentera report") {
       return emitInvalidInput(io, {

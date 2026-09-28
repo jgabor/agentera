@@ -293,6 +293,8 @@ records:
           reason: Recovery explanations publish scoped preview and apply grammar without executing it, covered by lifecycle detail and extracted traversal tests.
         - path: packages/cli/src/cli/commands/reportDetail.ts
           reason: Report explanations publish operation contracts and privacy qualifications, covered by report detail and extracted traversal tests.
+        - path: packages/cli/src/cli/commands/profileInputs.ts
+          reason: The explicit read-only Profile inputs command emits bounded generation metadata and static syntax, covered by source privacy checks and extracted-package reads.
         - path: packages/cli/src/cli/commands/serviceDetail.ts
           reason: The static service dispatcher publishes report and recovery guidance with bounded correction output and read-side effect checks.
         - path: packages/cli/src/cli/commands/state/explainDetail.ts

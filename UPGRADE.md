@@ -59,7 +59,14 @@ Success requires exit 0 and JSON `status` of `success` or `noop`, not merely an
 attempted command. An unrelated doctor warning does not negate a current shared
 skill, and shared-skill success does not resolve unrelated app/project warnings.
 
-A missing installation keeps the separate explicit install-preview route:
+A missing installation offers the same one-confirmation journey:
+
+> Agentera’s shared skill is missing. Install it now? Your project files will not change.
+
+Only explicit Yes runs the exact offered command. Fresh approval cannot replace
+a destination that appears after the offer; unsafe parents also cause refusal.
+Recorded publication identities allow the same command to resume an interrupted
+install. No or silence makes no changes. Direct CLI preview remains available:
 
 ```bash
 npx -y agentera@next upgrade --shared-skill --dry-run
@@ -184,11 +191,14 @@ npx -y agentera@next state plan create --input PLAN.yaml
 
 `doctor` also reports bounded `retired_resources` candidates. A
 proven Agentera-installed OpenCode plugin reports `pending_automatic_removal`
-and points to normal `upgrade`; it needs no separate cleanup selector. An
-unproven or uninspectable resource reports `manual_review` and a read-only,
-ID-scoped doctor command. Doctor never includes resource contents, adopts a name
-collision as Agentera-owned, or changes a diagnosed path. Absent resources
-report `clean`.
+with a focused `--legacy-cleanup` preview, never a full app-migration offer.
+Unproven or uninspectable resources report `manual_review` with read-only,
+ID-scoped previews. In JSON, `current_health` separates a current CLI and skill
+from `cleanup_attention`; aggregate status remains non-success while cleanup
+or manual-review work remains. For a bundled CLI, `appHome` and `managedAppRoot`
+refer to package bytes, while `userDataRoot` names separately resolved durable
+user data. Doctor never includes resource contents, adopts a name collision as
+Agentera-owned, or changes a diagnosed path. Absent resources report `clean`.
 
 Retries re-observe the current app/project state. Completed migration work
 converges to no change; interrupted v2 migration continues through the same full
@@ -220,6 +230,15 @@ The four-host evidence gaps remain explicit in
 Use the development package's separate preview and apply commands below with
 one declared native Agentera resource ID.
 The cleanup option pair is `--legacy-cleanup RESOURCE_ID --dry-run|--yes`.
+When the runtime and skill are current, JSON Doctor's `cleanup_offer` groups up
+to twelve ownership-proven leaves into one question and complete per-leaf
+commands. Only explicit Yes runs the unchanged offered commands in order. No,
+silence, manual-review resources and unoffered leaves cause no cleanup. Each
+offered command binds its resource paths, identities, bytes and roots; changed
+evidence refuses. Re-diagnose remaining resources after each operation. A
+focused offer does not approve app migration, shared configuration, symlink
+targets or a whole host directory. Direct focused cleanup retains its separate
+explicit-approval route.
 
 ```bash
 npx -y agentera@next upgrade --legacy-cleanup claude.agentera-skill-link --dry-run
@@ -353,14 +372,21 @@ profile, installation, and runtime effects first:
 npx -y agentera@next upgrade --reset-product-v1 --dry-run
 ```
 
-To apply after review, rerun the same scoped command and replace `--dry-run`
-with `--yes --authorization TOKEN`, using the unchanged authorization digest.
+The preview returns exact `deletions`, `recreations`, `irreversible_loss`, one
+question, and a complete `apply_command` bound to the selected roots and source.
+After reviewing the irreversible effects, only an explicit **Yes** permits the
+host to run that command unchanged. No, silence, or a changed scope/source makes
+no reset; never ask the user to copy a token or reconstruct the command. Reset
+approval is separate from ordinary update and focused cleanup approval.
 
 This reset is destructive and irreversible. It deletes all Agentera state in
 the listed scopes, retains no backup, and initializes fresh v3 installation
 state. Review `irreversible_loss`, every deletion, and every recreation in the
 preview before applying it. Do not use the reset for v2 projects. Supported v2
 state continues to use the one-way v2-to-v3 preview and apply commands above.
+If interrupted, retry the same approved operation with its retained reset
+journal. Report completion only when the existing executor verifies fresh-v3
+state; preserve and report blocked recovery without expanding the scope.
 
 Reset approval binds the selected one-file bootstrap source and any listed host
 removal/recreation. It unlinks an approved host symlink without traversing its

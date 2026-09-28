@@ -234,6 +234,8 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/setup/hostSkillLifecycle.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/setup/sharedSkill.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/appContentRefresh.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
+      // Focused cleanup binds the offered leaf snapshot without installing a native adapter.
+      "packages/cli/src/upgrade/cleanupOffer.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/declaredRetiredResourceCleanup.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
       "packages/cli/src/upgrade/doctor.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",

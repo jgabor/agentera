@@ -240,7 +240,7 @@ describe("retired native resource doctor diagnostics", () => {
     ]);
   });
 
-  it("reports a proven plugin as pending automatic removal through normal upgrade in JSON and default text", () => {
+  it("reports a proven plugin as pending focused removal without a full app migration", () => {
     const plugin = path.join(home, ".config", "opencode", "plugins", "agentera.js");
     fs.mkdirSync(path.dirname(plugin), { recursive: true });
     fs.writeFileSync(plugin, historicalPluginFixture(path.resolve(import.meta.dirname, "../../../..")));
@@ -269,7 +269,8 @@ describe("retired native resource doctor diagnostics", () => {
       status: "pending_automatic_removal",
     });
     expect(resource.next_action).toContain(" upgrade ");
-    expect(resource.next_action).not.toContain("--legacy-cleanup");
+    expect(resource.next_action).toContain("--legacy-cleanup opencode.plugin.agentera");
+    expect(resource.next_action).not.toContain("--channel development");
     expect(resource).not.toHaveProperty("preview_command");
     expect(payload.signals).toContainEqual(
       expect.objectContaining({

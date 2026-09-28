@@ -9,8 +9,13 @@ import { personalGlossaryProfileFullContract } from "../../registries/glossaryPr
 import { validateProtocolSelf } from "../../validate/capability.js";
 import { GuidanceInputError } from "../guidanceDetail.js";
 import { operationIndex, requireValid, type ServiceAuthority } from "./serviceDetail.js";
+import { PROFILE_INPUTS_CONTRACT } from "./profileInputs.js";
 
 export function reportDetailSections(a: ServiceAuthority, base: string, operation?: string) {
+  if (operation === "profile-inputs") {
+    a.add("usage", PROFILE_INPUTS_CONTRACT, "packages/cli/src/cli/commands/profileInputs.ts");
+    return;
+  }
   const relative = "references/artifacts/glossary-entry-contract.yaml";
   const entry = a.yaml(relative, "entry", (_value, file) => requireValid(validateGlossaryEntryContract(file)));
   const file = `${a.root}/${relative}`;
@@ -23,6 +28,7 @@ export function reportDetailSections(a: ServiceAuthority, base: string, operatio
     "summary",
     "refresh",
     "profile-grounding",
+    "profile-inputs",
     "glossary-advice",
     `${tail(candidates.candidateReadCommand)} list`,
     `${tail(candidates.candidateReadCommand)} get`,

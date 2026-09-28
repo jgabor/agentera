@@ -93,7 +93,7 @@ describe("diagnoseCanonicalSkill", () => {
     });
   });
 
-  it("warns for a missing target with a scoped read-only install preview", () => {
+  it("offers a scoped fresh install without writing during diagnosis", () => {
     const result = diagnose({ appHome });
 
     expect(result).toMatchObject({
@@ -106,7 +106,11 @@ describe("diagnoseCanonicalSkill", () => {
       ownership: "absent",
       preview_command: `npx -y agentera@next upgrade --shared-skill --home ${homePath} --install-root ${appHome} --dry-run`,
     });
-    expect(result.upgrade_offer).toBeNull();
+    expect(result.upgrade_offer).toMatchObject({
+      question: "Agentera’s shared skill is missing. Install it now? Your project files will not change.",
+      approval: "explicit_yes_only",
+      apply_command: expect.stringContaining("--yes --authorization fresh-one-file-sha256:"),
+    });
     expect(fs.existsSync(target())).toBe(false);
     expect(fs.existsSync(appHome)).toBe(false);
   });

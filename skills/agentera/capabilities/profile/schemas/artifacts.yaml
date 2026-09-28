@@ -13,9 +13,10 @@ ARTIFACTS:
        use the bounded review lifecycle. Unavailable, stale, or degraded coverage
        preserves the base and owned section and requires explicit refresh. Lookup remains deferred. Profile writes
       this in both Full and Validate modes, then reads it for validation and
-      update context. Prime exposes its canonical resolved path only inside
-      `prime --context profile`; no other Prime context or profile-grounding
-      failure may serialize that path.
+      update context. The explicit read-only `report profile-inputs` supplies
+      the canonical resolved generation path and bounded evidence status without
+      profile content or acquisition. Prime and profile-grounding keep their
+      existing path/content privacy boundaries.
   2:
     id: A2
     artifact: decisions

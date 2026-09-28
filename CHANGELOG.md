@@ -3,7 +3,10 @@
 ## [Unreleased]
 
 - Development npm publication retains the original package for 7-day recovery; rerunning `Publish Agentera` confirms accepted uploads without rebuilding or resubmitting them.
-- `prime` and `doctor` now offer a one-confirmation update of `~/.agents/skills/agentera`, including older directories and symlinks without ownership records, while preserving project files and symlink targets.
+- `prime` and `doctor` now offer one-confirmation installation or update of `~/.agents/skills/agentera`, including older directories and symlinks without ownership records, while preserving project files and symlink targets.
+- Final-plan approval can save and start execution without another prompt; orchestration resumes persisted evaluations without repeating verified work, and routine factual documentation changes are handled as one checked patch set.
+- Profile Full can reuse bounded evidence or refresh explicitly selected sources and regenerate in one run while retaining the prior profile and accepted Glossary. A read-only report exposes generation metadata without revealing profile content.
+- Doctor separates current CLI and skill health from ownership-bound retired-resource cleanup; the product-v1 reset preview now supplies a complete approved operation with an irreversible-loss warning.
 - Fixed slow glossary publish, decision, and verify commands by reusing immutable parsed YAML authorities across requests while reading current authority bytes fresh for every request.
 - Fixed slow state and upgrade commands that read large authorities as in-memory text by reusing one immutable parse per distinct text; ordinary callers still receive a private mutable copy and read-only scopes still share one frozen value.
 - Entity references now use meaningful names and plain-language labels, with supplementary glyphs (⛋ Decision, ≡ Plan, □ Task, → TODO). Lists and action targets retain exact IDs; unavailable descriptions are explicit.

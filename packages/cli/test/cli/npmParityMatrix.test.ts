@@ -161,10 +161,10 @@ function runMatrixRowInner(row: ParityRow, doctorParity: boolean): MatrixResult 
   try {
     payload = JSON.parse(out) as Record<string, unknown>;
     // The closed Python parity family owns the legacy app-status envelope.
-    // Shared-skill diagnosis is additive to the legacy app-status envelope.
+    // Independently tested v3 shared-skill and scoped cleanup projections are
+    // additive; compare only the pinned Python app-status keys in this row.
     const parityPayload = doctorParity ? { ...payload } : payload;
-    if (doctorParity) delete parityPayload.shared_skill;
-    if (doctorParity) delete parityPayload.retired_resources;
+    if (doctorParity) for (const key of ["shared_skill", "retired_resources", "current_health", "cleanup_attention", "cleanup_offer"]) delete parityPayload[key];
     normalized = normalizeEnvelope(parityPayload) as Record<string, unknown>;
     const literalPins = {
       ...row.literalPins,
@@ -296,6 +296,13 @@ describe("npm CLI parity matrix (Python oracle envelopes)", () => {
     expect(row.python_commit, `row '${row.family}' python_commit`).toBe(REMAINING_FAMILIES.python_commit);
     expect(row.version_break, `row '${row.family}' version_break`).toBe(!isParityFamilyClosed(familyId));
     if (isParityFamilyClosed(familyId)) {
+      if (familyId === "doctor_upgrade_safety") {
+        expect(result.payload).toMatchObject({
+          current_health: expect.any(Object),
+          cleanup_attention: expect.any(Object),
+          cleanup_offer: null,
+        });
+      }
       expect(result.rc, `row '${row.family}' exit code`).toBe(expectedMatrixExitCode(row, result));
       assertRowPassesOrDocumentsBreak(row, result.classification!, result.rc);
       expect(result.drift_direction, `row '${row.family}' drift_direction`).toBe("equal");

@@ -1,0 +1,28 @@
+id: mffqzhjhlb
+artifact: health
+record:
+  dimensions:
+    - pattern_consistency
+    - test_health
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: improving within the cleanup-offer follow-up; no codebase-wide trend assessed
+  grades:
+    pattern_consistency: A
+    test_health: A
+  dimensions_detail:
+    - name: pattern_consistency
+      grade: A
+      summary: Focused review ses_f15fc2963ffeSW4Psb2ZOqqB3D passed. Doctor now forwards its existing environment at packages/cli/src/cli/commands/doctor.ts:304, matching diagnosis and apply without changing resolvers, ownership, scope binding, or stale-authorization protections. Completed plan gebglunpxa and unrelated workflows remain closed.
+      findings:
+        []
+    - name: test_health
+      grade: A
+      summary: "Scoped regressions at packages/cli/test/cli/doctorCleanupOffer.test.ts:254-312 reproduce the defect. Fresh evidence shows 46 focused tests, 32 built-CLI calls, and 11/11 development gates passing for custom-only/combined roots and changed-evidence refusals. Evidence: /tmp/opencode/gebglunpxa-evidence/cleanup-env-fix/INDEX.md. Scripted consent is not live-host proof; prior qualification predates this fix."
+      findings:
+        []
+  date: 2026-09-28
+  appended_at: 2026-09-28T21:59:24.884Z

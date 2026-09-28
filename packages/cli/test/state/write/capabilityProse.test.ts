@@ -130,7 +130,8 @@ describe("producer capability writer integration", () => {
     expect(planInstructions).toContain("agentera state plan archive");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");
     expect(orchestrateInstructions).toContain("agentera state plan record-evaluation");
-    expect(orchestrateInstructions).toContain("before marking the task complete");
+    expect(orchestrateInstructions).toContain("For a new evaluator verdict, persist it through");
+    expect(orchestrateInstructions).toContain("Persisted PASS with applicable evidence");
     expect(orchestrateInstructions).toContain("recovery for persisted out-of-order replacement state");
     expect(orchestrateInstructions).toContain("may receive its first PASS only");
     expect(orchestrateInstructions).toContain("Every replacement must be complete with latest persisted PASS before supersession");
@@ -253,9 +254,9 @@ describe("producer capability writer integration", () => {
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
 
     expect(planInstructions).toContain("### Step 4: Validate and publish");
-    expect(planInstructions).toContain("Normally run exactly one `agentera state plan create");
-    expect(planInstructions).toContain("do not run standalone lint or dry-run first");
-    expect(planInstructions).toContain("publish from the same unchanged PATH");
+    expect(planInstructions).toContain("Call `agentera state plan create --input PATH` once");
+    expect(planInstructions).toContain("writer validates strict prose lint and schema on final bytes");
+    expect(planInstructions).toContain("Only for an explicitly requested preview, use `--dry-run`, then publish the same unchanged PATH");
     expect(planInstructions).not.toContain("Optionally run `agentera check lint");
     expect(planInstructions).not.toContain("Pre-write self-audit");
     expect(vocabulary).toContain("Draft lint preview");

@@ -13,9 +13,15 @@ export const instructions: string = JSON.parse(
   .replace("Visual-token families (VT/SI/EX/SG/PH) by `skills/agentera/protocol.yaml`.", "Read visual-token families (VT/SI/EX/SG/PH) through `agentera schema --protocol` and its exact section commands.");
 const fullModeExistingGenerationInstructions = `#### Step 1: Verify existing bounded evidence
 
-Profile Full uses an already published bounded signal tier. It MUST NOT run \`report refresh\`, collect local history, or create a generation implicitly. Read \`profile_context.profile.bounded_signals\` before synthesis. If it is missing, legacy, stale, or corrupt, stop before any base write and report its explicit-consent recovery. If it is insufficient, continue only with its declared confidence cap and flagged output. Do not load a monolithic corpus or rescan history.
+Read \`profile_context.profile.bounded_signals\` first. Reuse valid, sufficient evidence that covers the requested regeneration; do not acquire history merely because Full was invoked. Profile Full MUST NOT run \`report refresh\`, collect local history, or create a generation implicitly. If evidence is missing, legacy, stale, corrupt or inadequate, disclose the gap and obtain explicit approval for both the selected acquisition sources and the generated-profile replacement before refreshing. An existing profile's replacement includes all non-glossary content and accumulated tensions; retain its original copy and preserve the accepted owned Glossary bytes. A generic Profile invocation, No or silence is not acquisition or replacement approval. Without the required approvals, preserve the profile and evidence and report what is needed. A user may instead approve limited synthesis from readable evidence with its declared confidence cap and flagged output.
 
-**Separate explicit refresh (outside this Full run):** The active runtime IDs are exactly \`opencode\`, \`codex\`, \`cursor\`, and \`copilot\`. A user who explicitly wants a new generation may run \`npx -y agentera@next report refresh --consent local-history\`, then start a new Full run. Cursor Agent CLI storage is a Cursor source product, never a separate runtime identity. Claude Code is not a supported runtime. Its transcript parser is an explicit historical importer only: \`npx -y agentera@next report refresh --consent local-history --import-source claude\`. Before that opt-in, warn that transcripts can contain secrets, file contents, and command output. Every imported record is labeled \`source_class=historical_import\`, \`source_product=claude-code\`, and \`active_runtime=false\`; default active analytics exclude it.
+**Consented refresh within this Full run:** Read \`agentera report explain --operation refresh\` and its linked detail. Disclose and keep the complete acquisition selection: runtime stores, project roots (including instruction/config files), profile/tier destination, excluded runtimes and any accepted coverage gaps. Use explicit store/root flags and every applicable \`--no-*\` exclusion; omitted selections default to available sources and the current project, not to the user's narrower intent. \`--project-root\` is not a universal history filter: Codex, OpenCode and Copilot selectors choose whole stores. If those selectors cannot express the approved scope, stop rather than read more. No hidden import or source expansion is allowed.
+
+After both approvals, run the existing \`npx -y agentera@next report refresh --consent local-history\` with that unchanged selection. A same-selection \`--dry-run\` can disclose the operation without reading history; do not combine it with consent or treat it as acquisition. Recheck bounded evidence, then continue Steps 2–4 in this invocation without a restart handoff or another mode choice. Changed sources or destinations require fresh approval. Refresh publishes evidence and candidate projections, not PROFILE.md; acquisition consent does not approve profile replacement or glossary meanings.
+
+The active runtime IDs are exactly \`opencode\`, \`codex\`, \`cursor\`, and \`copilot\`. Cursor Agent CLI storage is a Cursor source product, never a separate runtime identity. Claude Code is not a supported runtime. Its transcript parser remains an explicit historical importer only: \`npx -y agentera@next report refresh --consent local-history --import-source claude\`. Never add that opt-in to improve coverage. Before separately approved import, warn that transcripts can contain secrets, file contents, and command output. Imported records retain \`source_class=historical_import\`, \`source_product=claude-code\`, and \`active_runtime=false\`; default active analytics exclude them.
+
+**Partial completion:** Inspect the refresh result's evidence and projection statuses separately. Reuse a valid completed tier for synthesis even if projection failed; report the remaining glossary limitation under its existing rules instead of reacquiring just to redo completed work. Accepted source exclusions may retain an incomplete-coverage caveat; do not enable more sources to remove it. If acquisition must be retried after fixing a concrete failure, use only the same approved source/destination selection; bare recovery examples do not discard those selections. Never replace the entire personal root, erase evidence, or broaden scope to make a retry pass. Report what completed, what remains and whether available evidence still warrants capped confidence.
 
 #### Step 2: Read bounded signals`;
 
@@ -31,6 +37,8 @@ export function servedInstructions(): string {
 Generate the complete non-glossary decision profile in memory as byte string \`B\`, following the Profile format template above. The generated base MUST NOT contain either personal-glossary marker or a line whose complete heading is \`## Glossary\`.
 
 Use this ordered base-profile sequence. Do not reorder or combine its writes:
+
+Before replacement, disclose that all generated non-glossary content, including accumulated tensions, is replaced; require explicit approval for that effect. Preserve accepted Glossary meaning separately. On resumption, compare the requested base, current profile and retained original copy: if the base is already published, reuse it and continue only remaining validation/glossary work. If only the backup completed, reuse it after verifying it matches the unchanged original. Never overwrite that retained copy with the new base or silently replace a profile changed since approval. This adds no glossary admission, review, signing or enrollment authority.
 
 <!-- agentera:profile-full-action:capture-owned-glossary -->
 1. **Capture and validate the existing owned Glossary section.** Before copying history or writing any generated bytes, read the existing \`profile_context.profile.path\` only if it exists. Count the literal start marker, literal end marker, and line-anchored \`## Glossary\` heading. If all counts are zero, set the captured section \`G\` to absent. Otherwise require exactly one of each, the start before the end, the heading inside that range, and the complete range to match the deterministic representation below. Its JSON must parse to a mapping with exactly \`schema_version\`, \`as_of\`, \`confidence_basis\`, and \`entries\`; require schema \`${profileGlossaryOutput.sectionSchemaVersion}\`, a valid calendar date, one integer confidence basis per unique case-insensitive term, and shared-primitive-valid entries. Reject unmatched markers, duplicate sections or terms, an unowned heading, malformed JSON or fields, or any other ambiguous boundary before a history copy or base write. Capture \`G\` as the exact bytes from the first byte of the start marker through the final byte of the end marker, inclusive.
@@ -91,16 +99,31 @@ The publisher merges terms case-insensitively. It preserves established spelling
 `;
 
   const servedInstructionBody = instructions
+    .replace(
+      "Check if `profile_context.profile.path` resolves to an existing file.",
+      "Run `agentera report profile-inputs` and call its result `profile_inputs`. This explicit read supplies the configured destination and bounded evidence metadata without profile content, acquisition or writes; normal Prime intentionally omits them. If profile validity is repair_needed, preserve the profile and report recovery before replacement. Check if `profile_context.profile.path` resolves to an existing file.",
+    )
+    .replace("If it DOES exist, present the mode choice:", "If it DOES exist and the mode is unspecified, present the mode choice. For an explicit Full request, disclose its replacement effect and ask only for missing approvals:")
     .replace("Steps: extract, read, synthesize, generate.", "Steps: verify, read, synthesize, generate.")
     .replace(/#### Step 1: Coverage and extraction[\s\S]*?#### Step 2: Read bounded signals/, fullModeExistingGenerationInstructions)
     .replace("Read the bounded signal tier published in Step 1.", "Read the existing bounded signal tier.")
-    .replace("Run Step 1 refresh to publish bounded tiers first.", "Stop and report the explicit refresh recovery; do not refresh during Full mode.")
+    .replace("Run Step 1 refresh to publish bounded tiers first.", "Return to Step 1's explicit source and replacement approvals; after approved refresh, continue this Full run without loading the whole corpus.")
+    .replace(
+      "Regenerate from scratch using all session data. Replaces the existing profile including any accumulated tensions. Best when the profile feels significantly outdated or you want a clean baseline.",
+      "Regenerate the non-glossary profile from valid bounded evidence. Replaces generated content including accumulated tensions, retains the prior copy, and preserves the accepted owned Glossary section. Any needed history acquisition requires separate explicit source selection and consent; choosing Full is not permission to read all history.",
+    )
     .replace(
       "#### Step 4: Generate the profile and validate\n\nWrite the decision profile to `profile_context.profile.path` following the Profile format template above.\n\nIf a previous version exists: copy to the `history/` subdirectory alongside PROFILE.md, generate new version, show change summary (added, updated, removed).",
       personalGlossaryInstructions,
     )
-    .replace("Full extraction across all sources. Produces PROFILE.md at `profile_context.profile.path`.", "Uses existing consent-bound bounded evidence and a current personal glossary generation. Produces PROFILE.md at `profile_context.profile.path`.");
-  return servedInstructionBody;
+    .replace(
+      "Full extraction across all sources. Produces PROFILE.md at `profile_context.profile.path`.",
+      "Reuses valid bounded evidence or refreshes explicitly approved sources and continues in the same Full run. Produces the approved non-glossary PROFILE.md at `profile_context.profile.path` while preserving its owned Glossary section.",
+    );
+  return servedInstructionBody
+    .replaceAll("profile_context.profile.bounded_signals", "profile_inputs.bounded_signals")
+    .replaceAll("profile_context.profile.path", "profile_inputs.profile.path")
+    .replace("Recheck bounded evidence, then continue", "Rerun `agentera report profile-inputs` to recheck bounded evidence, then continue");
 }
 
 export function loadProfileDecayParameters(): {

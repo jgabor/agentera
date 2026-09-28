@@ -1522,11 +1522,11 @@ describe("retired runtime current-surface policy", () => {
     expect(read("skills/agentera/SKILL.md")).toContain("One agent, one CLI");
   });
 
-  it("documents automatic OpenCode plugin retirement without a separate selector", () => {
+  it("documents focused ownership-proven OpenCode plugin retirement without a full migration", () => {
     for (const surface of ["README.md", "UPGRADE.md"]) {
       const content = read(surface);
       expect(content, surface).not.toMatch(/--runtime\s+(?:all|opencode|codex|cursor|copilot)/);
-      expect(content, surface).toMatch(/no\s+separate cleanup selector/i);
+      expect(content, surface).toMatch(/focused (?:cleanup|`--legacy-cleanup`)/i);
       expect(content, surface).toMatch(/no OpenCode gate or\s+`hook` command/i);
     }
   });

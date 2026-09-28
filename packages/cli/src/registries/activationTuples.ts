@@ -96,6 +96,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
       ["packages/cli/src/cli/commands/checkDetail.ts", "Check explanations publish dispatched target contracts and correction commands, covered by source checks and extracted traversal."],
       ["packages/cli/src/cli/commands/recoveryDetail.ts", "Recovery explanations publish scoped preview and apply grammar without executing it, covered by lifecycle detail and extracted traversal tests."],
       ["packages/cli/src/cli/commands/reportDetail.ts", "Report explanations publish operation contracts and privacy qualifications, covered by report detail and extracted traversal tests."],
+      ["packages/cli/src/cli/commands/profileInputs.ts", "The explicit read-only Profile inputs command emits bounded generation metadata and static syntax, covered by source privacy checks and extracted-package reads."],
       ["packages/cli/src/cli/commands/serviceDetail.ts", "The static service dispatcher publishes report and recovery guidance with bounded correction output and read-side effect checks."],
       ["packages/cli/src/cli/commands/state/explainDetail.ts", "Typed operation detail exposes writer-owned input and effect contracts with exact section commands and bounded recovery."],
       ["packages/cli/src/cli/commands/workerDetail.ts", "Worker details project compiled delegation instructions and evaluator contracts through the capability detail owner."],
@@ -350,15 +351,15 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777",
     },
     package: {
-      count: 78,
-      sha256: "00395767f4a25372073ddf2ccd48ec9e0134c5cbe5910a5f9990e51657b636c1",
+      count: 79,
+      sha256: "bdeb62382cc99d1bf9420be94575aa1c1eb9060a83c20539665a29429f6d0c5e",
     },
     bootstrap: {
       count: 34,
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 316, sha256: "8dfd7934b2fabd8ae3b723030c568316596bc729e2245dfc0f2af646c5a6d56b" },
+  total: { count: 317, sha256: "0052090ac3619d16dd00e06c28d0e3b9a1090ebe94618d4be334a0993bb09a13" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

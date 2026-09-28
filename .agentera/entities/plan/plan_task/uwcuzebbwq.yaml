@@ -1,0 +1,23 @@
+id: uwcuzebbwq
+artifact: plan
+record:
+  name: Supply the complete destructive-reset operation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN recognized product-v1 state WHEN reset is previewed THEN Agentera returns the complete bound apply command and an exact deletion/recreation summary.
+    - GIVEN explicit approval after the irreversible-loss warning WHEN reset runs THEN the existing executor operates only on the approved scope without requiring the user to copy tokens or reconstruct commands.
+    - GIVEN changed scope, stale approval, or an unsupported project state WHEN reset is attempted THEN it refuses without broader effects.
+    - GIVEN interruption WHEN the same approved operation is retried THEN existing recovery applies and completion is reported only after verification. Never bundle reset into ordinary update or cleanup approval. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: uwcuzebbwq-coordinator-1
+      source: Coordinator inspected reset evidence:78 targeted tests,typecheck/build/contracts and14 isolated built-CLI calls passed, including exact bound command, stale/unsupported scope refusal and SIGKILL same-command recovery. Existing destructive executor unchanged. Index /tmp/opencode/gebglunpxa-evidence/task-uwcuzebbwq/INDEX.md. Host consent scripted; integrated qualification/audit pending.
+      recorded_at: 2026-09-28 16:06
+      writer_command: agentera state plan record-evaluation

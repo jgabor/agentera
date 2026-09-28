@@ -42,6 +42,7 @@
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
+- [ ] [id:qmoxsmithy] [task] Provide an ordinary-user glossary review and save workflow
 
 ## ⇢ Annoying
 

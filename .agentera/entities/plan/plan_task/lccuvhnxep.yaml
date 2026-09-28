@@ -1,0 +1,23 @@
+id: lccuvhnxep
+artifact: plan
+record:
+  name: Carry execution consent and make resumption consistent
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN a final plan and explicit approval to save and execute it WHEN approved THEN Agentera saves it and starts the appropriate execution capability without another confirmation.
+    - GIVEN planning-only approval or a materially changed plan WHEN proceeding THEN Agentera does not infer execution permission or permission for the new scope.
+    - GIVEN an interruption after a persisted evaluation WHEN execution resumes THEN Agentera uses recorded status and evidence to finish eligible transitions without repeating verified work.
+    - GIVEN the writer blocks a task after its second failed evaluation WHEN orchestration continues THEN it preserves that history and surfaces the required decision rather than inventing more retries. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: lccuvhnxep-coordinator-1
+      source: "Coordinator evidence review: 135 tests, typecheck/build/static contracts and 46 isolated built-CLI calls passed. Persisted PASS/resume/blocking are real writer evidence; consent traces explicitly scripted host-contract fixtures. Index /tmp/opencode/gebglunpxa-evidence/task-lccuvhnxep/INDEX.md. Final independent audit pending."
+      recorded_at: 2026-09-22 13:35
+      writer_command: agentera state plan record-evaluation

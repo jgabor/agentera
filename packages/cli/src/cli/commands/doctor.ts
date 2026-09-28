@@ -17,6 +17,8 @@ import { inspectTodoReconciliationState } from "../../state/todoReconciliationIn
 import { classifyAutomaticRetirement } from "../../runtime/nativeResourceCleanup.js";
 import { lifecycleOwnershipJournalPath } from "../../runtime/lifecycleOwnershipJournal.js";
 import { planDeclaredMarkerManagedFileItem } from "../../upgrade/declaredRetiredResourceCleanup.js";
+import { cleanupOfferAuthorization } from "../../upgrade/cleanupOffer.js";
+import { isNpxBundleRoot } from "../../core/sourceRoot.js";
 
 /**
  * `agentera doctor` — app/runtime status. Port of agentera_upgrade.cmd_doctor +
@@ -64,13 +66,12 @@ function doctorRetiredResources(diagnosis: RetiredResourceDiagnosis, context: { 
           };
         }
       }
-      const qualification = classifyAutomaticRetirement(resource.id, resource.evidence.paths[0]!, lifecycleOwnershipJournalPath(context.installRoot));
-      if (qualification.qualification === "qualified") {
+      if (resource.evidence.paths.length > 0 && resource.evidence.paths.every((source) => classifyAutomaticRetirement(resource.id, source, lifecycleOwnershipJournalPath(context.installRoot)).qualification === "qualified")) {
         return {
           id: resource.id,
           status: "pending_automatic_removal",
           evidence: resource.evidence,
-          next_action: commandText(["npx", "-y", "agentera@next", "upgrade", "--channel", "development", "--project", context.project, "--install-root", context.installRoot, "--dry-run"]),
+          next_action: previewCommand(resource, context),
         };
       }
       return {
@@ -80,6 +81,41 @@ function doctorRetiredResources(diagnosis: RetiredResourceDiagnosis, context: { 
         preview_command: previewCommand(resource, context),
       };
     }),
+  };
+}
+
+function cleanupOffer(
+  resources: Array<{ id: string; status: string; evidence: { paths: string[] } }>,
+  context: {
+    home: string;
+    project: string;
+    installRoot: string;
+    sourceRoot: string;
+    env: Record<string, string | undefined>;
+  },
+): Record<string, unknown> | null {
+  const eligible = resources.filter((resource) => resource.status === "pending_automatic_removal");
+  const operations = eligible.slice(0, 12).flatMap((resource) => {
+    const authorization = cleanupOfferAuthorization(resource.id, context);
+    if (!authorization) return [];
+    const base = ["npx", "-y", "agentera@next", "upgrade", "--home", context.home, "--project", context.project, "--install-root", context.installRoot, "--legacy-cleanup", resource.id];
+    return [
+      {
+        id: resource.id,
+        paths: resource.evidence.paths,
+        preview_command: commandText([...base, "--dry-run", "--authorization", authorization]),
+        apply_command: commandText([...base, "--yes", "--authorization", authorization]),
+      },
+    ];
+  });
+  if (operations.length === 0) return null;
+  return {
+    question: `Remove only these ${operations.length} ownership-proven retired Agentera resource${operations.length === 1 ? "" : "s"}: ${operations.map((operation) => operation.id).join(", ")}? Other files, shared configuration and symlink targets remain untouched.`,
+    approval: "explicit_yes_only",
+    operations,
+    remaining_eligible_resource_ids: eligible.filter((resource) => !operations.some((operation) => operation.id === resource.id)).map((resource) => resource.id),
+    manual_review_resource_ids: resources.filter((resource) => resource.status === "manual_review").map((resource) => resource.id),
+    effects: "Each offered command is a focused cleanup of that resource only; an empty dedicated parent may be removed. No app or project migration is included. Apply sequentially and re-diagnose after each command; partial effects are not atomic.",
   };
 }
 
@@ -204,6 +240,8 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion ?? null,
     expectedCommands,
   });
+  const appStatus = status.status;
+  if (isNpxBundleRoot(sourceRoot)) status.userDataRoot = installRoot;
   const todoReconciliation = inspectTodoReconciliationState(project, sourceRoot);
   if (todoReconciliation?.status === "action_required") {
     status.signals.push({
@@ -255,6 +293,17 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     if (status.status === APP_UP_TO_DATE) status.status = APP_REPAIR_NEEDED;
   }
   const sharedSkill = diagnoseCanonicalSkill(home, { sourceRoot, appHome: installRoot });
+  const offer =
+    appStatus === APP_UP_TO_DATE && sharedSkill.status === "pass"
+      ? cleanupOffer(
+          retiredResourceEntries as Array<{
+            id: string;
+            status: string;
+            evidence: { paths: string[] };
+          }>,
+          { home, project, installRoot, sourceRoot, env: process.env },
+        )
+      : null;
   let smokeReport: JsonObject | null = null;
   if (args.smoke) {
     smokeReport = runNpmSmokeChecks(sourceRoot, process.env, {
@@ -265,6 +314,19 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     const payload = doctorParityJsonEnvelope(status);
     payload.shared_skill = sharedSkill;
     payload.retired_resources = retiredResources;
+    payload.current_health = {
+      cli: appStatus,
+      shared_skill: sharedSkill.status,
+      runtime_package_root: sourceRoot,
+      durable_user_data_root: installRoot,
+    };
+    payload.cleanup_attention = {
+      status: retiredDiagnosis.status,
+      manual_review_resource_ids: manualReviewResources.map((resource) => resource.id),
+      pending_resource_ids: pendingAutomaticResources.map((resource) => resource.id),
+      omitted_resource_count: retiredDiagnosis.omittedResourceCount,
+    };
+    payload.cleanup_offer = offer;
     if (smokeReport) payload.smoke = smokeReport;
     out(pyJsonIndentSorted(payload) + "\n");
   } else {

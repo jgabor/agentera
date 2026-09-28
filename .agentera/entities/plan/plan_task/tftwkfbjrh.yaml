@@ -1,0 +1,23 @@
+id: tftwkfbjrh
+artifact: plan
+record:
+  name: Handle routine documentation as a bounded patch set
+  depends_on:
+    - lccuvhnxep
+  status: complete
+  acceptance:
+    - GIVEN authorized routine documentation work WHEN multiple in-scope corrections are found THEN Agentera handles them as one patch set rather than asking about every finding.
+    - GIVEN approval is still needed WHEN the patch set is presented THEN one approval covers its disclosed factual changes.
+    - GIVEN a proposed change affects policy, product intent, or unrelated work WHEN discovered THEN Agentera surfaces it separately rather than silently changing it or filing additional work.
+    - GIVEN documentation changes are applied WHEN checked THEN the result and documentation inventory accurately reflect those changes through the existing writers. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: tftwkfbjrh-coordinator-1
+      source: "Coordinator reviewed Document acceptance evidence: 3 focused tests, typecheck/build/contracts and 43 built-CLI plus3 factualchecks passed. Broader run66pass1failure reproduces pre-Document Plan startup32800>32768; remains explicit integration-task blocker, not counted passing. Index /tmp/opencode/gebglunpxa-evidence/task-tftwkfbjrh/INDEX.md. Final audit pending."
+      recorded_at: 2026-09-22 13:56
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,38 @@
+id: gebglunpxa
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-22
+    status: complete
+    reviewed: 2026-09-22
+    critic_issues: 0 found, 0 addressed, 0 dismissed
+    title: "Plan: Simple end-to-end Agentera workflows"
+  what: Make an explicitly approved user request reach a verified outcome without unnecessary capability restarts, repeated confirmations, token copying, or manual coordination of internal operations. Deliver consent-aware plan execution and resumption, bounded documentation patch sets, fresh skill installation offers, consented profile refresh, clear diagnosis and scoped historical cleanup, and complete bound destructive-reset operations.
+  why: The successful one-confirmation shared-skill upgrade demonstrated that users should approve a bounded outcome while Agentera coordinates its existing operations. Research found redundant handoffs, contradictory retry instructions, missing installation offers, profile restart requirements, and exposed reset mechanics. Reuse existing executors and writers rather than adding a general consent framework, another repair system, or broader directory-ownership assumptions. Glossary review is separately deferred.
+  constraints: Consent remains scoped. Planning-only approval is not execution approval. History access, global installation, historical cleanup, destructive reset, and Git actions remain distinct permissions. Material scope changes invalidate approval. Preserve JSON compatibility, meaningful failures, platform limits, accepted meanings, and writer-owned state. Use isolated fixtures, not live installations, histories, cleanup targets, or reset state. Every task targets one success and one refusal per testable behavior; additional cases require distinct consent, ownership, privacy, or interruption risks. Keep heavy verification resource-bounded. No commit, push, publication, or live apply is authorized by plan approval.
+  scope:
+    included:
+      - Combined final-plan approval and execution when explicitly requested.
+      - Consistent orchestration retry and resumption instructions using existing writer-owned counts and transitions.
+      - Bounded documentation patch-set approval and existing typed inventory maintenance.
+      - Fresh shared-skill installation offers consistent with existing scoped upgrades.
+      - End-to-end profile refresh with explicit history-source and generated-profile replacement consent.
+      - Clear public JSON diagnosis, accurate runtime/data locations, and scoped historical cleanup offers.
+      - Complete bound product-v1 reset operations with explicit irreversible-loss disclosure.
+      - Cross-workflow source/package verification, current guidance, changelog, and related typed state closeout.
+    excluded:
+      - Glossary review, signing, or enrollment changes; these remain TODO qmoxsmithy.
+      - New atomic evaluation/completion APIs, retry stores, general consent frameworks, or repair systems.
+      - Capability-level redesigns, command renaming, v2 migration changes, and publication-workflow changes.
+      - Whole-directory authority over project state, personal profiles, history, shared host configuration, or symlink targets.
+      - Live profile acquisition, installation, cleanup, destructive reset, commits, pushes, or publication without separate authorization.
+    deferred:
+      - Provide an ordinary-user glossary review and save workflow, tracked separately as TODO qmoxsmithy.
+  design: Carry explicit approval through the existing operations that complete its bounded outcome. Correct the execution and retry instructions first, then apply those consent rules to routine documentation work. Independently complete the installation, profile, diagnosis/cleanup, and destructive-reset journeys through their existing owners. Keep meaningful user decisions visible and mechanical coordination internal. Finish with cross-workflow qualification so shipped guidance, offers, recovery, and completion reporting agree.
+  overall_acceptance: GIVEN a supported request with explicit, appropriately scoped approval WHEN Agentera executes it THEN the user receives a verified outcome or an actionable bounded failure, not unnecessary restarts, repeated permission questions, or instructions to manage internal commands and records. Glossary review remains deferred and protected, and no excluded operation inherits approval.
+  unknowns:
+    []
+  rejected:
+    []
+  surprises: ""

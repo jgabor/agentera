@@ -9,8 +9,52 @@ export default instructions
 
 Documentation inventory entries, progress cycles, decisions, and health audits use entity authority: every record has \`id\` and \`artifact\`, lives in one writer-owned entity file, and is read through bounded list or exact \`get --id ID\` commands. Start from \`agentera prime --context document\`; read \`capability_context.startup.outcome\` and use a deferred availability row's exact \`detail_command\` for detail. Discover documentation-inventory mutations with \`agentera state docs explain\` and use the typed entity writer; never edit entity paths directly. The docs mapping and policy, vision, changelog, design, and profile remain intentional singletons.
 
+### Bounded factual patch set
+
+Follow the shared execution rules. Explicit authorization for routine factual documentation changes, including an approved plan task's execution scope, covers one bounded patch set without per-finding questions or a second draft confirmation. Planning-only, audit-only or discovery requests are not write approval. Do not infer public product promises from code or private history.
+
+Collect related in-scope corrections into one patch set: identify target paths, proposed factual changes, supporting current sources/checks and the corresponding inventory changes. Preserve intended behavior and meaning. Surface policy, product-intent, ambiguous doc-versus-code conflicts and unrelated findings separately; do not silently rewrite them or file TODOs, plans or other work. Those need their own decision and authorization.
+
+If approval is still needed, disclose this patch set and its exclusions, then ask once: "Apply this factual documentation patch set and its inventory updates?" Only explicit approval permits that disclosed set. No, silence or planning-only approval means no documentation or inventory writes. A changed disclosed patch set needs renewed approval; do not append changes under an earlier Yes. Existing approval never grants unrelated Git, global or history permissions.
+
+### Verify and record inventory
+
+After applying only the authorized patch set, inspect the resulting diff and run relevant factual checks (commands/examples, paths and links). Report changed files, checks/results, remaining discrepancies and any partial failure; do not report unchecked claims as verified. Retain generated status for tool-generated output; use its owning generator, not hand edits. Only verified implemented documentation is current; intended future behavior remains intent, unresolved drift stale, and absent documents missing.
+
+Read inventory through \`agentera state docs list\` and \`agentera state docs get --id ID\`. After \`agentera state docs explain --verb create\` or \`--verb update\` and its detail, use \`agentera state docs create --input PATH\` for a genuinely new entry, or \`agentera state docs update --id ID --input PATH\` for an existing entry. Input is one complete record with document, path, last_updated and status; preserve other existing record data on update and omit writer-owned id/artifact. Update is replacement, not a partial patch. The writer stores inventory only; it neither edits nor verifies the referenced document.
+
+Use actual observed results and dates, then read back affected entries to confirm them. One approved patch set may require several existing writer calls; it is not an atomic batch. After interruption, reread entries before creating duplicates; identical full-record updates are no-effect replays. If content verification or an inventory write fails, report the partial result without claiming completion or marking unverified content current. Do not initialize or migrate project state just to repair inventory without authorization. Routine patches do not change docs mapping, conventions or policy, write an index into the singleton, or invent project-wide audit dates/coverage.
+
 ## Workflow phases`,
   )
   .replaceAll("`.agentera/decisions.yaml`", "the decisions entity view")
   .replaceAll("`.agentera/progress.yaml`", "the progress entity view")
-  .replaceAll("`.agentera/health.yaml`", "the health entity view");
+  .replaceAll("`.agentera/health.yaml`", "the health entity view")
+  .replace("| No `.agentera/docs.yaml` exists | First-run survey |", "| Conventions or mapping are requested but not defined | First-run survey |")
+  .replace("3. **Index**: all discovered docs (auto-generated = `generated`, existing = `current`)", "3. **Inventory proposal**: list discovered docs separately from the convention map; statuses follow actual verification, not mere existence. Publish approved entries through the inventory workflow above.")
+  .replace("After writing, proceed to the originally requested mode, or stop if the survey was the entire request.", "Keep inventory out of the singleton. After writing, proceed only within the originally authorized mode, or stop if the survey was the entire request.")
+  .replace("Present draft for approval before writing.", "Intent-first drafts define intended behavior: obtain explicit approval of that content before writing; routine factual-update approval does not authorize new intent.")
+  .replace("Present drafts for approval.", "Use the bounded factual patch-set gate above; present one disclosed set if approval is needed, otherwise apply within the existing authorization.")
+  .replace(/### Step 3: Update docs index[\s\S]*?### Step 4: Suggest next steps/, "### Step 3: Update docs inventory\n\nUse the typed inventory workflow above. Intent-first documentation is `intent` until implemented and verified; do not mark future behavior current.\n\n### Step 4: Suggest next steps")
+  .replace(
+    /### Step 4: Update docs index[\s\S]*?### Update-and-verify mode/,
+    "### Step 4: Update docs inventory\n\nVerify generated documentation and use the typed inventory workflow above. Missing convention mapping alone does not authorize a policy survey or broaden a factual patch set.\n\n### Update-and-verify mode",
+  )
+  .replace("Read `.agentera/docs.yaml` for current index.", "Read current inventory through `agentera state docs list`; retrieve exact records when needed.")
+  .replace("Identify all doc files:", "Identify the authorized scope's doc files:")
+  .replace("5. `git log --oneline -20` for context", "5. Use current source and applicable project evidence; factual patch work does not authorize acquiring private history.")
+  .replace(
+    "**Exit-early stop condition**: If `.agentera/docs.yaml` exists with coverage at 100% and no files have changed since the last document audit (`git log --since` the last audit date shows no changes), report exit signal `complete`: documentation current, and stop.",
+    "**Exit-early stop condition**: If the authorized scope has applicable verification evidence and unchanged relevant inputs, report no patch needed. Inventory status or an old audit date alone does not prove current documentation.",
+  )
+  .replace(
+    "For each finding, offer to: fix the doc, file to TODO.md (code is wrong per the docs-first workflow), or skip.",
+    "Group related verified factual corrections into the bounded patch set above and apply under existing authorization, or ask for that set once if needed. Report policy, product-intent and unrelated findings separately without changing them or filing work. A discrepancy alone does not establish whether the code or the intended documentation is wrong.",
+  )
+  .replace(/### Step 4: Update docs index[\s\S]*?---\n\n## Safety rails/, "### Step 4: Verify result and update inventory\n\nFollow the verification and typed inventory workflow above. Report only the scope actually checked; keep unresolved findings and partial effects explicit.\n\n---\n\n## Safety rails")
+  .replace("MUST NOT write or modify documentation without explicit user approval. Present drafts and get confirmation.", "MUST NOT write outside explicit approval. Existing factual-work approval covers its bounded patch set; otherwise obtain one approval for the disclosed set, not one question per finding.")
+  .replace(
+    "MUST NOT update docs to match broken code. Per the docs-first workflow, if code diverges from docs, the code is wrong. Document the divergence as an issue in TODO.md.",
+    "MUST NOT rewrite intended behavior or product policy to match broken code. Surface uncertain intent and out-of-scope findings separately; no automatic TODO or other work creation.",
+  )
+  .replace("docs index is current, and all drafted content received user approval before writing.", "the authorized patch set is verified, and affected inventory entries accurately reflect observed results through typed writers.");

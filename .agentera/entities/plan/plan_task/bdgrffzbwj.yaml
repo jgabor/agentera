@@ -1,0 +1,23 @@
+id: bdgrffzbwj
+artifact: plan
+record:
+  name: Offer fresh shared-skill installation
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the CLI is invoked with a missing skill and an eligible destination WHEN diagnosis runs THEN it supplies one plain installation question and a complete bound operation, explaining that project files will not change.
+    - GIVEN Yes versus No or silence WHEN the offer is handled THEN Agentera installs only within the approved scope or makes no changes.
+    - GIVEN the destination appears or changes after the offer, or its parents are unsafe WHEN installation is attempted THEN Agentera refuses without silently replacing newly encountered data.
+    - GIVEN successful installation or an already-current skill WHEN diagnosed THEN the result is one current regular SKILL.md with no redundant installation prompt. Preserve current platform limits and existing upgrade behavior. Test one success and one refusal per behavior, adding cases only for distinct risks.
+  plan: gebglunpxa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: bdgrffzbwj-coordinator-1
+      source: "Coordinator reviewed task-attributed code evidence: 101 targeted tests, typecheck/build/contracts and 17 isolated built-CLI calls passed; all four criteria covered including appeared-target refusal. Index /tmp/opencode/gebglunpxa-evidence/task-bdgrffzbwj/INDEX.md. Final integrated independent audit remains required."
+      recorded_at: 2026-09-22 13:14
+      writer_command: agentera state plan record-evaluation

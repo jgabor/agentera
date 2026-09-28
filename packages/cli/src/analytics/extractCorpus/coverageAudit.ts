@@ -258,7 +258,8 @@ export function runCoverageAudit(args: ExtractArgs, env: Env = process.env, plat
     const available = discovery.status === "available";
     let earliest: string | null = null;
     let latest: string | null = null;
-    if (available && config.storePath) {
+    // Skipped stores may be discovered for coverage, but their history is not approved for content reads.
+    if (available && config.selected && config.storePath) {
       const bounds = probeRuntimeTimestamps(config.sourceProduct, config.storePath);
       earliest = bounds.earliest;
       latest = bounds.latest;

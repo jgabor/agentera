@@ -201,7 +201,9 @@ function briefSelectedPlanTask(task: unknown, projection: SourceContractProjecti
   if (name !== undefined) out.name = name;
   const dependencies = boundedStringList(task.depends_on, maxItems, maxChars);
   if (dependencies !== undefined) out.depends_on = dependencies;
-  const acceptance = boundedStringList(task.acceptance, maxItems, maxChars);
+  // Preserve one executable criterion even in the smallest fallback; exact get
+  // recovers the remainder without claiming truncated text is complete.
+  const acceptance = boundedStringList(task.acceptance, projection === "irreducible" ? 1 : maxItems, projection === "normal" ? maxChars : BRIEF_SCALAR_MAX_CHARS);
   if (acceptance !== undefined) out.acceptance = acceptance;
   if (isObject(task.retrieval)) {
     out.retrieval = pick(task.retrieval, ["get"]);
@@ -232,10 +234,10 @@ function briefHistoryRetrieval(value: unknown): Record<string, unknown> {
   return pick(value, ["list", "get"]);
 }
 
-function briefHistoryCaveats(value: unknown, maxChars: number): unknown[] | undefined {
+function briefHistoryCaveats(value: unknown, maxChars: number, preserveSummaryEvidence = false): unknown[] | undefined {
   if (!Array.isArray(value)) return undefined;
   return value.slice(0, 4).map((caveat) => {
-    if (typeof caveat === "string") return truncateCodePoints(caveat, maxChars, "…");
+    if (typeof caveat === "string") return truncateCodePoints(caveat, preserveSummaryEvidence && caveat.includes("incomplete historical evidence") ? 160 : maxChars, "…");
     if (!isObject(caveat)) return {};
     const out: Record<string, unknown> = {};
     for (const key of ["class", "kind", "state", "confidence", "satisfaction_state", "message", "reason", "detail_availability", "compatibility", "recovery"]) {
@@ -261,11 +263,11 @@ function briefHistory(history: unknown, projection: SourceContractProjection = "
       counts: pick(counts, ["total", "returned", "remaining", "full", "summary"]),
       retrieval: briefHistoryRetrieval(entryObj.retrieval),
     };
-    const caveats = briefHistoryCaveats(entryObj.caveats, maxChars);
+    const caveats = briefHistoryCaveats(entryObj.caveats, maxChars, projection === "irreducible");
     if (caveats !== undefined) projected.caveats = caveats;
     if (isObject(entryObj.degraded_history)) {
       const degraded = pick(entryObj.degraded_history, ["summary_count", "returned_count", "omitted_count"]);
-      const degradedCaveats = briefHistoryCaveats(entryObj.degraded_history.caveats, maxChars);
+      const degradedCaveats = briefHistoryCaveats(entryObj.degraded_history.caveats, maxChars, projection === "irreducible");
       if (degradedCaveats !== undefined) degraded.caveats = degradedCaveats;
       projected.degraded_history = degraded;
     }

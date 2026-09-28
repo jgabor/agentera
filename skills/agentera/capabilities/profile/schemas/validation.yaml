@@ -45,7 +45,9 @@ VALIDATION:
     description: >-
       Profile MUST NOT modify session history, memory files, or config
       files. It reads these sources for extraction but never writes to them.
-      The only artifact profile produces is PROFILE.md. Profile MUST NOT
+      Profile writes PROFILE.md and its retained prior copy; explicitly consented
+      refresh writes bounded evidence and candidate projections through existing
+      owners. Profile MUST NOT
       load the monolithic corpus.json whole: synthesis reads the bounded
       signal tier and retrieves full evidence one shard at a time via
       evidence_anchor. Legacy/missing tiers require a refresh to publish
@@ -56,6 +58,7 @@ VALIDATION:
       - "No writes to memory or config files"
       - "Monolithic corpus.json is never loaded whole"
       - "Full-evidence records are retrieved one shard at a time"
+      - "Skipped stores are not opened to inspect history timestamps"
   5:
     id: V5
     rule: prediction_accuracy
@@ -119,3 +122,22 @@ VALIDATION:
       - "Fresh evidence refreshes only matching meaning and provenance kind"
       - "Glossary confidence never mutates decision-pattern confidence"
       - "Question-capable hosts present only a bounded queued review set; other hosts use the durable queue"
+  9:
+    id: V9
+    rule: consented_same_run_refresh
+    description: >-
+      Full reuses adequate valid bounded evidence. Inadequate evidence may trigger
+      refresh and regeneration in the same run only after explicit source-selection
+      consent and generated-profile replacement approval. Disclose replacement of
+      all non-glossary content including tensions; retain the prior copy and preserve
+      accepted owned Glossary bytes. No, silence or generic Profile invocation grants
+      neither missing approval. Changed sources/destinations require fresh approval.
+      After partial failure, reuse valid completed tiers/base/backup and report what
+      remains; any necessary reacquisition stays within the same approved selection.
+      Existing glossary meaning review/admission stays separate and unchanged.
+    severity: critical
+    checks:
+      - "Approved refresh continues synthesis without a restart handoff"
+      - "Adequate valid evidence does not trigger unnecessary acquisition"
+      - "Source and replacement refusals leave profile/history unchanged"
+      - "Prior copy, owned glossary and completed work survive resumption"

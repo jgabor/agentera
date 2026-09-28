@@ -16,6 +16,7 @@ import { runLifecycleUpgrade, isLifecycleCleanupResource, type LifecycleUpgradeR
 import { acquireUpgradeLock, releaseUpgradeLock } from "./upgradeLock.js";
 import { applyPreparedEntityCutover, inspectEntityCutoverForUpgrade, prepareEntityCutoverForUpgrade, type PreparedEntityCutover } from "../state/entityCutover.js";
 import { detectStateMode } from "../state/stateMode.js";
+import { cleanupOfferAuthorization } from "./cleanupOffer.js";
 
 /**
  * Phased upgrade orchestration for v2→v3 migration and project-level migration work.
@@ -40,6 +41,7 @@ export interface UpgradeOrchestratorArgs {
   /** Retired CLI input retained only so direct callers fail before mutation. */
   runtime?: string | null;
   legacyCleanup?: string | null;
+  cleanupAuthorization?: string | null;
 }
 
 export interface UpgradeOrchestratorPhase {
@@ -320,6 +322,44 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
   });
   const crossMajorBoundary = crossMajorBoundaryApplies(install, sourceRoot);
   const markerManagedResource = args.legacyCleanup ? resolveDeclaredMarkerManagedResource(args.legacyCleanup) : null;
+  if (args.cleanupAuthorization && args.legacyCleanup) {
+    const current = cleanupOfferAuthorization(args.legacyCleanup, {
+      home,
+      project,
+      installRoot,
+      sourceRoot,
+      env,
+    });
+    if (!current || current !== args.cleanupAuthorization) {
+      const items: MigrationPhaseItem[] = [
+        {
+          resourceId: args.legacyCleanup,
+          status: "blocked",
+          action: "review-declared-resource",
+          message: "Focused cleanup evidence or scope changed since the offer; preserve remaining resources and obtain a new diagnosis.",
+        },
+      ];
+      const phases = [summarizeOrchestratorPhase("cleanup", items, "focused cleanup evidence changed")];
+      return {
+        schemaVersion: UPGRADE_PREVIEW_SCHEMA,
+        mode: args.yes ? "apply" : "plan",
+        status: "blocked",
+        lifecycleStatus: STATUS_MANUAL_REVIEW_NEEDED,
+        channel,
+        install,
+        upgradeOutcome,
+        crossMajorBoundary,
+        project,
+        appHome: installRoot,
+        home,
+        phases,
+        lifecycle: null,
+        summary: aggregateSummary(phases),
+        dryRunCommand: null,
+        applyCommand: null,
+      };
+    }
+  }
   if (args.legacyCleanup && (markerManagedResource || !isLifecycleCleanupResource(args.legacyCleanup))) {
     const targetedContext = {
       appHome: installRoot,

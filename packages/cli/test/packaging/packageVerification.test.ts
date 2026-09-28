@@ -12,6 +12,7 @@ import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWor
 import { validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 import { appendDecisionEntity } from "../../src/state/decisionEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
+import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -188,7 +189,14 @@ function runResetWorkflow(bin: string, root: string) {
   });
   expect(previewResult.status, `reset preview failed:\n${previewResult.stdout}\n${previewResult.stderr}`).toBe(0);
   const preview = JSON.parse(previewResult.stdout);
-  const applyResult = spawnSync(process.execPath, [bin, ...common, "--yes", "--authorization", preview.authorization, "--format", "json"], {
+  expect(preview).toMatchObject({
+    approval: "explicit_yes_only",
+    question: expect.stringContaining("no backup or undo"),
+    apply_command: expect.stringContaining(`--authorization ${preview.authorization}`),
+  });
+  const offeredArgs = shellCommandArgs(preview.apply_command.replace(/^npx -y agentera@next /, "agentera "));
+  expect(offeredArgs).toEqual(["upgrade", "--reset-product-v1", "--project", project, "--home", home, "--install-root", install, "--yes", "--authorization", preview.authorization, "--format", "json"]);
+  const applyResult = spawnSync(process.execPath, [bin, ...offeredArgs], {
     cwd: project,
     env: packageEnvironment(home, profile),
     encoding: "utf8",
@@ -204,6 +212,7 @@ function runResetWorkflow(bin: string, root: string) {
       deletionIds: preview.deletions.map((item: { id: string }) => item.id),
       recreationIds: preview.recreations.map((item: { id: string }) => item.id),
       irreversibleLossCount: preview.irreversible_loss.length,
+      boundApply: preview.apply_command.includes(`--project ${project}`) && preview.apply_command.includes(`--home ${home}`) && preview.apply_command.includes(`--install-root ${install}`),
     },
     applied: { status: applied.status, effects_performed: applied.effects_performed },
     result: {
@@ -386,7 +395,21 @@ describe("npm distribution boundary", () => {
       expect(payload.capability_context.instructions.match(/## Execution rules/g)).toHaveLength(1);
       expect(payload.capability_context.instructions).toContain("explicit permissions remain binding");
       expect(payload.capability_context.instructions).toContain("Stop at accepted scope, even if blocked");
+      if (capability === "plan") {
+        expect(payload.capability_context.instructions).toContain("carry explicit save-and-execute approval forward without another confirmation");
+        expect(payload.capability_context.instructions).not.toContain("suggest ⎈ orchestrate to execute the entire plan and wait for confirmation");
+      }
+      if (capability === "document") {
+        expect(payload.capability_context.instructions).toContain("without per-finding questions or a second draft confirmation");
+        expect(payload.capability_context.instructions).toContain("state docs update --id ID --input PATH");
+      }
+      if (capability === "profile") {
+        expect(payload.capability_context.instructions).toContain("continue Steps 2–4 in this invocation without a restart handoff");
+        expect(payload.capability_context.instructions).not.toContain("outside this Full run");
+      }
       if (capability === "orchestrate") {
+        expect(payload.capability_context.instructions).toContain("do not re-delegate, re-evaluate or record a new attempt");
+        expect(payload.capability_context.instructions).not.toContain("Increment the retry count");
         expect(payload.capability_context.instructions).toContain("current worktree content, including uncommitted changes");
         expect(payload.capability_context.instructions).toContain("unchanged-but-valid artifacts need no touch");
         expect(payload.capability_context.instructions).not.toContain("git log -1 --format=%aI");
@@ -814,6 +837,116 @@ describe("npm distribution boundary", () => {
     });
   });
 
+  it("matches fresh host installation and ownership-bound Doctor cleanup across constructed and extracted runtimes", () => {
+    const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
+    const observations = bins.map((bin, index) => {
+      const root = path.join(fixture.root, `host-cleanup-${index}`),
+        home = path.join(root, "home"),
+        project = path.join(root, "project"),
+        data = path.join(home, ".local/share/agentera");
+      fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+      fs.mkdirSync(data, { recursive: true });
+      fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      const env = { ...packageEnvironment(home), XDG_DATA_HOME: path.join(home, ".local/share") };
+      const run = (args: string[]) => {
+        const result = spawnSync(process.execPath, [bin, ...args], {
+          cwd: project,
+          env,
+          encoding: "utf8",
+        });
+        expect(result.stdout, result.stderr).not.toBe("");
+        return { status: result.status, payload: JSON.parse(result.stdout) };
+      };
+      const argumentsOf = (command: string) => shellCommandArgs(command.replace(/^npx -y agentera@next /, "agentera "));
+      const first = run(["prime", "--context", "status"]);
+      const offer = first.payload.shared_skill.upgrade_offer;
+      expect(offer).toMatchObject({
+        question: expect.stringContaining("Install it now?"),
+        approval: "explicit_yes_only",
+        apply_command: expect.stringContaining("--authorization fresh-one-file-sha256:"),
+      });
+      const installed = run(argumentsOf(offer.apply_command));
+      expect(installed).toMatchObject({ status: 0, payload: { status: "success" } });
+      const target = path.join(home, ".agents/skills/agentera");
+      expect(fs.readdirSync(target)).toEqual(["SKILL.md"]);
+      expect(fs.lstatSync(path.join(target, "SKILL.md")).isFile()).toBe(true);
+      expect(run(["prime", "--context", "status"]).payload.shared_skill.upgrade_offer).toBeNull();
+      const raceHome = path.join(root, "race-home"),
+        raceEnv = {
+          ...packageEnvironment(raceHome),
+          XDG_DATA_HOME: path.join(raceHome, ".local/share"),
+        };
+      fs.mkdirSync(raceHome, { recursive: true });
+      const raceCall = (args: string[]) => {
+        const result = spawnSync(process.execPath, [bin, ...args], {
+          cwd: project,
+          env: raceEnv,
+          encoding: "utf8",
+        });
+        return { status: result.status, payload: JSON.parse(result.stdout) };
+      };
+      const raceOffer = raceCall(["prime", "--context", "status"]).payload.shared_skill.upgrade_offer;
+      const appeared = path.join(raceHome, ".agents/skills/agentera/SKILL.md");
+      fs.mkdirSync(path.dirname(appeared), { recursive: true });
+      fs.writeFileSync(appeared, "new unapproved data\n");
+      expect(raceCall(argumentsOf(raceOffer.apply_command))).toMatchObject({
+        status: 1,
+        payload: { status: "non_success" },
+      });
+      expect(fs.readFileSync(appeared, "utf8")).toBe("new unapproved data\n");
+      const sibling = path.join(home, ".codex/agents/status.toml"),
+        external = path.join(root, "external.txt");
+      fs.mkdirSync(path.dirname(sibling), { recursive: true });
+      fs.writeFileSync(external, "preserve\n");
+      fs.symlinkSync(external, sibling);
+      for (const name of ["build", "plan"]) fs.writeFileSync(path.join(home, `.codex/agents/${name}.toml`), `# agentera_managed: true\nname = '${name}'\n`);
+      const diagnosis = run(["doctor", "--home", home, "--project", project, "--install-root", data, "--format", "json"]);
+      expect(diagnosis.status).toBe(1);
+      expect(diagnosis.payload).toMatchObject({
+        current_health: { cli: "up_to_date", shared_skill: "pass", durable_user_data_root: data },
+        userDataRoot: data,
+        cleanup_offer: {
+          approval: "explicit_yes_only",
+          operations: expect.any(Array),
+          manual_review_resource_ids: ["codex.agent-descriptor.status"],
+        },
+      });
+      expect(diagnosis.payload.cleanup_offer.operations.map((item: { id: string }) => item.id)).toEqual(["codex.agent-descriptor.build", "codex.agent-descriptor.plan"]);
+      const [build, plan] = diagnosis.payload.cleanup_offer.operations;
+      expect(run(argumentsOf(build.apply_command)).payload.status).toMatch(/applied|blocked/);
+      fs.appendFileSync(path.join(home, ".codex/agents/plan.toml"), "changed after offer\n");
+      const refused = run(argumentsOf(plan.apply_command));
+      expect(refused).toMatchObject({
+        status: 1,
+        payload: {
+          status: "blocked",
+          remaining_cleanup: {
+            status: "action_required",
+            recovery_command: expect.stringContaining("doctor --home"),
+          },
+        },
+      });
+      expect(fs.existsSync(path.join(home, ".codex/agents/build.toml"))).toBe(false);
+      expect(fs.existsSync(path.join(home, ".codex/agents/plan.toml"))).toBe(true);
+      expect(fs.lstatSync(sibling).isSymbolicLink()).toBe(true);
+      expect(fs.readFileSync(external, "utf8")).toBe("preserve\n");
+      const after = run(["doctor", "--home", home, "--project", project, "--install-root", data, "--format", "json"]);
+      expect(after.status).toBe(1);
+      expect(after.payload.cleanup_attention.pending_resource_ids).toEqual(["codex.agent-descriptor.plan"]);
+      return {
+        firstOffer: offer.approval,
+        installed: installed.payload.status,
+        appearedRefused: true,
+        hostFiles: fs.readdirSync(target),
+        health: after.payload.current_health.cli,
+        pending: after.payload.cleanup_attention.pending_resource_ids,
+        manual: after.payload.cleanup_attention.manual_review_resource_ids,
+        refusal: refused.payload.status,
+      };
+    });
+    expect(observations[1]).toEqual(observations[0]);
+  });
+
   it("isolates selected-term startup from an empty inherited XDG profile root", () => {
     const inheritedData = path.join(fixture.root, "empty-inherited-xdg");
     fs.mkdirSync(inheritedData);
@@ -886,12 +1019,33 @@ describe("npm distribution boundary", () => {
 
   it("matches the source personal glossary production workflow", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    expect(runProductionGlossaryWorkflow(bin, path.join(fixture.root, "glossary-production"))).toEqual({
+    const root = path.join(fixture.root, "glossary-production");
+    expect(runProductionGlossaryWorkflow(bin, root)).toEqual({
       generationBound: true,
       outcome: "review_required",
       privacyBounded: true,
       recovery: "agentera report refresh --consent local-history",
     });
+    const profileDir = path.join(root, "profile-data");
+    const read = spawnSync(process.execPath, [bin, "report", "profile-inputs"], {
+      cwd: root,
+      env: {
+        ...packageEnvironment(path.join(root, "home"), profileDir),
+        XDG_DATA_HOME: path.join(root, "xdg-data"),
+      },
+      encoding: "utf8",
+    });
+    expect(read.status, read.stdout + read.stderr).toBe(0);
+    expect(JSON.parse(read.stdout)).toMatchObject({
+      schemaVersion: "agentera.profileInputs.v1",
+      profile: { path: path.join(profileDir, "PROFILE.md") },
+      bounded_signals: {
+        state: expect.stringMatching(/current|incomplete/),
+        profile_signal_count: expect.any(Number),
+      },
+      privacy: { local_history_read: false, profile_content_emitted: false, writes: false },
+    });
+    expect(read.stdout).not.toContain("Keep signal-braid explicit.");
   });
 
   it("runs producer readiness publication and replay from the extracted package", { timeout: 120_000 }, async () => {

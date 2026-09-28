@@ -138,3 +138,15 @@ VALIDATION:
       - "Normal publication is one typed writer call"
       - "Standalone lint and default dry-run are absent"
       - "Explicit preview and publication reuse one unchanged input"
+  12:
+    id: V12
+    rule: final_plan_execution_approval
+    description: >-
+      Apply protocol OPERATING_RULES to the final reviewed plan: explicit approval
+      to save and execute carries through successful publication and handoff.
+      Planning-only approval, silence, failed publication or material changes
+      cannot start execution. Git, global installation and history remain separate.
+    severity: critical
+    checks:
+      - "Save-and-execute starts the appropriate capability once after publication"
+      - "Planning-only and changed-plan cases do not infer execution consent"
