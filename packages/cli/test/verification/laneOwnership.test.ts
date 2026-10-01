@@ -608,7 +608,9 @@ describe("verification lane ownership", () => {
     expect(inventory.files.package).toEqual([
       "packages/cli/test/packaging/coldProcessScheduler.test.ts",
       "packages/cli/test/packaging/copyBundleSafety.test.ts",
+      "packages/cli/test/packaging/discussCloseoutJourney.test.ts",
       "packages/cli/test/packaging/packageVerification.test.ts",
+      "packages/cli/test/packaging/projectMigrationJourney.test.ts",
       "packages/cli/test/packaging/sharedSkillUpgradeChain.test.ts",
       "packages/cli/test/packaging/staticDiscoveryQualification.test.ts",
     ]);

@@ -1,0 +1,39 @@
+id: rjwzzprtnu
+artifact: todo
+record:
+  kind: feat
+  target_version: null
+  title: File selected research and audit findings with one approval
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "No separate expected-outcome discussion is required: present the exact selected research/audit entries and severities, deduplicate against existing TODOs, and obtain one explicit approval before saving that set."
+    - Reuse existing typed writer operations, including batch writers where suitable; do not add a new API or claim global multi-file atomicity. After interruption verify saved and remaining entries before retrying the unchanged authorized set.
+    - Approval covers only filing the selected findings, not code fixes, capability execution, vision writes or additional findings. Scope changes require fresh approval; a plan alone does not authorize saves.
+  acceptance:
+    - The preview shows exactly the selected entries and severities, excludes duplicates, and one approval saves only that set through existing typed writers.
+    - Refusal leaves TODO state unchanged and starts no code fixes, capability execution or vision writes.
+    - Changing the selected entries or severities invalidates prior approval; additional findings do not inherit it.
+    - After interruption, saved and remaining entries are verified and reported; unchanged authorized retries avoid duplicates without claiming global multi-file atomicity.
+  readiness:
+    capability: build
+    reason: The selected-findings filing outcome is bounded and needs no separate outcome discussion; execution still requires approval of the exact deduplicated set.
+    dependencies:
+      []
+    blocked: null
+    gate: null
+    queue_rank: 103
+    order_reason: Append the missing recommended findings-filing outcome without reordering unrelated work.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat] File selected research and audit findings with one approval"
+      status: resolved
+      order: 142
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Research and Audit now file one exact deduplicated findings set with one approval and verified duplicate-free recovery.
+    date: 2026-09-30

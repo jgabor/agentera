@@ -1,0 +1,47 @@
+id: rimkqvqboe
+artifact: todo
+record:
+  kind: feat
+  target_version: null
+  title: Approve optimization setup as one bounded package
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "Apply decision mwtpectiwp: show the objective, target, measurement method, first named hypothesis, scope, resource limits and keep/discard rule as one proposal before active setup or code changes. One explicit approval covers setup, baseline measurement and that one bounded experiment; decline or silence activates nothing."
+    - Use typed objective and experiment writers after bqbsplvlfz is complete. Prefer existing suitable measurement commands over duplicate tooling. Keep the approved judge fixed during the experiment; material target, method, hypothesis, scope or limit changes require a revised proposal and fresh approval.
+    - If the verified baseline already meets the target, report that fact without unnecessary experimental changes or invented results. Keep experimental changes only when the approved metric improves and regression and constraint checks pass; otherwise discard only the experiment's own unsuccessful changes, preserving unrelated user work. Never silently start a replacement experiment when blocked.
+    - "Retain only artifacts with concrete continuing use: a still-relevant objective, usable measurement tooling and bounded actionable experiment records. Do not keep failed implementation code, duplicate harnesses, abandoned branches, disposable drafts or large raw logs by default. Reuse measurements only while inputs and conditions match; surface uncertain continued use or safe cleanup, and close or retire obsolete setup through its owner without silently deleting history."
+    - On interruption, report completed and remaining work. Reuse known approval and still-valid completed setup, measurements and checks; do not repeat verified work or create duplicate records. Missing approval, invalid evidence or material drift stops for bounded recovery or revised approval rather than guessed continuation.
+    - Stop after the named experiment; an additional experiment requires fresh authorization. Package approval implies no Git, profile/history acquisition or installation permission. Correct directly conflicting automatic-commit, path-based mutation and blocked-hypothesis guidance within this delivery, without adding a general consent, retention or cleanup framework.
+  acceptance:
+    - GIVEN a concrete optimization package WHEN approved THEN setup, baseline and one named experiment follow that one approval; decline or silence leaves active setup and project code unchanged.
+    - GIVEN changed target, measurement method, hypothesis, scope or limits WHEN proceeding THEN a revised proposal and fresh approval are required, and the experiment's approved judge remains fixed.
+    - GIVEN verified measurements and regression/constraint results WHEN deciding THEN only improved compliant changes are kept, unsuccessful experimental changes alone are discarded, and an already-met target causes no unnecessary experimental changes or invented outcome.
+    - GIVEN retention or interruption WHEN continuing THEN only concretely useful setup and bounded actionable records remain, existing suitable tools and valid evidence are reused, saved/remaining work is clear, and uncertain cleanup or missing approval is surfaced without duplicate records.
+    - GIVEN the outcome and identity prerequisite WHEN delivery is assessed THEN typed ownership, one-experiment limits and separate permission boundaries hold; isolated checks target one success and one refusal per behavior, with extras only for distinct recovery, preservation or evidence risks.
+  readiness:
+    capability: build
+    reason: Decision mwtpectiwp and reviewed task fobwsfjjhn define the outcome; identity prerequisite bqbsplvlfz passed and the user authorized orchestration and resumption.
+    dependencies:
+      - artifact: todo
+        id: bqbsplvlfz
+    blocked: null
+    gate:
+      state: satisfied
+      reason: Explicit orchestration and resumption authorize the setup-approval implementation, not a live optimization experiment.
+      recovery: Changed scope requires renewed approval; live experiments, profile/history acquisition, installation and Git actions remain excluded.
+    queue_rank: 102
+    order_reason: Preserve the existing optimization backlog position; do not reorder unrelated work.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat] Approve optimization setup as one bounded package"
+      status: resolved
+      order: 147
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Implemented one bounded setup/baseline/named-experiment approval with fixed measurement, useful retention and valid resumption; source/package checks and independent review passed.
+    date: 2026-10-01

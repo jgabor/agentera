@@ -1,0 +1,23 @@
+id: nzpqztrpxp
+artifact: plan
+record:
+  name: Align project readiness and recovery
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN fresh, legacy, partial, corrupt or valid projects WHEN diagnosed THEN Doctor and Prime agree on operability and scoped recovery.
+    - GIVEN blocked project operations WHEN installation is current THEN component health remains visible without an aggregate all-clear.
+    - GIVEN clean or stale global homes WHEN project recovery runs THEN its result and untouched global resources agree.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior pass THEN existing passing separation is reused and delivery is verified.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Doctor's new corrupt-entity fallback omits the diagnosed project: doctor --project B from healthy A returns unscoped check validate state, which validates A. Criterion1 scoped recovery requires explicit --cwd B; criteria2-4 otherwise pass."
+    provenance:
+      attempt_id: project-readiness-audit-2
+      source: Independent bounded recheck ses_f0b81ff8dffecf2GwlDxOaRcFh confirms all four criteria. Cross-directory recovery now targets diagnosed B with quoted --cwd;32 focused,4823 source+6skips,44 package tests pass. Source/build/package755fb896423fb8d1287ad2a0beec1a12431bf7cfd4788f24ca24432c51db7f0e and durable correction evidence match.
+      recorded_at: 2026-10-01 01:13
+      writer_command: agentera state plan record-evaluation

@@ -66,7 +66,7 @@ function failure(io: Io, schemaVersion: string, command: string, syntax: string,
   return 1;
 }
 
-function reviewSummary(record: PersonalGlossaryReviewReadRecord): Mapping {
+export function reviewSummary(record: PersonalGlossaryReviewReadRecord): Mapping {
   return {
     review_id: record.review_id,
     candidate_id: record.candidate_id,

@@ -1,17 +1,9 @@
 import fs from "node:fs";
 
-import {
-  dispositionPersonalGlossaryReviewRecord,
-  queuePersonalGlossaryReviewRecord,
-  validPersonalGlossaryReviewGenerationBinding,
-  validPersonalGlossaryReviewMetadataBinding,
-  type PersonalGlossaryReviewQueueResult,
-  type PersonalGlossaryReviewDispositionResult,
-  type PersonalGlossaryReviewReadRecord,
-} from "../../analytics/personalGlossaryReviewRecords.js";
+import { dispositionPersonalGlossaryReviewRecord, queuePersonalGlossaryReviewRecord, validPersonalGlossaryReviewGenerationBinding, validPersonalGlossaryReviewMetadataBinding, type PersonalGlossaryReviewQueueResult, type PersonalGlossaryReviewDispositionResult } from "../../analytics/personalGlossaryReviewRecords.js";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { personalGlossaryReviewRecordsContract } from "../../registries/glossaryReviewRecordsContract.js";
-import { getPersonalGlossaryReviewRecord, listPersonalGlossaryReviewRecords } from "./personalGlossaryReviewRecordReads.js";
+import { getPersonalGlossaryReviewRecord, listPersonalGlossaryReviewRecords, reviewSummary } from "./personalGlossaryReviewRecordReads.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import { emitStructured } from "../structured.js";
 import type { Io } from "../dispatch/shared.js";
@@ -76,7 +68,6 @@ interface ReviewFailure {
     | "review_not_pending"
     | "review_approval_invalid"
     | "review_approval_replayed"
-    | "review_approval_unavailable"
     | "review_replay_capacity_exceeded"
     | "cursor_invalid"
     | "cursor_snapshot_unavailable"
@@ -574,30 +565,6 @@ function validateDispositionRequest(request: Mapping, value: ReviewRecordsComman
   return { reviewId: request.review_id, receipt: request.receipt, approval: request.approval };
 }
 
-function reviewSummary(record: PersonalGlossaryReviewReadRecord): Mapping {
-  return {
-    review_id: record.review_id,
-    candidate_id: record.candidate_id,
-    candidate_revision: record.candidate_revision,
-    candidate_capsule_sha256: record.candidate_capsule_sha256,
-    candidate_projection_sha256: record.candidate_projection_sha256,
-    host_receipt_sha256: record.host_receipt_sha256,
-    cli_decision_sha256: record.cli_decision_sha256,
-    semantic_fingerprint: record.semantic_fingerprint,
-    generation: record.generation,
-    policy_version: record.policy_version,
-    scope: record.scope,
-    reason: record.reason,
-    status: record.status,
-    disposition: record.disposition,
-    reopen_reason: record.reopen_reason,
-    queued_at: record.queued_at,
-    terminal_at: record.terminal_at,
-    expires_at: record.expires_at,
-    record_sha256: record.record_sha256,
-  };
-}
-
 function serializedBytes(value: unknown): number {
   return Buffer.byteLength(`${JSON.stringify(value, null, 2)}\n`, "utf8");
 }
@@ -759,18 +726,13 @@ function dispositionReview(io: Io, input: string, value: ReviewRecordsCommandCon
     },
     approval_invalid: {
       class: "review_approval_invalid",
-      message: "the current-user review approval is invalid or no longer fresh",
-      recovery: "Request a new signed current-user local-host approval for this current review, then retry; no review metadata was changed.",
+      message: "the explicit user review action or its exact bindings are invalid",
+      recovery: "Reread the current review and correct the harness assertion. Changed meanings, scope or revision require fresh displayed approval; no review metadata was changed.",
     },
     approval_conflicting_replay: {
       class: "review_approval_replayed",
-      message: "the review approval nonce was already used with different signed content",
-      recovery: "Request a new signed current-user local-host approval with a new nonce, then retry; no review metadata was changed.",
-    },
-    approval_unavailable: {
-      class: "review_approval_unavailable",
-      message: "the configured trusted local-host key is unavailable or invalid",
-      recovery: "Repair the user-local trusted host key configuration, then retry; no review metadata was changed.",
+      message: "the review approval nonce was already used with different content",
+      recovery: "Keep the original request for unchanged approved work. Changed meanings, scope or revision require fresh displayed approval and a new action nonce; no review metadata was changed.",
     },
     records_unavailable: {
       class: "review_records_unavailable",

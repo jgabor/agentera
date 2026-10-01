@@ -9,6 +9,7 @@ import path from "node:path";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { resolvePath } from "../../core/paths.js";
 import { normalizeArtifactProtocolId } from "../../registries/artifactProtocolIds.js";
+import { canonicalEntityEnvelope, canonicalEntityPath } from "../../state/entityStorage.js";
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { validateMd } from "./markdown.js";
 import { defaultArtifactPath, readIfNeeded } from "./traversal.js";
@@ -47,12 +48,28 @@ export class ArtifactSchemaValidator {
     return validateMd(content, name, schema);
   }
 
-  validateExplicit(artifact: string, filePath: string, _cwd: string): string[] {
+  validateExplicit(artifact: string, filePath: string, cwd: string): string[] {
+    if (!filePath && (artifact === "objective" || artifact === "experiments")) return [`${artifact}: no fixed artifact path; provide an entity or explicit scoped legacy path`];
     const content = readIfNeeded(null, filePath);
     if (content === null) return [`${artifact}: cannot read artifact file '${filePath}'`];
     const protocolId = normalizeArtifactProtocolId(artifact);
     if (protocolId === null) {
       return [`${artifact}: unsupported artifact protocol id`];
+    }
+    if (protocolId === "objective" || protocolId === "experiments") {
+      const relative = path.relative(cwd, filePath).replaceAll("\\", "/");
+      if (relative === `.agentera/${protocolId}.yaml`) return [`${protocolId}: root pseudo-path is not an artifact authority; use an entity or explicit scoped legacy path`];
+      const entity = canonicalEntityPath(relative);
+      if (entity) {
+        if (entity.artifact !== protocolId) return [`${protocolId}: entity path belongs to ${entity.artifact}`];
+        try {
+          canonicalEntityEnvelope(content, entity);
+          return [];
+        } catch (error) {
+          return [`${protocolId}: ${(error as Error).message}`];
+        }
+      }
+      if (relative.startsWith(".agentera/entities/")) return [`${protocolId}: invalid canonical entity path`];
     }
     if (AGENT_FACING_ARTIFACT_IDS.has(protocolId)) {
       const schema = this.loadSchema(protocolId);

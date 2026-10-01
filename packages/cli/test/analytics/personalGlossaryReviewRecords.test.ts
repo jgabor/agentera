@@ -10,6 +10,7 @@ import {
   dispositionPersonalGlossaryReviewRecord,
   maintainPersonalGlossaryReviewRecords,
   personalGlossaryReviewRecordsPath,
+  personalGlossaryReviewPublicationAuthorization,
   personalGlossaryTrustedLocalHostPath,
   queuePersonalGlossaryReviewRecord,
   readPersonalGlossaryReviewRecords,
@@ -191,6 +192,112 @@ function dispose(capsule: GlossaryEvidenceCapsule, projection: PersonalGlossaryC
     now,
   });
 }
+
+it.each(["accept", "correct"] as const)("refuses superseded %s authorization but retains the newer unsaved approval and metadata", (disposition) => {
+  const capsule = candidate(1);
+  const projection = persist([capsule]);
+  const originalReceipt = receipt(capsule, projection);
+  const originalDecision = decidePersonalGlossaryCandidate(originalReceipt, storage()).decision!;
+  const original = queue(capsule, projection).record!;
+  const originalAction = dispose(capsule, projection, original, disposition);
+  expect(originalAction.status).toBe("disposed");
+  const authorizeOriginal = (now = "2026-08-11T00:04:00.000Z") =>
+    personalGlossaryReviewPublicationAuthorization({
+      ...storage(),
+      ...originalAction.publication_authorization!,
+      capsule,
+      receipt: originalReceipt,
+      decision: originalDecision,
+      candidate_projection_sha256: projection.projection_sha256,
+      now,
+    });
+  expect(authorizeOriginal().status).toBe("authorized");
+  const newerReceipt = receipt(capsule, projection, "uncertain");
+  const newer = queuePersonalGlossaryReviewRecord({
+    ...storage(),
+    receipt: newerReceipt,
+    now: "2026-08-11T00:02:00.000Z",
+  }).record!;
+  // Merely queued is not supersession.
+  expect(authorizeOriginal().status).toBe("authorized");
+  const newerApproval = approval(newer, "correct", {
+    disposed_at: "2026-08-11T00:03:00.000Z",
+    corrected_meaning: "The later approved meaning.",
+  });
+  const newerAction = dispositionPersonalGlossaryReviewRecord({
+    ...storage(),
+    review_id: newer.review_id,
+    receipt: newerReceipt,
+    approval: newerApproval,
+    now: "2026-08-11T00:04:00.000Z",
+  });
+  expect(newerAction.status).toBe("disposed");
+  expect(authorizeOriginal().status).toBe("superseded");
+  expect(authorizeOriginal("2036-08-11T00:04:00.000Z").status).toBe("superseded");
+  const authorizeNewer = () =>
+    personalGlossaryReviewPublicationAuthorization({
+      ...storage(),
+      ...newerAction.publication_authorization!,
+      capsule,
+      receipt: newerReceipt,
+      decision: decidePersonalGlossaryCandidate(newerReceipt, storage()).decision!,
+      candidate_projection_sha256: projection.projection_sha256,
+      now: "2036-08-11T00:04:00.000Z",
+    });
+  expect(authorizeNewer().status).toBe("authorized");
+  expect(
+    dispositionPersonalGlossaryReviewRecord({
+      ...storage(),
+      review_id: newer.review_id,
+      receipt: newerReceipt,
+      approval: newerApproval,
+      now: "2036-08-11T00:04:00.000Z",
+    }).status,
+  ).toBe("unchanged_replay");
+  expect(readPersonalGlossaryReviewRecords(storage()).store!.records).toHaveLength(2);
+  expect(authorizeNewer().status).toBe("authorized");
+});
+
+it("refuses ambiguous same-time approvals without discarding either review record", () => {
+  const capsule = candidate(1);
+  const projection = persist([capsule]);
+  const firstReceipt = receipt(capsule, projection);
+  const secondReceipt = receipt(capsule, projection, "uncertain");
+  const first = queue(capsule, projection).record!;
+  const second = queuePersonalGlossaryReviewRecord({
+    ...storage(),
+    receipt: secondReceipt,
+    now: QUEUED_AT,
+  }).record!;
+  const firstAction = dispose(capsule, projection, first, "accept");
+  const secondAction = dispositionPersonalGlossaryReviewRecord({
+    ...storage(),
+    review_id: second.review_id,
+    receipt: secondReceipt,
+    approval: approval(second, "correct"),
+    now: "2026-08-11T00:02:00.000Z",
+  });
+  expect(secondAction.status).toBe("disposed");
+  const storeBytes = fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8");
+  for (const [action, hostReceipt] of [
+    [firstAction, firstReceipt],
+    [secondAction, secondReceipt],
+  ] as const) {
+    expect(
+      personalGlossaryReviewPublicationAuthorization({
+        ...storage(),
+        ...action.publication_authorization!,
+        capsule,
+        receipt: hostReceipt,
+        decision: decidePersonalGlossaryCandidate(hostReceipt, storage()).decision!,
+        candidate_projection_sha256: projection.projection_sha256,
+        now: "2026-08-11T00:02:00.000Z",
+      }).status,
+    ).toBe("superseded");
+  }
+  expect(fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8")).toBe(storeBytes);
+  expect(readPersonalGlossaryReviewRecords(storage()).store!.records).toHaveLength(2);
+});
 
 // Reopening tests share only canonical fixture bytes. Each case restores them into
 // its own profile directory before exercising the real replay and requeue paths.
@@ -419,7 +526,7 @@ describe("personal glossary review-record persistence", () => {
     expect(fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8")).toBe(bytes);
   });
 
-  it("requires a fresh trusted current-user approval before it changes a queued review", () => {
+  it("requires an explicit current-user action with exact bindings, not age-based freshness", () => {
     const capsule = candidate(8);
     const projection = persist([capsule]);
     const queued = queue(capsule, projection);
@@ -439,7 +546,7 @@ describe("personal glossary review-record persistence", () => {
         queued.record!,
         "accept",
         {
-          disposed_at: "2026-08-11T00:00:00.000Z",
+          disposed_at: "2026-08-12T00:00:00.000Z",
           expires_at: "2026-08-11T00:01:00.000Z",
         },
         "2026-08-11T00:06:00.000Z",
@@ -763,7 +870,48 @@ describe("personal glossary review-record persistence", () => {
     expect(first.record!.record_sha256).toMatch(SHA256);
   });
 
-  it("expires terminal metadata or purges only review records without touching profile or projection", () => {
+  it("resumes unchanged approved work after metadata age without enrolling a signer", () => {
+    const capsule = candidate(41);
+    const projection = persist([capsule]);
+    const queued = queue(capsule, projection);
+    const request = approval(queued.record!, "accept");
+    delete request.signature;
+    delete request.expires_at;
+    Object.assign(request, {
+      schema_version: "agentera.personalGlossaryReviewApproval.v2",
+      issuer: "agentera-harness",
+      subject: "current_user",
+      trusted_channel: "explicit-user-review",
+    });
+    const input = {
+      ...storage(),
+      review_id: queued.record!.review_id,
+      receipt: receipt(capsule, projection),
+      approval: request,
+    };
+    const first = dispositionPersonalGlossaryReviewRecord({
+      ...input,
+      now: "2026-08-11T00:02:00.000Z",
+    });
+    expect(first.status).toBe("disposed");
+    maintainPersonalGlossaryReviewRecords({ ...storage(), now: "2036-08-11T00:02:00.000Z" });
+    expect(dispositionPersonalGlossaryReviewRecord({ ...input, now: "2036-08-11T00:02:00.000Z" })).toMatchObject({
+      status: "unchanged_replay",
+      publication_authorization: first.publication_authorization,
+    });
+    const before = fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8");
+    expect(
+      dispositionPersonalGlossaryReviewRecord({
+        ...input,
+        approval: { ...request, candidate_revision: "f".repeat(64) },
+        now: "2036-08-11T00:02:00.000Z",
+      }).status,
+    ).toBe("approval_invalid");
+    expect(fs.readFileSync(personalGlossaryReviewRecordsPath(storage()), "utf8")).toBe(before);
+    expect(fs.existsSync(personalGlossaryTrustedLocalHostPath(storage()))).toBe(false);
+  });
+
+  it("expires rejected terminal metadata or purges only review records without touching profile or projection", () => {
     const capsule = candidate(5);
     const projection = persist([capsule]);
     const profilePath = path.join(profileDir, "PROFILE.md");
@@ -773,9 +921,9 @@ describe("personal glossary review-record persistence", () => {
     const profileBefore = fs.readFileSync(profilePath, "utf8");
     const first = queue(capsule, projection);
     writeTrustedHost();
-    expect(dispose(capsule, projection, first.record!, "accept")).toMatchObject({
+    expect(dispose(capsule, projection, first.record!, "reject")).toMatchObject({
       status: "disposed",
-      record: { status: "terminal", disposition: "accept" },
+      record: { status: "terminal", disposition: "reject" },
     });
     const pathname = personalGlossaryReviewRecordsPath(storage());
 

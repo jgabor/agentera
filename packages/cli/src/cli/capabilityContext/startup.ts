@@ -1,5 +1,6 @@
 import { publicDoctorStatus } from "../../upgrade/doctor.js";
-import { CAPABILITY_INSTRUCTIONS } from "../../capabilities/index.js";
+import { CAPABILITY_INSTRUCTIONS, servedInstructions } from "../../capabilities/index.js";
+import { PROJECT_MIGRATION_STARTUP_GUIDANCE } from "../../upgrade/projectMigrationOffer.js";
 import { asList } from "../stateQuery.js";
 import { capabilityContext } from "./contract.js";
 import { bespokeCapabilityContexts, slimBespokeContext } from "./bespoke.js";
@@ -242,7 +243,8 @@ export function slimCapabilityContext(
     app: capabilityContextAppSummary(appHome, bundle),
     startup: startupAggregation(context, health, cutover, todoReconciliation),
     context: boundStartupValue(contextPayload) as JsonObject,
-    instructions: CAPABILITY_INSTRUCTIONS[capability] ?? "",
+    instructions: capability === "status" && cutover?.migration_offer ? servedInstructions(PROJECT_MIGRATION_STARTUP_GUIDANCE) : (CAPABILITY_INSTRUCTIONS[capability] ?? ""),
+    ...(capability === "status" && cutover?.migration_offer ? { instruction_mode: "project_migration_offer", capability_instructions_deferred: true } : {}),
     guidance_details: {
       instructions: preCutoverCommand(`prime --context ${capability} --detail instructions`),
       artifacts: preCutoverCommand(`prime --context ${capability} --detail artifacts`),

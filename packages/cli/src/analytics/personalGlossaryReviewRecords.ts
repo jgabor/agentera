@@ -29,7 +29,6 @@ import {
   personalGlossaryTrustedLocalHostPath,
   privateWritePersonalGlossaryReviewRecords,
   readPersonalGlossaryReviewRecords,
-  readPersonalGlossaryTrustedLocalHost,
   readablePersonalGlossaryReviewRecord,
   recordMatchesProjection,
   replayDigestMap,
@@ -105,7 +104,7 @@ export interface PersonalGlossaryReviewPublicationAuthorization {
 }
 
 export interface PersonalGlossaryReviewDispositionResult {
-  status: "disposed" | "unchanged_replay" | "review_not_found" | "review_not_pending" | "current_binding_mismatch" | "approval_invalid" | "approval_conflicting_replay" | "approval_unavailable" | "records_unavailable" | "replay_capacity_exceeded";
+  status: "disposed" | "unchanged_replay" | "review_not_found" | "review_not_pending" | "current_binding_mismatch" | "approval_invalid" | "approval_conflicting_replay" | "records_unavailable" | "replay_capacity_exceeded";
   record: PersonalGlossaryReviewRecord | null;
   publication_authorization: PersonalGlossaryReviewPublicationAuthorization | null;
 }
@@ -121,7 +120,7 @@ export interface PersonalGlossaryReviewPublicationAuthorizationInput extends Per
 }
 
 export interface PersonalGlossaryReviewPublicationAuthorizationResult {
-  status: "authorized" | "unavailable" | "binding_mismatch" | "not_publishable";
+  status: "authorized" | "unavailable" | "binding_mismatch" | "not_publishable" | "superseded";
   review: GlossaryReviewRecord | null;
 }
 
@@ -387,7 +386,7 @@ function currentRecordForDisposition(record: PersonalGlossaryReviewStoredRecord,
   }
 }
 
-/** Record one signed current-user disposition after current source and replay validation. */
+/** Record one explicit user action asserted by the trusted ordinary harness. */
 export function dispositionPersonalGlossaryReviewRecord(input: PersonalGlossaryReviewDispositionInput): PersonalGlossaryReviewDispositionResult {
   const now = input.now ?? new Date().toISOString();
   if (!timestamp(now)) throw new TypeError("review disposition time must be an ISO timestamp");
@@ -427,12 +426,10 @@ export function dispositionPersonalGlossaryReviewRecord(input: PersonalGlossaryR
     return { status: "current_binding_mismatch", record: null, publication_authorization: null };
   const record = currentRecordForDisposition(storedRecord, input.receipt);
   if (!record) return { status: "current_binding_mismatch", record: null, publication_authorization: null };
-  const trustedHost = readPersonalGlossaryTrustedLocalHost(options);
-  if (!trustedHost) return { status: "approval_unavailable", record: null, publication_authorization: null };
   const replayEntries = isCurrentReviewStore(current.store) ? currentReplayIndex(current.store.replay_index, now) : [];
   const replayNonceKey = typeof input.approval.nonce === "string" ? replayNonceDigest(input.approval.nonce) : undefined;
   const errors = validatePersonalReviewApprovalReceipt(input.approval, {
-    currentUserSubject: trustedHost.subject,
+    currentUserSubject: typeof input.approval.subject === "string" && input.approval.subject.startsWith("user:") ? input.approval.subject : "current_user",
     reviewId: record.review_id,
     candidateId: record.candidate_id,
     candidateRevision: record.candidate_revision,
@@ -441,7 +438,6 @@ export function dispositionPersonalGlossaryReviewRecord(input: PersonalGlossaryR
     generation: record.generation,
     policyVersion: record.policy_version,
     now: new Date(now),
-    trustedHostPublicKey: trustedHost.publicKey,
     consumedReceiptDigests: activeReplayDigestMap(replayEntries, now),
     replayNonceKey,
   });
@@ -457,6 +453,20 @@ export function dispositionPersonalGlossaryReviewRecord(input: PersonalGlossaryR
   }
   if (replay === "conflicting_replay") return { status: "approval_conflicting_replay", record: null, publication_authorization: null };
   if (errors.length > 0) return { status: "approval_invalid", record: null, publication_authorization: null };
+  if (
+    record.status === "terminal" &&
+    record.review_record &&
+    ["accept", "correct"].includes(String(record.disposition)) &&
+    record.disposition === input.approval.disposition &&
+    record.review_record.corrected_meaning === input.approval.corrected_meaning &&
+    record.review_record.corrected_scope === input.approval.corrected_scope
+  ) {
+    return {
+      status: "unchanged_replay",
+      record,
+      publication_authorization: publicationAuthorization(record),
+    };
+  }
   if (replay === "exact_replay")
     return {
       status: "unchanged_replay",
@@ -500,7 +510,7 @@ export function dispositionPersonalGlossaryReviewRecord(input: PersonalGlossaryR
   const replayEntry: PersonalGlossaryReviewReplayEntry = {
     nonce_sha256: nonceDigest,
     receipt_sha256: receiptDigest,
-    expires_at: input.approval.expires_at as string,
+    expires_at: reviewExpiry(input.approval.disposed_at as string),
   };
   const next = makePersonalGlossaryReviewStore(
     current.store.records.map((item) => (item.review_id === record.review_id ? nextRecord : item)),
@@ -547,6 +557,15 @@ export function personalGlossaryReviewPublicationAuthorization(input: PersonalGl
     validateGlossaryReviewRecord(storedRecord.review_record, input.capsule, input.receipt, input.decision).length > 0
   )
     return { status: "binding_mismatch", review: null };
+  // candidate_id is the stable caseless-exact term identity, not a projection
+  // identity. A later approved correction supersedes even an interrupted save.
+  // Equal action times are ambiguous; never pick an overwrite by digest order.
+  if (
+    current.store.records.some(
+      (record) => isCurrentReviewRecord(record) && record.review_id !== storedRecord.review_id && record.candidate_id === storedRecord.candidate_id && record.status === "terminal" && ["accept", "correct"].includes(String(record.disposition)) && Date.parse(record.terminal_at!) >= Date.parse(storedRecord.terminal_at!),
+    )
+  )
+    return { status: "superseded", review: null };
   return { status: "authorized", review: storedRecord.review_record };
 }
 

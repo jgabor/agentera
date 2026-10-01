@@ -332,7 +332,6 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
   const reviews = mapping(privacy?.reviews);
   const authentication = mapping(reviews?.authentication);
   const correction = mapping(authentication?.correction);
-  const signature = mapping(authentication?.signature);
   const freshness = mapping(authentication?.freshness);
   const replay = mapping(authentication?.replay);
   const terminalDisposition = mapping(authentication?.terminal_disposition);
@@ -373,10 +372,10 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
     !nonEmpty(authentication?.proof) ||
     !sameStrings(authentication?.binding_fields, ["review_id", "candidate_id", "candidate_revision", "candidate_projection_sha256", "semantic_fingerprint", "generation", "policy_version", "disposition", "corrected_meaning", "corrected_scope", "disposed_at"]) ||
     !sameStrings(authentication?.forbidden_principals, ["agent", "model", "imported_record", "generic_consent"]) ||
-    authentication?.receipt_schema_version !== "agentera.personalGlossaryReviewApproval.v1" ||
-    authentication?.issuer !== "agentera-local-host" ||
+    authentication?.receipt_schema_version !== "agentera.personalGlossaryReviewApproval.v2" ||
+    authentication?.issuer !== "agentera-harness" ||
     authentication?.subject !== "current_user" ||
-    authentication?.trusted_channel !== "agentera-local-host-ipc" ||
+    authentication?.trusted_channel !== "explicit-user-review" ||
     !sameStrings(authentication?.required_fields, [
       "schema_version",
       "issuer",
@@ -393,46 +392,19 @@ export function validatePersonalMiningAuthority(authority: Mapping): string[] {
       "corrected_meaning",
       "corrected_scope",
       "disposed_at",
-      "expires_at",
-      "nonce",
-      "signature",
-    ]) ||
-    signature?.algorithm !== "ed25519" ||
-    signature?.encoding !== "base64url" ||
-    signature?.key_source !== "user_local_trusted_host_key" ||
-    !sameStrings(signature?.signed_fields, [
-      "schema_version",
-      "issuer",
-      "subject",
-      "trusted_channel",
-      "review_id",
-      "candidate_id",
-      "candidate_revision",
-      "candidate_projection_sha256",
-      "semantic_fingerprint",
-      "generation",
-      "policy_version",
-      "disposition",
-      "corrected_meaning",
-      "corrected_scope",
-      "disposed_at",
-      "expires_at",
       "nonce",
     ]) ||
-    signature?.verification !== "trusted_host_public_key_signature_check" ||
     !sameStrings(correction?.correct_fields, ["corrected_meaning", "corrected_scope"]) ||
     correction?.non_correct_values !== null ||
     !sameStrings(correction?.corrected_scope_values, ["personal"]) ||
     correction?.corrected_meaning_max_utf8_bytes !== 4_096 ||
     !nonEmpty(correction?.rule) ||
-    freshness?.max_age_seconds !== 300 ||
-    freshness?.disposed_at !== "trusted_host_clock" ||
-    freshness?.expires_at_required !== true ||
-    freshness?.rule !== "disposed_at_must_not_be_future_and_expires_at_must_be_after_now" ||
+    freshness?.disposed_at !== "harness_action_time" ||
+    freshness?.rule !== "disposed_at_must_not_be_future_current_bindings_required_not_age" ||
     replay?.nonce !== "required_unique_receipt_nonce" ||
     replay?.index !== "user_local_consumed_receipt_digest_index" ||
     replay?.exact_replay !== "no_op_only_when_nonce_and_receipt_digest_match" ||
-    replay?.conflicting_replay !== "reject_reused_nonce_with_changed_bindings_or_signature" ||
+    replay?.conflicting_replay !== "reject_reused_nonce_with_changed_content" ||
     !sameStrings(terminalDisposition?.terminal, ["accept", "correct", "reject"]) ||
     !sameStrings(terminalDisposition?.pending, ["defer"]) ||
     retention?.pending_excerpt_days !== 30 ||

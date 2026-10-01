@@ -1,0 +1,21 @@
+id: mwtpectiwp
+artifact: decisions
+record:
+  date: 2026-09-30
+  question: What should one optimization-setup approval authorize and retain?
+  context: packages/cli/src/capabilities/optimize/instructions.ts separates objective and harness approval. Its automatic Git and blocked-hypothesis prose conflicts with scoped authorization. Retention needs concrete current consumers, not dead weight.
+  alternatives:
+    - name: One bounded setup-and-experiment package with useful retention and verified resumption.
+      status: chosen
+    - name: Setup-only approval by default.
+      status: rejected
+    - name: Silent substitution of a materially different hypothesis.
+      status: rejected
+    - name: Keeping all setup and incidental artifacts by default.
+      status: rejected
+    - name: Reconfirmation of unchanged valid interrupted work.
+      status: rejected
+  choice: Show objective, target, measurement method, hypothesis, scope, limits and keep/discard rule together. One approval covers setup, baseline and one named experiment. Decline activates nothing. Material target, method, hypothesis, scope or limit changes require fresh approval; keep the judge fixed during the experiment. Skip unnecessary changes when baseline already meets the target. Keep improved, regression-safe, constraint-compliant changes; discard only unsuccessful experimental changes. Retain relevant objectives, usable tooling and bounded actionable records, not incidental artifacts. Resume known approved work using still-valid evidence without duplicates. Stop after the experiment; no Git, profile/history or installation permission is implied.
+  reasoning: One concrete approval avoids mechanical loops without moving goalposts. Existing tools and bounded records serve later sessions; questionable retention or cleanup must be surfaced rather than guessed.
+  confidence: firm
+  feeds_into: TODO rimkqvqboe and plan qldlbzxsfp's optimization tasks after identity prerequisite bqbsplvlfz. This policy capture authorizes no experiment or implementation; autonomous execution still needs explicit authorization.

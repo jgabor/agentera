@@ -25,12 +25,16 @@ record:
     gate: null
     queue_rank: 87
     order_reason: Run after the existing open queue; this cleanup is independent of durability retirement.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[refactor] Separate objective and experiment IDs from fixed artifact paths"
+      status: resolved
+      order: 144
       severity: normal
-      status: open
-      order: 24
+  lifecycle:
+    operation: resolve
+    reason: Separated objective/experiment identity from fixed root aliases; canonical validation, legacy compatibility and redaction pass full source/package/development checks.
+    date: 2026-10-01

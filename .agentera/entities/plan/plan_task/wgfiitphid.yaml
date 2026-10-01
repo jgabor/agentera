@@ -1,0 +1,25 @@
+id: wgfiitphid
+artifact: plan
+record:
+  name: Deliver the agreed project-migration offer
+  depends_on:
+    - nzpqztrpxp
+    - ocbjiulcls
+  status: complete
+  acceptance:
+    - GIVEN supported complete tracked unchanged inputs WHEN read-only preflight succeeds THEN a ready-to-run project-only offer discloses the project, target, exact effects, actual loss and unsupported rollback/return-to-v2 consequence before one explicit Yes.
+    - GIVEN Yes, decline, silence or inapplicable state WHEN handled THEN only the disclosed supported operation follows Yes; no reset, global cleanup, shared-skill change, implicit Git action, whole-directory authority or technical confirmation loop is inferred.
+    - GIVEN unexpected input, scope or effect changes WHEN applying THEN the stale operation makes no new changes and requires a fresh preview and approval.
+    - GIVEN matching checkpoints and known approval WHEN recovering THEN the same forward operation resumes without redundant confirmation; completion requires state/startup verification, while missing approval or invalid evidence reports bounded recovery without widening scope.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior establish the outcome THEN existing preservation, platform and project-isolation limits remain intact; distinct drift or interruption risks justify additional cases, not a new consent or rollback framework.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Ready migration offer omits checkpoint/lock publication path preflight: tracked v2 project with .agentera/migrations mode0500 returnsready, thenunchangedapply failsEACCES beforepublishingcheckpoint. Criterion1 readiness-before-consent unmet; criteria2-5pass."
+    provenance:
+      attempt_id: project-migration-offer-audit-2
+      source: Independent bounded recheck ses_f08a36726fferJPMZDHtPYYlKH confirms all five criteria. Required checkpoint/lock publication paths now readonlypreflighted;0500negative/0700positive across4surfaces preservedbytes+modes.19builtjourneys143calls,4873source+6skips,72package checks pass,current d7ed7ace42abab9e8b77628d2981e4db2daa256d33e0291864b6697fa335e418 matches. Outcomeandproportionalityreview local correction/reusedexecutor justified.
+      recorded_at: 2026-10-01 15:04
+      writer_command: agentera state plan record-evaluation

@@ -22,8 +22,8 @@ meta:
   artifact_type: agent_facing
   path: ".agentera/plan.yaml"
   authority: legacy_migration_input_only
-  producer: [orchestrate, plan, build]
-  consumers: [status, audit, orchestrate, plan, build]
+  producer: [orchestrate, plan, build, discuss]
+  consumers: [status, audit, orchestrate, plan, build, discuss]
   format: yaml
 
 ENTITY_AUTHORITY:
@@ -689,6 +689,7 @@ LIFECYCLE_CONTRACT:
       - packages/cli/src/hooks/sessionStart.ts
       - packages/cli/src/eval/evalSkills.ts
       - packages/cli/src/state/stateMode.ts
+      - packages/cli/src/state/entityValidation.ts
     writers:
       - packages/cli/src/state/write/*.ts
       - packages/cli/src/state/entityStorage.ts
@@ -724,6 +725,7 @@ LIFECYCLE_CONTRACT:
       - scripts/**
     fixtures:
       - packages/cli/test/**/*.ts
+      - packages/cli/test/helpers/optimizeSetupJourney.mjs
       - packages/cli/test/**/*.md
       - packages/cli/test/fixtures/**
       - packages/cli/test/fixtures/**/.agentera/*

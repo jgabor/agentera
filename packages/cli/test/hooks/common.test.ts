@@ -26,6 +26,11 @@ describe("artifact path resolution", () => {
     expect(parseDocsYamlMapping(text)).toEqual({ plan: "notes/plan.yaml", todo: "TODO.md" });
   });
 
+  it.each(["objective", "experiments"])("does not invent a default or DOCS authority for %s", (artifact) => {
+    expect(() => resolveArtifactPath("/p", artifact)).toThrow(/no fixed artifact path/);
+    expect(() => resolveArtifactPath("/p", artifact, { [artifact]: `.agentera/${artifact}.yaml` })).toThrow(/no fixed artifact path/);
+  });
+
   it("parses legacy DOCS.md artifact table", () => {
     const text = "| Artifact | Path |\n| --- | --- |\n| PLAN.md | .agentera/plan.yaml |\n| TODO.md | TODO.md |\n\ntext";
     expect(parseArtifactMapping(text)).toEqual({ plan: ".agentera/plan.yaml", todo: "TODO.md" });

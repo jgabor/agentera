@@ -1,6 +1,9 @@
 import { buildUpgradePlan, renderUpgradePlan, sortKeysDeep, upgradeExitCode, validateUpgradeApply, type UpgradeOrchestratorArgs, type UpgradeOnlyPhase } from "../../upgrade/upgradeOrchestrator.js";
 import { renderVerifySummary, verifyOneWayUpgrade, verifyUpgrade, type OneWayUpgradeVerification, type VerifyContext } from "./upgradeVerify.js";
 import { detectStateMode } from "../../state/stateMode.js";
+import { readProjectFileSnapshot } from "../../state/safeProjectFile.js";
+import { validateRealProjectRoot } from "../../state/projectRoot.js";
+import { ENTITY_MODE_MARKER } from "../../state/entityCutover.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
 import { applyProductV1Reset, previewProductV1Reset, type ProductV1ResetPreview } from "../../upgrade/productV1Reset.js";
@@ -11,6 +14,7 @@ import { runHostSkillLifecycle } from "../../setup/hostSkillLifecycle.js";
 import { emitInvalidInput } from "../errors.js";
 import { diagnoseRetiredResources } from "../../upgrade/retiredResourceDiagnostics.js";
 import { commandText } from "../../upgrade/upgradeCommands.js";
+import { projectMigrationOffer, renderProjectMigrationOffer, hasProjectMigrationCheckpoint, ProjectMigrationApprovalError } from "../../upgrade/projectMigrationOffer.js";
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 type UpgradeDependencies = {
@@ -52,6 +56,7 @@ function toOrchestratorArgs(args: UpgradeArgs): UpgradeOrchestratorArgs {
     runtime: args.runtime ?? null,
     legacyCleanup: args.legacyCleanup ?? null,
     cleanupAuthorization: args.legacyCleanup ? (args.authorization ?? null) : null,
+    migrationAuthorization: !args.legacyCleanup && !args.productV1Reset ? args.authorization : null,
   };
 }
 
@@ -64,8 +69,8 @@ function toVerifyContext(args: UpgradeArgs): VerifyContext {
   };
 }
 
-function renderOneWayResult(verification: OneWayUpgradeVerification, applyPassed: boolean, json: boolean): string {
-  const verificationPassed = verification.state_validation.status === "passed" && verification.startup_validation.status === "passed";
+function renderOneWayResult(verification: OneWayUpgradeVerification, applyPassed: boolean, json: boolean, authorityActive = true): string {
+  const verificationPassed = authorityActive && verification.state_validation.status === "passed" && verification.startup_validation.status === "passed";
   const result = {
     phase: applyPassed ? (verificationPassed ? "complete" : "verification") : "apply",
     startup_validation: verification.startup_validation,
@@ -87,6 +92,20 @@ function entityAuthorityConfirmedActive(project: string): boolean {
 export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
   const err = io.err ?? ((t: string) => process.stderr.write(t));
+  if (args.authorization?.startsWith("project-migration:") && (args.sharedSkill || args.productV1Reset || args.legacyCleanup || args.installRoot || args.only?.length || args.force || args.runtime || args.channel !== "development")) {
+    const failure = new ProjectMigrationApprovalError();
+    if (args.format === "text") err(`upgrade error: ${failure.message}\n`);
+    else
+      out(
+        JSON.stringify({
+          status: "non_success",
+          phase: "preflight",
+          error: { class: "stale_operation", message: failure.message },
+          migration_effects_performed: false,
+        }) + "\n",
+      );
+    return 1;
+  }
   if (args.sharedSkill) {
     if (args.project || args.channel || args.expectedVersion || args.only?.length || args.force || args.runtime || args.legacyCleanup || args.verify || args.productV1Reset || (args.yes && args.dryRun)) {
       return emitInvalidInput(io, {
@@ -111,15 +130,19 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     out(args.format === "text" ? `${result.status}: ${result.reason}\nPath: ${result.path}\n${"authorization" in result ? JSON.stringify(result, null, 2) + "\n" : ""}Recovery: ${result.recovery}\n` : JSON.stringify(result, null, 2) + "\n");
     return result.status === "non_success" ? 1 : 0;
   }
-  if (args.authorization && !args.productV1Reset && !args.legacyCleanup)
+  if (args.authorization && !args.productV1Reset && !args.legacyCleanup && !args.authorization.startsWith("project-migration:"))
     return emitInvalidInput(io, {
       format: args.format === "text" ? "text" : "json",
       body: {
         class: "invalid_request",
-        message: "--authorization is scoped to --shared-skill, --reset-product-v1 or a focused --legacy-cleanup offer; it does not authorize app/project migration.",
+        message: "--authorization must come from the matching shared-skill, reset, cleanup or project-migration offer.",
       },
     });
   const orchestratorArgs = toOrchestratorArgs(args);
+  if (args.yes && !args.authorization && !args.productV1Reset && !args.legacyCleanup && hasProjectMigrationCheckpoint(args.project ?? process.cwd())) {
+    err("upgrade error: this project has a bound migration checkpoint. Resume the unchanged approved command only under known approval; do not infer permission from the checkpoint or --yes alone.\n");
+    return 1;
+  }
 
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
@@ -189,9 +212,9 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   }
 
   let plan;
-  let fullEntityCutoverApply = false;
+  let fullEntityCutoverApply = Boolean(orchestratorArgs.yes && orchestratorArgs.migrationAuthorization);
   try {
-    if (orchestratorArgs.yes) {
+    if (orchestratorArgs.yes && !orchestratorArgs.migrationAuthorization) {
       const preview = buildUpgradePlan({ ...orchestratorArgs, yes: false });
       fullEntityCutoverApply = !orchestratorArgs.only && (preview.crossMajorBoundary || preview.phases.some((phase) => phase.name === "entities" && phase.items.some((item) => item.action === "entity-cutover" && item.status === "pending")));
       const applyError = validateUpgradeApply(orchestratorArgs, preview);
@@ -213,7 +236,21 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
       }
     }
     plan = buildUpgradePlan(orchestratorArgs);
+    if (orchestratorArgs.yes && orchestratorArgs.migrationAuthorization) fullEntityCutoverApply = true;
   } catch (exc) {
+    if (exc instanceof ProjectMigrationApprovalError) {
+      if (args.format === "json")
+        out(
+          JSON.stringify({
+            status: "non_success",
+            phase: "preflight_or_forward_recovery",
+            error: { class: "stale_operation", message: exc.message },
+            effects_after_refusal: false,
+          }) + "\n",
+        );
+      else err(`upgrade error: ${exc.message}\n`);
+      return 1;
+    }
     if (exc instanceof UpgradeLockError) {
       err(`upgrade error: ${exc.message}\n`);
     } else if (fullEntityCutoverApply) {
@@ -221,6 +258,18 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     } else {
       err(`upgrade error: ${(exc as Error).message}\n`);
     }
+    if (orchestratorArgs.migrationAuthorization && args.format === "json")
+      out(
+        JSON.stringify({
+          status: "non_success",
+          phase: "apply_or_forward_recovery",
+          error: {
+            class: "operation_incomplete",
+            message: "The approved migration stopped at a publication or validation boundary.",
+          },
+          recovery: "Preserve the actual project and checkpoint. Correct only the reported conflict, then resume the original unchanged command under known approval; unexpected changes require fresh preview and approval.",
+        }) + "\n",
+      );
     return 2;
   }
 
@@ -228,11 +277,15 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
     const applyExit = upgradeExitCode(plan);
     const verification = (dependencies.verifyOneWayUpgrade ?? verifyOneWayUpgrade)(toVerifyContext(args));
     const authorityActive = entityAuthorityConfirmedActive(plan.project);
+    const markerPresent = authorityActive || readProjectFileSnapshot(validateRealProjectRoot(plan.project), ENTITY_MODE_MARKER).kind === "file";
     const verificationPassed = verification.state_validation.status === "passed" && verification.startup_validation.status === "passed";
-    out(renderOneWayResult(verification, applyExit === 0 && authorityActive, (args.format ?? "text") === "json"));
+    out(renderOneWayResult(verification, applyExit === 0 && markerPresent, (args.format ?? "text") === "json", authorityActive));
     if (applyExit !== 0 || !authorityActive || !verificationPassed) {
       if (!authorityActive) {
-        err("Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n");
+        const unresolved = plan.phases.flatMap((phase) => phase.items).find((item) => item.status === "blocked" || item.status === "failed");
+        if (unresolved) err(`Action required: ${unresolved.action}: ${unresolved.message.slice(0, 512)}\n`);
+        const marker = readProjectFileSnapshot(validateRealProjectRoot(plan.project), ENTITY_MODE_MARKER);
+        err(marker.kind === "file" ? "An authority marker exists but project verification failed. Preserve the project and checkpoint; diagnose the reported state and continue forward only under the matching known approval.\n" : "Recover the tracked v2 checkout with Git and retry; no v3 authority was activated.\n");
       } else {
         const unresolved = plan.phases
           .filter((phase) => ["runtime", "cleanup", "lifecycle"].includes(phase.name))
@@ -278,9 +331,21 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
         };
       }
     }
-    out(JSON.stringify(sortKeysDeep(remainingCleanup ? { ...plan, remaining_cleanup: remainingCleanup } : plan), null, 2) + "\n");
+    const offer = !orchestratorArgs.yes ? projectMigrationOffer(orchestratorArgs, plan) : null;
+    out(
+      JSON.stringify(
+        sortKeysDeep({
+          ...plan,
+          ...(offer ? { migration_offer: offer } : {}),
+          ...(remainingCleanup ? { remaining_cleanup: remainingCleanup } : {}),
+        }),
+        null,
+        2,
+      ) + "\n",
+    );
   } else {
     out(renderUpgradePlan(plan));
+    if (!orchestratorArgs.yes) out(renderProjectMigrationOffer(projectMigrationOffer(orchestratorArgs, plan)));
   }
   let exit = upgradeExitCode(plan);
 

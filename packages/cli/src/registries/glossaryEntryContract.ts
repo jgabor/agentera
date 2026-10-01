@@ -6,7 +6,7 @@ import { loadYamlMappingFile } from "../core/yaml.js";
 import { validateConsumerBoundary, validateConsumerEvidenceOwner } from "./glossaryConsumerContractValidation.js";
 import { validatePersonalCandidateContracts } from "./glossaryCandidateContracts.js";
 import { validateConversationProvenance, validateHistoryEvidence, validatePersonalMiningAuthority, validateProvenanceVariants } from "./glossaryMiningAuthority.js";
-import { isGlossaryIsoCalendarDate } from "./glossaryEntryTemporal.js";
+import { requiredEntryShape } from "./glossaryEntryShape.js";
 import type { ConfirmedVariantGuardContract, PersonalGlossaryAdmissionContract, PersonalGlossaryOutputContract, PersonalProfileGroundingContract } from "./personalGlossaryContracts.js";
 export type { ConfirmedVariantGuardContract, PersonalGlossaryAdmissionContract, PersonalGlossaryOutputContract, PersonalProfileGroundingContract };
 type Mapping = Record<string, unknown>;
@@ -376,7 +376,7 @@ export function validateGlossaryEntryContract(pathname: string = glossaryEntryAu
     profileSection?.encoding !== "deterministic_json_fence" ||
     profileSection?.document_schema_version !== "agentera.personalGlossarySection.v1" ||
     profileSection?.entry_shape !== "shared_primitive" ||
-    !sameStrings(profileSection?.lifecycle_metadata, ["as_of", "confidence_basis"]) ||
+    !sameStrings(profileSection?.lifecycle_metadata, ["as_of", "confidence_basis", "confirmed_terms"]) ||
     !nonEmpty(profileSection?.boundary_rule) ||
     mergeIdentity?.normalization !== "unicode_caseless_exact_no_normalization" ||
     !nonEmpty(mergeIdentity?.rule) ||
@@ -595,38 +595,6 @@ export function validateGlossaryCapabilityImplementationClaim(capability: string
     return [`${capability} glossary behavior is ${String(declaredImplementation)}; ${claimedImplementation} is a false implementation claim`];
   }
   return [];
-}
-
-function requiredEntryShape(entry: Mapping, authority: Mapping): string[] {
-  const errors: string[] = [];
-  const primitive = mapping(authority.shared_primitive);
-  const fields = mapping(primitive?.fields);
-  const consumer = mapping(authority.consumer_boundary);
-  const forbidden = strings(consumer?.forbidden_persisted_entry_fields).filter((field) => field in entry);
-  if (forbidden.length > 0) {
-    errors.push(`entry contains forbidden persisted fields: ${forbidden.join(", ")}`);
-  }
-  const requiredFields = strings(primitive?.required_fields);
-  const additional = Object.keys(entry).filter((field) => !requiredFields.includes(field));
-  if (additional.length > 0) errors.push(`entry contains fields outside the shared primitive: ${additional.join(", ")}`);
-  for (const field of requiredFields) {
-    if (!(field in entry)) errors.push(`${field} is required`);
-  }
-  if (typeof entry.term !== "string" || entry.term.trim() === "") errors.push("term must be a non-empty string");
-  if (typeof entry.meaning !== "string" || entry.meaning.trim() === "") errors.push("meaning must be a non-empty string");
-  if (!Number.isInteger(entry.confidence) || Number(entry.confidence) < 0 || Number(entry.confidence) > 100) {
-    errors.push("confidence must be an integer from protocol CS1-CS5");
-  }
-  if (!strings(mapping(fields?.permanence)?.values).includes(String(entry.permanence))) {
-    errors.push("permanence must be an existing profile permanence class");
-  }
-  const temporal = mapping(entry.temporal);
-  for (const field of strings(mapping(fields?.temporal)?.required_fields)) {
-    if (!isGlossaryIsoCalendarDate(temporal?.[field])) {
-      errors.push(`temporal.${field} must be an ISO date`);
-    }
-  }
-  return errors;
 }
 
 function evidenceShape(evidence: Mapping, requiredFields: string[], kind: string, index: number): string[] {

@@ -104,12 +104,6 @@ export interface PersonalGlossaryReviewRecordsContract {
   dispositionMaxResultUtf8Bytes: number;
   dispositionPublicationAuthorizationDispositions: string[];
   dispositionPublicationAuthorizationFields: string[];
-  trustedHostKeyFile: string;
-  trustedHostKeySchemaVersion: string;
-  trustedHostKeyFields: string[];
-  trustedHostKeyOwner: string;
-  trustedHostKeyAlgorithm: string;
-  trustedHostKeyMaxSerializedUtf8Bytes: number;
   storeSchemaVersion: string;
   recordSchemaVersion: string;
   storeOwner: string;

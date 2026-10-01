@@ -4,9 +4,10 @@ ARTIFACTS:
     artifact: todo
     local_role: produces
     description: >-
-      Open problems by severity. Research writes actionable findings here
-      (with user confirmation), classifying each by severity per protocol
-      SF1-SF3. Build picks up changes automatically in its next cycle.
+      Open problems by severity. Research offers one approval for exact selected,
+      deduplicated typed TODO records with severities mapped through the protocol.
+      The existing batch writer binds preview/apply and supports unchanged replay.
+      Filing starts no Build cycle and grants no code or vision approval.
   2:
     id: A2
     artifact: vision

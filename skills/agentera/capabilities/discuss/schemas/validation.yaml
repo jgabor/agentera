@@ -13,12 +13,19 @@ VALIDATION:
     id: V2
     rule: user_approval_for_artifact_writes
     description: >-
-      Discuss MUST NOT modify vision, objective, or todo artifacts (the
-      protected_write_boundaries) without explicit user confirmation. Present
-      drafts and get approval.
+      Discuss MUST show the concrete decision and only directly justified
+      affected-artifact patches together before one explicit approval, without a
+      preliminary destination menu. Offer decision-only and Done (skip saving).
+      Approval covers only exact shown in-scope changes through supported writers
+      or owners, including TODO, plan, objective, vision or design when justified.
+      Named vision patches require explicit vision-task permission. Refusal or
+      silence writes nothing; changed proposals need fresh approval. No execution,
+      Git, global-installation, personal-data or final-satisfaction permission follows.
     severity: critical
     checks:
-      - "User confirmation obtained before writing to vision, objective, or todo artifacts"
+      - "One exact displayed proposal approved before owner-scoped writes"
+      - "Decision-only and skip choices retained; no invented follow-ups"
+      - "Unseen changes and broader permissions are not inferred"
   3:
     id: V3
     rule: decision_confidence_required
@@ -145,3 +152,34 @@ VALIDATION:
       - "No glossary or consumer-caveat mutation occurs"
       - "No approval, consent, or conflict bookkeeping occurs"
       - "Unavailable advice does not fabricate glossary grounding"
+  13:
+    id: V13
+    rule: affected_artifact_coherence
+    description: >-
+      Apply protocol OPERATING_RULES coherence guidance to relevant affected
+      artifacts before firm closeout. Surface material conflicts or uncertain
+      implications for user choice; record deliberate pivot/exception scope.
+      Missing authority or unresolved tension requires qualified/flagged closure,
+      not a false claim of firm coherence. Follow discovered CLI readers and raw
+      read policy, without a whole-project audit or automatic semantic merge.
+    severity: critical
+    checks:
+      - "Relevant conflicts, uncertain implications and authority gaps are surfaced"
+      - "Intentional pivots or exceptions have explicit scope"
+      - "Unresolved closure stays qualified/flagged"
+  14:
+    id: V14
+    rule: native_closeout_recovery
+    description: >-
+      Reuse operation-level writer transactions and recovery, not global atomicity.
+      Retain verified saves between operations, stop dependent writes on failure,
+      and report saved and remaining work as INCOMPLETE until required approved
+      changes are verified. A read barrier does not verify partial saves. Recover
+      pending transactions with their exact original operation, not a subset batch.
+      Prove actual state before continuing unchanged approved work; avoid duplicates
+      and mechanical reapproval. Changed proposals require fresh approval.
+    severity: critical
+    checks:
+      - "Verified saves retained and dependent writes stopped after failure"
+      - "Saved, unverified and remaining work reported without false completion"
+      - "Exact native recovery and replay used without duplicate records"

@@ -29,7 +29,6 @@ export function personalGlossaryReviewRecordsContract(pathname: string = glossar
   const dispositionRequest = mapping(disposition?.request);
   const dispositionResult = mapping(disposition?.result);
   const publicationAuthorization = mapping(disposition?.publication_authorization);
-  const trustedHostKey = mapping(records?.trusted_host_key);
   const retrieval = mapping(records?.retrieval);
   const retrievalCommand = mapping(retrieval?.command);
   const list = mapping(retrieval?.list);
@@ -65,12 +64,6 @@ export function personalGlossaryReviewRecordsContract(pathname: string = glossar
     dispositionMaxResultUtf8Bytes: typeof dispositionResult?.max_utf8_bytes === "number" ? dispositionResult.max_utf8_bytes : 0,
     dispositionPublicationAuthorizationDispositions: strings(publicationAuthorization?.dispositions),
     dispositionPublicationAuthorizationFields: strings(publicationAuthorization?.fields),
-    trustedHostKeyFile: typeof trustedHostKey?.file === "string" ? trustedHostKey.file : "",
-    trustedHostKeySchemaVersion: typeof trustedHostKey?.schema_version === "string" ? trustedHostKey.schema_version : "",
-    trustedHostKeyFields: strings(trustedHostKey?.fields),
-    trustedHostKeyOwner: typeof trustedHostKey?.owner === "string" ? trustedHostKey.owner : "",
-    trustedHostKeyAlgorithm: typeof trustedHostKey?.public_key_algorithm === "string" ? trustedHostKey.public_key_algorithm : "",
-    trustedHostKeyMaxSerializedUtf8Bytes: typeof trustedHostKey?.max_serialized_utf8_bytes === "number" ? trustedHostKey.max_serialized_utf8_bytes : 0,
     storeSchemaVersion: typeof persistence?.schema_version === "string" ? persistence.schema_version : "",
     recordSchemaVersion: typeof persistence?.record_schema_version === "string" ? persistence.record_schema_version : "",
     storeOwner: typeof persistence?.owner === "string" ? persistence.owner : "",

@@ -1,0 +1,24 @@
+id: stjjlvlrfb
+artifact: plan
+record:
+  name: Deliver the agreed glossary review journey
+  depends_on:
+    - mrihvccqpd
+  status: complete
+  acceptance:
+    - GIVEN the trusted ordinary OpenCode/Codex harness WHEN reviewing a bounded set of exact personal meanings with edit, reject and defer choices THEN one explicit save approval covers the displayed selected set without signing, enrollment, key management, user-handled receipts or publication commands; generic profile consent or silence does not approve unseen meanings.
+    - GIVEN an approved selected set WHEN saving encounters invalid entries, partial failure or interruption THEN save valid approved entries, clearly report saved and unsaved items, and resume unchanged approvals without duplicates or redundant approval; never save rejected, deferred or unapproved entries.
+    - GIVEN prior approval WHEN a meaning, scope or revision changes THEN require fresh approval before saving the changed proposal; unchanged approvals remain resumable, but never extend to changed or unseen proposals.
+    - GIVEN a user-confirmed meaning WHEN time passes or a concrete conflict arises THEN time alone neither expires it nor weakens its authority, and concrete conflicts or explicit revisions prompt review rather than silent replacement; do not change unreviewed inferred-candidate policies or broader Profile confidence rules.
+    - GIVEN isolated personal-glossary checks WHEN one success and one refusal per behavior establish the agreed outcome THEN preserve unrelated accepted meanings, non-glossary profile content, privacy and scoped writes; review approval grants neither history access nor other capability execution, and implementation requires separate explicit authorization.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Independent audit reproduced an older approved correction overwriting a later saved correction and an unchanged publication request failing after the profile date advances. Acceptance criteria 2, 3 and 4 remain unmet until these bounded retry findings are corrected.
+    provenance:
+      attempt_id: glossary-build-corrected-audit-20260930
+      source: Independent audit ses_f0d36d545ffeKGAOpCizFc6Pn3 and bounded correction recheck confirm all five task criteria. Corrected built/extracted-package regressions prevent superseded corrections and resume unchanged approval with a fresh publication date. Final 11-owner development gate passes on source 6e0edaf84d68684f3bf3e072059a812bdd6cdd8b11c1f1480901568af7a0cc3f. Evidence /tmp/opencode/qmoxsmithy-correction-evidence-index.md. No live host UI or release qualification claimed.
+      recorded_at: 2026-09-30 17:47
+      writer_command: agentera state plan record-evaluation

@@ -15,6 +15,7 @@ import { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS, normalizeArtifactPr
 import { DEFAULT_ARTIFACT_PATHS } from "../common.js";
 import { COMPACTABLE_YAML_ARTIFACTS, compactFile, compactYamlFile } from "../compaction/index.js";
 import { withStateMutation } from "../../state/write/mutation.js";
+import { canonicalEntityPath } from "../../state/entityStorage.js";
 import { isMapping } from "./schema.js";
 
 import type { JsonObject } from "../../core/jsonValue.js";
@@ -43,7 +44,10 @@ function docsPathOverrides(cwd: string): Record<string, string> {
     if (!isMapping(entry)) continue;
     const artifact = entry.artifact;
     const p = entry.path;
-    if (typeof artifact === "string" && typeof p === "string") overrides[artifact] = p;
+    if (typeof artifact === "string" && typeof p === "string") {
+      const id = normalizeArtifactProtocolId(artifact) ?? artifact;
+      if (id !== "objective" && id !== "experiments") overrides[artifact] = p;
+    }
   }
   return overrides;
 }
@@ -65,6 +69,8 @@ function samePath(left: string, right: string): boolean {
 }
 
 export function artifactForWrite(absPath: string, relPath: string, basename: string, cwd: string): string | null {
+  const entity = canonicalEntityPath(path.relative(cwd, absPath));
+  if (entity) return entity.artifact;
   for (const [artifact, mappedPath] of Object.entries(artifactPaths(cwd))) {
     if (samePath(absPath, mappedPath)) return artifact;
   }

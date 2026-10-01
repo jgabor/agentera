@@ -1,0 +1,23 @@
+id: zebpzwigal
+artifact: plan
+record:
+  name: Deliver informational status handoffs
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN initial orientation WHEN a next action is suggested THEN a free-form continuation replaces an unsolicited confirmation menu.
+    - GIVEN clear acceptance, decline or ambiguity WHEN handled THEN the named capability starts once, stops, or asks one clarification.
+    - GIVEN a direct capability request WHEN routed THEN status adds no confirmation and downstream approval boundaries remain unchanged.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior pass THEN served guidance and delivery evidence agree.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Added served Status wording increases the unsafe-inactive fixture JSON by 190 bytes: prior wording returns 22391 bytes, current 22581 exceeds22500 and emits no JSON. Handoff rules pass but startup-budget regression requires compact wording."
+    provenance:
+      attempt_id: status-handoff-audit-2
+      source: Independent bounded recheck ses_f0bef99f7ffel718wUgdPSkQzM confirms all four criteriaPASS; same long161TODO HOME now22313bytes below22500,57focusedtests and builttraces/typecheck/build/contracts pass. Evidence /tmp/opencode/xghiltndjy-evidence-index.md.
+      recorded_at: 2026-09-30 22:56
+      writer_command: agentera state plan record-evaluation

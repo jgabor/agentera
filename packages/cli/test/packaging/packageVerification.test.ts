@@ -8,7 +8,7 @@ import { encode } from "gpt-tokenizer/model/gpt-5";
 import { describe, expect, inject, it } from "vitest";
 
 import { EXPECTED_PRODUCER_READINESS, runProducerReadinessWorkflow } from "../helpers/producerReadinessWorkflow.js";
-import { runProductionGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import { runProductionGlossaryWorkflow, runTrustedHarnessGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
 import { validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 import { appendDecisionEntity } from "../../src/state/decisionEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
@@ -1046,6 +1046,11 @@ describe("npm distribution boundary", () => {
       privacy: { local_history_read: false, profile_content_emitted: false, writes: false },
     });
     expect(read.stdout).not.toContain("Keep signal-braid explicit.");
+  });
+
+  it("supports ordinary harness review, current-date retries and superseded-approval refusal through the extracted package", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    runTrustedHarnessGlossaryWorkflow(bin, path.join(fixture.root, "trusted-harness-glossary"));
   });
 
   it("runs producer readiness publication and replay from the extracted package", { timeout: 120_000 }, async () => {

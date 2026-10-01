@@ -1,0 +1,23 @@
+id: kyfkvdpsfy
+artifact: plan
+record:
+  name: File a selected findings set
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN exact selected findings and severities WHEN approved THEN one confirmation files the deduplicated unchanged set.
+    - GIVEN decline or changed entries WHEN handled THEN unapproved writes, fixes and downstream execution do not occur.
+    - GIVEN interrupted or repeated filing WHEN continuing THEN saved and remaining entries are verified without duplicate records.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior pass THEN Research, Audit and delivery evidence agree.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: findings-filing-audit-1
+      source: "Independent audit ses_f0c2d6c08ffeDktVpIYuogNdnq: all four criteria PASS, 83 focused tests, typecheck, built CLI capability/contracts and 42 isolated CLI calls. Evidence /tmp/opencode/rjwzzprtnu-evidence-index.md; complete development/extracted-package integration remains task kzcctfzpav."
+      recorded_at: 2026-09-30 21:41
+      writer_command: agentera state plan record-evaluation

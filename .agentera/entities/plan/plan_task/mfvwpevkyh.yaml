@@ -1,0 +1,23 @@
+id: mfvwpevkyh
+artifact: plan
+record:
+  name: Correct objective and experiment identity
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN current objectives and experiments WHEN accessed THEN entity identity works without invented fixed root-artifact paths.
+    - GIVEN scoped legacy migration or compaction WHEN checked THEN supported compatibility remains unchanged.
+    - GIVEN classification, validation or redaction WHEN applied THEN real entity scopes are recognized and pseudo-path authority is rejected.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior pass THEN source, served contracts and delivery evidence agree.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: identity-prerequisite-final-audit-1
+      source: Independent bounded recheck ses_f0bdafe79ffeKO5o7huSnTo5kR confirms all four criteria and required full-source/package checks. 4816 source tests,44 package tests,11 development owners passed; extraction966/820lines preserves43 existing function bodies. Current source/build matches durable evidence0c19bce0401a097f67126e76a1e145a18dfc40f2803020c27abe2319c9a198e3 under /home/jgabor/git/.agentera-reboot-qldlbzxsfp/evidence/.
+      recorded_at: 2026-10-01 00:11
+      writer_command: agentera state plan record-evaluation

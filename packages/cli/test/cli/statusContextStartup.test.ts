@@ -174,6 +174,113 @@ function renderStatusDashboard(statusContext: Record<string, any>): Record<strin
   };
 }
 
+describe("informational status handoff", () => {
+  function suggestion() {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    writeTodoEntity("abcdefghij", "critical", "open", "Fix the fixture bug", readyTodo("build", "One scoped fix", 1));
+    const result = runStatus();
+    expect(result.rc, result.err).toBe(0);
+    expect(statusState(result.payload).next_action).toMatchObject({ capability: "build" });
+    return result.payload.capability_context.instructions as string;
+  }
+
+  function startBuild() {
+    let out = "";
+    let err = "";
+    const rc = main(["node", "agentera", "prime", "--context", "build"], {
+      out: (text) => (out += text),
+      err: (text) => (err += text),
+    });
+    expect(rc, err).toBe(0);
+    expect(JSON.parse(out).capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.build);
+  }
+
+  it("serves the same informational first handoff in status, shared skill and vocabulary", () => {
+    const guidance = suggestion();
+    const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
+    const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
+    for (const text of [guidance, vocabulary]) {
+      const normalized = text.replace(/\s+/g, " ");
+      expect(normalized).toContain("free-form continuation prompt");
+      expect(normalized).toContain("even when the suggested capability may mutate state");
+      expect(normalized).toContain("user requested bounded choices");
+      expect(normalized).toContain("without a second status confirmation");
+      expect(normalized).toContain("invoked capability owns any additional mutation approval");
+      expect(normalized).not.toContain("state-changing Proceed/Cancel handoff");
+      expect(normalized).not.toContain("Any proposed project/runtime mutation needs a Proceed/Cancel handoff");
+    }
+    expect(guidance).toContain("Initial status: free-form continuation prompt");
+    expect(guidance).toContain("native choices only if the user requested bounded choices");
+    expect(guidance).toContain("scope and permissions stay unchanged, including autonomous orchestration");
+    const bootstrap = skill.replace(/\s+/g, " ");
+    expect(bootstrap).toContain("Initial status offers `next_action` free-form even for mutations; bounded choices only on request");
+    expect(bootstrap).toContain("Acceptance starts it once, no second status prompt");
+    expect(bootstrap).toContain("Decline stops; ambiguity gets one clarification");
+    expect(bootstrap).toContain("Direct routes need no confirmation");
+    expect(bootstrap).toContain("invoked capability owns mutation approvals; scope, permissions and orchestration stay unchanged");
+  });
+
+  // These are explicit compliant-host traces against real CLI startup and route
+  // responses, not a native prompt implementation or CLI enforcement of consent.
+  it("accepts the named suggestion and starts it once without a second status prompt", () => {
+    expect(suggestion()).toContain("start exactly that capability once");
+    const trace = ["status brief", "free-form continuation", "user: yes"];
+    startBuild();
+    trace.push("prime --context build");
+    expect(trace).toEqual(["status brief", "free-form continuation", "user: yes", "prime --context build"]);
+    // No writer or implementation command follows invocation without Build's approval.
+    expect(fs.existsSync(path.join(project, ".agentera/entities/progress"))).toBe(false);
+  });
+
+  it("stops on decline without starting the suggested capability", () => {
+    expect(suggestion()).toContain("Decline stops without invocation");
+    const before = fs.readFileSync(path.join(project, ".agentera/entities/todo/todo_item/abcdefghij.yaml"), "utf8");
+    const trace = ["status brief", "free-form continuation", "user: no", "stop"];
+    expect(trace).not.toContain("prime --context build");
+    expect(fs.readFileSync(path.join(project, ".agentera/entities/todo/todo_item/abcdefghij.yaml"), "utf8")).toBe(before);
+  });
+
+  it.each(["yes", "no"])("asks one clarification for ambiguity, then handles %s", (reply) => {
+    expect(suggestion()).toContain("ambiguity asks one clarification before invocation");
+    const trace = ["status brief", "user: maybe", "clarify: Start build for the fixture bug?"];
+    expect(trace).not.toContain("prime --context build");
+    trace.push(`user: ${reply}`);
+    if (reply === "yes") {
+      startBuild();
+      trace.push("prime --context build");
+    } else trace.push("stop");
+    expect(trace.filter((event) => event.startsWith("clarify:"))).toHaveLength(1);
+    expect(trace.filter((event) => event === "prime --context build")).toHaveLength(reply === "yes" ? 1 : 0);
+  });
+
+  it("routes a direct request without status confirmation and retains downstream refusal", () => {
+    writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    writeTodoEntity("abcdefghij", "critical", "open", "Fix the fixture bug", readyTodo("build", "One scoped fix", 1));
+    const before = fs.readFileSync(path.join(project, ".agentera/entities/todo/todo_item/abcdefghij.yaml"), "utf8");
+    let out = "";
+    let err = "";
+    expect(
+      main(["node", "agentera", "route", "request", "--input", "-"], {
+        stdin: () => JSON.stringify({ request: "/agentera build" }),
+        out: (text) => (out += text),
+        err: (text) => (err += text),
+      }),
+      err,
+    ).toBe(0);
+    expect(JSON.parse(out)).toMatchObject({
+      outcome: "deterministic_selection",
+      capability: "build",
+    });
+    expect(CAPABILITY_INSTRUCTIONS.status).toContain("A direct capability route is already consent to invoke it");
+    const trace = ["user: /agentera build"];
+    startBuild();
+    trace.push("prime --context build", "user: decline additional mutation", "stop");
+    expect(trace).toEqual(["user: /agentera build", "prime --context build", "user: decline additional mutation", "stop"]);
+    expect(fs.readFileSync(path.join(project, ".agentera/entities/todo/todo_item/abcdefghij.yaml"), "utf8")).toBe(before);
+    expect(fs.existsSync(path.join(project, ".agentera/entities/progress"))).toBe(false);
+  });
+});
+
 describe("status capability self-contained startup", () => {
   it("defers host diagnostics to the exact read-only preview without losing health facts or instructions", () => {
     const result = runStatus();
@@ -324,7 +431,14 @@ describe("status capability self-contained startup", () => {
     }
   });
 
-  it("bounds unsafe inactive diagnosis without copying private recovery detail", () => {
+  it("bounds unsafe inactive diagnosis with a long isolated HOME without copying private recovery detail", () => {
+    // Keep the long-HOME case that exposed the handoff prose's output regression.
+    // Extra path bytes must fit the existing budget, not be hidden by short TMPDIR.
+    home = path.join(tempRoot, "long-isolated-home-for-statusxxx", "home");
+    appHome = path.join(home, "agentera");
+    fs.mkdirSync(appHome, { recursive: true });
+    process.env.HOME = home;
+    process.env.AGENTERA_HOME = appHome;
     const sentinel = "PRIVATE_STATUS_STARTUP_TODO";
     const ids = seedUnsafeInactiveTodos(161, sentinel);
 

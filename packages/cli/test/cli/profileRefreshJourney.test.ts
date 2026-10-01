@@ -113,7 +113,9 @@ it("serves the complete same-run consent and replacement contract without changi
   expect(body).toContain("including accumulated tensions");
   expect(body).toContain("Never overwrite that retained copy with the new base");
   expect(body).toContain("Reuse a valid completed tier for synthesis even if projection failed");
-  expect(body).toContain("authenticated local-host review disposition flow");
+  expect(body).toContain("Trust the ordinary OpenCode/Codex harness to record that action");
+  expect(body).toContain("Generic profile consent, silence and unseen proposals never approve a meaning");
+  expect(body).toContain("Review approval never authorizes history acquisition");
   expect(body).not.toMatch(/outside this Full run|then start a new Full run|do not refresh during Full mode|using all session data/);
 });
 

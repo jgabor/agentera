@@ -9,6 +9,9 @@ import { sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { ArtifactValidationAdapter } from "../../src/hooks/validateArtifact/index.js";
+import { artifactForWrite, defaultArtifactPath } from "../../src/hooks/validateArtifact/traversal.js";
+import { normalizeArtifactProtocolId } from "../../src/registries/artifactProtocolIds.js";
 import { dumpYamlMapping, loadYamlMapping } from "../../src/core/yaml.js";
 import { validateEntityState } from "../../src/state/entityStorage.js";
 import { detectStateModeBinding } from "../../src/state/stateMode.js";
@@ -144,6 +147,37 @@ afterEach(() => {
 });
 
 describe("objective and experiment entity authority", () => {
+  it("classifies and validates real entities without accepting root pseudo-paths or DOCS aliases", () => {
+    const root = project();
+    const owner = createObjective(root, "latency");
+    const baseline = publish(root, owner.id, experiment("baseline", "baseline"));
+    const adapter = new ArtifactValidationAdapter();
+    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), "mapping:\n- artifact: objective\n  path: .agentera/objective.yaml\n- artifact: experiments\n  path: .agentera/experiments.yaml\n");
+    for (const [artifact, boundary, entity] of [
+      ["objective", "objective", owner],
+      ["experiments", "experiment", baseline],
+    ] as const) {
+      const relative = `.agentera/entities/${artifact}/${boundary}/${entity.id}.yaml`;
+      const file = path.join(root, relative);
+      expect(normalizeArtifactProtocolId(artifact)).toBe(artifact);
+      expect(defaultArtifactPath(artifact, root)).toBe("");
+      expect(artifactForWrite(file, relative, path.basename(file), root)).toBe(artifact);
+      expect(adapter.runExplicit(artifact, file, root)[0]).toBe(0);
+      expect(adapter.runExplicit(artifact, null, root)[0]).toBe(2);
+      const pseudo = `.agentera/${artifact}.yaml`;
+      fs.copyFileSync(file, path.join(root, pseudo));
+      expect(artifactForWrite(path.join(root, pseudo), pseudo, `${artifact}.yaml`, root)).toBeNull();
+      const rejected = adapter.runExplicit(artifact, pseudo, root);
+      expect(rejected[0]).toBe(2);
+      expect(JSON.stringify(rejected[1])).toContain("root pseudo-path");
+      const bytes = fs.readFileSync(file, "utf8");
+      fs.writeFileSync(file, bytes.replace(`id: ${entity.id}`, "id: abcdefghij"));
+      expect(adapter.runExplicit(artifact, file, root)[0]).toBe(2);
+      fs.writeFileSync(file, bytes);
+      expect(fs.readFileSync(path.join(root, pseudo), "utf8")).toBe(bytes);
+    }
+  });
+
   it("creates and replaces independent objective entities with bare project-wide IDs", () => {
     const root = project();
     const created = createObjective(root, "latency");

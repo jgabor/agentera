@@ -238,7 +238,7 @@ it("keeps packaged runtime location separate from durable selected data root", (
   write(path.join(home, ".agents/skills/agentera/SKILL.md"), loadHostSkillSource(bundle).content);
   const result = doctor();
   expect(result.payload).toMatchObject({
-    status: "up_to_date",
+    status: "repair_needed",
     userDataRoot: data,
     managedAppRoot: path.join(repo, "packages/cli/bundle"),
     current_health: {

@@ -10,7 +10,6 @@
 
 ## ⇉ Degraded
 
-- [ ] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
 
 ## → Normal
@@ -32,17 +31,13 @@
 - [ ] [id:ocntbqcatr] [feat:3.0.0] Detect "You're right", "my mistake", "You're right to push back" responses during profiling, to add generalized rules to the profile to correct the model's behavior.
 - [ ] [id:jfxmrlnily] [fix:3.0.0] Recompute non-glossary profile provenance from each bounded signal generation
 - [ ] [id:vhsrtulfio] [fix:3.0.0] Reduce the focused runtimeBootstrapMatrix.test.ts package-verification wall time from about 128 seconds to a bounded release-gate budget without weakening the 190-row source/package bootstrap proof.
-- [ ] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
-- [ ] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
 - [ ] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
-- [ ] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
-- [ ] [id:qmoxsmithy] [task] Provide an ordinary-user glossary review and save workflow
 
 ## ⇢ Annoying
 
@@ -188,3 +183,12 @@
 - [x] [id:dzrruetyod] [chore:3.0.0] Unify setup-requiring CI behind Vite+
 - [x] [id:rtfizoqaxt] [chore:3.0.0] Provide a fail-closed Vite+ CI bootstrap
 - [x] [id:ehudiaaepe] [chore:3.0.0] Address existing CLI lint warnings
+- [x] [id:qmoxsmithy] [task] Provide an ordinary-user glossary review and save workflow
+- [x] [id:rjwzzprtnu] [feat] File selected research and audit findings with one approval
+- [x] [id:xghiltndjy] [fix:3.0.0] Keep initial status handoffs informational.
+- [x] [id:bqbsplvlfz] [refactor] Separate objective and experiment IDs from fixed artifact paths
+- [x] [id:azsvrmuhch] [fix:3.0.0] Make Doctor report project operability separately from installation health.
+- [x] [id:zeyfnbqdov] [fix:3.0.0] Separate project initialization and migration from global legacy-resource cleanup.
+- [x] [id:rimkqvqboe] [feat] Approve optimization setup as one bounded package
+- [x] [id:doqgrxxkev] [feat] Approve Discuss closeout as a concrete decision and follow-up set
+- [x] [id:secbcalqyr] [feat] Offer project migration as one explicitly approved outcome

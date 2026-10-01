@@ -248,6 +248,218 @@ export function runProductionGlossaryWorkflow(executable: string, root: string):
   };
 }
 
+/** The same isolated review/save journey runs against the build and extracted package. */
+export function runTrustedHarnessGlossaryWorkflow(executable: string, root: string, source = false): void {
+  fs.mkdirSync(root, { recursive: true });
+  const env = isolatedEnv(root);
+  const execute = (args: string[], input?: string) => invoke(executable, args, root, input, source ? { AGENTERA_BOOTSTRAP_SOURCE_ROOT: CHECKOUT_ROOT } : undefined);
+  let instructionArgs = ["prime", "--context", "profile", "--detail", "instructions", "--section", "instructions"];
+  const instructionParts: string[] = [];
+  for (;;) {
+    const page = json(execute(instructionArgs));
+    for (const item of page.items as Mapping[]) instructionParts.push(String(item.content));
+    if (!page.next_command) break;
+    instructionArgs = (String(page.next_command).match(/'[^']*'|\S+/g) ?? []).slice(3).map((word) => (word.startsWith("'") ? word.slice(1, -1) : word));
+  }
+  const instructions = instructionParts.join("");
+  const retryGuidance = execute(["report", "explain", "--operation", "personal-glossary-publish", "--section", "workflow.privacy"]);
+  assert.equal(retryGuidance.status, 0, retryGuidance.stderr || retryGuidance.stdout);
+  for (const guidance of [instructions, retryGuidance.stdout]) {
+    assert.equal(guidance.includes("inject the current publication date"), true);
+    assert.equal(guidance.includes("no earlier than the owned section's current date"), true);
+    assert.equal(guidance.includes("no new meaning approval or date question"), true);
+    assert.equal(guidance.includes("unchanged requests"), false);
+    assert.equal(guidance.includes("stable term identity"), true);
+  }
+  const profile = path.join(env.AGENTERA_PROFILE_DIR!, "PROFILE.md");
+  const base = "# Fixture profile\n\nKeep every non-glossary byte.\n";
+  fs.writeFileSync(profile, base, { mode: 0o640 });
+  const generation = currentTierGeneration(root, "ordinary-review");
+  const capsules = [1, 2, 3, 4, 5].map((index) => inferredCapsule(index, generation));
+  const projection = persistProjection(root, capsules, generation);
+  const now = new Date().toISOString();
+  const reviewRequest = (index: number, consistency = "consistent") => {
+    const capsule = capsules[index]!;
+    const decided = json(
+      execute(
+        ["report", "personal-glossary-decision", "--input", "-"],
+        JSON.stringify({
+          schema_version: "agentera.personalGlossaryAdmissionRequest.v2",
+          candidate_id: capsule.candidate_id,
+          candidate_revision: capsule.candidate_revision,
+          candidate_capsule_sha256: capsule.capsule_sha256,
+          candidate_projection_sha256: projection.projection_sha256,
+          generation,
+          policy_version: capsule.policy_version,
+          classification: {
+            term: capsule.term,
+            meaning: capsule.meaning,
+            scope: "personal",
+            permanence: "durable",
+            consistency,
+            confidence: 80,
+          },
+        }),
+      ),
+    );
+    assert.equal(decided.status, "review_required");
+    const queued = json(
+      execute(
+        ["report", "personal-glossary-reviews", "queue", "--input", "-"],
+        JSON.stringify({
+          schema_version: "agentera.personalGlossaryReviewQueueRequest.v1",
+          receipt: decided.receipt,
+        }),
+      ),
+    );
+    const review = mapping(queued.record);
+    const disposition = ["correct", "accept", "reject", "defer", "accept"][index];
+    return {
+      decided,
+      approval: {
+        schema_version: "agentera.personalGlossaryReviewDispositionRequest.v1",
+        review_id: review.review_id,
+        receipt: decided.receipt,
+        approval: {
+          schema_version: "agentera.personalGlossaryReviewApproval.v2",
+          issuer: "agentera-harness",
+          subject: "current_user",
+          trusted_channel: "explicit-user-review",
+          review_id: review.review_id,
+          candidate_id: review.candidate_id,
+          candidate_revision: review.candidate_revision,
+          candidate_projection_sha256: review.candidate_projection_sha256,
+          semantic_fingerprint: review.semantic_fingerprint,
+          generation: review.generation,
+          policy_version: review.policy_version,
+          disposition,
+          corrected_meaning: disposition === "correct" ? "An edited fixture meaning." : null,
+          corrected_scope: disposition === "correct" ? "personal" : null,
+          disposed_at: now,
+          nonce: `fixture-set-item-${index}`,
+        },
+      },
+    };
+  };
+  const requests = capsules.map((_, index) => reviewRequest(index));
+  const dispose = (request: unknown) => execute(["report", "personal-glossary-reviews", "disposition", "--input", "-"], JSON.stringify(request));
+  const approvedAt = new Date().toISOString();
+  for (const request of requests) request.approval.approval.disposed_at = approvedAt;
+  const publish = (index: number, authorization?: unknown, asOf = "2026-09-30") =>
+    execute(
+      ["report", "personal-glossary-publish", "--input", "-"],
+      JSON.stringify({
+        schema_version: "agentera.personalGlossaryPublishRequest.v1",
+        receipt: requests[index]!.decided.receipt,
+        decision: requests[index]!.decided.decision,
+        as_of: asOf,
+        ...(authorization ? { review_authorization: authorization } : {}),
+      }),
+    );
+  const first = json(dispose(requests[0]!.approval));
+  // One displayed set approval can be coordinated with existing per-entry calls.
+  // A bad selected entry does not roll back the other valid approved entry.
+  const bad = structuredClone(requests[1]!.approval);
+  bad.approval.candidate_revision = "f".repeat(64);
+  assert.notEqual(dispose(bad).status, 0);
+  const saved = json(publish(0, first.publication_authorization));
+  assert.equal(saved.status, "changed");
+  const savedBytes = fs.readFileSync(profile, "utf8");
+  assert.equal(savedBytes.startsWith(base), true);
+  assert.equal(savedBytes.includes("An edited fixture meaning."), true);
+  assert.notEqual(publish(1).status, 0);
+  assert.equal(fs.readFileSync(profile, "utf8"), savedBytes);
+  for (const index of [2, 3]) {
+    const result = json(dispose(requests[index]!.approval));
+    assert.equal(result.publication_authorization, null);
+    const review = mapping(result.record);
+    const authorization = {
+      review_id: review.review_id,
+      review_record_sha256: review.record_sha256,
+    };
+    assert.notEqual(publish(index, authorization).status, 0);
+  }
+  // The unseen fifth item has no action, so it cannot be saved.
+  assert.notEqual(publish(4).status, 0);
+  assert.equal(fs.readFileSync(profile, "utf8"), savedBytes);
+  assert.equal(json(dispose(requests[0]!.approval)).status, "unchanged_replay");
+  assert.equal(json(publish(0, first.publication_authorization)).status, "unchanged_replay");
+  const changed = structuredClone(requests[0]!.approval);
+  changed.approval.corrected_meaning = "A meaning not included in the original approval.";
+  assert.notEqual(dispose(changed).status, 0);
+  assert.equal(fs.readFileSync(profile, "utf8"), savedBytes);
+  const second = json(dispose(requests[1]!.approval));
+  // F2: interrupt the selected-set save, then let another term advance the date.
+  assert.equal(json(publish(0, first.publication_authorization, "2026-10-01")).status, "changed");
+  const advancedBytes = fs.readFileSync(profile, "utf8");
+  assert.notEqual(publish(1, second.publication_authorization).status, 0);
+  assert.equal(fs.readFileSync(profile, "utf8"), advancedBytes);
+  const originalApproval = JSON.stringify(requests[1]!.approval);
+  const originalAuthorization = JSON.stringify(second.publication_authorization);
+  assert.equal(json(publish(1, second.publication_authorization, "2026-10-01")).status, "changed");
+  assert.equal(json(publish(1, second.publication_authorization, "2026-10-01")).status, "unchanged_replay");
+  assert.equal(JSON.stringify(requests[1]!.approval), originalApproval);
+  assert.equal(JSON.stringify(second.publication_authorization), originalAuthorization);
+  // Only publication date changes on resume, with no new disposition or approval.
+  assert.equal(json(publish(1, second.publication_authorization, "2036-09-30")).status, "changed");
+  const finalBytes = fs.readFileSync(profile, "utf8");
+  const document = JSON.parse(/```json\n([\s\S]*?)\n```/.exec(finalBytes)![1]!);
+  assert.deepEqual(
+    document.entries.map((entry: Mapping) => entry.term),
+    capsules.slice(0, 2).map((capsule) => capsule.term),
+  );
+  assert.equal(document.entries[0].confidence, 80);
+  assert.deepEqual(
+    document.confirmed_terms,
+    capsules.slice(0, 2).map((capsule) => capsule.term),
+  );
+  assert.equal(finalBytes.startsWith(base), true);
+  assert.equal(fs.statSync(profile).mode & 0o777, 0o640);
+  const reviewStore = path.join(env.AGENTERA_PROFILE_DIR!, "intermediate/personal-glossary/review-records.json");
+  assert.equal(fs.statSync(reviewStore).mode & 0o777, 0o600);
+  assert.equal(fs.existsSync(path.join(path.dirname(reviewStore), "trusted-local-host.json")), false);
+  // F1: a distinct current classification receipt approves B on A's same term
+  // and projection. B supersedes A before saving, not just after profile writes.
+  const newer = reviewRequest(0, "uncertain");
+  assert.notEqual(mapping(newer.decided.receipt).receipt_sha256, mapping(requests[0]!.decided.receipt).receipt_sha256);
+  assert.equal(newer.approval.approval.candidate_projection_sha256, requests[0]!.approval.approval.candidate_projection_sha256);
+  newer.approval.approval.corrected_meaning = "The newer explicitly approved fixture meaning.";
+  newer.approval.approval.disposed_at = new Date().toISOString();
+  newer.approval.approval.nonce = "fixture-newer-correction";
+  const newerAction = json(dispose(newer.approval));
+  const retryA = () => publish(0, first.publication_authorization, "2036-09-30");
+  const refusedBeforeSave = retryA();
+  assert.equal(refusedBeforeSave.status, 1);
+  assert.match(String(mapping(JSON.parse(refusedBeforeSave.stdout).error).message), /superseded/);
+  assert.equal(fs.readFileSync(profile, "utf8"), finalBytes);
+  const requestB = {
+    schema_version: "agentera.personalGlossaryPublishRequest.v1",
+    receipt: newer.decided.receipt,
+    decision: newer.decided.decision,
+    review_authorization: newerAction.publication_authorization,
+    as_of: "2036-09-30",
+  };
+  const publishB = () => execute(["report", "personal-glossary-publish", "--input", "-"], JSON.stringify(requestB));
+  assert.equal(json(publishB()).status, "changed");
+  const newerBytes = fs.readFileSync(profile, "utf8");
+  assert.equal(newerBytes.includes(newer.approval.approval.corrected_meaning), true);
+  // This is the original A publication request from the initial audit, including date.
+  const refusedOriginal = publish(0, first.publication_authorization);
+  assert.equal(refusedOriginal.status, 1);
+  assert.match(String(mapping(JSON.parse(refusedOriginal.stdout).error).message), /superseded/);
+  assert.equal(fs.readFileSync(profile, "utf8"), newerBytes);
+  assert.equal(retryA().status, 1);
+  assert.equal(fs.readFileSync(profile, "utf8"), newerBytes);
+  assert.equal(json(publishB()).status, "unchanged_replay");
+  // Another term's original approval still resumes, without duplicate entries.
+  assert.equal(json(publish(1, second.publication_authorization, "2036-09-30")).status, "unchanged_replay");
+  assert.equal(fs.readFileSync(profile, "utf8"), newerBytes);
+  // A changed projection cannot reuse any approval for the previous revision.
+  persistProjection(root, [inferredCapsule(99, generation)], generation);
+  assert.notEqual(publish(0, first.publication_authorization, "2036-09-30").status, 0);
+  assert.equal(fs.readFileSync(profile, "utf8"), newerBytes);
+}
+
 function servedContract(root: string): ServedProfileFullContract {
   const args = ["prime", "--context", "profile", "--format", "json"];
   const prime = invokeInProcess(args, root);

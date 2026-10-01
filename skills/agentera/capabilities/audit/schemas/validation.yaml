@@ -45,11 +45,19 @@ VALIDATION:
     id: V5
     rule: user_confirmation_for_filing
     description: >-
-      Findings MUST NOT be filed to TODO.md without explicit user confirmation.
-      Present the findings and ask; the user decides what to track.
+      Findings MUST NOT be filed without one explicit approval of the exact
+      selected, deduplicated full TODO records and mapped severities. Use the
+      existing typed batch writer and preview effect binding. Decline or silence
+      leaves TODO state unchanged; changed entries or effects need fresh approval.
+      Filing grants no fixes, downstream execution or vision approval. After
+      interruption verify saved and remaining entries, then use only the original
+      unchanged authorized request/effect and existing recovery/replay. Do not
+      claim global multi-file atomicity or recreate items to bypass recovery.
     severity: critical
     checks:
-      - "TODO.md is only modified after user confirmation"
+      - "One approval files only the displayed deduplicated unchanged set through typed writers"
+      - "Decline or changed entries cause no unapproved writes or downstream effects"
+      - "Interrupted or repeated filing verifies saved/remaining and avoids duplicates"
   6:
     id: V6
     rule: exit_marker_required

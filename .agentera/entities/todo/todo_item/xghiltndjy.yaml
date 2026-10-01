@@ -2,7 +2,7 @@ id: xghiltndjy
 artifact: todo
 record:
   severity: degraded
-  status: open
+  status: resolved
   readiness:
     capability: build
     reason: Immediate native confirmation caused observed handoff dismissal, while current authority already treats clear free-form acceptance as confirmation.
@@ -17,9 +17,9 @@ record:
     public:
       present: true
       description: "[fix:3.0.0] Keep initial status handoffs informational."
+      status: resolved
+      order: 143
       severity: degraded
-      status: open
-      order: 1
   kind: fix
   target_version: 3.0.0
   requirements:
@@ -34,3 +34,7 @@ record:
     - No status schema or host-native prompt implementation is added, and orchestration behavior is unchanged.
   release_blocker: false
   title: Keep initial status handoffs informational.
+  lifecycle:
+    operation: resolve
+    reason: Initial Status handoffs stay informational; clear acceptance invokes once and downstream approval remains with the owner. Verified long-path startup budget and refusal/routing fixtures.
+    date: 2026-09-30

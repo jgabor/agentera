@@ -18,8 +18,9 @@ ARTIFACTS:
     local_role: produces_and_consumes
     description: >-
       Discuss may update project direction only with explicit user
-      confirmation when a decision feeds into project direction. Read for
-      context during deliberation.
+      approval of the exact named vision patch as an explicit vision task when
+      a decision feeds into project direction. Discuss invocation alone does not
+      grant permission. Resolve mapping/ownership and read policy before reliance.
   3:
     id: A3
     artifact: todo
@@ -57,3 +58,20 @@ ARTIFACTS:
       Discuss consumes bounded read-only terminology advice at governed
       meaning-sensitive events. It never reads the glossary path directly,
       publishes project terminology, or mutates personal profile state.
+  8:
+    id: A8
+    artifact: plan
+    local_role: produces_and_consumes
+    description: >-
+      Read relevant affected commitments through discovered bounded CLI readers.
+      Only directly justified exact displayed approved patches use the existing
+      plan writer and flags. Saving does not authorize execution or task completion.
+  9:
+    id: A9
+    artifact: design
+    local_role: produces_and_consumes
+    description: >-
+      Relevant design constraints participate in protocol OPERATING_RULES coherence.
+      Resolve mapped ownership and read policy; surface missing authority rather
+      than inventing a reader or generic singleton writer. Only exact displayed
+      approved owner-scoped patches may change design; preserve unrelated content.

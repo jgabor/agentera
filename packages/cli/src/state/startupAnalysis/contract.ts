@@ -1,6 +1,7 @@
 import crypto from "node:crypto";
 
 import type { JsonObject } from "../../core/jsonValue.js";
+import { canonicalEntityPath } from "../entityStorage.js";
 
 export const TRANSCRIPT_KEYS = new Set(["content", "text", "prompt", "message", "preceding_context", "input_text", "output_text", "transcript"]);
 export const SESSION_KEYS = new Set(["session_id", "sessionID", "sessionId", "conversation_id"]);
@@ -22,8 +23,6 @@ const DEFAULT_CONTRACT: JsonObject = {
       ".agentera/decisions.yaml": "decisions",
       ".agentera/health.yaml": "health",
       ".agentera/vision.yaml": "vision",
-      ".agentera/objective.yaml": "objective",
-      ".agentera/experiments.yaml": "experiments",
       plan: "plan",
       progress: "progress",
       docs: "docs",
@@ -76,19 +75,24 @@ const FALLBACK_ARTIFACT_LABELS: Array<[string, string]> = [
   [".agentera/decisions.yaml", "decisions"],
   [".agentera/health.yaml", "health"],
   [".agentera/vision.yaml", "vision"],
-  [".agentera/objective.yaml", "objective"],
-  [".agentera/experiments.yaml", "experiments"],
 ];
 
 export function canonicalArtifactLabel(value: unknown, contract: JsonObject | null = null): string | null {
   const text = String(value).replace(/\\/g, "/");
+  const entityStart = text.lastIndexOf(".agentera/entities/");
+  if (entityStart === 0 || (entityStart > 0 && text[entityStart - 1] === "/")) {
+    const entity = canonicalEntityPath(text.slice(entityStart));
+    if (entity) return entity.artifact;
+  }
+  const scoped = /(?:^|\/)\.agentera\/optimize\/([^/]+)\/(objective|experiments)\.yaml$/.exec(text);
+  if (scoped && scoped[1] !== "." && scoped[1] !== "..") return scoped[2];
   const loaded = contract ?? loadContract();
   const privacyBoundary = loaded.privacy_boundary && typeof loaded.privacy_boundary === "object" && !Array.isArray(loaded.privacy_boundary) ? loaded.privacy_boundary : {};
   const labels = privacyBoundary.canonical_artifact_labels;
   if (labels && typeof labels === "object" && !Array.isArray(labels)) {
     for (const [suffix, label] of Object.entries(labels)) {
       const normalized = String(suffix).replace(/\\/g, "/");
-      if (text === normalized || text.endsWith("/" + normalized) || text.includes(normalized)) {
+      if (text === normalized || (normalized.includes("/") && (text.endsWith("/" + normalized) || text.includes(normalized)))) {
         return String(label);
       }
     }

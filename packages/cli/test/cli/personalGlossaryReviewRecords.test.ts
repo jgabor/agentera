@@ -255,7 +255,8 @@ describe("agentera report personal-glossary-reviews", () => {
     expect(help).toContain("personal-glossary-reviews queue --input <file|->");
     expect(help).toContain("personal-glossary-reviews disposition --input <file|->");
     expect(help).toContain("personal-glossary-reviews list [--status pending|terminal]");
-    expect(help).toContain("fresh signed current-user");
+    expect(help).toContain("ordinary trusted harness using agentera.personalGlossaryReviewApproval.v2");
+    expect(help).toContain("no signing or enrollment");
     expect(requiresCompletedEntityCutover(["report", "personal-glossary-reviews", "list"])).toBe(false);
     expect((buildSchemaPayload().integration as any).personal_glossary.review_records).toMatchObject({
       command: "agentera report personal-glossary-reviews",

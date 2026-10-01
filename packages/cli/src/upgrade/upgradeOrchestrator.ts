@@ -17,6 +17,7 @@ import { acquireUpgradeLock, releaseUpgradeLock } from "./upgradeLock.js";
 import { applyPreparedEntityCutover, inspectEntityCutoverForUpgrade, prepareEntityCutoverForUpgrade, type PreparedEntityCutover } from "../state/entityCutover.js";
 import { detectStateMode } from "../state/stateMode.js";
 import { cleanupOfferAuthorization } from "./cleanupOffer.js";
+import { withProjectMigrationApproval, checkPreparedProjectMigration, checkReviewedMigrationItems, ProjectMigrationApprovalError } from "./projectMigrationOffer.js";
 
 /**
  * Phased upgrade orchestration for v2→v3 migration and project-level migration work.
@@ -42,6 +43,7 @@ export interface UpgradeOrchestratorArgs {
   runtime?: string | null;
   legacyCleanup?: string | null;
   cleanupAuthorization?: string | null;
+  migrationAuthorization?: string | null;
 }
 
 export interface UpgradeOrchestratorPhase {
@@ -271,6 +273,9 @@ export function buildUpgradePlan(args: UpgradeOrchestratorArgs): UpgradePlanV2 {
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
   if (!args.yes) return buildUpgradePlanUnlocked(args, home, project, []);
+  if (args.migrationAuthorization) {
+    return withProjectMigrationApproval(args, project, (locks) => buildUpgradePlanUnlocked(args, home, project, locks));
+  }
 
   const projectLock = acquireUpgradeLock(project, "project");
   try {
@@ -509,6 +514,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
   }
 
   let migrationPreview = runMigration ? dryRunMigration(migrationCtx) : null;
+  if (migrationPreview) checkReviewedMigrationItems(args, Object.values(migrationPreview));
   const entityBoundary = projectEntityCutover || crossMajorMigration;
   const filteredEntityBoundary = entityBoundary && Boolean(args.only && args.only.length > 0);
   const entitySelected = entityBoundary && (!filteredEntityBoundary || (!args.yes && Boolean(args.only?.includes("artifacts"))));
@@ -519,8 +525,10 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
     if (args.yes && entitySelected && !entityAuthorityActive) {
       try {
         preparedEntityMigration = prepareEntityCutoverForUpgrade(project, sourceRoot, activeUpgradeLockPaths);
+        checkPreparedProjectMigration(args, preparedEntityMigration);
         entityPhase = readyEntityCutoverPhase(preparedEntityMigration.entityCount, preparedEntityMigration.todoReconciliation);
       } catch (error) {
+        if (error instanceof ProjectMigrationApprovalError) throw error;
         entityPhase = summarizeOrchestratorPhase("entities", [
           {
             status: "blocked",
@@ -569,6 +577,7 @@ function buildUpgradePlanUnlocked(args: UpgradeOrchestratorArgs, home: string, p
   }
 
   if (args.yes && migrationPreview && !entityPreflightBlocked) {
+    checkReviewedMigrationItems(args, Object.values(migrationPreview));
     const applyPhases = args.only ?? MIGRATION_ONLY_PHASES;
     migrationPreview = applyMigrationPhases(migrationCtx, migrationPreview, applyPhases);
   }

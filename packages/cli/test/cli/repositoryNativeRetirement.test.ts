@@ -248,6 +248,7 @@ describe("repository-native retirement inventory", () => {
       "packages/cli/src/upgrade/productV1Reset.ts -> packages/cli/src/runtime/lifecyclePublication.ts",
       "packages/cli/src/upgrade/productV1Reset.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/productV1ResetAuthority.ts -> packages/cli/src/runtime/lifecycleAuthority.ts",
+      "packages/cli/src/upgrade/projectMigrationOffer.ts -> packages/cli/src/runtime/lifecycleOwnershipJournal.ts",
       "packages/cli/src/upgrade/retiredResourceDiagnostics.ts -> packages/cli/src/runtime/nativeResourceCleanup.ts",
       "packages/cli/src/upgrade/upgradeOrchestrator.ts -> packages/cli/src/upgrade/lifecycleUpgrade.ts",
       "packages/cli/src/validate/activationConjunction.ts -> packages/cli/src/runtime/lifecycleAuthority.ts",

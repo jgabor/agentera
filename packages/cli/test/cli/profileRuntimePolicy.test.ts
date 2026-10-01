@@ -27,7 +27,8 @@ describe("served profile runtime policy", () => {
     expect(profile).toContain("### Personal Glossary section");
     expect(profile).toContain("npx -y agentera@next report personal-glossary-publish");
     expect(profile).toContain("agentera.personalGlossaryPublishRequest.v1");
-    expect(profile).toContain("Publish only current explicit automatic decisions");
+    expect(profile).toContain("Publish current explicit automatic decisions separately");
+    expect(profile).toContain("A `review_required` result needs Step 5's exact accept/correct authorization");
     expect(profile).toContain("Host classification is semantic evidence, never admission authority");
     expect(profile).toContain("Without a question channel, ask nothing and rely on the durable queue");
     expect(profile).not.toContain("Profile Full does not invoke");

@@ -214,6 +214,7 @@ export interface OrientationState {
     status: "complete" | "fresh_uninitialized" | "required" | "invalid_lifecycle";
     project_state: "v3" | "fresh_uninitialized" | "legacy" | "partial" | "corrupt" | "unknown" | "invalid_lifecycle";
     recovery_command: string | null;
+    migration_offer?: import("../../upgrade/projectMigrationOffer.js").ProjectMigrationOffer;
   };
   shared_skill: JsonObject;
   plan: PlanSummary;

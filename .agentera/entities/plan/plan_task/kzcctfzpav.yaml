@@ -1,0 +1,30 @@
+id: kzcctfzpav
+artifact: plan
+record:
+  name: Qualify the complete user journeys
+  depends_on:
+    - zebpzwigal
+    - stjjlvlrfb
+    - nzpqztrpxp
+    - wgfiitphid
+    - mfvwpevkyh
+    - fobwsfjjhn
+    - kyfkvdpsfy
+    - mfnohbwilm
+  status: complete
+  acceptance:
+    - GIVEN integrated journeys WHEN approval, refusal, silence, scope changes and interruption are exercised THEN results preserve every permission boundary.
+    - GIVEN source and extracted packaged runtimes WHEN exercised without checkout companions THEN behavior and bounded guidance agree.
+    - GIVEN completed deliveries WHEN evaluated THEN required checks, independent review and typed closeout support claims with remaining gaps explicit.
+    - GIVEN existing evidence WHEN reused THEN coverage matches; one success and one refusal per behavior suffice unless distinct risks require extras.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: integrated-journeys-audit-1
+      source: Independent audit ses_f08438aeeffeVJ8vyRDLer8YWi confirms all four criteria, all8source/extracted journeys,11owner development PASS,staticquality817files0errors6retainedwarnings and matchedtarballa6aede5c68321a3634e3b57903e75f6e5e2b89ae1a33c33ee307bdd4c0535acf. Precloseoutsourcebindingd53197c19b3ed157b141f5fa92ca12a3d0b046c0b50eca9bda5d95912662c8e2. Durable new-evidence/kzcctfzpav under reboot handoff. Outcome/effort reviewed, no arbitraryhost/liveUI/release qualification claimed.
+      recorded_at: 2026-10-01 16:07
+      writer_command: agentera state plan record-evaluation

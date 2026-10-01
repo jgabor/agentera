@@ -1,0 +1,49 @@
+id: secbcalqyr
+artifact: todo
+record:
+  kind: feat
+  target_version: null
+  title: Offer project migration as one explicitly approved outcome
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "Apply decision fgnpjqlrir: run read-only preflight before presenting a ready-to-run offer for the existing supported project-only v2-to-v3 executor. Required migration sources must be complete, tracked and unchanged at HEAD."
+    - Identify the selected project, target and disclosed effects in plain language, state unsupported rollback/return to v2, and disclose any actual loss rather than inventing or hiding it. Accept one explicit Yes; no token copying, manual command reconstruction or extra technical confirmation.
+    - Bind approval to reviewed migration inputs, project scope and effects. Unexpected changes refuse the stale operation without new effects and require a fresh preview and approval. Decline or silence makes no changes.
+    - Validate checkpoints read-only and reuse known approval for matching expected migration progress. Resume through the same supported forward operation without another confirmation. Missing approval or changed checkpoint evidence stops rather than inferring permission. Required state and startup verification must pass before reporting completion; otherwise report actual state and bounded recovery.
+    - Do not grant whole-directory .agentera ownership or bundle global cleanup, shared-skill changes, reset or implicit Git actions. Fresh, current-v3, partial, corrupt and unsupported states follow their own applicable paths. Preserve existing platform, retention and forward-only limits; do not invent rollback, automatic source preparation or a general consent framework.
+    - Doctor project readiness (azsvrmuhch) and project/global separation (zeyfnbqdov) remain implementation prerequisites. Review the affected plan acceptance and obtain separate implementation authorization; this captured outcome authorizes neither code nor live migration, and autonomous execution remains deferred.
+  acceptance:
+    - GIVEN eligible supported inputs WHEN read-only preflight succeeds THEN one ready-to-run project-only offer identifies the project, target, effects, real losses and unsupported rollback/return-to-v2 consequence before asking for approval.
+    - GIVEN explicit Yes, decline or silence WHEN handled THEN only the disclosed migration is authorized by Yes; no technical confirmation loop, token copying or broader effects occur.
+    - GIVEN unexpected migration-input, scope or effect changes WHEN apply is attempted THEN the stale operation makes no new changes and fresh preview and approval are required.
+    - GIVEN matching checkpointed progress and known approval WHEN recovering THEN the forward operation resumes without another confirmation, and completion is reported only after required state and startup checks pass; failures report actual state and bounded recovery.
+    - GIVEN fresh, current, partial, corrupt or unsupported state, or unmet prerequisites WHEN assessed THEN no unusable migration offer or automatic reset/source preparation/global cleanup occurs; existing scope and retention limits remain intact.
+  readiness:
+    capability: build
+    reason: Decision fgnpjqlrir and reviewed task wgfiitphid define the outcome; Doctor/project-isolation prerequisites passed and the user authorized orchestration and resumption.
+    dependencies:
+      - artifact: todo
+        id: azsvrmuhch
+      - artifact: todo
+        id: zeyfnbqdov
+    blocked: null
+    gate:
+      state: satisfied
+      reason: Explicit orchestration and resumption authorize the migration-offer implementation, not live migration.
+      recovery: Changed scope requires renewed approval; live migration, global cleanup, reset and Git actions remain excluded.
+    queue_rank: 101
+    order_reason: Preserve the existing migration backlog position; do not reorder unrelated work.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat] Offer project migration as one explicitly approved outcome"
+      status: resolved
+      order: 149
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Implemented a ready-to-run bound project-only migration offer with strict drift refusal, verified forward recovery and complete readonly publication preflight; source/package and independent review passed.
+    date: 2026-10-01

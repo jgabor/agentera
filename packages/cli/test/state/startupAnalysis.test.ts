@@ -17,8 +17,22 @@ describe("startup analysis: redaction core", () => {
   it("maps known artifact paths to canonical labels", () => {
     expect(canonicalArtifactLabel(".agentera/plan.yaml")).toBe("plan");
     expect(canonicalArtifactLabel(".agentera/decisions.yaml")).toBe("decisions");
-    expect(canonicalArtifactLabel("/repo/.agentera/objective.yaml")).toBe("objective");
+    expect(canonicalArtifactLabel("/repo/.agentera/objective.yaml")).toBe("AGENTERA_ARTIFACTS");
     expect(canonicalArtifactLabel("/etc/passwd")).toBeNull();
+  });
+
+  it.each([
+    ["objective", "objective"],
+    ["experiments", "experiment"],
+  ])("redacts real %s entity and scoped legacy paths without root pseudo-authority", (artifact, boundary) => {
+    for (const file of [`/private/repo/.agentera/entities/${artifact}/${boundary}/abcdefghij.yaml`, `/private/repo/.agentera/optimize/private-target/${artifact}.yaml`]) {
+      expect(canonicalArtifactLabel(file)).toBe(artifact);
+      expect(redactForStartupOutput({ path: file }, "S")).toEqual({ path: artifact });
+    }
+    for (const file of [`.agentera/${artifact}.yaml`, `.agentera/entities/${artifact}/wrong/abcdefghij.yaml`, `.agentera/optimize/../${artifact}.yaml`]) {
+      expect(canonicalArtifactLabel(file)).toBe("AGENTERA_ARTIFACTS");
+      expect(redactForStartupOutput({ path: file }, "S")).toEqual({ path: "AGENTERA_ARTIFACTS" });
+    }
   });
 
   it("redacts transcript text, session ids, and paths recursively", () => {

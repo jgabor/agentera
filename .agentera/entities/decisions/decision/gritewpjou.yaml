@@ -1,0 +1,21 @@
+id: gritewpjou
+artifact: decisions
+record:
+  date: 2026-09-30
+  question: How should Discuss capture decisions while keeping affected artifacts coherent?
+  context: packages/cli/src/capabilities/discuss/instructions.ts separates destination choice from approving protected writes. Closeout needs explicit coherence and recovery behavior without adding mechanical confirmation loops.
+  alternatives:
+    - name: One concrete coherence-aware proposal using existing writer recovery.
+      status: chosen
+    - name: Decision-only proposals by default.
+      status: rejected
+    - name: Fixed decision-and-TODO-only approval scope.
+      status: rejected
+    - name: Unacknowledged material conflicts at firm closeout.
+      status: rejected
+    - name: A new global all-or-none closeout transaction.
+      status: rejected
+  choice: Propose the decision and justified follow-ups, with decision-only and skip choices. Check affected artifacts; surface material conflicts or ambiguity, clarify uncertain implications, and record deliberate pivots or exceptions. Qualify unresolved closure. One approval covers exact shown in-scope changes through their owners. Reuse writer transactions; retain verified saves, stop dependent writes and report incomplete closure after failure. Resume unchanged approvals without duplicates; changed proposals need fresh approval. No execution, Git, global-installation or personal-data permission is implied.
+  reasoning: Coherent artifacts preserve intent across sessions, while deliberate deviations remain user-controlled. One concrete approval avoids mechanical menus. Existing operation-level recovery avoids a new general transaction framework.
+  confidence: firm
+  feeds_into: TODO doqgrxxkev, Discuss closeout and shared coherence guidance, and the affected tasks of plan qldlbzxsfp. Autonomous execution remains deferred until outstanding outcome choices are settled.

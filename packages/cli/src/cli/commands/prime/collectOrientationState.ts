@@ -14,25 +14,25 @@ import type { PrimeOpts } from "./types.js";
 import { diagnoseCanonicalSkill } from "../../../setup/sharedSkill.js";
 import { collectEntityOrientation } from "./collectEntityOrientation.js";
 import { acquireProfile } from "../../profileAcquisition.js";
-import { fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../../../upgrade/upgradeCommands.js";
 import { classifyEntityCutoverProject } from "../../../state/entityMigrationPreview.js";
+import { fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../../../upgrade/upgradeCommands.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
+import { projectMigrationOffer } from "../../../upgrade/projectMigrationOffer.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 
-function stateCutover(project: string, sourceRoot: string): OrientationState["state_cutover"] {
+/** Shared, read-only project cutover and recovery projection for Prime and Doctor. */
+export function projectStateCutover(project: string, sourceRoot: string): OrientationState["state_cutover"] {
   try {
     const projectState = classifyEntityCutoverProject(project, sourceRoot);
-    if (projectState === "v3") {
-      return { status: "complete", project_state: "v3", recovery_command: null };
-    }
-    if (projectState === "fresh_uninitialized") {
-      return { status: "fresh_uninitialized", project_state: projectState, recovery_command: null };
-    }
+    if (projectState === "v3") return { status: "complete", project_state: "v3", recovery_command: null };
+    if (projectState === "fresh_uninitialized") return { status: "fresh_uninitialized", project_state: projectState, recovery_command: null };
+    const offer = projectState === "legacy" ? projectMigrationOffer({ project, channel: "development", dryRun: true }) : null;
     return {
       status: "required",
       project_state: projectState,
-      recovery_command: projectState === "legacy" ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project),
+      ...(offer ? { migration_offer: offer } : {}),
+      recovery_command: offer ? preCutoverCommand("upgrade --explain --operation migrate --section usage") : projectState === "legacy" ? fullEntityUpgradeCommand(project) : fullEntityUpgradePreviewCommand(project),
     };
   } catch {
     return {
@@ -77,7 +77,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
   const { tiers_dir: _tiersDir, signal_path: _signalPath, ...publicBoundedSignals } = boundedSignals;
   profileDict.bounded_signals = publicBoundedSignals as unknown as ProfileSummary["bounded_signals"];
   const entity = collectEntityOrientation(project, sourceRoot);
-  const cutover = stateCutover(project, sourceRoot);
+  const cutover = projectStateCutover(project, sourceRoot);
   const plan = entity.plan;
   const docs = entity.docs;
   const progress = entity.progress;

@@ -101,6 +101,7 @@ const addedTuples: ActivationCanonicalTuple[] = [
       ["packages/cli/src/cli/commands/state/explainDetail.ts", "Typed operation detail exposes writer-owned input and effect contracts with exact section commands and bounded recovery."],
       ["packages/cli/src/cli/commands/workerDetail.ts", "Worker details project compiled delegation instructions and evaluator contracts through the capability detail owner."],
       ["packages/cli/src/state/write/operationDetail.ts", "Writer contract projection serves complete operation semantics and executable examples verified against writer authorities."],
+      ["packages/cli/src/upgrade/projectMigrationOffer.ts", "Project-only migration offers publish a complete reviewed-scope-bound development command; source and extracted-package migration journeys check that command and its effects."],
     ] as const
   ).map(([path, reason]): ActivationCanonicalTuple => ({
     class: "package",
@@ -351,15 +352,15 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777",
     },
     package: {
-      count: 79,
-      sha256: "bdeb62382cc99d1bf9420be94575aa1c1eb9060a83c20539665a29429f6d0c5e",
+      count: 80,
+      sha256: "f8e682ab265ff2420033a9f1719389001f109632fb354ccf7512ec0d228d343b",
     },
     bootstrap: {
       count: 34,
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 317, sha256: "0052090ac3619d16dd00e06c28d0e3b9a1090ebe94618d4be334a0993bb09a13" },
+  total: { count: 318, sha256: "774100232ddf655dba1ba1101ed78760c0f2fb89b91e72d776ebd73078abd58c" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

@@ -40,6 +40,7 @@ interface PersonalGlossaryDocument {
   as_of: string;
   confidence_basis: Record<string, number>;
   entries: PersonalGlossaryEntry[];
+  confirmed_terms?: string[];
 }
 
 export interface UpdatePersonalGlossaryProfileInput {
@@ -48,6 +49,8 @@ export interface UpdatePersonalGlossaryProfileInput {
   retainedHistory: GlossaryAdmissionContext;
   asOf: string;
   dryRun?: boolean;
+  /** Only the publisher's current accept/correct authorization sets this. */
+  userConfirmed?: boolean;
 }
 
 export interface UpdatePersonalGlossaryProfileResult {
@@ -137,7 +140,7 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
   if (!value || typeof value !== "object" || Array.isArray(value)) throw new Error("PROFILE.md Glossary section document is malformed");
   const document = value as PersonalGlossaryDocument;
   if (
-    JSON.stringify(Object.keys(document)) !== JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries"]) ||
+    ![JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries"]), JSON.stringify(["schema_version", "as_of", "confidence_basis", "entries", "confirmed_terms"])].includes(JSON.stringify(Object.keys(document))) ||
     document.schema_version !== SCHEMA_VERSION ||
     !Array.isArray(document.entries) ||
     !document.confidence_basis ||
@@ -149,6 +152,9 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
   if (document.entries.length > maxEntries) throw new GlossaryEntryBoundError("personal glossary exceeds the consumer entry bound");
   calendarDate(document.as_of);
   validateUnique(document.entries, "existing personal glossary");
+  if (document.confirmed_terms !== undefined && (!Array.isArray(document.confirmed_terms) || document.confirmed_terms.some((term, index, terms) => typeof term !== "string" || matchingIndex(document.entries, term) < 0 || terms.slice(0, index).some((prior) => unicodeCaselessExact(prior, term))))) {
+    throw new Error("PROFILE.md Glossary section confirmed terms are malformed");
+  }
   const basisKeys = Object.keys(document.confidence_basis);
   if (basisKeys.length !== document.entries.length || basisKeys.some((key, index) => basisKeys.slice(0, index).some((candidate) => unicodeCaselessExact(candidate, key)) || matchingIndex(document.entries, key) < 0)) {
     throw new Error("PROFILE.md Glossary section confidence basis is malformed");
@@ -165,6 +171,12 @@ function parseSection(profile: string, maxEntries = Number.POSITIVE_INFINITY): {
 export class PersonalGlossaryBoundaryError extends Error {
   constructor(readonly availability: "malformed" | "ambiguous") {
     super("PROFILE.md Glossary section has malformed or ambiguous owned boundaries");
+  }
+}
+
+export class PersonalGlossaryConflictError extends Error {
+  constructor(term: string) {
+    super(`personal glossary conflict for established term '${term}'`);
   }
 }
 
@@ -220,6 +232,7 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
   const merged: PersonalGlossaryEntry[] = [];
   const confidenceBasis = new Map<string, number>();
   const usedFresh = new Set<number>();
+  const confirmedTerms = [...(section.document?.confirmed_terms ?? [])];
 
   for (const previous of established) {
     const freshIndex = matchingIndex(fresh, previous.term);
@@ -227,14 +240,16 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
     if (freshIndex >= 0) usedFresh.add(freshIndex);
     let entry: PersonalGlossaryEntry;
     let entryBasis: number;
+    const confirmed = previous.provenance.kind === "personal_explicit_definition" || confirmedTerms.some((term) => unicodeCaselessExact(term, previous.term));
     if (current) {
-      if (previous.meaning !== current.meaning || previous.provenance.kind !== current.provenance.kind) {
-        throw new Error(`personal glossary conflict for established term '${previous.term}'`);
+      if (!input.userConfirmed && (previous.meaning !== current.meaning || previous.provenance.kind !== current.provenance.kind)) {
+        throw new PersonalGlossaryConflictError(previous.term);
       }
       daysBetween(previous.temporal.last_confirmed_at, input.asOf);
-      entryBasis = current.confidence;
+      entryBasis = confirmed && !input.userConfirmed ? Math.max(confidenceBasisFor(section.document!, previous.term), current.confidence) : current.confidence;
       entry = orderedEntry({
         ...current,
+        confidence: confirmed && !input.userConfirmed ? Math.max(previous.confidence, current.confidence) : current.confidence,
         term: previous.term,
         permanence: previous.permanence,
         temporal: { observed_at: previous.temporal.observed_at, last_confirmed_at: input.asOf },
@@ -244,7 +259,7 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
       const days = daysBetween(previous.temporal.last_confirmed_at, input.asOf);
       entry = orderedEntry({
         ...previous,
-        confidence: Math.max(DECAY.floor, Math.round(entryBasis * Math.exp(-DECAY.lambdas[previous.permanence] * days))),
+        confidence: confirmed ? previous.confidence : Math.max(DECAY.floor, Math.round(entryBasis * Math.exp(-DECAY.lambdas[previous.permanence] * days))),
       });
     }
     merged.push(entry);
@@ -263,12 +278,19 @@ export function updatePersonalGlossaryProfile(input: UpdatePersonalGlossaryProfi
   }
 
   merged.sort((left, right) => compareText(left.term, right.term));
+  if (input.userConfirmed) {
+    for (const current of fresh) {
+      const term = merged[matchingIndex(merged, current.term)]!.term;
+      if (!confirmedTerms.some((prior) => unicodeCaselessExact(prior, term))) confirmedTerms.push(term);
+    }
+  }
   const orderedBasis = Object.fromEntries(merged.map((entry) => [entry.term, confidenceBasis.get(entry.term)!]));
   const document: PersonalGlossaryDocument = {
     schema_version: SCHEMA_VERSION,
     as_of: input.asOf,
     confidence_basis: orderedBasis,
     entries: merged,
+    ...(confirmedTerms.length > 0 ? { confirmed_terms: confirmedTerms.sort(compareText) } : {}),
   };
   const rendered = render(document);
   const candidate = section.document ? `${original.slice(0, section.start)}${rendered}${original.slice(section.end)}` : `${original}${original.endsWith("\n") ? "\n" : "\n\n"}${rendered}\n`;

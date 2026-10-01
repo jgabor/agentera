@@ -2,7 +2,7 @@
 #
 # Experiment log maintained by optimize. Each experiment records hypothesis,
 # method, metric results, kept/discarded status, and conclusions. Lives
-# alongside OBJECTIVE.md in .agentera/optimize/<name>/.
+# in current entities; scoped legacy logs remain migration and compaction input.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
 # following capability_schema_contract.yaml and protocol.yaml conventions.
@@ -22,6 +22,20 @@ meta:
   producer: optimize
   consumers: [status, optimize]
   format: yaml
+
+ENTITY_AUTHORITY:
+  authority: references/artifacts/state-storage-authority.yaml
+  current_path: ".agentera/entities/experiments/experiment/<id>.yaml"
+  identity: bare_ten_letter_id
+  envelope: [id, artifact, record]
+  legacy_path: ".agentera/optimize/<name>/experiments.yaml"
+  qualification: >-
+    With an active entity marker, typed experiment reads and publication use entity
+    IDs and an objective relation. The meta.path and numbered compaction rules
+    describe explicit scoped legacy input, not a current default path or mutable
+    entity projection. No root .agentera/experiments.yaml or DOCS mapping supplies
+    experiment authority. Generic validation requires an explicit path; entity
+    validation checks the canonical envelope and record contract.
 
 GROUP_PREFIXES:
   BUDGET: EB

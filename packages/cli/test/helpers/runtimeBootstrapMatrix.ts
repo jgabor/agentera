@@ -691,12 +691,26 @@ export function runRuntimeBootstrapMatrix(fixture: PackageFixture, checkoutRoot:
         const doctor = dispatch(doctorId, { owner: "doctor.status", source: doctorCommand }, doctorCommand, {
           accepted: true,
           classification: "accepted",
+          exit: projectState === "v3" ? 0 : 1,
           argv: ["doctor", "--home", home, "--project", project, "--install-root", paths.appHome],
         });
         doctorPayload = JSON.parse(doctor.stdout);
         expect(doctorPayload).toMatchObject({
-          status: "up_to_date",
+          status: projectState === "v3" ? "up_to_date" : "repair_needed",
           shared_skill: { status: "pass" },
+        });
+        expect(doctorPayload.current_health).toMatchObject({
+          cli: "up_to_date",
+          shared_skill: "pass",
+          project_state: {
+            project_state: expectedCutoverState,
+            status: projectState === "v3" ? "complete" : "required",
+          },
+          capability_startup: { outcome: expectedOutcome },
+          writer_readiness: {
+            status: projectState === "v3" ? "ready" : "blocked",
+            permission_granted: false,
+          },
         });
 
         recoveries.push(...readOnlyRecoveries(primePayload, doctorPayload));

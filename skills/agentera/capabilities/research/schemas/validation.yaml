@@ -10,7 +10,11 @@ VALIDATION:
     severity: critical
     checks:
       - "No code modifications in target project"
-      - "TODO.md and VISION.md writes require user confirmation"
+      - "TODO filing uses the existing typed batch writer after one approval of exact deduplicated records and mapped severities"
+      - "Decline or silence makes no TODO write; changed entries or effects need fresh approval"
+      - "Interrupted filing verifies saved and remaining entries and retries only the original unchanged request/effect without duplicates"
+      - "Filing approval starts no fixes or downstream capability and grants no vision approval"
+      - "Vision writes require separate explicit user confirmation"
   2:
     id: V2
     rule: source_depth

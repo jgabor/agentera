@@ -20,10 +20,6 @@ export function statusStartupInstructions(canonical: string): string {
       "**Exit marker**: after the closing code fence of the dashboard, emit `⌂ status · <status>` on its own line, followed by a one-sentence summary of what you delivered. For `waiting`, `flagged`, or `stuck`, add a `▸` bullet below the summary identifying what the user needs to decide or act on next. The exit marker MUST appear on every invocation regardless of mode (fresh welcome or returning briefing).",
       "**Exit marker**: always follow the Exit signals format below.",
     ],
-    [
-      "- State-changing handoffs are consequential Proceed/Cancel decisions even when there is only one suggested action. State-changing means the proposed next step may write artifacts, edit code, run optimization or orchestration cycles, apply migrations, refresh app/runtime state, or otherwise mutate project/runtime state.\n- Use the behavior rule first, with common examples such as ⧉ build, ≡ plan when creating or updating plans, ▤ document when writing docs, ⎘ optimize when running or applying optimization cycles, and ⎈ orchestrate when dispatching cycles.",
-      "- Any proposed project/runtime mutation needs a Proceed/Cancel handoff, even alone: edits, optimization/orchestration, migration or refresh. Judge behavior, not the capability name.",
-    ],
     ["Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.", "For entity targets, follow the shared human-reference rules; retain exact IDs. Other objects include `OBJECTIVE: <metric>` and `VISION refresh`."],
     ["Use the `mode` field from `agentera prime` to detect fresh vs returning:", "Use the `mode` field from `capability_context.context.status_context` to detect fresh vs returning:"],
     [
@@ -39,5 +35,5 @@ export function statusStartupInstructions(canonical: string): string {
     }
     adapted = adapted.replace(from, to);
   }
-  return `${adapted}\n\n### Shared-skill offer\n\nThe separate \`shared_skill.upgrade_offer\` is host maintenance, not project work. Ask its question once; only explicit Yes runs its unchanged \`apply_command\`. No or no answer means no action. Do not invent tokens or manual repairs. Report completion only for exit 0 and JSON \`status\` of \`success\` or \`noop\`; otherwise report the bounded failure without broadening approval.\n`;
+  return `${adapted}\n\n### Offers\n\n\`shared_skill.upgrade_offer\` is host maintenance; \`state_cutover.migration_offer\` is project-only. Show effects, loss and warning; ask its question once. Only explicit Yes runs its unchanged \`apply_command\`. No/no answer does nothing. Do not invent tokens or repairs. Require exit 0 and JSON \`status\` \`success\`/\`noop\`; otherwise report bounded recovery, not completion.\n`;
 }

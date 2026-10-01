@@ -2,6 +2,19 @@
 
 ## [Unreleased]
 
+- Prime and Doctor now offer supported project-only v2-to-v3 migration after read-only preflight. One approval covers the disclosed forward-only effects; changed inputs refuse stale approval, matching interrupted work resumes, and completion requires state and startup verification.
+
+- Discuss now proposes the decision and justified artifact changes together for one approval, with decision-only and skip choices. It surfaces affected-artifact conflicts and retains verified saves when closeout needs recovery, without implying permission to implement.
+
+- Optimize now proposes setup, baseline and one named experiment for a single approval. It keeps only improved, regression-safe, constraint-compliant changes, preserves unrelated work on discard, and resumes valid approved work without duplicate records or implied Git, profile or installation permission.
+
+- Doctor now reports project and startup readiness separately from app and shared-skill health, and no longer reports an all-clear when project writers require initialization or recovery.
+
+- Objective and experiment identities no longer imply root artifact files. Validation recognizes their actual entities, while scoped legacy migration and compaction remain supported.
+
+- Initial status handoffs now use a free-form continuation prompt, including suggestions that may change state. Clear acceptance starts the named capability once; its own approval boundaries remain unchanged.
+- Research and Audit now offer one approval to file an exact selected, deduplicated findings set in `TODO.md`. Unchanged retries avoid duplicates; filing does not authorize fixes or other capabilities.
+- Personal glossary review now supports one approval for displayed meanings through the ordinary agent harness, without signing setup. Valid approved meanings save independently, unchanged work can resume, and confirmed meanings retain their authority over time.
 - Development npm publication retains the original package for 7-day recovery; rerunning `Publish Agentera` confirms accepted uploads without rebuilding or resubmitting them.
 - `prime` and `doctor` now offer one-confirmation installation or update of `~/.agents/skills/agentera`, including older directories and symlinks without ownership records, while preserving project files and symlink targets.
 - Final-plan approval can save and start execution without another prompt; orchestration resumes persisted evaluations without repeating verified work, and routine factual documentation changes are handled as one checked patch set.

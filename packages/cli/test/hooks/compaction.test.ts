@@ -50,6 +50,30 @@ function publishProgressArchives(dir: string, cycleCount: number): void {
 }
 
 describe("checkCompaction (repo-state fixtures)", () => {
+  it("retains explicit scoped legacy experiment classification without root pseudo-paths", () => {
+    const scoped = path.join(tmp, ".agentera/optimize/latency/experiments.yaml");
+    fs.mkdirSync(path.dirname(scoped), { recursive: true });
+    fs.writeFileSync(scoped, "experiments:\n- number: 1\n  result: preserved\n");
+    fs.writeFileSync(path.join(tmp, ".agentera/experiments.yaml"), "experiments: []\n");
+    fs.writeFileSync(path.join(tmp, ".agentera/objective.yaml"), "header: {title: pseudo}\n");
+    fs.writeFileSync(path.join(tmp, ".agentera/docs.yaml"), "mapping:\n- artifact: objective\n  path: .agentera/objective.yaml\n- artifact: experiments\n  path: .agentera/experiments.yaml\n");
+    const operations = checkCompaction(tmp);
+    expect(operations.filter((op) => op.status.artifact === "experiments")).toEqual([
+      expect.objectContaining({
+        action: "skipped",
+        status: expect.objectContaining({
+          path: scoped,
+          classification: "protected",
+          total_count: 1,
+        }),
+      }),
+    ]);
+    expect(operations.some((op) => op.status.path === path.join(tmp, ".agentera/objective.yaml") || op.status.path === path.join(tmp, ".agentera/experiments.yaml"))).toBe(false);
+    const bytes = fs.readFileSync(scoped);
+    fixCompaction(tmp);
+    expect(fs.readFileSync(scoped)).toEqual(bytes);
+  });
+
   it("flags 56 Resolved entries as 6 over the 10/40/50 total limit", () => {
     const root = useFixtureProject("todo-resolved-over-limit");
     fixtureRoots.push(root);

@@ -3,33 +3,29 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      One experiment completed the full cycle: hypothesis formulated,
-      implementation dispatched, regression check passed, metric measured,
-      decision made (kept or discarded), and experiments.yaml updated.
+      The one approved named experiment completed and its truthful record was
+      published through the typed owner, or verified baseline already met the
+      target and typed objective closure completed without invented experiments.
     exit_signal: complete
   2:
     id: E2
     condition: flagged
     description: >-
-      The experiment cycle completed but with issues worth noting: the metric
-      did not improve after multiple attempts, a plateau was detected, or the
-      experiment had to be discarded due to a regression. Each concern is
-      listed explicitly.
+      Discard, regression/constraint failure, plateau, unsafe cleanup or incomplete
+      saves. List each concern and remaining work; no replacement experiment.
     exit_signal: flagged
   3:
     id: E3
     condition: stuck
     description: >-
-      Cannot proceed because objective.yaml is missing and the brainstorm cannot
-      be completed without user input, the eval harness is broken and cannot
-      be repaired without user approval, or the regression check infrastructure
-      is unavailable.
+      Required measurement or regression tooling is unavailable, evidence is
+      invalid or the named hypothesis is blocked. Stop for bounded recovery;
+      changed measurement or hypothesis requires a revised approved package.
     exit_signal: stuck
   4:
     id: E4
     condition: waiting
     description: >-
-      The optimization objective is too vague to experiment against, the metric
-      cannot be measured by any available tooling, or the scope is undefined
-      and cannot be safely inferred.
+      Proposal awaits explicit approval, user declines, scope is ambiguous or
+      approval cannot be established. No active setup or code changes.
     exit_signal: waiting

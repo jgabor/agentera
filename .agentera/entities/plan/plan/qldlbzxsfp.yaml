@@ -1,0 +1,53 @@
+id: qldlbzxsfp
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-09-30
+    status: complete
+    title: "Plan: Clear approvals and complete user journeys"
+    reviewed: 2026-09-30
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Assign the explicit lifecycle transition that releases decision-gated tasks.
+  what: "Deliver the five recommended follow-ups: informational status handoffs, ordinary glossary review, accurate project readiness and scoped migration offers, bounded optimization and closeout approvals, and verified journeys. Discuss unsettled outcomes before implementing them. Reuse the existing TODOs and the four newly created TODOs rather than duplicate completed work."
+  why: Users should choose an understandable outcome while Agentera coordinates its existing operations. The completed skill-upgrade and end-to-end workflow plans provide the precedent without expanding ownership or permission boundaries.
+  constraints: This draft is planning-only. Saving or approving it does not authorize execution or settle any discussion gate. Four expected-outcome decisions remain required. Discussion tasks require user participation, not autonomous approval. Independent ungated work may proceed only after separate execution authorization. Replan an affected implementation task if a decision changes its outcome or scope. The coordinator releases only the decision-gated tasks 3, 6, 9 and 12 after the explicit decision, acceptance review, completed prerequisites and separate execution authorization. Use the typed task update to clear blocked_reason, then the flag-only set-status transition to pending; verify both before selection. An interrupted release resumes from the recorded state. Never apply this rule to exhausted evaluator retries or other blockers. Update the corresponding TODO readiness from discussion to implementation only with the recorded outcome and real prerequisites; source TODO completion remains with its delivery owner. Preserve JSON compatibility, typed writers, semantic approval, privacy, accepted meanings, immutable experiment measurements, platform limits and lifecycle owners. No general consent framework, new signing infrastructure by assumption, directory ownership expansion, or replacement of project state. No live histories, installations, migration, cleanup or reset; use isolated fixtures. No commit, push, publication, version bump or satisfaction inference. Known passing behavior needs evidence, not redundant changes. Each delivery includes guidance, applicable changelog and writer-owned closeout; do not create a bookkeeping-only cycle.
+  scope:
+    included:
+      - "Status handoffs: TODO xghiltndjy."
+      - "Glossary expected outcome and review/save journey: TODO qmoxsmithy."
+      - "Doctor project readiness: TODO azsvrmuhch; project/global separation: TODO zeyfnbqdov."
+      - "Project-migration offer: TODO secbcalqyr."
+      - "Objective/experiment identity: TODO bqbsplvlfz; optimization approval: TODO rimkqvqboe."
+      - "Selected Research/Audit findings filing: TODO rjwzzprtnu."
+      - "Discuss decision and follow-up closeout: TODO doqgrxxkev."
+      - Relevant served instructions, schemas, runtime behavior, tests, guidance and delivery state.
+    excluded:
+      - Reimplementing completed plans nmdizjtrei and gebglunpxa.
+      - Whole-directory management beyond the existing dedicated shared-skill installation.
+      - Live user data or host operations, Git actions, release work and version changes.
+      - General consent frameworks, speculative host services, new batch APIs or global atomicity promises.
+    deferred:
+      - Research and Audit scope-level features, and shared-skill uninstall.
+      - Any glossary architecture or broader integration not justified by the user's outcome decision.
+  design: Keep the clear low-risk outcomes separate from the outcomes that still need a user decision. Establish each disputed outcome before its dependent implementation. Align diagnosis and recovery before offering migration; establish reliable artifact identity before combining optimization approval. Reuse existing writers and executors, then qualify the complete interaction across delivered runtimes.
+  overall_acceptance: GIVEN the required outcome decisions and separate execution authorization WHEN the supported journeys are completed THEN users receive verified bounded outcomes without mechanical confirmation loops, invented consent or broader effects; unresolved or changed outcomes remain blocked and accurately reported.
+  unknowns:
+    - question: What ordinary glossary review outcome and trust boundary should the supported host and CLI provide?
+      affects_task: 3
+      resolve_by: Task 2 records the user's decision and actual host evidence; replan task 3 if the agreed outcome changes.
+    - question: What exact migration scope, one-way disclosure and stale-approval behavior should the offer promise?
+      affects_task: 6
+      resolve_by: Task 5 records the user's decision before task 6; broaden no migration or global-cleanup permission.
+    - question: Does one optimization approval cover setup, baseline and one named experiment, and what should refusal or interruption retain?
+      affects_task: 9
+      resolve_by: Task 8 records the user's decision; revise task 9 before implementation if the proposed bundle changes.
+    - question: Which records should Discuss propose together, and how should it disclose partial saves?
+      affects_task: 12
+      resolve_by: Task 11 records the user's decision without inferring approval of protected changes or unseen drafts.
+  surprises: |-
+    The original glossary unknown is resolved by approved decision lkjovuyqtk. Revised stjjlvlrfb acceptance incorporates trusted-harness approval, partial saves and no age-based weakening of user-confirmed meanings. No implementation is authorized; independent task review and completion remain coordinator-owned. The other three outcome discussions remain unresolved. The historical root unknowns list is preserved because this writer cannot update it; this note records the current glossary resolution.
+    Current resolution: the glossary outcome is recorded in decision lkjovuyqtk and its implementation task stjjlvlrfb is complete with a passing evaluation. Decision gritewpjou resolves the Discuss closeout outcome; revised mfnohbwilm acceptance records combined concrete proposals, affected-artifact coherence and native writer recovery. Closeout implementation is not authorized, and autonomous execution remains deferred. Migration and optimization-setup outcome discussions remain unresolved. This supersedes earlier temporary glossary approval/pending statements. The root unknowns list retains the original planning questions because the supported task writer cannot amend that list; this note records their current resolutions.
+    Current resolution: glossary decision lkjovuyqtk and implementation stjjlvlrfb are complete; decision gritewpjou resolves Discuss closeout, whose implementation remains blocked. Decision fgnpjqlrir resolves the project-migration offer outcome; revised wgfiitphid acceptance preserves Doctor/project-isolation prerequisites and separate implementation authorization. No live migration is approved. Optimization setup is the remaining unresolved outcome discussion. Autonomous execution remains deferred. This supersedes earlier remaining-discussion and temporary approval statements. The root unknowns list retains original planning questions because the supported task writer cannot amend it; this note records their current resolutions.
+    Current resolution: all four expected-outcome choices are recorded in decisions lkjovuyqtk (glossary), gritewpjou (Discuss closeout), fgnpjqlrir (project migration) and mwtpectiwp (optimization setup). Glossary implementation stjjlvlrfb is complete. Revised delivery acceptance records the other outcomes, including purposeful retention and evidence-aware optimization resumption. No additional implementation, experiment, live migration or autonomous execution is authorized by this capture; delivery prerequisites and separate execution gates remain. This supersedes earlier unresolved- outcome and temporary approval statements. The root unknowns list retains original planning questions because the supported task writer cannot amend it; this note records their current resolutions.
+    Terminal-task resolution: the user authorized orchestration and resumption after all four outcome decisions were settled. All 13 tasks now have persisted passing evaluations and complete status; all nine delivery TODOs are resolved. The source and extracted-package journeys and final 11-owner development qualification passed on the pre-closeout binding recorded by kzcctfzpav. Subsequent changes are authorized lifecycle records and this resolution note, not product changes or a new qualification hash. Earlier approval, pending-work and unresolved-question statements are historical and superseded by current task state. The original root unknowns remain as planning history; their four decisions and delivered acceptance are authoritative resolutions. Limited artifact-freshness health and final plan completion remain coordinator-owned. No commit, push, publication, live user-data operation or new plan is authorized; actual host compliance and final user satisfaction are not inferred.

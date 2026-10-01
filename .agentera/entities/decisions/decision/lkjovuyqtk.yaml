@@ -1,0 +1,21 @@
+id: lkjovuyqtk
+artifact: decisions
+record:
+  date: 2026-09-30
+  question: How should personal glossary review, approval and meaning lifetime work?
+  context: packages/cli/README.md:235-242 describes signing prerequisites; the served glossary contract also allows age-based confidence decay. These requirements obscure ordinary OpenCode/Codex skill-plus-CLI review.
+  alternatives:
+    - name: Trusted-harness set approval with persistent confirmed meanings.
+      status: chosen
+    - name: Dedicated signing integration and enrollment.
+      status: rejected
+    - name: Separate approval for every displayed meaning.
+      status: rejected
+    - name: All-or-nothing saving of the review set.
+      status: rejected
+    - name: Age-based expiry or weakening of user-confirmed meanings.
+      status: rejected
+  choice: Trust the user's agent harness; malicious agents are outside scope. Display exact meanings with edit, reject and defer choices. One explicit approval covers the displayed set. Save valid approved entries and report unsaved items; retry unchanged approved work. Changed proposals require fresh approval. User-confirmed meanings neither expire nor lose authority solely with age. Concrete conflicts prompt review, not silent replacement. Preserve unrelated accepted meanings.
+  reasoning: Agentera already assumes a trusted harness. Users should approve meanings, not manage signing machinery. Partial results stay explicit. Elapsed time does not establish that a confirmed definition has changed.
+  confidence: firm
+  feeds_into: TODO qmoxsmithy and plan qldlbzxsfp's glossary tasks. Review affected acceptance before implementation; this decision grants no execution or history-access permission.

@@ -34,6 +34,7 @@ function artifactPaths(projectRoot: string): Record<string, string> {
   }
   const resolved: Record<string, string> = {};
   for (const [artifact, rel] of Object.entries(paths)) {
+    if (artifact === "objective" || artifact === "experiments") continue;
     resolved[artifact] = path.join(projectRoot, rel);
   }
   return resolved;
@@ -187,6 +188,7 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
 
   for (const [artifact, [activeKey, archiveKey]] of Object.entries(COMPACTABLE_YAML_ARTIFACTS)) {
     const p = paths[artifact];
+    if (!p) continue;
     if (fs.existsSync(p)) {
       let active: any[];
       let archive: any[];
@@ -217,6 +219,7 @@ export function computeCompactionStatus(projectRoot: string): CompactionStatus[]
 
   for (const [artifact, [classification, reason]] of Object.entries(NON_COMPACTABLE_ARTIFACTS)) {
     const p = paths[artifact];
+    if (!p) continue;
     statuses.push({
       artifact,
       path: p,

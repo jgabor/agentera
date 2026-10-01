@@ -11,12 +11,13 @@ meta:
   name: design
   version: "1.0.0"
   description: >-
-    Visual identity system. Produced by design. Consumed by capabilities
+    Visual identity system owned by design, with exact approved owner-scoped
+    Discuss follow-through. Consumed by capabilities
     that need visual identity context. Human-facing: remains Markdown at root.
   artifact_type: human_facing
   path: "DESIGN.md"
-  producer: design
-  consumers: [document, status, audit, build, vision, design]
+  producer: [design, discuss]
+  consumers: [document, status, audit, build, vision, design, discuss]
   format: markdown
 
 GROUP_PREFIXES:

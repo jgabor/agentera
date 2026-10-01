@@ -4,8 +4,17 @@ import path from "node:path";
 
 import { expect, inject, it } from "vitest";
 
-import { runSourceProfileFullWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
+import { runSourceProfileFullWorkflow, runTrustedHarnessGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
 import { installSourceGlossaryEvaluationRunner } from "../helpers/sourceSubprocess.js";
+
+it("saves a displayed selection through the built CLI, resumes with a current date, and refuses superseded approvals", { timeout: 120_000 }, () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "trusted-harness-glossary-build-"));
+  try {
+    runTrustedHarnessGlossaryWorkflow(path.join(inject("sourceBuildRoot"), "bin/agentera.js"), root, true);
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true });
+  }
+});
 
 it("drives Profile Full source behavior from the served instruction order", { timeout: 120_000 }, () => {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "profile-full-source-workflow-"));

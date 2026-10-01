@@ -631,10 +631,10 @@ personal_mining_authority:
       dispositions: [accept, correct, reject, defer]
       trusted_disposition_authority: current_user
       authentication:
-        receipt_schema_version: agentera.personalGlossaryReviewApproval.v1
-        issuer: agentera-local-host
+        receipt_schema_version: agentera.personalGlossaryReviewApproval.v2
+        issuer: agentera-harness
         subject: current_user
-        trusted_channel: agentera-local-host-ipc
+        trusted_channel: explicit-user-review
         required_fields:
           - schema_version
           - issuer
@@ -651,14 +651,15 @@ personal_mining_authority:
           - corrected_meaning
           - corrected_scope
           - disposed_at
-          - expires_at
           - nonce
-          - signature
         proof: >-
-          The local host signs an explicit current-user action. The verifier
-          checks the trusted host public key before accepting the receipt; a
-          model, agent, imported transcript, or unbound text field cannot create
-          proof by asserting issuer or subject values.
+          Trust the ordinary user harness to assert an explicit action on exact
+          displayed meanings. One save approval covers the displayed selected set;
+          the harness submits one bound action per entry and saves each valid
+          accept or correct independently. This assertion is not an authentication
+          boundary against a malicious agent. No signer, keys or enrollment are
+          needed. Generic profile consent, silence and unseen proposals are not
+          approval. Legacy v1 action shapes remain accepted without key verification.
         binding_fields: [review_id, candidate_id, candidate_revision, candidate_projection_sha256, semantic_fingerprint, generation, policy_version, disposition, corrected_meaning, corrected_scope, disposed_at]
         forbidden_principals: [agent, model, imported_record, generic_consent]
         correction:
@@ -667,43 +668,18 @@ personal_mining_authority:
           corrected_scope_values: [personal]
           corrected_meaning_max_utf8_bytes: 4096
           rule: >-
-            Only a signed correct action may carry a complete bounded corrected
+            Only an explicitly approved correct action may carry a complete bounded corrected
             meaning and the personal scope. Other dispositions carry null correction
             fields. Corrected content remains user-local review metadata and must
             pass the same secret and sensitive-content exclusion as a candidate.
-        signature:
-          algorithm: ed25519
-          encoding: base64url
-          key_source: user_local_trusted_host_key
-          signed_fields:
-            - schema_version
-            - issuer
-            - subject
-            - trusted_channel
-            - review_id
-            - candidate_id
-            - candidate_revision
-            - candidate_projection_sha256
-            - semantic_fingerprint
-            - generation
-            - policy_version
-            - disposition
-            - corrected_meaning
-            - corrected_scope
-            - disposed_at
-            - expires_at
-            - nonce
-          verification: trusted_host_public_key_signature_check
         freshness:
-          max_age_seconds: 300
-          disposed_at: trusted_host_clock
-          expires_at_required: true
-          rule: disposed_at_must_not_be_future_and_expires_at_must_be_after_now
+          disposed_at: harness_action_time
+          rule: disposed_at_must_not_be_future_current_bindings_required_not_age
         replay:
           nonce: required_unique_receipt_nonce
           index: user_local_consumed_receipt_digest_index
           exact_replay: no_op_only_when_nonce_and_receipt_digest_match
-          conflicting_replay: reject_reused_nonce_with_changed_bindings_or_signature
+          conflicting_replay: reject_reused_nonce_with_changed_content
         terminal_disposition:
           terminal: [accept, correct, reject]
           pending: [defer]
@@ -711,15 +687,25 @@ personal_mining_authority:
       pending_excerpt_days: 30
       terminal_excerpt_days: 0
       review_metadata_days_after_terminal: 90
+      approved_save_retention: >-
+        Accept/correct authorizations remain resumable while their exact current
+        bindings are unchanged and no later accept/correct approval supersedes them
+        for the same stable term identity, regardless of age. A later approval
+        supersedes even before its save completes. Unrelated terms do not supersede
+        each other; equal action times require review rather than arbitrary replacement.
+        The 90-day terminal expiry
+        applies to other terminal metadata and replay digests, not approved saves.
+        Explicit owner purge is separate. Saved confirmation lives in the profile,
+        not this review store.
       accepted_entry: ownership_contracts.personal.retention_and_decay
       pending_review_metadata: retained_until_terminal_or_purge
       terminal_review_metadata: retained_for_90_days_after_disposition
       rule: >-
         Safe excerpts expire after 30 days and are removed immediately when a
-        review becomes terminal. Disposition metadata remains for 90 days after
-        a terminal disposition to suppress the same revision, then expires.
-        Accepted glossary entries follow the existing personal profile decay
-        authority and never retain an excerpt.
+        review becomes terminal. Rejected disposition metadata remains for 90 days
+        to suppress the same revision. Accept/correct authorizations remain resumable
+        under unchanged current bindings, until superseded for that term or owner purge. Confirmed meanings
+        never weaken through age and never retain an excerpt.
     purge:
       authority: current_user
       trigger: explicit_authenticated_user_request_or_retention_expiry
@@ -1028,18 +1014,6 @@ personal_mining_authority:
     owner: user_local_review_lifecycle
     runtime: packages/cli/src/analytics/personalGlossaryReviewRecords.ts#queuePersonalGlossaryReviewRecord
     input: current_validated_review_required_cli_decision_and_host_receipt
-    trusted_host_key:
-      root: $AGENTERA_PROFILE_DIR/intermediate/personal-glossary
-      file: trusted-local-host.json
-      schema_version: agentera.personalGlossaryTrustedLocalHost.v1
-      fields: [schema_version, owner, subject, public_key_spki_base64url]
-      owner: current_user
-      public_key_algorithm: ed25519
-      max_serialized_utf8_bytes: 4096
-      rule: >-
-        The configured user-local host key names the current-user subject and one
-        Ed25519 SPKI public key. It is read only to verify a local-host IPC receipt;
-        it is never accepted from command input, project state, agent text, or output.
     persistence:
       root: $AGENTERA_PROFILE_DIR/intermediate/personal-glossary
       file: review-records.json
@@ -1199,9 +1173,9 @@ personal_mining_authority:
         dispositions: [accept, correct]
         fields: [review_id, review_record_sha256]
       rule: >-
-        Disposition accepts only a current queued review and a complete signed
-        current-user local-host approval. It verifies the configured trusted public
-        key, exact receipt fields and bindings, current clock freshness, replay index,
+        Disposition accepts only a current queued review and a complete explicit
+        current-user action asserted by the ordinary trusted harness. It checks
+        exact assertion fields and bindings, action time and replay index,
         current projection, policy, and semantic fingerprint before a user-local write.
         Accept and correct create an opaque authorization for the existing personal
         publish command. Reject and defer never publish. The operation does not read
@@ -1248,7 +1222,7 @@ personal_mining_authority:
         return stale, malformed, expired, or owner-mismatched metadata.
     maintenance:
       entrypoint: packages/cli/src/analytics/personalGlossaryReviewRecords.ts#maintainPersonalGlossaryReviewRecords
-      exposure: authenticated_review_owner_only
+      exposure: current_user_authorized_review_owner_only
       terminal_metadata_days: 90
       pending_metadata: retained_until_terminal_or_purge
       cache: replay_index_until_receipt_expiry
@@ -1259,7 +1233,7 @@ personal_mining_authority:
         - candidate_projection
         - publication
       rule: >-
-        Separate maintenance removes only expired terminal review metadata and expired
+        Separate maintenance removes only expired rejected terminal metadata and expired
         replay-index entries, or the complete review-record file after a
         current-user-authorized purge. It never creates a record during a read and
         never deletes or changes a profile entry, project state, candidate projection,
@@ -1761,8 +1735,8 @@ ownership_contracts:
         corpus location. It has no project-glossary identity, path, or record
         input, and its result is invariant to project-glossary presence.
     retention_and_decay:
-      retention: Retained entries decay rather than disappearing solely because evidence ages.
-      confidence: Apply the existing profile permanence decay class to integer confidence.
+      retention: User-confirmed meanings never expire solely through age; retain all entries.
+      confidence: Preserve user-confirmed confidence. Apply existing permanence decay only to unreviewed inferred entries.
       permanence: Remains independently classified and is not changed by evidence age or confidence decay.
       authority: packages/cli/src/capabilities/profile/instructions.ts#Profile-format
     profile_output:
@@ -1803,7 +1777,10 @@ ownership_contracts:
             rule: >-
               The command rereads one current user-local review record, validates its
               canonical record hash and all receipt, decision, projection, policy,
-              semantic-fingerprint, and revision bindings, then uses its approved
+              semantic-fingerprint, and revision bindings. It refuses an authorization
+              superseded by a later accept/correct approval for that stable term identity,
+              even if the later save is pending. Equal action times require review.
+              It then uses its approved
               corrected meaning and personal scope only for correct. No direct review
               record, correction, key, nonce, signature, profile path, or project path
               is accepted from publication input.
@@ -1811,6 +1788,11 @@ ownership_contracts:
             as_of is one injected ISO calendar date. Use it for lifecycle
             rendering and derive published_at as UTC midnight of that exact date;
             never read the wall clock for publication content or replay.
+            The section date cannot move backward. On resume the harness retains the
+            original approval, action timestamp, nonce, receipt, decision and
+            authorization, but injects the current publication date, no earlier than
+            the owned section's current date. Refreshing only as_of requires no new
+            meaning approval or date question and grants no broader permission.
         result:
           schema_version: agentera.personalGlossaryPublicationResult.v1
           fields: [schema_version, owner, candidate_id, candidate_revision, candidate_capsule_sha256, decision_sha256, review_record_sha256, generation, policy_version, status, profile_section_sha256, published_at, result_sha256]
@@ -1831,7 +1813,12 @@ ownership_contracts:
         encoding: deterministic_json_fence
         document_schema_version: agentera.personalGlossarySection.v1
         entry_shape: shared_primitive
-        lifecycle_metadata: [as_of, confidence_basis]
+        lifecycle_metadata: [as_of, confidence_basis, confirmed_terms]
+        confirmation_rule: >-
+          Optional confirmed_terms contains unique existing term identities added
+          only by current accept/correct publication. Legacy sections without it
+          remain readable. Explicit user definitions are inherently confirmed.
+          Confirmation survives review metadata expiry. Entry shape is unchanged.
         boundary_rule: >-
           Add one owned section when absent or replace exactly the bytes from its
           start marker through its end marker. Reject unmatched markers,
@@ -1846,15 +1833,19 @@ ownership_contracts:
           Preserve the established spelling and observed_at date. Fresh
           qualifying evidence may refresh an entry only when meaning and
           provenance kind are unchanged; divergent meaning or provenance kind is
-          a conflict rather than an implicit overwrite.
+           a conflict rather than an implicit overwrite. A current explicit
+           accept/correct review authorization may revise the reviewed term.
       refresh_rule: >-
         For matching fresh qualifying evidence, set confidence and its
         confidence_basis to the fresh evidence-based integer, replace only the
         same-kind personal evidence anchors, and set last_confirmed_at to the
-        injected as_of date. Preserve observed_at and permanence. This rule is
+        injected as_of date. Unreviewed evidence cannot reduce confirmed confidence.
+        Preserve observed_at and permanence. This rule is
         stable for identical input and as_of.
       decay_rule: >-
-        Without matching fresh evidence, retain the entry and permanence. Derive
+        User-confirmed entries retain confidence without age-based weakening.
+        For unreviewed inferred entries without matching fresh evidence, retain
+        the entry and permanence. Derive
         confidence from its unchanged confidence_basis, its permanence-class
         lambda, and calendar days from last_confirmed_at to injected as_of using
         the Profile formula; round to the nearest integer after applying the

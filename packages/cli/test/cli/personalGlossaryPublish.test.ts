@@ -588,7 +588,12 @@ describe("agentera report personal-glossary-publish", () => {
 
     const result = publishRequest(publicationRequest(receipt, decision));
     expect(result).toMatchObject({ rc: 1, err: "" });
-    expect(JSON.parse(result.out)).toMatchObject({ error: { class: "profile_unavailable" } });
+    expect(JSON.parse(result.out)).toMatchObject({
+      error: {
+        class: "profile_conflict",
+        recovery: expect.stringContaining("Review the exact conflicting meanings"),
+      },
+    });
     expectNoEffects(before);
   });
 

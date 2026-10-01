@@ -1,0 +1,25 @@
+id: fobwsfjjhn
+artifact: plan
+record:
+  name: Deliver the agreed optimization setup approval
+  depends_on:
+    - mfvwpevkyh
+    - rrlxvzmivu
+  status: complete
+  acceptance:
+    - GIVEN the displayed objective, target, measurement method, named hypothesis, scope, limits and keep/discard rule WHEN approved THEN setup, baseline and that one experiment proceed without redundant confirmation; decline or silence activates no setup or code changes.
+    - GIVEN material target, method, hypothesis, scope or limit changes WHEN proceeding THEN fresh approval is required; the judge remains fixed during the experiment, and an already-met verified target causes no unnecessary changes or invented results.
+    - GIVEN measurement and regression/constraint results WHEN deciding THEN keep only improved compliant changes and discard only unsuccessful experimental changes; preserve unrelated work, stop after the named experiment, and infer no Git, profile/history or installation permission.
+    - GIVEN failure or interruption WHEN continuing THEN retain only concretely useful setup and bounded records, reuse suitable existing tools and still-valid work under known approval, report completed/remaining state, avoid duplicates, and surface unsafe cleanup or material drift.
+    - GIVEN isolated checks WHEN one success and one refusal per behavior establish the outcome THEN typed ownership, identity and permission limits remain intact; distinct recovery or preservation risks justify extras, not a general consent or retention framework.
+  plan: qldlbzxsfp
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: optimization-setup-implementation-audit-1
+      source: Independent audit ses_f0b47c4deffe6ZTXTsoLXOlIgs confirms all five criteria and current source/build/package identity8f23ee6c40a7cdca75bf524596d052fba1cd67e4b515cdcaf7ec469d42ab5fb4. 17 built workflows,4841 source tests+6skips,44 package tests,typecheck/contracts pass; trusted-host boundary explicit. Durable index new-evidence/fobwsfjjhn under reboot handoff; integrated qualification remains kzcctfzpav.
+      recorded_at: 2026-10-01 01:59
+      writer_command: agentera state plan record-evaluation

@@ -1,7 +1,7 @@
 # Objective Artifact Schema
 #
-# Optimization objective maintained by optimize. Each objective lives in its
-# own subdirectory under .agentera/optimize/<name>/ and captures the metric,
+# Optimization objective maintained by optimize. Current objectives are entities.
+# Scoped legacy input under .agentera/optimize/<name>/ captures the metric,
 # target, baseline, constraints, measurement method, gates, and scope.
 #
 # Structural pattern: UPPER_CASE groups with numbered entries and stable IDs,
@@ -23,6 +23,19 @@ meta:
   producer: [optimize, discuss]
   consumers: [status, optimize, discuss]
   format: yaml
+
+ENTITY_AUTHORITY:
+  authority: references/artifacts/state-storage-authority.yaml
+  current_path: ".agentera/entities/objective/objective/<id>.yaml"
+  identity: bare_ten_letter_id
+  envelope: [id, artifact, record]
+  legacy_path: ".agentera/optimize/<name>/objective.yaml"
+  qualification: >-
+    With an active entity marker, typed objective reads and writes use entity IDs.
+    The meta.path and legacy header identity below describe scoped migration input,
+    not a current default path. No root .agentera/objective.yaml or DOCS mapping
+    supplies objective authority. Generic validation requires an explicit path;
+    entity validation checks the canonical envelope and record contract.
 
 GROUP_PREFIXES:
   BUDGET: OB_BUDGET

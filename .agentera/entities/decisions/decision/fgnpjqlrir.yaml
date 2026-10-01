@@ -1,0 +1,21 @@
+id: fgnpjqlrir
+artifact: decisions
+record:
+  date: 2026-09-30
+  question: What should one project-migration approval cover?
+  context: UPGRADE.md:309-326 defines forward-only v2-to-v3 migration with complete tracked, unchanged inputs. Users need a ready-to-run offer rather than manual coordination.
+  alternatives:
+    - name: One ready-to-run project-only offer with bound approval and forward recovery.
+      status: chosen
+    - name: Confirmation before full readiness checks.
+      status: rejected
+    - name: Additional technical confirmations or token copying.
+      status: rejected
+    - name: Retaining approval for unexpectedly changed inputs.
+      status: rejected
+    - name: Reconfirming unchanged checkpointed retries.
+      status: rejected
+  choice: Complete read-only preflight before offering the supported project-only migration. Require tracked unchanged inputs. Show the project, target, effects, actual loss and unsupported rollback/return-to-v2 warning. One explicit Yes authorizes the disclosed operation and verification. Exclude global cleanup, shared-skill changes, reset and implicit Git actions. Unexpected input, scope or effect changes require fresh preview and approval without new effects. Matching checkpointed progress may resume under known approval without another confirmation. Verify project state and startup before reporting completion; otherwise report actual state and bounded forward recovery.
+  reasoning: Readiness before consent avoids unusable offers. Explicit consequences preserve intent; scoped binding prevents approval drift. Checkpointed retries are mechanical continuation, not a new user decision.
+  confidence: firm
+  feeds_into: TODO secbcalqyr and plan qldlbzxsfp's migration tasks. Doctor readiness and project/global separation remain implementation prerequisites. No live migration or implementation is authorized; autonomous execution remains deferred.

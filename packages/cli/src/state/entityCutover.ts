@@ -233,12 +233,13 @@ function inspect(projectRoot: string, sourceRoot: string, requireGit: boolean, w
   if (requireGit) {
     const allowedPaths = new Set<string>([FORWARD_MANIFEST, ENTITY_MODE_MARKER, ...targets.map(({ path: target }) => target)]);
     for (const activeLockPath of activeUpgradeLockPaths) {
+      if (activeLockPath === path.join(project, ".agentera/migrations/project-upgrade/apply.lock/owner.json")) allowedPaths.add(".agentera/migrations/project-upgrade.json");
       const relative = path.relative(project, path.resolve(activeLockPath));
       if (relative !== "" && !relative.startsWith(`..${path.sep}`) && !path.isAbsolute(relative)) allowedPaths.add(relative.split(path.sep).join("/"));
     }
     const binding = verifyEntityCutoverGitSource(project, plan, {
       paths: allowedPaths,
-      prefixes: writerLockHeld ? [".agentera/.writer.lock"] : [],
+      prefixes: writerLockHeld || activeUpgradeLockPaths.some((candidate) => candidate === path.join(project, ".agentera/migrations/project-upgrade/apply.lock/owner.json")) ? [".agentera/.writer.lock"] : [],
     });
     head = binding.head;
   }
@@ -303,6 +304,7 @@ function writeDurable(file: string, bytes: string): void {
 }
 
 function fault(phase: string): void {
+  if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === `SIGKILL_${phase}`) process.kill(process.pid, "SIGKILL");
   if (process.env.NODE_ENV === "test" && process.env.AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE === phase) throw new EntityCutoverError(`simulated entity import interruption after ${phase}`);
 }
 
@@ -341,7 +343,7 @@ function publishTargets(project: string, plan: DurableEntityMigrationPlan): void
 }
 
 function upgradePublicationContext(project: string, activeUpgradeLockPaths: readonly string[]): EntityPublicationContext {
-  const lockPath = activeUpgradeLockPaths.find((candidate) => path.dirname(candidate) === path.join(project, ".agentera"));
+  const lockPath = activeUpgradeLockPaths.find((candidate) => path.dirname(candidate) === path.join(project, ".agentera") || candidate === path.join(project, ".agentera/migrations/project-upgrade/apply.lock/owner.json"));
   if (!lockPath || !fs.existsSync(lockPath)) throw new EntityCutoverError("active project upgrade lock is unavailable for recoverable TODO cutover");
   const relative = path.relative(project, lockPath).split(path.sep).join("/");
   return EntityPublicationContext.open(validateRealProjectRoot(project), relative, fs.readFileSync(lockPath));

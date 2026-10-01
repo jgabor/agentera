@@ -22,8 +22,8 @@ EXIT_CONDITIONS:
     description: >-
       Cannot complete the audit because the project is inaccessible, required
       language tooling is unavailable and manual analysis is not feasible, or
-      filing findings to TODO.md was declined by the user and results cannot
-      be safely surfaced any other way.
+      results cannot be safely surfaced. Declined TODO filing alone does not
+      block presenting the audit results.
     exit_signal: stuck
   4:
     id: E4

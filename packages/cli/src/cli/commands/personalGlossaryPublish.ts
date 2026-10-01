@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { updatePersonalGlossaryProfile, type PersonalGlossaryEntry } from "../../analytics/personalGlossaryProfile.js";
+import { updatePersonalGlossaryProfile, PersonalGlossaryConflictError, type PersonalGlossaryEntry } from "../../analytics/personalGlossaryProfile.js";
 import { readCurrentPersonalGlossaryCandidateProjection } from "../../analytics/personalGlossaryCurrentGeneration.js";
 import { containsPersonalGlossarySensitiveContent } from "../../analytics/personalGlossaryCandidateProjectionExcerpts.js";
 import { decidePersonalGlossaryCandidate } from "../../analytics/personalGlossaryDecision.js";
@@ -32,7 +32,7 @@ interface PublishRequest {
   asOf: string;
 }
 
-type PublishFailure = "publication_unavailable" | "publication_not_authorized" | "profile_unavailable" | "output_bound_exceeded";
+type PublishFailure = "profile_conflict" | "publication_unavailable" | "publication_not_authorized" | "profile_unavailable" | "output_bound_exceeded";
 
 function mapping(value: unknown): value is Mapping {
   return value !== null && typeof value === "object" && !Array.isArray(value);
@@ -55,7 +55,7 @@ function invalid(io: Io, body: InvalidInputErrorBody): number {
   });
 }
 
-function failure(io: Io, contract: PersonalGlossaryOutputContract, failureClass: PublishFailure): number {
+function failure(io: Io, contract: PersonalGlossaryOutputContract, failureClass: PublishFailure, superseded = false): number {
   emitStructured(
     {
       schemaVersion: contract.resultSchemaVersion,
@@ -63,8 +63,16 @@ function failure(io: Io, contract: PersonalGlossaryOutputContract, failureClass:
       status: "fail",
       error: {
         class: failureClass,
-        message: "Personal glossary publication was not applied.",
-        recovery: RECOVERY,
+        message: superseded
+          ? "This personal glossary approval is superseded or has an ambiguous action time. Publication was not applied."
+          : failureClass === "profile_conflict"
+            ? "An established personal meaning conflicts with this proposal. Publication was not applied."
+            : "Personal glossary publication was not applied.",
+        recovery: superseded
+          ? "Resume the newer approved meaning with its original authorization and current injected publication date. If approval order is ambiguous, review the exact current meaning again; no profile bytes were changed."
+          : failureClass === "profile_conflict"
+            ? "Review the exact conflicting meanings and obtain a current accept/correct review authorization before saving; no profile bytes were changed."
+            : RECOVERY,
       },
     },
     "json",
@@ -263,12 +271,15 @@ function currentCandidate(receipt: Mapping): { capsule: GlossaryEvidenceCapsule;
   return candidates.length === 1 ? { capsule: candidates[0]!.capsule, projectionSha256: current.projection.projection_sha256 } : null;
 }
 
-function authorizedPublication(request: PublishRequest): {
-  capsule: GlossaryEvidenceCapsule;
-  receipt: GlossaryHostClassificationReceipt;
-  decision: GlossaryAdmissionDecision;
-  review: GlossaryReviewRecord | null;
-} | null {
+function authorizedPublication(request: PublishRequest):
+  | {
+      capsule: GlossaryEvidenceCapsule;
+      receipt: GlossaryHostClassificationReceipt;
+      decision: GlossaryAdmissionDecision;
+      review: GlossaryReviewRecord | null;
+    }
+  | "superseded"
+  | null {
   const selected = currentCandidate(request.receipt);
   if (!selected) return null;
   if (
@@ -301,6 +312,7 @@ function authorizedPublication(request: PublishRequest): {
     decision: request.decision as GlossaryAdmissionDecision,
     candidate_projection_sha256: selected.projectionSha256,
   });
+  if (review.status === "superseded") return "superseded";
   if (review.status !== "authorized" || review.review === null) return null;
   return {
     capsule: selected.capsule,
@@ -451,6 +463,7 @@ export function runPersonalGlossaryPublishCommand(argv: string[], io: Io): numbe
   } catch {
     return failure(io, contractValue, "publication_unavailable");
   }
+  if (authorized === "superseded") return failure(io, contractValue, "publication_not_authorized", true);
   if (!authorized) return failure(io, contractValue, "publication_not_authorized");
   const publication = entryFor(authorized.capsule, authorized.receipt, request.asOf, authorized.review);
   if (!publication) return failure(io, contractValue, "publication_not_authorized");
@@ -460,12 +473,13 @@ export function runPersonalGlossaryPublishCommand(argv: string[], io: Io): numbe
     freshEntries: [publication.entry],
     retainedHistory: publication.context,
     asOf: request.asOf,
+    userConfirmed: authorized.review !== null,
   };
   let preview;
   try {
     preview = updatePersonalGlossaryProfile({ ...profileInput, dryRun: true });
-  } catch {
-    return failure(io, contractValue, "profile_unavailable");
+  } catch (error) {
+    return failure(io, contractValue, error instanceof PersonalGlossaryConflictError ? "profile_conflict" : "profile_unavailable");
   }
   let text: string | null;
   try {
@@ -492,6 +506,7 @@ export function runPersonalGlossaryPublishCommand(argv: string[], io: Io): numbe
     } catch {
       return failure(io, contractValue, "publication_unavailable");
     }
+    if (beforeEffect === "superseded") return failure(io, contractValue, "publication_not_authorized", true);
     if (!beforeEffect || beforeEffect.decision.decision_sha256 !== authorized.decision.decision_sha256) {
       return failure(io, contractValue, "publication_not_authorized");
     }

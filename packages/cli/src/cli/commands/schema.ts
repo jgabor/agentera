@@ -322,6 +322,16 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
       cli: {
         command: "agentera",
       },
+      project_migration: {
+        startup_instructions: "Eligible Status startup uses a bounded project_migration_offer capsule; full Status instructions remain at capability_context.details.instructions. Other project states keep their existing startup instructions.",
+        preview_field: "migration_offer",
+        startup_field: "state_cutover.migration_offer",
+        doctor_field: "current_health.project_state.migration_offer",
+        approval: "one explicit Yes through the trusted host; decline/silence/absent offer means no apply",
+        apply: "run the unchanged apply_command; its --authorization binds scope and expected progress, not user authentication",
+        detail: "npx -y agentera@next upgrade --explain --operation migrate --section usage",
+        completion: "exit 0 and status success after state/startup verification; a marker alone is insufficient",
+      },
       personal_glossary: {
         command: profileGlossary.command,
         request_schema_version: profileGlossary.requestSchemaVersion,
@@ -430,14 +440,6 @@ export function buildSchemaPayload(command = "schema"): JsonObject {
               dispositions: reviewRecords.dispositionPublicationAuthorizationDispositions,
               fields: reviewRecords.dispositionPublicationAuthorizationFields,
             },
-          },
-          trusted_host_key: {
-            file: reviewRecords.trustedHostKeyFile,
-            schema_version: reviewRecords.trustedHostKeySchemaVersion,
-            fields: reviewRecords.trustedHostKeyFields,
-            owner: reviewRecords.trustedHostKeyOwner,
-            public_key_algorithm: reviewRecords.trustedHostKeyAlgorithm,
-            max_serialized_utf8_bytes: reviewRecords.trustedHostKeyMaxSerializedUtf8Bytes,
           },
           persistence: {
             schema_version: reviewRecords.storeSchemaVersion,

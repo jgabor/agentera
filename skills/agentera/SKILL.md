@@ -66,10 +66,11 @@ Handoff verbs retain their permission meanings:
 - `dispatch`: invoke autonomously only inside a flow the current capability owns.
 - `chain`: multiple dispatches only inside an authorized orchestration flow.
 
-Use glyph plus canonical name for handoffs. Ask before invoking a state-changing
-downstream capability not already authorized. First-interaction status renders
-the brief and a free-form continuation prompt, not a native question menu, unless
-the user requests bounded choices or a state-changing Proceed/Cancel handoff.
+Use glyph plus canonical name. Initial status offers `next_action` free-form
+even for mutations; bounded choices only on request. Acceptance starts it once,
+no second status prompt. Decline stops; ambiguity gets one clarification. Direct
+routes need no confirmation. The invoked capability owns mutation approvals;
+scope, permissions and orchestration stay unchanged.
 
 ## Shared-skill installation or update offer
 

@@ -84,6 +84,9 @@ export function parseArtifactMapping(docsText: string): Record<string, string> {
 
 export function resolveArtifactPath(projectRoot: string, artifact: string, overrides: Record<string, string> | null = null): string {
   const artifactId = normalizeArtifactProtocolId(artifact) ?? artifact;
+  if (normalizeArtifactProtocolId(artifact) && !(artifactId in DEFAULT_ARTIFACT_PATHS)) {
+    throw new Error(`${artifactId}: no fixed artifact path; use an entity ID or an explicit scoped legacy path`);
+  }
   if (overrides && artifactId in overrides) {
     return path.join(projectRoot, overrides[artifactId]);
   }

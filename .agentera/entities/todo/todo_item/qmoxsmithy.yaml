@@ -7,21 +7,40 @@ record:
   severity: normal
   release_blocker: false
   requirements:
-    - Assess whether the required external authenticated signer fits the supported one-file-skill plus CLI product before adding integration machinery.
-    - Establish whether a supported host already provides enrollment and signed user-action capture; distinguish a missing integration from an unsuitable baseline requirement.
-    - Let users review a bounded set of meanings with save, edit-and-save, reject, or later choices and receive a clear saved or deferred result without handling keys, receipts, or publication commands.
-    - Preserve meaning-specific user decisions, accepted glossary content, privacy, scope binding, and retry safety; generic consent must not substitute for semantic approval.
-    - Research anchors are packages/cli/README.md:235-242, personalGlossaryReviewRecordStorage.ts:666-695, personalGlossaryReviewRecords.ts:430-431, and personalGlossaryReviewRecords CLI recovery at :770-773. External-host support remains unverified; do not presume a new plugin, authentication service, or registry is necessary.
+    - Trust the user's ordinary agent harness. Do not require a separate signer, enrollment, key management or malicious-agent threat model for personal glossary review and save.
+    - Present a bounded set of exact personal meanings with edit-and-save, reject and later choices. One explicit approval covers the displayed set; generic profile-update consent is not approval of unseen meanings.
+    - Save valid approved entries, clearly report saved and unsaved items, and retry unchanged approved work without duplicate saves or redundant approval. Changed meanings, scope or revisions require renewed review.
+    - User-confirmed meanings neither expire nor lose authority solely because time passes. Explicit revisions or concrete conflicts require review rather than silent replacement; distinguish confirmed meanings from unreviewed inferred candidates.
+    - Preserve unrelated accepted meanings, non-glossary profile content, privacy, scoped writes and retry safety. Review approval does not authorize history acquisition or other capability execution.
+    - Apply decision lkjovuyqtk, which replaces the external-signer assessment prerequisite and age-based weakening of user-confirmed meanings. Review the affected acceptance in plan qldlbzxsfp before implementation; decision capture is not execution approval.
   acceptance:
-    - GIVEN the supported baseline host and CLI WHEN the review workflow is designed THEN the trust boundary and an end-to-end user approval path are documented without an unexplained external signing prerequisite.
-    - GIVEN a bounded set of proposed meanings WHEN a user saves, corrects, rejects, or defers each meaning THEN the resulting saved or deferred state is explicit and unrelated meanings remain unchanged.
-    - GIVEN unavailable approval evidence or an interrupted operation WHEN the workflow cannot safely finish THEN it preserves existing data and provides actionable recovery without manufacturing user approval.
-  status: open
+    - GIVEN an ordinary supported harness and CLI WHEN personal meanings are reviewed THEN no signing integration, keys, receipts or publication commands are required from the user.
+    - GIVEN exact displayed meanings and any edits, rejections or deferrals WHEN the user approves the set THEN only its valid approved meanings are saved and unrelated meanings remain unchanged.
+    - GIVEN partial failure or interruption WHEN continuing THEN saved and unsaved items are clear, unchanged approved work can resume, and changed proposals require fresh approval.
+    - GIVEN a user-confirmed meaning WHEN time passes THEN it neither expires nor loses authority solely through age; concrete changes or conflicts require review rather than silent replacement.
+    - GIVEN the recorded outcome WHEN affected plan acceptance is reviewed THEN implementation still requires separate execution authorization and review grants no history-access permission.
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[task] Provide an ordinary-user glossary review and save workflow"
+      status: resolved
+      order: 141
       severity: normal
-      status: open
-      order: 28
+  readiness:
+    capability: build
+    reason: Decision lkjovuyqtk and reviewed task stjjlvlrfb define the glossary outcome; the user explicitly authorized this scoped build cycle.
+    dependencies:
+      []
+    blocked: null
+    gate:
+      state: satisfied
+      reason: The user explicitly invoked build for TODO qmoxsmithy after its discussion and plan acceptance review.
+      recovery: Approval covers this glossary implementation cycle only; changed scope requires renewed authorization.
+    queue_rank: 100
+    order_reason: Preserve the existing glossary backlog position; do not reorder unrelated work.
+  lifecycle:
+    operation: resolve
+    reason: Implemented trusted-harness glossary review with displayed-set approval, partial saves, safe retries and durable confirmed meanings; built/package checks and independent review passed.
+    date: 2026-09-30

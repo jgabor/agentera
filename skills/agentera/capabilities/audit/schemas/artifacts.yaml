@@ -34,9 +34,11 @@ ARTIFACTS:
     artifact: todo
     local_role: produces_and_consumes
     description: >-
-      Audit reads this to avoid re-reporting known issues and writes to it
-      with user confirmation when filing
-      critical and warning findings. During evaluation startup, known TODO state is
+      Audit reads this to avoid re-reporting known issues and offers one approval
+      for exact selected, deduplicated typed TODO records and mapped severities.
+      Filing uses the existing batch writer and unchanged recovery/replay; it
+      starts no fixes or downstream capability and grants no vision approval.
+      During evaluation startup, known TODO state is
       consumed through CLI `evidence_context`; raw TODO reads are diagnostic-only
       for corruption or CLI-defect investigation.
   5:

@@ -14,16 +14,16 @@ record:
     - An up-to-date app with a blocked project preserves the app result while reporting the aggregate project outcome as blocked or action-required.
   release_blocker: true
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Make Doctor report project operability separately from installation health."
+      status: resolved
+      order: 145
       severity: normal
-      status: open
-      order: 18
   lifecycle:
-    operation: set-severity
-    reason: Moved from the duplicated Critical section to the Normal backlog.
-    date: 2026-08-06
+    operation: resolve
+    reason: Doctor reuses Prime project preflight and reports honest aggregate readiness while preserving installation component health and scoped recovery.
+    date: 2026-10-01

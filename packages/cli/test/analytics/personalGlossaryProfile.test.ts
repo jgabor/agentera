@@ -256,27 +256,64 @@ describe("personal PROFILE.md glossary output", () => {
 });
 
 describe("personal glossary lifecycle", () => {
+  it("keeps explicit and reviewed meanings authoritative through age while unreviewed inference still decays", () => {
+    const pathname = profilePath();
+    update(pathname, [explicit(), inferred({ term: "unreviewed", permanence: "durable", confidence: 80 })]);
+    updatePersonalGlossaryProfile({
+      profilePath: pathname,
+      freshEntries: [inferred({ confidence: 80 })],
+      retainedHistory,
+      asOf: "2026-07-01",
+      userConfirmed: true,
+    });
+    const confirmed = document(pathname).entries.find((entry: PersonalGlossaryEntry) => entry.term === "intent seam");
+    update(pathname, [], "2036-07-01");
+    const aged = document(pathname);
+    expect(aged.entries.find((entry: PersonalGlossaryEntry) => entry.term === "intent seam")).toEqual(confirmed);
+    expect(aged.entries.find((entry: PersonalGlossaryEntry) => entry.term === "ship shape").confidence).toBe(80);
+    expect(aged.entries.find((entry: PersonalGlossaryEntry) => entry.term === "unreviewed").confidence).toBe(20);
+    expect(aged.confirmed_terms).toEqual(["intent seam"]);
+    expect(fs.readFileSync(pathname, "utf8").startsWith(baseProfile)).toBe(true);
+  });
+
+  it("refuses automatic replacement but applies an explicitly reviewed revision only to its term", () => {
+    const pathname = profilePath();
+    update(pathname, [explicit(), inferred()]);
+    const before = fs.readFileSync(pathname, "utf8");
+    const revision = inferred({ meaning: "An explicitly revised boundary.", confidence: 90 });
+    expect(() => update(pathname, [revision])).toThrow("conflict");
+    expect(fs.readFileSync(pathname, "utf8")).toBe(before);
+    updatePersonalGlossaryProfile({
+      profilePath: pathname,
+      freshEntries: [revision],
+      retainedHistory,
+      asOf: "2026-07-01",
+      userConfirmed: true,
+    });
+    expect(document(pathname).entries).toEqual([revision, explicit()]);
+    expect(document(pathname).confirmed_terms).toEqual(["intent seam"]);
+  });
   it.each([
     ["stable", 72],
     ["durable", 49],
     ["situational", 20],
   ] as const)("retains and decays %s entries with unchanged permanence", (permanence, expected) => {
     const pathname = profilePath();
-    update(pathname, [explicit({ permanence, confidence: 80 })]);
+    update(pathname, [inferred({ permanence, confidence: 80 })]);
     update(pathname, [], "2026-10-09");
     expect(document(pathname).entries[0]).toMatchObject({ confidence: expected, permanence });
   });
 
   it("applies the floor without deleting an old entry", () => {
     const pathname = profilePath();
-    update(pathname, [explicit({ permanence: "situational", confidence: 21 })]);
+    update(pathname, [inferred({ term: "ship shape", permanence: "situational", confidence: 21 })]);
     update(pathname, [], "2036-07-01");
     expect(document(pathname).entries).toMatchObject([{ term: "ship shape", confidence: 20, permanence: "situational" }]);
   });
 
   it("is same-date idempotent and derives later decay from the retained basis, not rendered confidence", () => {
     const pathname = profilePath();
-    update(pathname, [explicit({ permanence: "durable", confidence: 80 })]);
+    update(pathname, [inferred({ permanence: "durable", confidence: 80 })]);
     update(pathname, [], "2026-10-09");
     const once = fs.readFileSync(pathname, "utf8");
     const replay = update(pathname, [], "2026-10-09");

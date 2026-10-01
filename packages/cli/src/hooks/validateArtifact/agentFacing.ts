@@ -5,8 +5,8 @@
  * the AGENT_FACING_ARTIFACT_IDS computation across hot paths).
  */
 
-import { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS } from "../../registries/artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_IDS, ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS } from "../../registries/artifactProtocolIds.js";
 
 export { ARTIFACT_PROTOCOL_PATHS, HUMAN_FACING_ARTIFACT_IDS };
 
-export const AGENT_FACING_ARTIFACT_IDS = new Set(Object.keys(ARTIFACT_PROTOCOL_PATHS).filter((id) => !HUMAN_FACING_ARTIFACT_IDS.has(id)));
+export const AGENT_FACING_ARTIFACT_IDS = new Set([...ARTIFACT_PROTOCOL_IDS].filter((id) => !HUMAN_FACING_ARTIFACT_IDS.has(id)));

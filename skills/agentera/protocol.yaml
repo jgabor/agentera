@@ -102,12 +102,27 @@ OPERATING_RULES:
   instructions: |-
     ## Execution rules
 
-    - Reuse passing evidence when task/scope, inputs, environment and coverage match. Recheck gaps, invalidation or mandatory gates; missing, stale or unrelated evidence never proves PASS.
-    - Test consequential unknowns narrowly before substantial dependent work.
-    - Add mechanisms only for concrete needs. Stop at accepted scope, even if blocked; new work/plans need authorization.
-    - Carry explicit approval to save and execute a final plan through its unchanged handoff. Planning-only approval, silence or material changes do not authorize execution. Git, global installation and history permissions remain separate.
+    - Reuse PASS only for matching scope, inputs, environment and coverage; check gaps, invalidation and mandatory gates.
+    - Probe consequential unknowns narrowly before dependent work.
+    - Add mechanisms only for concrete needs. Stop at accepted scope, even if blocked. New work/plans need authorization.
+    - Carry explicit save-and-execute plan approval through unchanged handoff; planning-only approval, silence or material changes do not authorize execution. Git, global installation and history permissions remain separate.
+    - Check relevant artifact coherence before firm closure; surface conflicts, gaps and deliberate exceptions. Follow protocol OPERATING_RULES detail.
 
     Project/host/trust gates, typed writers and explicit permissions remain binding. Guidance requires loading; not host enforcement.
+  coherence: >-
+    Check only artifacts relevant to the proposed outcome, including affected vision,
+    design, TODOs, plans and firm decisions, not a whole-project audit each turn.
+    Use served summaries and discovered CLI detail/read commands before reliance;
+    follow raw_artifact_read_policy. If available readers cannot establish needed
+    authority or policy forbids a read, name the gap and let the user choose a
+    qualified outcome or defer. Never invent reader/writer APIs or read installed
+    companions. Surface material conflicts and uncertain implications before firm
+    closure. The user may choose an intentional pivot or scoped exception; record
+    its scope and affected commitments. Unresolved tensions remain explicit and
+    closure is qualified/flagged, not falsely coherent or firm. Do not automatically
+    merge semantic changes or add scoring. This is compliant trusted-host semantic
+    judgment, not enforcement against a malicious agent. Coherence grants no write
+    permission and does not override artifact ownership or execution gates.
 
 HUMAN_REFERENCES:
   description: >-

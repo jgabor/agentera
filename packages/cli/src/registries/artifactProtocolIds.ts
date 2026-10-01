@@ -1,6 +1,6 @@
 /**
  * Decision 58 artifact protocol names: one `artifact_id` per artifact in CLI,
- * hooks, validators, and JSON envelopes. Storage paths live here only.
+ * hooks, validators, and JSON envelopes. Identity does not require a fixed path.
  */
 
 export const ARTIFACT_PROTOCOL_PATHS: Readonly<Record<string, string>> = {
@@ -10,13 +10,13 @@ export const ARTIFACT_PROTOCOL_PATHS: Readonly<Record<string, string>> = {
   progress: ".agentera/progress.yaml",
   health: ".agentera/health.yaml",
   docs: ".agentera/docs.yaml",
-  objective: ".agentera/objective.yaml",
-  experiments: ".agentera/experiments.yaml",
   todo: "TODO.md",
   changelog: "CHANGELOG.md",
   design: "DESIGN.md",
   glossary: ".agentera/glossary.yaml",
 };
+
+export const ARTIFACT_PROTOCOL_IDS: ReadonlySet<string> = new Set([...Object.keys(ARTIFACT_PROTOCOL_PATHS), "objective", "experiments"]);
 
 export const HUMAN_FACING_ARTIFACT_IDS = new Set(["todo", "changelog", "design"]);
 
@@ -31,15 +31,15 @@ function artifactProtocolStem(input: string): string {
 
 export function normalizeArtifactProtocolId(input: string): string | null {
   const trimmed = input.trim();
-  if (trimmed in ARTIFACT_PROTOCOL_PATHS) {
+  if (ARTIFACT_PROTOCOL_IDS.has(trimmed)) {
     return trimmed;
   }
   const lower = trimmed.toLowerCase();
-  if (lower in ARTIFACT_PROTOCOL_PATHS) {
+  if (ARTIFACT_PROTOCOL_IDS.has(lower)) {
     return lower;
   }
   const stem = artifactProtocolStem(trimmed);
-  if (stem in ARTIFACT_PROTOCOL_PATHS) {
+  if (ARTIFACT_PROTOCOL_IDS.has(stem)) {
     return stem;
   }
   return null;

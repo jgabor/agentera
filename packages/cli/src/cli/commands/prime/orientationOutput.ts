@@ -1,4 +1,5 @@
 import { publicDoctorStatus } from "../../../upgrade/doctor.js";
+import { renderProjectMigrationOffer } from "../../../upgrade/projectMigrationOffer.js";
 import { humanReference } from "../../../capabilities/humanReferences.js";
 import { projectInstallTrack } from "../../../upgrade/compatibility.js";
 import { formatNextAction, startupPlanSummary } from "../../orientation.js";
@@ -366,6 +367,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
     out(`project_integration_message: ${projectIntegration.message}\n`);
   }
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
+  out(renderProjectMigrationOffer(state.state_cutover.migration_offer));
   const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
   const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
   out(`outcome: ${String(startup.outcome)}\n`);

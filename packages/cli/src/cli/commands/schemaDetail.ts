@@ -3,7 +3,7 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import { loadReadOnlyYamlAuthorityFile, withReadOnlyYamlMappingCache } from "../../core/yaml.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import { ARTIFACT_PROTOCOL_PATHS } from "../../registries/artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_IDS } from "../../registries/artifactProtocolIds.js";
 import { validateContractBootstrap } from "../../registries/capabilityContract.js";
 import { validateProtocolSelf } from "../../validate/capability.js";
 import { validateGlossaryEntryContract } from "../../registries/glossaryEntryContract.js";
@@ -17,7 +17,7 @@ export function isSchemaDetailQuery(argv: string[]): boolean {
   return argv.some((arg) => ["--artifact", "--protocol", "--capability-contract", "--section", "--limit", "--cursor"].includes(arg.split("=")[0]));
 }
 export const schemaDetailDiscovery = () => ({
-  artifacts: Object.keys(ARTIFACT_PROTOCOL_PATHS).map((artifact) => ({
+  artifacts: [...ARTIFACT_PROTOCOL_IDS].map((artifact) => ({
     artifact,
     command: `${PREFIX} --artifact ${artifact}`,
   })),
@@ -56,7 +56,7 @@ function runSchemaDetailRequest(argv: string[], io: { out?: (text: string) => vo
     const owners = ["artifact", "protocol", "capability-contract"].filter((key) => key in args);
     if (owners.length !== 1) throw new GuidanceInputError("Select exactly one of --artifact, --protocol, --capability-contract.", ["--artifact", "--protocol", "--capability-contract"]);
     const owner = owners[0];
-    if (owner === "artifact" && !Object.hasOwn(ARTIFACT_PROTOCOL_PATHS, String(args.artifact))) throw new GuidanceInputError("Unknown artifact; use an advertised artifact identity, not a path.", Object.keys(ARTIFACT_PROTOCOL_PATHS));
+    if (owner === "artifact" && !ARTIFACT_PROTOCOL_IDS.has(String(args.artifact))) throw new GuidanceInputError("Unknown artifact; use an advertised artifact identity, not a path.", [...ARTIFACT_PROTOCOL_IDS]);
     baseCommand = `${PREFIX} --${owner}${owner === "artifact" ? ` ${guidanceQuote(String(args.artifact))}` : ""}`;
     if (args.format !== undefined && args.format !== "json") throw new GuidanceInputError("Static schema detail supports JSON only.", ["json"]);
     const limit = args.limit === undefined ? 20 : Number(args.limit);
@@ -115,7 +115,11 @@ function runSchemaDetailRequest(argv: string[], io: { out?: (text: string) => vo
       for (const comment of authorityComments) {
         const keys = comment.path.map((key) => encodeURIComponent(key).replaceAll(".", "%2E"));
         if (namespace) keys.unshift(namespace);
-        comments.push({ section: keys.join(".") || null, placement: comment.placement, text: comment.text });
+        comments.push({
+          section: keys.join(".") || null,
+          placement: comment.placement,
+          text: comment.text,
+        });
       }
       if (namespace)
         sections.push({

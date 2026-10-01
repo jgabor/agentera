@@ -325,6 +325,50 @@ Forward migration is one-way. Returning to the Python 2.x line is unsupported,
 and cross-major apply has no rollback, restore, non-Git, or partial workflow.
 If apply is interrupted, rerun the same full apply command.
 
+### One project-migration offer
+
+For a supported complete, tracked and unchanged v2 project, ordinary `prime`,
+Status startup and `doctor` perform read-only preflight and return a ready offer.
+Upgrade preview returns the same `migration_offer`. Preview creates no lock or
+checkpoint and changes neither the project nor the home.
+
+The offer identifies the project, v3 target, exact planned effects, deleted
+retired resources (if any), and unsupported rollback/return to v2. Show these
+before asking its question once. Only an explicit **Yes** runs the unchanged
+`apply_command`. No, silence or an absent offer runs nothing. The CLI supplies
+the complete command and its scope binding; users do not copy tokens or prepare
+commands. This approval covers no app/global cleanup, shared-skill changes,
+reset, Git action, private history access or whole-directory `.agentera` ownership.
+
+Eligible Status startup uses a bounded migration capsule and keeps every reviewed
+effect, including grouped source paths, in the offer. Full Status instructions
+remain at `capability_context.details.instructions`. Other project states keep
+their existing startup guidance. A fresh supported legacy offer also binds any
+existing valid checkpoint; a new Yes may replace only that exact reviewed
+checkpoint. Malformed evidence and unsupported partial state remain blocked.
+
+The binding checks the project, `HEAD`, source identities and bytes, runtime
+contracts, and reviewed effects before new migration effects. Unexpected changes
+refuse the stale operation and require fresh preview and approval. Agentera never
+commits, restores or discards source changes for you. Fresh, current-v3, partial,
+corrupt and unsupported projects receive their own diagnosis, not a forced offer.
+
+Keep the exact originally approved command after interruption. Known approval
+and matching checkpointed progress resume the same forward operation without a
+new question. Missing approval or invalid evidence stops with bounded recovery.
+The checkpoint is not proof of user participation, and the token binds scope,
+not authentication. The trusted host must retain the original approval.
+Dead Linux lock owners are recovered through the existing lifecycle lock;
+malformed or live ownership still blocks. State and startup verification must
+pass after apply or retry before completion is reported. A marker alone is not
+success, and failed verification does not undo completed effects.
+
+Full installed-runtime detail requires no companion files:
+
+```bash
+npx -y agentera@next upgrade --explain --operation migrate --section usage
+```
+
 ### Compacted v2 summaries
 
 Entity-cutover publication for valid v2 compaction output is implemented for

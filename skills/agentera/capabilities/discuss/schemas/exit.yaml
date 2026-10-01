@@ -4,9 +4,9 @@ EXIT_CONDITIONS:
     condition: complete
     description: >-
       Deliberation reached a conclusion the user chose to act on; any
-      requested artifacts (decisions, vision, objective, todo)
-      were written with user approval, and the decision confidence level
-      was captured.
+      required exact approved changes were verified through their owners, and
+      decision confidence was captured. Refusal saves nothing. Failed or
+      unverified required saves are INCOMPLETE, never complete.
     exit_signal: complete
   2:
     id: E2
@@ -15,7 +15,8 @@ EXIT_CONDITIONS:
       Deliberation concluded but the decision remains unresolved or
       provisional: the user wrapped up without a clear choice, significant
       tensions could not be resolved, or the conclusion contradicts prior
-      decisions without explicit acknowledgment.
+      affected commitments without explicit acknowledgment. Missing authority
+      stays an explicit gap; intentional pivots or exceptions record their scope.
     exit_signal: flagged
   3:
     id: E3
@@ -23,7 +24,8 @@ EXIT_CONDITIONS:
     description: >-
       Cannot proceed because the user's topic requires external research
       the capability cannot access, or writing to an artifact was attempted
-      but failed due to a file access issue.
+      but failed. Retain verified saves, stop dependent writes, report saved and
+      remaining work as INCOMPLETE, and follow native recovery before continuation.
     exit_signal: stuck
   4:
     id: E4

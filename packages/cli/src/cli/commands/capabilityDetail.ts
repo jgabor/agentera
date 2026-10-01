@@ -7,7 +7,7 @@ import { planStartupContract } from "../capabilityContext/contract.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { loadCapabilitySchemaContract } from "../../registries/capabilityContract.js";
-import { ARTIFACT_PROTOCOL_PATHS } from "../../registries/artifactProtocolIds.js";
+import { ARTIFACT_PROTOCOL_IDS } from "../../registries/artifactProtocolIds.js";
 import { workerSections } from "./workerDetail.js";
 import { buildProtocolValueLookup, checkNumberedEntries, checkSchemaPrimitiveReferences, checkStableIds, validateProtocolSelf } from "../../validate/capability.js";
 import { emitInvalidInput } from "../errors.js";
@@ -119,7 +119,7 @@ export function runCapabilityDetail(argv: string[], io: { out?: (text: string) =
           name: "construction",
           content: Object.values(mapping.ARTIFACTS as Record<string, JsonObject>).map((entry) => ({
             artifact: entry.artifact,
-            command: Object.hasOwn(ARTIFACT_PROTOCOL_PATHS, String(entry.artifact)) ? `npx -y agentera@next schema --artifact ${entry.artifact}` : `npx -y agentera@next prime --context ${entry.artifact === "profile" ? "profile" : capability} --detail instructions`,
+            command: ARTIFACT_PROTOCOL_IDS.has(String(entry.artifact)) ? `npx -y agentera@next schema --artifact ${entry.artifact}` : `npx -y agentera@next prime --context ${entry.artifact === "profile" ? "profile" : capability} --detail instructions`,
           })),
           authority: relative,
           classification: "related_contract_actions_not_write_permission",

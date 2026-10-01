@@ -1,0 +1,45 @@
+id: doqgrxxkev
+artifact: todo
+record:
+  kind: feat
+  target_version: null
+  title: Approve Discuss closeout as a concrete decision and follow-up set
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "Apply decision gritewpjou: propose the decision and directly justified follow-ups together, retaining decision-only and save-nothing choices. Do not create speculative work merely to fill a bundle."
+    - Use relevant affected artifacts to uphold consistency and coherence, not only vision. Surface material conflicts or implications that cannot be cleanly inferred or resolved so the user can decide. Clarify intentional pivots or scoped exceptions; qualify and flag unresolved closure rather than silently asserting consistency or firm intent.
+    - One explicit approval may cover the exact displayed in-scope decision and artifact changes, including relevant TODO, plan, vision or design changes, through supported writers or owners. No prior destination-selection confirmation is required, and no unseen changes are approved.
+    - Reuse existing writer transactions and recovery. Between operations, retain verified saves, stop dependent writes on failure, report saved and remaining changes, and keep closeout incomplete until required changes are verified. Resume unchanged approved work without duplicate records or redundant approval; changed proposals require fresh approval. Do not add a global transaction or general consent framework.
+    - Preserve single-question-per-turn behavior, artifact ownership, privacy and refusal safety. Closeout approval grants no execution, Git, global-installation or personal-data permission; autonomous execution remains deferred until the remaining outcome choices are settled.
+  acceptance:
+    - GIVEN a discussion outcome WHEN closeout is proposed THEN the concrete decision and justified artifact changes are shown together, with decision-only and save-nothing choices and no preliminary destination-confirmation loop.
+    - GIVEN material conflicts or uncertain implications across affected artifacts WHEN closing THEN the user can clarify, choose a pivot or exception, or leave an explicit qualified tension; no silent inconsistency or unsupported firm conclusion is claimed.
+    - GIVEN approval, refusal or changed scope WHEN saving THEN only exact shown approved changes are applied through their owners; unseen changes and broader permissions are not inferred.
+    - GIVEN interruption or a failed writer operation WHEN recovering THEN native recovery is used, verified saves are retained between operations, dependent writes stop, saved and remaining changes are reported, and unchanged approvals resume without duplicates or another approval.
+    - GIVEN the approved outcome WHEN affected plan acceptance is reviewed THEN implementation remains separately gated, and isolated checks target one success and one refusal per behavior with extras only for distinct recovery or coherence risks.
+  readiness:
+    capability: build
+    reason: Decision gritewpjou and reviewed task mfnohbwilm define the outcome; the user authorized remaining plan implementation via orchestrate and resumed after reboot.
+    dependencies:
+      []
+    blocked: null
+    gate:
+      state: satisfied
+      reason: Explicit orchestration and resumption authorize this planned implementation, not live or Git operations.
+      recovery: Changed scope requires renewed approval; current authorization excludes commits, pushes, publication and live user-data operations.
+    queue_rank: 104
+    order_reason: Preserve the existing Discuss closeout backlog position; do not reorder unrelated work.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat] Approve Discuss closeout as a concrete decision and follow-up set"
+      status: resolved
+      order: 148
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Discuss now captures one concrete coherence-aware artifact proposal with scoped approval and existing-writer recovery; source/package checks and independent review passed.
+    date: 2026-10-01

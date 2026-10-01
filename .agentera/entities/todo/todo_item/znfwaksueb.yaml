@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees."
       severity: degraded
       status: open
-      order: 2
+      order: 1

@@ -285,6 +285,8 @@ records:
         - {"path":"references/cli/update-channels.yaml","region":"$[\"channels\"][\"stable\"][\"resolution\"][\"git\"][\"update_command\"]","category":"other_vocabulary","classification":"exact_exemption","normalized_sha256":"f04157f879236e341352a572ccc2b7d6e20a41f3152306fbcc6f4be3ff069e51","reason":"Stable-channel resolver metadata stores the exact uvx argv source as one structured scalar."}
         - {"path":"references/cli/update-channels.yaml","region":"$[\"channels\"][\"development\"][\"resolution\"][\"npm\"][\"update_command\"]","category":"other_vocabulary","classification":"exact_exemption","normalized_sha256":"6014cb13fa18e26c1e356cfd73db98be5a60039955eb5c857a5e05b3b18b62a3","reason":"Development-channel resolver metadata stores the exact npm package prefix consumed as structured data."}
       emitted_producers:
+        - path: packages/cli/src/upgrade/projectMigrationOffer.ts
+          reason: Project-only migration offers publish a complete reviewed-scope-bound development command; source and extracted-package migration journeys check that command and its effects.
         - path: packages/cli/src/cli/commands/capabilityDetail.ts
           reason: Static capability details emit complete compiled guidance and exact bounded section actions, covered by source reconstruction and extracted traversal.
         - path: packages/cli/src/cli/commands/checkDetail.ts

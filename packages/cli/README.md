@@ -37,7 +37,17 @@ bytes). Status startup returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together (at most 25000 UTF-8
 bytes). Omitted detail names its authoritative recovery command. `doctor`
-returns detailed read-only evidence and exact user actions. Entity-mode projects
+returns detailed read-only evidence and exact user actions. It exposes bounded
+`current_health` results for the CLI, shared skill, project state,
+Prime Status startup, and typed-writer cutover preflight. Doctor's aggregate
+`status` is not `up_to_date` when startup or writer preflight is blocked, even
+when `current_health.cli` is current. Fresh Git projects allow Plan startup but
+require `state plan create` before other writers. Writer readiness is not write
+permission or validation of a particular operation. Profile absence and optional
+history do not block project cutover. Project recovery remains separate from
+explicit, ownership-bound global cleanup.
+
+Entity-mode projects
 with an absent or unsafe TODO reconciliation marker return `action_required`
 instead of `ok` or `up_to_date`. A safe inactive project reports an activation
 preview and its exact effect-bound apply command:
@@ -232,14 +242,31 @@ corrected meaning in the canonical user-local review record. Records never retai
 a term, excerpt, raw evidence, source, session, project, path, tool content,
 signature, nonce, or host proof.
 
-The local host writes one canonical `trusted-local-host.json` document beside the
-review store. It contains the current-user subject and an Ed25519 SPKI public key.
-Only a fresh `agentera.personalGlossaryReviewApproval.v1` action from
-`agentera-local-host` over `agentera-local-host-ipc`, signed by that key, can
-disposition a queued review. The signed receipt binds the review ID, stable term,
-revision, projection, semantic fingerprint, generation, policy, disposition,
-correction fields, timestamps, and nonce. Exact receipt replay is idempotent;
-reusing a nonce with changed signed content fails before effects.
+The ordinary OpenCode/Codex harness shows a bounded set of exact personal meanings
+with edit-and-save, reject and later choices. One explicit save approval covers
+the displayed selected set, not unseen proposals, generic profile consent or
+silence. The harness coordinates the commands; users need no signer, enrollment,
+keys, receipts or publication commands. Its structured
+`agentera.personalGlossaryReviewApproval.v2` assertion uses issuer
+`agentera-harness`, subject `current_user`, channel `explicit-user-review`, exact
+review/candidate/revision/projection/fingerprint/generation/policy bindings,
+disposition, correction fields, action timestamp and a stable retry nonce.
+This trusts the user harness, not a security boundary against malicious agents.
+Legacy v1 action shapes remain accepted without key verification.
+
+Save each valid approved entry even if another fails. Report exact saved and
+unsaved items. On resume, retain the original approval, action timestamp, nonce,
+receipt, decision and authorization, but inject the current publication date as
+`as_of`, no earlier than the owned section's current date. This date refresh needs
+no new meaning approval or date question and prevents the section date from moving
+backward. Retry only still-current approved meanings without duplicate entries;
+changed meanings, scope or revisions need fresh review. Never
+publish rejected, deferred or unapproved entries. Review grants no history access.
+Confirmed meanings retain their confidence regardless of age. Explicit definitions
+are inherently confirmed; reviewed inferred entries use optional `confirmed_terms`
+lifecycle metadata in the owned profile section. Old sections remain readable,
+and unreviewed inferred entries keep their existing decay policy. Conflicts need
+review, never automatic replacement.
 
 Canonical v1 pending review stores remain readable through `list` and `get`
 without changing their bytes. Only `disposition` can migrate one valid v1 record.
@@ -256,8 +283,13 @@ an opaque authorization for the separate publish command. They do not publish
 directly. List and exact reads are noninteractive, owner-restricted,
 cursor-bounded, and mutation-free.
 
-Terminal metadata expires after 90 days. The bounded receipt replay index expires
-with each approval receipt. Separate authenticated owner maintenance affects only
+Rejected terminal metadata and replay digests expire after 90 days. Accept/correct
+authorizations remain resumable while their current bindings are unchanged and no
+later accept/correct approval supersedes them for the same stable term identity.
+This applies even if the later approval is not saved yet. Unrelated terms do not
+supersede each other. Equal action times require review rather than arbitrary
+replacement;
+elapsed time does not revoke approved work. Separate owner maintenance affects only
 review metadata and replay digests. It does not modify a profile entry, project
 state, candidate projection, or publication result.
 

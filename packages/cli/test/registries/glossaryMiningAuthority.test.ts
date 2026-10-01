@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { generateKeyPairSync, sign } from "node:crypto";
 
 import YAML from "yaml";
 import { describe, expect, it } from "vitest";
@@ -236,7 +235,6 @@ describe("personal glossary mining authority", () => {
       compatibilityMigrationOperation: "disposition_only",
       dispositionRequestSchemaVersion: "agentera.personalGlossaryReviewDispositionRequest.v1",
       dispositionPublicationAuthorizationDispositions: ["accept", "correct"],
-      trustedHostKeyFile: "trusted-local-host.json",
       retrievalSchemaVersion: "agentera.personalGlossaryReviewRetrieval.v1",
       listStatuses: ["pending", "terminal"],
       terminalMetadataDays: 90,
@@ -730,10 +728,9 @@ describe("personal glossary consent discriminator", () => {
   });
 });
 
-const reviewKeyPair = generateKeyPairSync("ed25519");
 const reviewNow = new Date("2026-08-07T12:00:00.000Z");
 const reviewVerification = {
-  currentUserSubject: "user:current",
+  currentUserSubject: "current_user",
   reviewId: "a".repeat(64),
   candidateId: "candidate-a",
   candidateRevision: "revision-a",
@@ -742,16 +739,14 @@ const reviewVerification = {
   generation: "generation-a",
   policyVersion: "agentera.personalGlossaryMiningPolicy.v1",
   now: reviewNow,
-  trustedHostPublicKey: reviewKeyPair.publicKey,
 };
 
 function reviewReceipt(overrides: Record<string, unknown> = {}): Record<string, unknown> {
-  const { signature: signatureOverride, ...overriddenFields } = overrides;
-  const unsigned = {
-    schema_version: "agentera.personalGlossaryReviewApproval.v1",
-    issuer: "agentera-local-host",
-    subject: "user:current",
-    trusted_channel: "agentera-local-host-ipc",
+  return {
+    schema_version: "agentera.personalGlossaryReviewApproval.v2",
+    issuer: "agentera-harness",
+    subject: "current_user",
+    trusted_channel: "explicit-user-review",
     review_id: reviewVerification.reviewId,
     candidate_id: "candidate-a",
     candidate_revision: "revision-a",
@@ -763,19 +758,13 @@ function reviewReceipt(overrides: Record<string, unknown> = {}): Record<string, 
     corrected_meaning: null,
     corrected_scope: null,
     disposed_at: "2026-08-07T11:59:00.000Z",
-    expires_at: "2026-08-07T12:04:00.000Z",
     nonce: "nonce-a",
-    ...overriddenFields,
-  };
-  const payload = JSON.stringify(unsigned);
-  return {
-    ...unsigned,
-    signature: signatureOverride ?? sign(null, Buffer.from(payload, "utf8"), reviewKeyPair.privateKey).toString("base64url"),
+    ...overrides,
   };
 }
 
 describe("personal glossary review approval receipts", () => {
-  it("accepts a trusted signed receipt with concrete current-user bindings", () => {
+  it("accepts an ordinary harness assertion with exact current-user bindings and no key", () => {
     const receipt = reviewReceipt();
     expect(validatePersonalReviewApprovalReceipt(receipt, reviewVerification)).toEqual([]);
     expect(personalReviewApprovalReplayStatus(receipt)).toBe("new");
@@ -792,18 +781,16 @@ describe("personal glossary review approval receipts", () => {
     ["semantic fingerprint binding", { semantic_fingerprint: "d".repeat(64) }, "review approval receipt semantic fingerprint binding is invalid"],
     ["generation binding", { generation: "generation-b" }, "review approval receipt generation binding is invalid"],
     ["policy binding", { policy_version: "agentera.personalGlossaryMiningPolicy.v2" }, "review approval receipt policy binding is invalid"],
-    ["stale freshness", { disposed_at: "2026-08-07T11:54:00.000Z" }, "review approval receipt is stale"],
-    ["expired freshness", { expires_at: "2026-08-07T11:59:30.000Z" }, "review approval receipt expires_at is not current"],
-    ["forged signature", { signature: "Zm9yZ2Vk" }, "review approval receipt signature is not from the trusted host"],
+    ["future action", { disposed_at: "2026-08-08T11:54:00.000Z" }, "review approval receipt disposed_at is in the future"],
   ])("rejects a receipt with invalid %s", (_name, overrides, expected) => {
     expect(validatePersonalReviewApprovalReceipt(reviewReceipt(overrides), reviewVerification)).toContain(expected);
   });
 
-  it.each(["agent", "model", "imported_record", "generic_consent"])("does not let %s self-assert current-user approval", (subject) => {
+  it.each(["agent", "model", "imported_record", "generic_consent"])("rejects a %s disposition instead of an explicit user action", (subject) => {
     expect(validatePersonalReviewApprovalReceipt(reviewReceipt({ subject }), reviewVerification)).toContain("review approval receipt subject is not the trusted current user");
   });
 
-  it("requires the exact signed receipt field set and allows only a bounded personal correction", () => {
+  it("requires the exact assertion fields and allows only a bounded personal correction", () => {
     const correction = reviewReceipt({
       disposition: "correct",
       corrected_meaning: "A corrected private meaning.",

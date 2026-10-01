@@ -1,4 +1,3 @@
-import { createPublicKey, type KeyObject } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 
@@ -15,12 +14,10 @@ const STORE_SCHEMA_VERSION = "agentera.personalGlossaryReviewStore.v2";
 const RECORD_SCHEMA_VERSION = "agentera.personalGlossaryReviewRecord.v2";
 const LEGACY_STORE_SCHEMA_VERSION = "agentera.personalGlossaryReviewStore.v1";
 const LEGACY_RECORD_SCHEMA_VERSION = "agentera.personalGlossaryPendingReviewRecord.v1";
-const TRUSTED_HOST_KEY_SCHEMA_VERSION = "agentera.personalGlossaryTrustedLocalHost.v1";
 const REVIEW_OWNER = "current_user";
 const REVIEW_ID_SCHEMA_VERSION = "agentera.personalGlossaryReviewIdentity.v1";
 const REPLAY_NONCE_SCHEMA_VERSION = "agentera.personalGlossaryReviewReplayNonce.v1";
 const SHA256 = /^[a-f0-9]{64}$/u;
-const BASE64URL = /^[A-Za-z0-9_-]+$/u;
 const TIMESTAMP = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/u;
 const SENSITIVE_REVIEW_METADATA_ASSIGNMENT = /(?:^|[^A-Za-z0-9_])(?:api[_-]?key|access[_-]?token|token|password|passwd|cookie|private[_-]?key|authorization(?:[_-]?header)?|session(?:[_-]?id)?|email|phone|contact|secret)\s*[:=]/iu;
 
@@ -115,15 +112,8 @@ export interface PersonalGlossaryReviewRecordsReadResult {
   store: PersonalGlossaryReviewStoreSource | null;
 }
 
-export interface TrustedLocalHostKey {
-  subject: string;
-  publicKey: KeyObject;
-}
-
 export interface PersonalGlossaryReviewRecordsStorageContract {
   storeFile: string;
-  trustedHostKeyFile: string;
-  trustedHostKeyMaxSerializedUtf8Bytes: number;
   storeMaxSerializedUtf8Bytes: number;
   recordMaxSerializedUtf8Bytes: number;
   recordsMax: number;
@@ -210,12 +200,6 @@ export function personalGlossaryReviewRecordsStorageContract(): PersonalGlossary
     value.dispositionMaxResultUtf8Bytes !== 4_096 ||
     !sameStrings(value.dispositionPublicationAuthorizationDispositions, ["accept", "correct"]) ||
     !sameStrings(value.dispositionPublicationAuthorizationFields, ["review_id", "review_record_sha256"]) ||
-    value.trustedHostKeyFile !== "trusted-local-host.json" ||
-    value.trustedHostKeySchemaVersion !== TRUSTED_HOST_KEY_SCHEMA_VERSION ||
-    !sameStrings(value.trustedHostKeyFields, ["schema_version", "owner", "subject", "public_key_spki_base64url"]) ||
-    value.trustedHostKeyOwner !== REVIEW_OWNER ||
-    value.trustedHostKeyAlgorithm !== "ed25519" ||
-    value.trustedHostKeyMaxSerializedUtf8Bytes !== 4_096 ||
     value.storeSchemaVersion !== STORE_SCHEMA_VERSION ||
     value.recordSchemaVersion !== RECORD_SCHEMA_VERSION ||
     value.storeOwner !== REVIEW_OWNER ||
@@ -282,15 +266,13 @@ export function personalGlossaryReviewRecordsStorageContract(): PersonalGlossary
     value.exactCurrentBindingField !== "candidate_projection_sha256" ||
     value.exactMaxSerializedUtf8Bytes !== 8_192 ||
     value.terminalMetadataDays !== 90 ||
-    value.maintenanceExposure !== "authenticated_review_owner_only" ||
+    value.maintenanceExposure !== "current_user_authorized_review_owner_only" ||
     value.maintenancePurge !== "current_user_authorized_review_records_only" ||
     !sameStrings(value.maintenanceForbiddenEffects, ["profile_entry", "project_state", "candidate_projection", "publication"])
   )
     throw new TypeError("personal glossary review-record contract is unavailable");
   return {
     storeFile: value.storeFile,
-    trustedHostKeyFile: value.trustedHostKeyFile,
-    trustedHostKeyMaxSerializedUtf8Bytes: value.trustedHostKeyMaxSerializedUtf8Bytes,
     storeMaxSerializedUtf8Bytes: value.storeMaxSerializedUtf8Bytes,
     recordMaxSerializedUtf8Bytes: value.recordMaxSerializedUtf8Bytes,
     recordsMax: value.recordsMax,
@@ -635,7 +617,7 @@ export function recordMatchesProjection(record: PersonalGlossaryReviewStoredReco
 }
 
 export function terminalReviewRecordExpired(record: PersonalGlossaryReviewStoredRecord, now: string): boolean {
-  return record.status === "terminal" && Date.parse(record.expires_at!) <= Date.parse(now);
+  return record.status === "terminal" && !(isCurrentReviewRecord(record) && ["accept", "correct"].includes(String(record.disposition))) && Date.parse(record.expires_at!) <= Date.parse(now);
 }
 
 export function readablePersonalGlossaryReviewRecord(record: PersonalGlossaryReviewStoredRecord): PersonalGlossaryReviewReadRecord {
@@ -664,36 +646,8 @@ export function personalGlossaryReviewRecordsPath(options: PersonalGlossaryRevie
 }
 
 export function personalGlossaryTrustedLocalHostPath(options: PersonalGlossaryReviewRecordsStorageOptions = {}): string {
-  return path.join(path.dirname(personalGlossaryReviewRecordsPath(options)), personalGlossaryReviewRecordsStorageContract().trustedHostKeyFile);
-}
-
-export function readPersonalGlossaryTrustedLocalHost(options: PersonalGlossaryReviewRecordsStorageOptions): TrustedLocalHostKey | null {
-  let text: string;
-  try {
-    text = readBoundedFile(personalGlossaryTrustedLocalHostPath(options), personalGlossaryReviewRecordsStorageContract().trustedHostKeyMaxSerializedUtf8Bytes);
-  } catch {
-    return null;
-  }
-  try {
-    const value = JSON.parse(text) as unknown;
-    if (
-      !mapping(value) ||
-      !exactKeys(value, ["schema_version", "owner", "subject", "public_key_spki_base64url"]) ||
-      value.schema_version !== TRUSTED_HOST_KEY_SCHEMA_VERSION ||
-      value.owner !== REVIEW_OWNER ||
-      !validPersonalGlossaryReviewMetadataBinding(value.subject) ||
-      !boundedText(value.public_key_spki_base64url, 4_096) ||
-      !BASE64URL.test(value.public_key_spki_base64url) ||
-      text !== `${canonicalGlossaryJson(value)}\n`
-    )
-      return null;
-    const encoded = Buffer.from(value.public_key_spki_base64url, "base64url");
-    const publicKey = createPublicKey({ key: encoded, format: "der", type: "spki" });
-    const normalized = publicKey.export({ format: "der", type: "spki" });
-    return publicKey.asymmetricKeyType === "ed25519" && Buffer.from(normalized).equals(encoded) ? { subject: value.subject, publicKey } : null;
-  } catch {
-    return null;
-  }
+  // Legacy path compatibility only. The review workflow never reads this file.
+  return path.join(path.dirname(personalGlossaryReviewRecordsPath(options)), "trusted-local-host.json");
 }
 
 export function readPersonalGlossaryReviewRecords(options: PersonalGlossaryReviewRecordsStorageOptions = {}): PersonalGlossaryReviewRecordsReadResult {
