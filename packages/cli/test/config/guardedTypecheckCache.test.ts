@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
@@ -27,6 +28,9 @@ function fixture(wait = false) {
     recursive: true,
   });
   fs.mkdirSync(path.join(root, "node_modules"));
+  // Fresh pnpm bin shims resolve through the root virtual store. Link only
+  // dependencies, leaving this fixture's sibling .vite/task-cache private.
+  fs.symlinkSync(path.join(repo, "node_modules/.pnpm"), path.join(root, "node_modules/.pnpm"), "dir");
   fs.symlinkSync(path.join(repo, "node_modules/vite-plus"), path.join(root, "node_modules/vite-plus"), "dir");
   fs.symlinkSync(path.join(repo, "packages/cli/node_modules"), path.join(root, "packages/cli/node_modules"), "dir");
   fs.writeFileSync(path.join(root, "vite.config.ts"), `export default ${JSON.stringify({ run: config.run })};\n`);
@@ -54,7 +58,7 @@ if (process.argv[1]?.replaceAll('\\\\', '/').endsWith('/typescript/bin/tsc')) {
 }
 `,
   );
-  const env = {
+  const env: NodeJS.ProcessEnv = {
     ...process.env,
     TMPDIR: ipc,
     NODE_OPTIONS: `${process.env.NODE_OPTIONS ?? ""} --require=${JSON.stringify(observer)}`,
@@ -68,6 +72,80 @@ if (process.argv[1]?.replaceAll('\\\\', '/').endsWith('/typescript/bin/tsc')) {
 }
 
 describe("guarded real developer typecheck", () => {
+  it("resolves a fresh relative pnpm compiler shim through the linked store without sharing task cache", () => {
+    const f = fixture();
+    const observations: object[] = [];
+    const compilerPackage = fs.realpathSync(path.join(repo, "packages/cli/node_modules/typescript"));
+    const compilerVersion = JSON.parse(fs.readFileSync(path.join(compilerPackage, "package.json"), "utf8")).version;
+    const relativeCompiler = path.relative(path.join(repo, "packages/cli/node_modules/.bin"), path.join(compilerPackage, "bin/tsc"));
+    const store = path.join(f.root, "node_modules/.pnpm");
+    const inputFiles = ["package.json", "pnpm-lock.yaml", "packages/cli/package.json", "packages/cli/tsconfig.json"];
+    const hashes = (root: string) =>
+      Object.fromEntries(
+        inputFiles.map((file) => [
+          file,
+          createHash("sha256")
+            .update(fs.readFileSync(path.join(root, file)))
+            .digest("hex"),
+        ]),
+      );
+    const snapshotHashes = hashes(f.root);
+    try {
+      expect(snapshotHashes).toEqual(hashes(repo));
+      expect(f.env.VP_HOME).toBe(process.env.VP_HOME);
+      // Replace only the fixture link, never write through the original package's
+      // node_modules. This shim models fresh pnpm's root-relative compiler path.
+      const packageModules = path.join(f.root, "packages/cli/node_modules");
+      expect(fs.lstatSync(packageModules).isSymbolicLink()).toBe(true);
+      fs.unlinkSync(packageModules);
+      fs.mkdirSync(path.join(packageModules, ".bin"), { recursive: true });
+      const shim = path.join(packageModules, ".bin/tsc");
+      expect(relativeCompiler).toMatch(/^\.\.\/\.\.\/\.\.\/\.\.\/node_modules\/\.pnpm\//);
+      fs.writeFileSync(shim, `#!/bin/sh\nbasedir=$(dirname "$0")\nexec node "$basedir/${relativeCompiler}" "$@"\n`);
+      const invoke = (label: string) => {
+        const result = spawnSync("sh", [shim, "--version"], {
+          cwd: f.root,
+          env: { ...f.env, PATH: `${path.dirname(process.execPath)}:${f.env.PATH}` },
+          encoding: "utf8",
+          timeout: 15_000,
+        });
+        observations.push({
+          label,
+          status: result.status,
+          stdout: result.stdout,
+          stderr: result.stderr,
+        });
+        expect(result.error).toBeUndefined();
+        return result;
+      };
+      const loaded = invoke("linked-store");
+      expect(loaded.status, loaded.stderr).toBe(0);
+      expect(loaded.stdout.trim()).toBe(`Version ${compilerVersion}`);
+      expect(fs.lstatSync(path.join(f.root, "node_modules")).isSymbolicLink()).toBe(false);
+      expect(fs.lstatSync(store).isSymbolicLink()).toBe(true);
+      expect(fs.realpathSync(store)).toBe(fs.realpathSync(path.join(repo, "node_modules/.pnpm")));
+      fs.unlinkSync(store); // Remove only the owned link to reproduce the hosted gap.
+      try {
+        const missing = invoke("missing-store");
+        expect(missing.status).toBe(1);
+        expect(missing.stderr).toContain("MODULE_NOT_FOUND");
+        expect(missing.stderr).toContain(path.join(f.root, "node_modules/.pnpm"));
+      } finally {
+        fs.symlinkSync(path.join(repo, "node_modules/.pnpm"), store, "dir");
+      }
+      expect(invoke("restored-store").status).toBe(0);
+      const cache = path.join(f.root, "node_modules/.vite/task-cache");
+      fs.mkdirSync(cache, { recursive: true });
+      expect(fs.realpathSync(cache)).toBe(path.join(fs.realpathSync(f.root), "node_modules/.vite/task-cache"));
+      const marker = `probe-${path.basename(f.root)}.txt`;
+      fs.writeFileSync(path.join(cache, marker), "fixture-owned cache\n");
+      expect(fs.existsSync(path.join(repo, "node_modules/.vite/task-cache", marker))).toBe(false);
+    } finally {
+      fs.writeFileSync(path.join(runEvidence, "relative-shim.json"), JSON.stringify({ compilerVersion, relativeCompiler, snapshotHashes, observations }, null, 2));
+      f.dispose();
+    }
+  });
+
   it("qualifies actual compiler reuse, source/test/lock/environment misses, failure, and public alias fault rejection", () => {
     const f = fixture();
     const operations: object[] = [];

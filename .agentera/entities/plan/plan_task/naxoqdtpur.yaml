@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: xcxdsrlvym
   name: Qualify and enable guarded developer check-result caching
-  status: complete
+  status: in_progress
   depends_on:
     - pydcmammtu
   acceptance:
@@ -12,12 +12,12 @@ record:
     - GIVEN real eligible inputs WHEN source, tests, lockfile, or relevant environment changes THEN affected checks execute again; failures and cancellation cannot become cached passes.
     - GIVEN unchanged successful work WHEN repeated THEN measured reuse and recovery behavior are documented separately from cold CI acceptance.
   evaluation:
-    attempt_count: 1
-    failure_count: 0
+    attempt_count: 3
+    failure_count: 1
     last_verdict: pass
-    last_failure_evidence: null
+    last_failure_evidence: "Hosted run 37051026069: two real-owner cache assertions failed before compiler load because the disposable fixture lacked the root pnpm virtual store; MODULE_NOT_FOUND for typescript/bin/tsc."
     provenance:
-      attempt_id: guarded-typecheck-1
-      source: Scoped cache integration review ses_f0254da3bffe8EKLVq1mlLLAV5; real-owner native proof, 48 focused checks, and final 11-gate local development pass
-      recorded_at: 2026-10-02 20:47
+      attempt_id: guarded-typecheck-fixture-2
+      source: Bounded fixture review ses_f01b24200ffe2rmypoKP74g4ma; 49 affected checks and real compiler layout/isolation proof; fresh hosted qualification pending
+      recorded_at: 2026-10-02 22:34
       writer_command: agentera state plan record-evaluation

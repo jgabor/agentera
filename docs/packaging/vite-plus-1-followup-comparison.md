@@ -347,3 +347,46 @@ do not infer corruption from arbitrary workflow failures. The guard is a
 workaround, not an upstream repair or a security boundary. Related upstream
 issue [2636](https://github.com/voidzero-dev/vite-plus/issues/2636) supplies no
 committed exact fix or ETA. See the cache proof for policy and environment inputs.
+
+## Hosted dependency-layout correction
+
+[Run 37051026069](https://github.com/jgabor/agentera/actions/runs/37051026069)
+at `a591403afbefd8c75d60a2a23db53eda2999de84` completed candidate source in
+1,467.816 seconds: 293 files, 4,956 passed, two failed and one platform skip.
+Package passed 72 assertions in 452.716 seconds, including 23.133 seconds setup,
+within its unchanged 515-second budget. Both source failures were the real-owner
+typecheck fixture's missing root `.pnpm` virtual store, not a production guard
+or compiler failure. Cold/warm, invalidation and cancellation qualification were
+not reached there. Raw hosted records remain under
+`.vitest/hosted-a591403a/vite-plus-candidate-37051026069-1/`.
+
+The fixture now links only the existing root `node_modules/.pnpm` for dependency
+reads. Its owned root `node_modules` and sibling `.vite/task-cache` stay private.
+A new regression replaces only the fixture's package dependency link with an
+owned minimal fresh-pnpm-style relative shim. It loads the actual installed
+compiler, reproduces `MODULE_NOT_FOUND` when the fixture store link is removed,
+then loads again when restored. Cache realpath and a private marker prove no
+checkout-cache sharing. The original package dependency directory is not edited.
+Local compiler output is TypeScript 7.0.2; the hosted missing path also targets
+7.0.2, but hosted compiler execution remains unverified. Root package-manager,
+SDK visibility, actual owner, guard, cache policy, pins and budgets are unchanged.
+
+The final serial three-file check passed **49 assertions** in **20.87 seconds**:
+35 cache contracts, 11 guard contracts and three real-owner/layout contracts.
+Real compiler counts remain cold/warm `1 -> 1`, source/test/lock/environment
+misses `2 -> 3 -> 4 -> 5`, two TS2322 failures `6 -> 7`, correction/warm
+`8 -> 8`, malformed-entry rejection `8`, fresh recovery `9`, and repeated
+rejection `9`. Cancellation/retry/warm counts are `1 -> 2 -> 2`. Cold was
+825 ms; warm calls were 204, 186 and 187 ms. These are local diagnostics only.
+Focused test typecheck (ESNext/Bundler), lint, formatting and diff checks passed.
+The pre-fix relative-shim regression failed with the same missing-module path.
+
+Final JSON is `node_modules/agentera-native-guard-proof/relative-layout-qualification-final.json`.
+Layout, snapshot SHA-256 values and real-owner records are retained under
+`node_modules/agentera-native-guard-proof/typecheck/run-NWPiMx/` as
+`relative-shim.json`, `real-owner.json` and `real-owner-cancellation.json`.
+The failing reproduction remains under `typecheck/run-6i2FxN/`. Snapshot
+manifest/lock/tsconfig hashes equal the checkout inputs. No full source,
+development, package or performance owner was rerun for this test-only repair.
+Previous local evidence and failure history remain intact; coordinator review,
+evaluation and a fresh hosted qualification remain pending.
