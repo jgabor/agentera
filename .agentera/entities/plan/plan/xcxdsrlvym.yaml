@@ -47,5 +47,4 @@ record:
       affects_task: 8
       resolve_by: Use candidate-only hosted verification and repair failed candidate work within the approved window; report any unresolved gate honestly.
   overall_acceptance: GIVEN the candidate is complete WHEN its evidence is reviewed THEN Vite+ provides the consolidated development path, required behavior and trust boundaries hold, changed coverage and concessions are explicit, paired cold and warm timings show the actual effect, cold hosted development verification passes with package wall time at or below 515 seconds, and adoption or publication still requires separate approval.
-  surprises:
-    []
+  surprises: "The user renewed corrective execution and non-publishing feature-branch verification after the overnight window. The current milestone is comparison readiness, not release qualification: correct behavioral blockers, exclude locally resource-contaminated samples, and report remaining budget failures and concessions. Local tmpfs saturation and one-hour cleanup are environment-invalid evidence, not Vite+ regressions. Hosted fixture-policy failures remain separate. Preserve task 8's failed strict qualification history; do not claim its original fully passing acceptance unless actually met."

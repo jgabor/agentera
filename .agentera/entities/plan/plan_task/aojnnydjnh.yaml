@@ -1,0 +1,23 @@
+id: aojnnydjnh
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Give native freshness and cancellation probes bounded per-case lifecycles
+  status: complete
+  depends_on:
+    - niwgozmrcv
+  acceptance:
+    - GIVEN every fresh root owner WHEN invoked twice with forced caching THEN both executions remain observable under separately bounded sequential cases.
+    - GIVEN a waiting child WHEN readiness is confirmed and cancellation occurs THEN failure settles before cleanup and no successful verdict is reused.
+    - GIVEN malformed or corrupt reuse and changed inputs WHEN probed THEN existing safety assertions and failure evidence remain intact.
+    - GIVEN probe startup failure WHEN reported THEN child output and exit evidence distinguish failure from a cancellation verdict without increasing existing timeouts.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: followup-cache-1
+      source: docs/packaging/vite-plus-1-followup-cache.md; 30 assertions passed, every root owner retains two fresh calls, and same-input cancellation retry precedes release
+      recorded_at: 2026-10-02 09:51
+      writer_command: agentera state plan record-evaluation

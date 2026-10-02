@@ -1,0 +1,14 @@
+id: bmcqliehzj
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Prepare clean behavioral and performance evidence for branch comparison
+  status: in_progress
+  depends_on:
+    - qsrfozwwas
+    - aojnnydjnh
+  acceptance:
+    - GIVEN corrected fixtures WHEN behavioral verification runs THEN required hook, freshness, cancellation and source assertions pass without lost coverage.
+    - GIVEN local temporary-storage exhaustion or automatic cleanup WHEN a sample is affected THEN it is retained as environment-invalid and excluded from candidate judgments.
+    - GIVEN clean baseline and candidate evidence WHEN compared THEN revisions, resource allocation, cold or warm state, failures and remaining budgets are explicit.
+    - GIVEN the review dossier WHEN delivered THEN the candidate is comparison-ready without implying adoption, publication, full historical qualification or unmeasured improvements.

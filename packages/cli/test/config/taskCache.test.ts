@@ -2,7 +2,7 @@ import { spawn, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vite-plus/test";
 import config from "../../../../vite.config.ts";
 import { sharedTestConfig } from "../../vitest.shared.ts";
 
@@ -13,16 +13,30 @@ const tasks = config.run!.tasks!;
 // shipped: malformed native entries can return success without child execution.
 const candidateCache = {
   input: [{ auto: true }, ".node-version", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "references/analysis/toolchain-baseline.yaml"],
-  env: ["NODE_OPTIONS", "NODE_PATH", "NODE_ENV", "PATH", "VP_HOME", "VP_NODE_VERSION", "VP_PACKAGE_MANAGER", "VP_PNPM_VERSION", "PROBE_MODE"],
+  env: ["NODE_OPTIONS", "NODE_PATH", "NODE_ENV", "PATH", "VP_HOME", "VP_NODE_VERSION", "VP_PACKAGE_MANAGER", "VP_PNPM_VERSION", "PROBE_MODE", "PROBE_RELEASE"],
   output: [],
 };
 const roots: string[] = [];
-afterEach(() => roots.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
+const ipcRoots = new Map<string, string>();
+const evidence = path.join(repo, ".vitest/followup/cache");
+fs.mkdirSync(evidence, { recursive: true });
+const runEvidence = fs.mkdtempSync(path.join(evidence, "run-"));
+let invocation = 0;
+function record(label: string, result: object) {
+  fs.writeFileSync(path.join(runEvidence, `${++invocation}-${label}.json`), JSON.stringify(result, null, 2));
+}
+function cleanup(root: string) {
+  fs.rmSync(root, { recursive: true, force: true });
+  fs.rmSync(ipcRoots.get(root)!, { recursive: true, force: true });
+  ipcRoots.delete(root);
+}
+afterEach(() => roots.splice(0).forEach(cleanup));
 
-function fixture() {
-  // Linux IPC needs a short owned root; do not require an agent-specific parent.
-  const root = fs.mkdtempSync("/tmp/agentera-task-cache-");
-  roots.push(root);
+function fixture(suiteOwned = false) {
+  // Bulk data and caches stay on disk. Only native Unix sockets use short /tmp.
+  const root = fs.mkdtempSync(path.join(runEvidence, "fixture-"));
+  ipcRoots.set(root, fs.mkdtempSync("/tmp/atc-"));
+  if (!suiteOwned) roots.push(root);
   // Each fixture owns its cache. Never symlink the whole node_modules directory.
   fs.mkdirSync(path.join(root, "node_modules"));
   fs.symlinkSync(path.join(repo, "node_modules/vite-plus"), path.join(root, "node_modules/vite-plus"), "dir");
@@ -30,6 +44,8 @@ function fixture() {
   fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ name: "cache-probe", private: true, type: "module" }));
   fs.writeFileSync(path.join(root, "input.txt"), "original");
   fs.writeFileSync(path.join(root, "pnpm-lock.yaml"), "lock input\n");
+  // Nested disk fixtures must not discover the enclosing production workspace.
+  fs.writeFileSync(path.join(root, "pnpm-workspace.yaml"), "packages:\n  - packages/*\n");
   fs.writeFileSync(
     path.join(root, "child.mjs"),
     `import fs from 'node:fs';
@@ -37,7 +53,14 @@ fs.readFileSync('input.txt', 'utf8');
 fs.appendFileSync('executions.log', 'executed\\n');
 fs.appendFileSync('argv.log', JSON.stringify({args: process.argv.slice(2), mode: process.env.PROBE_MODE ?? null}) + '\\n');
 if (process.env.PROBE_MODE === 'fail') process.exit(19);
-if (process.env.PROBE_MODE === 'wait') { fs.writeFileSync('ready', 'ready'); await new Promise(resolve => setTimeout(resolve, 1500)); }
+if (process.env.PROBE_MODE === 'wait') {
+console.log('READY');
+await new Promise(resolve => {
+const timer = setInterval(() => {
+if (fs.existsSync(process.env.PROBE_RELEASE)) { clearInterval(timer); resolve(); }
+}, 25);
+});
+}
 console.log('probe assertions executed');\n`,
   );
   const command = "node child.mjs";
@@ -52,10 +75,15 @@ function run(root: string, task = "diagnostic", env: NodeJS.ProcessEnv = process
     // Native task-cache tracking uses a Unix socket beneath TMPDIR. The private
     // qualification owner's nested temp path can exceed Linux SUN_LEN; the
     // fixture owns a short temp root without changing production cache policy.
-    env: { ...env, TMPDIR: root },
+    env: {
+      ...env,
+      TMPDIR: ipcRoots.get(root),
+      PROBE_RELEASE: path.join(ipcRoots.get(root)!, "release"),
+    },
     encoding: "utf8",
     timeout: 15_000,
   });
+  record(task, { root, flags, mode: env.PROBE_MODE, ...result });
   expect(result.error, result.stderr).toBeUndefined();
   return result;
 }
@@ -81,10 +109,15 @@ describe("fresh tasks and bounded preparation reuse", () => {
     expect(process.env.VP_CLI_BIN).toBeDefined();
     const result = spawnSync(process.env.VP_CLI_BIN!, ["run", "typecheck", "--", "two words"], {
       cwd: root,
-      env: { ...process.env, TMPDIR: root, PATH: `${path.dirname(vp)}:/usr/bin:/bin` },
+      env: {
+        ...process.env,
+        TMPDIR: ipcRoots.get(root),
+        PATH: `${path.dirname(vp)}:/usr/bin:/bin`,
+      },
       encoding: "utf8",
       timeout: 30_000,
     });
+    record("runtime", result);
     expect(result.status, result.stdout + result.stderr).toBe(0);
     expect(JSON.parse(fs.readFileSync(path.join(root, "packages/cli/runtime.json"), "utf8"))).toEqual({
       version: `v${fs.readFileSync(path.join(repo, ".node-version"), "utf8").trim()}`,
@@ -117,13 +150,16 @@ fs.appendFileSync(${JSON.stringify(path.join(root, "assertions.log"))}, 'asserte
 expect(value).toBe(Number(process.env.EXPECTED ?? 1));
 });\n`,
     );
-    const test = (expected = "1") =>
-      spawnSync(vp, ["test", "run", "--config", "vite.config.ts", "--reporter=dot"], {
+    const test = (expected = "1") => {
+      const result = spawnSync(vp, ["test", "run", "--config", "vite.config.ts", "--reporter=dot"], {
         cwd: root,
-        env: { ...process.env, TMPDIR: root, EXPECTED: expected },
+        env: { ...process.env, TMPDIR: ipcRoots.get(root), EXPECTED: expected },
         encoding: "utf8",
         timeout: 15_000,
       });
+      record("preparation", { expected, ...result });
+      return result;
+    };
     const lines = (file: string) => fs.readFileSync(path.join(root, file), "utf8").trim().split("\n").length;
     const cold = test();
     expect(cold.status, cold.stdout + cold.stderr).toBe(0);
@@ -201,15 +237,24 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     expect(executions(root)).toBe(5);
   });
 
-  it("executes every fresh root owner under --cache even beside a valid cached verdict", () => {
-    const root = fixture();
-    pass(root);
-    pass(root);
-    let count = 1;
+  describe("fresh root owners beside a valid cached verdict", { concurrency: false }, () => {
+    let root: string;
+    beforeAll(() => {
+      root = fixture(true);
+      pass(root);
+      pass(root);
+      expect(executions(root)).toBe(1);
+    });
+    afterAll(() => {
+      if (root) cleanup(root);
+    });
     for (const name of Object.keys(tasks)) {
-      pass(root, name, process.env, ["--cache"]);
-      pass(root, name, process.env, ["--cache"]);
-      expect(executions(root), name).toBe((count += 2));
+      it(`${name} executes twice under --cache`, () => {
+        const before = executions(root);
+        pass(root, name, process.env, ["--cache"]);
+        pass(root, name, process.env, ["--cache"]);
+        expect(executions(root), name).toBe(before + 2);
+      });
     }
   });
 
@@ -233,10 +278,11 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     for (const task of ["legacy", "typecheck"]) {
       const result = spawnSync(vp, ["run", task, "--", "--flag", "two words"], {
         cwd: root,
-        env: { ...env, TMPDIR: root },
+        env: { ...env, TMPDIR: ipcRoots.get(root) },
         encoding: "utf8",
         timeout: 15_000,
       });
+      record(task, result);
       expect(result.status, result.stdout + result.stderr).not.toBe(0);
     }
     const records = fs
@@ -294,32 +340,86 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
   it("does not store success when an executing child is cancelled", async () => {
     const root = fixture();
     const env = { ...process.env, PROBE_MODE: "wait" };
-    const child = spawn(vp, ["run", "diagnostic"], {
-      cwd: root,
-      env: { ...env, TMPDIR: root },
-      detached: true,
-      stdio: "ignore",
-    });
-    const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve, reject) => {
-      child.once("error", reject);
-      child.once("exit", (code, signal) => resolve({ code, signal }));
-    });
-    try {
-      for (let attempt = 0; attempt < 200 && !fs.existsSync(path.join(root, "ready")); attempt++) await new Promise((resolve) => setTimeout(resolve, 25));
-      expect(fs.existsSync(path.join(root, "ready"))).toBe(true);
-      process.kill(-child.pid!, "SIGTERM");
-      const result = await exited;
-      expect(result.code === 0 && result.signal === null).toBe(false);
-    } finally {
+    const release = path.join(ipcRoots.get(root)!, "release");
+    // Both waiting calls start with identical command/env and no release input.
+    async function waitingCall(expectedExecutions: number, cancel: boolean) {
+      expect(fs.existsSync(release)).toBe(false);
+      const child = spawn(vp, ["run", "diagnostic"], {
+        cwd: root,
+        env: {
+          ...env,
+          TMPDIR: ipcRoots.get(root),
+          PROBE_RELEASE: release,
+        },
+        detached: true,
+        stdio: "pipe",
+      });
+      let stdout = "";
+      let stderr = "";
+      let startupError: string | undefined;
+      const context = () =>
+        JSON.stringify({
+          stdout,
+          stderr,
+          startupError,
+          code: child.exitCode,
+          signal: child.signalCode,
+        });
+      const exited = new Promise<{ code: number | null; signal: NodeJS.Signals | null }>((resolve) => {
+        child.once("error", (error) => {
+          startupError = error.message;
+        });
+        // close drains the pipes before fixture cleanup.
+        child.once("close", (code, signal) => resolve({ code, signal }));
+      });
+      // Use the existing 15s task-child deadline, not the unrelated 5s poll.
+      // READY cannot become successful completion without the external release marker.
+      let timer: ReturnType<typeof setTimeout>;
+      const deadline = new Promise<never>((_, reject) => {
+        timer = setTimeout(() => reject(new Error(`Waiting child deadline (15000ms): ${context()}`)), 15_000);
+      });
+      const ready = new Promise<void>((resolve, reject) => {
+        child.stdout.on("data", (data) => {
+          stdout += data.toString();
+          if (stdout.split(/\r?\n/).includes("READY")) resolve();
+        });
+        child.stderr.on("data", (data) => {
+          stderr += data.toString();
+        });
+        child.once("error", (error) => reject(new Error(`Startup failed: ${error.message}; ${context()}`)));
+        void exited.then(() => reject(new Error(`Exited before READY: ${context()}`)));
+      });
       try {
-        process.kill(-child.pid!, "SIGKILL");
-      } catch {
-        /* Process group already exited. */
+        await Promise.race([ready, deadline]);
+        expect(fs.existsSync(release), context()).toBe(false);
+        expect(executions(root), context()).toBe(expectedExecutions);
+        expect(child.exitCode, context()).toBeNull();
+        expect(child.signalCode, context()).toBeNull();
+        if (cancel) process.kill(-child.pid!, "SIGTERM");
+        else fs.writeFileSync(release, "release");
+        const result = await Promise.race([exited, deadline]);
+        expect(result.code === 0 && result.signal === null, context()).toBe(!cancel);
+      } finally {
+        clearTimeout(timer!);
+        try {
+          process.kill(-child.pid!, "SIGKILL");
+        } catch {
+          /* Process group already exited. */
+        }
+        const result = await exited;
+        record(cancel ? "cancellation" : "cancel-retry", {
+          ...result,
+          stdout,
+          stderr,
+          startupError,
+        });
       }
-      await exited;
     }
-    // Same command, inputs and environment. This time let the child finish.
-    pass(root, "diagnostic", env);
+    await waitingCall(1, true);
+    // Prove fresh execution before changing the potentially tracked release input.
+    await waitingCall(2, false);
+    expect(executions(root)).toBe(2);
+    // The successful retry created a valid verdict with the marker present.
     pass(root, "diagnostic", env);
     expect(executions(root)).toBe(2);
   });

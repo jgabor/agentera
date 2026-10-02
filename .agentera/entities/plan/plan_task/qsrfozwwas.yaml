@@ -1,0 +1,23 @@
+id: qsrfozwwas
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Isolate native hook verification from CI and temporary-storage policy
+  status: complete
+  depends_on:
+    - niwgozmrcv
+  acceptance:
+    - GIVEN outer hooks are disabled WHEN disposable fixture hooks are enabled THEN installation and ordinary commit checks execute without changing outer policy.
+    - GIVEN staged and unstaged edits WHEN fixture checks run THEN formatting, reader ordering, failure propagation and partial-hunk restoration remain correct.
+    - GIVEN resource-isolated verification WHEN it runs THEN bulky temporary data stays disk-backed and cleanup affects only owned fixtures.
+    - GIVEN each retained hook boundary WHEN tested THEN one successful and one rejected case preserve its behavioral assertions.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: followup-hooks-1
+      source: docs/packaging/vite-plus-1-followup-hooks.md; 26 hook and four formatter assertions passed with outer disabling flags preserved and disk-backed fixtures
+      recorded_at: 2026-10-02 09:51
+      writer_command: agentera state plan record-evaluation

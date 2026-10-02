@@ -1,6 +1,5 @@
 import { execFileSync, spawnSync } from "node:child_process";
 import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, symlinkSync, rmSync } from "node:fs";
-import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
@@ -12,7 +11,9 @@ const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
 
 function fixture() {
-  const root = mkdtempSync(join("/tmp", "agentera-formatter-"));
+  const parent = process.env.TMPDIR ?? join(repo, ".vitest/followup/hooks/tmp");
+  mkdirSync(parent, { recursive: true });
+  const root = mkdtempSync(join(parent, "agentera-formatter-"));
   temporary.push(root);
   mkdirSync(join(root, "packages/cli"), { recursive: true });
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");
@@ -30,16 +31,15 @@ describe("formatter check", () => {
   });
 
   it("accepts clean input and rejects formatting drift", () => {
-    const directory = mkdtempSync(join(tmpdir(), "agentera-formatter-"));
-    temporary.push(directory);
-    const clean = join(directory, "clean.ts");
-    const drifted = join(directory, "drifted.ts");
+    const directory = fixture();
+    const clean = join(directory, "packages/cli/clean.ts");
+    const drifted = join(directory, "packages/cli/drifted.ts");
 
     writeFileSync(clean, 'const value = "clean";\n');
     writeFileSync(drifted, "const value='drifted'\n");
 
-    expect(() => execFileSync(vp, ["fmt", "--check", clean])).not.toThrow();
-    expect(spawnSync(vp, ["fmt", "--check", drifted]).status).not.toBe(0);
+    expect(() => execFileSync(vp, ["fmt", "--check", clean], { cwd: directory })).not.toThrow();
+    expect(spawnSync(vp, ["fmt", "--check", drifted], { cwd: directory }).status).not.toBe(0);
   });
 
   it("uses the same root/package/editor width and byte-stable exclusions", () => {

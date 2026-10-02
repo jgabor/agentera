@@ -4,6 +4,19 @@ Recorded 2026-10-02 for task 8. This is the unshipped experiment dossier for a
 later side-by-side adoption review, not an adoption decision, release receipt or
 hosted budget acceptance. Prime owns hosted results, state and lifecycle closeout.
 
+## Corrective follow-up
+
+The newer [corrective comparison evidence](vite-plus-1-followup-comparison.md)
+measures `544163f6` with the three source-harness corrections still dirty. Clean
+local full source passes with 4,934 titles (4,928 passed, six existing conditional
+skips). The cold development owner retains one valid 30-second cache-test budget
+failure; package passes all 72 titles in 126,610 ms. There are no non-budget
+assertion failures in that final conjunction, but its later gates do not run.
+Invalid placement/quota/cleanup samples are retained and excluded. This is
+comparison-ready evidence, not development or release qualification. Hosted
+acceptance of the corrective patch remains Prime's next check. The historical
+campaign and failures below remain frozen observations, not the latest verdict.
+
 ## Final disposition
 
 The toolchain candidate is implemented, but the plan is **not fully complete**.

@@ -1,20 +1,43 @@
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import config from "../../../../vite.config.ts";
 import { selectChecks } from "../../scripts/pre-commit-checks.mjs";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 const vp = path.join(repo, "node_modules/.bin/vp");
 const stagedCommand = "./node_modules/.bin/vp staged --hide-partially-staged";
+const fixtureParent = path.join(repo, ".vitest/followup/hooks");
+const hookFlags = ["VP_GIT_HOOKS", "VITE_GIT_HOOKS", "HUSKY"] as const;
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
 
+function temporaryRoot(prefix: string) {
+  fs.mkdirSync(fixtureParent, { recursive: true });
+  fs.mkdirSync(path.join(fixtureParent, "tmp"), { recursive: true });
+  const root = fs.mkdtempSync(path.join(fixtureParent, prefix));
+  temporary.push(root);
+  return root;
+}
 function run(root: string, command: string, args: string[], env = process.env) {
-  return spawnSync(command, args, { cwd: root, env, encoding: "utf8", maxBuffer: 8 * 1024 * 1024 });
+  // Only our disposable fixture children may override the host's hook policy.
+  const childEnv = temporary.includes(root)
+    ? {
+        ...env,
+        TMPDIR: env.TMPDIR ?? path.join(fixtureParent, "tmp"),
+        VP_GIT_HOOKS: "1",
+        VITE_GIT_HOOKS: "1",
+        HUSKY: "1",
+      }
+    : env;
+  return spawnSync(command, args, {
+    cwd: root,
+    env: childEnv,
+    encoding: "utf8",
+    maxBuffer: 8 * 1024 * 1024,
+  });
 }
 function ok(root: string, command: string, args: string[]) {
   const result = run(root, command, args);
@@ -27,8 +50,7 @@ function write(root: string, file: string, text: string) {
   fs.writeFileSync(target, text);
 }
 function fixture() {
-  const root = fs.mkdtempSync(path.join("/tmp", "agentera-native-hooks-"));
-  temporary.push(root);
+  const root = temporaryRoot("native-");
   ok(root, "git", ["init", "--quiet"]);
   ok(root, "git", ["config", "user.name", "Hook Fixture"]);
   ok(root, "git", ["config", "user.email", "fixture@example.invalid"]);
@@ -40,6 +62,8 @@ function fixture() {
   for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/pre-commit-checks.mjs"]) write(root, file, fs.readFileSync(path.join(repo, file), "utf8"));
   write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt })};\n`);
   write(root, ".gitignore", "node_modules\n");
+  // Keep native workspace discovery inside this nested disposable repository.
+  write(root, "pnpm-workspace.yaml", "packages: []\n");
   write(root, "package.json", '{"name":"hook-fixture","private":true,"type":"module"}\n');
   write(root, "README.md", "# Fixture\n\nOriginal.\n");
   write(root, "packages/cli/src/odd name [x] 'quoted'.ts", "export const first = 0;\n\n// Separate hunks\n\nexport const second = 0;\n");
@@ -53,7 +77,12 @@ function install(root: string) {
   ok(root, "git", ["config", "--local", "--unset", "core.hooksPath"]);
   const output = ok(root, "vp", ["hooks", "enable"]);
   fs.chmodSync(path.join(root, ".vite-hooks/pre-commit"), 0o755);
-  expect(ok(root, "git", ["config", "--local", "core.hooksPath"]).trim(), output).toBe(".vite-hooks/_");
+  const status = run(root, "vp", ["hooks", "status"]);
+  const hooksPath = run(root, "git", ["config", "--local", "core.hooksPath"]);
+  const diagnostics = output + status.stdout + status.stderr + hooksPath.stdout + hooksPath.stderr;
+  expect(status.status, diagnostics).toBe(0);
+  expect(hooksPath.status, diagnostics).toBe(0);
+  expect(hooksPath.stdout.trim(), diagnostics).toBe(".vite-hooks/_");
   expect(fs.existsSync(path.join(root, ".vite-hooks/_/pre-commit"))).toBe(true);
 }
 
@@ -72,8 +101,7 @@ describe("native hook boundaries", () => {
   });
 
   it.each(["compact", "parity", "guards", "related", "typecheck"])("propagates %s failures and does not run later readers", (failed) => {
-    const root = fs.mkdtempSync(path.join("/tmp", "agentera-hook-dispatch-"));
-    temporary.push(root);
+    const root = temporaryRoot("dispatch-");
     const bin = path.join(root, "bin");
     const fake = `const fs = require('node:fs'); const args = process.argv.slice(2); const job = args.includes('10s') ? 'compact' : args.includes('--json') ? 'parity' : args.includes('guards') ? 'guards' : args.includes('related') ? 'related' : 'typecheck'; fs.appendFileSync('trace', job + '\\n'); if (process.env.FAIL_CHECK === job) process.exit(17);`;
     write(root, "fake.cjs", fake);
@@ -274,6 +302,31 @@ describe("native hook boundaries", () => {
     expect(fs.readFileSync(path.join(root, "README.md"), "utf8")).toContain("Unstaged.");
   });
 
+  it("executes installed hook checks with all outer hook flags disabled without changing them", () => {
+    const before = hookFlags.map((flag) => process.env[flag]);
+    try {
+      for (const flag of hookFlags) vi.stubEnv(flag, "0");
+      const root = fixture();
+      install(root);
+      write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: { "*": [...config.staged!["*"], "node trace.cjs"] }, lint: config.lint, fmt: config.fmt })};\n`);
+      write(root, "trace.cjs", `const fs = require('node:fs'); fs.writeFileSync('hook-trace.json', JSON.stringify({flags: ${JSON.stringify(hookFlags)}.map(flag => process.env[flag]), markdown: fs.readFileSync('README.md', 'utf8')}));\n`);
+      write(root, "README.md", "# Fixture\n\n\nEnabled child.\n");
+      ok(root, "git", ["add", "--", "README.md"]);
+      ok(root, "git", ["commit", "--quiet", "-m", "disabled parent enabled fixture"]);
+      expect(JSON.parse(fs.readFileSync(path.join(root, "hook-trace.json"), "utf8"))).toEqual({
+        flags: ["1", "1", "1"],
+        markdown: "# Fixture\n\nEnabled child.\n",
+      });
+      expect(ok(root, "git", ["show", "HEAD:README.md"])).toBe("# Fixture\n\nEnabled child.\n");
+      expect(hookFlags.map((flag) => process.env[flag])).toEqual(["0", "0", "0"]);
+      // Commands against the checkout must still inherit its disabled policy.
+      expect(JSON.parse(ok(repo, process.execPath, ["-e", `console.log(JSON.stringify(${JSON.stringify(hookFlags)}.map(flag => process.env[flag])))`]))).toEqual(["0", "0", "0"]);
+    } finally {
+      vi.unstubAllEnvs();
+    }
+    expect(hookFlags.map((flag) => process.env[flag])).toEqual(before);
+  });
+
   it.each(["guards", "related", "typecheck"])("rejects an installed-hook %s failure and restores partial hunks", (reader) => {
     const root = fixture();
     write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt, test: { projects: [{ test: { name: "local", include: ["local.test.ts"] } }, { test: { name: "guards", include: ["guards.test.ts"] } }] } })};\n`);
@@ -368,8 +421,7 @@ describe("native hook boundaries", () => {
     const localFiles = rootFiles.filter(({ projectName }) => projectName === "local").map(({ file }) => path.relative(repo, file));
     expect(localFiles).toContain("packages/cli/test/validate/capability.test.ts");
     expect(localFiles.some((file) => /\/test\/(integration|upgrade|runtime|setup|build)\//.test(file))).toBe(false);
-    const reportRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-related-report-"));
-    temporary.push(reportRoot);
+    const reportRoot = temporaryRoot("related-report-");
     const reportFile = path.join(reportRoot, "related.json");
     ok(repo, vp, ["test", "related", "--run", "--project", "local", "--reporter=json", `--outputFile=${reportFile}`, "packages/cli/src/core/text.ts"]);
     const related = JSON.parse(fs.readFileSync(reportFile, "utf8")).testResults as {
