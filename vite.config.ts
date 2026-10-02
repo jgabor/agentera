@@ -1,10 +1,52 @@
+import fs from "node:fs";
 import { defineConfig } from "vite-plus";
 import { ownerProjects, sharedTestConfig } from "./packages/cli/vitest.shared.ts";
 
+// Native tasks, not package scripts: per-task cache:false also resists --cache.
+// Keep the existing package owners and argument forwarding, without vp recursion.
+const freshCommands = {
+  bootstrap: "VP_GIT_HOOKS=0 vp install --frozen-lockfile",
+  test: "pnpm -C packages/cli test",
+  // Explicit developer diagnostic, not the complete source owner.
+  "test:local": "vp test run --project local",
+  build: "pnpm -C packages/cli build",
+  verify: "pnpm -C packages/cli run verify:release",
+  "verify:development": "pnpm -C packages/cli run verify:development",
+  typecheck: "pnpm -C packages/cli run typecheck",
+  "typecheck:fresh": "pnpm -C packages/cli run typecheck",
+  "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
+  "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
+  "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
+  "cli:ready:dev": "pnpm -C packages/cli run release:ready",
+  "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
+  "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
+  "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",
+  "cli:publish:qualified:stable": "pnpm -C packages/cli/shim run release:publish:qualified",
+  "cli:approve:dev": "pnpm -C packages/cli run release:approve",
+  "cli:stage:dev": "pnpm -C packages/cli run release:stage",
+  "cli:promote:dev": "pnpm -C packages/cli run release:promote",
+  "cli:stage:stable": "pnpm -C packages/cli/shim run release:stage",
+  "cli:promote:stable": "pnpm -C packages/cli/shim run release:promote",
+};
+
 export default defineConfig({
+  run: {
+    cache: false,
+    // Native run does not activate the managed Node runtime for task children.
+    // Explicit managed exec preserves vp run aliases and forwarded arguments.
+    tasks: Object.fromEntries(
+      Object.entries(freshCommands).map(([name, command]) => [
+        name,
+        {
+          command: command.startsWith("pnpm ") || command.startsWith("vp test ") ? `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(new URL(".node-version", import.meta.url), "utf8").trim()} ${command}` : command,
+          cache: false,
+        },
+      ]),
+    ),
+  },
   staged: {
-    "*.{ts,tsx,js,jsx,mjs,cjs,json,jsonc}": "./node_modules/.bin/vp check --fix",
-    "*.md": "./node_modules/.bin/markdownlint --dot --fix",
+    // One sequential task keeps every reader inside the native staged snapshot.
+    "*": ["./node_modules/.bin/vp check --fix", "node packages/cli/scripts/pre-commit-checks.mjs"],
   },
   lint: {
     ignorePatterns: ["/*", "!/vite.config.ts", "!/scripts/", "!/packages/", "/packages/*", "!/packages/cli/", "packages/cli/dist/**", "packages/cli/bundle/**", "**/node_modules/**", "**/*.generated.*", "packages/cli/test/**/fixtures/**", "packages/cli/test/evidence/**"],
@@ -15,7 +57,20 @@ export default defineConfig({
       "/*",
       "!/vite.config.ts",
       "!/package.json",
-      "!/.markdownlint.json",
+      "!/*.md",
+      "!/docs/",
+      "/docs/**",
+      "!/docs/**/",
+      "!/docs/**/*.md",
+      "!/skills/",
+      "/skills/**",
+      "!/skills/**/",
+      "!/skills/**/*.md",
+      "!/.opencode/",
+      "/.opencode/**",
+      "!/.opencode/skills/",
+      "!/.opencode/skills/**/",
+      "!/.opencode/skills/**/*.md",
       "!/packages/",
       "/packages/*",
       "!/packages/cli/",
@@ -27,6 +82,14 @@ export default defineConfig({
       "packages/cli/scripts/verify-all-test-typecheck-evidence.mjs",
       "packages/cli/test/validate/allTestTypecheckViability.test.ts",
       "**/*.generated.*",
+      ".agentera/**",
+      "TODO.md",
+      "CHANGELOG.md",
+      "references/**",
+      "docs/plans/**",
+      "skills/*/references/contract.md",
+      // Published projection and line/digest-bound protocol surfaces are not prose.
+      "skills/agentera/SKILL.md",
     ],
     printWidth: 320,
     overrides: [
