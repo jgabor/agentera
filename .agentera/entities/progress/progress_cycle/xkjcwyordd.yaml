@@ -1,0 +1,15 @@
+id: xkjcwyordd
+artifact: progress
+record:
+  timestamp: 2026-10-02 07:38
+  type: refactor
+  phase: build
+  what: Implement the isolated Vite+ toolchain candidate; leave hosted source acceptance blocked.
+  context:
+    intent: Consolidate the toolchain and measure its CI trade-offs without npm publication or integration.
+    constraints: Preserve behavior, security, raw budgets, shared hooks and the primary checkout.
+    scope: The approved experimental branch; final adoption remains pending.
+  discovered: Native task-verdict corruption can report success without execution. Verdict caching stays disabled; transformed preparation remains reusable.
+  verified: Local cold development, hermetic source, bootstrap and focused checks pass. Hosted package budget passes, but hosted source fails. Historical certification remains failed on prior bindings.
+  next: Review docs/packaging/vite-plus-1-comparison.md, diagnose the remaining hosted cache-guard timeout, and obtain fresh authorization before continuing.
+  publication_order: 400

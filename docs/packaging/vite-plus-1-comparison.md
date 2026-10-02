@@ -4,6 +4,35 @@ Recorded 2026-10-02 for task 8. This is the unshipped experiment dossier for a
 later side-by-side adoption review, not an adoption decision, release receipt or
 hosted budget acceptance. Prime owns hosted results, state and lifecycle closeout.
 
+## Final disposition
+
+The toolchain candidate is implemented, but the plan is **not fully complete**.
+Tasks 1–7 are complete; hosted source acceptance in task 8 remains blocked.
+No npm package was published, the primary checkout is unchanged, and adoption
+still requires the separate branch review.
+
+In [run 36965353815](https://github.com/jgabor/agentera/actions/runs/36965353815),
+the candidate package owner passes all 72 assertions in **454,444 ms**, below
+the unchanged **515,000 ms** budget. The baseline takes **810,693 ms** and fails
+that budget. This is a **43.94% package-time reduction**, with the candidate's
+one-source-worker concession versus the baseline's two recorded explicitly.
+
+The candidate source gate fails: **4,892 passed, 20 failed, one skipped**.
+Nineteen failures require an undeclared `/tmp/opencode` parent in formatter and
+native-hook fixtures. Their final correction uses short OS temporary roots;
+39 focused formatter, hook and cache assertions pass locally afterward. The
+remaining hosted failure is the all-root cache-guard test: a 120,000 ms timeout
+with 239,700 ms reported duration. Its cause remains unresolved. The failed
+conjunction took 1,767,537 ms; later gates did not run. A package-budget pass is
+not a development-qualification pass.
+
+Hosted source acceptance after the final fixture correction is unverified.
+Full historical qualification also remains failed on pre-existing archive
+bindings. Do not adopt this branch as a fully qualified release source or
+describe the CI feedback-loop problem as solved. Raw final hosted evidence is
+retained under `/tmp/opencode/agentera-hosted-{baseline,candidate}-4ce0adbb`
+and the linked workflow artifacts.
+
 ## Result
 
 The matched package campaign passes all **7 files / 72 assertions** in each

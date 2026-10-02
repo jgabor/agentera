@@ -12,7 +12,7 @@ const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((root) => rmSync(root, { recursive: true, force: true })));
 
 function fixture() {
-  const root = mkdtempSync(join("/tmp/opencode", "agentera-formatter-"));
+  const root = mkdtempSync(join("/tmp", "agentera-formatter-"));
   temporary.push(root);
   mkdirSync(join(root, "packages/cli"), { recursive: true });
   symlinkSync(join(repo, "node_modules"), join(root, "node_modules"), "dir");

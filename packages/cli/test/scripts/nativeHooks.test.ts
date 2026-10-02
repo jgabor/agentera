@@ -27,7 +27,7 @@ function write(root: string, file: string, text: string) {
   fs.writeFileSync(target, text);
 }
 function fixture() {
-  const root = fs.mkdtempSync(path.join("/tmp/opencode", "agentera-native-hooks-"));
+  const root = fs.mkdtempSync(path.join("/tmp", "agentera-native-hooks-"));
   temporary.push(root);
   ok(root, "git", ["init", "--quiet"]);
   ok(root, "git", ["config", "user.name", "Hook Fixture"]);
@@ -72,7 +72,7 @@ describe("native hook boundaries", () => {
   });
 
   it.each(["compact", "parity", "guards", "related", "typecheck"])("propagates %s failures and does not run later readers", (failed) => {
-    const root = fs.mkdtempSync(path.join("/tmp/opencode", "agentera-hook-dispatch-"));
+    const root = fs.mkdtempSync(path.join("/tmp", "agentera-hook-dispatch-"));
     temporary.push(root);
     const bin = path.join(root, "bin");
     const fake = `const fs = require('node:fs'); const args = process.argv.slice(2); const job = args.includes('10s') ? 'compact' : args.includes('--json') ? 'parity' : args.includes('guards') ? 'guards' : args.includes('related') ? 'related' : 'typecheck'; fs.appendFileSync('trace', job + '\\n'); if (process.env.FAIL_CHECK === job) process.exit(17);`;
