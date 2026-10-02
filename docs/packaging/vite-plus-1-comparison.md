@@ -19,6 +19,14 @@ campaign and failures below remain frozen observations, not the latest verdict.
 
 ## Final disposition
 
+The corrective follow-up adds three tasks to the same plan. Its comparison-ready
+milestone is complete: all corrected behavioral checks and the complete local
+source owner pass without local temporary-storage contamination. See
+[the clean follow-up evidence](vite-plus-1-followup-comparison.md) for explicit
+remaining test/workflow budget failures, the fresh hosted timeout, and excluded
+environment-invalid samples. The original strict qualification task stays
+blocked. The paragraphs below retain the earlier overnight disposition.
+
 The toolchain candidate is implemented, but the plan is **not fully complete**.
 Tasks 1–7 are complete; hosted source acceptance in task 8 remains blocked.
 No npm package was published, the primary checkout is unchanged, and adoption

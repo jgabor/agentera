@@ -6,6 +6,35 @@ Recorded 2026-10-02 for comparison-evidence task `bmcqliehzj`. This is compariso
 
 The complete source owner passes. The cold owning development command fails on **one unchanged 30,000 ms cache-test budget**, with no non-budget assertion failures. Package passes all 72 assertions within its unchanged 515,000 ms budget. The failing conjunction stops at generated overlap; its omitted owners remain unverified. No limits were changed, no assertions were weakened, and the valid budget failure was not retried to obtain green.
 
+## Fresh hosted observation
+
+[Run 36988627683](https://github.com/jgabor/agentera/actions/runs/36988627683)
+tested corrective commit `ff4ae9a7e9d648c39608e78c141514b34076de2d`.
+The baseline failed its package budget: measured package wall time was
+803,172 ms against 515,000 ms. The candidate package participant passed after
+467,785 ms of coordinator elapsed time. That observation includes participant
+startup and is **not** a recovered package-owner timing profile; the prior
+measured 468,062 ms owner result remains separately recorded.
+
+Candidate build, stress and typecheck passed. Source remained running when
+the unchanged 30-minute workflow limit terminated verification. The artifact
+contains no complete source JSON/profile, package timing JSON, or final
+conjunction result. Thus it establishes a workflow **BUDGET** timeout, not a
+count of remaining assertion failures and not an 11-gate pass. No tmpfs quota
+or one-hour cleanup error appears in this hosted record.
+
+Both jobs used the same hosted runner class; baseline source allocation was
+two workers and candidate allocation one. The changed allocation is a
+concession, not a version-only performance comparison. Raw hosted artifacts
+are retained on disk at `.vitest/followup/hosted-ff4ae9a7/`. The deployment and
+publication workflow remains unchanged, and no npm package was published.
+
+The current user-authorized milestone is **comparison readiness**. Complete
+local source and all corrected hook/freshness/cancellation assertions pass in
+the valid disk-backed environment. Valid test/workflow budgets still fail and
+are explicitly retained. The original strict qualification task remains
+blocked; this milestone does not replace it with a false green release result.
+
 | Check                                                                   |  Exit | Actual result                                                      |                                  Wall time |
 | ----------------------------------------------------------------------- | ----: | ------------------------------------------------------------------ | -----------------------------------------: |
 | Three corrected files, root native configuration, one worker            |     0 | 60 passed: hooks 26, formatter 4, cache 30                         |                                  38,127 ms |

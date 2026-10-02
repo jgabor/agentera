@@ -1,0 +1,15 @@
+id: sshpihvaie
+artifact: progress
+record:
+  timestamp: 2026-10-02 12:04
+  type: fix
+  phase: build
+  what: Complete the comparison-ready toolchain follow-up while retaining strict qualification failures.
+  context:
+    intent: Produce useful, uncontaminated comparison evidence rather than require every budget to be green.
+    constraints: Keep original failures, behavior, security, shared hooks and publication boundaries intact.
+    scope: Three corrective tasks on the isolated experimental branch; strict qualification remains separate.
+  discovered: Local tmpfs saturation and cleanup invalidate measurements, not the candidate. Hosted fixture policy and probe lifecycle required separate corrections.
+  verified: Corrected hooks, formatter, freshness and cancellation checks pass. Complete local source passes in disk-backed storage. Remaining local test and hosted workflow limits remain failed evidence.
+  next: Compare the baseline and candidate using docs/packaging/vite-plus-1-followup-comparison.md before any adoption or publication decision.
+  publication_order: 401
