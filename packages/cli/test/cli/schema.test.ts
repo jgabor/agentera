@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { buildSchemaPayload, cmdSchema } from "../../src/cli/commands/schema.js";
 import { main } from "../../src/cli/dispatch.js";

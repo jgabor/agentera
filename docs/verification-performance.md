@@ -8,10 +8,13 @@ resource and capacity owners, followed by concurrent validation readers.
 ## Cache boundaries
 
 - `references/analysis/toolchain-baseline.yaml#project_contract.no_task_result_cache` requires fresh
-  task execution. Root package-script wrappers are uncached; the Vite config has
-  no cached task definitions.
-- `references/analysis/bootstrap-integrity.md` requires fresh CI dependency state because Corepack's
-  warm-cache path skips its download-integrity check. Each overlap participant
+  task execution. Root native tasks have per-task `cache: false`, which cannot
+  be overridden by `--cache`. No task-verdict caching is enabled. The
+  [bounded reuse proof](packaging/vite-plus-1-cache-proof.md) records preparation
+  reuse with fresh assertions and the native corruption defect that ruled out
+  local cached typecheck verdicts.
+- `references/analysis/bootstrap-integrity.md` requires fresh CI dependency state because Vite+'s
+  warm runtime/manager caches skip archive acquisition and verification. Each overlap participant
   also gets isolated npm and XDG state.
 - Vitest's filesystem module cache is enabled in `packages/cli/vitest.shared.ts`.
 - Static schema/report/check/recovery commands reuse immutable YAML values and
@@ -145,9 +148,9 @@ package tests. These are one clean sample per allocation, not hosted-runner
 qualification or a statistically stable performance estimate.
 
 | Source workers | Total elapsed | Source participant | Package participant | Private build |
-| --- | --- | --- | --- | --- |
-| 4 | 291 s | 281.228 s | 220.657 s | 2.916 s |
-| 2 | 549 s | 538.909 s | 212.664 s | 2.328 s |
+| -------------- | ------------- | ------------------ | ------------------- | ------------- |
+| 4              | 291 s         | 281.228 s          | 220.657 s           | 2.916 s       |
+| 2              | 549 s         | 538.909 s          | 212.664 s           | 2.328 s       |
 
 Total elapsed comes from second-resolution shell timestamps. Participant times
 come from the overlap evidence. Two workers saved about eight seconds in the
@@ -162,13 +165,13 @@ was corrected before the two clean runs. The failed trial is excluded above.
 
 The four-worker timing profile identifies these largest source suites:
 
-| Suite | Elapsed |
-| --- | --- |
-| `integration/runtimeBootstrapMatrix.test.ts` | 111.113 s |
-| `state/todoDocsEntities.test.ts` | 102.251 s |
-| `cli/personalGlossaryPublish.test.ts` | 55.119 s |
-| `analytics/personalGlossaryReviewRecords.test.ts` | 53.907 s |
-| `upgrade/upgradeEntityCutover.test.ts` | 52.459 s |
+| Suite                                             | Elapsed   |
+| ------------------------------------------------- | --------- |
+| `integration/runtimeBootstrapMatrix.test.ts`      | 111.113 s |
+| `state/todoDocsEntities.test.ts`                  | 102.251 s |
+| `cli/personalGlossaryPublish.test.ts`             | 55.119 s  |
+| `analytics/personalGlossaryReviewRecords.test.ts` | 53.907 s  |
+| `upgrade/upgradeEntityCutover.test.ts`            | 52.459 s  |
 
 The bootstrap matrix already reuses its build fixture and memoizes reusable
 results. Its remaining costs include live process execution, protected-root
@@ -209,10 +212,10 @@ the same pinned Node 24.19.0 runtime, and a fresh process for each traversal.
 Both distributions completed every query with identical command and semantic
 SHA-256 values, continuation/detail counts, roots and maximum output sizes.
 
-| Traversal | Queries | Before | After |
-| --- | --- | --- | --- |
-| Schema | 1,388 | 45.437 s | 1.197 s |
-| Upgrade | 1,235 | 25.529 s | 3.802 s |
+| Traversal | Queries | Before   | After   |
+| --------- | ------- | -------- | ------- |
+| Schema    | 1,388   | 45.437 s | 1.197 s |
+| Upgrade   | 1,235   | 25.529 s | 3.802 s |
 
 These are local complete-traversal measurements, not hosted CI or individual
 cold CLI invocation timings. The bounded parse cache warms within each process;
@@ -238,10 +241,10 @@ to the cache.
 compared two source workers, then four, on the same four-vCPU AMD EPYC 9V74
 runner at `c9289d2c`. Both samples passed all 41 package assertions.
 
-| Source workers | Package wall time | Package budget | Source result | Total overlap |
-| --- | --- | --- | --- | --- |
-| 2 | 384.318 s | Passed | 4,716 passed, one declared skip | 1,468.799 s |
-| 4 | 602.081 s | Failed | Cancelled | 606.876 s to failure |
+| Source workers | Package wall time | Package budget | Source result                   | Total overlap        |
+| -------------- | ----------------- | -------------- | ------------------------------- | -------------------- |
+| 2              | 384.318 s         | Passed         | 4,716 passed, one declared skip | 1,468.799 s          |
+| 4              | 602.081 s         | Failed         | Cancelled                       | 606.876 s to failure |
 
 Two workers reduced package wall time by 36.2%, with 130.682 s of budget
 headroom. The full source participant took 1,441.886 s. Four-worker cancellation

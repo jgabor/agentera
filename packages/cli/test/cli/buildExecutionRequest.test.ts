@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { buildExecutionContext } from "../../src/cli/capabilityContext/build.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";

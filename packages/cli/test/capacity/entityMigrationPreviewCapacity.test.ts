@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { ENTITY_MIGRATION_PREVIEW_MAX_OUTPUT_BYTES } from "../../src/state/entityMigrationPreview.js";
 import { collectMigrationPreviewPages } from "../helpers/entityMigrationPagination.js";

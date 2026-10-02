@@ -1,0 +1,23 @@
+id: yyhecmclhx
+artifact: plan
+record:
+  name: Introduce bounded reuse without cached assurance
+  depends_on:
+    - varohvchik
+  status: complete
+  acceptance:
+    - GIVEN unchanged deterministic preparation WHEN repeated THEN valid reuse avoids measured duplicate work while required assertions execute freshly.
+    - GIVEN changed inputs, environment, or corrupted reuse WHEN checked THEN stale outputs invalidate or fail closed.
+    - GIVEN cold qualification and publication WHEN run THEN independent assurance never depends on a previously cached successful verdict.
+    - GIVEN reuse behavior WHEN tested THEN one hit and one miss per reusable unit plus corruption and cancellation cases prove safety.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: bounded-reuse-1
+      source: docs/packaging/vite-plus-1-cache-proof.md; fresh assertions with transform reuse, invalidation/corruption/failure/cancellation probes, 60 focused tests and 641 local assertions passed; unsafe task-verdict cache rejected
+      recorded_at: 2026-10-02 03:00
+      writer_command: agentera state plan record-evaluation

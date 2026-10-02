@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import { main } from "../../../src/cli/dispatch/index.js";
 import { runStateWrite } from "../../../src/cli/commands/state/write.js";
 import { runStateExplainDetail } from "../../../src/cli/commands/state/explainDetail.js";

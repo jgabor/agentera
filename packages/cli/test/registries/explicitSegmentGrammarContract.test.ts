@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { EXPLICIT_SEGMENT_FORM_IDS, EXPLICIT_SEGMENT_INPUTS, EXPLICIT_SEGMENT_REASONS, EXPLICIT_SEGMENT_STATES, explicitSegmentTransition, loadExplicitSegmentGrammarContract, validateExplicitSegmentGrammar } from "../../src/registries/explicitSegmentGrammarContract.js";
 import { glossaryEntryAuthorityPath, validateGlossaryEntryContract } from "../../src/registries/glossaryEntryContract.js";

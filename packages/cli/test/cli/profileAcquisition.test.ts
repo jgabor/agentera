@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";

@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { REPO_STATE_FIXTURE_NAMES, cleanupFixtureProject, repoStateFixturePath, useFixtureProject } from "./useFixtureProject.js";
 

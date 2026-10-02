@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { checkCompaction, compactYamlFile, compactEntries, computeCompactionStatus, fixCompaction, parseEntries, runCompaction } from "../../src/hooks/compaction/index.js";
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES } from "../../src/hooks/common.js";

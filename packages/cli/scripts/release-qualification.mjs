@@ -12,6 +12,7 @@ import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGener
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
 import { deriveLatencyAdvisory, measurementProfile, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import YAML from "yaml";
+import { retainQualificationDiagnostics } from "./verification-timing.mjs";
 import { parseReleaseFlags } from "./release-arguments.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
 import { createVerificationProgress, createOverlapProgressForwarder } from "./verification-progress.mjs";
@@ -1081,6 +1082,11 @@ export async function runSourceQualificationDag(options = {}) {
   try {
     return await executeSourceQualificationDag(options, overlapRoot);
   } finally {
+    try {
+      retainQualificationDiagnostics(overlapRoot, process.env.AGENTERA_QUALIFICATION_DIAGNOSTICS);
+    } catch (error) {
+      console.error(`Qualification diagnostic export failed: ${error.message}`);
+    }
     fs.rmSync(overlapRoot, { recursive: true, force: true });
   }
 }

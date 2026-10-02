@@ -6,7 +6,7 @@
 
 Vitest proves **logic** with temp dirs and pinned fixtures. **Live-repo artifact hygiene**
 (compaction budgets, committed artifact shape) is owned by `agentera check compact` in CI
-and lefthook — not duplicated as vitest assertions against this checkout's `.agentera/` or
+and the native pre-commit policy, not duplicated as Vitest assertions against this checkout's `.agentera/` or
 `TODO.md`.
 
 | Layer                   | Proves                                                                                                                                                                                                                                                                | Entry point                                                               |
@@ -23,17 +23,21 @@ and lefthook — not duplicated as vitest assertions against this checkout's `.a
 Generated-output construction, consumers, package publication, and temporary-root
 lifecycle are defined once in the
 [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
+Run the table's advanced package-directory recipes as
+`vp env exec --node 24.19.0 vp -C packages/cli run TASK` from the root.
+Root `vp run` tasks already select `.node-version` explicitly; native `run` and
+`exec` alone do not guarantee that pin in Vite+ 1.0.
 
 ## Contributor prerequisites
 
-Use the standalone Vite+ 0.3.0 setup in
+Use the verified standalone Vite+ 1.0.0 setup in
 [AGENTS.md](../../../AGENTS.md#common-commands), from the repository root. It
 supplies pinned Node and pnpm plus project-local test and hook tools; it does
 not supply the operating system or Git history. Linux x64 is the verified
 contributor environment, not a claim of macOS or Windows qualification.
 
 - Source tests and hook fixtures require `git`, `sh`, `bash`, `grep`, `head`,
-  `mkdir`, `cp`, `rm`, `find`, `dirname`, Python 3 (`python3`), and GNU `timeout`
+  `mkdir`, `cp`, `rm`, `find`, `dirname`, `basename`, Python 3 (`python3`), and GNU `timeout`
   on `PATH`. Vite+ does not install these OS tools. Git must support the local
   fixture repositories and worktrees used by the tests.
 - Runtime fixtures own an empty default app home unless a test explicitly

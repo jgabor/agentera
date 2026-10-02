@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { createHash } from "node:crypto";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import YAML from "yaml";
 
 import { LIFECYCLE_LEDGER_SCHEMA, type LifecycleOwnershipLedger } from "../../src/runtime/lifecycleOperations.js";

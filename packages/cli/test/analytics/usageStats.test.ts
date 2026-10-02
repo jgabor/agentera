@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { CorpusUnavailable, analyzeCorpus, buildJsonPayload, classifyTrigger, defaultCorpusPath, defaultUsageDir, findMarkers, loadCorpusOrRaise, usageMain, pairInvocations, renderMarkdown } from "../../src/analytics/usageStats.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";

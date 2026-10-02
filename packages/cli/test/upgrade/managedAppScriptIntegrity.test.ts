@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { MANAGED_APP_SCRIPT_PATH, NODE_SHEBANG, PYTHON_SHEBANG, UV_SCRIPT_SHEBANG, managedAppScriptContent, platformDefaultAppHome as helperPlatformDefaultAppHome, scriptBody, scriptShebang, writeManagedAppStub } from "../helpers/managedAppStub.js";

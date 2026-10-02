@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { createSourceOwnerEvidence, OWNER_EVIDENCE_MAX_BYTES, SOURCE_OWNER_EVIDENCE_SCHEMA, writeContentAddressedOwnerEvidence } from "../../src/validate/activationArtifactEvidence.js";
 import { loadActivationProductionInputs } from "../../src/validate/activationConjunction.js";

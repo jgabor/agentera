@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle, HOST_SKILL_DIRECTORY_ID, HOST_SKILL_FILE_ID } from "../../src/setup/hostSkillLifecycle.js";
 import { diagnoseCanonicalSkill } from "../../src/setup/sharedSkill.js";
 import { main } from "../../src/cli/dispatch.js";

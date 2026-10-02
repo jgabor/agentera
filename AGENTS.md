@@ -162,28 +162,33 @@ editing files or checking credentials.
 
 ## Common commands
 
-Contributors use standalone Vite+ **0.3.0**, which supplies the Node.js version
+Contributors use standalone Vite+ **1.0.0**, which supplies the Node.js version
 in `.node-version` and pnpm 10.30.3 from `package.json#packageManager`.
-No separate Node, Corepack, pnpm, or Lefthook installation is required.
+No separate Node, Corepack, pnpm, or hook manager installation is required.
 
 Obtain the standalone launcher from the trusted
-[Vite+ v0.3.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v0.3.0),
+[Vite+ v1.0.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.0.0),
 not the Node-dependent project shim. The verified Linux x64 asset is
 `vp-x86_64-unknown-linux-gnu.tar.gz`; review the release provenance and checksum
 before extracting its executable into a user-owned directory on ordinary
 shell **and Git** `PATH`. Download/extraction tools are OS prerequisites, not
 provided by Vite+. Do not substitute an unpinned installer or an older global
-`vp`; `vp --version` must report 0.3.0 for the launcher and, after install, the
+`vp`; `vp --version` must report 1.0.0 for the launcher and, after install, the
 local package. This contributor path is verified on Linux x64 only; macOS and
 Windows are not qualified by that evidence.
+
+The selected Linux x64 archive SHA-256 is
+`2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a`.
+Verify it before extraction or execution. The immutable release, selected npm
+SLSA provenance, bootstrap isolation, and fresh/warm cache limits are recorded in
+[the bootstrap authority](references/analysis/bootstrap-integrity.md).
 
 From the repository root, first install (also dependency recovery):
 
 ```bash
 vp --version
 vp env on
-vp install --frozen-lockfile
-vp exec lefthook install
+VP_GIT_HOOKS=0 vp install --frozen-lockfile
 ```
 
 `vp run bootstrap` repeats the frozen install only **after local dependencies
@@ -192,10 +197,16 @@ old, restore the supported standalone executable on `PATH` first. If the frozen
 lock check fails, restore matching checked-in manifests and lockfile, then rerun
 the frozen install; do not bypass the lock check or install another manager.
 
+Dependency installation does not authorize hook activation. In an independent
+clone, activate the native dispatcher with `vp hooks enable` after install, and
+inspect `vp hooks status`. Do not enable it in a linked worktree without permission
+to change shared Git configuration. The existing common hook remains supported
+through a small invoking-worktree bridge, without installing Lefthook.
+
 Daily commands, also from the repository root:
 
 ```bash
-vp install
+VP_GIT_HOOKS=0 vp install
 vp check
 vp run typecheck
 vp run test
@@ -204,9 +215,21 @@ vp run verify:development
 vp run verify
 ```
 
-The scripts are uncached and delegate to the existing CLI package owners.
+The root recipes are native tasks in `vite.config.ts`, with per-task `cache: false`.
+They stay fresh even under `vp run --cache` and delegate to the existing CLI package owners.
+Runtime-bearing tasks use the invoking standalone launcher's `VP_CLI_BIN` with
+explicit `env exec --node` from `.node-version`. Native `run` and `exec` alone
+can select ambient Node even after managed setup. The public root `vp run`
+recipes and argument forwarding stay unchanged. For package-directory recipes,
+use `vp env exec --node 24.19.0 vp -C packages/cli run TASK` from the root.
+This is scoped execution, not a global PATH or hook change.
 `vp run test` is the complete source owner; `vp run build` builds the CLI.
-Native `vp test` and `vp build` are not aliases for those scripts.
+Native `vp test` and `vp build` are not aliases for those tasks.
+`vp run test:local` is an explicit developer diagnostic for the positive fast
+`local` project, not full source assurance. `vp run typecheck:fresh` is an explicit
+alias for fresh typecheck. Transformed modules can be reused, but assertions and
+qualification results are never replayed. See
+`docs/packaging/vite-plus-1-cache-proof.md` for the rejected verdict-cache candidate.
 `vp run verify:development` is routine development safety; `vp run verify` is
 full qualification, including repeated measurements and historical certification.
 pnpm remains the underlying workspace/lockfile authority, managed through Vite+.
@@ -227,13 +250,15 @@ the full source owner into `local`, `source` (remainder), and `guards` without d
 full CI retains specialized owners. See the verification skill for coverage
 limits, fixture exclusions, and local-tool recovery.
 
-Lefthook is the sole hook owner; do not also run `vp hooks`. Its installed hook
-uses `packages/cli/scripts/run-lefthook.sh` from the invoking worktree, and Vite+
-supplies the managed runtime to that worktree's local tools. Formatting still
-uses project-local Vite+, never a global formatter. Git hooks are shared across
-linked worktrees, not isolated per worktree; each worktree needs its own
-`vp install --frozen-lockfile`. Restore launcher discovery and dependencies before
-rerunning `vp exec lefthook install` when hook setup needs repair.
+Vite+ is the sole hook owner. `.vite-hooks/pre-commit` invokes project-local
+`vp staged`; `vite.config.ts#staged` runs fixes, then the scoped readers in
+`packages/cli/scripts/pre-commit-checks.mjs`, within the hidden-partial-hunk
+snapshot. `packages/cli/scripts/run-lefthook.sh` only forwards an old installed
+`run pre-commit` entry point to that policy. It never activates hooks.
+Restore launcher discovery and each worktree's dependencies before retrying Git.
+Oxfmt owns Markdown formatting, not Markdown structural lint. Root, package and
+editor formatting use width 320 and the root exclusions. See the
+[formatting concessions](docs/packaging/vite-plus-1-formatting-concessions.md).
 
 ### Optional checkout-local runtime dependencies
 
@@ -245,7 +270,7 @@ the root install:
 vp exec npm --prefix .opencode install --ignore-scripts --no-audit --no-fund
 ```
 
-This Vite+ 0.3.0 recipe uses managed npm with the nested npm manifest and
+This Vite+ 1.0.0 recipe uses managed npm with the nested npm manifest and
 `package-lock.json`, without adopting it into pnpm or changing the parent
 workspace authorities. It is not part of root install. Keep that ignored,
 checkout-local dependency boundary outside the pnpm workspace and Agentera
@@ -256,7 +281,7 @@ Warm cached offline use is verified; an empty offline cache cannot provision
 Node. Optional npm `--offline` also requires its dependency artifacts locally.
 Vite+ does not supply the OS tools or Git history required by tests and hooks;
 see [test prerequisites](packages/cli/test/README.md#contributor-prerequisites).
-CI's trusted Corepack bootstrap, internal pnpm scripts, isolated npm package
+CI's verified native Vite+ bootstrap, internal pnpm scripts, isolated npm package
 construction, and fixed OIDC publisher are separate authorities, not alternate
 contributor setup recipes. Consumer `npx -y agentera@next` is unchanged.
 
@@ -280,7 +305,7 @@ or touching generated and packaged output.
 - Never push during ordinary capability execution.
 - Never amend, force-push, or use destructive Git operations unless the user
   explicitly authorizes the applicable action.
-- Never skip hooks as a routine shortcut. Use `LEFTHOOK=0` only when hook
+- Never skip hooks as a routine shortcut. Use `VP_GIT_HOOKS=0` at commit time only when hook
   configuration is broken or a failure is already tracked for CI.
 - Preserve unrelated worktree changes and stage only intended files.
 - Never bypass typed state writers with direct entity edits.

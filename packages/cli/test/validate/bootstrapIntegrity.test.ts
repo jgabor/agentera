@@ -2,51 +2,64 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vite-plus/test";
 
-import { COREPACK_ARCHIVE_INTEGRITY, PNPM_REFERENCE, provisionCorepack, verifiedCorepackArchive, verifiedCorepackBytes } from "../../scripts/bootstrap-integrity.mjs";
+import { PNPM_REFERENCE, VP_ARCHIVE_SHA256, VP_ARCHIVE_URL, activateBootstrap, prepareBootstrap, provisionVpArchive, verifiedVpArchive } from "../../scripts/bootstrap-integrity.mjs";
 
 describe("bootstrap integrity prerequisites", () => {
-  it("binds the selected pnpm version to the reviewed tarball digest", () => {
+  it("binds pnpm and native Vite+ to reviewed release digests", () => {
     const integrity = "yWHR4KLY41TsqlFmuCJRZmi39Ey1vZUSLVkN2Bki9gb1RzttI+xKW+Bef80Y6EiNR9l4u+mBhy8RRdBumnQAFw==";
     expect(PNPM_REFERENCE).toBe(`pnpm@10.30.3+sha512.${Buffer.from(integrity, "base64").toString("hex")}`);
+    expect(VP_ARCHIVE_SHA256).toBe("2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a");
   });
 
-  it("rejects altered and missing host Corepack without executing it", () => {
+  it("rejects altered and missing native archives before extraction or execution", () => {
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "bootstrap-prerequisite-"));
     try {
-      const file = path.join(root, "corepack.cjs");
-      const marker = path.join(root, "executed");
-      fs.writeFileSync(file, `require('node:fs').writeFileSync(${JSON.stringify(marker)}, 'bad');`);
-      expect(() => verifiedCorepackBytes(file)).toThrow("host Corepack integrity mismatch");
-      expect(() => verifiedCorepackBytes(path.join(root, "missing.cjs"))).toThrow(/ENOENT/);
-      expect(fs.existsSync(marker)).toBe(false);
+      const file = path.join(root, "vp.tgz");
+      fs.writeFileSync(file, "unverified native code");
+      expect(() => verifiedVpArchive(fs.readFileSync(file))).toThrow("Vite+ archive integrity mismatch");
+      expect(() => prepareBootstrap(root, file)).toThrow("Vite+ archive integrity mismatch");
+      expect(() => prepareBootstrap(root, path.join(root, "missing.tgz"))).toThrow(/ENOENT/);
+      expect(fs.readdirSync(root)).toEqual(["vp.tgz"]);
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });
 
-  it("rejects downloaded Corepack bytes before archive extraction or execution", () => {
-    expect(COREPACK_ARCHIVE_INTEGRITY).toBe("sha512-9BuIGHDFE7Zieor1CeRsvt7X7AJFEuJ6OnbSbsVprq83ChDFoBh1wP98NeUS9FT3ZwlzFllPElXcz/OiDf0YGw==");
-    expect(() => verifiedCorepackArchive(Buffer.from("unverified bootstrap"))).toThrow("Corepack archive integrity mismatch");
-    expect(() => verifiedCorepackArchive(Buffer.alloc(0))).toThrow("Corepack archive integrity mismatch");
-  });
-
-  it("fails closed at provisioning without extracting altered bytes or retrying unavailable inputs", async () => {
-    const root = fs.mkdtempSync(path.join(os.tmpdir(), "corepack-provision-"));
+  it("fails closed without extracting altered bytes or retrying unavailable inputs", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "vp-provision-"));
     const fetch = vi
       .fn()
       .mockResolvedValueOnce(new Response("altered archive"))
       .mockResolvedValueOnce(new Response("unavailable", { status: 503 }));
     vi.stubGlobal("fetch", fetch);
     try {
-      await expect(provisionCorepack(root)).rejects.toThrow("Corepack archive integrity mismatch");
-      await expect(provisionCorepack(root)).rejects.toThrow("Corepack download failed: 503");
+      await expect(provisionVpArchive(root)).rejects.toThrow("Vite+ archive integrity mismatch");
+      await expect(provisionVpArchive(root)).rejects.toThrow("Vite+ download failed: 503");
       expect(fetch).toHaveBeenCalledTimes(2);
-      expect(fetch.mock.calls.every(([url]) => url === "https://registry.npmjs.org/corepack/-/corepack-0.35.0.tgz")).toBe(true);
+      expect(fetch.mock.calls.every(([url]) => url === VP_ARCHIVE_URL)).toBe(true);
       expect(fs.readdirSync(root)).toEqual([]);
     } finally {
       vi.unstubAllGlobals();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects project pin drift before launching managed project commands", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "bootstrap-pin-"));
+    const execute = vi.fn();
+    try {
+      fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ packageManager: "pnpm@latest" }));
+      await expect(activateBootstrap({ execute }, root)).rejects.toThrow("project packageManager pin rejected");
+      fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ packageManager: "pnpm@10.30.3" }));
+      fs.writeFileSync(path.join(root, ".node-version"), "24.20.0\n");
+      await expect(activateBootstrap({ execute }, root)).rejects.toThrow("project Node pin rejected");
+      expect(execute).not.toHaveBeenCalled();
+      fs.writeFileSync(path.join(root, ".npmrc"), "registry=https://untrusted.invalid\n");
+      await expect(activateBootstrap({ execute }, root)).rejects.toThrow("project .npmrc is not allowed");
+      expect(execute).not.toHaveBeenCalled();
+    } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
   });

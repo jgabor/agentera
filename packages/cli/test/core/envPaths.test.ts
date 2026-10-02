@@ -1,7 +1,7 @@
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { defaultCorpusPath, defaultUsageDir } from "../../src/analytics/usageStats.js";
 import { agenteraDataHome, startupBenchmarkDir } from "../../src/cli/capabilityContext/benchmark.js";

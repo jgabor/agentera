@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { doctorRoots, loadSuiteVersion, resolveActiveAppModel, resolveInstallRoot } from "../../src/upgrade/appModel.js";
 import { resolvePath } from "../../src/core/paths.js";

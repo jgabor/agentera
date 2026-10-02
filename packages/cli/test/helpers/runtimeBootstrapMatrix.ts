@@ -4,7 +4,7 @@ import fs from "node:fs";
 import { performance } from "node:perf_hooks";
 import path from "node:path";
 
-import { expect } from "vitest";
+import { expect } from "vite-plus/test";
 
 import { preCutoverCommand } from "../../src/cli/preCutoverCommand.js";
 import { DEVELOPMENT_CHILD_PATH } from "../../src/core/developmentInvocation.js";

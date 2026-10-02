@@ -1,0 +1,23 @@
+id: oazzhjwxul
+artifact: plan
+record:
+  name: Replace Corepack with the verified managed environment
+  depends_on:
+    - yggluuqako
+  status: complete
+  acceptance:
+    - GIVEN a supported fresh checkout WHEN provisioned THEN development and non-publishing CI need no Corepack or ambient runtime tools.
+    - GIVEN pinned dependencies WHEN installed THEN integrity, frozen-lock enforcement, credential isolation, and lifecycle restrictions remain effective.
+    - GIVEN linked worktrees and isolated homes WHEN commands run THEN the correct environment is selected without modifying other checkouts.
+    - GIVEN bootstrap behavior WHEN tested THEN one valid case and one rejected case per trust boundary prove fail-closed behavior.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: managed-bootstrap-1
+      source: docs/packaging/vite-plus-1-runtime-proof.md; nine bootstrap checks, managed-runtime negative cases, 21 targeted assertions, typecheck and build passed
+      recorded_at: 2026-10-02 01:08
+      writer_command: agentera state plan record-evaluation

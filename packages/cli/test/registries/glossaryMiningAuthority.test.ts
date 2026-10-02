@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { glossaryCandidateRevision, stableGlossaryTermIdentity, unicodeCaselessExact } from "../../src/registries/glossaryTermIdentity.js";
 import { classifyPersonalMiningConsent, glossaryEvidenceSetDigest, personalReviewApprovalReceiptDigest, personalReviewApprovalReplayStatus, personalReviewDispositionLifecycle, projectPersonalReviewRetention, validatePersonalReviewApprovalReceipt } from "../../src/registries/glossaryMiningAuthority.js";

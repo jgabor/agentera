@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { personalGlossaryCandidateProjectionPath, persistPersonalGlossaryCandidateProjection, projectPersonalGlossaryCandidates, type PersonalGlossaryCandidateProjection } from "../../src/analytics/personalGlossaryCandidateProjection.js";
 import { dispositionPersonalGlossaryReviewRecord, personalGlossaryTrustedLocalHostPath, queuePersonalGlossaryReviewRecord, type PersonalGlossaryReviewRecord } from "../../src/analytics/personalGlossaryReviewRecords.js";

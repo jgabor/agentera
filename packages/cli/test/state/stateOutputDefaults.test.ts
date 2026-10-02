@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { runStateWrite } from "../../src/cli/commands/state/write.js";
 import { parseQueryArgs } from "../../src/cli/dispatch/state.js";

@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { applyCleanupPhase, applyMigrationPhases, applyRuntimeRetirementPhase, dryRunMigration, planArtifactsPhase, planCleanupPhase, planRuntimeRetirementPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { APP_CONTENT_REFRESH_ACTION } from "../../src/upgrade/appContentRefresh.js";

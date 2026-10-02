@@ -1,163 +1,146 @@
-# Pinned bootstrap and workflow rollout
+# Verified native bootstrap
 
-The two development setup jobs use the integrity-bound bootstrap described below.
-The replaced setup-vp installer remains unverified; its old accepted-risk record
-is **not acceptance evidence**. Hosted acceptance is still outstanding. The
-credential-bearing publisher is unchanged. Historical compiler/formatter
-certification is not re-run here.
+The two non-OIDC development setup jobs use native Vite+ **1.0.0** to manage
+Node **24.19.0** and pnpm **10.30.3**. Corepack is not installed or executed.
+The checkout-free, action-free OIDC publisher is unchanged. Hosted acceptance
+remains outstanding; local proofs do not establish a passing hosted run.
 
-## Trust root and pins
+## Trust roots and selected bytes
 
-The supported proof host is Linux with the repository's exact `.node-version`
-runtime provisioned by a trusted host. Node and `/bin/sh`, the reviewed checkout,
-and the filesystem/process isolation provided by that host are prerequisites.
-It is not a sandbox against an actor able to rewrite that checkout or process.
-Node 24 does **not** imply that Corepack is installed. The caller must supply
-the path to the Corepack **0.35.0** `dist/lib/corepack.cjs` file. Missing bytes or
-a different digest stop before loading it; there is no installation fallback.
-The helper copies the checked bytes to a fresh directory before loading them,
-so it does not execute the host's unchecked launcher or resolve host packages.
+The supported platform is Linux x64 glibc. The reviewed checkout, host process
+and filesystem isolation, HTTPS trust store, and OS utilities are prerequisites.
+`bootstrap-integrity.mjs` initially uses only trusted host Node built-ins and
+`/bin/tar` with `/bin/gzip`. It reads the verified archive's single `vp` member
+to stdout, not arbitrary archive paths into the host filesystem. Native children
+also need `sh`, `sed`, `dirname`, and `uname` on the private PATH. No native
+installer or separate OpenSSL executable is needed by this path.
 
-Pin provenance, retrieved 2026-09-10 over HTTPS from the npm registry:
+The GitHub release API was rechecked on 2026-10-02:
 
-- `https://registry.npmjs.org/corepack/0.35.0` identifies git commit
-  `4210ff8b4dba03ab347098c3f59225f34cb05652` and tarball
-  `https://registry.npmjs.org/corepack/-/corepack-0.35.0.tgz`, integrity
-  `sha512-9BuIGHDFE7Zieor1CeRsvt7X7AJFEuJ6OnbSbsVprq83ChDFoBh1wP98NeUS9FT3ZwlzFllPElXcz/OiDf0YGw==`.
-  After verifying this archive (without executing it), its bundled
-  `package/dist/lib/corepack.cjs` SHA-512 was compared with the provisioned host
-  file. The fixed bundle digest is `COREPACK_SHA512` in the helper.
-- `https://registry.npmjs.org/pnpm/10.30.3` declares tarball integrity
-  `sha512-yWHR4KLY41TsqlFmuCJRZmi39Ey1vZUSLVkN2Bki9gb1RzttI+xKW+Bef80Y6EiNR9l4u+mBhy8RRdBumnQAFw==`.
-  `PNPM_REFERENCE` encodes those same SHA-512 bytes in hexadecimal.
-- Vite+ **0.3.0** and all installed build components retain the repository's
-  `pnpm-lock.yaml` integrity authority and `pnpm-workspace.yaml` catalog pins.
-  The proof does not generate a replacement lockfile or execute an installer.
+- Immutable release `v1.0.0`, source commit
+  `fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4`.
+- Asset `vp-x86_64-unknown-linux-gnu.tar.gz`, SHA-256
+  `2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a`.
+- The helper checks that fixed digest before extraction or native execution.
+  Missing, altered, or unavailable bytes fail closed. No installer, setup-vp
+  action, mutable fallback, or dynamically learned digest is used.
 
-These are reviewable registry-derived pins, not an independently verified SLSA
-attestation. A reviewer must trust the selected upstream release bytes before
-approving them. No runtime metadata response may replace an expected digest.
+Selected npm packages were separately checked with Sigstore verification from
+the npm bundled in Vite-managed Node 24.19.0, without a new dependency. The
+SLSA v1 DSSE signatures, certificate issuer/identity, transparency evidence,
+exact tarball SHA-512 subjects, workflow, and source commit passed verification:
 
-## Mechanism
+| Artifact | SHA-512 SRI |
+| --- | --- |
+| `vite-plus@1.0.0` | `sha512-2ezzBWt+AVO+I2F9Cpb2Of0J12Lat35kWZ/FRL2monMnKZuACKfkYAA/nMqdDo1KwB8sWjTKzmD9mRCh1Q1n+g==` |
+| `@voidzero-dev/vite-plus-linux-x64-gnu@1.0.0` | `sha512-R6+/oVLCSEvatOG1utYo0d0I++QPjWuRt2moD21+UUu2mQ8VyZHaaQLgoxrQG9shA9o0RBDmwxhGUXL20Rk1FA==` |
 
-Corepack documents `name@version+algorithm.hex` integrity in `packageManager`
-and accepts the same version reference for `install --global`. For pnpm 10.30.3,
-Corepack 0.35.0 hashes the downloaded tarball, compares before publishing its
-installation or running pnpm, and does not hash just the executable entry file.
-Corepack's existing-cache path skips downloading and checking bytes; therefore
-every proof uses a newly created `COREPACK_HOME`, not inherited cached success.
-
-The helper uses only host Node built-ins until the fixed Corepack bundle has
-been checked. Children receive a constructed credential-free environment,
-private config/store/cache directories, and a PATH containing only explicitly
-provisioned Node and sh. Frozen pnpm installation retains lockfile integrity
-checks and uses `--ignore-scripts`. This is the stricter existing build-job
-lifecycle policy, not a relaxation of the esbuild-only contributor policy.
+The signer is GitHub Actions (`https://token.actions.githubusercontent.com`),
+identity `https://github.com/voidzero-dev/vite-plus/.github/workflows/release.yml@refs/heads/main`.
+Upstream releases run on pushes to main, not tag-triggered runs. The main package
+attestation identifies run `36369459351/attempts/1` and the selected source commit.
+The native npm package contains the Node addon, not the standalone launcher.
+Do not claim that its npm attestation authenticates the separate GitHub asset.
+That asset's boundary is the reviewed immutable release and fixed checksum.
 
 Sources:
 
-- <https://github.com/nodejs/corepack/blob/v0.35.0/README.md>
-- <https://github.com/nodejs/corepack/blob/v0.35.0/sources/corepackUtils.ts>
+- <https://api.github.com/repos/voidzero-dev/vite-plus/releases/tags/v1.0.0>
+- <https://registry.npmjs.org/vite-plus/1.0.0>
+- <https://registry.npmjs.org/@voidzero-dev/vite-plus-linux-x64-gnu/1.0.0>
+- <https://github.com/voidzero-dev/vite-plus/blob/fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4/.github/workflows/release.yml>
 
-## Workflow deployment and acceptance boundaries
+## Acquisition and isolation
 
-The trusted hosted baseline is GitHub's Linux runner, its action runtime and
-filesystem/process isolation, the reviewed checkout, and the Node/npm
-distribution provisioned by `actions/setup-node` **v6.3.0**, pinned to
-`53b83947a5a98c8d113130e565377fae1a50d02f`. The action uses `.node-version`
-(**24.19.0**) and `package-manager-cache: false`, with no registry-auth setup.
-Its Node distribution acquisition/tool cache is a trusted prerequisite, not
-something the Corepack/pnpm proof independently authenticates. Host `/bin/tar`
-and `/bin/gzip` are also trusted utilities. Local checks require the same Node
-version and its colocated `lib/node_modules/npm`; there is no global npm fallback.
+Every CI bootstrap starts with fresh HOME, VP_HOME, XDG roots, temporary
+directory, empty npm user/global configs, dependency store and npm cache. Its
+constructed child environment does not inherit npm tokens/config, OIDC request
+variables, Node options/module paths, runtime/package-manager overrides, mirror
+or proxy settings, or ambient JavaScript executables. A project `.npmrc` fails
+closed rather than loading ignored credentials or mirror overrides. Checkout
+code and checked-in manifests remain trusted, not adversarial inputs.
 
-`bootstrap-integrity.mjs` downloads the exact Corepack archive above using Node
-built-ins and verifies its fixed archive SHA-512 **before extraction**. Trusted
-tar/gzip emit only `package/dist/lib/corepack.cjs` to stdout; no archive paths are
-unpacked into the host. The existing bundle digest check and private copy then
-apply before Corepack is loaded. Missing, altered, or unavailable prerequisites
-fail closed; no installer or dynamically learned digest is a fallback.
+Native managed mode is enabled only in that private profile. The repository Node
+and package-manager declarations must match the exact pins before project
+commands run. Vite+ obtains official Node releases with mandatory signed
+`SHASUMS256.txt.asc` verification against its embedded Node release keys, then
+checks the archive SHA-256 before extraction. The helper does not allow an
+inherited custom mirror, where upstream permits checksum-only acquisition.
 
-The helper creates fresh homes, stores, caches and empty npm configs, installs
-the integrity-bound pnpm, and runs the unchanged frozen lockfile with store
-integrity checking. `verify-development` and `build-development` retain
-`--ignore-scripts`. The contributor allowlist variant remains locally proven,
-not a separate hosted gate. No dependency cache is restored or saved; the
-task-result-cache prohibition and the eleven development gates are unchanged.
+pnpm's reviewed tarball SRI is
+`sha512-yWHR4KLY41TsqlFmuCJRZmi39Ey1vZUSLVkN2Bki9gb1RzttI+xKW+Bef80Y6EiNR9l4u+mBhy8RRdBumnQAFw==`.
+The same bytes are encoded in `PNPM_REFERENCE`. The helper uses **`vp env exec
+pnpm`** with `VP_PACKAGE_MANAGER` and `VP_PNPM_VERSION` carrying that reference
+to verify a fresh manager download before execution. Plain `vp exec pnpm` can
+resolve the project's unhashed manifest pin instead; it is not the integrity
+acquisition entrypoint. Subsequent native installation uses that verified cache.
 
-After successful installation, a private bin directory exposes the selected
-Node, npm/npx from that same trusted distribution, a pnpm launcher with the explicit
-version/digest, and the lockfile-installed Vite+ **0.3.0** entrypoint. All are
-checked before exporting the private PATH and config environment across steps.
-Later steps retain ordinary runner tools behind this directory. This is not a
-sandbox against trusted checkout code, nor a claim that later tools cannot
-modify PATH. No runner-global package installation or configuration is changed.
-The root contributor vocabulary (`vp install`, `vp check`, `vp run ...`) is
-unchanged; initial CI installation uses the helper rather than an unverified
-global Vite+ installer.
+Frozen install retains lockfile integrity/store checks and root-local Vite+
+1.0.0 verification. Native install forwards pnpm-only flags after `--`.
+Both CI jobs retain `--ignore-scripts`; contributor policy still allows only
+esbuild. No task-result or dependency cache is added. The baseline proof verifies
+the allowed and blocked lifecycle scripts separately.
 
-Acceptance is deliberately split:
+After success, the private bin exposes the verified native `vp`, its managed
+Node/npm/npx distribution, and digest-selected pnpm shim. Only then does CI
+export its private PATH and config environment. Ordinary runner OS tools remain
+behind it in later steps. This is not a sandbox against trusted checkout code
+or an actor who can change the process, binaries, PATH, caches, or checkout.
+Version output is a mistake/drift guard, not executable authenticity evidence.
 
-1. **Local evidence:** credential-free execution of both clean install
-   variants, the deployment trust-boundary and workflow-contract tests, and
-   meaningful local Agentera build/package smoke. This does not qualify a hosted
-   job or authorize registry mutation.
-2. **Selected direct-push acceptance:** `publish.yml` checks out the pushed SHA,
-   runs `vp check` and exactly one `vp run verify:development`, then explicitly
-   runs `vp run build`: the private verification build has already been removed.
-   That checkout CLI runs all five L1 migration scenarios before the dependent
-   candidate job. Expected refusal passes only when typed outcomes and preserved
-   files match the scenario; unexpected build or scenario failure blocks the job.
-   The 45-minute job budget is unchanged. There is no PR prerequisite or duplicate
-   verification workflow on the v3 branch; default `main` is untouched.
-3. **Hosted evidence:** the corrected migration gate remains pending a separately
-   authorized integration and push to the configured development ref. Local proof
-   does not authorize either action or prove hosted execution. Existing dev.112
-   publication evidence is not evidence for this corrected migration gate.
+Source review:
 
-The OIDC publisher remains checkout-free, action-free and setup-free; its logic
-and the exact-tarball construction/smoke steps are unchanged.
+- <https://github.com/voidzero-dev/vite-plus/blob/fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4/crates/vp_js_runtime/src/runtime.rs>
+- <https://github.com/voidzero-dev/vite-plus/blob/fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4/crates/vp_js_runtime/src/providers/node.rs>
+- <https://github.com/voidzero-dev/vite-plus/blob/fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4/crates/vp_pm_cli/src/package_manager.rs>
+- <https://github.com/voidzero-dev/vite-plus/blob/fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4/crates/vp_pm_cli/src/request.rs>
 
-Action input authority:
-<https://github.com/actions/setup-node/blob/53b83947a5a98c8d113130e565377fae1a50d02f/action.yml>.
+## Contributor and hosted boundaries
 
-## Running and interpreting the proof
+Contributors need no ambient Node or Corepack: obtain the native archive from
+the trusted release and verify its fixed checksum before using it, then follow
+`AGENTS.md#common-commands`. Do not substitute the Node-dependent npm shim for
+first provisioning. macOS and Windows are not qualified by the Linux proof.
 
-From the assigned checkout, with the pinned trusted Node selected:
+CI retains pinned `actions/setup-node` v6.3.0 at
+`53b83947a5a98c8d113130e565377fae1a50d02f`, `.node-version` and
+`package-manager-cache: false`. This is the trusted **bootstrap host** for the
+small built-ins-only verifier, not the Node owner of later project commands.
+Vite+ acquires and verifies a separate managed Node distribution in fresh roots.
+Keeping the reviewed host action avoids introducing a second shell downloader
+or an unverified installer. The proof succeeded from host Node 24.21.0 while
+project commands used 24.19.0, so host equality is no longer required.
+
+Warm runtime/manager caches skip archive acquisition and verification. They are
+trusted writable user state, not a security boundary against local tampering.
+Warm dependency stores support `vp install --offline --frozen-lockfile`; first
+use with empty caches still needs network. CI does not restore these caches.
+
+## Executable proofs
+
+From the repository root, use a **new** disposable evidence directory:
 
 ```bash
-node packages/cli/scripts/prove-bootstrap-integrity.mjs \
-  /provisioned/corepack/dist/lib/corepack.cjs \
-  /tmp/opencode/NEW-UNUSED-EVIDENCE-DIRECTORY
+vp node packages/cli/scripts/prove-bootstrap-integrity.mjs /tmp/NEW_EVIDENCE_DIRECTORY
+vp node packages/cli/scripts/verify-managed-toolchain.mjs
 ```
 
-The parent evidence directory must exist; the requested final directory must
-not exist. The proof retains `report.json`, install/build logs and disposable
-fixtures. It copies only the two dependency manifests, workspace config and
-unchanged lockfile into a representative TypeScript library fixture. It does
-not duplicate the checkout, qualify the whole Agentera build, or reuse its
-`node_modules`. The build invokes `node_modules/vite-plus/bin/vp` explicitly
-with no global tools on PATH and asserts the emitted module's exported value.
-There is no task cache in this direct build. Root package-script wrappers remain
-uncached under `toolchain-baseline.yaml#project_contract.no_task_result_cache`;
-the Vite configuration does not define cached tasks.
+The first proof acquires verified native bytes and fresh managed runtime/manager
+roots, installs a manifest-only fixture using the repository lockfile, builds
+and executes TypeScript, rejects manifest drift and altered archives, and proves
+warm offline success versus empty-cache failure. The second proves root-local
+ownership, esbuild-only scripts, wrapper argument/cwd/exit behavior, and rejection
+of wrong managed Node or stale launcher before project commands. Neither writes
+state, changes global tools, or activates checkout/shared hooks.
 
-The proof also uses trusted host `/bin/tar` and `/bin/gzip` solely to construct
-a valid malicious test archive, never to execute downloaded bootstrap code.
-A local HTTP server supplies that archive or HTTP 503. Separate fresh homes
-prove rejection of altered pnpm bytes, altered locked dependency bytes, and
-unavailable pnpm inputs after a prior successful installation. Altered/missing
-host Corepack checks run before that. Executable markers must remain absent.
-These boundary cases are part of the proof runner; source tests additionally
-retain cheap pin and missing/altered prerequisite regression checks.
-
-Local Linux x64 evidence on 2026-09-10 passed all six report checks under
-Node 24.19.0, Corepack 0.35.0, pnpm 10.30.3 and local Vite+ 0.3.0. This is
-mechanism evidence only, not hosted acceptance of the corrected migration gate.
+Task 3's local evidence is summarized in
+`docs/packaging/vite-plus-1-runtime-proof.md`. Historical compiler/formatter and
+hook certification remain separate owners. Local success is not hosted approval.
 
 ## Maintenance
 
 - Maintainer: Agentera CLI maintainers
 - Source checkout root: `.`
 - Working directory: `.`
-- Command: `pnpm -C packages/cli run test:toolchain-baseline`
+- Command: `pnpm -C packages/cli run test:toolchain-baseline` (invoke with `vp exec`
+  so managed runtime ownership is retained).

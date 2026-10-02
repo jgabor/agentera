@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { cmdLint, lintFullArtifactPayload, lintPayload } from "../../src/cli/commands/lint.js";
 import { main } from "../../src/cli/dispatch.js";

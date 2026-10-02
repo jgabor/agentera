@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, expect, it, vi } from "vite-plus/test";
 import { main } from "../../src/cli/dispatch.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { readProfileSignals } from "../../src/analytics/profileSignals.js";

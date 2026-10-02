@@ -5,11 +5,11 @@ one-off reviews, and scratch material.
 
 Authoritative Agentera documentation lives elsewhere:
 
-| Topic | Location |
-| --- | --- |
-| Terminology index | [`references/cli/vocabulary.md`](../references/cli/vocabulary.md) |
-| CLI vocabulary authorities | [`references/cli/`](../references/cli/) |
-| User guides | [`README.md`](../README.md), [`UPGRADE.md`](../UPGRADE.md), [`AGENTS.md`](../AGENTS.md) |
+| Topic                      | Location                                                                                |
+| -------------------------- | --------------------------------------------------------------------------------------- |
+| Terminology index          | [`references/cli/vocabulary.md`](../references/cli/vocabulary.md)                       |
+| CLI vocabulary authorities | [`references/cli/`](../references/cli/)                                                 |
+| User guides                | [`README.md`](../README.md), [`UPGRADE.md`](../UPGRADE.md), [`AGENTS.md`](../AGENTS.md) |
 
 Authoritative exceptions:
 

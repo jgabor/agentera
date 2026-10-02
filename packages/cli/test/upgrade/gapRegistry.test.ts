@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { D56_PARITY_FAMILY_GAPS, GAP_IDS, DEFAULT_RUNTIME_MATRIX, TRACKED_GAPS, gapSkipReason, isGapClosed, isParityFamilyClosed } from "./gapRegistry.js";
 

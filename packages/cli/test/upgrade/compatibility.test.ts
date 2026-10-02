@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";

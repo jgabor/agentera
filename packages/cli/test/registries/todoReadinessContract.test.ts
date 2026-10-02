@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { loadTodoReadinessContract, todoReadinessRecordViolations, todoReadinessReferenceViolations, validateTodoReadinessContract } from "../../src/registries/todoReadinessContract.js";
 

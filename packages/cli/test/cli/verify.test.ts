@@ -1,7 +1,7 @@
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { buildVerifyPayload, cmdVerify, validateVerifyRequest, VerifyArgs } from "../../src/cli/commands/verify.js";
 import { requiresCompletedEntityCutover } from "../../src/cli/migrationRequired.js";

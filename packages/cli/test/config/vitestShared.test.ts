@@ -3,13 +3,28 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { describe, expect, inject, it } from "vitest";
+import { describe, expect, inject, it } from "vite-plus/test";
 import YAML from "yaml";
-import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
+import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, ownerProjects, sharedTestConfig, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
 describe("source worker policy", () => {
+  it("preserves independent v4 project configuration and mock history", () => {
+    expect(sharedTestConfig).toMatchObject({
+      fsModuleCache: true,
+      clearMocks: false,
+      sharedViteServer: false,
+    });
+    expect(sharedTestConfig).not.toHaveProperty("experimentalFsModuleCache");
+    for (const owner of ["source", "package"]) {
+      for (const project of ownerProjects(owner, 2, { partitionSource: true })) {
+        expect(project.extends).toBe(false);
+        expect(project.test).toMatchObject({ clearMocks: false, sharedViteServer: false });
+      }
+    }
+  });
+
   it("uses eight workers only for the explicitly selected measured runner", () => {
     expect(workerPolicyFor({ AGENTERA_VITEST_RUNNER_POLICY: MEASURED_LOCAL_WORKER_POLICY })).toEqual({
       name: MEASURED_LOCAL_WORKER_POLICY,
@@ -87,6 +102,7 @@ describe("source worker policy", () => {
     expect(packaged.hookTimeout).toBe(expected);
     expect(packaged.testTimeout).toBe(120_000);
     expect(packaged.maxWorkers).toBe(1);
+    expect(packaged.projects[0].test.maxConcurrency).toBe(4);
   });
 
   it("enforces shared deadlines in real Vitest while allowing passing tests and hooks", () => {

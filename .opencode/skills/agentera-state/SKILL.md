@@ -86,23 +86,23 @@ implementation chronology.
 Use one dominant scope or omit it. Do not use `agentera` as a scope and do not
 use comma-separated scopes.
 
-| Scope | Area |
-| --- | --- |
-| `cli` | CLI behavior, output, and tests |
-| `hooks` | Hooks and artifact validation |
-| `schemas` | Protocol, schemas, and schema contracts |
-| `eval` | Semantic evaluation fixtures and harnesses |
-| `install` | App home, setup, upgrade, and doctor behavior |
-| `package` | Package manifests, registry, lockfiles, version surfaces |
-| `runtime` | Shared cross-runtime behavior and adapters |
-| `opencode` | OpenCode runtime and packaging |
-| `claude` | Retired Claude migration and historical import only |
-| `codex` | Codex runtime and packaging |
-| `copilot` | Copilot runtime and packaging |
-| `cursor` | Cursor runtime, hooks, agents, and packaging |
-| `release` | Release readiness, publication, and version cuts |
-| `agents` | `AGENTS.md` and runtime-neutral operating guidance |
-| Capability name | Behavior, prose, schemas, or tests for that capability |
+| Scope           | Area                                                     |
+| --------------- | -------------------------------------------------------- |
+| `cli`           | CLI behavior, output, and tests                          |
+| `hooks`         | Hooks and artifact validation                            |
+| `schemas`       | Protocol, schemas, and schema contracts                  |
+| `eval`          | Semantic evaluation fixtures and harnesses               |
+| `install`       | App home, setup, upgrade, and doctor behavior            |
+| `package`       | Package manifests, registry, lockfiles, version surfaces |
+| `runtime`       | Shared cross-runtime behavior and adapters               |
+| `opencode`      | OpenCode runtime and packaging                           |
+| `claude`        | Retired Claude migration and historical import only      |
+| `codex`         | Codex runtime and packaging                              |
+| `copilot`       | Copilot runtime and packaging                            |
+| `cursor`        | Cursor runtime, hooks, agents, and packaging             |
+| `release`       | Release readiness, publication, and version cuts         |
+| `agents`        | `AGENTS.md` and runtime-neutral operating guidance       |
+| Capability name | Behavior, prose, schemas, or tests for that capability   |
 
 Capability scopes are `status`, `vision`, `discuss`, `research`, `plan`,
 `build`, `optimize`, `audit`, `document`, `profile`, `design`, and
@@ -116,7 +116,7 @@ that same commit:
 
 - Plan and task updates through the typed plan writer.
 - Any durable progress record authorized or required by the current `state
-  progress explain --verb append` guidance, through the typed progress writer.
+progress explain --verb append` guidance, through the typed progress writer.
 - `TODO.md` open-item resolution or newly discovered work.
 - Health findings through the typed health writer.
 - Decision updates through the typed decisions writer.
@@ -173,6 +173,6 @@ That history belongs in commit messages or design records.
 - Never amend unless the user explicitly requests it.
 - Never force-push or use destructive Git operations unless the user explicitly
   requests the applicable action.
-- Never skip hooks as a routine shortcut. Use `LEFTHOOK=0` only when hook
+- Never skip hooks as a routine shortcut. Use `VP_GIT_HOOKS=0` at commit time only when hook
   configuration is broken or a failure is already tracked for CI.
 - Preserve unrelated user changes and stage only intended files.

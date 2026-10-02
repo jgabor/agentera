@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { discoverEntities } from "../../src/state/entityStorage.js";
 import { assertRaceInvariant, concurrentPublication } from "../helpers/entityPublicationRace.js";

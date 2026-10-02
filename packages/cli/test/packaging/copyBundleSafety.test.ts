@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, inject, it } from "vitest";
+import { describe, expect, inject, it } from "vite-plus/test";
 
 const fixture = inject("packageFixture");
 const checkoutPackageRoot = path.resolve(import.meta.dirname, "../..");

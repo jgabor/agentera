@@ -5,7 +5,7 @@ import path from "node:path";
 
 import YAML from "yaml";
 import { encode } from "gpt-tokenizer/model/gpt-5";
-import { describe, expect, inject, it } from "vitest";
+import { describe, expect, inject, it } from "vite-plus/test";
 
 import { EXPECTED_PRODUCER_READINESS, runProducerReadinessWorkflow } from "../helpers/producerReadinessWorkflow.js";
 import { runProductionGlossaryWorkflow, runTrustedHarnessGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
@@ -13,6 +13,7 @@ import { validateStructuredInputInventory } from "../../src/registries/structure
 import { appendDecisionEntity } from "../../src/state/decisionEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
+import { coldProcessTest } from "../helpers/coldProcessTest.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -612,36 +613,39 @@ describe("npm distribution boundary", () => {
     });
   });
 
-  it("preserves readable references, selectors and minimum rows across constructed and extracted executables", () => {
+  it("preserves readable references, selectors and minimum rows across constructed and extracted executables", async (context) => {
     const project = path.join(fixture.root, "readable-reference-project");
     fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     const question = `Restore readable references ${"🧭".repeat(400)}`;
     const ids = Array.from({ length: 101 }, (_, index) => `${"a".repeat(8)}${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`);
-    for (const id of ids) {
-      const values = {
-        date: "2026-09-11",
-        question,
-        context: "Compatibility fixture",
-        alternatives: { chosen: "canonical entities" },
-        choice: "canonical entities",
-        reasoning: "x".repeat(20_000),
-        confidence: "firm",
-      };
-      appendDecisionEntity(
-        {
-          artifact: "decisions",
-          spec: operationSpec("decisions", "append")!,
-          projectRoot: project,
-          dryRun: false,
-          force: false,
-          values,
-          callerPayload: structuredClone(values),
-          input: null,
-        },
-        { id, sourceRoot: CHECKOUT_ROOT },
-      );
-    }
+    // This is a 101-row reader/budget fixture, not 101 distinct writer cases.
+    // Publish one canonical entity, then retain its exact record for every ID.
+    const values = {
+      date: "2026-09-11",
+      question,
+      context: "Compatibility fixture",
+      alternatives: { chosen: "canonical entities" },
+      choice: "canonical entities",
+      reasoning: "x".repeat(20_000),
+      confidence: "firm",
+    };
+    appendDecisionEntity(
+      {
+        artifact: "decisions",
+        spec: operationSpec("decisions", "append")!,
+        projectRoot: project,
+        dryRun: false,
+        force: false,
+        values,
+        callerPayload: structuredClone(values),
+        input: null,
+      },
+      { id: ids[0], sourceRoot: CHECKOUT_ROOT },
+    );
+    const decisionDirectory = path.join(project, ".agentera/entities/decisions/decision");
+    const canonical = YAML.parse(fs.readFileSync(path.join(decisionDirectory, `${ids[0]}.yaml`), "utf8"));
+    for (const id of ids.slice(1)) fs.writeFileSync(path.join(decisionDirectory, `${id}.yaml`), YAML.stringify({ ...canonical, id }));
     const todoId = "zzzzzzzzzz";
     const description = `Description-only TODO ${"漢😀".repeat(200)}`;
     const todoDirectory = path.join(project, ".agentera/entities/todo/todo_item");
@@ -667,82 +671,103 @@ describe("npm distribution boundary", () => {
         ]);
     const before = snapshot();
     const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
-    const read = (args: string[], status = 0) => {
-      const observations = bins.map((bin) => {
-        const result = spawnSync(process.execPath, [bin, ...args], {
-          cwd: project,
-          env: packageEnvironment(),
-          encoding: "utf8",
+    // The immutable project can be read by both fresh CLI processes at once.
+    // Keep dependency/mutation tests elsewhere in this file strictly serial.
+    await coldProcessTest(
+      context,
+      async ({ run, all }) => {
+        const read = async (args: string[], status = 0) => {
+          const observations = await all(
+            bins.map(async (bin) => {
+              const result = await run({
+                command: process.execPath,
+                args: [bin, ...args],
+                cwd: project,
+                env: packageEnvironment(),
+              });
+              expect(result.status, result.stdout + result.stderr).toBe(status);
+              expect(result.stderr).toBe("");
+              expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(32_768);
+              return JSON.parse(result.stdout);
+            }),
+          );
+          expect(observations[1]).toEqual(observations[0]);
+          return observations[0];
+        };
+        const list = ["state", "decisions", "list"];
+        const small = await read([...list, "--limit", "2"]);
+        expect(small.entries).toHaveLength(2);
+        expect(new Set(small.entries.map((row: { id: string }) => row.id)).size).toBe(2);
+        for (const row of small.entries) {
+          expect(row.readable).toMatchObject({
+            text: Array.from(question).slice(0, 160).join(""),
+            availability: "excerpt",
+            metadata: { confidence: "firm" },
+          });
+          expect(row.retrieval.get).toBe(`agentera state decisions get --id ${row.id}`);
+        }
+        const page = await read([...list, "--limit", "100"]);
+        expect(page.entries).toHaveLength(100);
+        expect(page.counts).toMatchObject({
+          returned: 100,
+          omitted: 1,
+          continuation: 1,
+          remaining: 1,
         });
-        expect(result.status, result.stdout + result.stderr).toBe(status);
-        expect(result.stderr).toBe("");
-        expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(32_768);
-        return JSON.parse(result.stdout);
-      });
-      expect(observations[1]).toEqual(observations[0]);
-      return observations[0];
-    };
-    const list = ["state", "decisions", "list"];
-    const small = read([...list, "--limit", "2"]);
-    expect(small.entries).toHaveLength(2);
-    expect(new Set(small.entries.map((row: { id: string }) => row.id)).size).toBe(2);
-    for (const row of small.entries) {
-      expect(row.readable).toMatchObject({
-        text: Array.from(question).slice(0, 160).join(""),
-        availability: "excerpt",
-        metadata: { confidence: "firm" },
-      });
-      expect(row.retrieval.get).toBe(`agentera state decisions get --id ${row.id}`);
-    }
-    const page = read([...list, "--limit", "100"]);
-    expect(page.entries).toHaveLength(100);
-    expect(page.counts).toMatchObject({ returned: 100, omitted: 1, continuation: 1, remaining: 1 });
-    expect(page.degradation.omitted_fields).toContain("readable");
-    expect(page.degradation.detail_omitted_count).toBe(100);
-    expect(page.next_cursor).toEqual(expect.any(String));
-    for (const row of page.entries) {
-      expect(row).toEqual({
-        id: row.id,
-        artifact: "decisions",
-        retrieval: { get: `agentera state decisions get --id ${row.id}` },
-      });
-    }
-    expect(read([...list, "--limit", "100", "--ids-only"]).entries).toEqual(page.entries);
-    const last = read([...list, "--limit", "100", "--cursor", page.next_cursor]);
-    expect(last.entries).toHaveLength(1);
-    expect(new Set([...page.entries, ...last.entries].map((row: { id: string }) => row.id))).toEqual(new Set(ids));
-    expect(last.next_cursor).toBeUndefined();
-    const selected = read([...list, "--limit", "2", "--fields", "confidence"]);
-    expect(
-      selected.entries.map((row: { record: unknown; readable?: unknown }) => ({
-        record: row.record,
-        readable: row.readable,
-      })),
-    ).toEqual(Array.from({ length: 2 }, () => ({ record: { confidence: "firm" }, readable: undefined })));
-    expect(read(["state", "decisions", "get", "--id", small.entries[0].id]).entry.record.question).toBe(question);
-    expect(read([...list, "--fields", "confidence,confidence"], 2)).toMatchObject({
-      status: "fail",
-    });
-    const todos = read(["state", "todo", "list", "--status", "open"]);
-    expect(todos.entries[0].readable).toMatchObject({
-      text: Array.from(description).slice(0, 160).join(""),
-      source: "record.description",
-      availability: "excerpt",
-    });
-    expect(read(["state", "todo", "list", "--fields", "description,status"]).entries[0].record).toEqual({ description, status: "open" });
-    const startup = read(["prime", "--context", "status"]);
-    expect(Buffer.byteLength(JSON.stringify(startup, null, 2) + "\n")).toBeLessThanOrEqual(22500);
-    const context = startup.capability_context.context.status_context;
-    const decisionAttention = context.attention.find((text: string) => text.includes("⛋ Decision"));
-    expect(decisionAttention).toContain(`⛋ Decision ${ids[0]}`);
-    expect(decisionAttention).toContain("confidence firm; satisfaction unavailable");
-    expect(context.attention.find((text: string) => text.includes("→ TODO"))).toContain(`→ TODO ${todoId} · open`);
-    const decisionAction = [context.next_action, ...context.next_action.alternatives].find((action: { id?: string }) => action.id === ids[0]);
-    expect(decisionAction.object).toContain(`⛋ Decision ${ids[0]} · confidence firm; satisfaction unavailable`);
-    expect(snapshot()).toEqual(before);
-    for (const relative of ["skills/agentera/SKILL.md", "skills/agentera/protocol.yaml", "references/artifacts/state-storage-authority.yaml"]) {
-      expect(fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative), "utf8")).toBe(fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8"));
-    }
+        expect(page.degradation.omitted_fields).toContain("readable");
+        expect(page.degradation.detail_omitted_count).toBe(100);
+        expect(page.next_cursor).toEqual(expect.any(String));
+        for (const row of page.entries) {
+          expect(row).toEqual({
+            id: row.id,
+            artifact: "decisions",
+            retrieval: { get: `agentera state decisions get --id ${row.id}` },
+          });
+        }
+        expect((await read([...list, "--limit", "100", "--ids-only"])).entries).toEqual(page.entries);
+        const last = await read([...list, "--limit", "100", "--cursor", page.next_cursor]);
+        expect(last.entries).toHaveLength(1);
+        expect(new Set([...page.entries, ...last.entries].map((row: { id: string }) => row.id))).toEqual(new Set(ids));
+        expect(last.next_cursor).toBeUndefined();
+        const selected = await read([...list, "--limit", "2", "--fields", "confidence"]);
+        expect(
+          selected.entries.map((row: { record: unknown; readable?: unknown }) => ({
+            record: row.record,
+            readable: row.readable,
+          })),
+        ).toEqual(
+          Array.from({ length: 2 }, () => ({
+            record: { confidence: "firm" },
+            readable: undefined,
+          })),
+        );
+        expect((await read(["state", "decisions", "get", "--id", small.entries[0].id])).entry.record.question).toBe(question);
+        expect(await read([...list, "--fields", "confidence,confidence"], 2)).toMatchObject({
+          status: "fail",
+        });
+        const todos = await read(["state", "todo", "list", "--status", "open"]);
+        expect(todos.entries[0].readable).toMatchObject({
+          text: Array.from(description).slice(0, 160).join(""),
+          source: "record.description",
+          availability: "excerpt",
+        });
+        expect((await read(["state", "todo", "list", "--fields", "description,status"])).entries[0].record).toEqual({ description, status: "open" });
+        const startup = await read(["prime", "--context", "status"]);
+        expect(Buffer.byteLength(JSON.stringify(startup, null, 2) + "\n")).toBeLessThanOrEqual(22500);
+        const context = startup.capability_context.context.status_context;
+        const decisionAttention = context.attention.find((text: string) => text.includes("⛋ Decision"));
+        expect(decisionAttention).toContain(`⛋ Decision ${ids[0]}`);
+        expect(decisionAttention).toContain("confidence firm; satisfaction unavailable");
+        expect(context.attention.find((text: string) => text.includes("→ TODO"))).toContain(`→ TODO ${todoId} · open`);
+        const decisionAction = [context.next_action, ...context.next_action.alternatives].find((action: { id?: string }) => action.id === ids[0]);
+        expect(decisionAction.object).toContain(`⛋ Decision ${ids[0]} · confidence firm; satisfaction unavailable`);
+        expect(snapshot()).toEqual(before);
+        for (const relative of ["skills/agentera/SKILL.md", "skills/agentera/protocol.yaml", "references/artifacts/state-storage-authority.yaml"]) {
+          expect(fs.readFileSync(path.join(fixture.packageRoot, "bundle", relative), "utf8")).toBe(fs.readFileSync(path.join(CHECKOUT_ROOT, relative), "utf8"));
+        }
+      },
+      { concurrency: 2 },
+    );
   });
 
   it("matches selected-term startup across constructed and extracted runtimes", () => {

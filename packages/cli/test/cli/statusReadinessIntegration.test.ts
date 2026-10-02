@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessEntity } from "../../src/cli/todoReadinessSelection.js";

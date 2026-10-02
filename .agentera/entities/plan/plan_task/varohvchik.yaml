@@ -1,0 +1,25 @@
+id: varohvchik
+artifact: plan
+record:
+  name: Reduce the measured package-verification bottleneck
+  depends_on:
+    - yggluuqako
+    - oazzhjwxul
+    - crpfvreykv
+  status: complete
+  acceptance:
+    - GIVEN baseline cost evidence WHEN expensive work changes THEN the dominant measured cost is reduced rather than merely moving setup time.
+    - GIVEN merged or replaced checks WHEN reviewed THEN every required scenario maps to retained evidence and no unexplained coverage loss remains.
+    - GIVEN concurrent verification WHEN it fails THEN children settle before cleanup and independent package proofs remain valid.
+    - GIVEN changed workload behavior WHEN tested THEN one successful case and one failure per boundary preserve defect detection.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: package-workload-1
+      source: docs/packaging/vite-plus-1-package-proof.md; 72 package assertions and 4892 source assertions passed; bounded journey scheduling cut observed package wall 47 percent without lost scenarios
+      recorded_at: 2026-10-02 02:31
+      writer_command: agentera state plan record-evaluation

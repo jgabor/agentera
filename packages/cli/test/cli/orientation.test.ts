@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { healthSummary, issueCounts, loadTodoItems, parseProfileHeaderDates, planSummary, progressSummary, selectStatusNextAction, selectStatusReadiness, statePresence } from "../../src/cli/orientation.js";
 import { orchestrationContext } from "../../src/cli/capabilityContext/orchestration.js";

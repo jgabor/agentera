@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach } from "vitest";
+import { afterEach, beforeEach } from "vite-plus/test";
 
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 

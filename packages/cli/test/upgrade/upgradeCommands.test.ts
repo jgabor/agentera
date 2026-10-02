@@ -1,7 +1,7 @@
 import { fileURLToPath } from "node:url";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { resolveUpdateChannel } from "../../src/upgrade/channels.js";
 import { buildUpgradeCommands, commandText } from "../../src/upgrade/upgradeCommands.js";

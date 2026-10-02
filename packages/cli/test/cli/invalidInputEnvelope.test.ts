@@ -1,6 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch.js";
 import { emitInvalidInput, INVALID_INPUT_EXIT_CODE, type InvalidInputErrorClass, type InvalidInputEnvelope } from "../../src/cli/errors.js";

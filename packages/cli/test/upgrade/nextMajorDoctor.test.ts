@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { loadUpdateChannelsAuthority } from "../../src/upgrade/channels.js";
 import { NEXT_MAJOR_LINE_CAP, NEXT_MAJOR_SECTION_HEADER, formatNextMajorDoctorLines, isStableSuccessorAnnounced, loadChannelNextMajor, prependNextMajorDoctorSection, resolveNextMajorDoctorLines, setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";

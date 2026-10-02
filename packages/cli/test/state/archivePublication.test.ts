@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import { publishImmutableFile, publishNumberedArchive, type ArchivePublicationFileSystem } from "../../src/state/archivePublication.js";

@@ -1,22 +1,33 @@
 schema_version: agentera.toolchainBaseline.v2
 status: bootstrap_rollout_pending_hosted_acceptance
-recorded: 2026-09-03
+recorded: 2026-10-02
 purpose: >-
-  Retain the exact Vite+ candidate, exhaustive setup-vp trust review, isolated
-  root-ownership proof, and executable install-policy evidence needed before
-  the workspace-root and CI migrations.
+  Retain the verified Vite+ 1.0.0 runtime and component pins, historical setup-vp
+  trust review, isolated root-ownership proof, and current executable
+  install-policy evidence. Hosted bootstrap acceptance remains separate.
 
 selection:
   vite_plus:
-    version: 0.3.0
-    release_commit: b2d15e3899dcc8adedfd45d98de9d30046a624f4
-    npm_integrity: sha512-GNWbWuWD37frCSFrz6MLzUo62bTv5IOJozHEgZYOkxsLkuQtTwm4TowzpfoGrSsfwhAAtfPd/sK1Y0+v1SwhZA==
-    node_range: ^20.19.0 || ^22.18.0 || >=24.11.0
+    version: 1.0.0
+    release_commit: fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4
+    npm_integrity: sha512-2ezzBWt+AVO+I2F9Cpb2Of0J12Lat35kWZ/FRL2monMnKZuACKfkYAA/nMqdDo1KwB8sWjTKzmD9mRCh1Q1n+g==
+    node_range: ^22.18.0 || ^24.11.0 || >=26.0.0
+    native_linux_x64:
+      asset: vp-x86_64-unknown-linux-gnu.tar.gz
+      sha256: 2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a
+      immutable_release: true
+    npm_provenance:
+      verified: 2026-10-02
+      predicate: https://slsa.dev/provenance/v1
+      issuer: https://token.actions.githubusercontent.com
+      signer: https://github.com/voidzero-dev/vite-plus/.github/workflows/release.yml@refs/heads/main
+      invocation: https://github.com/voidzero-dev/vite-plus/actions/runs/36369459351/attempts/1
+      platform_npm_integrity: sha512-R6+/oVLCSEvatOG1utYo0d0I++QPjWuRt2moD21+UUu2mQ8VyZHaaQLgoxrQG9shA9o0RBDmwxhGUXL20Rk1FA==
     bundled:
-      vite: 8.2.2
-      vitest: 4.1.11
-      oxlint: 1.79.0
-      oxfmt: 0.64.0
+      vite: 8.3.1
+      vitest: 5.0.1
+      oxlint: 1.85.0
+      oxfmt: 0.70.0
     conclusion: compatible with the pinned Node 24.19.0 runtime
   setup_vp:
     selected:
@@ -111,9 +122,9 @@ executable_proof:
   command: vp -C packages/cli run test:toolchain-baseline
   fixture: isolated temporary workspace; the checkout is not migrated
   coverage:
-    - reads packageManager and executes Vite-managed pinned pnpm through standalone Vite+ 0.3.0
+    - reads packageManager and executes Vite-managed pinned pnpm through standalone Vite+ 1.0.0
     - reads onlyBuiltDependencies through live pnpm config
-    - installs exact root-local vite-plus 0.3.0 and defeats an earlier stale vp on PATH
+    - installs exact root-local vite-plus 1.0.0 and defeats an earlier stale vp on PATH
     - accepts a matching frozen lockfile and rejects a changed manifest
     - executes the allowed esbuild install script and suppresses an unlisted install script
     - rejects ambient Node, pnpm and Corepack ownership with executable traps
@@ -127,7 +138,7 @@ executable_proof:
       rejected: pnpm@latest
     ownership:
       fresh_bare_vp: 0.1.19
-      installed_root_vp: 0.3.0
+      installed_root_vp: 1.0.0
       stale_owned_project_commands: false
     frozen_lockfile:
       accepted: true
@@ -136,8 +147,8 @@ executable_proof:
       allowed_executed: esbuild
       rejected_suppressed: blocked-build
     elapsed_seconds:
-      fresh_frozen_install: 0.340
-      installed_vp_frozen_install: 0.495
+      fresh_frozen_install: 0.263
+      installed_vp_frozen_install: 0.362
     timing_interpretation: observational only; not a budget
 
 sources:
@@ -148,8 +159,8 @@ sources:
   - https://github.com/voidzero-dev/setup-vp/blob/1b32467adbe183473499fd9d5d372c3ed9641754/dist/index.mjs
   - https://github.com/voidzero-dev/setup-vp/blob/5af416ede120848958d85c9720e61b921ac7bca6/src/install-viteplus.ts
   - https://github.com/voidzero-dev/setup-vp/blob/5af416ede120848958d85c9720e61b921ac7bca6/src/ci/install-script-urls.ts
-  - https://github.com/voidzero-dev/vite-plus/releases/tag/v0.3.0
-  - https://registry.npmjs.org/vite-plus/0.3.0
+  - https://github.com/voidzero-dev/vite-plus/releases/tag/v1.0.0
+  - https://registry.npmjs.org/vite-plus/1.0.0
   - https://pnpm.io/cli/install#--frozen-lockfile
 
 caveat: >-

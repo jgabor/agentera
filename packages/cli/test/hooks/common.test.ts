@@ -1,6 +1,6 @@
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { MAX_FULL_ENTRIES, MAX_TOTAL_ENTRIES, applyRetentionCaps, parseArtifactMapping, parseDocsYamlMapping, resolveArtifactPath } from "../../src/hooks/common.js";
 

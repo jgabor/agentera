@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { buildNoRuntimeStartupIntermediate, buildStartupIntermediate, extractStartupIntermediateFromCorpusFile, persistStartupBenchmark, previousBenchmarkWatermark } from "../../src/state/startupAnalysis.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";

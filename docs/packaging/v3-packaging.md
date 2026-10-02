@@ -12,10 +12,10 @@ packages, and the former Bun single-binary surface are retired.
 
 ## Contributor command entrypoints
 
-Complete the standalone Vite+ 0.3.0 setup in
+Complete the verified standalone Vite+ 1.0.0 setup in
 [AGENTS.md](../../AGENTS.md#common-commands) before using this guide's maintainer
 commands. Run them from the repository root. That authority owns launcher and
-dependency recovery, Lefthook setup, the optional nested npm recipe, and the
+dependency recovery, native hook setup, the optional nested npm recipe, and the
 Linux x64/offline support limits; Vite+ does not provide OS tools or Git history.
 See [test prerequisites](../../packages/cli/test/README.md#contributor-prerequisites).
 
@@ -26,7 +26,35 @@ maintainer helpers. Keep the documented targets and arguments, including literal
 the pnpm workspace; do not replace them with workspace filters. Native
 `vp test`/`vp build` are not aliases for `vp run test`/`vp run build`.
 
-The scripts still delegate internally to pnpm. CI's trusted Corepack bootstrap,
+The root recipes are native tasks in `vite.config.ts`, not root package scripts.
+Each has `cache: false`, including every release wrapper, so `vp run --cache`
+cannot replay a verdict. Package-level pnpm scripts remain unchanged. Use the
+documented `vp run` entrypoints rather than removed root pnpm script aliases.
+`vp run test:local` selects only the positive fast native project for developer
+diagnostics. `vp run typecheck:fresh` explicitly selects the fresh typecheck owner.
+The [bounded reuse proof](vite-plus-1-cache-proof.md) records transformed-module
+reuse and why native verdict caching remains disabled.
+
+Runtime-bearing root tasks invoke the standalone launcher's `VP_CLI_BIN` with
+`env exec --node` from `.node-version`. This keeps the public `vp run` recipes
+unchanged without trusting ambient Node. In Vite+ 1.0, native `run` and `exec`
+alone do not guarantee the runtime pin. Wrap this guide's advanced `vp -C`
+recipes as `vp env exec --node 24.19.0 vp -C packages/cli run <script>`.
+Use the same wrapper for the shim directory. The actual child process version,
+not the displayed pin, is the qualification check.
+
+The branch-only `.github/workflows/vite-plus-toolchain.yml` is a separate,
+nonpublishing experiment. It compares immutable baseline
+`1b964ee320832100b8715503a8a7747b0d0fc591` with the pushed branch SHA on fresh
+Ubuntu 24.04 Linux x64 runners. Each revision uses its own verified bootstrap
+and production development-verification owner. Candidate execution still runs
+after baseline failure unless the workflow is cancelled. It has read-only
+repository permission, no OIDC or registry credentials, no verdict cache, and
+no publication or candidate-construction command. It does not replace or edit
+`publish.yml`. See [qualification evidence](vite-plus-1-qualification.md) for
+local results, diagnostic retention and hosted-run gaps.
+
+The tasks still delegate internally to pnpm. CI's verified native Vite+ bootstrap,
 isolated npm package construction, and the fixed OIDC publisher are separate
 authorities and remain unchanged. These contributor commands neither replace
 those mechanisms nor grant release or registry-mutation permission. Consumer
@@ -101,7 +129,7 @@ derives the base release line from the valid checked-in
 `GITHUB_RUN_NUMBER + 89`. The new workflow's runs 1, 2, and 3 map to
 `3.0.0-dev.90`, `.91`, and `.92`; the fixed offset follows the prior workflow's
 `dev.89` publication. Before construction, a no-OIDC verification job checks
-out `GITHUB_SHA`, installs the exact root Vite+ 0.3.0 and pnpm 10.30.3
+out `GITHUB_SHA`, installs the exact root Vite+ 1.0.0 and pnpm 10.30.3
 toolchain without automatic install or caching, runs bare `vp check`, then
 runs uncached `vp run verify:development`. This runs development safety,
 not full release qualification, and produces no receipt. Its
@@ -121,8 +149,8 @@ construction manifest. It
 validates that exact tarball's version and git ref, runs its executable CLI
 version smoke, then uploads the tarball and bounded classification as one
 same-run Actions artifact. The entire dependent checkout-free, action-free job has OIDC
-    capability and runs only fixed reviewed workflow logic. It downloads and
-    publishes that exact tarball to `@next`; it does not rebuild. This routine path does
+capability and runs only fixed reviewed workflow logic. It downloads and
+publishes that exact tarball to `@next`; it does not rebuild. This routine path does
 not run the manual receipt-producing qualification, attestation, benchmark, or artifact
 handoff framework. It does not edit the checkout or require a final metadata-only
 commit. The package-global `publish-agentera` group uses
@@ -207,7 +235,7 @@ not use the development receipt. `cli:qualify:source` and `cli:qualify:dev`
 remain the exact low-level receipt owners.
 
 Stable publication is not implemented. The cutover must add a no-OIDC stable
-    build job and a dependent OIDC-enabled publication job with the protected
+build job and a dependent OIDC-enabled publication job with the protected
 `npm-publish` environment inside the same `.github/workflows/publish.yml`.
 
 Full source qualification runs one evidence DAG. Batch A starts generated-overlap,
@@ -513,7 +541,7 @@ package artifact digest, metadata commit, package, version, artifact hash and
 integrity, and source run ID. It reports measured stage, staged package migration
 smoke, and promote components,
 total and unattributed time, reconciliation, replay state, and whether the
-  total is strictly below 120,000 ms. It ignores child or caller elapsed claims.
+total is strictly below 120,000 ms. It ignores child or caller elapsed claims.
 The first failure retains its original phase label. Diagnostics and receipts
 omit credentials and private absolute paths.
 
@@ -549,14 +577,14 @@ it is not a budget, package artifact receipt, approval, or publication authority
 test inventory ownership and policy composition. The six test owners are
 independent:
 
-| Owner | Entry point | Owns |
-| ----- | ----------- | ---- |
-| Source | `vp run test` (`test:source`) | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
-| Stress | `vp -C packages/cli run test:stress` | Repeated probabilistic stress evidence assigned by the policy inventory. |
-| Performance | `vp -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check. |
-| Capacity | `vp -C packages/cli run test:capacity` | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing. |
-| Package | `vp -C packages/cli run verify:package` | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke. |
-| Certification | `vp -C packages/cli run test:certification` | Historical all-test compiler viability, formatter normalization replay, and parity re-pin proof, including tamper rejection. Only the three explicitly named policy files belong here; behavioral product parity remains source-owned. Mandatory in full qualification, omitted from routine development. |
+| Owner         | Entry point                                 | Owns                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source        | `vp run test` (`test:source`)               | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Stress        | `vp -C packages/cli run test:stress`        | Repeated probabilistic stress evidence assigned by the policy inventory.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Performance   | `vp -C packages/cli run test:performance`   | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check.                                                                                                                                                                                                             |
+| Capacity      | `vp -C packages/cli run test:capacity`      | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing.                                                                                                                                                                                                                                                                                                                                              |
+| Package       | `vp -C packages/cli run verify:package`     | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke.                                                                                                                                                                     |
+| Certification | `vp -C packages/cli run test:certification` | Historical all-test compiler viability, formatter normalization replay, and parity re-pin proof, including tamper rejection. Only the three explicitly named policy files belong here; behavioral product parity remains source-owned. Mandatory in full qualification, omitted from routine development.                                                                                                                                                |
 
 Build is a separate generated-output participant, not a test owner. Routine
 builds synchronize staged output into checkout `dist/` and `bundle/`; release
@@ -585,8 +613,8 @@ reduced to its distribution-only inventory, three controlled runs took 5.558,
 5.489, and 5.471 seconds. Their measured owner times were 4.752, 4.698, and
 4.672 seconds. Earlier single-construction calibration is
 retained in the policy but is explicitly superseded as final-snapshot evidence:
-  the 10,000 ms limit rejected a passing 10.429-second owner, while the
-  15,000 ms limit passed owner runs of 9.859, 8.962, and 13.069 seconds. The
+the 10,000 ms limit rejected a passing 10.429-second owner, while the
+15,000 ms limit passed owner runs of 9.859, 8.962, and 13.069 seconds. The
 former 60,000 ms calibration combined the controlled maximum (5,558 ms) with
 standalone remote cold-run evidence (28,714 ms); that context is superseded,
 not erased. The intended release DAG overlaps source, package, and build.
@@ -613,18 +641,18 @@ limit fails with the package correction command.
 
 The canonical policy compositions are:
 
-| Policy | Owners, in order |
-| ------ | ---------------- |
-| `targeted` | Source |
-| `precommit` | Source |
-| `fast` | Source |
-| `local` | Source |
-| `merge` | Source, package |
-| `scheduled` | Source, stress, performance, capacity |
-| `release` | Source, stress, performance, capacity, package, certification |
+| Policy      | Owners, in order                                              |
+| ----------- | ------------------------------------------------------------- |
+| `targeted`  | Source                                                        |
+| `precommit` | Source                                                        |
+| `fast`      | Source                                                        |
+| `local`     | Source                                                        |
+| `merge`     | Source, package                                               |
+| `scheduled` | Source, stress, performance, capacity                         |
+| `release`   | Source, stress, performance, capacity, package, certification |
 
-Pre-commit uses native staged checks and import-related source tests, not a
-changed-path routing script. Root native discovery contains disjoint `local`,
+Pre-commit uses native staged checks and import-related source tests, with a small
+reader-selection bridge. Root native discovery contains disjoint `local`,
 `source` (remainder) and `guards` projects; all belong to the source owner. Native configurations
 derive membership from `verification-policy.yaml`, including the specialized
 owners selected by CI. The local `guards` project runs for authority and
@@ -638,11 +666,14 @@ subset. Run `vp run test` or `vp -C packages/cli run test:source` for
 all source tests; `--project source` alone selects only the remainder. Two local
 workers and native test/hook timeouts are configured, with whole-project
 typecheck separate; membership is bounded, not a runtime SLA.
-Project-local staged formatting/linting runs first by native priority,
-hides unstaged hunks and never uses
-Lefthook `stage_fixed`. Markdown uses a pinned local tool and config-owned rules
-and ignores. Byte-stable fixtures/evidence and typed-state output are not
-rewritten. Missing local tools fail; recover with `vp install`. Only network
+One sequential root staged task runs project-local formatting/linting before
+all validation readers, then restores hidden partial hunks. Native Vite+ owns
+the hook; an old installed entry point only forwards to the same policy.
+Oxfmt owns eligible Markdown formatting, not structural lint. Its concessions,
+width 320 and exclusions are documented in
+[the formatting concession record](vite-plus-1-formatting-concessions.md).
+Byte-stable fixtures/evidence and typed-state output are not rewritten.
+Missing local tools fail; recover with `VP_GIT_HOOKS=0 vp install`. Only network
 state compaction retains a 10-second watchdog; Python/TS parity stays narrowly
 triggered. The local hook never executes a specialized owner or release lane.
 The configured development-ref workflow invokes development safety once.

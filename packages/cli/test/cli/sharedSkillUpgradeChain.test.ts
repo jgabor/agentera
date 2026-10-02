@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { expect, it, vi } from "vitest";
+import { expect, it, vi } from "vite-plus/test";
 import { main } from "../../src/cli/dispatch.js";
 import { loadHostSkillSource } from "../../src/setup/hostSkillLifecycle.js";
 import { runSharedSkillUpgradeWorkflow } from "../helpers/sharedSkillUpgradeWorkflow.js";

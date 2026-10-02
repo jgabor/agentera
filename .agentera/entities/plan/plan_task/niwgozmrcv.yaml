@@ -1,0 +1,23 @@
+id: niwgozmrcv
+artifact: plan
+record:
+  name: Qualify the candidate and synchronize its contracts
+  depends_on:
+    - yyhecmclhx
+  status: complete
+  acceptance:
+    - GIVEN the completed candidate WHEN required checks run THEN source, package, migration, resource, and contract obligations remain satisfied.
+    - GIVEN development and full qualification WHEN compared THEN faster routine checks do not masquerade as full release assurance.
+    - GIVEN feature-branch verification WHEN pushed THEN baseline and candidate run without publication while exact-byte binding and credential isolation remain intact.
+    - GIVEN changed tooling WHEN delivery is prepared THEN guidance, dependency inventory, decisions, and concession records describe the same final behavior.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: candidate-qualification-1
+      source: docs/packaging/vite-plus-1-qualification.md; all 11 development gates, hermetic source, bootstrap and migration passed; initial audit found no defects; full historical certification remains failed and documented
+      recorded_at: 2026-10-02 05:08
+      writer_command: agentera state plan record-evaluation

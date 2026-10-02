@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it, beforeEach, afterEach } from "vite-plus/test";
 
 import { ArtifactSchemaValidator } from "../../../src/hooks/validateArtifact/index.js";
 import { countTodoResolvedEntries, countTodoResolvedInSeverityBands, countTodoResolvedSectionHeadings, countTodoPendingSummarization, extractResolvedSection, isTodoResolvedSectionHeading, normalizeTodoResolvedLayout } from "../../../src/hooks/compaction/parse.js";

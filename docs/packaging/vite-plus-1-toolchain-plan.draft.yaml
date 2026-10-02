@@ -1,0 +1,151 @@
+# Approved source input, not canonical plan state.
+# Published plan xcxdsrlvym owns current task and lifecycle state.
+header:
+  level: full
+  created: "2026-10-01"
+  status: open
+  reviewed: "2026-10-01"
+  critic_issues: "1 found, 1 addressed, 0 dismissed"
+  revised: "Set eight-hour unattended scope, non-publishing feature-branch CI retries, and retain-exception fallbacks."
+  title: "Plan: Consolidate the toolchain on Vite+ 1.0.0"
+what: >-
+  Develop an isolated Vite+ 1.0.0 toolchain candidate that replaces redundant
+  runtime, formatting, and hook tools, reduces CI feedback time, and provides
+  measured evidence and an explicit concession record for later branch review.
+why: >-
+  Development publication failed at baseline 1b964ee3 because package verification
+  took 780.9 seconds against a 515-second budget. Only 24.6 seconds was recorded
+  setup. The user now prioritizes consolidation and practical CI feedback over
+  retaining the previous toolchain architecture. The provisional toolchain
+  decision udusuvfkcj is historical context, not approval for this redesign.
+constraints: >-
+  After explicit execution approval, work unattended for at most eight hours
+  on the candidate. Preserve consumer behavior, dependency integrity, required
+  defect detection, and publication isolation. Record formatting concessions;
+  retain minimal exceptions instead of asking or weakening safeguards. Permit
+  local commits, ordinary non-publishing feature-branch repair pushes, and
+  read-only CI monitoring. Verify publication routing before every push. No
+  integration, force-push, npm mutation, global tool change, or shared-hook
+  activation. Do not raise budgets to hide failure. Report unresolved work at
+  the deadline; publication of plan state alone does not start execution.
+design: >-
+  Establish a reproducible baseline and identify the dominant workload before
+  changing its execution. Consolidate the development environment and quality
+  loop, then remove measured duplication and introduce bounded reuse. Validate
+  invalidation and failures before measuring the completed candidate. Preserve
+  independent release assurance and finish with an evidence package for a
+  separate side-by-side adoption review, not an automatic integration.
+scope:
+  included:
+    - "Baseline commit 1b964ee320832100b8715503a8a7747b0d0fc591 and CI run 36920660152."
+    - "Vite+ 1.0.0 migration, bundled dependency alignment, and compatible test APIs."
+    - "Corepack replacement in contributor and non-OIDC CI bootstrap paths."
+    - "Native Vite+ commands and hooks; retire Lefthook when required checks are preserved."
+    - "Oxfmt Markdown formatting and Markdownlint retirement with an explicit lost-rule inventory."
+    - "Measured package workload, verification scheduling, deterministic preparation, and safe caching."
+    - "Current verification authorities, CI workflow, manifests, lockfile, tests, and contributor guidance."
+    - "Branch-only non-publishing hosted comparison, ordinary feature-branch repair pushes, and read-only monitoring."
+    - "Small paired performance measurement and a dependency, coverage, and concession dossier."
+  excluded:
+    - "Consumer CLI features, project-state schema changes, and stable-release cutover."
+    - "Unrelated runtime or optional OpenCode dependency upgrades."
+    - "Changing the configured publication ref or exposing the OIDC publisher to candidate tools."
+    - "Pushes outside refs/heads/vite-plus-1-toolchain, force-pushes, branch integration, npm publication, and adoption decisions."
+    - "Remote workflow cancellation, unrelated dispatch, and any change to the fixed OIDC publisher."
+  deferred:
+    - "Proper side-by-side branch comparison and adoption decision after the candidate is complete."
+    - "Broad benchmark campaigns or worker retuning without a measured need."
+unknowns:
+  - question: "Which package workload or runner phase dominates the 756.3-second outside-setup residual?"
+    affects_task: 5
+    resolve_by: "Use task 1 timings to select the expensive work; revise downstream scope if evidence contradicts it."
+  - question: "Can the native hook path preserve all required checks without changing the primary worktree's hooks?"
+    affects_task: 4
+    resolve_by: "Prove behavior in disposable repositories; retain a minimal compatible hook entry without changing shared configuration."
+  - question: "Which preparation results can be reused without replacing independent package proofs or fresh behavioral checks?"
+    affects_task: 6
+    resolve_by: "Classify task 1 obligations, then demonstrate identity binding and invalidation before enabling reuse."
+  - question: "Does the candidate meet the existing package budget on the contracted hosted runner?"
+    affects_task: 8
+    resolve_by: "Use candidate-only hosted verification and repair failed candidate work within the approved window; report any unresolved gate honestly."
+overall_acceptance: >-
+  GIVEN the candidate is complete WHEN its evidence is reviewed THEN Vite+
+  provides the consolidated development path, required behavior and trust
+  boundaries hold, changed coverage and concessions are explicit, paired cold
+  and warm timings show the actual effect, cold hosted development verification
+  passes with package wall time at or below 515 seconds, and adoption or
+  publication still requires separate approval.
+tasks:
+  - number: 1
+    name: Establish the baseline and package cost model
+    depends_on: []
+    status: pending
+    acceptance:
+      - "GIVEN the frozen baseline WHEN measured THEN owner, setup, file, assertion, and residual timings identify expensive work."
+      - "GIVEN before samples WHEN retained THEN exact revisions, environment, cache state, outcomes, and required scenario inventory are recorded."
+      - "GIVEN a baseline failure WHEN reported THEN it remains visible and is not converted into a passing timing result."
+      - "GIVEN measurement changes WHEN checked THEN one successful run and one failing or cancelled run prove reliable reporting."
+  - number: 2
+    name: Establish the Vite+ 1.0.0 compatibility baseline
+    depends_on: [1]
+    status: pending
+    acceptance:
+      - "GIVEN the original dependency state WHEN migrated THEN the aligned toolchain preserves required test behavior and owner selection."
+      - "GIVEN migrated tests WHEN checked THEN setup, mocks, asynchronous assertions, and report consumers retain their intended semantics."
+      - "GIVEN dependency consolidation WHEN reviewed THEN every retained direct tool has a concrete compatibility or verification reason."
+      - "GIVEN changed compatibility behavior WHEN tested THEN one pass and one fail per testable unit preserve regression coverage."
+  - number: 3
+    name: Replace Corepack with the verified managed environment
+    depends_on: [2]
+    status: pending
+    acceptance:
+      - "GIVEN a supported fresh checkout WHEN provisioned THEN development and non-publishing CI need no Corepack or ambient runtime tools."
+      - "GIVEN pinned dependencies WHEN installed THEN integrity, frozen-lock enforcement, credential isolation, and lifecycle restrictions remain effective."
+      - "GIVEN linked worktrees and isolated homes WHEN commands run THEN the correct environment is selected without modifying other checkouts."
+      - "GIVEN bootstrap behavior WHEN tested THEN one valid case and one rejected case per trust boundary prove fail-closed behavior."
+  - number: 4
+    name: Consolidate formatting, linting, and commit checks
+    depends_on: [3]
+    status: pending
+    acceptance:
+      - "GIVEN supported root, package, and editor entry points WHEN checks run THEN intended scope and options agree."
+      - "GIVEN a partially staged change WHEN commit checks run THEN required checks execute and unstaged content remains unchanged."
+      - "GIVEN Markdown formatting replaces lint policy WHEN reviewed THEN lost rules and resulting formatting changes are listed explicitly."
+      - "GIVEN native hook adoption WHEN proven THEN one pass and one fail per retained check support retirement of redundant tools."
+  - number: 5
+    name: Reduce the measured package-verification bottleneck
+    depends_on: [2, 3, 4]
+    status: pending
+    acceptance:
+      - "GIVEN baseline cost evidence WHEN expensive work changes THEN the dominant measured cost is reduced rather than merely moving setup time."
+      - "GIVEN merged or replaced checks WHEN reviewed THEN every required scenario maps to retained evidence and no unexplained coverage loss remains."
+      - "GIVEN concurrent verification WHEN it fails THEN children settle before cleanup and independent package proofs remain valid."
+      - "GIVEN changed workload behavior WHEN tested THEN one successful case and one failure per boundary preserve defect detection."
+  - number: 6
+    name: Introduce bounded reuse without cached assurance
+    depends_on: [5]
+    status: pending
+    acceptance:
+      - "GIVEN unchanged deterministic preparation WHEN repeated THEN valid reuse avoids measured duplicate work while required assertions execute freshly."
+      - "GIVEN changed inputs, environment, or corrupted reuse WHEN checked THEN stale outputs invalidate or fail closed."
+      - "GIVEN cold qualification and publication WHEN run THEN independent assurance never depends on a previously cached successful verdict."
+      - "GIVEN reuse behavior WHEN tested THEN one hit and one miss per reusable unit plus corruption and cancellation cases prove safety."
+  - number: 7
+    name: Qualify the candidate and synchronize its contracts
+    depends_on: [6]
+    status: pending
+    acceptance:
+      - "GIVEN the completed candidate WHEN required checks run THEN source, package, migration, resource, and contract obligations remain satisfied."
+      - "GIVEN development and full qualification WHEN compared THEN faster routine checks do not masquerade as full release assurance."
+      - "GIVEN feature-branch verification WHEN pushed THEN baseline and candidate run without publication while exact-byte binding and credential isolation remain intact."
+      - "GIVEN changed tooling WHEN delivery is prepared THEN guidance, dependency inventory, decisions, and concession records describe the same final behavior."
+  - number: 8
+    name: Measure the result and prepare the adoption review
+    depends_on: [7]
+    status: pending
+    acceptance:
+      - "GIVEN matched before and after samples WHEN compared THEN cold and warm times, spread, failures, and coverage differences are reported separately."
+      - "GIVEN matched cold hosted development runs WHEN evaluated THEN candidate verification passes and package wall time including setup stays within 515 seconds."
+      - "GIVEN missing hosted evidence or unmet targets WHEN reported THEN the candidate remains unqualified and no result is presented as a pass."
+      - "GIVEN the review dossier WHEN handed off THEN both revisions, gains, retained tools, concessions, and rollback choices support a separate adoption decision."
+surprises: []

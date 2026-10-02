@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
 const verifier = path.join(root, "packages/cli/scripts/verify-formatter-normalization.mjs");

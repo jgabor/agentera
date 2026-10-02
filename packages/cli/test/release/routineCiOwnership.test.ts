@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import YAML from "yaml";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");

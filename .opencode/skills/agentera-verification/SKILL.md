@@ -16,9 +16,9 @@ load it only for a release-specific need covered by its trigger.
 
 ## Environment
 
-- Follow `AGENTS.md#common-commands`: standalone Vite+ 0.3.0 manages the pinned
+- Follow `AGENTS.md#common-commands`: verified standalone Vite+ 1.0.0 manages the pinned
   Node.js and pnpm 10.30.3, without separately installing Node, Corepack, pnpm,
-  or Lefthook. First install is `vp env on` then `vp install --frozen-lockfile`;
+  or a hook manager. First install is `vp env on` then `VP_GIT_HOOKS=0 vp install --frozen-lockfile`;
   `vp run bootstrap` requires existing local dependencies.
 - Use that guide's tested `vp exec npm --prefix .opencode install` recipe and
   flags only for optional checkout-local runtime dependencies. Its npm manifest
@@ -27,18 +27,22 @@ load it only for a release-specific need covered by its trigger.
   use; an empty offline cache cannot download the runtime. OS tools and Git
   history are separate prerequisites listed in `packages/cli/test/README.md`.
 - Run contributor commands from the repository root unless noted.
+- Root runtime-bearing tasks explicitly select `.node-version` through the
+  invoking standalone launcher. Native `vp -C` can select ambient Node; wrap
+  package-directory recipes with `vp env exec --node 24.19.0 vp -C packages/cli run TASK`.
+  Do not weaken the real process-version guard or change global PATH to repair it.
 
 ## Common gates
 
-| Purpose | Command |
-| --- | --- |
-| CLI source tests | `vp run test` |
-| Package boundary | `vp -C packages/cli run verify:package` |
-| Typecheck | `vp run typecheck` |
-| Build | `vp run build` |
-| Compact gate | `vp node packages/cli/dist/bin/agentera.js check compact` |
-| Capability contract | Run the contract command below with a current build. |
-| Package dry run | `vp -C packages/cli run pack:dry-run` |
+| Purpose             | Command                                                   |
+| ------------------- | --------------------------------------------------------- |
+| CLI source tests    | `vp run test`                                             |
+| Package boundary    | `vp -C packages/cli run verify:package`                   |
+| Typecheck           | `vp run typecheck`                                        |
+| Build               | `vp run build`                                            |
+| Compact gate        | `vp node packages/cli/dist/bin/agentera.js check compact` |
+| Capability contract | Run the contract command below with a current build.      |
+| Package dry run     | `vp -C packages/cli run pack:dry-run`                     |
 
 ```bash
 vp node packages/cli/dist/bin/agentera.js check validate \
@@ -88,28 +92,32 @@ coupling.
 
 ## Pre-commit hooks
 
-`.lefthook.yml` is authoritative. After root dependencies exist, install with:
+Vite+ is the sole hook owner. `.vite-hooks/pre-commit`, `vite.config.ts#staged`
+and `packages/cli/scripts/pre-commit-checks.mjs` own the policy. After dependencies
+exist, activate only in an independent clone or with explicit shared-Git permission:
 
 ```bash
-vp exec lefthook install
+vp hooks enable
+vp hooks status
 ```
 
-The supported Lefthook override resolves `packages/cli/scripts/run-lefthook.sh`
-from the invoking worktree and uses standalone Vite+ on ordinary Git `PATH` to
-run local Lefthook with managed Node. No ambient Node/pnpm/Corepack/Lefthook is
-required. Do not install a second hook owner with `vp hooks`. Linked worktrees
-share installed Git hooks, but each needs its own dependencies. Missing Vite+
-requires restoring launcher discovery; missing local tools require
-`vp env on`, `vp install --frozen-lockfile`, then `vp exec lefthook install`.
-See `AGENTS.md` for the canonical setup and recovery boundary.
+The policy uses standalone Vite+ on ordinary Git `PATH` to supply managed Node
+to this worktree's local tools. No ambient Node/pnpm/Corepack is required.
+The old installed common hook can still call `run-lefthook.sh run pre-commit`;
+that small bridge only forwards to the native policy. Do not change common hooks
+or shared config as dependency recovery. Use `VP_GIT_HOOKS=0` during installs to
+prevent automatic activation; it does not skip checks at subsequent commits.
+The native dispatcher respects an existing foreign `core.hooksPath` and can report
+success without replacing it, so inspect status. Its OS prerequisites include
+`basename`. See `AGENTS.md` for setup and recovery boundaries.
 
 Pre-commit runs:
 
 - State and TODO changes run `agentera check compact` within a 10-second budget.
 - Project-local `vp staged --hide-partially-staged` formats/lints supported
-  TS/JS/config files and runs pinned local Markdown lint. Rules and byte-stable
-  exclusions live in native config. No `stage_fixed`: unstaged hunks must stay
-  unstaged. Native priority runs fixes before all validation readers. A missing
+  TS/JS/config files and Markdown with Oxfmt. Rules and byte-stable exclusions live
+  in root native config. Unstaged hunks must stay unstaged. One sequential staged
+  task runs fixes and all validation readers before restoring hidden partial hunks. A missing
   local binary fails; recover with `vp install`.
 - Native `related --run --project local` selects only the positive fast suite in
   `verification-policy.yaml#local_source`, with two workers: core utilities,
@@ -128,9 +136,13 @@ Pre-commit runs:
   the fast subset is bounded by membership, not a fixed runtime SLA.
 
 The staged hook never invokes release verification, performance, capacity, or
-package owners. Do not rely on summaries when `.lefthook.yml` has changed.
+package owners. Markdown structural/policy lint is intentionally removed, not
+equivalent to Oxfmt. Formatting exceptions and the lost-rule inventory are in
+`docs/packaging/vite-plus-1-formatting-concessions.md`. Root and package commands
+inherit width 320 and exclusions; `.editorconfig` uses the same width. Editors
+must use the root Vite+ config and must not format excluded artifacts on save.
 
-Use `LEFTHOOK=0` only when the hook configuration itself is broken or a failure
+Use `VP_GIT_HOOKS=0` at commit time only when the hook configuration itself is broken or a failure
 is already tracked for CI. Never use it for routine commits, TODO changes, or
 fixtures.
 
@@ -142,7 +154,7 @@ self-contained and includes runtime data under `packages/cli/bundle/`.
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
-Internal pnpm scripts, CI's trusted Corepack bootstrap and fixed OIDC npm
+Internal pnpm scripts, CI's verified native Vite+ bootstrap and fixed OIDC npm
 publisher remain unchanged; Vite+ is the contributor entrypoint, not a rewrite
 of those authorities. Use root `vp run cli:*` wrappers for named release tasks;
 stable wrappers retain the separate `packages/cli/shim` target outside the pnpm

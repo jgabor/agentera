@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { printUpgradeHelp } from "../../src/cli/help.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";

@@ -52,7 +52,7 @@ function initialize(root, selected = ".") {
     assert.equal(child.status, 0, child.stderr);
   }
 }
-export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {}) {
+export async function projectMigrationJourney(binary, fixture, scenario, baseEnv = {}, invoke) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-supported-project-migration-journey-"));
   const project = path.join(root, "selected project"),
     home = path.join(root, "synthetic home");
@@ -120,15 +120,16 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
   const trace = [];
   let offeredCommand;
   const quote = (text) => `'${text.replaceAll("'", `'"'"'`)}'`;
-  const run = (args, override = {}, cwd = project, offered = false) => {
+  const run = async (args, override = {}, cwd = project, offered = false) => {
     const command = offered ? "/bin/sh" : process.execPath;
     const argv = offered ? ["-c", "exec " + offeredCommand.replace(/^npx -y agentera@next /, `${quote(process.execPath)} ${quote(binary)} `)] : [binary, ...args];
-    const child = spawnSync(command, argv, {
+    const options = {
       cwd,
       env: { ...env, ...override },
       encoding: "utf8",
       timeout: 30000,
-    });
+    };
+    const child = invoke ? await invoke({ command, args: argv, cwd, env: options.env }) : spawnSync(command, argv, options);
     assert.equal(child.error, undefined, String(child.error));
     let json;
     if (child.stdout.trim()) json = args.includes("--help") ? { text: child.stdout } : JSON.parse(child.stdout);
@@ -154,27 +155,27 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         fs.chmodSync(directory, 0o500);
         const denied = bytes(project);
         const projections = [
-          run(previewArgs).json.migration_offer,
-          run(["prime", "--format", "json"]).json.startup.state_cutover.migration_offer,
-          run(["prime", "--context", "status", "--format", "json"]).json.capability_context.startup.state_cutover.migration_offer,
-          run(["doctor", "--project", project, "--format", "json"]).json.current_health.project_state.migration_offer,
+          (await run(previewArgs)).json.migration_offer,
+          (await run(["prime", "--format", "json"])).json.startup.state_cutover.migration_offer,
+          (await run(["prime", "--context", "status", "--format", "json"])).json.capability_context.startup.state_cutover.migration_offer,
+          (await run(["doctor", "--project", project, "--format", "json"])).json.current_health.project_state.migration_offer,
         ];
         assert.deepEqual(projections, [undefined, undefined, undefined, undefined], `${relative} mode 0500 must not produce a ready offer`);
         assert.deepEqual(bytes(project), denied, "read-only refusal must preserve bytes and modes");
         assert.deepEqual(bytes(home), globalBefore);
         fs.chmodSync(directory, 0o700); // Explicit fixture setup, never CLI repair.
         const writable = bytes(project);
-        const ready = run(previewArgs).json.migration_offer;
+        const ready = (await run(previewArgs)).json.migration_offer;
         assert.equal(ready?.status, "ready");
-        assert.equal(run(["prime", "--format", "json"]).json.startup.state_cutover.migration_offer.apply_command, ready.apply_command);
-        assert.equal(run(["prime", "--context", "status", "--format", "json"]).json.capability_context.startup.state_cutover.migration_offer.apply_command, ready.apply_command);
-        assert.equal(run(["doctor", "--project", project, "--format", "json"]).json.current_health.project_state.migration_offer.apply_command, ready.apply_command);
+        assert.equal((await run(["prime", "--format", "json"])).json.startup.state_cutover.migration_offer.apply_command, ready.apply_command);
+        assert.equal((await run(["prime", "--context", "status", "--format", "json"])).json.capability_context.startup.state_cutover.migration_offer.apply_command, ready.apply_command);
+        assert.equal((await run(["doctor", "--project", project, "--format", "json"])).json.current_health.project_state.migration_offer.apply_command, ready.apply_command);
         assert.deepEqual(bytes(project), writable, "writable preview must preserve bytes and modes");
       }
       assert.deepEqual(bytes(home), globalBefore);
       return { scenario, trace };
     }
-    const preview = run(previewArgs),
+    const preview = await run(previewArgs),
       offer = preview.json.migration_offer;
     offeredCommand = offer?.apply_command;
     assert.equal(offer?.status, "ready", JSON.stringify(preview));
@@ -184,25 +185,25 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
     assert.match(offer.loss, /removed without a migration backup/);
     assert.ok(offer.effects.some((effect) => effect.sources?.includes(".cursor/hooks.json")));
     assert.deepEqual(bytes(project), before, "preview must be zero-write");
-    const prime = run(["prime", "--format", "json"]);
+    const prime = await run(["prime", "--format", "json"]);
     assert.ok(prime.json?.startup, JSON.stringify(prime));
     assert.equal(prime.json.startup.state_cutover.migration_offer.apply_command, offer.apply_command);
-    const startup = run(["prime", "--context", "status", "--format", "json"]);
+    const startup = await run(["prime", "--context", "status", "--format", "json"]);
     assert.ok(startup.json, JSON.stringify(startup));
     assert.equal(startup.json.capability_context.instruction_mode, "project_migration_offer");
     assert.equal(startup.json.capability_context.capability_instructions_deferred, true);
     assert.equal(startup.json.capability_context.startup.state_cutover.migration_offer.apply_command, offer.apply_command);
-    const doctor = run(["doctor", "--project", project, "--format", "json"]);
+    const doctor = await run(["doctor", "--project", project, "--format", "json"]);
     assert.equal(doctor.json.current_health.project_state.migration_offer.apply_command, offer.apply_command);
     assert.deepEqual(bytes(project), before, "startup preflight must be zero-write");
     if (scenario === "yes") {
-      const fullStatus = run(["prime", "--context", "status", "--detail", "instructions", "--section", "instructions"]);
+      const fullStatus = await run(["prime", "--context", "status", "--detail", "instructions", "--section", "instructions"]);
       assert.match(fullStatus.json.items.map((item) => item.content).join(""), /Dashboard rendering/);
-      const details = run(["upgrade", "--explain", "--operation", "migrate", "--section", "usage"]);
+      const details = await run(["upgrade", "--explain", "--operation", "migrate", "--section", "usage"]);
       assert.match(details.json.items[0].content.offer, /unchanged complete apply_command/);
-      const schema = run(["schema"]);
+      const schema = await run(["schema"]);
       assert.equal(schema.json.integration.project_migration.preview_field, "migration_offer");
-      assert.match(run(["upgrade", "--help"]).json.text, /project-migration/);
+      assert.match((await run(["upgrade", "--help"])).json.text, /project-migration/);
       assert.deepEqual(bytes(project), before);
     }
     const apply = ["upgrade", "--project", project, "--channel", "development", "--yes", "--authorization", offer.apply_command.match(/--authorization (project-migration:[a-f0-9]{64})/)[1], "--format", "json"];
@@ -223,12 +224,12 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         command = apply.map((item) => (item === project ? other : item));
       }
       const changed = bytes(project);
-      const result = run(command);
+      const result = await run(command);
       assert.equal(result.json?.error?.class, "stale_operation", JSON.stringify(result));
       assert.deepEqual(bytes(project), changed, "stale apply must make no new changes");
       if (scenario === "scope-drift")
         for (const flags of [["--install-root", path.join(home, "agentera")], ["--shared-skill", "--home", home], ["--legacy-cleanup", "cursor.agent.agentera"], ["--reset-product-v1"], ["--only", "artifacts"]]) {
-          const refusal = run([...apply, ...flags]);
+          const refusal = await run([...apply, ...flags]);
           assert.notEqual(refusal.rc, 0);
           // Reset/channel combinations are rejected by the established
           // argument contract before the operation reaches its binding check.
@@ -256,13 +257,13 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         setup(target);
         initialize(target);
         const targetBefore = bytes(target);
-        assert.equal(run(previewArgs.map((item) => (item === project ? target : item))).json.migration_offer, undefined);
-        assert.equal(run(["doctor", "--project", target, "--format", "json"]).json.current_health.project_state.migration_offer, undefined);
-        assert.equal(run(["prime", "--format", "json"], {}, target).json.startup.state_cutover.migration_offer, undefined);
+        assert.equal((await run(previewArgs.map((item) => (item === project ? target : item)))).json.migration_offer, undefined);
+        assert.equal((await run(["doctor", "--project", target, "--format", "json"])).json.current_health.project_state.migration_offer, undefined);
+        assert.equal((await run(["prime", "--format", "json"], {}, target)).json.startup.state_cutover.migration_offer, undefined);
         assert.deepEqual(bytes(target), targetBefore);
       }
     } else {
-      const result = run(
+      const result = await run(
         apply,
         scenario === "sigkill-resume" || scenario === "bad-checkpoint" || scenario === "missing-approval"
           ? { AGENTERA_FAULT_INJECT_ENTITY_MIGRATION_AFTER_PHASE: "SIGKILL_entity_published" }
@@ -280,15 +281,15 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         fs.appendFileSync(path.join(project, ".agentera/progress.yaml"), "\n# explicit synthetic owner change\n");
         initialize(project, ".agentera/progress.yaml");
         const changed = bytes(project);
-        assert.equal(run(apply, {}, project, true).json?.error?.class, "stale_operation");
+        assert.equal((await run(apply, {}, project, true)).json?.error?.class, "stale_operation");
         assert.deepEqual(bytes(project), changed);
-        const fresh = run(previewArgs).json.migration_offer;
+        const fresh = (await run(previewArgs)).json.migration_offer;
         assert.equal(fresh?.status, "ready");
         assert.notEqual(fresh.apply_command, offeredCommand);
         assert.deepEqual(bytes(project), changed, "fresh preview remains zero-write");
         offeredCommand = fresh.apply_command;
         apply[apply.indexOf("--authorization") + 1] = offeredCommand.match(/--authorization (project-migration:[a-f0-9]{64})/)[1];
-        assert.equal(run(apply, {}, project, true).json?.status, "success");
+        assert.equal((await run(apply, {}, project, true)).json?.status, "success");
       } else if (scenario === "inter-phase-drift") {
         assert.equal(result.rc, 1, JSON.stringify(result));
         assert.equal(result.json.error.class, "stale_operation");
@@ -296,7 +297,7 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         assert.ok(fs.existsSync(path.join(project, ".cursor/hooks.json")), "no retirement effects may follow unexpected inter-phase drift");
         assert.match(fs.readFileSync(path.join(project, ".agentera/progress.yaml"), "utf8"), /concurrent owner change/);
         const changed = bytes(project);
-        assert.notEqual(run(apply, {}, project, true).rc, 0);
+        assert.notEqual((await run(apply, {}, project, true)).rc, 0);
         assert.deepEqual(bytes(project), changed);
       } else if (scenario === "verification-failure") {
         assert.equal(result.rc, 1);
@@ -306,7 +307,7 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         assert.ok(fs.existsSync(path.join(project, ".agentera/state-mode.yaml")));
         assert.match(result.stderr, /continue forward/);
         const failed = bytes(project);
-        assert.notEqual(run(apply, {}, project, true).rc, 0);
+        assert.notEqual((await run(apply, {}, project, true)).rc, 0);
         assert.deepEqual(bytes(project), failed);
       } else if (scenario !== "yes" && scenario !== "many-effects") {
         assert.equal(result.signal, "SIGKILL");
@@ -319,7 +320,7 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
           fs.appendFileSync(path.join(directory, journal), "invalid checkpoint");
         }
         const interrupted = bytes(project);
-        const resumed = run(scenario === "missing-approval" ? apply.filter((item, index) => item !== "--authorization" && apply[index - 1] !== "--authorization") : apply, {}, project, scenario !== "missing-approval");
+        const resumed = await run(scenario === "missing-approval" ? apply.filter((item, index) => item !== "--authorization" && apply[index - 1] !== "--authorization") : apply, {}, project, scenario !== "missing-approval");
         if (scenario === "bad-checkpoint" || scenario === "bad-todo-checkpoint" || scenario === "missing-approval") {
           assert.notEqual(resumed.rc, 0);
           assert.deepEqual(bytes(project), interrupted);
@@ -330,10 +331,10 @@ export function projectMigrationJourney(binary, fixture, scenario, baseEnv = {})
         assert.equal(result.json.state_validation.status, "passed");
         assert.equal(result.json.startup_validation.status, "passed");
         assert.equal(fs.existsSync(path.join(project, ".cursor/hooks.json")), false);
-        assert.equal(run(previewArgs).json.migration_offer, undefined);
-        assert.equal(run(["prime", "--context", "status", "--format", "json"]).json.capability_context.instruction_mode, undefined);
+        assert.equal((await run(previewArgs)).json.migration_offer, undefined);
+        assert.equal((await run(["prime", "--context", "status", "--format", "json"])).json.capability_context.instruction_mode, undefined);
         const completed = bytes(project);
-        assert.equal(run(apply, {}, project, true).json.status, "success");
+        assert.equal((await run(apply, {}, project, true)).json.status, "success");
         assert.deepEqual(bytes(project), completed, "verified retry is idempotent");
       }
     }

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { classifyDrift, DriftDirection, effectiveDriftDirection, expectedShapeLiteralPins, expectedShapeRequiredKeys, normalizeEnvelope, ParityRow } from "./parityOracle.js";
 

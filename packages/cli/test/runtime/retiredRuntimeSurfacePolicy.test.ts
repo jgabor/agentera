@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import YAML from "yaml";
 
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath, servedInstructions } from "../../src/capabilities/index.js";

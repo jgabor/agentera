@@ -3,7 +3,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { LIFECYCLE_AUTHORITY_RELATIVE_PATH, loadLifecycleAuthority, validateLifecycleAuthorityData, validateLifecycleAuthorityRoot } from "../../src/runtime/lifecycleAuthority.js";
 import { loadRuntimeLifecycleAdapterContract, validateRuntimeLifecycleAdapterContractRoot } from "../../src/runtime/lifecycleAdapterContract.js";

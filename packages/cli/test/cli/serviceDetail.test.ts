@@ -4,7 +4,7 @@ import os from "node:os";
 import { spawnSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import YAML from "yaml";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { runServiceDetail } from "../../src/cli/commands/serviceDetail.js";
 import { serviceDetailArgs, type ServiceOwner } from "../../src/cli/commands/serviceDetailQuery.js";
 import { runSchemaDetail } from "../../src/cli/commands/schemaDetail.js";

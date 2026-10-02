@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { sourceSubprocessEnv } from "../../helpers/sourceSubprocess.js";
 
 import { acquireWriterLock } from "../../../src/state/write/lock.js";

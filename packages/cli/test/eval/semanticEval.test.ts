@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import type { JsonObject } from "../../src/core/jsonValue.js";
 import { buildReport, evaluateFixture } from "../../src/eval/semanticEval.js";

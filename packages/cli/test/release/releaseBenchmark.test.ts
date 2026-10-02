@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { formatPublicationReceipt, runQualificationBenchmark, runQualifiedPublication } from "../../scripts/release-benchmark.mjs";
 import { canonicalJson, RELEASE_CONTRACT, sha256 } from "../../scripts/release-qualification.mjs";

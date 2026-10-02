@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { afterEach, expect, it, vi } from "vitest";
+import { afterEach, expect, it, vi } from "vite-plus/test";
 import { projectMigrationOffer, PROJECT_MIGRATION_APPROVAL } from "../../src/upgrade/projectMigrationOffer.js";
 import { cmdUpgrade } from "../../src/cli/commands/upgrade.js";
 import { gitCommitArgs } from "../helpers/git.js";

@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH, isProductV1PackageVersion, loadProductV1ResetAuthority, productV1ArtifactPairs, productV1ProjectTriggerPaths } from "../../src/upgrade/productV1ResetAuthority.js";
 

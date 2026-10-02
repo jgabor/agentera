@@ -1,4 +1,4 @@
-import { expect } from "vitest";
+import { expect } from "vite-plus/test";
 import { runStateExplainDetail } from "../../src/cli/commands/state/explainDetail.js";
 import { shellCommandArgs } from "./shellCommand.js";
 

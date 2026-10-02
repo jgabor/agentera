@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import type { GlobalSetupContext } from "vitest/node";
+import type { GlobalSetupContext } from "vite-plus/test/node";
 
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { waitForVerificationBarrier } from "../../scripts/verification-barrier.mjs";

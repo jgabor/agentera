@@ -1,17 +1,15 @@
-// Live, disposable Git/worktree regression. Run with standalone Vite+ 0.3:
+// Live, independent disposable Git regression. Run with standalone Vite+ 1.0.0:
 // vp node packages/cli/scripts/verify-hook-bootstrap.mjs /absolute/path/to/standalone/vp
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
-import os from "node:os";
 import path from "node:path";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const launcher = process.argv[2];
 assert.ok(launcher && path.isAbsolute(launcher), "Supply the supported standalone vp executable as an absolute path");
-const sandbox = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-hook-bootstrap-"));
+const sandbox = fs.mkdtempSync(path.join("/tmp/opencode", "agentera-hook-bootstrap-"));
 const current = path.join(sandbox, "current");
-const sibling = path.join(sandbox, "installer");
 const home = path.join(sandbox, "home");
 const bin = path.join(sandbox, "os-bin");
 for (const dir of [current, home, bin]) fs.mkdirSync(dir);
@@ -29,8 +27,8 @@ const env = {
   GIT_COMMITTER_EMAIL: "fixture@example.invalid",
   NO_COLOR: "1",
 };
-// OS tools only: no ambient JS runtime, package manager, or Lefthook.
-for (const name of ["git", "sh", "bash", "env", "uname", "tr", "sed", "dirname", "mkdir", "rm", "cat", "chmod", "timeout"]) {
+// OS tools only: no ambient JS runtime or package manager.
+for (const name of ["git", "sh", "bash", "env", "uname", "tr", "sed", "dirname", "basename", "mkdir", "rm", "cat", "chmod", "timeout"]) {
   const file = ["/usr/bin", "/bin"].map((dir) => path.join(dir, name)).find((file) => fs.existsSync(file));
   assert.ok(file, `Missing fixture OS prerequisite: ${name}`);
   fs.symlinkSync(file, path.join(bin, name));
@@ -73,21 +71,21 @@ write(
   JSON.stringify({
     private: true,
     packageManager: "pnpm@10.30.3",
-    devDependencies: { "vite-plus": "0.3.0", lefthook: "2.1.12" },
+    devDependencies: { "vite-plus": "1.0.0", vite: "npm:@voidzero-dev/vite-plus-core@1.0.0" },
     scripts: { typecheck: "node record.mjs typecheck" },
   }),
 );
 write(".node-version", fs.readFileSync(path.join(root, ".node-version")));
-assert.match(run([launcher, "--version"]).output, /^vp v0\.3\.0\n/);
-write("pnpm-workspace.yaml", "allowBuilds:\n  esbuild: true\n");
+assert.match(run([launcher, "--version"]).output, /^vp v1\.0\.0\n/);
+write("pnpm-workspace.yaml", "allowBuilds:\n  esbuild: true\noverrides:\n  vite@*: npm:@voidzero-dev/vite-plus-core@1.0.0\n  vitest@*: 5.0.1\npeerDependencyRules:\n  allowAny: [vite, vitest]\n");
 write(".gitignore", "node_modules/\n*.marker\n");
-write(".lefthook.yml", fs.readFileSync(path.join(root, ".lefthook.yml")));
-write("packages/cli/scripts/run-lefthook.sh", fs.readFileSync(path.join(root, "packages/cli/scripts/run-lefthook.sh")));
+for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/run-lefthook.sh", "packages/cli/scripts/pre-commit-checks.mjs"]) write(file, fs.readFileSync(path.join(root, file)));
+fs.chmodSync(path.join(current, ".vite-hooks/pre-commit"), 0o755);
 const staged = fs.readFileSync(path.join(root, "vite.config.ts"), "utf8").match(/staged: (\{[\s\S]*?\n  \}),/)[1];
 write(
   "vite.config.ts",
   `import { defineConfig } from 'vite-plus';
-export default defineConfig({ staged: ${staged}, test: { maxWorkers: 2, projects: [
+export default defineConfig({ staged: ${staged}, fmt: { printWidth: 320, ignorePatterns: ['node_modules/**', '.agentera/**', 'TODO.md', 'packages/cli/test/**/fixtures/**', 'packages/cli/test/evidence/**'] }, test: { maxWorkers: 2, projects: [
 { test: { name: 'local', include: ['local.test.ts'] } },
 { test: { name: 'guards', include: ['guards.test.ts'] } }
 ] } });\n`,
@@ -115,24 +113,23 @@ const source = "packages/cli/src/sample.js";
 const padding = "// separate hunks\n".repeat(15);
 write(source, `export const value = 1;\n${padding}export const pending = 0;\n`);
 run(["vp", "env", "on"]);
+// Dependency acquisition must not activate hooks implicitly, even in this fixture.
+env.VP_GIT_HOOKS = "0";
 run(["vp", "install"]);
+run(["vp", "install", "--frozen-lockfile"]);
+delete env.VP_GIT_HOOKS;
 run(["git", "add", "."]);
 run(["git", "commit", "-m", "seed disposable hook fixture"]);
-run(["git", "config", "extensions.worktreeConfig", "true"]);
-run(["git", "config", "--worktree", "fixture.preserve", "current-value"]);
-run(["git", "worktree", "add", "--detach", sibling]);
-run(["git", "config", "--worktree", "fixture.preserve", "sibling-value"], sibling);
+run(["git", "config", "--local", "fixture.preserve", "current-value"]);
+const globalConfig = path.join(home, ".gitconfig");
+fs.writeFileSync(globalConfig, "[fixture]\n\tpreserve = global-value\n");
+const globalBefore = fs.readFileSync(globalConfig);
+run(["vp", "hooks", "enable"]);
+assert.equal(run(["git", "config", "--local", "core.hooksPath"]).output.trim(), ".vite-hooks/_");
+assert.equal(run(["git", "config", "--local", "fixture.preserve"]).output.trim(), "current-value");
+assert.deepEqual(fs.readFileSync(globalConfig), globalBefore);
+assert.ok(fs.existsSync(path.join(current, ".vite-hooks/_/pre-commit")));
 const commonConfig = read(".git/config");
-const currentConfig = read(".git/config.worktree");
-const siblingConfigPath = path.join(current, ".git/worktrees/installer/config.worktree");
-const siblingConfig = fs.readFileSync(siblingConfigPath, "utf8");
-run(["vp", "install", "--frozen-lockfile"], sibling);
-run(["vp", "exec", "lefthook", "install"], sibling);
-assert.equal(fs.readFileSync(siblingConfigPath, "utf8"), siblingConfig);
-assert.equal(read(".git/config"), commonConfig);
-assert.equal(read(".git/config.worktree"), currentConfig);
-assert.match(read(".git/hooks/pre-commit"), /sh packages\/cli\/scripts\/run-lefthook\.sh "\$@"/);
-run(["git", "worktree", "remove", "--force", sibling]);
 write(source, `export const value=2\n${padding}export const pending = 0;\n`);
 run(["git", "add", source]);
 write(source, `export const value=2\n${padding}export const pending = 999;\n`);
@@ -158,7 +155,7 @@ run(["git", "hook", "run", "pre-commit"]);
 assert.equal(read("guards.marker"), "passed");
 for (const name of ["local.marker", "typecheck.marker"]) assert.equal(fs.existsSync(path.join(current, name)), false);
 assert.equal(read(".git/config"), commonConfig);
-assert.equal(read(".git/config.worktree"), currentConfig);
+assert.deepEqual(fs.readFileSync(globalConfig), globalBefore);
 // Actual missing prerequisites must fail, not silently skip checks.
 fs.renameSync(path.join(current, "node_modules"), path.join(current, "saved-dependencies"));
 const missingDependencies = run(["git", "hook", "run", "pre-commit"], current, false);
@@ -168,5 +165,10 @@ fs.renameSync(path.join(current, "saved-dependencies"), path.join(current, "node
 fs.unlinkSync(path.join(bin, "vp"));
 const missingLauncher = run(["git", "hook", "run", "pre-commit"], current, false);
 assert.notEqual(missingLauncher.exit, 0);
-assert.match(missingLauncher.output, /standalone Vite\+ 0\.3 on Git's PATH/);
-console.log(`PASS: installation, managed ordinary Git, removed sibling, partial hunks, owner selection, config preservation, missing prerequisites. Receipt: ${sandbox}/receipt.json`);
+assert.match(missingLauncher.output, /standalone Vite\+ 1\.0 on Git's PATH/);
+// An ambient Node does not make the local vp shim a supported runtime owner.
+fs.symlinkSync(process.execPath, path.join(bin, "node"));
+const ambientFallback = run(["git", "hook", "run", "pre-commit"], current, false);
+assert.notEqual(ambientFallback.exit, 0);
+assert.match(ambientFallback.output, /standalone Vite\+ 1\.0 on Git's PATH/);
+console.log(`PASS: native local activation, managed ordinary Git, partial hunks, owner selection, config preservation, missing prerequisites. Receipt: ${sandbox}/receipt.json`);

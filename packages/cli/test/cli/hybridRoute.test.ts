@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { runRouteReceipt, runRouteRequest } from "../../src/cli/commands/route.js";

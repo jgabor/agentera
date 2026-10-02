@@ -7,6 +7,17 @@ const MAX_REPORT_BYTES = 2 * 1024 * 1024;
 const MAX_RESULTS = 10_000;
 const ASSERTION_STATUSES = new Set(["passed", "failed", "skipped", "todo"]);
 
+/** Export only owner diagnostics, never private builds, packages or receipts. */
+export function retainQualificationDiagnostics(root, destination) {
+  if (!destination) return;
+  fs.mkdirSync(destination, { recursive: true });
+  for (const entry of fs.readdirSync(root, { withFileTypes: true })) {
+    if (entry.isFile() && (/^(?:source|package)\.json$/.test(entry.name) || /(?:\.log|\.profile\.json|\.timings\.json)$/.test(entry.name))) {
+      fs.copyFileSync(path.join(root, entry.name), path.join(destination, entry.name));
+    }
+  }
+}
+
 function duration(value) {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= Number.MAX_SAFE_INTEGER ? value : null;
 }
@@ -42,7 +53,13 @@ export function writeVerificationTimingProfile({ resultFile, owner, wallMs, file
         assertions: suite.assertionResults.flatMap((assertion, index) => (ASSERTION_STATUSES.has(assertion?.status) ? [{ index, durationMs: duration(assertion.duration), status: assertion.status }] : [])),
       });
     }
-    const serialized = JSON.stringify({ schemaVersion: "agentera.verificationTimingProfile.v1", diagnosticOnly: true, owner, wallMs, suites });
+    const serialized = JSON.stringify({
+      schemaVersion: "agentera.verificationTimingProfile.v1",
+      diagnosticOnly: true,
+      owner,
+      wallMs,
+      suites,
+    });
     if (Buffer.byteLength(serialized) > MAX_REPORT_BYTES) return false;
     fs.writeFileSync(`${resultFile}.profile.json`, serialized, { mode: 0o600 });
     return true;

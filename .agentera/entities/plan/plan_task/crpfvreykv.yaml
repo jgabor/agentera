@@ -1,0 +1,23 @@
+id: crpfvreykv
+artifact: plan
+record:
+  name: Consolidate formatting, linting, and commit checks
+  depends_on:
+    - oazzhjwxul
+  status: complete
+  acceptance:
+    - GIVEN supported root, package, and editor entry points WHEN checks run THEN intended scope and options agree.
+    - GIVEN a partially staged change WHEN commit checks run THEN required checks execute and unstaged content remains unchanged.
+    - GIVEN Markdown formatting replaces lint policy WHEN reviewed THEN lost rules and resulting formatting changes are listed explicitly.
+    - GIVEN native hook adoption WHEN proven THEN one pass and one fail per retained check support retirement of redundant tools.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: native-quality-1
+      source: docs/packaging/vite-plus-1-hook-proof.md; 137 assertions and disposable ordinary-Git bootstrap proof passed; shared configuration unchanged; concessions recorded
+      recorded_at: 2026-10-02 01:49
+      writer_command: agentera state plan record-evaluation

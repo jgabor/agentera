@@ -116,6 +116,10 @@ export class ColdProcessScheduler {
     };
   }
 
+  async cancel(reason: unknown = new Error("cold process test finished")): Promise<void> {
+    await this.abortAndSettle(reason);
+  }
+
   async own<T>(callback: (scope: ColdProcessScope) => Promise<T>): Promise<T> {
     if (this.scopeActive) throw new Error("cold process scheduler scope is already active");
     this.scopeActive = true;

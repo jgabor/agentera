@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { expect, inject, it } from "vitest";
+import { expect, inject, it } from "vite-plus/test";
 import { runSharedSkillUpgradeWorkflow } from "../helpers/sharedSkillUpgradeWorkflow.js";
 
 const fixture = inject("packageFixture");

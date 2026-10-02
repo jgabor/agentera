@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { planEntityMigration } from "../../src/state/entityMigrationPreview.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";

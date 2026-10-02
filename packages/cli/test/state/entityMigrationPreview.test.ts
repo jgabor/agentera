@@ -5,7 +5,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";

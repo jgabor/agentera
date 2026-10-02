@@ -3,14 +3,13 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
-import { afterEach, describe, expect, it } from "vitest";
-import YAML from "yaml";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 import config from "../../../../vite.config.ts";
+import { selectChecks } from "../../scripts/pre-commit-checks.mjs";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 const vp = path.join(repo, "node_modules/.bin/vp");
-const lefthook = path.join(repo, "node_modules/.bin/lefthook");
-const hook = YAML.parse(fs.readFileSync(path.join(repo, ".lefthook.yml"), "utf8"));
+const stagedCommand = "./node_modules/.bin/vp staged --hide-partially-staged";
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
 
@@ -28,7 +27,7 @@ function write(root: string, file: string, text: string) {
   fs.writeFileSync(target, text);
 }
 function fixture() {
-  const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-native-hooks-"));
+  const root = fs.mkdtempSync(path.join("/tmp/opencode", "agentera-native-hooks-"));
   temporary.push(root);
   ok(root, "git", ["init", "--quiet"]);
   ok(root, "git", ["config", "user.name", "Hook Fixture"]);
@@ -38,8 +37,8 @@ function fixture() {
   fs.symlinkSync(path.join(repo, "node_modules"), path.join(root, "node_modules"), "dir");
   fs.copyFileSync(path.join(repo, ".node-version"), path.join(root, ".node-version"));
   write(root, "packages/cli/scripts/run-lefthook.sh", fs.readFileSync(path.join(repo, "packages/cli/scripts/run-lefthook.sh"), "utf8"));
+  for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/pre-commit-checks.mjs"]) write(root, file, fs.readFileSync(path.join(repo, file), "utf8"));
   write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt })};\n`);
-  for (const file of [".markdownlint.json", ".markdownlintignore"]) fs.copyFileSync(path.join(repo, file), path.join(root, file));
   write(root, ".gitignore", "node_modules\n");
   write(root, "package.json", '{"name":"hook-fixture","private":true,"type":"module"}\n');
   write(root, "README.md", "# Fixture\n\nOriginal.\n");
@@ -49,7 +48,72 @@ function fixture() {
   return root;
 }
 
+function install(root: string) {
+  // This is an independent fixture repo, never the checkout's common hooks.
+  ok(root, "git", ["config", "--local", "--unset", "core.hooksPath"]);
+  const output = ok(root, "vp", ["hooks", "enable"]);
+  fs.chmodSync(path.join(root, ".vite-hooks/pre-commit"), 0o755);
+  expect(ok(root, "git", ["config", "--local", "core.hooksPath"]).trim(), output).toBe(".vite-hooks/_");
+  expect(fs.existsSync(path.join(root, ".vite-hooks/_/pre-commit"))).toBe(true);
+}
+
 describe("native hook boundaries", () => {
+  it.each([
+    ["compact", ".agentera/entities/task/owned.yaml", "README.md", "timeout"],
+    ["compact TODO", "TODO.md", "CHANGELOG.md", "timeout"],
+    ["parity", "packages/cli/test/analytics/extractCorpusParity.test.ts", "packages/cli/test/analytics/profileSignals.test.ts", "bash"],
+    ["guards", "references/authority.yaml", "docs/README.md", "guards"],
+    ["native hook guards", ".vite-hooks/pre-commit", "docs/README.md", "guards"],
+    ["related", "packages/cli/src/-odd [x] 'quoted'.ts", "packages/cli/dist/sample.ts", "related"],
+    ["typecheck", "package.json", "README.md", "typecheck"],
+  ])("selects %s only for its contracted inputs", (_name, selected, unrelated, token) => {
+    expect(selectChecks([selected]).some((command: string[]) => command.includes(token))).toBe(true);
+    expect(selectChecks([unrelated]).some((command: string[]) => command.includes(token))).toBe(false);
+  });
+
+  it.each(["compact", "parity", "guards", "related", "typecheck"])("propagates %s failures and does not run later readers", (failed) => {
+    const root = fs.mkdtempSync(path.join("/tmp/opencode", "agentera-hook-dispatch-"));
+    temporary.push(root);
+    const bin = path.join(root, "bin");
+    const fake = `const fs = require('node:fs'); const args = process.argv.slice(2); const job = args.includes('10s') ? 'compact' : args.includes('--json') ? 'parity' : args.includes('guards') ? 'guards' : args.includes('related') ? 'related' : 'typecheck'; fs.appendFileSync('trace', job + '\\n'); if (process.env.FAIL_CHECK === job) process.exit(17);`;
+    write(root, "fake.cjs", fake);
+    for (const file of ["bin/timeout", "bin/bash", "node_modules/.bin/vp"]) {
+      write(root, file, `#!/bin/sh\nexec '${process.execPath}' '${path.join(root, "fake.cjs")}' "$@"\n`);
+      fs.chmodSync(path.join(root, file), 0o755);
+    }
+    const inputs = ["TODO.md", "scripts/extract_corpus.py", "packages/cli/src/sample.ts", "package.json"].map((file) => path.join(root, file));
+    const args = [path.join(repo, "packages/cli/scripts/pre-commit-checks.mjs"), ...inputs];
+    const env = { ...process.env, PATH: `${bin}:${process.env.PATH}` };
+    const jobs = ["compact", "parity", "guards", "related", "typecheck"];
+    expect(run(root, process.execPath, args, { ...env, FAIL_CHECK: "" }).status).toBe(0);
+    expect(fs.readFileSync(path.join(root, "trace"), "utf8").trim().split("\n")).toEqual(jobs);
+    fs.unlinkSync(path.join(root, "trace"));
+    expect(run(root, process.execPath, args, { ...env, FAIL_CHECK: failed }).status).toBe(17);
+    expect(fs.readFileSync(path.join(root, "trace"), "utf8").trim().split("\n")).toEqual(jobs.slice(0, jobs.indexOf(failed) + 1));
+  });
+
+  it("accepts the old entry point only for pre-commit and runs the native policy", () => {
+    const root = fixture();
+    write(root, "README.md", "# Fixture\n\n\nBridge.\n");
+    ok(root, "git", ["add", "--", "README.md"]);
+    ok(root, "sh", ["packages/cli/scripts/run-lefthook.sh", "run", "pre-commit"]);
+    expect(ok(root, "git", ["show", ":README.md"])).toBe("# Fixture\n\nBridge.\n");
+    const unsupported = run(root, "sh", ["packages/cli/scripts/run-lefthook.sh", "install"]);
+    expect(unsupported.status).not.toBe(0);
+    expect(unsupported.stderr).toContain("supports only run pre-commit");
+    // Reproduce the existing common hook's delegate in this fixture only.
+    write(root, ".git/hooks/pre-commit", '#!/bin/sh\nexec sh packages/cli/scripts/run-lefthook.sh run pre-commit "$@"\n');
+    fs.chmodSync(path.join(root, ".git/hooks/pre-commit"), 0o755);
+    ok(root, "git", ["commit", "--quiet", "-m", "legacy delegate uses native policy"]);
+    expect(ok(root, "git", ["show", "HEAD:README.md"])).toBe("# Fixture\n\nBridge.\n");
+    const head = ok(root, "git", ["rev-parse", "HEAD"]);
+    write(root, "packages/cli/src/bad.ts", "export const value = ;\n");
+    ok(root, "git", ["add", "--", "packages/cli/src/bad.ts"]);
+    const failed = run(root, "git", ["commit", "--quiet", "-m", "must be rejected"]);
+    expect(failed.status, failed.stdout + failed.stderr).not.toBe(0);
+    expect(ok(root, "git", ["rev-parse", "HEAD"])).toBe(head);
+  });
+
   it("formats only staged hunks, handles odd names, renames and deletions, and leaves evidence bytes alone", () => {
     const root = fixture();
     const file = "packages/cli/src/odd name [x] 'quoted'.ts";
@@ -63,7 +127,9 @@ describe("native hook boundaries", () => {
       ok(root, "git", ["add", "--", name]);
     }
     const before = preserved.map((name) => fs.readFileSync(path.join(root, name)));
-    ok(root, "sh", ["-c", hook["pre-commit"].commands.staged.run]);
+    // Formatting-only probe; reader ordering is exercised through actual Git below.
+    write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: { "*": config.staged!["*"][0] }, lint: config.lint, fmt: config.fmt })};\n`);
+    ok(root, "sh", ["-c", stagedCommand]);
     const index = ok(root, "git", ["show", `:${file}`]);
     expect(index).toContain("first = { value: 1 }");
     expect(index).toContain("second = 0");
@@ -73,7 +139,7 @@ describe("native hook boundaries", () => {
     const renamed = "packages/cli/src/-renamed space.ts";
     ok(root, "git", ["mv", "--", file, renamed]);
     ok(root, "git", ["rm", "--", "README.md"]);
-    ok(root, "sh", ["-c", hook["pre-commit"].commands.staged.run]);
+    ok(root, "sh", ["-c", stagedCommand]);
     expect(ok(root, "git", ["diff", "--cached", "--name-status"])).toContain("README.md");
     expect(ok(root, "git", ["show", `:${renamed}`])).toContain("second = 0");
     expect(ok(root, "git", ["stash", "list"])).toBe("");
@@ -85,13 +151,13 @@ describe("native hook boundaries", () => {
       const file = `packages/cli/src/invalid.${extension}`;
       write(root, file, "export const invalid = ;\n");
       ok(root, "git", ["add", "--", file]);
-      const invalid = run(root, "sh", ["-c", hook["pre-commit"].commands.staged.run]);
+      const invalid = run(root, "sh", ["-c", stagedCommand]);
       expect(invalid.status).not.toBe(0);
       expect(invalid.stderr + invalid.stdout).toMatch(/Unexpected|Expected|parse/i);
       ok(root, "git", ["rm", "-f", "--", file]);
     }
     fs.unlinkSync(path.join(root, "node_modules"));
-    const missing = run(root, "sh", ["-c", hook["pre-commit"].commands.staged.run]);
+    const missing = run(root, "sh", ["-c", stagedCommand]);
     expect(missing.status).not.toBe(0);
     expect(missing.stderr).toContain("./node_modules/.bin/vp");
   });
@@ -170,8 +236,7 @@ describe("native hook boundaries", () => {
     ok(root, "git", ["add", "--", trigger === "source" ? source : test, "README.md", "authority.json"]);
     if (trigger === "source") write(root, source, fs.readFileSync(path.join(root, source), "utf8").replace("second = 0", "second = 99"));
     write(root, "README.md", "# Fixture\n\n\nStaged.\n\nUnstaged.\n");
-    fs.copyFileSync(path.join(repo, ".lefthook.yml"), path.join(root, ".lefthook.yml"));
-    ok(root, lefthook, ["install", "--force"]);
+    install(root);
     ok(root, "git", ["commit", "--quiet", "-m", "installed hook reader order"]);
     const trace = fs
       .readFileSync(path.join(root, "trace.jsonl"), "utf8")
@@ -198,16 +263,55 @@ describe("native hook boundaries", () => {
     expect(ok(root, "git", ["stash", "list"])).toBe("");
   });
 
-  it("commits only formatted staged Markdown through the installed Lefthook trigger", () => {
+  it("commits only formatted staged Markdown through the installed native trigger", () => {
     const root = fixture();
-    fs.copyFileSync(path.join(repo, ".lefthook.yml"), path.join(root, ".lefthook.yml"));
-    ok(root, lefthook, ["install", "--force"]);
+    install(root);
     write(root, "README.md", "# Fixture\n\n\nStaged.\n");
     ok(root, "git", ["add", "--", "README.md"]);
     write(root, "README.md", "# Fixture\n\n\nStaged.\n\nUnstaged.\n");
     ok(root, "git", ["commit", "--quiet", "-m", "staged Markdown"]);
     expect(ok(root, "git", ["show", "HEAD:README.md"])).toBe("# Fixture\n\nStaged.\n");
     expect(fs.readFileSync(path.join(root, "README.md"), "utf8")).toContain("Unstaged.");
+  });
+
+  it.each(["guards", "related", "typecheck"])("rejects an installed-hook %s failure and restores partial hunks", (reader) => {
+    const root = fixture();
+    write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt, test: { projects: [{ test: { name: "local", include: ["local.test.ts"] } }, { test: { name: "guards", include: ["guards.test.ts"] } }] } })};\n`);
+    write(
+      root,
+      "package.json",
+      JSON.stringify({
+        private: true,
+        type: "module",
+        scripts: { typecheck: 'node -e "process.exit(Number(process.env.FAIL_TYPECHECK || 0))"' },
+      }),
+    );
+    write(root, "packages/cli/src/value.ts", "export const value = 1;\n");
+    write(root, "local.test.ts", "import { it, expect } from 'vite-plus/test'; import { value } from './packages/cli/src/value.ts'; it('local reader', () => expect(value).toBe(1));\n");
+    write(root, "guards.test.ts", "import { it } from 'vite-plus/test'; it('guard reader', () => { if (process.env.FAIL_GUARDS) throw Error('negative guard'); });\n");
+    ok(root, "git", ["add", "--", "."]);
+    ok(root, "git", ["commit", "--quiet", "-m", "failure fixture baseline"]);
+    install(root);
+    write(root, "authority.json", "{}\n");
+    write(root, "packages/cli/src/value.ts", "export const value = 1;\n// staged\n");
+    ok(root, "git", ["add", "--", "authority.json", "packages/cli/src/value.ts"]);
+    ok(root, "git", ["hook", "run", "pre-commit"]);
+    if (reader === "related") {
+      write(root, "packages/cli/src/value.ts", "export const value = 2;\n// staged\n");
+      ok(root, "git", ["add", "--", "packages/cli/src/value.ts"]);
+    }
+    write(root, "packages/cli/src/value.ts", fs.readFileSync(path.join(root, "packages/cli/src/value.ts"), "utf8") + "// unstaged\n");
+    const index = ok(root, "git", ["show", ":packages/cli/src/value.ts"]);
+    const worktree = fs.readFileSync(path.join(root, "packages/cli/src/value.ts"), "utf8");
+    const result = run(root, "git", ["hook", "run", "pre-commit"], {
+      ...process.env,
+      FAIL_GUARDS: reader === "guards" ? "1" : "",
+      FAIL_TYPECHECK: reader === "typecheck" ? "19" : "0",
+    });
+    expect(result.status, result.stdout + result.stderr).not.toBe(0);
+    expect(ok(root, "git", ["show", ":packages/cli/src/value.ts"])).toBe(index);
+    expect(fs.readFileSync(path.join(root, "packages/cli/src/value.ts"), "utf8")).toBe(worktree);
+    expect(ok(root, "git", ["stash", "list"])).toBe("");
   });
 
   it("clears Git's complete local variable set before nested fixture writes", () => {
@@ -264,7 +368,13 @@ describe("native hook boundaries", () => {
     const localFiles = rootFiles.filter(({ projectName }) => projectName === "local").map(({ file }) => path.relative(repo, file));
     expect(localFiles).toContain("packages/cli/test/validate/capability.test.ts");
     expect(localFiles.some((file) => /\/test\/(integration|upgrade|runtime|setup|build)\//.test(file))).toBe(false);
-    const related = JSON.parse(ok(repo, vp, ["test", "related", "--run", "--project", "local", "--reporter=json", "packages/cli/src/core/text.ts"])).testResults as { name: string }[];
+    const reportRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-related-report-"));
+    temporary.push(reportRoot);
+    const reportFile = path.join(reportRoot, "related.json");
+    ok(repo, vp, ["test", "related", "--run", "--project", "local", "--reporter=json", `--outputFile=${reportFile}`, "packages/cli/src/core/text.ts"]);
+    const related = JSON.parse(fs.readFileSync(reportFile, "utf8")).testResults as {
+      name: string;
+    }[];
     expect(related.map(({ name }) => path.relative(repo, name))).toContain("packages/cli/test/validate/capability.test.ts");
     expect(related.every(({ name }) => localFiles.includes(path.relative(repo, name)))).toBe(true);
   });

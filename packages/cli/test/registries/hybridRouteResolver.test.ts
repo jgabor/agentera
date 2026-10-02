@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { HybridRouteRegistryError, resolveRouteRequest, semanticCapsuleSha256 } from "../../src/registries/hybridRoute.js";
 import { loadCapabilitySchemaContract } from "../../src/registries/capabilityContract.js";

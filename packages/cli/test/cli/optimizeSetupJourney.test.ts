@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { main } from "../../src/cli/dispatch/index.js";
 import instructions from "../../src/capabilities/optimize/instructions.js";
 import { optimizeScenarios, optimizeSetupJourney } from "../helpers/optimizeSetupJourney.mjs";

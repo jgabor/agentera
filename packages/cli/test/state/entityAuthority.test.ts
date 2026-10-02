@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { entityBoundariesForArtifact } from "../../src/state/entityStorage.js";
 import { canonicalRecordJson } from "../../src/state/archiveDiscovery.js";

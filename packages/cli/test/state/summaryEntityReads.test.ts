@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { main } from "../../src/cli/dispatch.js";

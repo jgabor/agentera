@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { renderManagedMarkdown } from "../../src/state/todoMarkdownProjection.js";
 import { inspectTodoSeverityHeadings } from "../../src/state/todoSeverityHeadings.js";

@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch.js";
 import { printCommandHelp, stateCommandNames, printStateHelp, printTopLevelHelp, printUpgradeHelp, wantsHelp } from "../../src/cli/help.js";

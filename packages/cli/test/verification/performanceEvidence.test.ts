@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { measurementProfile, normalizedLatencyAdvisory, performanceAuthority, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "../../scripts/performance-evidence.mjs";
 import { performanceEvidence, performanceObservationFixture, refreshPerformanceEvidence } from "../helpers/performanceEvidence.js";
 

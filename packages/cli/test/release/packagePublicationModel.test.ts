@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { ACTIVATION_CLASS_AUTHORITIES, ACTIVATION_CLASSES } from "../../src/registries/activationContract.js";
 import { SOURCE_GATE_IDS, validatePackagePublicationDocument } from "../../src/registries/packagePublication.js";

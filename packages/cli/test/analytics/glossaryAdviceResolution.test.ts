@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { classifyGlossaryAdviceInputs, GlossaryAdviceInputError, resolveGlossaryAdvice, type GlossaryAdviceHostReview } from "../../src/analytics/glossaryAdviceResolution.js";
 import type { AcquiredGlossaryInputs, ConsumerGlossaryEntry, GlossaryAvailability, GlossaryInputAvailability } from "../../src/analytics/glossaryInputAcquisition.js";

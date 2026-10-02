@@ -1,8 +1,8 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
-import { writeVerificationTimingProfile } from "../../scripts/verification-timing.mjs";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
+import { retainQualificationDiagnostics, writeVerificationTimingProfile } from "../../scripts/verification-timing.mjs";
 
 const directories: string[] = [];
 afterEach(() => {
@@ -19,13 +19,40 @@ function fixture(report?: unknown) {
     name: path.join(repoRoot, file),
     startTime: 1000,
     endTime: 1250,
-    assertionResults: [{ fullName: "PRIVATE_ASSERTION", duration: 12.75, status: "passed", failureMessages: ["PRIVATE_FAILURE"] }],
+    assertionResults: [
+      {
+        fullName: "PRIVATE_ASSERTION",
+        duration: 12.75,
+        status: "passed",
+        failureMessages: ["PRIVATE_FAILURE"],
+      },
+    ],
   };
   fs.writeFileSync(resultFile, JSON.stringify(report ?? { testResults: [suite], environment: "PRIVATE_ENVIRONMENT" }));
-  return { repoRoot, file, resultFile, suite, options: { resultFile, owner: "source", wallMs: 300, files: [file], repoRoot } };
+  return {
+    repoRoot,
+    file,
+    resultFile,
+    suite,
+    options: { resultFile, owner: "source", wallMs: 300, files: [file], repoRoot },
+  };
 }
 
 describe("diagnostic verification timing profiles", () => {
+  it("exports only settled owner logs and timing profiles before private-root cleanup", () => {
+    const setup = fixture();
+    const output = path.join(setup.repoRoot, "diagnostics");
+    for (const name of ["source.log", "package.log", "source.json.profile.json", "package.json.timings.json", "receipt.json", "candidate.tgz"]) fs.writeFileSync(path.join(setup.repoRoot, name), name);
+    fs.mkdirSync(path.join(setup.repoRoot, "private-build"));
+    fs.writeFileSync(path.join(setup.repoRoot, "private-build", "private.log"), "private");
+    fs.symlinkSync(setup.resultFile, path.join(setup.repoRoot, "symlink.log"));
+    retainQualificationDiagnostics(setup.repoRoot, undefined);
+    expect(fs.existsSync(output)).toBe(false);
+    retainQualificationDiagnostics(setup.repoRoot, output);
+    expect(fs.readdirSync(output).sort()).toEqual(["package.json.timings.json", "package.log", "source.json", "source.json.profile.json", "source.log"]);
+    expect(fs.readFileSync(path.join(output, "source.log"), "utf8")).toBe("source.log");
+    expect(fs.existsSync(path.join(setup.repoRoot, "private-build"))).toBe(true);
+  });
   it.each(["source", "package"])("retains %s durations without names, content or absolute paths", (owner) => {
     const setup = fixture();
     const original = fs.readFileSync(setup.resultFile, "utf8");
@@ -36,7 +63,13 @@ describe("diagnostic verification timing profiles", () => {
       diagnosticOnly: true,
       owner,
       wallMs: 300,
-      suites: [{ file: setup.file, elapsedMs: 250, assertions: [{ index: 0, durationMs: 12.75, status: "passed" }] }],
+      suites: [
+        {
+          file: setup.file,
+          elapsedMs: 250,
+          assertions: [{ index: 0, durationMs: 12.75, status: "passed" }],
+        },
+      ],
     });
     expect(text).not.toContain("PRIVATE");
     expect(text).not.toContain(setup.repoRoot);
@@ -45,8 +78,17 @@ describe("diagnostic verification timing profiles", () => {
 
   it("excludes unknown suites and preserves assertion indices and unavailable timing", () => {
     const setup = fixture();
-    const suite = { ...setup.suite, startTime: 1300, assertionResults: [{ status: "PRIVATE_STATUS", duration: 1 }, { status: "skipped" }, { status: "failed", duration: -1 }, { status: "todo", duration: "12" }] };
-    fs.writeFileSync(setup.resultFile, JSON.stringify({ testResults: [suite, { ...suite, name: "/private/unselected.test.ts" }, { ...suite, name: "packages/cli/test/unselected.test.ts" }] }));
+    const suite = {
+      ...setup.suite,
+      startTime: 1300,
+      assertionResults: [{ status: "PRIVATE_STATUS", duration: 1 }, { status: "skipped" }, { status: "failed", duration: -1 }, { status: "todo", duration: "12" }],
+    };
+    fs.writeFileSync(
+      setup.resultFile,
+      JSON.stringify({
+        testResults: [suite, { ...suite, name: "/private/unselected.test.ts" }, { ...suite, name: "packages/cli/test/unselected.test.ts" }],
+      }),
+    );
     expect(writeVerificationTimingProfile(setup.options)).toBe(true);
     expect(JSON.parse(fs.readFileSync(`${setup.resultFile}.profile.json`, "utf8")).suites).toEqual([
       {

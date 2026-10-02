@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { discoverPlanArtifacts } from "../../src/cli/planArtifacts.js";
 import type { JsonObject, JsonValue } from "../../src/core/jsonValue.js";

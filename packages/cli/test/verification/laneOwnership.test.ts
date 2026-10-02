@@ -4,7 +4,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { completePackageTimings, createPackageTimingRecorder, packageTimingSummary, readPackageTimings } from "../../scripts/package-verification-timing.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -625,7 +625,14 @@ describe("verification lane ownership", () => {
   });
 
   it("keeps one canonical generated-output and packaging authority", () => {
-    const authority = fs.readFileSync(path.join(REPO_ROOT, "docs/packaging/v3-packaging.md"), "utf8");
+    // Compare exact table content, not Oxfmt's presentation padding.
+    const authority = fs.readFileSync(path.join(REPO_ROOT, "docs/packaging/v3-packaging.md"), "utf8").replace(/^\|.*$/gm, (row) =>
+      row
+        .split("|")
+        .map((cell) => cell.trim())
+        .join(" | ")
+        .trim(),
+    );
     const contributor = fs.readFileSync(path.join(PACKAGE_ROOT, "README.md"), "utf8");
     const testPolicy = fs.readFileSync(path.join(PACKAGE_ROOT, "test/README.md"), "utf8");
     const characterization = fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-surface-characterization.md"), "utf8");

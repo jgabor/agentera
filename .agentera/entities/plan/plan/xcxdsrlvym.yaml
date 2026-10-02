@@ -1,0 +1,51 @@
+id: xcxdsrlvym
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-01
+    status: open
+    reviewed: 2026-10-01
+    critic_issues: 1 found, 1 addressed, 0 dismissed
+    revised: Set eight-hour unattended scope, non-publishing feature-branch CI retries, and retain-exception fallbacks.
+    title: "Plan: Consolidate the toolchain on Vite+ 1.0.0"
+  what: Develop an isolated Vite+ 1.0.0 toolchain candidate that replaces redundant runtime, formatting, and hook tools, reduces CI feedback time, and provides measured evidence and an explicit concession record for later branch review.
+  why: Development publication failed at baseline 1b964ee3 because package verification took 780.9 seconds against a 515-second budget. Only 24.6 seconds was recorded setup. The user now prioritizes consolidation and practical CI feedback over retaining the previous toolchain architecture. The provisional toolchain decision udusuvfkcj is historical context, not approval for this redesign.
+  constraints: After explicit execution approval, work unattended for at most eight hours on the candidate. Preserve consumer behavior, dependency integrity, required defect detection, and publication isolation. Record formatting concessions; retain minimal exceptions instead of asking or weakening safeguards. Permit local commits, ordinary non-publishing feature-branch repair pushes, and read-only CI monitoring. Verify publication routing before every push. No integration, force-push, npm mutation, global tool change, or shared-hook activation. Do not raise budgets to hide failure. Report unresolved work at the deadline; publication of plan state alone does not start execution.
+  design: Establish a reproducible baseline and identify the dominant workload before changing its execution. Consolidate the development environment and quality loop, then remove measured duplication and introduce bounded reuse. Validate invalidation and failures before measuring the completed candidate. Preserve independent release assurance and finish with an evidence package for a separate side-by-side adoption review, not an automatic integration.
+  scope:
+    included:
+      - Baseline commit 1b964ee320832100b8715503a8a7747b0d0fc591 and CI run 36920660152.
+      - Vite+ 1.0.0 migration, bundled dependency alignment, and compatible test APIs.
+      - Corepack replacement in contributor and non-OIDC CI bootstrap paths.
+      - Native Vite+ commands and hooks; retire Lefthook when required checks are preserved.
+      - Oxfmt Markdown formatting and Markdownlint retirement with an explicit lost-rule inventory.
+      - Measured package workload, verification scheduling, deterministic preparation, and safe caching.
+      - Current verification authorities, CI workflow, manifests, lockfile, tests, and contributor guidance.
+      - Branch-only non-publishing hosted comparison, ordinary feature-branch repair pushes, and read-only monitoring.
+      - Small paired performance measurement and a dependency, coverage, and concession dossier.
+    excluded:
+      - Consumer CLI features, project-state schema changes, and stable-release cutover.
+      - Unrelated runtime or optional OpenCode dependency upgrades.
+      - Changing the configured publication ref or exposing the OIDC publisher to candidate tools.
+      - Pushes outside refs/heads/vite-plus-1-toolchain, force-pushes, branch integration, npm publication, and adoption decisions.
+      - Remote workflow cancellation, unrelated dispatch, and any change to the fixed OIDC publisher.
+    deferred:
+      - Proper side-by-side branch comparison and adoption decision after the candidate is complete.
+      - Broad benchmark campaigns or worker retuning without a measured need.
+  unknowns:
+    - question: Which package workload or runner phase dominates the 756.3-second outside-setup residual?
+      affects_task: 5
+      resolve_by: Use task 1 timings to select the expensive work; revise downstream scope if evidence contradicts it.
+    - question: Can the native hook path preserve all required checks without changing the primary worktree's hooks?
+      affects_task: 4
+      resolve_by: Prove behavior in disposable repositories; retain a minimal compatible hook entry without changing shared configuration.
+    - question: Which preparation results can be reused without replacing independent package proofs or fresh behavioral checks?
+      affects_task: 6
+      resolve_by: Classify task 1 obligations, then demonstrate identity binding and invalidation before enabling reuse.
+    - question: Does the candidate meet the existing package budget on the contracted hosted runner?
+      affects_task: 8
+      resolve_by: Use candidate-only hosted verification and repair failed candidate work within the approved window; report any unresolved gate honestly.
+  overall_acceptance: GIVEN the candidate is complete WHEN its evidence is reviewed THEN Vite+ provides the consolidated development path, required behavior and trust boundaries hold, changed coverage and concessions are explicit, paired cold and warm timings show the actual effect, cold hosted development verification passes with package wall time at or below 515 seconds, and adoption or publication still requires separate approval.
+  surprises:
+    []

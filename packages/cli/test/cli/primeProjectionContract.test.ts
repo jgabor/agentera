@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { encode } from "gpt-tokenizer/model/gpt-5";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";

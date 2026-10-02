@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { expect, inject, it } from "vitest";
+import { expect, inject, it } from "vite-plus/test";
 
 import { runSourceProfileFullWorkflow, runTrustedHarnessGlossaryWorkflow } from "../helpers/profileFullGlossaryWorkflow.js";
 import { installSourceGlossaryEvaluationRunner } from "../helpers/sourceSubprocess.js";

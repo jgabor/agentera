@@ -1,36 +1,10 @@
 {
   "name": "agentera-monorepo",
   "private": true,
-  "scripts": {
-    "bootstrap": "vp install --frozen-lockfile",
-    "test": "pnpm -C packages/cli test",
-    "build": "pnpm -C packages/cli build",
-    "verify": "pnpm -C packages/cli run verify:release",
-    "verify:development": "pnpm -C packages/cli run verify:development",
-    "typecheck": "pnpm -C packages/cli run typecheck",
-    "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
-    "cli:prepare:stable": "pnpm -C packages/cli/shim run release:prepare",
-    "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
-    "cli:ready:dev": "pnpm -C packages/cli run release:ready",
-    "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
-    "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
-    "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",
-    "cli:publish:qualified:stable": "pnpm -C packages/cli/shim run release:publish:qualified",
-    "cli:approve:dev": "pnpm -C packages/cli run release:approve",
-    "cli:stage:dev": "pnpm -C packages/cli run release:stage",
-    "cli:promote:dev": "pnpm -C packages/cli run release:promote",
-    "cli:stage:stable": "pnpm -C packages/cli/shim run release:stage",
-    "cli:promote:stable": "pnpm -C packages/cli/shim run release:promote"
-  },
   "devDependencies": {
     "@typescript/typescript6": "catalog:",
-    "lefthook": "catalog:",
-    "markdownlint-cli": "catalog:",
-    "oxfmt": "catalog:",
-    "oxlint": "catalog:",
     "vite": "catalog:",
-    "vite-plus": "catalog:",
-    "vitest": "catalog:"
+    "vite-plus": "catalog:"
   },
   "packageManager": "pnpm@10.30.3"
 }

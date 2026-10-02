@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../../src/setup/hostSkillLifecycle.js";
 import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath, readLifecycleOwnershipJournal } from "../../src/runtime/lifecycleOwnershipJournal.js";
 import { applyLifecycleOperations, createLifecycleOwnershipManifest, planLifecycleOperations, type LifecycleOperationSpec } from "../../src/runtime/lifecycleOperations.js";

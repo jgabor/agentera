@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { publishNumberedArchive } from "../../src/state/archivePublication.js";
 import { effectiveChildFlagsAreComplete, EFFECTIVE_NODE_OPTIONS_UTF8_LIMIT as EVIDENCE_NODE_OPTIONS_LIMIT, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";

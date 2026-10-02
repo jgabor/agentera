@@ -1,0 +1,13 @@
+id: bemarqhvxe
+artifact: decisions
+record:
+  decision: udusuvfkcj
+  date: 2026-10-02
+  provenance: historical_revision
+  base_sha256: c125ac73c4f30636bf4941f0adc0734d08908adef49e6de9c454a60b176dbcb0
+  changes:
+    context: The user approved an isolated eight-hour Vite+ 1.0.0 redesign experiment with non-publishing feature-branch verification and repair pushes. Package CLI journeys, not preparation, dominate the measured baseline. Adoption into the integration branch remains a separate user decision.
+    choice: On the experimental candidate, use Vite+ 1.0 native root tasks and staged hooks, explicit managed runtime selection, verified Corepack-free bootstrap, and Oxfmt for eligible Markdown. Retain pnpm lock authority, independent package constructions, required behavioral checks, and the fixed OIDC publisher. Disable task-verdict caching, including forced cache flags, because a corrupt native entry returned success without running its child. Reuse transformed modules while assertions execute freshly. Use a branch-only read-only baseline/candidate workflow for hosted evidence. Keep this choice provisional until the side-by-side adoption review.
+    reasoning: Native consolidation removes redundant tool dependencies and reduces measured package wall time through bounded isolated journeys without lost scenarios. Equivalent instruction tightening preserves existing raw startup budgets. Local development and hermetic checks pass; full historical certification remains failed on pre-existing bindings. Hosted results and the concession inventory must inform adoption rather than converting experiment approval into integration or publication approval.
+    confidence: provisional
+    feeds_into: Experimental toolchain, verification workflow, contributor guidance, performance evidence, and the later adoption review.

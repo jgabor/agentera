@@ -1,6 +1,6 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import { closeout } from "../../src/capabilities/discuss/instructions.js";
 import { discussCloseoutJourney, discussScenarios } from "../helpers/discussCloseoutJourney.mjs";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
@@ -12,8 +12,8 @@ import { operationSpec } from "../../src/state/write/operations.js";
 useSourceAppHome();
 
 describe("Discuss closeout, cooperative host with built CLI writers", () => {
-  it.each([...discussScenarios, "pending-transaction"])("%s", (scenario) => {
-    const result = discussCloseoutJourney(
+  it.each([...discussScenarios, "pending-transaction"])("%s", async (scenario) => {
+    const result = await discussCloseoutJourney(
       (root: string, args: string[], input?: unknown) => {
         const child = spawnSync(process.execPath, [path.join(sourceBuildOutputRoot(), "bin/agentera.js"), ...args], {
           cwd: root,

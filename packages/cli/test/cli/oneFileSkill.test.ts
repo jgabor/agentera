@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import YAML from "yaml";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { main } from "../../src/cli/dispatch.js";

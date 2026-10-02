@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { boundStructuredProjection, loadProjectionPolicy, serializedProjectionBytes } from "../../src/state/projectionPolicy.js";
 import { checkCompaction, compactYamlFile } from "../../src/hooks/compaction/index.js";

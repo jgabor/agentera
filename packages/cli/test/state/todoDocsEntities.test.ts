@@ -4,7 +4,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, describe, expect, inject, it, vi } from "vitest";
+import { afterEach, describe, expect, inject, it, vi } from "vite-plus/test";
 import { useSourceAppHome } from "../helpers/managedAppStub.js";
 
 import { main } from "../../src/cli/dispatch/index.js";

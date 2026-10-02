@@ -5,9 +5,10 @@ import os from "node:os";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { parseReleaseFlags } from "../../scripts/release-arguments.mjs";
+import config from "../../../../vite.config.ts";
 import { canonicalContainedRegularFile, load, resolve } from "../../scripts/source-loader-hooks.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -245,7 +246,7 @@ describe("root release script argument forwarding", () => {
   });
 
   it("accepts the exact separator and JSON shape forwarded by every root release recipe", () => {
-    const rootScripts = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8")).scripts;
+    const rootTasks = config.run!.tasks!;
     const prepareDevelopment = {
       boolean: ["--check", "--json", "--verbose"],
       value: ["--source-commit", "--candidate-dir"],
@@ -295,7 +296,10 @@ describe("root release script argument forwarding", () => {
     ] as const;
 
     for (const [script, options, forwarded] of recipes) {
-      expect(rootScripts[script]).toMatch(/^pnpm -C packages\/cli/);
+      expect(rootTasks[script]).toMatchObject({
+        command: expect.stringMatching(/^"\$VP_CLI_BIN" env exec --node 24\.19\.0 pnpm -C packages\/cli/),
+        cache: false,
+      });
       const flags = parseReleaseFlags([...forwarded], options);
       expect(flags.get("--json"), script).toBe(true);
       expect([...flags.keys()], script).not.toContain("--");

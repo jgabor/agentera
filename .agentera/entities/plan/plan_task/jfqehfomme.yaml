@@ -1,0 +1,23 @@
+id: jfqehfomme
+artifact: plan
+record:
+  name: Establish the baseline and package cost model
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the frozen baseline WHEN measured THEN owner, setup, file, assertion, and residual timings identify expensive work.
+    - GIVEN before samples WHEN retained THEN exact revisions, environment, cache state, outcomes, and required scenario inventory are recorded.
+    - GIVEN a baseline failure WHEN reported THEN it remains visible and is not converted into a passing timing result.
+    - GIVEN measurement changes WHEN checked THEN one successful run and one failing or cancelled run prove reliable reporting.
+  plan: xcxdsrlvym
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: baseline-evidence-1
+      source: references/analysis/vite-plus-1-baseline.md; retained serial profiles and reporting success/failure/cancellation checks
+      recorded_at: 2026-10-02 00:09
+      writer_command: agentera state plan record-evaluation

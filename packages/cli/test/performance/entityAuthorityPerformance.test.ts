@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { createArchivePerformanceFixture } from "../helpers/archivePerformanceFixture.js";

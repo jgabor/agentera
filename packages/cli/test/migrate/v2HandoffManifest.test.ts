@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { PROFILE_FILE_MEMBERS, READER_PREFLIGHT_BUDGET_MS, USER_DATA_CATALOG_DIRS, V2_HANDOFF_MANIFEST_FILENAME, V2_HANDOFF_SCHEMA_VERSION, parseV2HandoffManifest, readV2HandoffManifestFile, resolveMigrationUserStatePreflight } from "../../src/migrate/v2HandoffManifest.js";
 import { planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";

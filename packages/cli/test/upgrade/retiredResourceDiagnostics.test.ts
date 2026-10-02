@@ -4,7 +4,7 @@ import path from "node:path";
 import { spawnSync } from "node:child_process";
 import { historicalPluginFixture } from "../helpers/git.js";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { cmdDoctor } from "../../src/cli/commands/doctor.js";
 import { main } from "../../src/cli/dispatch.js";

@@ -1,0 +1,13 @@
+id: jzslndjshp
+artifact: plan
+record:
+  name: Measure the result and prepare the adoption review
+  depends_on:
+    - niwgozmrcv
+  status: in_progress
+  acceptance:
+    - GIVEN matched before and after samples WHEN compared THEN cold and warm times, spread, failures, and coverage differences are reported separately.
+    - GIVEN matched cold hosted development runs WHEN evaluated THEN candidate verification passes and package wall time including setup stays within 515 seconds.
+    - GIVEN missing hosted evidence or unmet targets WHEN reported THEN the candidate remains unqualified and no result is presented as a pass.
+    - GIVEN the review dossier WHEN handed off THEN both revisions, gains, retained tools, concessions, and rollback choices support a separate adoption decision.
+  plan: xcxdsrlvym

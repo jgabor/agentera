@@ -1,4 +1,5 @@
 import { spawn, spawnSync } from "node:child_process";
+import config from "../../../../vite.config.ts";
 import crypto from "node:crypto";
 import fs from "node:fs";
 import http from "node:http";
@@ -6,14 +7,13 @@ import os from "node:os";
 import path from "node:path";
 import { createRequire } from "node:module";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import YAML from "yaml";
 
 import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "../../scripts/release-qualification.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const qualificationYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8");
-const rootPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "package.json"), "utf8"));
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
 const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
 const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
@@ -222,16 +222,17 @@ describe("package publication orchestration", () => {
   });
 
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
-    expect(rootPackage.scripts).toMatchObject({
-      "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",
-      "cli:qualify:source": "pnpm -C packages/cli run release:qualify:source",
-      "cli:ready:dev": "pnpm -C packages/cli run release:ready",
-      "cli:qualify:dev": "pnpm -C packages/cli run release:qualify:candidate",
-      "cli:benchmark:qualification": "pnpm -C packages/cli run release:benchmark:qualification",
-      "cli:publish:qualified:dev": "pnpm -C packages/cli run release:publish:qualified",
-      "cli:approve:dev": "pnpm -C packages/cli run release:approve",
-      "cli:stage:dev": "pnpm -C packages/cli run release:stage",
-      "cli:promote:dev": "pnpm -C packages/cli run release:promote",
+    const commands = Object.fromEntries(Object.entries(config.run!.tasks!).map(([name, task]) => [name, typeof task === "object" && !Array.isArray(task) ? task.command : task]));
+    expect(commands).toMatchObject({
+      "cli:prepare:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:prepare',
+      "cli:qualify:source": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:qualify:source',
+      "cli:ready:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:ready',
+      "cli:qualify:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:qualify:candidate',
+      "cli:benchmark:qualification": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:benchmark:qualification',
+      "cli:publish:qualified:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:publish:qualified',
+      "cli:approve:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:approve',
+      "cli:stage:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:stage',
+      "cli:promote:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:promote',
     });
     expect(developmentPackage.scripts["release:prepare"]).toContain("publication-transaction.mjs prepare development");
     expect(developmentPackage.scripts["release:ready"]).toBe("node scripts/release-readiness.mjs development");
@@ -1642,7 +1643,10 @@ assert not responses
   });
 
   it("keeps package verification benchmarking local after workflow removal", () => {
-    expect(rootPackage.scripts["cli:benchmark:qualification"]).toBe("pnpm -C packages/cli run release:benchmark:qualification");
+    expect(config.run!.tasks!["cli:benchmark:qualification"]).toMatchObject({
+      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:benchmark:qualification',
+      cache: false,
+    });
     expect(developmentPackage.scripts["release:benchmark:qualification"]).toContain("release-benchmark.mjs qualification");
     expect(publicationContract.benchmark).not.toHaveProperty("workflow");
   });

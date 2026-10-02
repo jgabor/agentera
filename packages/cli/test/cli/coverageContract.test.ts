@@ -1,12 +1,20 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 import YAML from "yaml";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
 const skillRoot = path.join(root, "skills/agentera");
-const document = fs.readFileSync(path.join(root, "docs/cli-coverage-contract.md"), "utf8");
+// Oxfmt aligns Markdown cells. Preserve the exact inventory/command assertions,
+// independent of presentation padding, without changing protocol source bytes.
+const document = fs.readFileSync(path.join(root, "docs/cli-coverage-contract.md"), "utf8").replace(/^\|.*$/gm, (row) =>
+  row
+    .split("|")
+    .map((cell) => cell.trim())
+    .join(" | ")
+    .trim(),
+);
 
 function section(start: string, end: string): string {
   const from = document.indexOf(start);

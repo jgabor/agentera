@@ -4,7 +4,7 @@ import path from "node:path";
 import { createRequire } from "node:module";
 const { DatabaseSync } = createRequire(import.meta.url)("node:sqlite") as typeof import("node:sqlite");
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { isolatedEnv, seedOpencodeManySessions } from "./extractCorpusFixtures.js";
 

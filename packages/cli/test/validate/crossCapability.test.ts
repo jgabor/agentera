@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { loadCanonicalArtifacts, validateGraph } from "../../src/validate/crossCapability.js";
 import { EXPECTED_ARTIFACT_SCHEMA_VERSION } from "../../src/registries/artifactRegistry.js";

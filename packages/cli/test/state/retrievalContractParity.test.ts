@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { capabilityContext } from "../../src/cli/capabilityContext/contract.js";

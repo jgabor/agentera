@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { EXPECTED_ARTIFACT_SCHEMA_VERSION, loadArtifactRecord, loadArtifactRegistry, loadDocsPathOverrides, resolveArtifactPath } from "../../src/registries/artifactRegistry.js";
 import type { JsonObject } from "../../src/core/jsonValue.js";

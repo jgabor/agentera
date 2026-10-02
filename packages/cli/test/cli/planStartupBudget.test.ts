@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { encode } from "gpt-tokenizer/model/gpt-5";
-import { afterEach, beforeEach, expect, it } from "vitest";
+import { afterEach, beforeEach, expect, it } from "vite-plus/test";
 
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { genericSlimStartupContext, slimPlanState, slimTodoState } from "../../src/cli/capabilityContext/startup.js";

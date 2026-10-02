@@ -34,10 +34,13 @@ export const testTimeout = testTimeoutFor();
 export const sharedTestConfig = {
   environment: "node" as const,
   globals: false,
+  // Preserve v4 mock history and independent inline project servers.
+  clearMocks: false,
+  sharedViteServer: false,
   maxWorkers,
   testTimeout,
   hookTimeout: testTimeout,
-  experimentalFsModuleCache: true,
+  fsModuleCache: true,
   // Authority/config changes use the explicit local guard suite, never all source.
   forceRerunTriggers: [],
 };
@@ -60,6 +63,7 @@ export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ??
   const include = owner === policy.inventory.default_owner ? [`${relative(policy.inventory.root)}/**/*${policy.inventory.suffix}`] : rules.filter((rule) => rule.owner === owner).map(pattern);
   const exclude = rules.filter((rule) => rule.owner !== owner).map(pattern);
   const project = (name: string, include: string[], exclude: string[]) => ({
+    extends: false as const,
     test: {
       ...sharedTestConfig,
       maxWorkers: workers,
@@ -69,7 +73,7 @@ export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ??
       exclude,
       setupFiles: ["./test/fixtureSetup.ts"],
       globalSetup: [owner === "package" ? "./test/packaging/packageSetup.ts" : "./test/sourceSetup.ts"],
-      ...(owner === "package" ? { maxWorkers: 1, testTimeout: 120_000 } : {}),
+      ...(owner === "package" ? { maxWorkers: 1, maxConcurrency: 4, testTimeout: 120_000 } : {}),
     },
   });
   // Full source verification compiles its transient runtime once. Only root

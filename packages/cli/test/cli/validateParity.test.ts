@@ -2,7 +2,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { cmdValidate, cmdValidateCapability, cmdValidateCapabilityContract, isDelegatedValidateFamily } from "../../src/cli/commands/validate.js";
 import { main } from "../../src/cli/dispatch.js";

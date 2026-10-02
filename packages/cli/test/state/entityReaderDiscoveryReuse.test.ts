@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";

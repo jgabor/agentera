@@ -41,3 +41,5 @@ bun.lock
 /packages/cli/.agentera-legacy-dist-*
 *.bun-build
 /sandbox-report-*.json
+.vitest/
+/.vite-hooks/_/

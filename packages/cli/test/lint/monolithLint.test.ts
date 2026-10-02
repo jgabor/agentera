@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const SRC_ROOT = path.resolve(__dirname, "../../src");
 const LINE_LIMIT = 1000;

@@ -2,12 +2,13 @@ import fs from "node:fs";
 import path from "node:path";
 
 import YAML from "yaml";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
 const workspace = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-workspace.yaml"), "utf8"));
+const lockfile = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-lock.yaml"), "utf8"));
 const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
 const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
 const rootViteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf8");
@@ -100,18 +101,32 @@ describe("toolchain baseline", () => {
 
   it("binds the executable integration proof to live project policy", () => {
     expect(baseline.executable_proof.command).toBe("vp -C packages/cli run test:toolchain-baseline");
-    expect(baseline.selection.vite_plus.version).toBe("0.3.0");
+    expect(baseline.selection.vite_plus.version).toBe("1.0.0");
+    expect(baseline.selection.vite_plus.release_commit).toBe("fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4");
+    expect(baseline.selection.vite_plus.node_range).toBe("^22.18.0 || ^24.11.0 || >=26.0.0");
+    expect(baseline.selection.vite_plus.bundled).toEqual({
+      vite: "8.3.1",
+      vitest: "5.0.1",
+      oxlint: "1.85.0",
+      oxfmt: "0.70.0",
+    });
+    expect(lockfile.packages["vite-plus@1.0.0"].resolution.integrity).toBe(baseline.selection.vite_plus.npm_integrity);
+    expect(lockfile.packages["@voidzero-dev/vite-plus-linux-x64-gnu@1.0.0"].resolution.integrity).toBe(baseline.selection.vite_plus.npm_provenance.platform_npm_integrity);
+    expect(baseline.selection.vite_plus.native_linux_x64).toEqual({
+      asset: "vp-x86_64-unknown-linux-gnu.tar.gz",
+      sha256: "2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a",
+      immutable_release: true,
+    });
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
     expect(workspace.catalog).toEqual({
-      lefthook: "2.1.12",
-      "markdownlint-cli": "0.48.0",
       "@typescript/typescript6": "6.0.2",
-      oxfmt: "0.64.0",
-      oxlint: "1.79.0",
-      vite: "8.2.2",
-      "vite-plus": "0.3.0",
-      vitest: "4.1.11",
+      vite: "npm:@voidzero-dev/vite-plus-core@1.0.0",
+      "vite-plus": "1.0.0",
+      vitest: "5.0.1",
     });
+    expect(workspace.overrides).toMatchObject({ "vite@*": "catalog:", "vitest@*": "catalog:" });
+    expect(rootPackage.devDependencies).not.toHaveProperty("oxfmt");
+    expect(rootPackage.devDependencies).not.toHaveProperty("oxlint");
     expect(Object.values(rootPackage.devDependencies)).toSatisfy((versions: unknown[]) => versions.every((version) => version === "catalog:"));
     expect(cliPackage.devDependencies).toMatchObject({
       "@typescript/typescript6": "catalog:",
@@ -121,14 +136,9 @@ describe("toolchain baseline", () => {
     });
     expect(rootViteConfig).toContain("maxWarnings: 8");
     expect(rootViteConfig).not.toContain("typeCheck: true");
-    expect(rootViteConfig).not.toContain("tasks:");
-    expect(rootPackage.scripts).toMatchObject({
-      bootstrap: "vp install --frozen-lockfile",
-      test: "pnpm -C packages/cli test",
-      build: "pnpm -C packages/cli build",
-      verify: "pnpm -C packages/cli run verify:release",
-      typecheck: "pnpm -C packages/cli run typecheck",
-    });
+    expect(rootViteConfig).toContain("tasks:");
+    expect(rootPackage.scripts).toBeUndefined();
+    for (const command of ["VP_GIT_HOOKS=0 vp install --frozen-lockfile", "pnpm -C packages/cli test", "pnpm -C packages/cli build", "pnpm -C packages/cli run verify:release", "pnpm -C packages/cli run typecheck"]) expect(rootViteConfig).toContain(command);
     expect(workspace.onlyBuiltDependencies).toEqual(["esbuild"]);
     expect(cliPackage.scripts["test:toolchain-baseline"]).toBe("node scripts/verify-toolchain-baseline.mjs");
   });

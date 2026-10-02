@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { buildSchemaPayload, REMOVED_TOP_LEVEL_CORRECTIONS, TRANSITIONAL_TOP_LEVEL_ALIASES } from "../../src/cli/commands/schema.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";

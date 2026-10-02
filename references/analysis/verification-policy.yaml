@@ -252,12 +252,12 @@ policies:
 # executes the stress owner.
 
 # The diagnostic `verify-lane route` API retains conservative CI ownership.
-# It is not a local hook router: Lefthook uses native related tests plus the
+# It is not a local hook router: Vite+ uses native related tests plus the
 # configured local_guards subset. CI keeps complete development safety; explicit
 # full qualification retains every owner including historical certification.
 conservative_routing:
   exact:
-    - .lefthook.yml
+    - .vite-hooks/pre-commit
     - protocol.yaml
     - registry.json
     - packages/cli/package.json

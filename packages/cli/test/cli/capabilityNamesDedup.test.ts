@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it } from "vite-plus/test";
 
 import { CAPABILITY_NAMES } from "../../src/cli/capabilityContext/types.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";

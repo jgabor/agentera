@@ -1,0 +1,27 @@
+#!/bin/sh
+# Git starts this policy at the invoking worktree root.
+# The native dispatcher prepends node_modules/.bin. Do not mistake that
+# Node-dependent vp shim for the standalone runtime owner, even with ambient Node.
+set -f
+saved_ifs=$IFS
+IFS=:
+launcher_path=
+for directory in $PATH; do
+  case "$directory" in
+    ""|*/node_modules/.bin|node_modules/.bin) ;;
+    *) launcher_path="${launcher_path:+$launcher_path:}$directory" ;;
+  esac
+done
+IFS=$saved_ifs
+PATH=$launcher_path
+export PATH
+if ! command -v vp >/dev/null 2>&1; then
+  echo "Hooks require standalone Vite+ 1.0 on Git's PATH. Restore launcher discovery, then run vp env on and vp install --frozen-lockfile." >&2
+  exit 1
+fi
+if [ ! -x ./node_modules/.bin/vp ]; then
+  echo "Hooks require this worktree's dependencies. Run vp env on and vp install --frozen-lockfile." >&2
+  exit 1
+fi
+# The launcher supplies managed Node; the worktree supplies the local toolchain.
+exec vp exec ./node_modules/.bin/vp staged --hide-partially-staged

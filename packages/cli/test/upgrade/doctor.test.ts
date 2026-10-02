@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { APP_MANUAL_REVIEW_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE, buildDoctorStatus, publicDoctorStatus } from "../../src/upgrade/doctor.js";
 import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";

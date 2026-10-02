@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";

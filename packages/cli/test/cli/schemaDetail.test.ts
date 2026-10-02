@@ -2,7 +2,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { spawnSync } from "node:child_process";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import YAML from "yaml";
 import { main } from "../../src/cli/dispatch.js";
 import { stateWriterArtifactContract } from "../../src/state/write/operations.js";

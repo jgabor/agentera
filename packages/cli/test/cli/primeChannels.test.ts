@@ -3,7 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
 import { resetUpdateChannelsAuthorityCache } from "../../src/upgrade/channels.js";

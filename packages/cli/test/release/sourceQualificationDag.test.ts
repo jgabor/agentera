@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { describe, expect, it, onTestFinished, vi } from "vitest";
+import { describe, expect, it, onTestFinished, vi } from "vite-plus/test";
 import YAML from "yaml";
 
 import { defaultStartSourceOwner, RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
