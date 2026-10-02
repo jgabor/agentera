@@ -38,6 +38,7 @@
 - [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
+- [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
 
 ## ⇢ Annoying
 

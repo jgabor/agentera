@@ -1,0 +1,24 @@
+id: zcfyobenbh
+artifact: todo
+record:
+  kind: task
+  target_version: null
+  title: Explore reducing development-gate and source wall time
+  requirements:
+    - "Use the cold hosted baseline: development gates 26m35.592s; source 24m35.230s (run 37062016377)."
+    - Profile remaining costs and compare bounded options for reducing fresh-check wall time.
+    - Preserve required coverage, fresh CI/release checks, isolation, and existing budgets.
+  acceptance:
+    - Identify dominant costs and evidence-backed improvements, with environment and worker allocation explicit.
+    - Report measured savings or no viable improvement, including regressions and trade-offs; do not hide work through cached verdicts.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[task] Explore reducing development-gate and source wall time"
+      severity: normal
+      status: open
+      order: 25
