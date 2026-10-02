@@ -289,6 +289,14 @@ async function runOwner(owner, state, forwarded = [], profile = "full") {
   const reporter = resultChannel ? ["--reporter=json", `--outputFile=${resultChannel}`] : [];
   const captureEvidence = definition.evidence !== undefined;
   const runnerEnv = { ...process.env, AGENTERA_VERIFICATION_OWNER: owner };
+  if (owner === "source") {
+    reporter.push(`--reporter=${path.join(packageRoot, "scripts/source-diagnostics.mjs")}`);
+    if (!resultChannel) reporter.unshift("--reporter=default");
+    runnerEnv.AGENTERA_SOURCE_DIAGNOSTICS = "1";
+    runnerEnv.AGENTERA_SOURCE_DIAGNOSTIC_ROOT = root;
+    runnerEnv.AGENTERA_SOURCE_DIAGNOSTIC_FILES = JSON.stringify(selection.files);
+    if (process.env.AGENTERA_QUALIFICATION_DIAGNOSTICS) runnerEnv.AGENTERA_SOURCE_DIAGNOSTIC_OUTPUT = path.join(process.env.AGENTERA_QUALIFICATION_DIAGNOSTICS, "source.progress.log");
+  }
   runnerEnv.AGENTERA_MEASUREMENT_PROFILE = profile;
   if (definition.execution?.workers !== undefined) {
     runnerEnv.VITEST_MAX_WORKERS = String(definition.execution.workers);
@@ -336,7 +344,13 @@ async function runOwner(owner, state, forwarded = [], profile = "full") {
   const elapsedMs = Math.ceil(Number(process.hrtime.bigint() - startedAt) / 1_000_000);
   // Capture diagnostic timings before the authoritative result drops them.
   // Failed owners can also leave useful reports; this never changes their exit.
-  writeVerificationTimingProfile({ resultFile: resultChannel, owner, wallMs: elapsedMs, files: selection.files, repoRoot: root });
+  writeVerificationTimingProfile({
+    resultFile: resultChannel,
+    owner,
+    wallMs: elapsedMs,
+    files: selection.files,
+    repoRoot: root,
+  });
   if (timingFile) console.log(packageTimingSummary(completePackageTimings(timingFile, elapsedMs)));
   if (timingRoot) fs.rmSync(timingRoot, { recursive: true, force: true });
   if (owner === "performance" && progress.timeout && (result.error || result.status !== 0)) console.error(`${progress.summary(elapsedMs, "verify-lane/process.hrtime.bigint")}\n${progress.timeout}`);

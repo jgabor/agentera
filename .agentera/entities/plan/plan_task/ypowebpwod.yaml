@@ -1,0 +1,22 @@
+id: ypowebpwod
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Finalize the accepted toolchain changes
+  status: complete
+  depends_on:
+    - bmcqliehzj
+  acceptance:
+    - GIVEN the accepted changes WHEN finalized THEN Removed Markdown policy checks, Removed root pnpm commands, Explicit Node selection, Custom hook code, and Concurrent test cleanup agree with contributor guidance.
+    - GIVEN completed candidate work WHEN gaps are assessed THEN valid passing evidence is reused and only missing implementation or guidance is changed.
+    - GIVEN changed checks WHEN tested THEN pass/fail behavior, staged-content isolation, pinned runtime selection, and child cleanup remain correct.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: merge-accepted-1
+      source: Initial review ses_f03186740ffeZ7QiPATj4jXxvY; contributor guidance and retained focused evidence in docs/packaging/vite-plus-1-followup-comparison.md
+      recorded_at: 2026-10-02 16:11
+      writer_command: agentera state plan record-evaluation

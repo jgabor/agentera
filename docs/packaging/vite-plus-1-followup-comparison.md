@@ -51,6 +51,145 @@ The six standalone-source skips are existing conditions: one Darwin process-iden
 
 The passing `vp check` reports zero errors and six warnings in unchanged files, within the existing warning policy. Static results remain applicable because executable inputs did not change during measurement. After writing both comparison documents, targeted `vp fmt`, `vp fmt --check`, and `git diff --check` passed. The documentation checks do not qualify omitted runtime owners.
 
+## Source cancellation diagnostics and isolation probe
+
+Task `xtbezclowi`, checkout HEAD `c1e677ed`, measured 2026-10-02. The hosted
+30-minute cause remains **unknown**. Source diagnostics now distinguish
+barrier/compilation, file collection/execution, numeric cases and native fixture
+invocations. Task-cache fixture child starts append synchronously to the
+diagnostic file even while the parent blocks in `spawnSync`. Records omit titles, child
+content, argv, absolute paths and environment values. These are observations,
+not gate results or a hostile-child security boundary. Reporter event arrival
+can lag a blocked worker; native events bypass that buffering. Missing child
+markers mean “not observed,” not a cache hit.
+
+Both coordinator layers forward records to the existing hosted
+`verification.log`; originating events also append synchronously to
+`AGENTERA_QUALIFICATION_DIAGNOSTICS/source.progress.log`. Neither requires final
+JSON or cleanup. The native-runner path did not relay the extra fixture child
+descriptor, although helper start/end records reached both coordinators. A
+bounded 500 ms file relay now forwards only inventory-allowed child starts,
+without duplicating helper records. The experimental upload step now uses
+`always()` alone to attempt artifact retention on cancellation too. No publisher
+workflow changed. Unit tests prove
+blocked-subprocess interruption and real two-coordinator cancellation retain
+records without inventing a pass. Hosted artifact proof remains pending push.
+
+One serial, one-worker taskCache-only sample per profile held Vite+ 1.0.0,
+actual Node 24.19.0, checkout inputs, disk-backed fixture parent/TMPDIR and
+budgets constant. Native verdict-cache fixtures were fresh in each sample;
+existing filesystem preparation reuse stayed enabled. The second sample used
+fresh owner-like HOME/XDG/npm-cache directories, not a full cold conjunction.
+
+| Diagnostic                              |        Caller |      Isolated |
+| --------------------------------------- | ------------: | ------------: |
+| Wrapper wall                            |      8,100 ms |     10,403 ms |
+| Tests passed / failed                   |        30 / 0 |        30 / 0 |
+| Transient compilation / file collection |   560 / 99 ms |   550 / 84 ms |
+| File execution, reporter-observed       |      7,117 ms |      8,137 ms |
+| Native calls / summed time              | 71 / 6,857 ms | 71 / 7,879 ms |
+| Observed fixture child starts           |            46 |            46 |
+| Parent-to-child, median / maximum       |   72 / 102 ms |    72 / 98 ms |
+| Child-to-exit, median / maximum         |      5 / 8 ms |      6 / 8 ms |
+| 21 fresh-owner cases, minimum / maximum |  153 / 160 ms |  153 / 162 ms |
+
+Neither valid sample reproduces the earlier 9–12.7 second fresh-owner cases or
+supports a production correction for `vjvtdpngqi`. CPU/RSS/I/O were not sampled;
+resource pressure and conjunction effects remain possible. No failed sample
+was retried into green. A harness preflight stopped before samples because
+`VP_CLI_BIN` was absent outside native tasks; it then used verified `/bin/vp`.
+
+Raw evidence: `.vitest/source-xtbezclowi-XteMru/node_modules/evidence/` contains
+`experiment.mjs`, `results.json`, `summary.json`, and `caller/`, `isolated/`
+with `run.log`, `result.json`, `observation.json`, `source.progress.log`.
+`fixtures/cache/run-yKThVb/` and `run-NK4KxH/` retain per-invocation pre-child
+and child-execution timing records. Input hashes stayed identical across both
+samples. Preparation reuse assertions and their existing records stay separate
+from verdict caching.
+
+The earlier 145 targeted checks passed. Corrected nativeHooks placement outside
+`node_modules` passes all 26 tests in 25,107 ms, with disposable fixtures cleaned.
+The first `vp run test` invocation used checkout-nested bulk TMPDIR and failed
+70 tests (4,863 passed, six skipped), in 134,623 ms. It is **environment-invalid**:
+fixtures discovered the enclosing workspace compiler and placed host publication
+paths inside internal runtime authority. It was preserved, not rerun.
+
+The single subsequent `vp run verify:development` used a fresh child of the
+established external disk temp root, separate XDG data, unchanged four source
+workers, one package worker and budgets. Preparation caches stayed enabled and
+untouched; this was not a deliberately cold conjunction. It failed generated
+overlap in 478,743 ms wrapper time. Source: 476,398 ms, 4,935 passed, three
+failed, one skipped. Package: 129,282 ms, all 72 passed. Stress, typecheck and
+private build passed; owners after the failed overlap remain unverified. The
+failures were a 30,000 ms taskCache timeout and two startup-output bounds
+(32,919 > 32,768 bytes; 22,547 > 22,500 bytes). No failing owner was retried.
+
+This conjunction reproduces the **local pre-child delay**: 71 synchronous native
+calls total 354,899 ms. Across 46 fixture child starts, parent-to-child median /
+maximum was 5,257 / 6,652 ms; child-to-exit was 6 / 8 ms. Fresh-owner case median
+was 10,561 ms. TaskCache occupied 365,349 ms and nativeHooks 148,639 ms. Compiler
+setup took 729 ms, so it is not the dominant observed delay. The underlying
+native-launch cause, CPU/RSS/I/O attribution and hosted 30-minute cause remain
+unknown. This identifies where to investigate for `vjvtdpngqi`, not a justified
+production correction or native-build approval.
+
+Continuation evidence: `.vitest/source-hooks-xtbezclowi-ZcAztV/node_modules/evidence/`
+contains per-stage `hooks/`, `source/`, `development/` logs, reports, profiles and
+observations, plus `summary.json` and `native-summary.json`. Fixture timing
+records are under that run's `cache/run-Cb4nxo/`; the earlier invalid source
+records are in `cache/run-2LU09Q/`. Development retained 11,803 closed-grammar
+diagnostic lines (1,816,461 bytes), including all 46 child starts. The final
+JSON-only narrow transport check retains evidence in `transport-final/` and
+proves two starts, two child starts and two ends, without replay. Broad runs
+precede the child-start relay correction; they are not final-code qualification.
+Final affected tests and typecheck pass. Hosted cancellation/upload proof and
+all three valid source failures remain unresolved; no merge readiness is claimed.
+
+## Fixture correction under the isolated owner
+
+Task `vjvtdpngqi`, HEAD `c1e677ed`: taskCache and nativeHooks fixtures now copy
+the root `packageManager` value verbatim, including any integrity suffix. Hook
+manifest replacements retain it too. One regression checks the declaration,
+fresh execution and absence of latest-resolution/setup errors. Required cache,
+failure, cancellation, guard, hook and preparation-reuse assertions are unchanged.
+
+The real `startChild` isolation route, followed by provisioned `pnpm run`, proved
+that bootstrap's shared `VP_HOME` survives fresh HOME/XDG/npm state. The probe
+used existing Node/pnpm bytes through a disposable shared SDK, not extra
+per-fixture manager links or installation. Actual pnpm exported the offline
+file registry. Latest metadata stayed absent; each comparison fixture was fresh.
+
+| Native invocation       | Pre-child before / after | Child-to-exit before / after |
+| ----------------------- | -----------------------: | ---------------------------: |
+| taskCache-like task     |           5,716 / 104 ms |                     7 / 8 ms |
+| nativeHooks-like script |            4,793 / 97 ms |                     5 / 6 ms |
+
+Both unpinned invocations logged `pnpm/latest` and `BadScheme`; neither corrected
+invocation performed a latest lookup, setup failure or download. The canonical
+manager was `pnpm@10.30.3`, with Vite+ 1.0.0 and actual Node 24.19.0. Adding the
+field added 32 bytes to each probe manifest, not to CLI startup output.
+
+Serial isolated offline checks passed: taskCache 33 tests (10,057 ms wrapper),
+guard 11 (1,860 ms), hooks 26 (26,638 ms). Corrected cache timing records show
+81 ms median pre-child and 7 ms median child-to-exit across 48 observed starts;
+all 21 hard-fresh owners still execute twice under `--cache`. Preparation reuse
+remains enabled and separately proved. All 82 retained native result records
+contain no latest lookup, package-manager setup error or download trace, across
+fresh/hit/failure/cancellation and guarded fault cases. Typecheck, targeted formatting/lint and
+diff checks pass. An unreleased harness barrier and a harness `VP_LOG` setting
+that polluted nested JSON were preserved, corrected only in the disposable
+driver, and are not passing samples or production fixes.
+
+Raw evidence: `.vitest/source-fix-vjvtdpngqi-rzLo14/node_modules/evidence/`,
+including `owner-before/`, `owner-after/`, `cache-checks-v2/`, `guard-checks-v2/`,
+`hooks-checks-v3/`, `cache/run-NHJSu7/` and `summary.json`. Full source/development
+runs are deferred until the separate cached-alias work finishes. The next local
+routine diagnostic must retain the shared provisioned SDK and external disk
+TMPDIR, and use the checked-in hosted candidate's one-source-worker allocation.
+The first cold hosted source pass within 30 minutes, cancellation/upload proof,
+and final readiness remain pending. Existing CLI startup byte-bound failures
+are unchanged, not waived, and outside this fixture correction.
+
 ## Identity and environment
 
 - Assigned checkout: `/home/jgabor/.local/share/orca/workspaces/agentera/vite-plus-1-toolchain`, branch `vite-plus-1-toolchain`.
@@ -149,3 +288,62 @@ All local raw artifacts remain in `E`:
 - `summary.json` / `summary.log` preserve exact assertion counters, all failed titles/messages, skipped titles, and title-inventory digests; `detail.json` preserves corrective-file raw timing profiles and input hashes. Source inventory digest: `18b2166a66bddad0843749a356edb872ca2ac30aaa66384bc602a59169814938`. Package inventory digest: `4a627051bbcff926075458a039afa8b2164739cc1c16074dac3123a9dd8cf32e`. These are local sorted basename/full-title digests, not release receipts.
 
 Fixture subprocess evidence remains under `.vitest/followup/cache/run-qSaN4B/` (final cold run) and `.vitest/followup/cache/run-TOvxlH/` (passing full source). Original focused hook/cache proofs remain in their own ignored directories. No evidence was published, no checkout commit or push was made, and no global environment, shared hook, tmpfiles setting, or remote workflow was changed.
+
+## Guarded developer typecheck qualification
+
+Task `naxoqdtpur`, checkout HEAD `c1e677ed`, measured 2026-10-02. The sole selected
+verdict cache is opt-in `vp run typecheck:cached`. Its public task always runs the
+known-fault guard around distinct private `_typecheck:cached`, using the same
+read-only `pnpm -C packages/cli run typecheck` owner. Default typecheck, hooks,
+tests/lint, build, installation, package, verification and publication remain
+fresh. This does not replace any historical cold/hosted evidence above.
+
+The real-owner fixture snapshots actual CLI source, tsconfig and manifests with
+the canonical declared pnpm manager. Its dependencies are read-only links and
+its native cache is private. A Node preload counts compiler launches, not replayed
+stdout. The unchanged baseline compiler uses its normal execve route. Only the
+separate deterministic cancellation probe selects its existing execFileSync
+fallback and pauses before Node exit after actual compilation.
+
+| Operation                                   |      Local wall time | Cumulative compiler launches | Result                                                  |
+| ------------------------------------------- | -------------------: | ---------------------------: | ------------------------------------------------------- |
+| Cold guarded real typecheck                 |             1,055 ms |                            1 | Passing compiler execution                              |
+| Three unchanged warm public alias calls     |     235, 211, 207 ms |                            1 | Private verdict hits, outer guard fresh                 |
+| Actual copied source edit                   |               868 ms |                            2 | Miss, compiler executes                                 |
+| Actual copied test edit                     |               854 ms |                            3 | Conservative invalidation, not cached tests             |
+| Valid lockfile comment edit                 |               878 ms |                            4 | Miss, compiler executes                                 |
+| `NODE_OPTIONS` toggle                       |               876 ms |                            5 | Environment miss, compiler executes                     |
+| Genuine TS2322 failure, repeated            | recorded in raw JSON |                     6 then 7 | Both exit 1; no passing verdict                         |
+| Compiler correction and warm repeat         | recorded in raw JSON |                     8 then 8 | Pass, then hit                                          |
+| Malformed entry through actual public alias | recorded in raw JSON |                            8 | Guard rejects exit-zero native skip with exit 1         |
+| Fresh default recovery                      | recorded in raw JSON |                            9 | Owner executes without cache deletion                   |
+| Public alias after recovery                 | recorded in raw JSON |                            9 | Still rejects damaged private entry; no automatic retry |
+
+The guarded warm median is 211 ms, about 844 ms (80%) below this cold sample.
+These are local developer-loop samples, not a CI speedup, performance budget or
+hosted qualification. The separate cancellation probe has launch counts
+`1 -> 2 -> 2`: cancelled completed compilation, identical-input execution, then
+successful warm replay. No command deadline, fixture cleanup assertion, native
+pin, hook call or publisher byte-identity contract changed.
+
+Serial focused checks passed 48 assertions across `taskCache.test.ts` (35),
+`nativeCacheGuard.test.ts` (11) and `guardedTypecheckCache.test.ts` (2), in
+22.15 seconds. This includes the original 21 fresh-root proofs under `--cache`,
+the new public-wrapper freshness proof, and the explicit private exception.
+Full source/development/package/performance and hosted owners were not run here.
+
+Raw real-owner evidence is retained at
+`node_modules/agentera-native-guard-proof/typecheck/run-I6Vr06/{real-owner,real-owner-cancellation}.json`.
+The first exploratory run assumed compiler exit 2, but this pinned owner returns
+exit 1 for TS2322. Initial cancellation probes also established that execve
+bypasses Node's exit events. Those failed probe records remain in adjacent run
+directories; they are not counted as qualification passes. The corrected
+assertion retains the actual nonzero contract and the cancellation preload uses
+the compiler launcher's existing fallback. The runtime guard was not changed.
+
+Recovery remains the unchanged fresh default `vp run typecheck` or
+`vp run typecheck:fresh`. Match the explicit `Cache lookup failed` diagnostic;
+do not infer corruption from arbitrary workflow failures. The guard is a
+workaround, not an upstream repair or a security boundary. Related upstream
+issue [2636](https://github.com/voidzero-dev/vite-plus/issues/2636) supplies no
+committed exact fix or ETA. See the cache proof for policy and environment inputs.

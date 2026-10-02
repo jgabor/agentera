@@ -1,5 +1,9 @@
+import { sourceDiagnosticPattern } from "./source-diagnostics.mjs";
+
 // Diagnostic progress only, never verification evidence. The closed grammar
-// excludes paths, command arguments, environment values and arbitrary child logs.
+// allows fixed labels and inventory-relative test identity, but excludes absolute
+// paths, command arguments, environment values and arbitrary child logs. This is
+// a diagnostic filter, not a security boundary against a hostile child process.
 const owners = {
   overlap: ["source", "build", "package", "invocation"],
   qualification: ["generated-overlap", "stress", "typecheck", "certification", "performance", "capacity", "compact", "capability-contract", "activation-conjunction"],
@@ -27,20 +31,26 @@ export function createVerificationProgress(scope, owner, { write = writeStderr, 
   };
 }
 
-export function createOverlapProgressForwarder(write = writeStderr) {
+export function createOverlapProgressForwarder(write = writeStderr, { sourceOnly = false } = {}) {
   let pending = "";
   let oversized = false;
   return {
     feed(chunk) {
       for (const part of String(chunk).split(/(?<=\n)/)) {
         pending += part;
-        if (pending.length > 256) {
+        if (pending.length > 512) {
           pending = "";
           oversized = true;
         }
         if (!part.endsWith("\n")) continue;
         const match = !oversized && linePattern.exec(pending.trimEnd());
-        if (match && match[1] === "overlap" && owners.overlap.includes(match[2]) && statuses.has(match[3])) write(`${match[0]}\n`);
+        const source = !oversized && sourceDiagnosticPattern.exec(pending.trimEnd());
+        try {
+          if (source) write(`${source[0]}\n`);
+          else if (!sourceOnly && match && match[1] === "overlap" && owners.overlap.includes(match[2]) && statuses.has(match[3])) write(`${match[0]}\n`);
+        } catch {
+          /* Diagnostic sinks never change the gate verdict. */
+        }
         pending = "";
         oversized = false;
       }

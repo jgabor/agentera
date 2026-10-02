@@ -11,7 +11,7 @@ import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSour
 import { validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { readPackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
-import { createVerificationProgress } from "./verification-progress.mjs";
+import { createVerificationProgress, createOverlapProgressForwarder } from "./verification-progress.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
 const defaultPackageRoot = path.resolve(path.dirname(scriptPath), "..");
@@ -211,11 +211,15 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
   let stdout = "";
   let stderr = "";
   const capture = (current, chunk) => stripVTControlCharacters(`${current}${chunk}`).slice(-1000);
+  const sourceStdout = name === "source" ? createOverlapProgressForwarder(undefined, { sourceOnly: true }) : undefined;
+  const sourceStderr = name === "source" ? createOverlapProgressForwarder(undefined, { sourceOnly: true }) : undefined;
   child.stdout.setEncoding("utf8").on("data", (chunk) => {
+    sourceStdout?.feed(chunk);
     stdout = capture(stdout, chunk);
     stream.write(chunk);
   });
   child.stderr.setEncoding("utf8").on("data", (chunk) => {
+    sourceStderr?.feed(chunk);
     stderr = capture(stderr, chunk);
     stream.write(chunk);
   });

@@ -3,38 +3,88 @@
 ## Decision and scope
 
 Keep Vitest's existing `fsModuleCache: true` for transformed-module preparation.
-Execute assertions and all verification owners on every invocation. Do not enable
-native task-verdict caching, even for local typecheck: the installed Vite+ 1.0.0
-returns success without child execution for one malformed-entry fault.
+Execute assertions and all required verification owners on every invocation.
+The sole opt-in verdict cache is developer typecheck, through an always-fresh
+outer known-fault guard. The installed Vite+ 1.0.0 still returns success without
+child execution for one malformed-entry fault; the guard rejects that diagnostic.
+This is a workaround, not an upstream repair or cold qualification.
 
 Root recipes moved from `package.json#scripts` to `vite.config.ts#run.tasks`.
 Their names, delegated pnpm commands, targets, argument forwarding, environment,
-and child-failure behavior remain unchanged. Each task has `cache: false`, which
-Vite+ does not let `--cache` override. The workspace default is also false, but
-that default alone is not the freshness guard. Task and script names cannot
+and child-failure behavior remain unchanged. Each of the 21 required tasks has
+`cache: false`, which Vite+ does not let `--cache` override. The new public cached
+alias also has `cache: false`; only its distinct private task has a cache object.
+Workspace `cache: { scripts: false, tasks: true }` permits that exception, not
+implicit caching of required owners. Task and script names cannot
 overlap, so retaining duplicate root scripts is not possible. Removed root pnpm
 script aliases are replaced by the existing documented `vp run` entrypoints;
 package-level pnpm owners remain unchanged.
 
-Two explicit developer commands are available:
+Explicit developer commands are:
 
 ```bash
 vp run test:local          # Positive fast local project only, not full source assurance
 vp run typecheck:fresh     # Same fresh owner as vp run typecheck
+vp run typecheck:cached    # Guarded read-only feedback; may replay a successful typecheck
 ```
 
-Neither command replays a verdict. Hooks and CI are not redirected to a cached
+Only `typecheck:cached` replays a verdict. Hooks and CI are not redirected to a cached
 diagnostic. Hosted workflow changes, package journey changes, state, commits,
 pushes, and registry mutation are outside this work.
 
-## Native contracts checked
+## Current guarded developer typecheck
+
+Public `typecheck:cached` uses managed Node to start the existing guard, which
+starts `vp run _typecheck:cached` from outside native lookup. The private owner
+is the unchanged `pnpm -C packages/cli run typecheck`, namely
+`tsc -p tsconfig.json --noEmit`. Do not call the private task directly. Its name
+is a maintainer convention, not an access-control boundary.
+
+Inputs retain `{ auto: true }` and explicitly include `packages/cli/src/**`,
+`packages/cli/test/**`, the CLI tsconfig/manifest, root manifest, lockfile,
+workspace configuration, `.node-version` and toolchain baseline. Tests are a
+conservative invalidation input; the existing tsconfig excludes them. This does
+not claim test typechecking or cached tests. `NODE_OPTIONS`, `NODE_PATH`,
+`NODE_ENV`, `PATH`, `VP_HOME`, `VP_CLI_BIN`, `VP_NODE_VERSION`,
+`VP_PACKAGE_MANAGER` and `VP_PNPM_VERSION` are fingerprinted. Automatic tracking
+retains compiler/dependency reads. `output: []` disables artifact restoration.
+
+`guardedTypecheckCache.test.ts` snapshots the actual CLI source, tsconfig and
+owner manifests into disk-backed, scanner-excluded fixtures with declared root
+pnpm. It links installed dependencies read-only and owns the native cache.
+No project state or user source is modified. A Node preload counts real compiler
+launches, not replayed passing text. Source and test edits, a valid lockfile
+comment edit and a `NODE_OPTIONS` toggle each require a new compiler launch.
+An actual TS2322 error fails twice with two launches; a source correction passes.
+Malformed SQLite entry values make the actual public alias fail with no compiler
+launch, even though native lookup reports exit 0. Fresh default typecheck then
+executes without clearing or repairing the private cache.
+
+The cancellation fixture invokes the same owner and native compiler. Only its
+test preload selects the installed compiler launcher's existing execFileSync
+fallback instead of execve, then holds Node before exit after successful real
+compilation. This gives a deterministic cancellation window. Cancellation cannot
+create a passing verdict: identical command/inputs/environment execute the
+compiler again before a release marker exists; only the subsequent completed
+run is reusable. The retained PID/group cleanup drains children before deleting
+the fixture. Default execve is used in the cold/warm, invalidation and fault proof.
+
+Unchanged warm measurements are developer-loop evidence, not CI qualification.
+The follow-up comparison records exact local samples and raw paths. Full source,
+development, package and hosted qualification are separately owned and were not
+run for this change. No test/lint verdict, build, installation, generated output,
+package, verification, release or publication task becomes cache eligible.
+
+## Historical native contracts checked
 
 Environment: Linux x64, Vite+ 1.0.0, Node 24.19.0, pnpm 10.30.3, Vitest 5.0.1.
 Read `vp cache --help` and `vp run --help` before probing. Installed
 `vite-plus/dist/define-config-*.d.ts` and the current official
 [run configuration](https://viteplus.dev/config/run.md),
 [automatic tracking](https://viteplus.dev/guide/automatic-data-tracking.md), and
-[cache guide](https://viteplus.dev/guide/cache.md) own the syntax.
+[cache guide](https://viteplus.dev/guide/cache.md) were consulted. Current guide
+snippets show flat fields; the installed 1.0.0 declarations and native proofs
+own the pinned nested `cache.input`, `cache.env` and `cache.output` syntax.
 
 The candidate used nested `cache.input`, `cache.env`, and `cache.output`, not
 older flat fields. It retained automatic tracking with `{ auto: true }`, added
@@ -45,7 +95,7 @@ and executable. `output: []` disabled artifact restoration. This was a local
 diagnostic verdict, not fresh assurance, even when a hit replayed passing text.
 The candidate and its wrapper were removed after the fault below.
 
-## Rejected candidate: local typecheck verdict
+## Historical rejected candidate: unguarded local typecheck verdict
 
 A disposable profile had its own `node_modules/.vite/task-cache`. Only the tool
 package and read-only CLI inputs were linked to the checkout, not the whole
@@ -77,7 +127,8 @@ not a production benchmark framework.
 
 The median warm saving was about 592 ms (90% of this small command). This is
 useful developer-loop latency, not a material package/CI improvement. Safety
-still rules out the candidate.
+ruled out that unguarded candidate. The separately recorded guarded samples do not rewrite
+this historical result or imply a package/CI saving.
 
 The second profile kept a valid SQLite database. Using Node's `DatabaseSync`,
 the probe replaced actual `cache_entries.value` blobs with invalid bytes:
@@ -98,6 +149,51 @@ acceptance therefore failed. Invalidating an entire database alone would have
 missed this defect. The source test characterizes this behavior explicitly and
 proves that a per-task `cache: false` owner still executes beside the malformed
 entry. It does not invent a successful fault-handling result.
+
+## Known-fault outer guard and recovery
+
+The pinned Vite+ 1.0.0 native lookup can emit `Cache lookup failed`, report a
+zero-task summary, and exit 0 without starting the command. A missing child is
+not a passing verdict. `packages/cli/scripts/guard-native-cache.mjs` starts the
+native runner from outside its cached task and rejects this exact diagnostic on
+stdout or stderr. A zero exit becomes exit 1; existing nonzero exits remain
+nonzero. The guard does not retry or clear caches. Cancellation remains cancelled,
+including when a child handles the signal and exits zero.
+
+The guard forwards output bytes with stream backpressure. Its fixed-size scanner
+examines all output, across chunk boundaries and ANSI CSI/OSC sequences, without
+retaining whole lines or imposing a capture limit. Streams are matched separately.
+Replayed or ordinary child text containing the diagnostic also fails
+conservatively. This is intentional, not proof of natural corruption.
+
+For the installed selective developer alias, the public task remains
+`cache: false` and invoke managed Node to run the guard around a **distinct**
+private cache-eligible task. Putting the guard inside that private command does
+nothing when native lookup skips the command. Vite+ can inline literal nested
+`vp run` commands, so retain a real Node process boundary and prove its placement
+with the malformed-entry fixture. Only the new opt-in alias uses this route;
+no existing default alias or hook is redirected.
+Build, package, publication, verification wrappers, and their owners stay fresh.
+
+When this explicit diagnostic appears, use the unchanged fresh default entry,
+such as `vp run typecheck:fresh` (or `vp run typecheck`). Do not infer corruption
+from every workflow failure, accept a skip, or delete shared cache data as routine
+recovery. The fresh entry bypasses lookup and runs the owner even beside the
+damaged entry. This is a **workaround, not an upstream repair**. The related open
+upstream symptom is tracked at
+[vite-plus#2636](https://github.com/voidzero-dev/vite-plus/issues/2636); it does not
+establish an exact fix or a committed fix date. Requalify against any replacement
+native pin before removing this workaround.
+
+Focused regressions use valid SQLite with malformed `cache_entries.value` bytes.
+They prove a valid guarded hit, rejection without execution/retry, one ordinary
+failed execution, fresh recovery without cache deletion, and native cancellation
+without a successful cached verdict. Separate guard tests cover both streams,
+every split of ANSI-interrupted diagnostic text, output above capture defaults,
+exact output and argument forwarding, spawn failure, and signal propagation.
+This is accidental known-fault containment, not a security boundary against
+changed tools, forged valid cache records, suppressed diagnostics, or altered
+configuration. Other natural-corruption behavior remains unknown.
 
 ## Accepted reuse: transformed preparation, fresh assertions
 
@@ -138,7 +234,8 @@ The source fixture also checks:
 
 - Automatic input mutation, explicit tool-input mutation, environment mutation,
   unchanged hits, and `--no-cache` using child-execution counts.
-- Every root task executes twice under `--cache` even beside a valid cached
+- All 21 required root tasks and the new public guard wrapper execute twice under
+  `--cache` even beside a valid cached
   result for the same child command. Actual qualification/publication is not
   invoked by this fixture.
 - Native tasks preserve the old uncached script's exact argument vector,
@@ -152,7 +249,7 @@ The source fixture also checks:
 
 ## Work not cached and trust limits
 
-No build artifacts, package bytes, owner verdicts, release evidence, generated
+No build artifacts, package bytes, required-owner verdicts, release evidence, generated
 overlap result, or independent determinism constructions are restored from task
 cache. Existing build source identity, private construction, and qualification
 owners remain unchanged. A preparation-cache framework is not justified by the
@@ -165,13 +262,14 @@ behavior, not authentication of cached code. Cold qualification and publication
 must continue to use their existing independent construction and fresh owners.
 No hosted cache or publication path is added.
 
-The hard-fresh guards apply to root native tasks. They do not protect an operator
+The hard-fresh guards apply to required root native tasks and the public guarded
+alias, not its private cache-eligible owner. They do not protect an operator
 who explicitly runs `vp -C packages/cli run --cache <script>` instead. Do not
 request caching for package-level assurance scripts; their default remains
 uncached but is CLI-overridable. Direct Node/pnpm qualification owners are not
 changed into cached tasks.
 
-## Verification record
+## Historical verification record
 
 - `vp test run packages/cli/test/config/taskCache.test.ts --reporter=verbose`:
   9 tests passed, including real native faults and fresh assertion probes.

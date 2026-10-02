@@ -1,0 +1,15 @@
+id: ifixrpaomn
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Verify readiness to merge the candidate into feat/v3
+  status: pending
+  depends_on:
+    - naxoqdtpur
+    - vjvtdpngqi
+    - xtbezclowi
+  acceptance:
+    - GIVEN the contracted hosted runner WHEN cold development CI runs THEN all required checks pass within 30 minutes and package wall time including setup stays at or below 515 seconds.
+    - GIVEN guarded developer caching WHEN compared THEN reuse and known-fault containment are demonstrated separately from mandatory fresh CI and release assurance.
+    - GIVEN the final difference against feat/v3 WHEN reviewed THEN accepted changes, required coverage, contributor guidance, state records, and publication isolation agree.
+    - GIVEN previous qualification failures WHEN reevaluated THEN matching new evidence is required and earlier failure history remains intact.

@@ -70,7 +70,9 @@ describe("nonpublishing toolchain experiment", () => {
       if (step.uses) expect(step.uses).toMatch(/@[a-f0-9]{40}$/);
     }
     expect(job.steps[6]).toMatchObject({
-      if: "always() && !cancelled()",
+      // Keep diagnostic artifacts on cancellation too; the candidate job itself
+      // still refuses to start after cancellation (asserted separately above).
+      if: "always()",
       uses: "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02",
       with: { path: "${{ runner.temp }}/toolchain-diagnostics" },
     });

@@ -215,8 +215,10 @@ vp run verify:development
 vp run verify
 ```
 
-The root recipes are native tasks in `vite.config.ts`, with per-task `cache: false`.
+The required root recipes are native tasks in `vite.config.ts`, with per-task `cache: false`.
 They stay fresh even under `vp run --cache` and delegate to the existing CLI package owners.
+Root pnpm scripts are removed. Update root-level automation from `pnpm run TASK`
+to `vp run TASK`; package-level pnpm scripts remain the internal owners.
 Runtime-bearing tasks use the invoking standalone launcher's `VP_CLI_BIN` with
 explicit `env exec --node` from `.node-version`. Native `run` and `exec` alone
 can select ambient Node even after managed setup. The public root `vp run`
@@ -227,9 +229,21 @@ This is scoped execution, not a global PATH or hook change.
 Native `vp test` and `vp build` are not aliases for those tasks.
 `vp run test:local` is an explicit developer diagnostic for the positive fast
 `local` project, not full source assurance. `vp run typecheck:fresh` is an explicit
-alias for fresh typecheck. Transformed modules can be reused, but assertions and
-qualification results are never replayed. See
-`docs/packaging/vite-plus-1-cache-proof.md` for the rejected verdict-cache candidate.
+alias for fresh typecheck. `vp run typecheck:cached` is the sole opt-in cached
+developer feedback entry. Its public task always runs the outer guard around
+private `_typecheck:cached`, which runs the same read-only compiler owner.
+Source, test, manifest/lock/toolchain inputs and relevant environment changes
+invalidate that verdict. Test-file invalidation does not mean tests are typechecked
+or cached. Default typecheck, hooks, tests/lint, verification, build, package and
+publication remain fresh. Never invoke the private task as an assurance entry.
+See `docs/packaging/vite-plus-1-cache-proof.md` for exact scope and proof.
+The pinned native `Cache lookup failed` diagnostic can accompany exit 0 without
+child execution. Never accept that skip as a pass. The maintainer outer guard in
+`packages/cli/scripts/guard-native-cache.mjs` rejects that diagnostic; it is a
+workaround, not an upstream repair or authority to cache other owners. Recover with
+the unchanged fresh entry (`vp run typecheck:fresh` for typecheck). See the cache
+proof's recovery section for placement and limits. Ordinary failures still need
+their own diagnosis.
 `vp run verify:development` is routine development safety; `vp run verify` is
 full qualification, including repeated measurements and historical certification.
 pnpm remains the underlying workspace/lockfile authority, managed through Vite+.
@@ -259,6 +273,8 @@ Restore launcher discovery and each worktree's dependencies before retrying Git.
 Oxfmt owns Markdown formatting, not Markdown structural lint. Root, package and
 editor formatting use width 320 and the root exclusions. See the
 [formatting concessions](docs/packaging/vite-plus-1-formatting-concessions.md).
+These bypassable local hooks prevent ordinary mistakes; they are not a security
+boundary or a substitute for required CI checks.
 
 ### Optional checkout-local runtime dependencies
 

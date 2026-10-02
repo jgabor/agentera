@@ -5,11 +5,14 @@ import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import config from "../../../../vite.config.ts";
 import { selectChecks } from "../../scripts/pre-commit-checks.mjs";
+import { startNativeDiagnostic } from "../../scripts/source-diagnostics.mjs";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
+const packageManager = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8")).packageManager;
 const vp = path.join(repo, "node_modules/.bin/vp");
 const stagedCommand = "./node_modules/.bin/vp staged --hide-partially-staged";
-const fixtureParent = path.join(repo, ".vitest/followup/hooks");
+const fixtureParent = process.env.AGENTERA_NATIVE_DIAGNOSTIC_ROOT ? path.join(process.env.AGENTERA_NATIVE_DIAGNOSTIC_ROOT, "hooks") : path.join(repo, ".vitest/followup/hooks");
+let nativeInvocation = 0;
 const hookFlags = ["VP_GIT_HOOKS", "VITE_GIT_HOOKS", "HUSKY"] as const;
 const temporary: string[] = [];
 afterEach(() => temporary.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
@@ -32,12 +35,15 @@ function run(root: string, command: string, args: string[], env = process.env) {
         HUSKY: "1",
       }
     : env;
-  return spawnSync(command, args, {
+  const timing = startNativeDiagnostic("packages/cli/test/scripts/nativeHooks.test.ts", ++nativeInvocation);
+  const result = spawnSync(command, args, {
     cwd: root,
     env: childEnv,
     encoding: "utf8",
     maxBuffer: 8 * 1024 * 1024,
   });
+  timing.complete(result);
+  return result;
 }
 function ok(root: string, command: string, args: string[]) {
   const result = run(root, command, args);
@@ -64,7 +70,7 @@ function fixture() {
   write(root, ".gitignore", "node_modules\n");
   // Keep native workspace discovery inside this nested disposable repository.
   write(root, "pnpm-workspace.yaml", "packages: []\n");
-  write(root, "package.json", '{"name":"hook-fixture","private":true,"type":"module"}\n');
+  write(root, "package.json", JSON.stringify({ name: "hook-fixture", private: true, type: "module", packageManager }));
   write(root, "README.md", "# Fixture\n\nOriginal.\n");
   write(root, "packages/cli/src/odd name [x] 'quoted'.ts", "export const first = 0;\n\n// Separate hunks\n\nexport const second = 0;\n");
   ok(root, "git", ["add", "--", "."]);
@@ -224,6 +230,7 @@ describe("native hook boundaries", () => {
         name: "hook-fixture",
         private: true,
         type: "module",
+        packageManager,
         scripts: { typecheck: "tsc6 -p tsconfig.json --noEmit && node trace.cjs typecheck" },
       }),
     );
@@ -336,6 +343,7 @@ describe("native hook boundaries", () => {
       JSON.stringify({
         private: true,
         type: "module",
+        packageManager,
         scripts: { typecheck: 'node -e "process.exit(Number(process.env.FAIL_TYPECHECK || 0))"' },
       }),
     );

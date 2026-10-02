@@ -347,6 +347,71 @@ describe("source qualification DAG", () => {
     }
   });
 
+  it("retains source diagnostics through the real coordinators before cancellation rejects the owner", async () => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-progress-"));
+    const childRoot = path.join(root, "overlap");
+    fs.mkdirSync(childRoot);
+    const output = path.join(root, "source.progress.log");
+    const lines: string[] = [];
+    let ready!: () => void;
+    const observed = new Promise<void>((resolve) => {
+      ready = resolve;
+    });
+    const write = vi.spyOn(process.stderr, "write").mockImplementation((chunk) => {
+      lines.push(String(chunk));
+      if (String(chunk).includes("AGENTERA_SOURCE_DIAGNOSTIC")) ready();
+      return true;
+    });
+    const probe = `import {writeSourceDiagnostic} from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/source-diagnostics.mjs"))}; writeSourceDiagnostic({file:'packages/cli/test/config/taskCache.test.ts',phase:'native-start',index:1}); console.error('private child content'); process.stderr.write('AGENTERA_SOURCE_DIAGNOSTIC file=/private/incomplete'); setInterval(()=>{},1000);`;
+    const script = `
+      import {startChild} from ${JSON.stringify(path.join(REPO_ROOT, "packages/cli/scripts/verify-generated-overlap.mjs"))};
+      const handle=startChild({name:'source',repoRoot:${JSON.stringify(REPO_ROOT)},root:${JSON.stringify(childRoot)},barrier:${JSON.stringify(path.join(childRoot, "barrier"))},cleanupMarginMs:1000,now:()=>performance.now(),sourceIdentity:${JSON.stringify(sourceIdentity())},command:[process.execPath,'--input-type=module','-e',${JSON.stringify(probe)}]});
+      process.on('SIGTERM',()=>handle.cancel());
+      try { await handle.promise; } catch { process.exitCode=1; }
+    `;
+    const handle = defaultStartSourceOwner({
+      name: "generated-overlap",
+      command: [process.execPath, "--input-type=module", "-e", script],
+      repo: REPO_ROOT,
+      environment: {
+        ...process.env,
+        AGENTERA_SOURCE_DIAGNOSTICS: "1",
+        AGENTERA_SOURCE_DIAGNOSTIC_OUTPUT: output,
+      },
+      reportFile: path.join(root, "report.log"),
+      timeoutMs: 10_000,
+      cancellable: true,
+    });
+    // Attach a rejection handler immediately so cancellation remains a failed
+    // owner, not an unhandled rejection or a diagnostic-only false pass.
+    const result = handle.promise.then(
+      () => "unexpected-pass",
+      (error) => error.sourceStatus,
+    );
+    let timer: ReturnType<typeof setTimeout>;
+    try {
+      await Promise.race([
+        observed,
+        new Promise((_, reject) => {
+          timer = setTimeout(() => reject(new Error("missing forwarded source start")), 5000);
+        }),
+      ]);
+      expect(fs.readFileSync(output, "utf8")).toContain("phase=native-start");
+      expect(lines.join("")).not.toContain("private child content");
+      expect(lines.join("")).not.toContain("/private/incomplete");
+      expect(fs.existsSync(path.join(childRoot, "source.json"))).toBe(false);
+      handle.cancel();
+      expect(await result).toBe("cancelled");
+      expect(lines.join("")).not.toMatch(/owner=(source|generated-overlap) status=passed/);
+    } finally {
+      clearTimeout(timer!);
+      handle.cancel();
+      await result;
+      write.mockRestore();
+      fs.rmSync(root, { recursive: true, force: true });
+    }
+  });
+
   it("reserves workers for the long source participant without widening its peers", () => {
     const environment = {
       VITEST_MAX_WORKERS: "1",
@@ -829,7 +894,16 @@ describe("source qualification DAG", () => {
         {
           name: path.join(REPO_ROOT, "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts"),
           status: "failed",
-          assertionResults: failureKind === "assertion" ? [{ status: "failed", fullName: "long assertion title ".repeat(1000), failureMessages: ["spawnSync node ETIMEDOUT"] }] : [],
+          assertionResults:
+            failureKind === "assertion"
+              ? [
+                  {
+                    status: "failed",
+                    fullName: "long assertion title ".repeat(1000),
+                    failureMessages: ["spawnSync node ETIMEDOUT"],
+                  },
+                ]
+              : [],
           message: `Hook timed out in 500ms.\nIf this is a long-running hook, configure hookTimeout.\n${REPO_ROOT}/fixture.ts ${os.homedir()}/private-fixture.ts ${root}/setup.ts`,
         },
       ],
@@ -993,7 +1067,11 @@ describe("source qualification DAG", () => {
         const timingJson = retained.match(/package timings ms: (\{[^}]*\})/)?.[1];
         expect(timingJson).toBeDefined();
         const parsed = JSON.parse(timingJson!);
-        expect(parsed).toMatchObject({ wall_ms: Number.MAX_SAFE_INTEGER, setup_ms: Number.MAX_SAFE_INTEGER, outside_setup_residual_ms: Number.MAX_SAFE_INTEGER });
+        expect(parsed).toMatchObject({
+          wall_ms: Number.MAX_SAFE_INTEGER,
+          setup_ms: Number.MAX_SAFE_INTEGER,
+          outside_setup_residual_ms: Number.MAX_SAFE_INTEGER,
+        });
         expect(Object.keys(parsed).length).toBeLessThan(Object.keys(expected).length);
         expect(`package timings ms: ${timingJson}`.length).toBeLessThanOrEqual(RELEASE_CONTRACT.bounds.diagnosticCharacters / 2);
       } else {

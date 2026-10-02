@@ -1,0 +1,13 @@
+id: vjvtdpngqi
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Fix the diagnosed uncached source-run bottleneck
+  status: in_progress
+  depends_on:
+    - ypowebpwod
+  acceptance:
+    - GIVEN the evidenced fixture launch cause WHEN corrected THEN the first uncached hosted source run passes within the existing 30-minute CI limit.
+    - GIVEN required coverage WHEN verified THEN no check, assertion, independent proof, or existing budget is removed or relaxed to obtain a pass.
+    - GIVEN offline verification WHEN corrected fixtures run THEN they use the already-provisioned pinned package manager without latest-version lookup or registry fallback.
+    - GIVEN previous and corrected behavior WHEN compared THEN targeted pass/fail evidence and retained timings demonstrate the correction without cached-result concealment.

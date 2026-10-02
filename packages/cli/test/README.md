@@ -149,11 +149,21 @@ or environment bypass.
 
 Native priority runs staged fixes before guards, related tests and typecheck.
 Native staged formatting/linting hides partial hunks instead of re-adding whole
-files. Markdown rules/ignores are checked in and use a pinned local tool.
+files. Oxfmt formats eligible Markdown with the pinned local tool and root
+exclusions. Markdown structural and policy lint is removed, not replaced by
+formatting; see the [formatting concessions](../../../docs/packaging/vite-plus-1-formatting-concessions.md).
 Evidence, fixtures, generated files and typed-state writer output are excluded
 from automatic rewriting. Global and worker setup remove Git's complete local
 environment variable set before nested fixture writes; workers retain the
 package working-directory contract even when tests are discovered from root.
+
+Concurrent package scenarios use `coldProcessTest` and `ColdProcessScheduler`
+(`test/helpers/coldProcessTest.ts` and `test/helpers/coldProcessScheduler.ts`).
+A test timeout does not stop its asynchronous work. The test-scoped cleanup
+cancels owned children and waits for the journey to settle before fixture
+teardown, while retaining the original test failure. This test lifecycle code
+is separate from the custom pre-commit readers and legacy hook bridge; removing
+root pnpm scripts does not require either mechanism.
 
 ## Classification key
 

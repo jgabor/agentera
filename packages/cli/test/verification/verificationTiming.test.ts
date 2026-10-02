@@ -1,8 +1,10 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
+import YAML from "yaml";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { retainQualificationDiagnostics, writeVerificationTimingProfile } from "../../scripts/verification-timing.mjs";
+import SourceDiagnosticReporter, { writeSourceDiagnostic } from "../../scripts/source-diagnostics.mjs";
 
 const directories: string[] = [];
 afterEach(() => {
@@ -39,6 +41,122 @@ function fixture(report?: unknown) {
 }
 
 describe("diagnostic verification timing profiles", () => {
+  it("retains experimental workflow artifacts even when verification is cancelled", () => {
+    const workflow = YAML.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../../../../.github/workflows/vite-plus-toolchain.yml"), "utf8"));
+    for (const name of ["baseline", "candidate"]) {
+      const upload = workflow.jobs[name].steps.find((step: { name?: string }) => step.name === "Retain diagnostics even after verification failure");
+      expect(upload.if).toBe("always()");
+      expect(upload.with.path).toBe("${{ runner.temp }}/toolchain-diagnostics");
+    }
+  });
+
+  it("relays only complete inventory-native records while workers run, without replay or a final report", () => {
+    vi.useFakeTimers();
+    const setup = fixture();
+    const output = path.join(setup.repoRoot, "source.progress.log");
+    const environment = {
+      AGENTERA_SOURCE_DIAGNOSTICS: "1",
+      AGENTERA_SOURCE_DIAGNOSTIC_ROOT: setup.repoRoot,
+      AGENTERA_SOURCE_DIAGNOSTIC_FILES: JSON.stringify([setup.file]),
+      AGENTERA_SOURCE_DIAGNOSTIC_OUTPUT: output,
+    };
+    const lines: string[] = [];
+    const original = fs.writeSync;
+    vi.spyOn(fs, "writeSync").mockImplementation(((fd: number, ...args: unknown[]) => {
+      if (fd === 2) {
+        lines.push(String(args[0]));
+        return String(args[0]).length;
+      }
+      return Reflect.apply(original, fs, [fd, ...args]);
+    }) as typeof fs.writeSync);
+    const reporter = new SourceDiagnosticReporter({ environment });
+    const native = `AGENTERA_SOURCE_DIAGNOSTIC file=${setup.file} phase=native-child-start index=1 elapsedMs=0 durationMs=0 status=observed\n`;
+    try {
+      reporter.onInit();
+      vi.advanceTimersByTime(500);
+      fs.writeFileSync(output, "PRIVATE_CHILD_CONTENT\n" + native.slice(0, 60));
+      vi.advanceTimersByTime(500);
+      expect(lines).toEqual([]);
+      fs.appendFileSync(output, native.slice(60));
+      fs.appendFileSync(output, native.replace(setup.file, "packages/cli/test/unselected.test.ts"));
+      fs.appendFileSync(output, native.replace("phase=native-child-start", "phase=native-start"));
+      fs.appendFileSync(output, "x".repeat(70_000));
+      vi.advanceTimersByTime(500);
+      expect(lines).toEqual([native]);
+      fs.appendFileSync(output, native + native);
+      vi.advanceTimersByTime(500);
+      expect(lines).toEqual([native, native]);
+      vi.advanceTimersByTime(1000);
+      expect(lines).toEqual([native, native]);
+      expect(lines.join("")).not.toContain("PRIVATE");
+      expect(lines.join("")).not.toContain("status=passed");
+    } finally {
+      reporter.onTestRunEnd();
+      expect(vi.getTimerCount()).toBe(0);
+      vi.useRealTimers();
+    }
+  });
+
+  it("reports inventory-only preparation/execution and numeric cases without private names", () => {
+    const setup = fixture();
+    const output = path.join(setup.repoRoot, "source.progress.log");
+    const environment = {
+      AGENTERA_SOURCE_DIAGNOSTICS: "1",
+      AGENTERA_SOURCE_DIAGNOSTIC_ROOT: setup.repoRoot,
+      AGENTERA_SOURCE_DIAGNOSTIC_FILES: JSON.stringify([setup.file]),
+      AGENTERA_SOURCE_DIAGNOSTIC_OUTPUT: output,
+    };
+    const writeSync = fs.writeSync;
+    vi.spyOn(fs, "writeSync").mockImplementation(((fd: number, ...args: unknown[]) => (fd === 2 ? 1 : Reflect.apply(writeSync, fs, [fd, ...args]))) as typeof fs.writeSync);
+    let now = 0;
+    const reporter = new SourceDiagnosticReporter({ environment, now: () => now });
+    const module = { moduleId: path.join(setup.repoRoot, setup.file), name: "PRIVATE_TITLE" };
+    const test = {
+      module,
+      id: "PRIVATE_ID",
+      name: "PRIVATE_TEST",
+      result: () => ({ state: "failed", errors: ["PRIVATE_FAILURE"] }),
+      diagnostic: () => ({ duration: 250 }),
+    };
+    reporter.onTestModuleQueued(module);
+    now = 100;
+    reporter.onTestModuleCollected(module);
+    reporter.onTestModuleStart(module);
+    reporter.onTestCaseReady(test);
+    // Callback arrival has not advanced, but the worker measured 250 ms.
+    reporter.onTestCaseResult(test);
+    reporter.onTestModuleEnd(module);
+    reporter.onTestModuleQueued({ moduleId: "/private/unselected.test.ts" });
+    const text = fs.readFileSync(output, "utf8");
+    expect(text).toContain("phase=collected index=0 elapsedMs=100 durationMs=100");
+    expect(text).toContain("phase=case-end index=1 elapsedMs=100 durationMs=250 status=failed");
+    expect(text).not.toContain("PRIVATE");
+    expect(text).not.toContain(setup.repoRoot);
+    expect(text.trim().split("\n")).toHaveLength(6);
+  });
+
+  it("ignores disabled, malformed and unwritable incremental diagnostics", () => {
+    const setup = fixture();
+    const write = vi.spyOn(fs, "writeSync").mockImplementation(() => {
+      throw new Error("PRIVATE_SINK_FAILURE");
+    });
+    const append = vi.spyOn(fs, "appendFileSync").mockImplementation(() => {
+      throw new Error("PRIVATE_SINK_FAILURE");
+    });
+    const record = { file: setup.file, phase: "queued" };
+    writeSourceDiagnostic(record, { environment: {} });
+    writeSourceDiagnostic({ ...record, file: "/private/path" }, { environment: { AGENTERA_SOURCE_DIAGNOSTICS: "1" } });
+    expect(write).not.toHaveBeenCalled();
+    expect(() =>
+      writeSourceDiagnostic(record, {
+        environment: {
+          AGENTERA_SOURCE_DIAGNOSTICS: "1",
+          AGENTERA_SOURCE_DIAGNOSTIC_OUTPUT: setup.resultFile,
+        },
+      }),
+    ).not.toThrow();
+    expect(append).toHaveBeenCalledTimes(1);
+  });
   it("exports only settled owner logs and timing profiles before private-root cleanup", () => {
     const setup = fixture();
     const output = path.join(setup.repoRoot, "diagnostics");

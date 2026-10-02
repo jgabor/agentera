@@ -1,0 +1,23 @@
+id: pydcmammtu
+artifact: plan
+record:
+  plan: xcxdsrlvym
+  name: Contain known native cache lookup failures with an outer guard
+  status: complete
+  depends_on:
+    - aojnnydjnh
+  acceptance:
+    - GIVEN a damaged entry WHEN the outer guard observes the known native lookup failure THEN it fails explicitly or retries once fresh, never accepting skipped execution as success.
+    - GIVEN ordinary failures or cancellation WHEN checks run THEN their unsuccessful verdicts remain unsuccessful without indiscriminate retries.
+    - GIVEN diagnostic output WHEN streamed THEN both streams, chunk boundaries, and ANSI formatting are handled; replayed diagnostic text produces a conservative result.
+    - GIVEN containment WHEN delivered THEN native pins remain unchanged and recovery guidance distinguishes the workaround from an upstream repair.
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: Initial scoped review reproduced an orphan fixture child after timeout SIGKILL at nativeCacheGuard.test.ts:72 and taskCache.test.ts:577; test cleanup must terminate the inner process before deleting fixtures.
+    provenance:
+      attempt_id: guarded-cache-2
+      source: Initial scoped guard review plus accepted cleanup recheck ses_f02cdce60ffePl0N5q7vdtATLM; 43 focused tests and retained native fault/hit/failure/cancellation evidence
+      recorded_at: 2026-10-02 18:00
+      writer_command: agentera state plan record-evaluation

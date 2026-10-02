@@ -2,8 +2,9 @@ import fs from "node:fs";
 import { defineConfig } from "vite-plus";
 import { ownerProjects, sharedTestConfig } from "./packages/cli/vitest.shared.ts";
 
-// Native tasks, not package scripts: per-task cache:false also resists --cache.
+// Required owners stay fresh: per-task cache:false also resists --cache.
 // Keep the existing package owners and argument forwarding, without vp recursion.
+const managedNode = `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(new URL(".node-version", import.meta.url), "utf8").trim()}`;
 const freshCommands = {
   bootstrap: "VP_GIT_HOOKS=0 vp install --frozen-lockfile",
   test: "pnpm -C packages/cli test",
@@ -31,18 +32,34 @@ const freshCommands = {
 
 export default defineConfig({
   run: {
-    cache: false,
+    cache: { scripts: false, tasks: true },
     // Native run does not activate the managed Node runtime for task children.
     // Explicit managed exec preserves vp run aliases and forwarded arguments.
-    tasks: Object.fromEntries(
-      Object.entries(freshCommands).map(([name, command]) => [
-        name,
-        {
-          command: command.startsWith("pnpm ") || command.startsWith("vp test ") ? `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(new URL(".node-version", import.meta.url), "utf8").trim()} ${command}` : command,
-          cache: false,
+    tasks: {
+      ...Object.fromEntries(
+        Object.entries(freshCommands).map(([name, command]) => [
+          name,
+          {
+            command: command.startsWith("pnpm ") || command.startsWith("vp test ") ? `${managedNode} ${command}` : command,
+            cache: false,
+          },
+        ]),
+      ),
+      // Opt-in read-only feedback only. A real Node boundary prevents native
+      // nested-run inlining from moving the guard inside the cached lookup.
+      "typecheck:cached": {
+        command: `${managedNode} node packages/cli/scripts/guard-native-cache.mjs "$VP_CLI_BIN" run _typecheck:cached`,
+        cache: false,
+      },
+      "_typecheck:cached": {
+        command: `${managedNode} pnpm -C packages/cli run typecheck`,
+        cache: {
+          input: [{ auto: true }, "packages/cli/src/**", "packages/cli/test/**", "packages/cli/tsconfig.json", "packages/cli/package.json", ".node-version", "package.json", "pnpm-lock.yaml", "pnpm-workspace.yaml", "references/analysis/toolchain-baseline.yaml"],
+          env: ["NODE_OPTIONS", "NODE_PATH", "NODE_ENV", "PATH", "VP_HOME", "VP_CLI_BIN", "VP_NODE_VERSION", "VP_PACKAGE_MANAGER", "VP_PNPM_VERSION"],
+          output: [],
         },
-      ]),
-    ),
+      },
+    },
   },
   staged: {
     // One sequential task keeps every reader inside the native staged snapshot.
