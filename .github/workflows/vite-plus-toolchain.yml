@@ -22,8 +22,6 @@ jobs:
       AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
       VITEST_TEST_TIMEOUT_MS: "120000"
       AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
-      AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
-      AGENTERA_QUALIFICATION_DIAGNOSTICS: ${{ runner.temp }}/toolchain-diagnostics
       VP_GIT_HOOKS: "0"
     steps:
       # Reviewed actions/checkout v5 ref on 2026-10-02.
@@ -39,12 +37,16 @@ jobs:
           package-manager-cache: false
       - &cold-context
         name: Bind cold Linux x64 runner context
+        env:
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+          AGENTERA_QUALIFICATION_DIAGNOSTICS: ${{ runner.temp }}/toolchain-diagnostics
         run: |
           set -euo pipefail
           test "$(uname -sm)" = "Linux x86_64"
           test ! -e node_modules
           test ! -e packages/cli/dist
           test ! -e packages/cli/bundle
+          printf '%s\n' "AGENTERA_PERFORMANCE_RUNNER_IDENTITY=$AGENTERA_PERFORMANCE_RUNNER_IDENTITY" "AGENTERA_QUALIFICATION_DIAGNOSTICS=$AGENTERA_QUALIFICATION_DIAGNOSTICS" >> "$GITHUB_ENV"
           mkdir -p "$AGENTERA_QUALIFICATION_DIAGNOSTICS"
           git rev-parse HEAD > "$AGENTERA_QUALIFICATION_DIAGNOSTICS/revision.txt"
           node -e 'console.log(JSON.stringify({hostNode:process.version, platform:process.platform, arch:process.arch, runner:process.env.AGENTERA_PERFORMANCE_RUNNER_IDENTITY, runnerClass:process.env.AGENTERA_PERFORMANCE_RUNNER_CLASS, sourceWorkers:2, testTimeoutMs:120000}))' > "$AGENTERA_QUALIFICATION_DIAGNOSTICS/context.json"

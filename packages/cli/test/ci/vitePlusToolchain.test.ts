@@ -36,10 +36,10 @@ describe("nonpublishing toolchain experiment", () => {
       AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
-      AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
-      AGENTERA_QUALIFICATION_DIAGNOSTICS: "${{ runner.temp }}/toolchain-diagnostics",
       VP_GIT_HOOKS: "0",
     });
+    // Runner expressions are unavailable in job.env, but valid in step.env.
+    expect(JSON.stringify(job.env)).not.toContain("runner.");
     expect(job.steps).toHaveLength(7);
     expect(job.steps[0]).toMatchObject({
       uses: "actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09",
@@ -49,12 +49,18 @@ describe("nonpublishing toolchain experiment", () => {
       uses: "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f",
       with: { "node-version": "24.19.0", "package-manager-cache": false },
     });
+    expect(job.steps[2].env).toEqual({
+      AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
+      AGENTERA_QUALIFICATION_DIAGNOSTICS: "${{ runner.temp }}/toolchain-diagnostics",
+    });
     const commands = job.steps.flatMap((step: { run?: string }) => (step.run ? [step.run] : [])).join("\n");
     expect(commands).toContain('test "$(uname -sm)" = "Linux x86_64"');
     for (const file of ["node_modules", "packages/cli/dist", "packages/cli/bundle", "node_modules/.vite", "packages/cli/node_modules/.vite"]) expect(commands).toContain(`test ! -e ${file}`);
     expect(commands).toContain('process.version!=="v24.19.0"');
     expect(commands).toContain('test "$(vp exec pnpm --version)" = "10.30.3"');
     expect(commands).toContain("node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts");
+    expect(commands).toContain('"AGENTERA_PERFORMANCE_RUNNER_IDENTITY=$AGENTERA_PERFORMANCE_RUNNER_IDENTITY"');
+    expect(commands).toContain('"AGENTERA_QUALIFICATION_DIAGNOSTICS=$AGENTERA_QUALIFICATION_DIAGNOSTICS" >> "$GITHUB_ENV"');
     expect(job.steps[5]["timeout-minutes"]).toBe(30);
     expect(commands.match(/vp exec vp run verify:development/g)).toHaveLength(1);
     for (const step of job.steps) {
