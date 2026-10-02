@@ -8,6 +8,12 @@ Prime owns state, decisions, commits, push approval and hosted measurement.
 
 ## Result
 
+Task 8's frozen cold measurement is recorded separately in
+[local experiment comparison](vite-plus-1-comparison.md). Package passes, but
+cold development fails with two cache-probe timeouts and two absent-checkout-bundle
+source failures. The passing task 7 runs below do not qualify that cold condition.
+Hosted results remain Prime-owned and are not inferred from local evidence.
+
 The nonpublishing experimental workflow and its regression contracts are in place.
 Root runtime-bearing tasks now select the pinned managed Node explicitly without
 changing their public `vp run` names, package owners or forwarded arguments.

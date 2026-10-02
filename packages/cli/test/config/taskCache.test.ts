@@ -20,7 +20,8 @@ const roots: string[] = [];
 afterEach(() => roots.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
 
 function fixture() {
-  const root = fs.mkdtempSync("/tmp/opencode/agentera-task-cache-");
+  // Linux IPC needs a short owned root; do not require an agent-specific parent.
+  const root = fs.mkdtempSync("/tmp/agentera-task-cache-");
   roots.push(root);
   // Each fixture owns its cache. Never symlink the whole node_modules directory.
   fs.mkdirSync(path.join(root, "node_modules"));

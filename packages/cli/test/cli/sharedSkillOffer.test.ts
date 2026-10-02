@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { main } from "../../src/cli/dispatch.js";
 import { runHostSkillLifecycle, loadHostSkillSource } from "../../src/setup/hostSkillLifecycle.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
+import { npxBundleFixture } from "../helpers/npxBundleFixture.js";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 const question = "Agentera’s installed skill needs an update. Update it now? Your project files will not change.";
@@ -230,7 +231,7 @@ describe("one-confirmation shared-skill startup offer", () => {
     vi.stubEnv("AGENTERA_HOME", undefined);
     vi.stubEnv("AGENTERA_PROFILE_DIR", privateRoot);
     vi.stubEnv("PROFILERA_PROFILE_DIR", privateRoot);
-    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", path.join(repo, "packages/cli/bundle"));
+    vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", npxBundleFixture(path.join(temp, "bundle")));
     const startup = capture(["prime", "--context", "build"]);
     expect(startup.code, startup.out + startup.err).toBe(0);
     const offer = startup.payload.shared_skill.upgrade_offer;

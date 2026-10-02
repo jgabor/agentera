@@ -6,6 +6,13 @@ workflow, state, commit, push, or shared-hook changes.
 
 ## Result and measurement limits
 
+Task 8 now supersedes this one-sample timing comparison with the frozen
+candidate's cold and two warm campaign in
+[local experiment comparison](vite-plus-1-comparison.md). All three matched
+package samples pass the same 72-title inventory. A rejected global worker
+override exposed shared-fixture overlap; this proof's serialization claim below
+applies to the configured one-worker, no-override command, not that environment.
+
 The complete package owner passed **7 files / 72 assertions**, with zero
 failed, pending, or todo assertions. Owner wall time fell from the recorded
 baseline's **178,563 ms to 94,544 ms**, a reduction of **84,019 ms (47.05%)**.

@@ -17,7 +17,7 @@ jobs:
   baseline:
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env: &measurement-env
+    env:
       AGENTERA_VITEST_RUNNER_POLICY: unmeasured
       AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
       VITEST_TEST_TIMEOUT_MS: "120000"
@@ -49,7 +49,7 @@ jobs:
           printf '%s\n' "AGENTERA_PERFORMANCE_RUNNER_IDENTITY=$AGENTERA_PERFORMANCE_RUNNER_IDENTITY" "AGENTERA_QUALIFICATION_DIAGNOSTICS=$AGENTERA_QUALIFICATION_DIAGNOSTICS" >> "$GITHUB_ENV"
           mkdir -p "$AGENTERA_QUALIFICATION_DIAGNOSTICS"
           git rev-parse HEAD > "$AGENTERA_QUALIFICATION_DIAGNOSTICS/revision.txt"
-          node -e 'console.log(JSON.stringify({hostNode:process.version, platform:process.platform, arch:process.arch, runner:process.env.AGENTERA_PERFORMANCE_RUNNER_IDENTITY, runnerClass:process.env.AGENTERA_PERFORMANCE_RUNNER_CLASS, sourceWorkers:2, testTimeoutMs:120000}))' > "$AGENTERA_QUALIFICATION_DIAGNOSTICS/context.json"
+          node -e 'console.log(JSON.stringify({hostNode:process.version, platform:process.platform, arch:process.arch, runner:process.env.AGENTERA_PERFORMANCE_RUNNER_IDENTITY, runnerClass:process.env.AGENTERA_PERFORMANCE_RUNNER_CLASS, sourceWorkers:Number(process.env.AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS), testTimeoutMs:120000}))' > "$AGENTERA_QUALIFICATION_DIAGNOSTICS/context.json"
       - &bootstrap
         name: Revision-owned verified bootstrap and frozen install
         timeout-minutes: 5
@@ -86,7 +86,14 @@ jobs:
     if: always() && !cancelled()
     runs-on: ubuntu-24.04
     timeout-minutes: 45
-    env: *measurement-env
+    # Keep the same hosted resource limits but reserve CPU for the four package
+    # journeys. The prior two-source-worker sample exceeded the package budget.
+    env:
+      AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "1"
+      VITEST_TEST_TIMEOUT_MS: "120000"
+      AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+      VP_GIT_HOOKS: "0"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09
         with:

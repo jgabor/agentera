@@ -33,7 +33,7 @@ describe("nonpublishing toolchain experiment", () => {
     expect(job).not.toHaveProperty("continue-on-error");
     expect(job.env).toEqual({
       AGENTERA_VITEST_RUNNER_POLICY: "unmeasured",
-      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: name === "baseline" ? "2" : "1",
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
       VP_GIT_HOOKS: "0",
@@ -55,6 +55,7 @@ describe("nonpublishing toolchain experiment", () => {
     });
     const commands = job.steps.flatMap((step: { run?: string }) => (step.run ? [step.run] : [])).join("\n");
     expect(commands).toContain('test "$(uname -sm)" = "Linux x86_64"');
+    expect(commands).toContain("sourceWorkers:Number(process.env.AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS)");
     for (const file of ["node_modules", "packages/cli/dist", "packages/cli/bundle", "node_modules/.vite", "packages/cli/node_modules/.vite"]) expect(commands).toContain(`test ! -e ${file}`);
     expect(commands).toContain('process.version!=="v24.19.0"');
     expect(commands).toContain('test "$(vp exec pnpm --version)" = "10.30.3"');

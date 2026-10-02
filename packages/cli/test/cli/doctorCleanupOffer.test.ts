@@ -8,6 +8,7 @@ import { historicalPluginFixture } from "../helpers/git.js";
 import { observeLifecyclePath } from "../../src/runtime/lifecyclePublication.js";
 import { appendLifecycleOwnershipJournal, lifecycleOwnershipJournalPath } from "../../src/runtime/lifecycleOwnershipJournal.js";
 import { LIFECYCLE_LEDGER_SCHEMA } from "../../src/runtime/lifecycleOperations.js";
+import { npxBundleFixture } from "../helpers/npxBundleFixture.js";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 let root: string, home: string, project: string, data: string, oldCwd: string;
@@ -232,20 +233,19 @@ it("does not let a scoped offer migrate, retarget, or follow a newly linked pare
 });
 
 it("keeps packaged runtime location separate from durable selected data root", () => {
-  // The local build's packaged bundle has the same sentinel-gated shape as the npm bundle.
-  const bundle = path.join(repo, "packages/cli/bundle");
+  const bundle = npxBundleFixture(path.join(root, "bundle"));
   vi.stubEnv("AGENTERA_BOOTSTRAP_SOURCE_ROOT", bundle);
   write(path.join(home, ".agents/skills/agentera/SKILL.md"), loadHostSkillSource(bundle).content);
   const result = doctor();
   expect(result.payload).toMatchObject({
     status: "repair_needed",
     userDataRoot: data,
-    managedAppRoot: path.join(repo, "packages/cli/bundle"),
+    managedAppRoot: bundle,
     current_health: {
       cli: "up_to_date",
       shared_skill: "pass",
       durable_user_data_root: data,
-      runtime_package_root: path.join(repo, "packages/cli/bundle"),
+      runtime_package_root: bundle,
     },
     cleanup_offer: null,
   });
