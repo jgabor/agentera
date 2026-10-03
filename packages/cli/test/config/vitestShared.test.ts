@@ -139,7 +139,7 @@ describe("source worker policy", () => {
     const sourceOwnerStep = workflow.jobs["verify-development"].steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
     expect(sourceOwnerStep.env).toEqual({
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
-      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "1",
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
       AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",

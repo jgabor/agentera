@@ -155,7 +155,7 @@ Do not add package, performance, capacity, or release work to pre-commit.
 
 ## Qualification and performance
 
-The final [hosted candidate job](https://github.com/jgabor/agentera/actions/runs/37062016377/job/111025358674)
+The recorded final [hosted candidate job](https://github.com/jgabor/agentera/actions/runs/37062016377/job/111025358674)
 qualified code `bfb03785`. It passed **all 11 development gates** in
 **26m 35.592s** (1,595.592 seconds).
 
@@ -165,7 +165,7 @@ qualified code `bfb03785`. It passed **all 11 development gates** in
 | Package | 7 files; 72 passed, 0 failed or skipped            | 7m 16.817s             |
 
 Package wall time includes 21.089 seconds of setup. It is 78.183 seconds below
-the unchanged 515-second budget. The baseline package took 786.424 seconds and
+the then-current 515-second budget. The baseline package took 786.424 seconds and
 failed that budget, which made the overall comparison workflow red. That baseline
 failure does not negate the candidate's complete development pass.
 
@@ -179,9 +179,17 @@ allocation. Each journey owns its project/home and keeps command order and
 assertions. Cancellation drains children and settles the test body before
 fixture deletion; asynchronous cleanup must not race still-running work.
 
-The experiment performed no publication and did not alter the fixed OIDC
-publisher. Its development pass is not full historical release certification
-or a publication receipt. Earlier failed attempts are not the current verdict.
+The migration-only comparison workflow and its dedicated test are retired; the
+linked run remains historical qualification evidence. Ordinary `publish.yml`
+development verification now uses that candidate's one-source-worker profile.
+Local source defaults and the package's one-worker allocation stay unchanged.
+The policy now allows 600 seconds for the whole package owner, explicitly
+authorized after publication run [37080534700](https://github.com/jgabor/agentera/actions/runs/37080534700)
+passed package tests but exceeded the former limit at 551.062 seconds.
+That run did not complete source verification, build a candidate, or publish.
+The fixed OIDC publisher is unchanged. The recorded development pass is not
+full historical release certification or a publication receipt; the repaired
+publication profile still needs a fresh passing ordinary CI run.
 
 ## Remaining limits
 

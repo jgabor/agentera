@@ -139,29 +139,33 @@ The intentional singleton project state is:
 
 ## Capabilities
 
-| | Capability | Use it when you need... |
-| --- | --- | --- |
-| ⌂ | status | Project briefing and next best action |
-| ⛥ | vision | Product direction |
-| ❈ | discuss | Structured deliberation |
-| ⬚ | research | External pattern analysis |
-| ≡ | plan | Scoped plan with acceptance criteria |
-| ⧉ | build | One verified development cycle |
-| ⎘ | optimize | Metric-driven optimization |
-| ▤ | document | Documentation aligned with code |
-| ◰ | design | Visual identity and design tokens |
-| ⛶ | audit | Architecture and project health audits |
-| ♾ | profile | Reusable decision profile |
-| ⎈ | orchestrate | Autonomous plan execution with evaluation |
+|     | Capability  | Use it when you need...                   |
+| --- | ----------- | ----------------------------------------- |
+| ⌂   | status      | Project briefing and next best action     |
+| ⛥   | vision      | Product direction                         |
+| ❈   | discuss     | Structured deliberation                   |
+| ⬚   | research    | External pattern analysis                 |
+| ≡   | plan        | Scoped plan with acceptance criteria      |
+| ⧉   | build       | One verified development cycle            |
+| ⎘   | optimize    | Metric-driven optimization                |
+| ▤   | document    | Documentation aligned with code           |
+| ◰   | design      | Visual identity and design tokens         |
+| ⛶   | audit       | Architecture and project health audits    |
+| ♾   | profile     | Reusable decision profile                 |
+| ⎈   | orchestrate | Autonomous plan execution with evaluation |
 
 ## Package
 
-| Package | Role |
-| --- | --- |
+| Package                     | Role                                            |
+| --------------------------- | ----------------------------------------------- |
 | `packages/cli` (`agentera`) | Primary TypeScript CLI and bundled runtime data |
 
 Use the canonical daily Vite+ contributor commands in
 [AGENTS.md](./AGENTS.md#common-commands). Migration and recovery details live
 in [UPGRADE.md](./UPGRADE.md).
+Ordinary development publication verification uses the qualified one-source-worker
+profile and a 600-second whole-package-owner budget. See the
+[toolchain guide](docs/packaging/vite-plus-1-toolchain.md#qualification-and-performance)
+for current CI behavior and recorded qualification evidence.
 
 License: [Apache-2.0](./LICENSE) · Author: Jonathan Gabor

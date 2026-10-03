@@ -246,6 +246,10 @@ recovery section for placement and limits. Ordinary failures still need
 their own diagnosis.
 `vp run verify:development` is routine development safety; `vp run verify` is
 full qualification, including repeated measurements and historical certification.
+Ordinary `publish.yml` development verification uses one source worker; local
+source defaults stay unchanged. The verification policy owns the current
+600-second whole-package-owner budget. The migration comparison workflow is retired;
+the toolchain guide retains its historical qualification links.
 pnpm remains the underlying workspace/lockfile authority, managed through Vite+.
 Maintainer-only package and lane commands live in
 `.opencode/skills/agentera-verification/SKILL.md` and

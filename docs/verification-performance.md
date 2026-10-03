@@ -199,8 +199,8 @@ did not run, so this does not establish a hosted worker allocation comparison.
 The package profile recorded 849.980 s wall time, of which setup took 22.041 s.
 Static discovery took 538.647 s and the other package-verification suite took
 271.223 s. This was a subprocess timeout failure, not merely a wall-budget
-rejection; the unchanged 515-second package acceptance budget also remains to
-be met by a successful hosted run.
+rejection; at that stage, the 515-second package acceptance budget also remained
+to be met by a successful hosted run.
 
 Local CPU profiles identify repeated YAML parsing in schema and upgrade
 discovery and repeated comment-path traversal in schema. Content-based parse
@@ -231,7 +231,7 @@ setup took 2.964 s. These are local isolated-owner timings, not hosted results.
 [Run 34864062466](https://github.com/jgabor/agentera/actions/runs/34864062466)
 tested the parse-cache change in `d6a82cad` on a four-vCPU AMD EPYC 9V74 runner.
 All 41 package tests passed, including schema and upgrade discovery. The package
-owner still rejected its 597.031 s wall time against the unchanged 515-second
+owner still rejected its 597.031 s wall time against the then-current 515-second
 budget. Setup took 24.153 s, static discovery 229.448 s, and package verification
 324.037 s. Source was cancelled at 599.283 s; there is no source pass evidence.
 The different CPU models prevent attributing the entire cross-run timing change
@@ -252,10 +252,12 @@ means there is no successful four-worker total to compare with 24m29s for two
 workers. This pair supports the allocation needed to pass the existing gate;
 it is not a repeated performance qualification or proof of optimal throughput.
 
-Development CI now sets `AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS=2` only for
-its development verification step. The package owner stays at one worker,
-local defaults remain unchanged, and no owner budgets, deadlines, coverage,
-independent builds or package constructions change. The failed four-worker
-control keeps the diagnostic workflow's overall status red even though the
-two-worker overlap passed. The branch workflow now runs the complete development
-verification job to check the selected setting beyond generated overlap.
+At that stage, development CI selected `AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS=2`
+only for its development verification step, without changing owner budgets or
+local defaults. The failed four-worker control kept the diagnostic workflow red
+even though the two-worker overlap passed. This is historical allocation evidence.
+Current ordinary publication verification instead uses the qualified one-worker
+profile and the authorized 600-second package budget; see the
+[toolchain guide](packaging/vite-plus-1-toolchain.md#qualification-and-performance).
+The migration-only comparison workflow is retired. Local defaults, coverage,
+deadlines, independent builds and package constructions remain unchanged.

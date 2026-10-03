@@ -44,16 +44,12 @@ recipes as `vp env exec --node 24.19.0 vp -C packages/cli run <script>`.
 Use the same wrapper for the shim directory. The actual child process version,
 not the displayed pin, is the qualification check.
 
-The branch-only `.github/workflows/vite-plus-toolchain.yml` is a separate,
-nonpublishing experiment. It compares immutable baseline
-`1b964ee320832100b8715503a8a7747b0d0fc591` with the pushed branch SHA on fresh
-Ubuntu 24.04 Linux x64 runners. Each revision uses its own verified bootstrap
-and production development-verification owner. Candidate execution still runs
-after baseline failure unless the workflow is cancelled. It has read-only
-repository permission, no OIDC or registry credentials, no verdict cache, and
-no publication or candidate-construction command. It does not replace or edit
-`publish.yml`. See [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)
-for the final hosted development pass and its limits.
+Ordinary `publish.yml` development verification uses the qualified one-source-worker
+profile, with the package owner's 600-second whole-owner budget from the verification
+policy. The migration-only baseline/candidate comparison workflow is retired.
+See [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)
+for the recorded hosted development pass and its limits. A new passing publication
+still requires fresh ordinary CI verification.
 
 The tasks still delegate internally to pnpm. CI's verified native Vite+ bootstrap,
 isolated npm package construction, and the fixed OIDC publisher are separate
@@ -627,12 +623,16 @@ Both were rejected after completion solely by the old package budget. The latter
 included 32,305 ms of setup and 215,074 ms outside setup: the budget covers the
 whole owner, not just construction. Applying the existing remote 2× headroom
 and 5,000 ms rounding to the overlap maximum gives
-`ceil(256090 * 2 / 5000) * 5000 = 515000` ms. The historical standalone
+`ceil(256090 * 2 / 5000) * 5000 = 515000` ms, the former limit. The historical standalone
 baseline ceiling is not a bound for this different workload.
+The current policy sets 600,000 ms by explicit user authorization after publication
+run [37080534700](https://github.com/jgabor/agentera/actions/runs/37080534700)
+passed package tests but rejected the 551,062 ms owner (24,204 ms setup,
+526,858 ms outside setup). Original calibration and failed verdicts remain history.
 This is a measured correctness-gate bound, not a cache, bypass, runtime
 optimization, or performance certification. Machine-sensitive performance
 remains with its separate isolated owner. Assertions, two independent
-constructions, isolation, sequencing, and default workers are unchanged, as is
+constructions, isolation, sequencing, and local default workers are unchanged, as is
 the active 2,400,000 ms parent qualification deadline. These historical failed
 qualifications remain failed history; hosted development run [34527789220](https://github.com/jgabor/agentera/actions/runs/34527789220) passed and published `3.0.0-dev.113` to `@next`. Historical full re-certification remains open under `vcrmaxuasq`.
 The controlled shell timings include command-launch overhead, so they

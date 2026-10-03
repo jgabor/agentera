@@ -1,7 +1,6 @@
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
-import YAML from "yaml";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import { retainQualificationDiagnostics, writeVerificationTimingProfile } from "../../scripts/verification-timing.mjs";
 import SourceDiagnosticReporter, { writeSourceDiagnostic } from "../../scripts/source-diagnostics.mjs";
@@ -41,15 +40,6 @@ function fixture(report?: unknown) {
 }
 
 describe("diagnostic verification timing profiles", () => {
-  it("retains experimental workflow artifacts even when verification is cancelled", () => {
-    const workflow = YAML.parse(fs.readFileSync(path.resolve(import.meta.dirname, "../../../../.github/workflows/vite-plus-toolchain.yml"), "utf8"));
-    for (const name of ["baseline", "candidate"]) {
-      const upload = workflow.jobs[name].steps.find((step: { name?: string }) => step.name === "Retain diagnostics even after verification failure");
-      expect(upload.if).toBe("always()");
-      expect(upload.with.path).toBe("${{ runner.temp }}/toolchain-diagnostics");
-    }
-  });
-
   it("relays only complete inventory-native records while workers run, without replay or a final report", () => {
     vi.useFakeTimers();
     const setup = fixture();

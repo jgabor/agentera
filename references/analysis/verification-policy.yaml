@@ -160,7 +160,7 @@ owners:
     config: packages/cli/vite.package.config.ts
     correction: Run `pnpm -C packages/cli verify:package`; fix package construction or the extracted-package assertion.
     execution:
-      wall_time_budget_ms: 515000
+      wall_time_budget_ms: 600000
       budget_basis:
         baseline:
           source: docs/packaging/v3-release-workflow-baseline.json#measurements.package
@@ -225,10 +225,13 @@ owners:
             command_wall_time_runs_ms: [11012, 9967, 14293]
             outcome: passed_repeatedly_before_final_fixture_strengthening
         derivation:
+          note: Historical 515000ms calibration, superseded by the explicitly authorized 600-second package owner budget. Original measurements and formula remain historical evidence.
           formula: ceil(hosted_overlap_maximum_ms * 2 / 5000) * 5000
           controlled_headroom_multiplier: 1.25
           remote_cold_headroom_multiplier: 2
           rounding_quantum_ms: 5000
+        authorized_adjustment:
+          reason: The package runner passed in publication run 37080534700 but its 551062ms whole-owner time exceeded the former limit. The user authorized 600 seconds; this is not a performance qualification or a new hosted publication pass.
 
 # Deterministic simultaneous-publication and stale-lock recovery evidence remains
 # source-owned. The independent 100-repetition stale-lock race is stress-owned.

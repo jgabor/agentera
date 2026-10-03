@@ -255,7 +255,7 @@ describe("verification lane ownership", () => {
     expect(run(["source"]).runs[0].workers).toBe("");
   });
 
-  it("calibrates the single package budget from successful hosted overlap owners", () => {
+  it("uses the authorized package budget while retaining historical overlap calibration", () => {
     const { wall_time_budget_ms: budget, budget_basis: basis } = PRODUCTION_POLICY.owners.package.execution;
     const measurement = basis.hosted_overlap_measurement;
     expect(measurement.observations).toEqual([
@@ -278,8 +278,8 @@ describe("verification lane ownership", () => {
     expect(basis.derivation.formula).toBe("ceil(hosted_overlap_maximum_ms * 2 / 5000) * 5000");
     expect(basis.derivation.remote_cold_headroom_multiplier).toBe(2);
     expect(basis.derivation.rounding_quantum_ms).toBe(5000);
-    expect(budget).toBe(Math.ceil((measurement.maximum_ms * basis.derivation.remote_cold_headroom_multiplier) / basis.derivation.rounding_quantum_ms) * basis.derivation.rounding_quantum_ms);
-    expect(budget).toBe(515000);
+    expect(Math.ceil((measurement.maximum_ms * basis.derivation.remote_cold_headroom_multiplier) / basis.derivation.rounding_quantum_ms) * basis.derivation.rounding_quantum_ms).toBe(515000);
+    expect(budget).toBe(600000);
     expect(basis.controlled_measurement.maximum_ms).toBe(5558);
     expect(basis.remote_cold_measurement.owner_wall_time_ms).toBe(28714);
     const publication = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "references/adapters/package-publication.json"), "utf8"));
@@ -317,6 +317,21 @@ describe("verification lane ownership", () => {
       expect(output).not.toContain("private-secret");
       expect(output).not.toContain("/private/path");
     }
+  });
+
+  it.each([551062, 600000, 600001])("enforces the current package budget at %ims without waiting", (wallMs) => {
+    const setup = fixture();
+    const contract = JSON.parse(fs.readFileSync(setup.contractPath, "utf8"));
+    const budget = PRODUCTION_POLICY.owners.package.execution.wall_time_budget_ms;
+    contract.owners.package.execution = { wall_time_budget_ms: budget };
+    fs.writeFileSync(setup.contractPath, JSON.stringify(contract));
+    const clock = path.join(setup.root, "clock.cjs");
+    fs.writeFileSync(clock, `let calls = 0; process.hrtime.bigint = () => BigInt(calls++ * ${wallMs}) * 1000000n;\n`);
+    const { result, runs } = run(["package"], setup, { NODE_OPTIONS: `--require=${clock}` });
+    expect(runs).toHaveLength(1);
+    expect(result.stdout).toContain(`package owner wall time ${wallMs}ms; budget ${budget}ms`);
+    expect(result.status, result.stderr).toBe(wallMs <= budget ? 0 : 1);
+    if (wallMs > budget) expect(result.stderr).toContain(`package owner exceeded its ${budget}ms wall-time budget (${wallMs}ms)`);
   });
 
   it("preserves a failing process exit and package timings rather than replacing it with the budget failure", () => {
