@@ -151,7 +151,7 @@ Native priority runs staged fixes before guards, related tests and typecheck.
 Native staged formatting/linting hides partial hunks instead of re-adding whole
 files. Oxfmt formats eligible Markdown with the pinned local tool and root
 exclusions. Markdown structural and policy lint is removed, not replaced by
-formatting; see the [formatting concessions](../../../docs/packaging/vite-plus-1-formatting-concessions.md).
+formatting; see the [formatting concessions](../../../docs/packaging/vite-plus-1-toolchain.md#formatting-and-hooks).
 Evidence, fixtures, generated files and typed-state writer output are excluded
 from automatic rewriting. Global and worker setup remove Git's complete local
 environment variable set before nested fixture writes; workers retain the

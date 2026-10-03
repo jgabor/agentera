@@ -133,9 +133,10 @@ ownership, esbuild-only scripts, wrapper argument/cwd/exit behavior, and rejecti
 of wrong managed Node or stale launcher before project commands. Neither writes
 state, changes global tools, or activates checkout/shared hooks.
 
-Task 3's local evidence is summarized in
-`docs/packaging/vite-plus-1-runtime-proof.md`. Historical compiler/formatter and
-hook certification remain separate owners. Local success is not hosted approval.
+The [toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup)
+summarizes contributor setup and links the final development qualification.
+Historical compiler/formatter and hook certification remain separate owners.
+Local success is not hosted approval.
 
 ## Maintenance
 

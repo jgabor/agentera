@@ -137,8 +137,8 @@ Pre-commit runs:
 
 The staged hook never invokes release verification, performance, capacity, or
 package owners. Markdown structural/policy lint is intentionally removed, not
-equivalent to Oxfmt. Formatting exceptions and the lost-rule inventory are in
-`docs/packaging/vite-plus-1-formatting-concessions.md`. Root and package commands
+equivalent to Oxfmt. Formatting exceptions and the accepted loss of checks are in
+`docs/packaging/vite-plus-1-toolchain.md#formatting-and-hooks`. Root and package commands
 inherit width 320 and exclusions; `.editorconfig` uses the same width. Editors
 must use the root Vite+ config and must not format excluded artifacts on save.
 

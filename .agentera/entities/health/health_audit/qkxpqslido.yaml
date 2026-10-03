@@ -1,0 +1,25 @@
+id: qkxpqslido
+artifact: health
+record:
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: stable (artifact_freshness closure only; no whole-codebase trend assessed)
+  grades:
+    artifact_freshness: A
+  dimensions_detail:
+    - name: artifact_freshness
+      grade: A
+      summary: Terminal closure for plan xcxdsrlvym only. Closeout review confirms 16 completed PASS-evaluated tasks and one superseded historical failed review. docs/packaging/vite-plus-1-toolchain.md:156-197 preserves hosted run 37062016377 qualification, current policy, and limits. Lifecycle state now agrees with delivered integration evidence. Earlier failed evaluations remain intact; full historical certification and a newly exercised exact 30-minute cancellation are not claimed.
+      findings:
+        []
+  trends:
+    comparison_target: Scoped artifact-freshness audit tfnqjvuywn
+    stable: Passing bounded artifact-freshness assessment; no broader health conclusion.
+    carried_forward: Historical certification and long-path fragility remain outside this closure.
+  date: 2026-10-03
+  appended_at: 2026-10-02T23:54:48.471Z

@@ -3,7 +3,7 @@ artifact: plan
 record:
   plan: xcxdsrlvym
   name: Fix the diagnosed uncached source-run bottleneck
-  status: in_progress
+  status: complete
   depends_on:
     - ypowebpwod
   acceptance:
@@ -11,3 +11,13 @@ record:
     - GIVEN required coverage WHEN verified THEN no check, assertion, independent proof, or existing budget is removed or relaxed to obtain a pass.
     - GIVEN offline verification WHEN corrected fixtures run THEN they use the already-provisioned pinned package manager without latest-version lookup or registry fallback.
     - GIVEN previous and corrected behavior WHEN compared THEN targeted pass/fail evidence and retained timings demonstrate the correction without cached-result concealment.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: terminal-source-correction
+      source: Closeout review ses_f01122156ffeRuQNMpXEBkjaal; offline pinned-manager comparison and hosted run 37062016377 source 4959 passed, 1 platform skip, 1475.230 seconds; budgets unchanged
+      recorded_at: 2026-10-03 01:53
+      writer_command: agentera state plan record-evaluation

@@ -32,8 +32,9 @@ cannot replay a verdict. Package-level pnpm scripts remain unchanged. Use the
 documented `vp run` entrypoints rather than removed root pnpm script aliases.
 `vp run test:local` selects only the positive fast native project for developer
 diagnostics. `vp run typecheck:fresh` explicitly selects the fresh typecheck owner.
-The [bounded reuse proof](vite-plus-1-cache-proof.md) records transformed-module
-reuse and why native verdict caching remains disabled.
+The [toolchain guide](vite-plus-1-toolchain.md#fresh-checks-and-optional-caching)
+explains transformed-module reuse and the sole opt-in guarded developer
+typecheck cache. Mandatory verification remains fresh.
 
 Runtime-bearing root tasks invoke the standalone launcher's `VP_CLI_BIN` with
 `env exec --node` from `.node-version`. This keeps the public `vp run` recipes
@@ -51,8 +52,8 @@ and production development-verification owner. Candidate execution still runs
 after baseline failure unless the workflow is cancelled. It has read-only
 repository permission, no OIDC or registry credentials, no verdict cache, and
 no publication or candidate-construction command. It does not replace or edit
-`publish.yml`. See [qualification evidence](vite-plus-1-qualification.md) for
-local results, diagnostic retention and hosted-run gaps.
+`publish.yml`. See [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)
+for the final hosted development pass and its limits.
 
 The tasks still delegate internally to pnpm. CI's verified native Vite+ bootstrap,
 isolated npm package construction, and the fixed OIDC publisher are separate
@@ -671,7 +672,7 @@ all validation readers, then restores hidden partial hunks. Native Vite+ owns
 the hook; an old installed entry point only forwards to the same policy.
 Oxfmt owns eligible Markdown formatting, not structural lint. Its concessions,
 width 320 and exclusions are documented in
-[the formatting concession record](vite-plus-1-formatting-concessions.md).
+[the formatting concessions](vite-plus-1-toolchain.md#formatting-and-hooks).
 Byte-stable fixtures/evidence and typed-state output are not rewritten.
 Missing local tools fail; recover with `VP_GIT_HOOKS=0 vp install`. Only network
 state compaction retains a 10-second watchdog; Python/TS parity stays narrowly

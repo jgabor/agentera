@@ -4,7 +4,7 @@ record:
   name: Measure the result and prepare the adoption review
   depends_on:
     - niwgozmrcv
-  status: blocked
+  status: superseded
   acceptance:
     - GIVEN matched before and after samples WHEN compared THEN cold and warm times, spread, failures, and coverage differences are reported separately.
     - GIVEN matched cold hosted development runs WHEN evaluated THEN candidate verification passes and package wall time including setup stays within 515 seconds.
@@ -21,3 +21,6 @@ record:
       source: docs/packaging/vite-plus-1-comparison.md; local measurements and hosted package budget pass; final hosted source acceptance remains failed
       recorded_at: 2026-10-02 07:38
       writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - ifixrpaomn
+  superseded_reason: The user-approved merge-readiness task replaces the original strict adoption review. Final cold development gates passed with resource-allocation limits explicit. Preserve the earlier failed evaluation; do not claim the historical strict comparison passed.

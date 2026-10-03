@@ -9,10 +9,10 @@ resource and capacity owners, followed by concurrent validation readers.
 
 - `references/analysis/toolchain-baseline.yaml#project_contract.no_task_result_cache` requires fresh
   task execution. Root native tasks have per-task `cache: false`, which cannot
-  be overridden by `--cache`. No task-verdict caching is enabled. The
-  [bounded reuse proof](packaging/vite-plus-1-cache-proof.md) records preparation
-  reuse with fresh assertions and the native corruption defect that ruled out
-  local cached typecheck verdicts.
+  be overridden by `--cache`. Mandatory checks do not cache verdicts. The
+  [toolchain guide](packaging/vite-plus-1-toolchain.md#fresh-checks-and-optional-caching)
+  explains preparation reuse, the sole opt-in guarded developer typecheck cache,
+  and recovery from the known native cache fault.
 - `references/analysis/bootstrap-integrity.md` requires fresh CI dependency state because Vite+'s
   warm runtime/manager caches skip archive acquisition and verification. Each overlap participant
   also gets isolated npm and XDG state.

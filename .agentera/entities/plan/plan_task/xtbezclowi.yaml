@@ -3,10 +3,20 @@ artifact: plan
 record:
   plan: xcxdsrlvym
   name: Explain why the first source run exceeds 30 minutes
-  status: in_progress
+  status: complete
   depends_on:
     - bmcqliehzj
   acceptance:
     - GIVEN the contracted hosted runner and no saved check results WHEN source checks run THEN progress and timings survive cancellation at the unchanged 30-minute limit.
     - GIVEN retained evidence WHEN analyzed THEN preparation, test execution, subprocess waits, and resource contention are distinguished and the dominant delay is identified.
     - GIVEN a suspected cause WHEN isolated THEN a targeted comparison supports it or preserves the remaining uncertainty without treating storage contamination as a candidate regression.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: terminal-source-diagnosis
+      source: Closeout review ses_f01122156ffeRuQNMpXEBkjaal; isolated resolver comparison, cancellation transport tests and retained hosted diagnostics; no new exact 30-minute cancellation claimed
+      recorded_at: 2026-10-03 01:53
+      writer_command: agentera state plan record-evaluation

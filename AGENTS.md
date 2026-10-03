@@ -236,13 +236,13 @@ Source, test, manifest/lock/toolchain inputs and relevant environment changes
 invalidate that verdict. Test-file invalidation does not mean tests are typechecked
 or cached. Default typecheck, hooks, tests/lint, verification, build, package and
 publication remain fresh. Never invoke the private task as an assurance entry.
-See `docs/packaging/vite-plus-1-cache-proof.md` for exact scope and proof.
+See [the toolchain guide](docs/packaging/vite-plus-1-toolchain.md#fresh-checks-and-optional-caching) for scope and qualification.
 The pinned native `Cache lookup failed` diagnostic can accompany exit 0 without
 child execution. Never accept that skip as a pass. The maintainer outer guard in
 `packages/cli/scripts/guard-native-cache.mjs` rejects that diagnostic; it is a
 workaround, not an upstream repair or authority to cache other owners. Recover with
-the unchanged fresh entry (`vp run typecheck:fresh` for typecheck). See the cache
-proof's recovery section for placement and limits. Ordinary failures still need
+the unchanged fresh entry (`vp run typecheck:fresh` for typecheck). See the guide's
+recovery section for placement and limits. Ordinary failures still need
 their own diagnosis.
 `vp run verify:development` is routine development safety; `vp run verify` is
 full qualification, including repeated measurements and historical certification.
@@ -272,7 +272,7 @@ snapshot. `packages/cli/scripts/run-lefthook.sh` only forwards an old installed
 Restore launcher discovery and each worktree's dependencies before retrying Git.
 Oxfmt owns Markdown formatting, not Markdown structural lint. Root, package and
 editor formatting use width 320 and the root exclusions. See the
-[formatting concessions](docs/packaging/vite-plus-1-formatting-concessions.md).
+[formatting concessions](docs/packaging/vite-plus-1-toolchain.md#formatting-and-hooks).
 These bypassable local hooks prevent ordinary mistakes; they are not a security
 boundary or a substitute for required CI checks.
 

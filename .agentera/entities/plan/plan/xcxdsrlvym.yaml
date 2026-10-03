@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-10-01
-    status: open
+    status: complete
     reviewed: 2026-10-01
     critic_issues: 1 found, 1 addressed, 0 dismissed
     revised: Set eight-hour unattended scope, non-publishing feature-branch CI retries, and retain-exception fallbacks.
