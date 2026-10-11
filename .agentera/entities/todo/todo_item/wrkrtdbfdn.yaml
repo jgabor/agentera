@@ -1,0 +1,25 @@
+id: wrkrtdbfdn
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Clarify shared-skill diagnosis labels and blocked messages.
+  severity: annoying
+  release_blocker: false
+  requirements:
+    - Label a missing shared skill as missing, not `skill_path_drift`.
+    - When the skill path and the data root resolve under different homes (for example HOME and XDG_DATA_HOME disagree), explain the mismatch and give a next step the user can act on, not only "do not broaden approval or move files manually".
+    - After a legacy conversion, let doctor report retained legacy copies and their location so users know they exist. Removal stays out of scope unless separately approved.
+  acceptance:
+    - GIVEN no installed skill WHEN diagnosed THEN the gap label says the skill is missing.
+    - GIVEN mismatched home and data roots WHEN diagnosed THEN the message names both paths and one user action.
+    - GIVEN retained conversion data WHEN doctor runs THEN it lists the retained location without offering deletion.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages."
+      severity: annoying
+      status: open
+      order: 1

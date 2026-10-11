@@ -27,9 +27,7 @@ The schema directory contains `triggers.yaml`, `artifacts.yaml`,
 npx -y agentera@next prime --context <name>
 ```
 
-The primary capability list is `status`, `vision`, `discuss`, `research`,
-`plan`, `build`, `optimize`, `document`, `design`, `audit`, `profile`, and
-`orchestrate`.
+`skills/agentera/capabilities/` holds one directory per capability.
 
 ## Add or modify a capability
 
@@ -38,8 +36,9 @@ The primary capability list is `status`, `vision`, `discuss`, `research`,
 2. Default-export a string constant named `instructions`.
 3. Create or update all four schemas under
    `skills/agentera/capabilities/<name>/schemas/`.
-4. Update the capability table in `skills/agentera/SKILL.md` when membership or
-   user-facing purpose changes.
+4. When membership or a purpose changes, update the `capabilities:`
+   frontmatter list in `skills/agentera/SKILL.md` (membership only), the list
+   in `AGENTS.md#product`, and the capability table in `README.md`.
 5. Verify every command, path, environment variable, and contract reference
    against the v3 runtime and filesystem.
 6. Validate the changed capability and the shared contract.
@@ -62,37 +61,23 @@ Shared primitives and visual identity tokens belong in
 
 ## Validation
 
-Prefer the pre-cutover published development entry point for user-facing
-validation:
-
-```bash
-npx -y agentera@next check validate capability <name-or-path>
-npx -y agentera@next check validate capability-contract
-```
-
-When modifying CLI source, build before invoking the local runtime:
+The published `@next` CLI does not contain unpublished changes. Validate
+changed capabilities, schemas, or CLI source with a current local build:
 
 ```bash
 vp run typecheck
 vp run build
-vp node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract
+vp node packages/cli/dist/bin/agentera.js check validate capability <name-or-path>
+vp node packages/cli/dist/bin/agentera.js check validate capability-contract
 ```
-
-Top-level `agentera validate` is a migration alias. Prefer
-`agentera check validate`. Use `agentera prime` for status and typed
-`agentera state` commands for artifacts. Top-level `status`, `todo`, and `docs`
-are not v3 commands.
 
 ## Bundled package boundary
 
-The published v3 package is self-contained. It bundles the shared skill,
-references, and registry under `packages/cli/bundle/`, so
-`npx -y agentera@next` needs neither a checkout nor `AGENTERA_HOME`.
-
-Do not validate only source prose. Verification must cover source, generated,
-and extracted package surfaces when the change can affect bundling or runtime
-parity. Load `.opencode/skills/agentera-verification/SKILL.md` for those gates.
+The published package bundles the shared skill, references, and registry under
+`packages/cli/bundle/`. Do not validate only source prose. When a change can
+affect bundling or runtime parity, verification must cover source, generated,
+and extracted package surfaces. Load
+`.opencode/skills/agentera-verification/SKILL.md` for those gates.
 
 The host projection contains only `SKILL.md`; source schemas are internal CLI
 data, not host companions. Serve required semantics through the purpose-owned
@@ -104,9 +89,8 @@ registry or teach installed-file reads as recovery.
 
 ## Helper policy
 
-`npx -y agentera@next ...` is the documented entry point until v3 is promoted
-to stable. Direct scripts under `scripts/` are maintainer-only unless they back
-an `agentera` namespace command. Prefer a stable namespace for new user-facing
+Direct scripts under `scripts/` are maintainer-only unless they back an
+`agentera` namespace command. Prefer a stable namespace for new user-facing
 behavior. Otherwise document the helper as local-only with its privacy and
 scope limits.
 

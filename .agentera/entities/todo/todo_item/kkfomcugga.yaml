@@ -1,0 +1,26 @@
+id: kkfomcugga
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Report a fresh project as ready to start, not as needing repair.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Give `doctor` a distinct non-error project status for `fresh_uninitialized` instead of top-level `repair_needed`.
+    - Make the doctor next step agree with `prime` `next_action` (for example Vision or Plan), not `state plan create --input PLAN.yaml`.
+    - Keep `repair_needed` for partial, corrupt or unknown state, and never report an all-clear when real damage blocks writers.
+    - Keep existing JSON fields. Record any changed status value in the changelog.
+  acceptance:
+    - GIVEN a fresh git project WHEN doctor runs THEN it reports a ready-to-start status and the same next capability as prime, and asks the user to create no file.
+    - GIVEN partial or corrupt project state WHEN doctor runs THEN it still reports repair_needed with scoped recovery.
+    - One success and one refusal case cover the behavior.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Report a fresh project as ready to start, not as needing repair."
+      severity: normal
+      status: open
+      order: 26

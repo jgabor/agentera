@@ -1,0 +1,27 @@
+id: lvxezpcpvv
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Help users discover capabilities they have not used yet.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - When Status suggests a next step, let it also name at most one relevant capability the project has not used, with a one-line reason based on project state (for example no recorded health audit, or no objective for Optimize).
+    - Derive unused capabilities from existing state. Add no new tracking store.
+    - Keep the suggestion informational. It is never consent and adds no menu or extra question.
+    - Rewrite the README Get started section for users - what to ask the agent, the one install question, and a short list of capabilities to try first. Move maintainer detail elsewhere.
+  acceptance:
+    - GIVEN a project with no recorded audit WHEN Status runs THEN it may mention Audit once with a state-based reason and starts nothing without user acceptance.
+    - GIVEN a direct capability request WHEN routed THEN no discovery suggestion is added.
+    - README Get started contains no internal state terms such as fresh_uninitialized or writer command names.
+    - Startup output stays within existing byte budgets.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Help users discover capabilities they have not used yet."
+      severity: normal
+      status: open
+      order: 27

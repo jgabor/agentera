@@ -295,8 +295,8 @@ state, candidate projection, or publication result.
 
 ## Contributors
 
-Use the standalone Vite+ 1.0.0 setup and recovery recipe in
-[AGENTS.md](../../AGENTS.md#common-commands). Vite+ supplies the pinned Node and
+Use the standalone Vite+ 1.0.0 setup and recovery recipe in the
+[toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup). Vite+ supplies the pinned Node and
 pnpm; no separate JavaScript tool or hook manager installation is needed. That guide
 also owns hook setup, optional nested npm dependencies, and platform/offline
 limits. The commands below select existing maintainer owners through Vite+;

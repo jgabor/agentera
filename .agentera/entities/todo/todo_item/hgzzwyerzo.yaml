@@ -1,0 +1,25 @@
+id: hgzzwyerzo
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Inventory every capability `instructions.ts` that applies `.replace()` or `.replaceAll()` to its base instruction string (for example build, orchestrate, document, plan, profile), and record which patches still match.
+    - Find out why the patch chains exist and whether any generator or migration still depends on them.
+    - Decide whether the base string or the served output is the authority, and fold, keep, or replace the chains to match that decision.
+    - Make sure a patch whose match string disappears cannot silently change nothing.
+  acceptance:
+    - GIVEN each capability module WHEN its served instructions are compared with the reviewed source THEN they agree, and no patch silently fails to match.
+    - GIVEN a patch that no longer matches WHEN validation or tests run THEN they fail with the capability and patch named.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules."
+      severity: normal
+      status: open
+      order: 30

@@ -1,0 +1,26 @@
+id: sqkaukicrr
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Verify one-question consent journeys with a live agent.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Use the existing `check verify eval skills` live-model harness, extended only as needed, to run each shipped offer journey with a real agent - shared-skill install and update, project migration, doctor cleanup, plan save-and-execute, Document patch set, Discuss closeout, Optimize setup, findings filing and Status handoff.
+    - Record the questions the agent asks, the wording it shows the user, and whether it runs only the CLI-provided operation after Yes.
+    - Use isolated fixtures only. Do not touch live installations, histories or project state.
+    - Keep the scripted host fixtures as the regression baseline. Live runs add evidence; they do not replace those fixtures.
+  acceptance:
+    - Each journey has at least one live run for Yes and one for No or silence, with a recorded transcript.
+    - A journey passes only when the agent asks one plain question, does nothing on No or silence, and asks no question about internal mechanics after Yes.
+    - Failures are reported per journey with the transcript excerpt.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Verify one-question consent journeys with a live agent."
+      severity: normal
+      status: open
+      order: 28

@@ -26,18 +26,29 @@ The supported combination is standalone Vite+ **1.0.0**, Node.js **24.19.0**,
 and pnpm **10.30.3** on Linux x64. Both the launcher and installed local Vite+
 must report 1.0.0. macOS and Windows are not qualified by the Linux evidence.
 
-Follow [AGENTS.md](../../AGENTS.md#common-commands) for launcher installation
-and recovery. The [bootstrap authority](../../references/analysis/bootstrap-integrity.md)
-owns archive verification, provenance, and credential isolation. Use the trusted
-standalone launcher, not the Node-dependent project shim or an unpinned installer.
+Obtain the standalone launcher from the trusted
+[Vite+ v1.0.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.0.0),
+not the Node-dependent project shim or an unpinned installer. The verified Linux
+x64 asset is `vp-x86_64-unknown-linux-gnu.tar.gz`. Verify its SHA-256 and
+provenance against the [bootstrap authority](../../references/analysis/bootstrap-integrity.md)
+before extraction or execution; that authority also owns credential isolation
+and fresh/warm cache limits. Extract the executable into a user-owned directory
+on both the ordinary shell `PATH` and Git's `PATH`. Download and extraction
+tools are OS prerequisites, not provided by Vite+.
 
-From the repository root:
+First install, also used for dependency recovery, from the repository root:
 
 ```bash
 vp --version
 vp env on
 VP_GIT_HOOKS=0 vp install --frozen-lockfile
 ```
+
+`vp run bootstrap` repeats the frozen install only after local dependencies
+exist; it is not the fresh-checkout entry point. If the launcher is missing or
+old, restore the standalone executable on `PATH` first. If the frozen lock check
+fails, restore matching checked-in manifests and lockfile, then rerun the frozen
+install. Do not bypass the lock check or install another package manager.
 
 Installation does not authorize hook activation. In an independent clone,
 enable hooks after installation and inspect their status:
@@ -52,6 +63,22 @@ permission. Each worktree still needs its own dependencies and launcher discover
 Vite+ does not supply OS utilities or Git history; see the
 [test prerequisites](../../packages/cli/test/README.md#contributor-prerequisites).
 Warm cached offline use works, but an empty offline cache cannot provision Node.
+
+### Optional checkout-local runtime dependencies
+
+Only when optional `.opencode/` runtime code or tests need its declared types,
+and its npm manifest and lockfile are present, run this from the repository root
+after the root install:
+
+```bash
+vp exec npm --prefix .opencode install --ignore-scripts --no-audit --no-fund
+```
+
+This uses managed npm with the nested `package.json` and `package-lock.json`. It
+is not part of the root install. Keep that ignored dependency boundary outside
+the pnpm workspace and the Agentera package; do not replace it with
+`vp install` in the nested directory. Optional npm `--offline` also requires its
+dependency artifacts locally.
 
 ## Daily commands
 

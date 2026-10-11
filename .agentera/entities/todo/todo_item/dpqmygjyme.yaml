@@ -1,0 +1,22 @@
+id: dpqmygjyme
+artifact: todo
+record:
+  kind: task
+  target_version: null
+  title: Decide the manual development recovery version policy
+  requirements:
+    - The release skill permits only a `3.0.0-dev.N` to `3.0.0-dev.N+1` manual bump of the committed manifest, but CI allocates `@next` versions from `GITHUB_RUN_NUMBER + 89`, so the committed version stays below `@next` and a manual publish cannot move `@next` forward.
+    - Choose whether to retire manual development publication, allow a forward bump above the current `@next`, or publish manual recovery under another tag.
+  acceptance:
+    - The release skill, packaging guide, and publication contract describe one manual development recovery path that can succeed, or state that none exists.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[task] Decide the manual development recovery version policy"
+      severity: normal
+      status: open
+      order: 29

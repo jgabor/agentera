@@ -25,7 +25,7 @@
 - [ ] [id:ronsoryeeh] [refactor:3.0.0] Rename `agentera app-home` command to `agentera path`
 - [ ] [id:ymoffilhgo] [feat:3.0.0] Add macOS and Windows GitHub Actions jobs for `pnpm -C packages/cli test` (and related gates); CLI tests are cross-platform-hardened on darwin and linux.
 - [ ] [id:zxccscfiox] [test:3.0.0] Make contributor verification terminable and discoverable. Reproduce the 300-second timeout with process-tree evidence, assign cleanup to the actual owner, and, if reproduced, verify that termination stops all descendants without residue. Document `pnpm -C packages/cli run test:source -- test/path.test.ts`, including exact-path and source-owner constraints.
-- [ ] [id:ttwpziwvol] [docs:3.0.0] Surface the four-question update/repair wording template (What happened / What the preview did / What the recommended fix will do / What it will not do) in `agentera prime --format json` when `app.status` is `outdated` or `repair_needed`, or document in the collapsed SKILL.md that the host must read `agentera prime --context status --format json` `prose` for the framing. The JSON provides `app.approval` (one-line) and `app.signals[].message` — not the structured four-question template or recommendation-first label convention the old SKILL.md specified. (Branch: `feat/v3` — implement on `feat/v3`.)
+- [ ] [id:ttwpziwvol] [fix:3.0.0] Use one plain-language offer template for every approval question.
 - [ ] [id:cybxkpsyut] [refactor:3.0.0] After the unified status capsule and reserve gate ship, measure whether repeated capability instructions remain a material startup cost. Only if they do, generate one concise, validated, versioned execution contract from the authoritative capability prose so callers can omit an unchanged instruction body without creating a second hand-maintained contract.
 - [ ] [id:savaekyuar] [feat:3.0.0] Use git `user.name` and `user.email` for `confirmed_by` fields in `decisions.yaml`
 - [ ] [id:ocntbqcatr] [feat:3.0.0] Detect "You're right", "my mistake", "You're right to push back" responses during profiling, to add generalized rules to the profile to correct the model's behavior.
@@ -39,8 +39,14 @@
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 - [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
+- [ ] [id:kkfomcugga] [fix:3.0.0] Report a fresh project as ready to start, not as needing repair.
+- [ ] [id:lvxezpcpvv] [feat:3.0.0] Help users discover capabilities they have not used yet.
+- [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
+- [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
+- [ ] [id:hgzzwyerzo] [refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
 
 ## ⇢ Annoying
+- [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
 
 ## ✓ Resolved
 

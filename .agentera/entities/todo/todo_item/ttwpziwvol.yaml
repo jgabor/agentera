@@ -3,12 +3,25 @@ artifact: todo
 record:
   severity: normal
   status: open
-  description: "[docs:3.0.0] Surface the four-question update/repair wording template (What happened / What the preview did / What the recommended fix will do / What it will not do) in `agentera prime --format json` when `app.status` is `outdated` or `repair_needed`, or document in the collapsed SKILL.md that the host must read `agentera prime --context status --format json` `prose` for the framing. The JSON provides `app.approval` (one-line) and `app.signals[].message` — not the structured four-question template or recommendation-first label convention the old SKILL.md specified. (Branch: `feat/v3` — implement on `feat/v3`.)"
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[docs:3.0.0] Surface the four-question update/repair wording template (What happened / What the preview did / What the recommended fix will do / What it will not do) in `agentera prime --format json` when `app.status` is `outdated` or `repair_needed`, or document in the collapsed SKILL.md that the host must read `agentera prime --context status --format json` `prose` for the framing. The JSON provides `app.approval` (one-line) and `app.signals[].message` — not the structured four-question template or recommendation-first label convention the old SKILL.md specified. (Branch: `feat/v3` — implement on `feat/v3`.)"
+      description: "[fix:3.0.0] Use one plain-language offer template for every approval question."
       severity: normal
       status: open
       order: 12
+  kind: fix
+  target_version: 3.0.0
+  requirements:
+    - Define one shared offer primitive in `skills/agentera/protocol.yaml` - the action, what changes, what will not change, any irreversible loss, explicit Yes only, and fresh approval when the scope changes.
+    - Apply it to every offer - shared-skill install and update, project migration, product-v1 reset, doctor cleanup, plan save-and-execute, Document patch set, Discuss closeout, Optimize setup, Profile refresh, glossary save and findings filing.
+    - Use plain words in the user-facing question. Keep internal terms such as ownership-proven, resource IDs, v2 and v3, bound operation and writer in diagnostic fields.
+    - Replace per-capability restatements of the approval rules with references to the primitive.
+  acceptance:
+    - Every offer question follows the template and states what will not change.
+    - No user-facing question contains the internal terms the primitive lists.
+    - Consent text in capability instructions gets smaller, and startup output stays within existing byte budgets.
+    - One success and one refusal check per offer family.
+  release_blocker: false
+  title: Use one plain-language offer template for every approval question.

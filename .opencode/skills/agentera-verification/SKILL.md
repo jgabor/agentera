@@ -1,58 +1,64 @@
 ---
 name: agentera-verification
 description: >-
-  Run or change Agentera tests, builds, package checks, generated output,
-  pre-commit hooks, and release gates. Use when diagnosing verification lanes,
-  package construction, compaction, or runtime parity.
+  Change or diagnose Agentera verification. Use for test lanes, typecheck and
+  build gates, generated output, package construction, compaction, pre-commit
+  hooks, and runtime parity.
 ---
 
 # Agentera verification
 
-Load this skill before changing verification policy, diagnosing a gate, or
-working on generated output and package construction.
+Load this skill before changing or diagnosing tests, verification lanes,
+hooks, generated output, package construction, compaction, or runtime parity.
+Running the daily commands in `AGENTS.md#common-commands` does not require it.
 
-Ordinary tests and verification mentions do not require `agentera-release`;
-load it only for a release-specific need covered by its trigger.
+Ordinary tests and verification do not require `agentera-release`; load it
+only for a release-specific need covered by its trigger.
+
+## Terms
+
+- **Owner:** the command that runs one set of tests or checks, as assigned in
+  `references/analysis/verification-policy.yaml#owners`.
+- **`local` project:** an explicit allowlist of fast source tests
+  (`verification-policy.yaml#local_source`). Membership, not a time budget,
+  bounds it; test and hook timeouts stay in test configuration.
+- **Generated overlap:** the only private owner of generated output. In
+  release verification, source, package, and build evidence all run through
+  it.
 
 ## Environment
 
-- Follow `AGENTS.md#common-commands`: verified standalone Vite+ 1.0.0 manages the pinned
-  Node.js and pnpm 10.30.3, without separately installing Node, Corepack, pnpm,
-  or a hook manager. First install is `vp env on` then `VP_GIT_HOOKS=0 vp install --frozen-lockfile`;
-  `vp run bootstrap` requires existing local dependencies.
-- Use that guide's tested `vp exec npm --prefix .opencode install` recipe and
-  flags only for optional checkout-local runtime dependencies. Its npm manifest
-  and lockfile remain outside the root pnpm workspace and Agentera npm package.
-- Linux x64 is the verified contributor platform. Warm caches permit offline
-  use; an empty offline cache cannot download the runtime. OS tools and Git
-  history are separate prerequisites listed in `packages/cli/test/README.md`.
-- Run contributor commands from the repository root unless noted.
-- Root runtime-bearing tasks explicitly select `.node-version` through the
-  invoking standalone launcher. Native `vp -C` can select ambient Node; wrap
-  package-directory recipes with `vp env exec --node 24.19.0 vp -C packages/cli run TASK`.
-  Do not weaken the real process-version guard or change global PATH to repair it.
+Setup, dependency recovery, and the optional `.opencode` npm recipe live in
+`docs/packaging/vite-plus-1-toolchain.md#contributor-setup`. OS tools and Git
+history required by tests are listed in `packages/cli/test/README.md`.
+
+Run contributor commands from the repository root. Root `vp run` tasks select
+`.node-version` explicitly. Bare `vp -C` can select ambient Node, so run
+package-directory recipes as:
+
+```bash
+vp env exec --node "$(cat .node-version)" vp -C packages/cli run TASK
+```
+
+Do not weaken the process-version guard or change global PATH to repair a
+Node mismatch.
 
 ## Common gates
 
-| Purpose             | Command                                                   |
-| ------------------- | --------------------------------------------------------- |
-| CLI source tests    | `vp run test`                                             |
-| Package boundary    | `vp -C packages/cli run verify:package`                   |
-| Typecheck           | `vp run typecheck`                                        |
-| Build               | `vp run build`                                            |
-| Compact gate        | `vp node packages/cli/dist/bin/agentera.js check compact` |
-| Capability contract | Run the contract command below with a current build.      |
-| Package dry run     | `vp -C packages/cli run pack:dry-run`                     |
+| Purpose             | Command                                                                           |
+| ------------------- | --------------------------------------------------------------------------------- |
+| CLI source tests    | `vp run test`                                                                     |
+| Package boundary    | `vp env exec --node "$(cat .node-version)" vp -C packages/cli run verify:package` |
+| Typecheck           | `vp run typecheck`                                                                |
+| Build               | `vp run build`                                                                    |
+| Compact gate        | `vp node packages/cli/dist/bin/agentera.js check compact`                         |
+| Capability contract | `vp node packages/cli/dist/bin/agentera.js check validate capability-contract`    |
+| Package dry run     | `vp env exec --node "$(cat .node-version)" vp -C packages/cli run pack:dry-run`   |
 
-```bash
-vp node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract
-```
-
-Use a current local build for the compiled CLI and compact gate. Build when
-relevant source, build configuration, dependencies or bundled inputs change, or
-the artifact is absent; otherwise reuse it across invocations. A published CLI
-does not verify changed local behavior.
+The compact and contract gates need a current local build. Build when relevant
+source, build configuration, dependencies, or bundled inputs change, or the
+artifact is absent; otherwise reuse it. A published CLI does not verify changed
+local behavior.
 
 ## Verification lanes
 
@@ -62,152 +68,132 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
 - Source tests prove CLI logic from temporary directories and pinned fixtures.
 - Package verification proves the packed and extracted production boundary.
 - Stress owns probabilistic repeated evidence.
-- Performance owns machine-sensitive budgets, runs without competing owners,
-  uses one worker on the policy-pinned remote runner, and records runner
-  identity in its structured evidence. Local runs are diagnostic, not
-  authoritative package verification evidence.
+- Performance owns machine-sensitive budgets. It runs alone, with one worker, on
+  the policy-pinned remote runner, and records runner identity. Local runs are
+  diagnostic only.
 - Capacity owns large deterministic scale evidence and runs serially after
-  performance before source verification readers.
-- Generated overlap is the sole source, package, and build execution origin in
-  release source verification.
-- Routine `vp run verify:development` retains source, typecheck, private
-  build/package/generation checks, stress, capacity, compact and contract readers.
-  It runs the existing live CLI resource workload once per target at unchanged
-  scales and heap/output limits, not five repetitions; latency stays advisory.
-  Its distinct development evidence is not full qualification or a receipt.
-- Explicit `vp run verify` remains full qualification: five cold repetitions and
-  historical certification as well as all development safety guards. The three
-  historical suites belong to `test:certification`, not source. See the packaging
-  guide for the archived-history prerequisite. Certification failures stay visible.
+  performance.
+- `vp run verify:development` is routine development safety: source,
+  typecheck, build, package and generation checks, stress, capacity, compact,
+  contract, and activation-conjunction readers. It runs the live CLI resource workload once per target
+  at unchanged scales and limits; latency is advisory. Its evidence is not full
+  qualification or a receipt.
+- `vp run verify` is full qualification: five cold repetitions plus historical
+  certification (`test:certification`). See the packaging guide for the
+  archived-history prerequisite. Certification failures stay visible.
 
-Do not run an omitted owner separately after verification failure. Correct the
-first reported owner and rerun the owning command.
+After a verification failure, correct the first reported owner and rerun the
+owning command. Do not run an omitted owner separately.
 
 Vitest does not validate this checkout's live `.agentera/` or `TODO.md` budgets.
-`agentera check compact` owns committed artifact budgets. A passing test suite
-does not supersede a compact failure.
-
-See `packages/cli/test/README.md` for fixture boundaries and repository-root
-coupling.
+`agentera check compact` owns committed artifact budgets; a passing test suite
+does not supersede a compact failure. See `packages/cli/test/README.md` for
+fixture boundaries and repository-root coupling.
 
 ## Pre-commit hooks
 
-Vite+ is the sole hook owner. `.vite-hooks/pre-commit`, `vite.config.ts#staged`
-and `packages/cli/scripts/pre-commit-checks.mjs` own the policy. After dependencies
-exist, activate only in an independent clone or with explicit shared-Git permission:
+Vite+ is the sole hook owner. `.vite-hooks/pre-commit`, `vite.config.ts#staged`,
+and `packages/cli/scripts/pre-commit-checks.mjs` own the policy. After
+dependencies exist, activate hooks only in an independent clone or with explicit
+permission to change shared Git configuration:
 
 ```bash
 vp hooks enable
 vp hooks status
 ```
 
-The policy uses standalone Vite+ on ordinary Git `PATH` to supply managed Node
-to this worktree's local tools. No ambient Node/pnpm/Corepack is required.
-The old installed common hook can still call `run-lefthook.sh run pre-commit`;
-that small bridge only forwards to the native policy. Do not change common hooks
-or shared config as dependency recovery. Use `VP_GIT_HOOKS=0` during installs to
-prevent automatic activation; it does not skip checks at subsequent commits.
-The native dispatcher respects an existing foreign `core.hooksPath` and can report
-success without replacing it, so inspect status. Its OS prerequisites include
-`basename`. See `AGENTS.md` for setup and recovery boundaries.
+The hook needs standalone Vite+ on Git's `PATH`; no ambient Node, pnpm, or
+Corepack is required. An old installed common hook can still call
+`run-lefthook.sh run pre-commit`, which only forwards to the native policy. Do
+not change common hooks or shared config as dependency recovery.
+`VP_GIT_HOOKS=0` during an install prevents automatic activation; it does not
+skip checks at later commits. The dispatcher respects an existing foreign
+`core.hooksPath` and can report success without replacing it, so inspect
+`vp hooks status`. For when commit-time `VP_GIT_HOOKS=0` is allowed, see
+`AGENTS.md#always-on-boundaries`.
 
-Pre-commit runs:
+Pre-commit runs one sequential staged task inside a snapshot that hides
+unstaged hunks. `vp check --fix` runs first, then
+`pre-commit-checks.mjs` selects checks from the staged paths:
 
-- State and TODO changes run `agentera check compact` within a 10-second budget.
-- Project-local `vp staged --hide-partially-staged` formats/lints supported
-  TS/JS/config files and Markdown with Oxfmt. Rules and byte-stable exclusions live
-  in root native config. Unstaged hunks must stay unstaged. One sequential staged
-  task runs fixes and all validation readers before restoring hidden partial hunks. A missing
-  local binary fails; recover with `vp install`.
-- Native `related --run --project local` selects only the positive fast suite in
-  `verification-policy.yaml#local_source`, with two workers: core utilities,
-  registry contracts, argument parsing and capability-schema validation.
-  No related tests is a successful no-op, not an unrelated smoke fallback.
-- Root discovery partitions the source owner into `local`, `source` (remainder)
-  and `guards`, without duplicates. Run `vp run test` or
-  `vp -C packages/cli run test:source` for the complete source owner.
-  Bootstrap, upgrade, lifecycle, integration and other fs/subprocess contracts
-  stay in full source CI; they are not automatic local-related coverage.
-- fs/script/config-only changes run the configured `guards` project. This is
-  deliberately limited local feedback, not proof of those artifacts' behavior.
-  Whole-project typecheck is separate. Py-TS parity retains its narrow inputs.
-- Routine CI executes development safety; explicit full qualification retains
-  every `release` owner. Native test/hook timeouts stay in test configuration;
-  the fast subset is bounded by membership, not a fixed runtime SLA.
+- `vp check --fix` formats and lints supported TS/JS/config files and Markdown
+  with Oxfmt. A missing local binary fails; recover with `vp install`.
+- `.agentera/` or `TODO.md` changes run `agentera check compact` within a
+  10-second budget.
+- Extract-corpus changes run the Python/TypeScript parity check.
+- Root config, scripts, tests, skills, references, workflow, or hook changes
+  run the `guards` project. This is limited local feedback, not proof of those
+  artifacts' behavior.
+- CLI source and test changes run related tests in the `local` project with two
+  workers. No related tests is a successful no-op, not a fallback to unrelated
+  tests.
+- TS, JS, JSON, or YAML changes run the whole-project `vp run typecheck`.
 
-The staged hook never invokes release verification, performance, capacity, or
-package owners. Markdown structural/policy lint is intentionally removed, not
-equivalent to Oxfmt. Formatting exceptions and the accepted loss of checks are in
-`docs/packaging/vite-plus-1-toolchain.md#formatting-and-hooks`. Root and package commands
-inherit width 320 and exclusions; `.editorconfig` uses the same width. Editors
-must use the root Vite+ config and must not format excluded artifacts on save.
+Root test discovery partitions the source owner into `local`, `source` (the
+remainder), and `guards`, without duplicates. Bootstrap, upgrade, lifecycle,
+integration, and other fs or subprocess contracts run only in full source
+verification. Run `vp run test` for the complete source owner.
 
-Use `VP_GIT_HOOKS=0` at commit time only when the hook configuration itself is broken or a failure
-is already tracked for CI. Never use it for routine commits, TODO changes, or
-fixtures.
+The hook never runs release verification, performance, capacity, or package
+owners. Oxfmt is not a Markdown structural linter; the accepted loss of checks
+and the formatting exceptions are in
+`docs/packaging/vite-plus-1-toolchain.md#formatting-and-hooks`. Editors must
+use the root Vite+ config and must not format excluded artifacts on save.
 
 ## Package construction
 
-The v3 npm package publishes only `dist/` and `bundle/`. The package is
-self-contained and includes runtime data under `packages/cli/bundle/`.
+The v3 npm package publishes only `dist/` and `bundle/`, and includes runtime
+data under `packages/cli/bundle/`.
 
 `packages/cli/scripts/pack-package.mjs` constructs an isolated package tree and
 runs `npm pack` with lifecycle scripts disabled. Checkout `prepack` rejects
 direct `npm pack`; it is a safety guard, not a build step. Do not bypass it.
-Internal pnpm scripts, CI's verified native Vite+ bootstrap and fixed OIDC npm
-publisher remain unchanged; Vite+ is the contributor entrypoint, not a rewrite
-of those authorities. Use root `vp run cli:*` wrappers for named release tasks;
-stable wrappers retain the separate `packages/cli/shim` target outside the pnpm
-workspace. Keep forwarded arguments, including literal `--`, in their documented
-order. These commands do not grant release or registry-mutation permission.
-For a normal development push, CI allocates
-`3.0.0-dev.(GITHUB_RUN_NUMBER + 89)`: runs 1, 2, and 3 map to
-`3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`. This fixed offset preserves
-allocation after the workflow rename. Only copied manifest
-`version` and `agentera.gitRef` change. Ordinary pushes require no pre-push
-development version bump or metadata-only release commit. Failed runs can
-leave gaps; a rerun reuses the same run number, `GITHUB_SHA`, and candidate
-version. Manual readiness remains based on the committed manifest version and
-explicit source commit. Source and receipt checks remain bound to the clean
-pushed checkout.
+Use root `vp run cli:*` wrappers for named release tasks and keep forwarded
+arguments, including a literal `--`, in their documented order. Stable wrappers
+target `packages/cli/shim`, outside the pnpm workspace. These commands do not
+grant release or registry-mutation permission. Version allocation and push
+publication belong to `agentera-release`. CI's native Vite+ bootstrap, the
+internal pnpm scripts, and the fixed OIDC publisher are separate authorities,
+not alternate contributor setup recipes.
 
-Package verification requires an executable regular
-`dist/bin/agentera.js`, excludes source maps, and verifies source, generated,
-and extracted runtime parity. Construction refuses to overwrite an existing
-artifact.
+Package verification requires an executable regular `dist/bin/agentera.js`,
+excludes source maps, and verifies source, generated, and extracted runtime
+parity. Construction refuses to overwrite an existing artifact.
 
 `docs/packaging/v3-packaging.md` owns generated-output construction, package
-bounds, and publication interaction. Standalone generated-overlap removes its
-private temporary root after success or failure. Release verification retains
-its parent-owned root through barrier B and removes it in the DAG-level
-`finally`. Never force-kill generated overlap during source verification.
+bounds, and publication interaction. Generated overlap removes its private
+temporary root after success or failure; in release verification, the parent
+coordinator keeps that root until all readers finish. Never force-kill
+generated overlap during source verification.
 
 For the single-file host boundary, use the package-registry-selected host
 projection, not the internal skill tree. Verify exactly one regular `SKILL.md`
 and CLI-only discovery from an extracted package with isolated HOME; layout
-checks alone do not qualify complete workflows. The semantic/evidence map is
-`docs/cli-coverage-contract.md`; consumer lifecycle and platform limits live in
-`UPGRADE.md`. Never test conversion against a live home or prune symlink targets.
+checks alone do not qualify complete workflows. The semantic and evidence map
+is `docs/cli-coverage-contract.md`; consumer lifecycle and platform limits live
+in `UPGRADE.md`. Never test conversion against a live home or prune symlink
+targets.
 
 ## Behavioral verification
 
 Run the narrowest relevant check first, then broaden according to impact.
-Apply `skills/agentera/protocol.yaml#OPERATING_RULES`: passing evidence remains
-applicable only while task/scope, inputs, environment and coverage match. Run
-checks for concrete gaps, relevant invalidation and mandatory gates, not merely
-because work crossed a handoff. Missing, stale or unrelated evidence is not PASS;
-reuse never bypasses configured hooks, CI or trust-boundary requirements.
+Apply `skills/agentera/protocol.yaml#OPERATING_RULES`: passing evidence stays
+applicable only while task, scope, inputs, environment, and coverage match. Run
+checks for concrete gaps, relevant invalidation, and mandatory gates, not
+merely because work crossed a handoff. Missing, stale, or unrelated evidence is
+not PASS; reuse never bypasses configured hooks, CI, or trust-boundary
+requirements.
 
-For changed or unverified work, cover relevant structure and observable behavior:
+For changed or unverified work:
 
 1. Inspect the diff against the requested scope.
 2. Run targeted tests or validation for uncovered or invalidated behavior.
 3. Run required typecheck and ensure a current build when source or package
    behavior can change.
-4. Invoke the realistic local CLI against representative state when CLI behavior
-   needs verification; prose-only work uses relevant documentation checks.
-5. Run broader package, compact, or release gates when required by the affected
-   boundary, without treating narrower evidence as broader qualification.
+4. Invoke the local CLI against representative state when CLI behavior needs
+   verification; prose-only work uses relevant documentation checks.
+5. Run broader package, compact, or release gates when the affected boundary
+   requires them. Narrower evidence is not broader qualification.
 
 Do not weaken tests to pass a gate. Report exact commands, results, and any
 unverified boundary.

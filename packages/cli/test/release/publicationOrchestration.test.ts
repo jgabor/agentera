@@ -210,13 +210,14 @@ describe("package publication orchestration", () => {
   });
 
   it("documents the job-level OIDC boundary without stale publication guidance", () => {
-    for (const surface of [agentsGuide, releaseSkill, packagingGuide, changelog, publicationContract.invariants.credentials]) {
+    for (const surface of [releaseSkill, packagingGuide, changelog, publicationContract.invariants.credentials]) {
       const prose = surface.replace(/\s+/g, " ");
       expect(prose).toMatch(/entire (?:dependent )?checkout-free, action-free (?:publication )?job has OIDC capability/);
       expect(prose).toContain("fixed reviewed workflow logic");
       expect(prose).not.toMatch(/OIDC-only job|only (?:the )?(?:npm publish|publish step) has OIDC/i);
     }
     for (const surface of [agentsGuide, releaseSkill, verificationSkill, packagingGuide, changelog]) {
+      expect(surface.replace(/\s+/g, " ")).not.toMatch(/OIDC-only job|only (?:the )?(?:npm publish|publish step) has OIDC/i);
       expect(surface).not.toMatch(/publish-(?:next|stable)\.yml|GITHUB_RUN_NUMBER (?:\+|plus) 80|AGENTERA_NEXT_BRANCH/);
     }
   });
@@ -254,10 +255,15 @@ describe("package publication orchestration", () => {
   });
 
   it("keeps canonical development publication instructions on deterministic allocation authority", () => {
+    // The bootstrap keeps only the push boundary and defers allocation detail to the release skill.
+    expect(agentsGuide).toContain("explicit push authorization");
+    expect(agentsGuide).toContain("ci.developmentPush.ref");
+    expect(agentsGuide).toContain("`agentera-release`");
+    expect(agentsGuide).not.toMatch(/offset 82/i);
+
     for (const [label, instructions] of [
       ["packaging guide", packagingGuide],
       ["release skill", releaseSkill],
-      ["agent bootstrap", agentsGuide],
     ] as const) {
       expect(instructions, label).toContain("GITHUB_RUN_NUMBER");
       expect(instructions, label).toMatch(/(?:plus|\+) 89/);
@@ -276,25 +282,32 @@ describe("package publication orchestration", () => {
 
     expect(releaseSkill).toContain(["vp run cli:prepare:stable -- \\", "  --target-version X.Y.Z --source-commit COMMIT"].join("\n"));
 
+    // The verification skill defers version allocation to the release skill.
+    expect(verificationSkill.replace(/\s+/g, " ")).toContain("Version allocation and push publication belong to `agentera-release`");
+
     for (const [label, instructions] of [
       ["release skill", releaseSkill],
       ["verification skill", verificationSkill],
     ] as const) {
-      const normalizedInstructions = instructions.replace(/\s+/g, " ");
-      expect(normalizedInstructions, label).toContain("GITHUB_RUN_NUMBER + 89");
-      expect(normalizedInstructions, label).toContain("runs 1, 2, and 3 map to");
-      expect(normalizedInstructions, label).toContain("`3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`");
-      expect(normalizedInstructions, label).toContain("Only copied manifest `version` and `agentera.gitRef` change");
-      expect(normalizedInstructions, label).toContain("no pre-push development version bump or metadata-only release commit");
-      expect(normalizedInstructions, label).toContain("Failed runs can leave gaps");
-      expect(normalizedInstructions, label).toContain("rerun reuses the same run number, `GITHUB_SHA`, and candidate version");
-
       const normalPushGuidance = instructions
         .split(/\n\s*\n/)
         .filter((paragraph) => /(?:normal|development|queued) push/i.test(paragraph))
         .join("\n");
       expect(normalPushGuidance, label).not.toMatch(/checked-in (?:candidate |package )?version/i);
       expect(normalPushGuidance, label).not.toMatch(/(?:changes|sets) only\s+`agentera\.gitRef`/i);
+    }
+
+    const normalizedReleaseSkill = releaseSkill.replace(/\s+/g, " ");
+    for (const phrase of [
+      "GITHUB_RUN_NUMBER + 89",
+      "runs 1, 2, and 3 map to",
+      "`3.0.0-dev.90`, `3.0.0-dev.91`, and `3.0.0-dev.92`",
+      "Only copied manifest `version` and `agentera.gitRef` change",
+      "no pre-push development version bump or metadata-only release commit",
+      "Failed runs can leave gaps",
+      "rerun reuses the same run number, `GITHUB_SHA`, and candidate version",
+    ]) {
+      expect(normalizedReleaseSkill).toContain(phrase);
     }
 
     expect(changelog).toContain("preserves deterministic allocation");

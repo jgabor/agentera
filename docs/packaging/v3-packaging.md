@@ -13,8 +13,8 @@ packages, and the former Bun single-binary surface are retired.
 ## Contributor command entrypoints
 
 Complete the verified standalone Vite+ 1.0.0 setup in
-[AGENTS.md](../../AGENTS.md#common-commands) before using this guide's maintainer
-commands. Run them from the repository root. That authority owns launcher and
+the [toolchain guide](vite-plus-1-toolchain.md#contributor-setup) before using this guide's maintainer
+commands. Run them from the repository root. That guide owns launcher and
 dependency recovery, native hook setup, the optional nested npm recipe, and the
 Linux x64/offline support limits; Vite+ does not provide OS tools or Git history.
 See [test prerequisites](../../packages/cli/test/README.md#contributor-prerequisites).
@@ -686,19 +686,18 @@ gates add metadata and dry-run publication checks while using the same package
 construction path rather than adding another extracted-package matrix.
 
 For check-only diagnosis, run the complete non-publishing release verification
-from the repository root:
+from the repository root. Its DAG already includes typecheck, build, compact,
+and capability-contract owners, so do not run them again separately:
 
 ```bash
 vp run verify
-vp run typecheck
-vp run build
-vp node packages/cli/dist/bin/agentera.js check compact
-vp node packages/cli/dist/bin/agentera.js check validate \
-  capability-contract
-vp node packages/cli/dist/bin/agentera.js check validate \
-  release-metadata
-vp -C packages/cli run pack:dry-run
+vp env exec --node "$(cat .node-version)" vp -C packages/cli run pack:dry-run
 ```
+
+`check validate release-metadata` checks the committed `agentera.gitRef`
+against the package source tree. Manual and stable package verification run it
+after the metadata commit. On an ordinary checkout, CI never updates `gitRef`,
+so the check fails by design.
 
 This diagnostic verification is not a step before or after `cli:ready:dev` in a
 normal package-readiness run. Doing both would repeat owners that the

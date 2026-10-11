@@ -1,9 +1,9 @@
 ---
 name: agentera-state
 description: >-
-  Read or mutate Agentera project state and prepare repository commits. Use for
-  plans, tasks, progress, decisions, health, TODO, changelog, commit scopes,
-  state closeout, and same-commit artifact requirements.
+  Mutate Agentera project state and prepare repository commits. Use for writes
+  to plans, tasks, progress, decisions, health, TODO, and changelog, and for
+  commit scopes, state closeout, and same-commit artifact requirements.
 ---
 
 # Agentera state and commits
@@ -13,21 +13,8 @@ updates must preserve writer authority and land with the substantive change.
 
 ## Read authority
 
-When state knowledge is needed, read through the CLI before direct artifact
-reads. Reuse known state while relevant state is unchanged; refresh only missing
-or invalidated context. These are need-driven recipes, not a mandatory sequence:
-
-```bash
-npx -y agentera@next prime
-npx -y agentera@next state todo list
-npx -y agentera@next state plan list --status open
-npx -y agentera@next state query --list-artifacts
-```
-
-Canonical names such as `DOCS.md` can map to YAML paths. Use CLI inventory and
-`.agentera/docs.yaml` mappings as the source of truth.
-
-Use exact `get --id ID` forms for entity detail. Do not infer identity,
+Read recipes and path mapping rules are in `AGENTS.md#state-authority`. Use
+exact `get --id ID` forms for entity detail. Do not infer identity,
 predecessor, successor, or ownership from list order.
 
 ## Writer authority
@@ -58,15 +45,18 @@ an explicit vision task.
 
 ## Commit format
 
-For an authorized commit-only request on unchanged, already reviewed and
-verified work, reuse applicable evidence under
-`skills/agentera/protocol.yaml#OPERATING_RULES`. Confirm intended scope and
-evidence applicability, stage only intended changes, run configured hooks, then
-check the commit result and remaining worktree state. Do not restart Build,
-repeat a full review, add a scanner, or force orientation solely to commit.
-Higher-priority host inspection requirements still apply; this narrow path does
-not override them. Changed or unverified work needs the relevant review and
-checks; hook changes to content require reassessing affected evidence.
+For an authorized commit-only request on work that is already reviewed and
+verified and has not changed since, reuse that evidence under
+`skills/agentera/protocol.yaml#OPERATING_RULES`:
+
+1. Confirm the intended scope and that the evidence still applies.
+2. Stage only intended changes and commit with configured hooks.
+3. Check the commit result and the remaining worktree state.
+
+Do not restart Build, repeat a full review, add a scanner, or force orientation
+only to commit. Host inspection requirements still apply. Changed or unverified
+work needs the relevant review and checks. If a hook changes content, reassess
+the affected evidence.
 
 Keep same-commit state integrity below and leave lifecycle closeout to its
 assigned owner. Satisfaction is user-only; never infer or write it for the user.
@@ -89,6 +79,7 @@ use comma-separated scopes.
 | Scope           | Area                                                     |
 | --------------- | -------------------------------------------------------- |
 | `cli`           | CLI behavior, output, and tests                          |
+| `ci`            | CI workflows, runners, and CI-only fixtures              |
 | `hooks`         | Hooks and artifact validation                            |
 | `schemas`       | Protocol, schemas, and schema contracts                  |
 | `eval`          | Semantic evaluation fixtures and harnesses               |
@@ -104,9 +95,8 @@ use comma-separated scopes.
 | `agents`        | `AGENTS.md` and runtime-neutral operating guidance       |
 | Capability name | Behavior, prose, schemas, or tests for that capability   |
 
-Capability scopes are `status`, `vision`, `discuss`, `research`, `plan`,
-`build`, `optimize`, `audit`, `document`, `profile`, `design`, and
-`orchestrate`. New scopes are closed by default. Add a new scope to the
+Capability scopes are the twelve capability names in `AGENTS.md#product`. New
+scopes are closed by default. Add a new scope to the
 repository vocabulary in the same commit or omit it.
 
 ## Same-commit state rule
@@ -155,8 +145,9 @@ small. In highlights, use a short bold label followed by a factual summary. In
 
 Include concrete commands, flags, environment variables, defaults, and
 before/after measurements when they help a reader act. Exclude internal plan
-IDs, state evidence, receipt paths, archive workpapers, registry sync notes,
-hype, and unshipped scaffolding.
+IDs, state bookkeeping, verification details, receipt paths, archive
+workpapers, registry sync notes, agent activity, hype, and unshipped
+scaffolding.
 
 Fold changelog updates into the implementation or release commit. Do not create
 standalone changelog bookkeeping commits.
@@ -169,10 +160,5 @@ That history belongs in commit messages or design records.
 
 ## Git safety
 
-- Never push during capability execution.
-- Never amend unless the user explicitly requests it.
-- Never force-push or use destructive Git operations unless the user explicitly
-  requests the applicable action.
-- Never skip hooks as a routine shortcut. Use `VP_GIT_HOOKS=0` at commit time only when hook
-  configuration is broken or a failure is already tracked for CI.
-- Preserve unrelated user changes and stage only intended files.
+`AGENTS.md#always-on-boundaries` owns push, amend, destructive Git, hook-skip,
+and staging rules. They apply to every commit.
