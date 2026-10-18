@@ -195,6 +195,7 @@ export function reportDetailSections(a: ServiceAuthority, base: string, operatio
                 status: "published on engine success, failed on engine failure; readable or unavailable if lock acquisition failed",
                 generation: "Current manifest generation, present only when available",
                 published_at: "Current manifest publication time, present only when available",
+                coverage: "Present with the generation: status complete or incomplete, and gaps listing each runtime and reason the refresh could not read",
               },
               projection: {
                 not_attempted: { status: "not_attempted" },

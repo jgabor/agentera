@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Fixed `report refresh --consent local-history` hiding sources it could not read. The result now includes `evidence.coverage` with `status` (`complete` or `incomplete`) and `gaps` naming each runtime and reason, such as `schema_divergent`, and text output prints the gaps.
 - Fixed Profile Full never publishing personal glossary entries when a refresh mined more than 50 candidates. Reaching the candidate cap, or a candidate list page with more pages, no longer marks coverage `degraded`; the cap and dropped counts stay in the report, and only an uncovered source family or project degrades coverage.
 - Fixed personal glossary mining proposing fragments as terms, such as JSON keys (`result`, `file_count`), patch and markup text, clauses, and pronouns (`it`, `this`). These now abstain as `structural_fragment` or `ambiguous_reference`; on a real 115,000-record history, explicit candidates fell from 76 to 35 before the attribution fix.
 - Fixed `report refresh --consent local-history` labelling runtime-written text as user messages. Prompts in Codex subagent sessions, OpenCode child sessions, and Cursor subagent transcripts now extract as `agent`, and turns that open with a runtime envelope (AGENTS.md preamble, skill body, notification, or Codex reviewer transcript) extract as `injected_instruction`. Profile signal counts and personal glossary mining now use only what the user wrote; Cursor messages keep only their `<user_query>` text as the user's words, without attached skills, files, or environment details.

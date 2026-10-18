@@ -334,6 +334,9 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       releasePersonalGlossaryRefreshCommitLock(refreshLock);
     }
     const refreshStatus = finalRc === 0 ? "pass" : rc === 4 ? "flagged" : "fail";
+    // Sources that were selected but could not be read stay visible here, not
+    // only in later bounded-state reads.
+    const coverageGaps = (currentGeneration?.manifest.coverage.skipped ?? []).map((gap) => ({ runtime: gap.runtime, reason: gap.reason }));
     const payload = {
       command: "stats refresh",
       status: refreshStatus,
@@ -356,6 +359,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
           ? {
               generation: currentGeneration.manifest.generation,
               published_at: currentGeneration.manifest.published_at,
+              coverage: { status: coverageGaps.length > 0 ? "incomplete" : "complete", gaps: coverageGaps },
             }
           : {}),
       },
@@ -373,6 +377,7 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
       out(`agentera stats refresh: ${payload.status}\ncorpus=${corpusPath}\ntiers=${tiersDirForCorpusPath(corpusPath)}\n`);
       if (engineOut) out(engineOut);
       if (engineErr) err(engineErr);
+      if (coverageGaps.length > 0) err(`coverage incomplete: ${coverageGaps.map((gap) => `${gap.runtime ?? "unknown"} (${gap.reason})`).join(", ")}\n`);
       if (projection.status === "failed") {
         err(`candidate projection failed: ${String(projection.reason)}\nRecovery: ${String(projection.recovery)}\n`);
       }

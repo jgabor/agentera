@@ -255,6 +255,7 @@ describe("cmdReport", () => {
     expect(payload.privacy.tier_write).toBe(true);
     expect(payload.privacy.projection_write).toBe(true);
     expect(payload.evidence.status).toBe("published");
+    expect(payload.evidence.coverage).toMatchObject({ status: expect.stringMatching(/^(complete|incomplete)$/), gaps: expect.any(Array) });
     expect(payload.projection.status).toBe("published");
     // No monolithic corpus.json written — tiers are the canonical output.
     expect(fs.existsSync(outp)).toBe(false);

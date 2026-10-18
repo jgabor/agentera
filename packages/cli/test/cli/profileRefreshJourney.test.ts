@@ -188,6 +188,10 @@ it("refreshes only the selected synthetic sources after consent and reads valid 
   const inputs = readProfileSignals(result.tier_path);
   // Deliberately excluded runtimes retain the existing incomplete-coverage caveat.
   expect(inputs.state).toBe("incomplete");
+  // The refresh result names every unread source itself.
+  expect(result.evidence.coverage.status).toBe("incomplete");
+  expect(result.evidence.coverage.gaps.length).toBeGreaterThan(0);
+  for (const gap of result.evidence.coverage.gaps) expect(Object.keys(gap).sort()).toEqual(["reason", "runtime"]);
   expect(inputs.sufficiency.sufficient).toBe(true);
   expect(inputs.profile_signal_count).toBeGreaterThan(0);
   expect(inputs.signals.every((signal) => signal.runtime === "codex" || signal.runtime === "filesystem")).toBe(true);

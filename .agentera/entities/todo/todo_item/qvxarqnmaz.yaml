@@ -1,0 +1,25 @@
+id: qvxarqnmaz
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Report refresh coverage gaps in the refresh result
+  requirements:
+    - The consented refresh result must list each runtime it could not read and the reason, with an overall complete or incomplete coverage status.
+  acceptance:
+    - A refresh that skips a source reports evidence.coverage.status incomplete and one gap per skipped runtime with runtime and reason.
+  release_blocker: false
+  severity: degraded
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Report refresh coverage gaps in the refresh result"
+      status: resolved
+      order: 162
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: The refresh result reports evidence.coverage with each unread runtime and its reason.
+    date: 2026-10-18
