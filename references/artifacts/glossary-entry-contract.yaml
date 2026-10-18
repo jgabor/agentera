@@ -2216,6 +2216,11 @@ consumer_boundary:
     option: --term-input
     sources: [file, stdin]
     encoding: utf8_scalar
+    line_terminator: one_trailing_lf_or_crlf_removed
+    line_terminator_rule: >-
+      Remove exactly one trailing LF or CRLF, as written by a here-string, echo,
+      or editor, before exact-term resolution. Every other byte, including
+      leading, inner, and remaining trailing whitespace, is part of the term.
     max_utf8_bytes: 65536
     scopes: [capability_startup_no_review, compact_refresh_no_review]
     privacy:

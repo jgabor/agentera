@@ -264,6 +264,8 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     selectedTermTransport?.option !== "--term-input" ||
     !sameStrings(selectedTermTransport?.sources, ["file", "stdin"]) ||
     selectedTermTransport?.encoding !== "utf8_scalar" ||
+    selectedTermTransport?.line_terminator !== "one_trailing_lf_or_crlf_removed" ||
+    !nonEmpty(selectedTermTransport?.line_terminator_rule) ||
     selectedTermTransport?.max_utf8_bytes !== 65536 ||
     !sameStrings(selectedTermTransport?.scopes, ["capability_startup_no_review", "compact_refresh_no_review"]) ||
     transportPrivacy?.selected_term_in_argv !== "forbidden" ||

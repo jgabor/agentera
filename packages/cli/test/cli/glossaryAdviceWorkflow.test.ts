@@ -244,6 +244,16 @@ describe("packaged Build glossary advice seam", () => {
     expect(result.stdout + result.stderr).not.toContain("Ship Shape");
   });
 
+  it("matches a term supplied with the trailing newline of a here-string", () => {
+    const root = project();
+    const profileRoot = profile("Ship Shape", "Personal meaning");
+    for (const term of ["Ship Shape\n", "Ship Shape\r\n"]) {
+      const result = compactAdvice(root, profileRoot, term);
+      expect(result.status, result.stderr).toBe(0);
+      expect(JSON.parse(result.stdout).advice).toMatchObject({ outcome: "proven_project_gap", applicable_meaning: "Personal meaning" });
+    }
+  });
+
   it("rejects conflicting refresh inputs before reads or effects without echoing content", () => {
     const root = project();
     const before = snapshotTree(root);

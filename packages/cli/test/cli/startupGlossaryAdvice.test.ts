@@ -23,6 +23,22 @@ describe("selected term startup input", () => {
     expect(loadSelectedTermInput(input, undefined)).toBe("bounded term");
   });
 
+  it("drops exactly one trailing shell line terminator and keeps every other byte", () => {
+    const input = path.join(tmp, "term");
+    for (const [bytes, expected] of [
+      ["bounded term\n", "bounded term"],
+      ["bounded term\r\n", "bounded term"],
+      ["bounded term\n\n", "bounded term\n"],
+      [" bounded term \n", " bounded term "],
+    ] as const) {
+      fs.writeFileSync(input, bytes);
+      expect(loadSelectedTermInput(input, undefined)).toBe(expected);
+    }
+    expect(loadSelectedTermInput("-", () => Buffer.from("bounded term\n"))).toBe("bounded term");
+    fs.writeFileSync(input, " \n");
+    expect(() => loadSelectedTermInput(input, undefined)).toThrow(SelectedTermInputError);
+  });
+
   it("rejects malformed UTF-8 without exposing its bytes", () => {
     const input = path.join(tmp, "term");
     fs.writeFileSync(input, Buffer.from([0xc3, 0x28]));

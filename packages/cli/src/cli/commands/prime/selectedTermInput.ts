@@ -16,7 +16,9 @@ export function loadSelectedTermInput(source: string, stdin: Io["stdin"]): strin
   }
   if (bytes.length === 0 || bytes.length > MAX_SELECTED_TERM_UTF8_BYTES) throw new SelectedTermInputError();
   try {
-    const term = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+    // Here-strings, echo, and editors end the scalar with one line terminator
+    // that is not part of the term; exact matching keeps every other byte.
+    const term = new TextDecoder("utf-8", { fatal: true }).decode(bytes).replace(/\r?\n$/u, "");
     if (term.trim().length === 0) throw new SelectedTermInputError();
     return term;
   } catch {
