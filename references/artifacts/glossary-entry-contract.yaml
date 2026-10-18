@@ -830,8 +830,11 @@ personal_mining_authority:
       coverage: >-
         Each selection round prefers the represented source family with the
         fewest retained candidates, then the candidate whose represented project
-        has the fewest retained candidates. A capped or uncovered family or
-         project reports degraded coverage with retained and dropped counts.
+        has the fewest retained candidates. Reaching candidates_max is a page
+        limit: the report keeps cap.applied and the retained and dropped
+        counts, and coverage stays complete. Only an uncovered source family or
+        project reports degraded coverage. A list page with remaining
+        candidates is a continuation, not degraded coverage.
     mining_summary:
       schema_version: agentera.personalGlossaryMiningSummary.v1
       location: report.mining_summary

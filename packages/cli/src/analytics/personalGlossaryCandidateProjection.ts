@@ -358,7 +358,9 @@ export function projectPersonalGlossaryCandidates(input: PersonalGlossaryCandida
   const capApplied = merged.candidates.length > contract.candidatesMax;
   const uncoveredSourceFamilies = (["explicit", "recurring"] as const).filter((family) => (availableByFamily.get(family) ?? 0) > 0 && (retainedByFamily.get(family) ?? 0) === 0);
   const uncoveredProjects = [...availableByProject.keys()].filter((projectKey) => (retainedByProject.get(projectKey) ?? 0) === 0).length;
-  const coverageReasons = [...(capApplied ? ["candidate_cap"] : []), ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(uncoveredProjects > 0 ? ["project_uncovered"] : [])];
+  // The candidate cap is a page limit reported by cap, retained, and dropped
+  // counts; only an uncovered family or project degrades coverage.
+  const coverageReasons = [...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(uncoveredProjects > 0 ? ["project_uncovered"] : [])];
   const report: PersonalGlossaryCandidateProjectionReport = {
     schema_version: PROJECTION_REPORT_SCHEMA_VERSION,
     input_count: input.candidates.length,
@@ -491,7 +493,7 @@ function validProjectionReport(value: unknown): value is PersonalGlossaryCandida
     !exactKeys(coverage, ["status", "reasons", "uncovered_source_families", "uncovered_projects"]) ||
     !["complete", "degraded"].includes(String(coverage.status)) ||
     !Array.isArray(coverage.reasons) ||
-    coverage.reasons.some((reason) => typeof reason !== "string" || !["candidate_cap", "source_family_uncovered", "project_uncovered"].includes(reason)) ||
+    coverage.reasons.some((reason) => typeof reason !== "string" || !["source_family_uncovered", "project_uncovered"].includes(reason)) ||
     !Array.isArray(coverage.uncovered_source_families) ||
     coverage.uncovered_source_families.some((family) => family !== "explicit" && family !== "recurring") ||
     !nonNegativeInteger(coverage.uncovered_projects) ||
@@ -616,7 +618,7 @@ function validProjectionBindings(projection: PersonalGlossaryCandidateProjection
     const item = report.source_families.find((entry) => entry.family === family)!;
     return item.available > 0 && item.retained === 0;
   });
-  const coverageReasons = [...(report.cap.applied ? ["candidate_cap"] : []), ...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(report.projects.dropped > 0 ? ["project_uncovered"] : [])];
+  const coverageReasons = [...(uncoveredSourceFamilies.length > 0 ? ["source_family_uncovered"] : []), ...(report.projects.dropped > 0 ? ["project_uncovered"] : [])];
   if (report.coverage.uncovered_projects !== report.projects.dropped || !sameTextArray(report.coverage.uncovered_source_families, uncoveredSourceFamilies) || !sameTextArray(report.coverage.reasons, coverageReasons) || report.coverage.status !== (coverageReasons.length === 0 ? "complete" : "degraded")) {
     return false;
   }

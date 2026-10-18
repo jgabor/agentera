@@ -1,0 +1,27 @@
+id: aaqlfjtcow
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Treat the personal glossary candidate cap as a page limit
+  requirements:
+    - Reaching the projection candidate cap must keep coverage complete and report the cap and dropped counts, so Profile Full still processes the retained candidates.
+    - A candidate list page with remaining candidates must not report degraded status; only uncovered source families or projects degrade coverage.
+  acceptance:
+    - A projection of 51 candidates retains 50 with cap.applied true, coverage complete, and one candidate_cap selection abstention.
+    - A list page with remaining candidates reports status ok with a continuation cursor.
+  release_blocker: false
+  severity: critical
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Treat the personal glossary candidate cap as a page limit"
+      status: resolved
+      order: 161
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: The candidate cap and list paging no longer degrade coverage; dropped counts stay visible as candidate_cap selection abstentions.
+    date: 2026-10-18

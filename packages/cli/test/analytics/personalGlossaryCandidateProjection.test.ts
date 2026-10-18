@@ -135,7 +135,7 @@ describe("personal glossary candidate projection", () => {
         tie_break: "candidate_id_then_candidate_revision_then_capsule_sha256",
       },
       projects: { available: 3, retained: 3, dropped: 0 },
-      coverage: { status: "degraded", reasons: ["candidate_cap"] },
+      coverage: { status: "complete", reasons: [] },
     });
     expect(first.report.allocation.tie_breaks_resolved).toBeGreaterThan(0);
     expect(first.report.source_families).toEqual([

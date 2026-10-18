@@ -210,3 +210,4 @@
 - [x] [id:pccnnqphak] [fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest
 - [x] [id:vkbmdjahzk] [fix:3.0.0] Attribute delegated and injected user-role turns to their real author
 - [x] [id:qlakkyxlhn] [fix:3.0.0] Reject structural spans as personal glossary candidates
+- [x] [id:aaqlfjtcow] [fix:3.0.0] Treat the personal glossary candidate cap as a page limit

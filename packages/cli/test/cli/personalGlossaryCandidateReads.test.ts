@@ -259,7 +259,7 @@ describe("agentera report personal-glossary-candidates", () => {
     expect(firstBody).toMatchObject({
       schemaVersion: "agentera.personalGlossaryCandidateRetrieval.v1",
       command: "agentera report personal-glossary-candidates list",
-      status: "degraded",
+      status: "ok",
       generation,
       policy_version: POLICY,
       candidate_projection_sha256: expect.stringMatching(/^[a-f0-9]{64}$/),
@@ -375,11 +375,11 @@ describe("agentera report personal-glossary-candidates", () => {
     expect(result).toMatchObject({ rc: 0, err: "" });
     const body = JSON.parse(result.out);
     expect(body).toMatchObject({
-      status: "degraded",
+      status: "ok",
       summary: {
         retained_count: 50,
         dropped_count: 1,
-        coverage: { status: "degraded", reasons: ["candidate_cap"] },
+        coverage: { status: "complete", reasons: [] },
         abstentions: { candidate_selection: { count: 1, reasons: ["candidate_cap"] } },
       },
     });

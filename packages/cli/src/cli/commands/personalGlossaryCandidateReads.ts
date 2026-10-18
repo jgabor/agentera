@@ -434,7 +434,7 @@ function projectionSummary(view: CandidateReadView): Mapping {
     abstentions: {
       candidate_selection: {
         count: report.dropped_count,
-        reasons: [...report.coverage.reasons],
+        reasons: [...(report.cap.applied ? ["candidate_cap"] : []), ...report.coverage.reasons],
       },
       safe_context: {
         available: safeContextAvailable,
@@ -578,7 +578,8 @@ function listCandidates(io: Io, options: ListOptions, value: CandidateReadContra
   const response: Mapping = {
     schemaVersion: value.schemaVersion,
     command: `${value.command} list`,
-    status: remaining > 0 || projection.report.coverage.status === "degraded" ? "degraded" : "ok",
+    // More pages are a continuation, not degraded coverage.
+    status: projection.report.coverage.status === "degraded" ? "degraded" : "ok",
     generation: projection.generation,
     policy_version: projection.policy_version,
     candidate_projection_sha256: projection.projection_sha256,
