@@ -205,3 +205,4 @@
 - [x] [id:ylipwxmech] [fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound
 - [x] [id:tjrpbdfxww] [fix:3.0.0] Treat an absent personal glossary as no data instead of unavailable authority
 - [x] [id:jiumssksof] [fix:3.0.0] Surface profile and glossary absence once at startup
+- [x] [id:pwcjgwekrz] [fix:3.0.0] Keep full-evidence shards within their byte cap

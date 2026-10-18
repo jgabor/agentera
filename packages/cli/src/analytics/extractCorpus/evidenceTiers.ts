@@ -230,10 +230,26 @@ function byteSize(text: string): number {
   return Buffer.byteLength(text, "utf-8");
 }
 
+/** Tier files end with one newline after the payload; readers stat the file. */
+const TIER_FILE_TERMINATOR_BYTES = 1;
+
 /**
- * Split full evidence into family shards, each no larger than `shardByteCap`.
- * A family whose records exceed the cap is split into numbered sub-shards; no
- * record is dropped to fit a shard.
+ * Exact byte accounting for an encoded `{ records: [...] }` tier payload, used
+ * by both signal and full-evidence shard files. Each array member is encoded at
+ * depth two, indented by four spaces, and followed by a two-byte separator; the
+ * frame absorbs the separator the last member does not carry, so
+ * total = frame + sum(member costs).
+ */
+function tierPayloadAccounting<T extends object>(sample: T): { frameBytes: number; cost: (record: T) => number } {
+  const cost = (record: T): number => byteSize(pyJsonIndentSorted(record, 2, 2)) + 6;
+  return { frameBytes: byteSize(encodeSorted({ records: [sample] })) - cost(sample), cost };
+}
+
+/**
+ * Split full evidence into family shards whose written files, measured with
+ * exact encoded bytes, are no larger than `shardByteCap`. A family whose
+ * records exceed the cap is split into numbered sub-shards; no record is
+ * dropped to fit a shard.
  */
 export function shardFullEvidence(
   records: JsonObject[],
@@ -260,6 +276,9 @@ export function shardFullEvidence(
     sourceIds: string[];
     bytes: number;
   }> = [];
+  const sample = records[0];
+  const { frameBytes, cost } = tierPayloadAccounting(sample ?? {});
+  const memberBudget = shardByteCap - TIER_FILE_TERMINATOR_BYTES - frameBytes;
   for (const family of [...byFamily.keys()].sort()) {
     const familyRecords = byFamily.get(family)!.slice().sort(tierSortKey);
     let current: JsonObject[] = [];
@@ -283,11 +302,11 @@ export function shardFullEvidence(
     };
     for (const r of familyRecords) {
       const id = asStringField(r, "source_id");
-      const recordByte = byteSize(encodeSorted(r));
+      const recordByte = cost(r);
       // If a single record exceeds the cap, it forms its own (oversized) shard
       // so the rest of the tier stays loadable; the oversized shard is reported
       // via the compatibility state rather than silently dropped.
-      if (current.length > 0 && currentBytes + recordByte > shardByteCap) {
+      if (current.length > 0 && currentBytes + recordByte > memberBudget) {
         flush();
       }
       current.push(r);
@@ -299,23 +318,9 @@ export function shardFullEvidence(
   return shards;
 }
 
-/** Tier files end with one newline after the payload; readers stat the file. */
-const TIER_FILE_TERMINATOR_BYTES = 1;
-
 function newestFirst(a: SignalRecord, b: SignalRecord): number {
   if (a.timestamp !== b.timestamp) return a.timestamp < b.timestamp ? 1 : -1;
   return a.source_id < b.source_id ? -1 : a.source_id > b.source_id ? 1 : 0;
-}
-
-/**
- * Exact byte accounting for the encoded `{ records: [...] }` signal payload.
- * Each array member is encoded at depth two, indented by four spaces, and
- * followed by a two-byte separator; the frame absorbs the separator the last
- * member does not carry, so total = frame + sum(member costs).
- */
-function signalPayloadAccounting(sample: SignalRecord): { frameBytes: number; cost: (record: SignalRecord) => number } {
-  const cost = (record: SignalRecord): number => byteSize(pyJsonIndentSorted(record, 2, 2)) + 6;
-  return { frameBytes: byteSize(encodeSorted({ records: [sample] })) - cost(sample), cost };
 }
 
 /**
@@ -353,7 +358,7 @@ export function selectSignalsForBound(
   });
   if (sorted.length === 0) return { records: sorted, selection: report(sorted, false) };
 
-  const { frameBytes, cost } = signalPayloadAccounting(sorted[0]!);
+  const { frameBytes, cost } = tierPayloadAccounting(sorted[0]!);
   const costs = new Map(sorted.map((s) => [s, cost(s)] as const));
   const memberBudget = signalByteCap - TIER_FILE_TERMINATOR_BYTES - frameBytes;
   let used = 0;
@@ -557,9 +562,10 @@ export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenc
   const priorCurrent = readCurrentPointer(opts.tiersDir);
   if (!fs.existsSync(finalDir)) {
     fs.renameSync(stageDir, finalDir);
-  } else if (publishedSignalBytes(finalDir) !== signalBytes + TIER_FILE_TERMINATOR_BYTES) {
-    // Generation identity covers record membership, not signal selection, so a
-    // same-identity directory written by a different selection is replaced.
+  } else if (publishedLayout(finalDir) !== publishedLayout(stageDir)) {
+    // Generation identity covers record membership, not signal selection or
+    // shard boundaries, so a same-identity directory written by an earlier
+    // layout is replaced.
     const supersededDir = `${stageDir}.superseded`;
     fs.renameSync(finalDir, supersededDir);
     fs.renameSync(stageDir, finalDir);
@@ -597,9 +603,11 @@ export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenc
   };
 }
 
-function publishedSignalBytes(generationDir: string): number | null {
+/** Byte layout of a generation's tier files; differing layouts are not the same publication. */
+function publishedLayout(generationDir: string): string | null {
   try {
-    return fs.statSync(path.join(generationDir, "signal.json")).size;
+    const files = ["signal.json", ...fs.readdirSync(path.join(generationDir, "full-evidence")).map((file) => path.join("full-evidence", file))].sort();
+    return files.map((file) => `${file}:${fs.statSync(path.join(generationDir, file)).size}`).join("\n");
   } catch {
     return null;
   }

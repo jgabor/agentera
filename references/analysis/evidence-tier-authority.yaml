@@ -426,7 +426,10 @@ bounds:
     A full-evidence shard encodes no more than `reader_byte_cap` bytes. Shards
     are grouped by source family; when a family's encoded records exceed the
     cap the family is split into numbered sub-shards so no shard exceeds it and
-    no record is dropped. This is the measured bound a bounded reader loads.
+    no record is dropped. Shard sizing measures the exact written file, each
+    record encoded inside the indented records array plus the trailing newline,
+    not a record's standalone encoding. This is the measured bound a bounded
+    reader loads.
   signal_bound_rule: >-
     The signal tier is bounded to fit under the reader cap. Selection must
     preserve representative evidence across all supported sources rather than

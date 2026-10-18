@@ -553,6 +553,38 @@ describe("signal tier publication bound", () => {
     expect(fs.statSync(signalFile).size).toBe(result.signal_bytes + 1);
   });
 
+  it("keeps every written full-evidence shard within its cap when records are deeply nested", () => {
+    // Nested data adds indentation on every line once a record sits inside the
+    // shard's records array; a top-level size estimate undercounts it.
+    const records = Array.from({ length: 80 }, (_, i) =>
+      fullRecord({
+        sourceId: `n${String(i).padStart(2, "0")}`,
+        sourceKind: "tool_call",
+        sourceProduct: "codex",
+        runtime: "codex",
+        timestamp: `2026-01-01T00:${String(i).padStart(2, "0")}:00.000Z`,
+        data: { tool_name: "edit", arguments: Object.fromEntries(Array.from({ length: 30 }, (_, k) => [`k${k}`, { v: [k, k + 1] }])) },
+      }),
+    );
+    const productFamily = new Map([["codex", "codex"]]);
+    for (const cap of [20_000, 60_000]) {
+      const shards = shardFullEvidence(records, cap, productFamily);
+      expect(shards.length).toBeGreaterThan(1);
+      for (const shard of shards) expect(Buffer.byteLength(pyJsonIndentSorted({ records: shard.records }), "utf-8") + 1).toBeLessThanOrEqual(cap);
+      expect(shards.reduce((sum, shard) => sum + shard.records.length, 0)).toBe(records.length);
+    }
+  });
+
+  it("replaces a same-identity generation whose shard file differs from the current layout", () => {
+    const first = publish(representativeRecords());
+    const generationDir = path.join(tmp, "generations", first.generation);
+    const shard = path.join(generationDir, first.shard_count > 0 ? readCurrentGeneration(tmp)!.manifest.shards[0]!.path : "");
+    const expected = fs.readFileSync(shard);
+    fs.appendFileSync(shard, " ".repeat(64));
+    expect(publish(representativeRecords()).generation).toBe(first.generation);
+    expect(fs.readFileSync(shard)).toEqual(expected);
+  });
+
   it("replaces a same-identity generation whose signal file differs from the current selection", () => {
     const first = publish(representativeRecords());
     const signalFile = path.join(tmp, "generations", first.generation, "signal.json");
