@@ -238,7 +238,7 @@ export function acquireProjectGlossaryInput(projectRoot: string, hooks: ProjectA
     const record = loadArtifactRecord("glossary");
     if (!record) return invalid("project", "ambiguous");
     const docsPath = path.join(root.path, ARTIFACT_PROTOCOL_PATHS.docs!);
-    const docsSource = readStableProjectFile(root, docsPath, bounds.maxSourceUtf8Bytes, "docs_override", hooks);
+    const docsSource = readStableProjectFile(root, docsPath, bounds.maxDocsOverrideUtf8Bytes, "docs_override", hooks);
     if (docsSource.status !== "ok" && docsSource.status !== "absent") {
       return invalid("project", "ambiguous");
     }

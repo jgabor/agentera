@@ -312,6 +312,8 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     projectAcquisition?.discovery !== "packages/cli/src/registries/artifactRegistry.ts#loadArtifactRecord" ||
     projectAcquisition?.path_resolution !== "packages/cli/src/registries/artifactRegistry.ts#resolveArtifactPath" ||
     projectAcquisition?.docs_override_read !== "bounded_no_follow_regular_file" ||
+    projectAcquisition?.max_docs_override_utf8_bytes !== 262144 ||
+    !nonEmpty(projectAcquisition?.docs_override_bound_rule) ||
     projectAcquisition?.project_root !== "packages/cli/src/state/projectRoot.ts#validateRealProjectRoot" ||
     !nonEmpty(projectAcquisition?.filesystem_guarantee) ||
     !nonEmpty(projectAcquisition?.external_docs_rule) ||

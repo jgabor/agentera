@@ -12,7 +12,6 @@
 
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
 - [ ] [id:tjrpbdfxww] [fix:3.0.0] Treat an absent personal glossary as no data instead of unavailable authority
-- [ ] [id:ylipwxmech] [fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound
 
 ## → Normal
 
@@ -205,3 +204,4 @@
 - [x] [id:jfgcwqzblm] [fix:3.0.0] Give Profile Full its destination and bounded signal inputs at startup
 - [x] [id:yuhyvwklcv] [fix:3.0.0] Keep the published signal tier within its byte cap
 - [x] [id:fkkwoyafum] [fix:3.0.0] Strip the shell line terminator from selected-term input
+- [x] [id:ylipwxmech] [fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound

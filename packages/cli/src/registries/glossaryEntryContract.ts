@@ -55,6 +55,7 @@ export interface GlossaryConsumerContract {
 
 export interface GlossaryAcquisitionContract {
   maxSourceUtf8Bytes: number;
+  maxDocsOverrideUtf8Bytes: number;
   maxEntries: number;
   availabilityStates: string[];
   outputEntryFields: string[];
@@ -190,8 +191,10 @@ export function glossaryAcquisitionContract(pathname: string = glossaryEntryAuth
   const bounds = mapping(acquisition?.bounds);
   const availability = mapping(acquisition?.availability);
   const output = mapping(acquisition?.output);
+  const project = mapping(acquisition?.project);
   return {
     maxSourceUtf8Bytes: typeof bounds?.max_source_utf8_bytes === "number" ? bounds.max_source_utf8_bytes : 0,
+    maxDocsOverrideUtf8Bytes: typeof project?.max_docs_override_utf8_bytes === "number" ? project.max_docs_override_utf8_bytes : 0,
     maxEntries: typeof bounds?.max_entries === "number" ? bounds.max_entries : 0,
     availabilityStates: strings(availability?.states),
     outputEntryFields: strings(output?.entry_fields),

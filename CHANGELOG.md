@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Fixed project glossary acquisition reporting `ambiguous` whenever `.agentera/docs.yaml` exceeded 64 KiB, which made glossary advice and Build treat project authority as unavailable. The docs path mapping is now read under its own 256 KiB bound, matching other docs mapping readers; the 64 KiB bound still applies to glossary sources.
 - Fixed `--term-input` for `report glossary-advice` and `prime --context <discuss|plan|build>` keeping the trailing newline from a here-string (`<<<`), echo, or editor, so a supplied term never matched its exact glossary entry. Exactly one trailing LF or CRLF is now removed; all other bytes remain part of the term.
 - Fixed `report refresh --consent local-history` publishing a signal tier above its 64 MiB cap when the newest records were larger than average. Selection now measures the exact written file size, the writer refuses an over-cap signal tier, and a refresh replaces an earlier same-identity generation whose signal file differs. Personal glossary projection now reports an unanalyzable tier state such as `oversized` instead of "current evidence generation changed during projection production".
 

@@ -152,6 +152,7 @@ describe("bounded glossary input acquisition", () => {
   it("loads the single authoritative availability model and bounds", () => {
     expect(glossaryAcquisitionContract()).toEqual({
       maxSourceUtf8Bytes: 65536,
+      maxDocsOverrideUtf8Bytes: 262144,
       maxEntries: 100,
       availabilityStates: ["absent", "valid_empty", "valid_present", "malformed", "unreadable", "ambiguous", "over_bound"],
       outputEntryFields: ["term", "meaning", "owner"],
@@ -320,6 +321,24 @@ describe("bounded glossary input acquisition", () => {
       entries: [],
       gap_proving: false,
     });
+  });
+
+  it("reads a docs mapping larger than the glossary source bound under its own bound", () => {
+    const root = projectRoot();
+    fs.mkdirSync(path.join(root, "docs"));
+    fs.writeFileSync(path.join(root, "docs/terms.yaml"), emptyProjectDocument());
+    const { maxSourceUtf8Bytes, maxDocsOverrideUtf8Bytes } = glossaryAcquisitionContract();
+    const docs = (bytes: number): Buffer => {
+      const mapping = Buffer.from(YAML.stringify({ mapping: [{ artifact: "GLOSSARY.md", path: "docs/terms.yaml" }] }) + "#");
+      return Buffer.concat([mapping, Buffer.alloc(bytes - mapping.byteLength, "x")]);
+    };
+    // Real docs mappings outgrow the glossary ceiling; they remain path authority.
+    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), docs(maxSourceUtf8Bytes + 1));
+    expect(acquireProjectGlossaryInput(root)).toMatchObject({ availability: "valid_empty", gap_proving: true });
+    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), docs(maxDocsOverrideUtf8Bytes));
+    expect(acquireProjectGlossaryInput(root)).toMatchObject({ availability: "valid_empty", gap_proving: true });
+    fs.writeFileSync(path.join(root, ".agentera/docs.yaml"), docs(maxDocsOverrideUtf8Bytes + 1));
+    expect(acquireProjectGlossaryInput(root)).toMatchObject({ availability: "ambiguous", entries: [], gap_proving: false });
   });
 
   it("rejects symlinked docs authority and descriptor-bound docs and target parent swaps", () => {

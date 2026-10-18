@@ -2100,6 +2100,12 @@ consumer_boundary:
       path_resolution: packages/cli/src/registries/artifactRegistry.ts#resolveArtifactPath
       docs_override: canonical_GLOSSARY.md_mapping_only
       docs_override_read: bounded_no_follow_regular_file
+      max_docs_override_utf8_bytes: 262144
+      docs_override_bound_rule: >-
+        The docs mapping is project path authority, not a glossary source, so
+        its read uses this separate ceiling, the same bound other docs mapping
+        readers apply, rather than the glossary source ceiling. Raw bytes above
+        it classify the project source ambiguous before decoding.
       project_root: packages/cli/src/state/projectRoot.ts#validateRealProjectRoot
       boundary_rule: >-
         Resolve only the registered glossary identity and its canonical docs
