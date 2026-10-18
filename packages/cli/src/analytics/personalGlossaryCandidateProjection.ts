@@ -95,8 +95,8 @@ function projectionContract(): ProjectionContract {
     contract.candidateSecretReason !== "secret_content" ||
     contract.excerptSensitiveContentAction !== "omit_complete_excerpt_before_projection" ||
     contract.miningSummarySchemaVersion !== MINING_SUMMARY_SCHEMA_VERSION ||
-    contract.explicitAbstentionKeys.length !== 24 ||
-    contract.recurringAbstentionKeys.length !== 12 ||
+    contract.explicitAbstentionKeys.length !== 25 ||
+    contract.recurringAbstentionKeys.length !== 13 ||
     JSON.stringify(Object.keys(families)) !== JSON.stringify(["explicit", "recurring"]) ||
     JSON.stringify(families.explicit) !== JSON.stringify(["personal_explicit_definition"]) ||
     JSON.stringify(families.recurring) !== JSON.stringify(["personal_inferred_usage", "personal_inferred_conversation"])

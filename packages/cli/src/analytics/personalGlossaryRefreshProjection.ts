@@ -7,6 +7,7 @@ import { PERSONAL_GLOSSARY_MINING_POLICY_VERSION } from "../registries/glossaryM
 import { readCurrentGeneration } from "./extractCorpus/evidenceTiers.js";
 import { mineExplicitGlossaryCandidates } from "./personalGlossaryExplicitMining.js";
 import { mineRecurringGlossaryCandidates } from "./personalGlossaryRecurrence.js";
+import { containsPersonalGlossarySensitiveContent } from "./personalGlossaryCandidateProjectionExcerpts.js";
 import {
   personalGlossaryCandidateProjectionPath,
   persistPersonalGlossaryCandidateProjectionAfterRefresh,
@@ -315,6 +316,16 @@ function familySummary(keys: readonly string[], candidateCount: number, abstenti
   };
 }
 
+function withoutSensitiveCandidates<T extends { capsule: { term: string; meaning: string } }>(candidates: readonly T[], reason: string): { candidates: T[]; abstentions: Array<{ reason: string }> } {
+  const kept: T[] = [];
+  const abstentions: Array<{ reason: string }> = [];
+  for (const candidate of candidates) {
+    if (containsPersonalGlossarySensitiveContent(candidate.capsule.term) || containsPersonalGlossarySensitiveContent(candidate.capsule.meaning)) abstentions.push({ reason });
+    else kept.push(candidate);
+  }
+  return { candidates: kept, abstentions };
+}
+
 /** Mine and publish the projection bound to the current successfully published evidence generation. */
 export function produceCurrentPersonalGlossaryProjection(options: PersonalGlossaryRefreshProjectionOptions): PersonalGlossaryRefreshProjectionResult {
   const before = readCurrentGeneration(options.tiersDir);
@@ -331,8 +342,12 @@ export function produceCurrentPersonalGlossaryProjection(options: PersonalGlossa
   }
 
   const contract = personalGlossaryCandidateProjectionContract();
-  const explicitSummary = familySummary(contract.explicitAbstentionKeys, explicit.candidates.length, explicit.abstentions);
-  const recurringSummary = familySummary(contract.recurringAbstentionKeys, recurring.candidates.length, recurring.abstentions);
+  // Content policy rejects a term or meaning carrying an actual secret before
+  // projection, so one sensitive candidate abstains instead of failing the batch.
+  const explicitKept = withoutSensitiveCandidates(explicit.candidates, contract.candidateSecretReason);
+  const recurringKept = withoutSensitiveCandidates(recurring.candidates, contract.candidateSecretReason);
+  const explicitSummary = familySummary(contract.explicitAbstentionKeys, explicitKept.candidates.length, [...explicit.abstentions, ...explicitKept.abstentions]);
+  const recurringSummary = familySummary(contract.recurringAbstentionKeys, recurringKept.candidates.length, [...recurring.abstentions, ...recurringKept.abstentions]);
   const miningSummary: PersonalGlossaryMiningSummary = {
     schema_version: "agentera.personalGlossaryMiningSummary.v1",
     explicit: explicitSummary,
@@ -345,11 +360,11 @@ export function produceCurrentPersonalGlossaryProjection(options: PersonalGlossa
     policy_version: PERSONAL_GLOSSARY_MINING_POLICY_VERSION,
     retained_at: before.manifest.published_at,
     candidates: [
-      ...explicit.candidates.map((candidate) => ({
+      ...explicitKept.candidates.map((candidate) => ({
         capsule: candidate.capsule,
         project_ids: candidate.project_ids,
       })),
-      ...recurring.candidates.map((candidate) => ({
+      ...recurringKept.candidates.map((candidate) => ({
         capsule: candidate.capsule,
         project_ids: candidate.project_ids,
       })),

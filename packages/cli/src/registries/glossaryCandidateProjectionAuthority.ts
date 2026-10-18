@@ -41,6 +41,7 @@ const EXPLICIT_ABSTENTION_KEYS = [
   "unresolved_anchor",
   "provenance_incomplete",
   "user_authorship_required",
+  "secret_content",
 ] as const;
 
 const RECURRING_ABSTENTION_KEYS = [
@@ -56,6 +57,7 @@ const RECURRING_ABSTENTION_KEYS = [
   "noise_term",
   "too_many_qualifying_origins",
   "user_authorship_required",
+  "secret_content",
 ] as const;
 
 /** Validate the authority-owned bounds for the internal candidate projection. */

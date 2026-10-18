@@ -1,0 +1,27 @@
+id: vppwtwnayj
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Abstain secret-bearing glossary candidates instead of failing the projection
+  requirements:
+    - Refresh projection production must reject a candidate whose term or meaning carries an actual secret before projection, recording a secret_content abstention, as the content-exclusion contract declares.
+    - One sensitive candidate must not prevent the remaining candidates from being projected.
+  acceptance:
+    - A generation with one secret-bearing explicit definition projects the other candidates and counts one explicit secret_content abstention.
+    - The persisted projection contains no part of the secret.
+  release_blocker: false
+  severity: critical
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Abstain secret-bearing glossary candidates instead of failing the projection"
+      status: resolved
+      order: 157
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: Refresh projection abstains secret-bearing candidates with secret_content and projects the rest.
+    date: 2026-10-18

@@ -850,6 +850,7 @@ personal_mining_authority:
         - unresolved_anchor
         - provenance_incomplete
         - user_authorship_required
+        - secret_content
       recurring_abstention_keys:
         - agent_only_evidence
         - copied_content
@@ -863,6 +864,7 @@ personal_mining_authority:
         - noise_term
         - too_many_qualifying_origins
         - user_authorship_required
+        - secret_content
       reconciliation:
         fixed_keys: all_keys_present_as_nonnegative_integers
         family_abstentions: abstention_count_equals_sum_of_reason_counts

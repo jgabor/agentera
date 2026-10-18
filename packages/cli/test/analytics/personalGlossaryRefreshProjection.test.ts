@@ -120,8 +120,8 @@ describe("refresh candidate projection production", () => {
     const projection = readPersonalGlossaryCandidateProjection().projection!;
     expect(projection.retained_at).toBe(PUBLISHED_AT);
     expect(projection.candidates.map((candidate) => candidate.source_family).sort()).toEqual(["explicit", "recurring"]);
-    expect(Object.keys(projection.report.mining_summary.explicit.abstentions_by_reason)).toHaveLength(24);
-    expect(Object.keys(projection.report.mining_summary.recurring.abstentions_by_reason)).toHaveLength(12);
+    expect(Object.keys(projection.report.mining_summary.explicit.abstentions_by_reason)).toHaveLength(25);
+    expect(Object.keys(projection.report.mining_summary.recurring.abstentions_by_reason)).toHaveLength(13);
 
     const listed = run(["report", "personal-glossary-candidates", "list", "--format", "json"]);
     expect(listed.rc).toBe(0);
@@ -133,6 +133,28 @@ describe("refresh candidate projection production", () => {
     const exact = run(["report", "personal-glossary-candidates", "get", "--candidate-id", capsule.candidate_id, "--candidate-revision", capsule.candidate_revision, "--generation", generation, "--policy-version", projection.policy_version, "--format", "json"]);
     expect(exact.rc).toBe(0);
     expect(JSON.parse(exact.out).candidate_projection_sha256).toBe(produced.candidate_projection_sha256);
+  });
+
+  it("abstains a candidate whose meaning carries a secret instead of failing the projection", () => {
+    const secret = "api_key=sk_live_4eC39HqLyjWDarjtT1zdp7dc";
+    const generation = publishEvidenceTiers(
+      [
+        ...evidence(),
+        record("explicit-secret", "conversation_turn", "project-secret", {
+          actor: "user",
+          signal_type: "decision",
+          text: `Definition: vault handle: the form of ${secret}.`,
+        }),
+      ] as any,
+      { tiersDir, adapterVersion: ADAPTER_VERSION, publishedAt: PUBLISHED_AT },
+    ).generation;
+    const produced = produceCurrentPersonalGlossaryProjection({ tiersDir });
+    expect(produced).toMatchObject({ generation, candidate_count: 2 });
+    const projection = readPersonalGlossaryCandidateProjection().projection!;
+    expect(projection.report.mining_summary.explicit.abstentions_by_reason.secret_content).toBe(1);
+    expect(projection.report.mining_summary.recurring.abstentions_by_reason.secret_content).toBe(0);
+    expect(JSON.stringify(projection)).not.toContain("sk_live_");
+    expect(projection.candidates.map((candidate) => candidate.capsule.term)).not.toContain("vault handle");
   });
 
   it("names an unanalyzable tier state instead of reporting a generation change", () => {
