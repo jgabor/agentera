@@ -39,6 +39,7 @@ export interface GlossaryAdviceContract {
   outputFields: string[];
   advisoryFields: string[];
   personalAbsentRecovery: string;
+  personalSectionAbsentRecovery: string;
   failureClasses: string[];
   dimensions: Record<string, string[]>;
   rows: GlossaryAdviceRow[];
@@ -85,6 +86,7 @@ export function glossaryAdviceContract(pathname: string = glossaryEntryAuthority
     outputFields: strings(output?.fields),
     advisoryFields: strings(output?.advisory_fields),
     personalAbsentRecovery: projectGlossaryDevelopmentValue(mapping(output?.recovery)?.personal_input_absent, "advice.recovery"),
+    personalSectionAbsentRecovery: projectGlossaryDevelopmentValue(mapping(output?.recovery)?.personal_glossary_section_absent, "advice.recovery_section_absent"),
     failureClasses: strings(failure?.classes),
     dimensions: Object.fromEntries(Object.entries(mapping(selection?.dimensions) ?? {}).map(([name, values]) => [name, strings(values)])),
     rows: strings(selection?.order).map((name) => {

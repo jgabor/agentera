@@ -158,7 +158,7 @@ export function runGlossaryAdviceCommand(argv: string[], io: Io): number {
   }
   try {
     const profilePath = registryArtifactPath("profile", discoverSchemasDir());
-    const advice = resolveGlossaryAdvice(requestedTerm, acquireGlossaryInputs(process.cwd(), profilePath), hostReview);
+    const advice = resolveGlossaryAdvice(requestedTerm, acquireGlossaryInputs(process.cwd(), profilePath), hostReview, { profilePresent: fs.existsSync(profilePath) });
     emitStructured(
       {
         schemaVersion: contract.schemaVersion,

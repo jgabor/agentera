@@ -244,6 +244,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     !sameStrings(adviceOutput?.fields, ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory", "recovery"]) ||
     mapping(adviceOutput?.recovery)?.when !== "personal_input_absent" ||
     mapping(adviceOutput?.recovery)?.personal_input_absent !== "npx -y agentera@next prime --context profile" ||
+    mapping(adviceOutput?.recovery)?.personal_glossary_section_absent !== "npx -y agentera@next report personal-glossary-reviews list" ||
     mapping(adviceOutput?.recovery)?.otherwise !== "null" ||
     !nonEmpty(mapping(adviceOutput?.recovery)?.rule) ||
     !sameStrings(adviceOutput?.owners, ["personal", "project"]) ||

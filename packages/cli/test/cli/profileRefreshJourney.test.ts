@@ -164,6 +164,9 @@ it("exposes generation metadata only through the explicit read-only input comman
   const served = String(primed.capability_context.instructions);
   expect(served).toContain("agentera@next report profile-inputs");
   expect(served).not.toMatch(/profile_context\.profile\./);
+  // Prime's profile_context carries no profile fields, so nothing tells the agent to trust it.
+  expect(served).not.toContain("trust `profile_context`");
+  expect(served).toContain("Use only signals whose `author_class` is `user` or absent");
   expect(served).toContain("profile_inputs.profile.path");
   expect(served).toContain("profile_inputs.bounded_signals");
   run(["report", "profile-inputs", "--consent", "local-history"], 2);

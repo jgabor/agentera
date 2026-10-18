@@ -2223,11 +2223,15 @@ consumer_boundary:
       recovery:
         when: personal_input_absent
         personal_input_absent: npx -y agentera@next prime --context profile
+        personal_glossary_section_absent: npx -y agentera@next report personal-glossary-reviews list
         otherwise: "null"
         rule: >-
           An absent personal glossary is valid input with no entries, not
-          unavailable authority. Advice then names the public Profile command
-          that creates it. Recovery is not an outcome, review, tension,
+          unavailable authority. Without PROFILE.md, advice names the public
+          Profile command that creates it. When PROFILE.md exists but has no
+          owned Glossary section, Profile has run and no entry is accepted yet,
+          so advice names the read of pending review decisions instead.
+          Recovery is not an outcome, review, tension,
           advisory, or caveat reason; it never names the profile path and never
           reaches progress, prime attention, or other durable surfaces.
       rule: >-

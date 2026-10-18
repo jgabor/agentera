@@ -121,6 +121,13 @@ describe("shared glossary entry authority", () => {
         load: (pathname) => glossaryAdviceContract(pathname),
       },
       {
+        name: "advice section-absent recovery",
+        mutate: (authority) => {
+          authority.consumer_boundary.advice_resolution.output.recovery.personal_glossary_section_absent = "npx -y agentera@latest report personal-glossary-reviews list";
+        },
+        load: (pathname) => glossaryAdviceContract(pathname),
+      },
+      {
         name: "advice recovery",
         mutate: (authority) => {
           authority.consumer_boundary.advice_resolution.output.recovery.personal_input_absent = "npx -y agentera@latest prime --context profile";

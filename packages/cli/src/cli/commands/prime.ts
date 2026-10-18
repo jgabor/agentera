@@ -1,3 +1,5 @@
+import fs from "node:fs";
+
 import { PRIME_BLOB } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
@@ -224,7 +226,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     if (selectedTerm !== null) {
       try {
         const profilePath = registryArtifactPath("profile", discoverSchemasDir());
-        glossaryAdvice = resolveStartupGlossaryAdvice(capability, selectedTerm, acquireGlossaryInputs(args.projectRoot ?? process.cwd(), profilePath));
+        glossaryAdvice = resolveStartupGlossaryAdvice(capability, selectedTerm, acquireGlossaryInputs(args.projectRoot ?? process.cwd(), profilePath), { profilePresent: fs.existsSync(profilePath) });
       } catch {
         return rejectInput({
           class: "invalid_selected_term",

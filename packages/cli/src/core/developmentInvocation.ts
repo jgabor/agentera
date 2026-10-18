@@ -55,6 +55,7 @@ const GLOSSARY_PROJECTIONS = {
   "profile_grounding.absent": `Use the Profile capability to generate PROFILE.md, then retry ${profileGroundingCommand}.`,
   "advice.command": developmentCommand("report glossary-advice --input REQUEST"),
   "advice.recovery": developmentCommand("prime --context profile"),
+  "advice.recovery_section_absent": developmentCommand("report personal-glossary-reviews list"),
   "candidate_retrieval.command": developmentCommand("report personal-glossary-candidates"),
   "candidate_decision.command": developmentCommand("report personal-glossary-decision"),
   "review_records.command": developmentCommand("report personal-glossary-reviews"),

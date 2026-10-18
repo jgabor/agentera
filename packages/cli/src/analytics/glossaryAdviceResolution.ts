@@ -141,7 +141,12 @@ function matches(match: Record<string, string[]>, state: GlossaryAdviceSelection
   return Object.entries(state).every(([dimension, value]) => match[dimension]?.includes(value));
 }
 
-export function resolveGlossaryAdvice(requestedTerm: string, acquired: AcquiredGlossaryInputs, hostReview?: GlossaryAdviceHostReview): GlossaryAdvice {
+export interface GlossaryAdviceContext {
+  /** PROFILE.md exists, so an absent personal glossary means no accepted entry yet. */
+  profilePresent?: boolean;
+}
+
+export function resolveGlossaryAdvice(requestedTerm: string, acquired: AcquiredGlossaryInputs, hostReview?: GlossaryAdviceHostReview, context: GlossaryAdviceContext = {}): GlossaryAdvice {
   const contract = glossaryAdviceContract();
   if (!boundedNonEmpty(requestedTerm, contract.maxRequestedTermUtf8Bytes)) {
     throw new GlossaryAdviceInputError("invalid_request");
@@ -164,6 +169,6 @@ export function resolveGlossaryAdvice(requestedTerm: string, acquired: AcquiredG
     review: advisory?.review ?? row.review,
     tension: row.tension,
     advisory: advisory ? { reason: advisory.caveatReason, ownership_state: advisory.ownershipState } : null,
-    recovery: acquired.personal.availability === "absent" ? contract.personalAbsentRecovery : null,
+    recovery: acquired.personal.availability !== "absent" ? null : context.profilePresent ? contract.personalSectionAbsentRecovery : contract.personalAbsentRecovery,
   };
 }

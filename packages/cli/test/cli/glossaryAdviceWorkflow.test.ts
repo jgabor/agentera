@@ -628,6 +628,12 @@ describe("packaged Build glossary advice seam", () => {
     expect(noData.recovery).toMatch(/ prime --context profile$/);
     expect(JSON.stringify(noData)).not.toContain(absentProfile);
 
+    // After Profile has run, a profile without a Glossary section points at pending reviews.
+    fs.writeFileSync(path.join(absentProfile, "PROFILE.md"), "# Decision Profile\n\nNo glossary yet.\n");
+    const afterProfile = JSON.parse(advice(exactRoot, absentProfile, { schema_version: "agentera.glossaryAdviceRequest.v1", requested_term: "Ship Shape" }).stdout).advice;
+    expect(afterProfile).toMatchObject({ outcome: "project_only", advisory: null });
+    expect(afterProfile.recovery).toMatch(/ report personal-glossary-reviews list$/);
+
     const divergentRoot = project();
     const divergentProfile = profile("Ship Shape", "PRIVATE_DIVERGENT_DEFINITION");
     publishProject(divergentRoot, "Ship Shape", "Project meaning");

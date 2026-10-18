@@ -305,6 +305,14 @@ describe("shared glossary advice resolution", () => {
     expect(resolveGlossaryAdvice(REQUESTED, acquired(projectGap(), source("personal", "valid_empty"))).recovery).toBeNull();
   });
 
+  it("points at pending reviews instead of Profile when PROFILE.md exists without a Glossary section", () => {
+    const contract = glossaryAdviceContract();
+    expect(contract.personalSectionAbsentRecovery).toMatch(/ report personal-glossary-reviews list$/);
+    expect(resolveGlossaryAdvice(REQUESTED, acquired(projectGap(), source("personal", "absent")), undefined, { profilePresent: true }).recovery).toBe(contract.personalSectionAbsentRecovery);
+    expect(resolveGlossaryAdvice(REQUESTED, acquired(projectGap(), source("personal", "absent")), undefined, { profilePresent: false }).recovery).toBe(contract.personalAbsentRecovery);
+    expect(resolveGlossaryAdvice(REQUESTED, acquired(projectGap(), source("personal", "valid_empty")), undefined, { profilePresent: true }).recovery).toBeNull();
+  });
+
   it("derives every lawful tuple's first matching row and row semantics from the loaded authority", () => {
     const contract = glossaryAdviceContract();
     const projectStates = {

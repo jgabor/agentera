@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Fixed glossary advice telling users to run Profile right after a Profile run. When PROFILE.md exists without a Glossary section, `advice.recovery` now names `npx -y agentera@next report personal-glossary-reviews list`. Profile instructions no longer say to trust `profile_context`, and they tell synthesis to use only user-authored signals.
 - Fixed `report refresh --consent local-history` hiding sources it could not read. The result now includes `evidence.coverage` with `status` (`complete` or `incomplete`) and `gaps` naming each runtime and reason, such as `schema_divergent`, and text output prints the gaps.
 - Fixed Profile Full never publishing personal glossary entries when a refresh mined more than 50 candidates. Reaching the candidate cap, or a candidate list page with more pages, no longer marks coverage `degraded`; the cap and dropped counts stay in the report, and only an uncovered source family or project degrades coverage.
 - Fixed personal glossary mining proposing fragments as terms, such as JSON keys (`result`, `file_count`), patch and markup text, clauses, and pronouns (`it`, `this`). These now abstain as `structural_fragment` or `ambiguous_reference`; on a real 115,000-record history, explicit candidates fell from 76 to 35 before the attribution fix.

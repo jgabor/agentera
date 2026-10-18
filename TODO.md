@@ -212,3 +212,4 @@
 - [x] [id:qlakkyxlhn] [fix:3.0.0] Reject structural spans as personal glossary candidates
 - [x] [id:aaqlfjtcow] [fix:3.0.0] Treat the personal glossary candidate cap as a page limit
 - [x] [id:qvxarqnmaz] [fix:3.0.0] Report refresh coverage gaps in the refresh result
+- [x] [id:pgoadaqwwx] [fix:3.0.0] Make glossary advice recovery and Profile startup wording match the actual state
