@@ -171,6 +171,20 @@ describe("readSuiteVersion", () => {
     expect(readSuiteVersion(home, contractWithSelector("version"))).toMatchObject({ kind: "failure", reason: "selector_mismatch" });
   });
 
+  it("rejects a contract that moves the persisted version authority", () => {
+    writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    fs.writeFileSync(path.join(home, "moved.json"), JSON.stringify({ skills: [{ version: "9.9.9" }] }));
+    const contractWithAuthority = (authority: string) => () => {
+      const record = structuredClone(loadRegistry().get("agentera"));
+      record.version_authority.persisted_authority = authority;
+      return new PackageRegistry([record]);
+    };
+    expect(readSuiteVersion(home, contractWithAuthority("registry.json"))).toMatchObject({ kind: "ok", version: "3.0.0" });
+    const moved = readSuiteVersion(home, contractWithAuthority("moved.json"));
+    expect(moved).toMatchObject({ kind: "failure", reason: "selector_mismatch", path: null });
+    expect(isCorruptSuiteVersion(moved)).toBe(true);
+  });
+
   it("classifies an unreadable package contract instead of throwing", () => {
     writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
     const result = readSuiteVersion(home, () => {

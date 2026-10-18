@@ -1025,13 +1025,14 @@ describe("npm distribution boundary", () => {
       env: packageEnvironment(path.join(root, "home")),
       encoding: "utf8",
     });
-    const packaged = JSON.parse(result.stdout) as { current_health: { cli: string }; signals: Array<{ kind: string; versionAuthority?: string }> };
-    const packagedSignal = packaged.signals.find((signal) => signal.kind === "version_authority_invalid");
+    const packaged = JSON.parse(result.stdout) as { schemaVersion: string; classification: string; reason: string };
 
     expect(sourceSignal?.versionAuthority).toBe("malformed");
-    expect(packagedSignal?.versionAuthority, result.stdout + result.stderr).toBe(sourceSignal?.versionAuthority);
     expect(source.status).toBe("repair_needed");
-    expect(packaged.current_health.cli).toBe("repair_needed");
+    expect(result.status, result.stdout + result.stderr).toBe(1);
+    expect(packaged.schemaVersion).toBe("agentera.startupFailure.v1");
+    expect(packaged.classification).toBe(sourceSignal?.kind);
+    expect(packaged.reason).toBe(sourceSignal?.versionAuthority);
     expect(fs.readFileSync(path.join(fixture.packageRoot, "bundle", "registry.json"), "utf8")).not.toBe("{ broken");
   });
 
@@ -1079,9 +1080,10 @@ describe("npm distribution boundary", () => {
       copy.unchanged();
     });
 
-    it("fails prime closed on corrupt version authority", () => {
+    it("returns typed JSON from prime and doctor on corrupt version authority", () => {
       const copy = startupCopy("version-authority", (bundle) => fs.writeFileSync(path.join(bundle, "registry.json"), '{"skills":[{"version":""}]}'));
-      expectFailure(copy.run(["prime", "--context", "status"]), "prime", "version_authority_invalid", "invalid_version");
+      const outputs = invocations.map((args) => expectFailure(copy.run(args), args[0], "version_authority_invalid", "invalid_version"));
+      for (const output of outputs) expect(output).toEqual(outputs[0]);
       copy.unchanged();
       for (const [relative, bytes] of sharedAuthorities) expect(fs.readFileSync(path.join(fixture.packageRoot, relative)).equals(bytes)).toBe(true);
     });

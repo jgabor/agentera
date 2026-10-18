@@ -12,3 +12,13 @@ record:
     - GIVEN valid authority WHEN either command runs THEN its output is unchanged.
     - GIVEN the CLI coverage contract WHEN read THEN it documents the failure shape, and TODO opybnibysh is resolved.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Criterion 2 fails for doctor: on corrupt version authority doctor prints its repair_needed report with expectedVersion unknown instead of the agentera.startupFailure.v1 envelope; only prime is gated (packages/cli/src/cli/commands/prime.ts:180); the doctor carve-out at docs/cli-coverage-contract.md:137 was not an approved plan change. Criterion 5 fails as a consequence: the opybnibysh resolve reason claims doctor prints the envelope for corrupt version authority."
+    provenance:
+      attempt_id: audit-1
+      source: Independent audit evaluator report for task rayhcanifm, 2026-10-19
+      recorded_at: 2026-10-19 01:26
+      writer_command: agentera state plan record-evaluation

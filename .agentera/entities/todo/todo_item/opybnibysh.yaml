@@ -37,5 +37,5 @@ record:
       severity: critical
   lifecycle:
     operation: resolve
-    reason: prime and doctor now print one agentera.startupFailure.v1 JSON object with classification, reason, recovery and state_changed false, and exit 1, for broken bundled authority, an incomplete bootstrap source, or corrupt version authority
+    reason: prime and doctor print one agentera.startupFailure.v1 JSON object with classification, reason, recovery and state_changed false, and exit 1, when an import-time bundled authority faults, the bootstrap source is incomplete, or the CLI's own version authority is corrupt
     date: 2026-10-19

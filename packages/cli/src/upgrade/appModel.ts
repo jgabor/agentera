@@ -48,6 +48,7 @@ export type SuiteVersionFailureReason = "missing" | "unreadable" | "malformed" |
 
 export type SuiteVersionResult = { kind: "ok"; version: string; path: string } | { kind: "failure"; reason: SuiteVersionFailureReason; path: string | null; message: string };
 
+export const SUPPORTED_SUITE_VERSION_AUTHORITY = "registry.json";
 export const SUPPORTED_SUITE_VERSION_SELECTOR = "skills[0].version";
 
 /**
@@ -67,6 +68,11 @@ export function readSuiteVersion(sourceRoot: string, loadContract: () => Pick<Pa
   }
   if (typeof authority.persisted_authority !== "string" || !authority.persisted_authority) {
     return { kind: "failure", reason: "contract_unreadable", path: null, message: "package contract has no persisted version authority path" };
+  }
+  // Moving the version authority requires an explicit ADR, so a contract edit
+  // alone cannot select another file.
+  if (authority.persisted_authority !== SUPPORTED_SUITE_VERSION_AUTHORITY) {
+    return { kind: "failure", reason: "selector_mismatch", path: null, message: `unsupported persisted version authority ${JSON.stringify(authority.persisted_authority)}; expected ${SUPPORTED_SUITE_VERSION_AUTHORITY}` };
   }
   const authorityPath = path.join(sourceRoot, authority.persisted_authority);
   if (authority.selector !== SUPPORTED_SUITE_VERSION_SELECTOR) {

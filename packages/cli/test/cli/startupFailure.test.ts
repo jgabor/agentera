@@ -121,12 +121,17 @@ describe("executable startup failure boundary", () => {
     expect(snapshot(copy.base)).toEqual(before);
   });
 
-  it("fails prime closed on corrupt version authority while doctor keeps its repair report", () => {
+  it("returns the same typed failure from prime and doctor on corrupt version authority", () => {
     const copy = sourceCopy();
     fs.writeFileSync(path.join(copy.source, "registry.json"), "{ broken");
-    expectStartupFailure(run(copy, ["prime", "--context", "status"]), "prime", "version_authority_invalid", "malformed");
-    const doctor = run(copy, ["doctor"]);
-    expect(doctor.status).toBe(1);
-    expect(JSON.parse(doctor.stdout)).toMatchObject({ status: "repair_needed", signals: expect.arrayContaining([expect.objectContaining({ kind: "version_authority_invalid", versionAuthority: "malformed" })]) });
+    const before = snapshot(copy.base);
+    const outputs = INVOCATIONS.map((args) => {
+      const result = run(copy, args);
+      expectStartupFailure(result, args[0], "version_authority_invalid", "malformed");
+      const { command: _command, ...rest } = JSON.parse(result.stdout) as Record<string, unknown>;
+      return rest;
+    });
+    for (const output of outputs) expect(output).toEqual(outputs[0]);
+    expect(snapshot(copy.base)).toEqual(before);
   });
 });

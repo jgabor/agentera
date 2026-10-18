@@ -2,7 +2,7 @@ import os from "node:os";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { pyJsonIndentSorted } from "../../core/pyjson.js";
-import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
+import { isCorruptSuiteVersion, readSuiteVersion, resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
 import { runNpmSmokeChecks } from "../../setup/smokeChecks.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import type { BundleStatus } from "../contracts/bundleStatus.js";
@@ -232,6 +232,9 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   } catch (exc) {
     return emitStartupFailure(io, classifyStartupError(exc), "doctor");
   }
+  // A CLI that cannot read its own version cannot diagnose against it.
+  const versionAuthority = readSuiteVersion(sourceRoot);
+  if (isCorruptSuiteVersion(versionAuthority)) return emitStartupFailure(io, { classification: "version_authority_invalid", reason: versionAuthority.reason }, "doctor");
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));
   const [installRoot, rootSource] = resolveDoctorInstallRoot(args.installRoot ?? null, {

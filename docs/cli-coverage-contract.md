@@ -119,25 +119,27 @@ do not wrap or rename existing JSON fields as an incidental compatibility break.
   selectors are rejected with structured correction before effects, not silently
   reinterpreted. Text exceptions reject format selectors. Existing JSON keys and
   state input formats retain their meanings.
-- Startup failure: when the CLI cannot start, or cannot trust its own bundled
-  authority, it writes one JSON object to stdout and exits 1 before any command
-  effect, with or without `--format json`. Its fields are `schemaVersion`
-  (`agentera.startupFailure.v1`), `status` (`fail`), `command` (the first
-  argument or `null`), `classification`, `reason`, `message`, `recovery` and
-  `state_changed` (always `false`). Classifications:
-  `runtime_authority_unavailable` (a bundled authority faulted while dispatch
-  modules loaded; reason `missing`, `unreadable`, `malformed` or `invalid`),
-  `bootstrap_source_missing` (the selected bootstrap source lacks `skills`,
-  `skills/agentera/SKILL.md` or `registry.json`; reason `missing`) and
-  `version_authority_invalid` (the CLI's own version authority is corrupt;
-  reason from the version reader, such as `malformed` or `invalid_version`).
-  The executable entry point emits it for any dispatched command whose module
-  loading fails; `prime` and `doctor` emit the same object for an incomplete
-  bootstrap source. `prime` also emits it for corrupt version authority, while
-  `doctor`, whose job is diagnosing that state, keeps its `repair_needed`
-  report with a `version_authority_invalid` signal and `versionAuthority`
-  reason from the same vocabulary. Messages never echo parser text, stacks or
-  file contents. Valid authority output is unchanged.
+- Startup failure: `prime`, `doctor` and every other dispatched command write
+  one JSON object to stdout and exit 1, before any command effect and with or
+  without `--format json`, in three cases: a bundled authority that dispatch
+  modules load at import time (such as
+  `references/artifacts/state-storage-authority.yaml`,
+  `references/artifacts/glossary-entry-contract.yaml` or
+  `references/adapters/package-registry.yaml`) is missing, unreadable,
+  malformed or invalid; the selected bootstrap source lacks `skills`,
+  `skills/agentera/SKILL.md` or `registry.json` (`prime` and `doctor`); or the
+  CLI's own version authority is corrupt (`prime` and `doctor`). Its fields
+  are `schemaVersion` (`agentera.startupFailure.v1`), `status` (`fail`),
+  `command` (the first argument or `null`), `classification`, `reason`,
+  `message`, `recovery` and `state_changed` (always `false`). Classifications
+  are `runtime_authority_unavailable` (reason `missing`, `unreadable`,
+  `malformed` or `invalid`), `bootstrap_source_missing` (reason `missing`) and
+  `version_authority_invalid` (reason from the version reader, such as
+  `malformed` or `invalid_version`). A missing `registry.json` with an
+  otherwise complete source is not corrupt version authority. For these three
+  cases the message is fixed text and never echoes parser output. Authorities
+  that a command reads after dispatch starts keep that command's existing
+  error handling. Valid authority output is unchanged.
 
 ## Coverage map: the supplied 64-file inventory
 
