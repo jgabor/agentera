@@ -21,6 +21,8 @@ import {
   extractInstructionDocuments,
   extractCodexSessions,
   extractOpencodeSessions,
+  isInjectedEnvelope,
+  userQueryBody,
   extractProjectConfigSignals,
   formatCoverageSummaryText,
   projectIdFromPath,
@@ -152,6 +154,13 @@ describe("user-role attribution", () => {
     ]);
     const turns = extractCodexSessions(dir, []).filter((r) => r.source_kind === "conversation_turn" && r.data.actor === "user");
     expect(turns.map((turn) => turn.author_class)).toEqual(["injected_instruction", "injected_instruction", "injected_instruction", "user", "user"]);
+  });
+
+  it("keeps only Cursor user_query bodies as user content", () => {
+    expect(userQueryBody("<user_info>OS: linux</user_info>\n<agent_skill>use X for Y</agent_skill>\n<user_query>\nAvoid em dashes.\n</user_query>")).toBe("Avoid em dashes.");
+    expect(userQueryBody("no wrapper here")).toBe("no wrapper here");
+    expect(isInjectedEnvelope("<user_info>OS: linux</user_info>")).toBe(true);
+    expect(isInjectedEnvelope("The following is the Codex agent history whose request action you are assessing.")).toBe(true);
   });
 
   it("labels user turns in an OpenCode child session as agent-authored", () => {

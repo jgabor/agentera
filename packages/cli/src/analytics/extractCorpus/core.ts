@@ -511,8 +511,19 @@ const INJECTED_ENVELOPE_PREFIXES = [
   "<in-app-browser-context",
   "<realtime_delegation>",
   "<manually_attached_skills>",
-  "The following is the Codex agent history added since your last approval assessment",
+  "<user_info>",
+  "The following is the Codex agent history",
+  "A previous agent produced the plan below",
 ] as const;
+
+/**
+ * Cursor wraps the user's words in `<user_query>` beside runtime-attached
+ * skills, files, and environment details. Only the query bodies are the user's.
+ */
+export function userQueryBody(content: string): string {
+  const bodies = [...content.matchAll(/<user_query>([\s\S]*?)(?:<\/user_query>|$)/gu)].map((match) => (match[1] ?? "").trim()).filter(Boolean);
+  return bodies.length > 0 ? bodies.join("\n\n") : content;
+}
 
 export function isInjectedEnvelope(content: string): boolean {
   if (content.includes("<user_query>")) return false;

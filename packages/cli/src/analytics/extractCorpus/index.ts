@@ -12,6 +12,8 @@ export {
   contentFingerprint,
   transportProvenance,
   authorClassForRole,
+  isInjectedEnvelope,
+  userQueryBody,
   missingProvenanceFields,
   assessProvenance,
   countIndependentOrigins,

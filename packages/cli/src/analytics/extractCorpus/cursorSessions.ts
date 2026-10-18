@@ -5,7 +5,7 @@ import crypto from "node:crypto";
 import { execFileSync } from "node:child_process";
 
 import { expanduser, resolvePath } from "../../core/paths.js";
-import { authorClassForRole, type Env, MAX_TOOL_ARG_TEXT, eventTimestamp, isFilePath, isoFromMtime, iterJsonl, record, signalType, textFromContent, transportProvenance, toolCallRecordFromItem } from "./core.js";
+import { authorClassForRole, type Env, MAX_TOOL_ARG_TEXT, eventTimestamp, isFilePath, isoFromMtime, iterJsonl, record, signalType, textFromContent, transportProvenance, toolCallRecordFromItem, userQueryBody } from "./core.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { isPlainObject, rglob, isDir } from "./core.js";
 import { type SqliteDb, openSqlite } from "./sqliteSessions.js";
@@ -142,6 +142,8 @@ export function extractCursorSessions(projectsDir: string | null, errors: string
   for (const p of iterCursorTranscriptPaths(projectsDir, roots)) {
     const fallbackTimestamp = isoFromMtime(p);
     const sessionId = path.basename(path.dirname(p)) || pathStem(p);
+    // Cursor stores a Task subagent's transcript under the parent's `subagents/`.
+    const delegatedSession = p.split(path.sep).includes("subagents");
     const parents = pathParents(p);
     const projectDir = parents.length > 2 ? parents[2] : null;
     let projectPath: string | null = null;
@@ -175,7 +177,8 @@ export function extractCursorSessions(projectsDir: string | null, errors: string
         }
       }
       const items = cursorContentItems(event);
-      const content = textFromContent(items.length > 0 ? items : event.message);
+      const rawContent = textFromContent(items.length > 0 ? items : event.message);
+      const content = role === "user" ? userQueryBody(rawContent) : rawContent;
       if (!content) continue;
       const timestamp = eventTimestamp(event, fallbackTimestamp);
       const transport = transportProvenance(event, ...items);
@@ -199,6 +202,7 @@ export function extractCursorSessions(projectsDir: string | null, errors: string
           sessionId,
           originId,
           authorClass,
+          delegatedSession,
           content,
           data,
         }),
@@ -216,6 +220,7 @@ export function extractCursorSessions(projectsDir: string | null, errors: string
               sessionId,
               originId,
               authorClass,
+              delegatedSession,
               content,
               data: { prompt: content, signal_type: sig },
             }),
@@ -374,7 +379,8 @@ export function extractCursorAgentSessions(chatsDir: string | null, errors: stri
           records.push(tr);
         }
       }
-      const content = cursorAgentMessageText(message);
+      const rawContent = cursorAgentMessageText(message);
+      const content = role === "user" ? userQueryBody(rawContent) : rawContent;
       if (!content) continue;
       const timestamp = eventTimestamp(message, fallbackTimestamp);
       const transport = transportProvenance(message);
