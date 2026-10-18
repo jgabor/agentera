@@ -1,0 +1,14 @@
+id: khqitogidj
+artifact: plan
+record:
+  name: Keep usage analytics JSON-only without USAGE.md
+  depends_on:
+    - ftolkieffu
+  status: pending
+  acceptance:
+    - GIVEN ready evidence WHEN usage analytics run THEN the JSON analytics are unchanged and no USAGE.md is written anywhere, and the old directory override no longer has an effect.
+    - GIVEN missing or stale evidence WHEN usage analytics run THEN the current privacy-safe recovery is unchanged.
+    - GIVEN an existing USAGE.md in the data home WHEN doctor, the v2-to-v3 upgrade, and handoff run THEN the file is byte-identical afterwards and both doctor and handoff still classify it as preserved user data.
+    - GIVEN the decisions artifact, the docs mapping, the report explanation, and the unreleased changelog WHEN read THEN the data home decision is amended so nothing writes USAGE.md, no active surface describes writing it, and the changelog says generation stopped, the override is ignored, and existing files are kept.
+    - GIVEN TODO khhotqvxei WHEN read THEN its acceptance describes JSON-only reporting and it is resolved.
+  plan: mayqocppfa

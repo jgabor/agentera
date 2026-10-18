@@ -1,0 +1,14 @@
+id: aucgajnzmq
+artifact: plan
+record:
+  name: Classify version-authority failures
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN version authority that is missing, unreadable, malformed, has empty skills data, points at the wrong version field, or whose package contract cannot be read WHEN the suite version is resolved THEN a stable typed classification is returned instead of an empty value or an uncaught error.
+    - GIVEN corrupt v3 version authority WHEN doctor and running-version resolution read it THEN they can tell it apart from a valid installation without a v3 version signal, and doctor no longer reports the CLI as up to date.
+    - GIVEN a valid v2 installation WHEN the distribution major is resolved THEN it is still 2 with no warning, and the warning still appears only when both version signals are missing.
+    - GIVEN one representative fault in a source run and a packaged run WHEN the version is read THEN both report the same classification.
+    - GIVEN valid version authority WHEN any reader resolves it THEN the result is unchanged, and TODO wmxyoqjjiv is resolved.
+  plan: mayqocppfa

@@ -7,6 +7,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { APP_MANUAL_REVIEW_NEEDED, APP_OUTDATED, APP_REPAIR_NEEDED, APP_UP_TO_DATE, buildDoctorStatus, publicDoctorStatus } from "../../src/upgrade/doctor.js";
 import { renderDoctorStatus } from "../../src/cli/commands/doctor.js";
+import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -334,5 +335,81 @@ describe("doctor", () => {
     expect(signal).toBeDefined();
     expect((signal as { message?: string }).message).toContain("corrupt");
     expect((signal as { message?: string }).message).toContain(".agentera-bundle.json");
+  });
+});
+
+describe("doctor version authority", () => {
+  function npxBundle(root: string, registry: string): void {
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(path.join(root, "registry.json"), registry);
+    fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ schemaVersion: "agentera.npxBundle.v1" }));
+  }
+  const options = (sourceRoot: string, expectedVersion: string | null = null) => ({
+    rootSource: "explicit --install-root",
+    sourceRoot,
+    home: tmp,
+    project: tmp,
+    expectedVersion,
+    env: {},
+  });
+  const authoritySignal = (status: { signals: Array<{ kind: string }> }) => status.signals.find((s) => s.kind === "version_authority_invalid");
+
+  it("keeps a valid npx bundle up to date", () => {
+    const root = path.join(tmp, "npx-valid");
+    npxBundle(root, JSON.stringify({ skills: [{ name: "agentera", version: "3.0.0" }] }));
+    const status = buildDoctorStatus(root, options(root));
+    expect(status.status).toBe(APP_UP_TO_DATE);
+    expect(status.expectedVersion).toBe("3.0.0");
+    expect(status.signals).toEqual([]);
+  });
+
+  it("reports a corrupt npx bundle authority as repair_needed even with an expected version", () => {
+    const root = path.join(tmp, "npx-corrupt");
+    npxBundle(root, "{ broken");
+    for (const expected of [null, "3.0.0"]) {
+      const status = buildDoctorStatus(root, options(root, expected));
+      expect(status.status).toBe(APP_REPAIR_NEEDED);
+      expect(authoritySignal(status)).toMatchObject({ status: APP_REPAIR_NEEDED, versionAuthority: "malformed" });
+    }
+  });
+
+  it("reports a corrupt source-checkout authority as repair_needed", () => {
+    const sourceRoot = path.join(tmp, "checkout");
+    fs.mkdirSync(path.join(sourceRoot, ".git"), { recursive: true });
+    fs.mkdirSync(path.join(sourceRoot, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(sourceRoot, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(path.join(sourceRoot, "registry.json"), JSON.stringify({ skills: [] }));
+    const appHome = path.join(tmp, "checkout-home");
+    fs.mkdirSync(appHome, { recursive: true });
+    const status = buildDoctorStatus(appHome, { ...options(sourceRoot), rootSource: "default app home" });
+    expect(status.rootStatus).toBe("source");
+    expect(status.status).toBe(APP_REPAIR_NEEDED);
+    expect(authoritySignal(status)).toMatchObject({ versionAuthority: "empty_skills" });
+  });
+
+  it("tells corrupt CLI authority apart from a source root without a version signal", () => {
+    const appHome = path.join(tmp, "managed-home");
+    managed(appHome, "3.0.0");
+
+    const missingRoot = path.join(tmp, "no-signal");
+    fs.mkdirSync(missingRoot, { recursive: true });
+    fs.writeFileSync(path.join(missingRoot, "package.json"), JSON.stringify({ version: "3.0.0" }));
+    const missing = buildDoctorStatus(appHome, options(missingRoot));
+    expect(missing.expectedVersion).toBe("unknown");
+    expect(missing.status).toBe(APP_OUTDATED);
+    expect(missing.signals.some((s) => s.kind === "version_mismatch")).toBe(true);
+    expect(authoritySignal(missing)).toBeUndefined();
+
+    const corruptRoot = path.join(tmp, "corrupt-cli");
+    fs.mkdirSync(corruptRoot, { recursive: true });
+    fs.writeFileSync(path.join(corruptRoot, "registry.json"), "{ broken");
+    fs.writeFileSync(path.join(corruptRoot, "package.json"), JSON.stringify({ version: "3.0.0" }));
+    const corrupt = buildDoctorStatus(appHome, options(corruptRoot));
+    expect(corrupt.status).toBe(APP_REPAIR_NEEDED);
+    expect(authoritySignal(corrupt)).toMatchObject({ versionAuthority: "malformed" });
+    expect(corrupt.signals.some((s) => s.kind === "version_mismatch")).toBe(false);
+    expect(corrupt.dryRunCommand).toBeNull();
+    expect(corrupt.applyCommand).toBeNull();
   });
 });

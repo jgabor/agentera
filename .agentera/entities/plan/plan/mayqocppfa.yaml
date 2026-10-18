@@ -1,0 +1,50 @@
+id: mayqocppfa
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-19
+    status: open
+    reviewed: 2026-10-19
+    critic_issues: 17 found, 17 addressed, 0 dismissed
+    title: "Plan: Typed startup failures, a safe v1 reset, and two retirements"
+  what: Deliver five open TODOs as one strictly sequential batch. Version-authority faults return stable typed classifications that callers can tell apart. Broken startup authority makes prime and doctor return one typed JSON failure instead of a stack trace or a healthy-looking result. The product-v1 reset deletes or recreates each location only when that location holds v1 evidence, so a v1 project no longer wipes a v3 data home and a v1 installation no longer wipes a v3 project, and its default preview is short enough that a host cannot truncate away what it deletes. The unused durability diagnostic is retired. Usage analytics stay JSON-only and nothing writes USAGE.md.
+  why: "The first two TODOs head the stable-release dependency chain and are release blockers. The reset deleted a v3-generated profile on 2026-09-02 because v1 evidence in one project put the whole global data home in scope, and the host-truncated preview hid that deletion from the approval question. The two retirements are stable-release dependencies that remove surfaces nobody can use: a diagnostic with no consumers and a report writer that the JSON-only output rule already makes unreachable."
+  constraints: "Keep the supported v2-to-v3 migration and the current v2 distribution result unchanged, guarded by existing tests. Product v1 stays unsupported: add no v1 conversion, import, backup, or restore. Operational commands stay JSON-only and JSON stays the default without a flag. Reset approval keeps binding every deleted entry, and nothing outside the declared scopes is deleted. User data means the profile and its retained copies, the usage report, history, sessions, benchmarks, and extracted evidence. Doctor, the v2-to-v3 upgrade, and handoff never rewrite or delete existing user data; the only exception is the reset of a v1 installation, which names that data before approval. Startup output and the installed shared skill stay within their existing byte budgets. Each task resolves its own TODO and records any decision change through the typed writers in the same commit. Preserve released changelog sections, archived plans, and recorded test evidence. Tests follow one pass and one fail per classification or behavior at the unit level, with one representative fault for each packaged or parity check; packaged tests use a per-test copy of the extracted package and never modify the shared extract. No push, publication, or version change."
+  overall_acceptance: GIVEN all seven tasks are complete WHEN the development verification lane runs THEN it passes, the five TODOs are resolved, prime and doctor never print a parser or module stack for broken authority, a v3 user's data and installation survive the reset of a project that holds v1 artifacts, a v3 project survives the reset of a v1 installation, and no durability command or USAGE.md writer remains.
+  scope:
+    included:
+      - Typed version-authority classifications for every reader that doctor and running-version resolution use, including the shortcuts that report the CLI current without reading the version
+      - One typed JSON startup failure for broken state or version authority in prime and doctor, raised before or during command loading
+      - A bounded default reset preview that names user data, with full detail behind an advertised option
+      - One shared rule for what proves a v1 installation or a v1 project, used by both the end-of-life gate and the reset
+      - Per-location evidence for every reset deletion and recreation, covering the project, the data home, the installation, and host resources
+      - Retirement of the durability diagnostic and the contract entries only it reads, with recovery guidance pointing to entity list, get, and state validation
+      - Removal of the USAGE.md writer, its default directory override, its docs mapping, and its report explanation
+      - Decision records for the reset scope rule and the USAGE.md amendment
+    excluded:
+      - Retiring the `agentera usage` command or the `stats` alias
+      - Reworking natural-language routing
+      - The shared approval-question template tracked by its own TODO
+      - The Trusted Publishing and stable cutover tasks that follow this batch
+      - Any v1 data conversion or migration
+    deferred:
+      - Retiring the `agentera usage` command, which a recorded decision says is not a live alias after 3.0
+  design: "Work runs strictly in sequence, enforced by the task chain, because every task edits the changelog and the TODO projection. Version classifications come first so that the startup failure reports the same classification doctor sees. The startup failure then covers faults that happen while the CLI starts, before any command runs. The reset changes in three steps: first its preview becomes short and explicit, then the end-of-life gate and the reset agree on what counts as v1 evidence, and only then does each reset effect require evidence for its own location. That order gives the scope change a visible preview to assert against and one evidence rule to depend on. The durability retirement follows the startup work because both change what the CLI declares it runs at startup. The usage retirement comes last so that its preservation rule can cite the reset exception recorded before it."
+  unknowns:
+    - question: Should corrupt v3 version authority alongside a valid package version still resolve the distribution major silently?
+      affects_task: 1
+      resolve_by: Decide at the start of task 1 from the existing distribution tests; if silence would hide corrupt v3 state, report the classification while keeping the v2 result unchanged, and record the choice as a task surprise.
+    - question: "Can the bounded default preview stay within 8 KiB for the worst case: a shared profile root with many entries and every host resource family present?"
+      affects_task: 3
+      resolve_by: Build a worst-case fixture first. If it cannot fit, show per-scope counts with an omitted count instead of names beyond the user-data entries, and keep the full-detail option as the complete view.
+    - question: Which installation signals reliably prove a v1 installation, including older v1 layouts that predate the current registry file?
+      affects_task: 4
+      resolve_by: Reconcile the end-of-life gate, the reset, and the historical v1 installer layouts. A layout with no reliable signal is treated as a non-v1 installation, so the global scopes stay out of reach, and the upgrade guide says so.
+    - question: Does any current test or caller rely on one location's v1 evidence selecting another location's deletion or recreation?
+      affects_task: 5
+      resolve_by: Inventory reset tests and callers at the start of task 5, update them to the per-location rule in the same change, and record any surprise on the task.
+  rejected:
+    []
+  surprises:
+    []

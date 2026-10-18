@@ -23,7 +23,6 @@
 - [ ] [id:tlqsuofsyp] [feat:3.0.0] Add light/normal/full levels to document. Light handles one localized documentation correction, normal covers a feature or coherent document set, and full performs repository-wide generation or drift auditing. Levels control document scope and verification breadth while preserving approval gates. Update the startup contract, instructions, schemas, and tests.
 - [ ] [id:nrbyeelnak] [feat:3.0.0] Add light/normal/full levels to profile. Light incrementally incorporates recent high-signal evidence, normal performs the standard synthesis workflow, and full rebuilds from the available corpus with complete validation. Levels control corpus breadth, synthesis depth, and verification—not output verbosity. Update the startup contract, instructions, schemas, and tests.
 - [ ] [id:kzajvenzel] [feat:3.0.0] Add progress cycles tracking to more capabilities, not just `build`.
-- [ ] [id:wmxyoqjjiv] [fix:3.0.0] Return typed loadSuiteVersion failure classifications.
 - [ ] [id:ojvhfbhdse] [feat:3.0.0] Add `statusline` command to show data such as current plan status, health, etc. that can be used by runtimes, similar to `https://github.com/ryoppippi/ccusage`, `https://github.com/avinashbest/cli-status-bar`, and `https://cursor.com/changelog/04-14-26`
 - [ ] [id:ronsoryeeh] [refactor:3.0.0] Rename `agentera app-home` command to `agentera path`
 - [ ] [id:ymoffilhgo] [feat:3.0.0] Add macOS and Windows GitHub Actions jobs for `pnpm -C packages/cli test` (and related gates); CLI tests are cross-platform-hardened on darwin and linux.
@@ -219,3 +218,4 @@
 - [x] [id:aaqlfjtcow] [fix:3.0.0] Treat the personal glossary candidate cap as a page limit
 - [x] [id:qvxarqnmaz] [fix:3.0.0] Report refresh coverage gaps in the refresh result
 - [x] [id:pgoadaqwwx] [fix:3.0.0] Make glossary advice recovery and Profile startup wording match the actual state
+- [x] [id:wmxyoqjjiv] [fix:3.0.0] Return typed loadSuiteVersion failure classifications.

@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import { classifyResolvedRoot } from "../state/installRoot.js";
-import { doctorRoots, loadSuiteVersion } from "./appModel.js";
+import { doctorRoots, readSuiteVersion, type SuiteVersionResult } from "./appModel.js";
 import type { InstallClassification } from "./compatibility.js";
 import { loadUpdateChannelsAuthority, type ResolvedUpdateChannel } from "./channels.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
@@ -49,22 +49,6 @@ export function parseSemverMajor(version: string): number | null {
   return Number.isFinite(major) ? major : null;
 }
 
-function readRegistryVersion(root: string): string | null {
-  const registryPath = path.join(root, "registry.json");
-  if (!fs.existsSync(registryPath)) {
-    return null;
-  }
-  try {
-    const data = JSON.parse(fs.readFileSync(registryPath, "utf8")) as {
-      skills?: Array<{ version?: string }>;
-    };
-    const version = data.skills?.[0]?.version;
-    return typeof version === "string" && version ? version : null;
-  } catch {
-    return null;
-  }
-}
-
 function readNpmPackageVersion(sourceRoot: string): string | null {
   const candidates = [path.join(sourceRoot, "package.json"), path.join(sourceRoot, "..", "package.json"), path.join(sourceRoot, "..", "..", "package.json")];
   for (const candidate of candidates) {
@@ -83,24 +67,32 @@ function readNpmPackageVersion(sourceRoot: string): string | null {
   return null;
 }
 
-export function resolveRunningVersion(args: { appHome: string; sourceRoot: string; install: InstallClassification }): string {
+export interface RunningVersionResolution {
+  version: string;
+  /** The CLI's own version authority, classified; the version value may come from a fallback. */
+  authority: SuiteVersionResult;
+}
+
+export function resolveRunningVersionDetail(args: { appHome: string; sourceRoot: string; install: InstallClassification }): RunningVersionResolution {
   void args.install;
+  const authority = readSuiteVersion(args.sourceRoot);
+  const expected = authority.kind === "ok" ? authority.version : null;
   if (isNpxBundleRoot(args.sourceRoot)) {
-    return readRegistryVersion(args.sourceRoot) ?? readNpmPackageVersion(args.sourceRoot) ?? "0.0.0";
+    return { version: expected ?? readNpmPackageVersion(args.sourceRoot) ?? "0.0.0", authority };
   }
   const roots = doctorRoots(args.appHome);
-  const expected = loadSuiteVersion(args.sourceRoot);
   const classification = classifyResolvedRoot(roots.activeBundleRoot, {
     source: "explicit",
     expectedVersion: expected,
   });
   if (classification.current_version) {
-    return classification.current_version;
+    return { version: classification.current_version, authority };
   }
-  if (isNpxBundleRoot(args.sourceRoot)) {
-    return readNpmPackageVersion(args.sourceRoot) ?? expected ?? "0.0.0";
-  }
-  return expected ?? "0.0.0";
+  return { version: expected ?? "0.0.0", authority };
+}
+
+export function resolveRunningVersion(args: { appHome: string; sourceRoot: string; install: InstallClassification }): string {
+  return resolveRunningVersionDetail(args).version;
 }
 
 export function loadOfflineLatestDefaults(sourceRoot: string): VersionCatalog {

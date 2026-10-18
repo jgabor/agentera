@@ -1,3 +1,4 @@
+import type { SuiteVersionFailureReason } from "../../upgrade/appModel.js";
 import type { InstallKind } from "../../upgrade/compatibility.js";
 
 /** Doctor signal emitted in bundle status payloads. */
@@ -5,6 +6,8 @@ export interface DoctorSignal {
   status: string;
   kind: string;
   message?: string;
+  /** Version-authority failure reason for a `version_authority_invalid` signal. */
+  versionAuthority?: SuiteVersionFailureReason;
   expected?: string;
   actual?: string | null;
   returnCode?: number | null;

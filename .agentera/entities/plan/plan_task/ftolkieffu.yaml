@@ -1,0 +1,14 @@
+id: ftolkieffu
+artifact: plan
+record:
+  name: Retire the durability diagnostic
+  depends_on:
+    - nolbaqvfzi
+  status: pending
+  acceptance:
+    - GIVEN CLI and check help WHEN listed THEN no durability operation is advertised, and `check durability` returns the standard unknown-subcommand error.
+    - GIVEN every advertised static discovery command in a packaged run WHEN each runs THEN each exits 0 and none mentions durability.
+    - GIVEN recovery and readiness guidance WHEN read THEN it points to entity list, entity get, and state validation for local diagnostics.
+    - GIVEN state reads, archives, and writes WHEN they run THEN their behavior is unchanged, including durable writes.
+    - GIVEN active user-facing documentation and the unreleased changelog WHEN read THEN they no longer describe the diagnostic, historical records are unchanged, and TODO ztkgkllvru is resolved.
+  plan: mayqocppfa

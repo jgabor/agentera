@@ -4,14 +4,14 @@ import { isLifecycleOwnershipStateDirectory } from "../runtime/lifecycleOwnershi
 
 import { expanduser, pathExists, resolvePath } from "../core/paths.js";
 import { SOURCE_LABELS, classifyResolvedRoot } from "../state/installRoot.js";
-import { doctorRoots, loadSuiteVersion } from "./appModel.js";
+import { doctorRoots, isCorruptSuiteVersion, readSuiteVersion, type SuiteVersionResult } from "./appModel.js";
 import { isNpxBundleRoot } from "../core/sourceRoot.js";
 import { resolveInvokedUpdateChannel, type ResolvedUpdateChannel } from "./channels.js";
 import { classifyInstall, cliDistributionMajor, crossMajorBoundaryApplies, type InstallClassification, isSourceCheckoutRoot, projectInstallTrack } from "./compatibility.js";
 import { isStableSuccessorAnnounced } from "./nextMajorDoctor.js";
 import { buildUpgradeCommands, commandText } from "./upgradeCommands.js";
 import { parseSemverMajor } from "./versionResolution.js";
-import type { BundleStatus, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
+import type { BundleStatus, DoctorSignal, PublicBundleStatus } from "../cli/contracts/bundleStatus.js";
 import { classifyInstallRootStatus } from "./doctorClassifier.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 
@@ -151,6 +151,21 @@ function sourceKey(rootSource: string): string {
   return "explicit";
 }
 
+export const VERSION_AUTHORITY_INVALID = "version_authority_invalid";
+
+function versionAuthoritySignal(authority: Extract<SuiteVersionResult, { kind: "failure" }>): DoctorSignal {
+  return {
+    status: APP_REPAIR_NEEDED,
+    kind: VERSION_AUTHORITY_INVALID,
+    versionAuthority: authority.reason,
+    message: `the Agentera CLI cannot read its own version (${authority.reason}): ${authority.message}; reinstall the Agentera CLI package`,
+  };
+}
+
+function authorityVersion(authority: SuiteVersionResult): string | null {
+  return authority.kind === "ok" ? authority.version : null;
+}
+
 export interface BuildDoctorStatusOptions {
   rootSource: string;
   sourceRoot: string;
@@ -188,15 +203,20 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       sourceRoot,
     });
 
+  // The CLI's own version authority is read even when an expected version is
+  // supplied: a corrupt authority means the CLI is broken, not current.
+  const authority = readSuiteVersion(sourceRoot);
+  const authorityCorrupt = isCorruptSuiteVersion(authority);
+
   // Fully self-contained npx bundle: the bundle IS the app and is always current
   // (its version is the package version), so there is no install/upgrade step.
   // Report it as the authoritative, up-to-date app home. (Sentinel-gated; never
   // triggers for a repo checkout or an installed managed app.)
   if (isNpxBundleRoot(sourceRoot) && !opts.skipNpxBundleShortCircuit) {
-    const bundleExpected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
+    const bundleExpected = opts.expectedVersion || authorityVersion(authority) || "unknown";
     return {
       schemaVersion: "agentera.bundleStatus.v1",
-      status: APP_UP_TO_DATE,
+      status: authorityCorrupt ? APP_REPAIR_NEEDED : APP_UP_TO_DATE,
       expectedVersion: bundleExpected,
       appHome: sourceRoot,
       appHomeSource: "bundled app",
@@ -212,7 +232,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       rootStatus: "bundled",
       installKind: "v3_self_contained_npm",
       markerVersion: bundleExpected,
-      signals: [],
+      signals: authorityCorrupt ? [versionAuthoritySignal(authority)] : [],
       dryRunCommand: null,
       applyCommand: null,
       retryCommand: commandText([...channel.updateCommand.trim().split(/\s+/).slice(0, 3), expectedCommands[0] ?? "prime"]),
@@ -226,10 +246,10 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   // missing default app home (still a real diagnostic), and AGENTERA_HOME
   // overrides all keep their existing inspection behavior.
   if (isSourceCheckoutRoot(sourceRoot) && rootSource === SOURCE_LABELS.default && pathExists(installRoot)) {
-    const checkoutExpected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
+    const checkoutExpected = opts.expectedVersion || authorityVersion(authority) || "unknown";
     return {
       schemaVersion: "agentera.bundleStatus.v1",
-      status: APP_UP_TO_DATE,
+      status: authorityCorrupt ? APP_REPAIR_NEEDED : APP_UP_TO_DATE,
       expectedVersion: checkoutExpected,
       appHome: installRoot,
       appHomeSource: rootSource,
@@ -245,7 +265,7 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
       rootStatus: "source",
       installKind: "source_checkout",
       markerVersion: null,
-      signals: [],
+      signals: authorityCorrupt ? [versionAuthoritySignal(authority)] : [],
       dryRunCommand: null,
       applyCommand: null,
       retryCommand: null,
@@ -253,12 +273,14 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     };
   }
 
-  const expected = opts.expectedVersion || loadSuiteVersion(sourceRoot) || "unknown";
+  const expected = opts.expectedVersion || authorityVersion(authority) || "unknown";
   const roots = doctorRoots(installRoot);
   const activeBundleRoot = roots.activeBundleRoot;
+  // Without a readable CLI version there is nothing to compare app files to,
+  // so a version mismatch would be invented rather than observed.
   const classification = classifyResolvedRoot(activeBundleRoot, {
     source: sourceKey(rootSource),
-    expectedVersion: expected,
+    expectedVersion: authorityCorrupt && !opts.expectedVersion ? null : expected,
   });
   const markerVersion = classification.current_version;
   const recoverableStaleDefault = isRecoverableStaleDefaultAppHome(installRoot, rootSource, home);
@@ -281,6 +303,9 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
   const rootStatus = classified.rootStatus;
   const signals = classified.signals;
   const blocked = classified.blocked;
+  if (authorityCorrupt) {
+    signals.push(versionAuthoritySignal(authority));
+  }
 
   const install = classifyInstall({ appHome: installRoot, sourceRoot });
   const crossMajorDetected = crossMajorBoundaryApplies(install, sourceRoot);
@@ -349,8 +374,8 @@ export function buildDoctorStatus(installRoot: string, opts: BuildDoctorStatusOp
     installKind: install.kind,
     markerVersion,
     signals,
-    dryRunCommand: blocked || crossMajorPending || status === APP_UP_TO_DATE ? null : upgradeCommands.dryRunCommand,
-    applyCommand: blocked || crossMajorPending || status === APP_UP_TO_DATE ? null : upgradeCommands.applyCommand,
+    dryRunCommand: blocked || crossMajorPending || authorityCorrupt || status === APP_UP_TO_DATE ? null : upgradeCommands.dryRunCommand,
+    applyCommand: blocked || crossMajorPending || authorityCorrupt || status === APP_UP_TO_DATE ? null : upgradeCommands.applyCommand,
     updateChannel: channel.channel,
     crossMajorBoundaryDetected: crossMajorDetected,
     crossMajorBoundary,

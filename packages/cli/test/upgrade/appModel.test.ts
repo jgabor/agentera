@@ -3,9 +3,10 @@ import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { doctorRoots, loadSuiteVersion, resolveActiveAppModel, resolveInstallRoot } from "../../src/upgrade/appModel.js";
+import { doctorRoots, isCorruptSuiteVersion, loadSuiteVersion, readSuiteVersion, resolveActiveAppModel, resolveInstallRoot } from "../../src/upgrade/appModel.js";
+import { PackageRegistry, RegistryError, loadRegistry } from "../../src/registries/packageRegistry.js";
 import { resolvePath } from "../../src/core/paths.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -100,5 +101,83 @@ describe("loadSuiteVersion", () => {
 
   it("returns null when registry.json is absent", () => {
     expect(loadSuiteVersion(home)).toBeNull();
+  });
+});
+
+describe("readSuiteVersion", () => {
+  const writeRegistry = (body: string) => fs.writeFileSync(path.join(home, "registry.json"), body);
+  const contractWithSelector = (selector: string) => () => {
+    const record = structuredClone(loadRegistry().get("agentera"));
+    record.version_authority.selector = selector;
+    return new PackageRegistry([record]);
+  };
+
+  it("returns the version for valid authority", () => {
+    writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    const result = readSuiteVersion(home);
+    expect(result).toEqual({ kind: "ok", version: "3.0.0", path: path.join(home, "registry.json") });
+    expect(isCorruptSuiteVersion(result)).toBe(false);
+  });
+
+  it("classifies a missing authority file as missing, not corrupt", () => {
+    const result = readSuiteVersion(home);
+    expect(result).toMatchObject({ kind: "failure", reason: "missing" });
+    expect(isCorruptSuiteVersion(result)).toBe(false);
+  });
+
+  it("classifies an unreadable authority file", () => {
+    writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    const realRead = fs.readFileSync;
+    const spy = vi.spyOn(fs, "readFileSync").mockImplementation(((file: fs.PathOrFileDescriptor, options?: unknown) => {
+      if (file === path.join(home, "registry.json")) {
+        throw Object.assign(new Error("EACCES: permission denied"), { code: "EACCES" });
+      }
+      return realRead(file, options as BufferEncoding);
+    }) as typeof fs.readFileSync);
+    try {
+      const result = readSuiteVersion(home);
+      expect(result).toMatchObject({ kind: "failure", reason: "unreadable" });
+      expect(isCorruptSuiteVersion(result)).toBe(true);
+    } finally {
+      spy.mockRestore();
+    }
+    fs.rmSync(path.join(home, "registry.json"));
+    fs.mkdirSync(path.join(home, "registry.json"));
+    const directory = readSuiteVersion(home);
+    expect(directory).toMatchObject({ kind: "failure", reason: "unreadable" });
+    expect(isCorruptSuiteVersion(directory)).toBe(true);
+  });
+
+  it("classifies malformed JSON", () => {
+    writeRegistry("{ broken");
+    expect(readSuiteVersion(home)).toMatchObject({ kind: "failure", reason: "malformed" });
+  });
+
+  it("classifies absent or empty skills data", () => {
+    writeRegistry(JSON.stringify({ skills: [] }));
+    expect(readSuiteVersion(home)).toMatchObject({ kind: "failure", reason: "empty_skills" });
+    writeRegistry("null");
+    expect(readSuiteVersion(home)).toMatchObject({ kind: "failure", reason: "empty_skills" });
+  });
+
+  it("classifies a first skill without a usable version", () => {
+    writeRegistry(JSON.stringify({ skills: [{ name: "agentera", version: "" }] }));
+    expect(readSuiteVersion(home)).toMatchObject({ kind: "failure", reason: "invalid_version" });
+  });
+
+  it("classifies a contract that selects another version field", () => {
+    writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    expect(readSuiteVersion(home, contractWithSelector("skills[0].version"))).toMatchObject({ kind: "ok", version: "3.0.0" });
+    expect(readSuiteVersion(home, contractWithSelector("version"))).toMatchObject({ kind: "failure", reason: "selector_mismatch" });
+  });
+
+  it("classifies an unreadable package contract instead of throwing", () => {
+    writeRegistry(JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    const result = readSuiteVersion(home, () => {
+      throw new RegistryError("PackageManifest registry validation failed");
+    });
+    expect(result).toMatchObject({ kind: "failure", reason: "contract_unreadable", path: null });
+    expect(isCorruptSuiteVersion(result)).toBe(true);
+    expect(loadSuiteVersion(home)).toBe("3.0.0");
   });
 });

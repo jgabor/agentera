@@ -12,6 +12,8 @@ import { runProductionGlossaryWorkflow, runTrustedHarnessGlossaryWorkflow } from
 import { validateStructuredInputInventory } from "../../src/registries/structuredInputInventory.js";
 import { appendDecisionEntity } from "../../src/state/decisionEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
+import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
+import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { coldProcessTest } from "../helpers/coldProcessTest.js";
 
@@ -1000,6 +1002,37 @@ describe("npm distribution boundary", () => {
       echoed: false,
       files: ["state-mode.yaml"],
     });
+  });
+
+  it("classifies malformed version authority the same in source and packaged runs", () => {
+    const root = path.join(fixture.root, "version-authority-parity");
+    const sourceBundle = path.join(root, "source-bundle");
+    fs.mkdirSync(path.join(sourceBundle, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(sourceBundle, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(path.join(sourceBundle, NPX_BUNDLE_SENTINEL), "{}");
+    fs.writeFileSync(path.join(sourceBundle, "registry.json"), "{ broken");
+    const source = buildDoctorStatus(sourceBundle, { rootSource: "bundled app", sourceRoot: sourceBundle, home: root, project: root, env: {} });
+    const sourceSignal = source.signals.find((signal) => signal.kind === "version_authority_invalid");
+
+    const packageCopy = path.join(root, "package");
+    fs.cpSync(fixture.packageRoot, packageCopy, { recursive: true, verbatimSymlinks: true });
+    fs.writeFileSync(path.join(packageCopy, "bundle", "registry.json"), "{ broken");
+    const projectRoot = path.join(root, "project");
+    fs.mkdirSync(path.join(projectRoot, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(projectRoot, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const result = spawnSync(process.execPath, [path.join(packageCopy, "dist/bin/agentera.js"), "doctor", "--format", "json"], {
+      cwd: projectRoot,
+      env: packageEnvironment(path.join(root, "home")),
+      encoding: "utf8",
+    });
+    const packaged = JSON.parse(result.stdout) as { current_health: { cli: string }; signals: Array<{ kind: string; versionAuthority?: string }> };
+    const packagedSignal = packaged.signals.find((signal) => signal.kind === "version_authority_invalid");
+
+    expect(sourceSignal?.versionAuthority).toBe("malformed");
+    expect(packagedSignal?.versionAuthority, result.stdout + result.stderr).toBe(sourceSignal?.versionAuthority);
+    expect(source.status).toBe("repair_needed");
+    expect(packaged.current_health.cli).toBe("repair_needed");
+    expect(fs.readFileSync(path.join(fixture.packageRoot, "bundle", "registry.json"), "utf8")).not.toBe("{ broken");
   });
 
   it("serves and isolates the bundled Profile contract", () => {

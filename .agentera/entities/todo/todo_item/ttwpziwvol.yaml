@@ -10,7 +10,7 @@ record:
       description: "[fix:3.0.0] Use one plain-language offer template for every approval question."
       severity: normal
       status: open
-      order: 12
+      order: 11
   kind: fix
   target_version: 3.0.0
   requirements:

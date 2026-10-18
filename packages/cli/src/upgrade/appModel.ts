@@ -6,7 +6,7 @@ import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { Classification, SOURCE_LABELS, classifyResolvedRoot, isForeignPlatformDefaultAppHome, resolveCandidate } from "../state/installRoot.js";
-import { loadRegistry } from "../registries/packageRegistry.js";
+import { loadRegistry, type PackageRegistry } from "../registries/packageRegistry.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
 import type { JsonObject } from "../core/jsonValue.js";
 
@@ -56,29 +56,68 @@ function sourceRootMissing(root: string): string[] {
   return SETUP_EVIDENCE.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
-export function loadSuiteVersion(sourceRoot: string): string | null {
-  const record = loadRegistry().get("agentera");
-  const authority = record.version_authority as JsonObject; // cast: parsed registry IO boundary
-  const authorityPath = path.join(sourceRoot, authority.persisted_authority as string); // cast: parsed registry IO boundary
-  if (!isFile(authorityPath)) {
-    return null;
-  }
-  let data: any;
+/** Stable reasons the suite version authority cannot yield a version. */
+export type SuiteVersionFailureReason = "missing" | "unreadable" | "malformed" | "empty_skills" | "invalid_version" | "selector_mismatch" | "contract_unreadable";
+
+export type SuiteVersionResult = { kind: "ok"; version: string; path: string } | { kind: "failure"; reason: SuiteVersionFailureReason; path: string | null; message: string };
+
+export const SUPPORTED_SUITE_VERSION_SELECTOR = "skills[0].version";
+
+/**
+ * Corrupt authority is present but unusable. A missing authority file is a
+ * valid layout without a v3 version signal, so callers keep their fallback.
+ */
+export function isCorruptSuiteVersion(result: SuiteVersionResult): result is Extract<SuiteVersionResult, { kind: "failure" }> {
+  return result.kind === "failure" && result.reason !== "missing";
+}
+
+export function readSuiteVersion(sourceRoot: string, loadContract: () => Pick<PackageRegistry, "get"> = () => loadRegistry()): SuiteVersionResult {
+  let authority: JsonObject;
   try {
-    data = JSON.parse(fs.readFileSync(authorityPath, "utf8"));
+    authority = loadContract().get("agentera").version_authority as JsonObject; // cast: parsed registry IO boundary
+  } catch (exc) {
+    return { kind: "failure", reason: "contract_unreadable", path: null, message: `package contract cannot be read: ${(exc as Error).message}` };
+  }
+  if (typeof authority.persisted_authority !== "string" || !authority.persisted_authority) {
+    return { kind: "failure", reason: "contract_unreadable", path: null, message: "package contract has no persisted version authority path" };
+  }
+  const authorityPath = path.join(sourceRoot, authority.persisted_authority);
+  if (authority.selector !== SUPPORTED_SUITE_VERSION_SELECTOR) {
+    return { kind: "failure", reason: "selector_mismatch", path: authorityPath, message: `unsupported version selector ${JSON.stringify(authority.selector)}; expected ${SUPPORTED_SUITE_VERSION_SELECTOR}` };
+  }
+  if (!pathExists(authorityPath)) {
+    return { kind: "failure", reason: "missing", path: authorityPath, message: `version authority is missing: ${authorityPath}` };
+  }
+  if (!isFile(authorityPath)) {
+    return { kind: "failure", reason: "unreadable", path: authorityPath, message: `version authority is not a regular file: ${authorityPath}` };
+  }
+  let text: string;
+  try {
+    text = fs.readFileSync(authorityPath, "utf8");
+  } catch (exc) {
+    return { kind: "failure", reason: "unreadable", path: authorityPath, message: `version authority cannot be read: ${(exc as Error).message}` };
+  }
+  let data: unknown;
+  try {
+    data = JSON.parse(text);
   } catch {
-    return null;
+    return { kind: "failure", reason: "malformed", path: authorityPath, message: `version authority is not valid JSON: ${authorityPath}` };
   }
-  if (authority.selector !== "skills[0].version") {
-    return null;
-  }
-  const skills = data?.skills;
+  const skills = data !== null && typeof data === "object" ? (data as { skills?: unknown }).skills : undefined;
   if (!Array.isArray(skills) || skills.length === 0) {
-    return null;
+    return { kind: "failure", reason: "empty_skills", path: authorityPath, message: `version authority has no skills entries: ${authorityPath}` };
   }
-  const first = skills[0];
-  const version = first && typeof first === "object" ? first.version : null;
-  return typeof version === "string" && version ? version : null;
+  const first: unknown = skills[0];
+  const version = first !== null && typeof first === "object" ? (first as { version?: unknown }).version : undefined;
+  if (typeof version !== "string" || !version) {
+    return { kind: "failure", reason: "invalid_version", path: authorityPath, message: `version authority ${SUPPORTED_SUITE_VERSION_SELECTOR} is not a non-empty string: ${authorityPath}` };
+  }
+  return { kind: "ok", version, path: authorityPath };
+}
+
+export function loadSuiteVersion(sourceRoot: string): string | null {
+  const result = readSuiteVersion(sourceRoot);
+  return result.kind === "ok" ? result.version : null;
 }
 
 export function doctorRoots(appHome: string): DoctorRoots {

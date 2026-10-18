@@ -24,4 +24,4 @@ record:
       description: "[feat:3.0.0] Help users discover capabilities they have not used yet."
       severity: normal
       status: open
-      order: 27
+      order: 26

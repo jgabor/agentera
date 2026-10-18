@@ -1,0 +1,14 @@
+id: nolbaqvfzi
+artifact: plan
+record:
+  name: Scope each reset effect to its own v1 evidence
+  depends_on:
+    - bnsppjkxsi
+  status: pending
+  acceptance:
+    - GIVEN a v3 installation with a v3 profile and one project holding v1 artifacts WHEN the reset previews and applies THEN only that project's state and project-level host resources are deleted and recreated, while the data home, the installation, and home-level host resources stay byte-identical and `report profile-grounding` still reports the profile valid.
+    - GIVEN a v1 installation and a project with v3 state WHEN the reset previews and applies THEN the installation, its user data, and home-level host resources are handled as before and named as in task 3, while the project's v3 state stays byte-identical.
+    - GIVEN both a v1 installation and a v1 project WHEN the reset previews and applies THEN both are deleted and recreated as today.
+    - GIVEN the decisions artifact, the upgrade guide, and the shared skill WHEN read THEN one decision records the per-location evidence rule and that user data is deleted only for a v1 installation after being named, and both documents describe the same rule.
+    - GIVEN TODO ztqdcyapxb WHEN read THEN its wording matches the per-location rule and it is resolved.
+  plan: mayqocppfa

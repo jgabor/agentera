@@ -91,7 +91,7 @@ function projectedStateRetrieval(retrieval: JsonObject): JsonObject {
 
 const CAPABILITY_NAMES = ["status", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"];
 const ROUTINE_STATE_COMMANDS = ["status", "plan", "progress", "health", "todo", "decisions", "docs", "objective", "experiments"];
-const DOCTOR_SIGNAL_KINDS = ["missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle", "missing_marker", "version_mismatch", "corrupt_bundle_marker"];
+const DOCTOR_SIGNAL_KINDS = ["missing_bundle", "invalid_install_root", "unmanaged_install_root", "invalid_bundle", "missing_marker", "version_mismatch", "corrupt_bundle_marker", "version_authority_invalid"];
 const DOCTOR_SELF_CHECK_CATEGORIES = ["Agentera CLI self-check status", "installed app and install-root status", "canonical shared-skill diagnosis", "project integration and project-state migration diagnostics", "bounded offline smoke checks when requested"] as string[];
 const DOCTOR_EXCLUDES = ["project artifact health", "codebase quality audit findings", "capability architecture, test, dependency, or documentation audit output"] as string[];
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;

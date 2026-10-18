@@ -11,4 +11,4 @@ record:
       description: "[refactor:3.0.0] Rename `agentera app-home` command to `agentera path`"
       severity: normal
       status: open
-      order: 9
+      order: 8

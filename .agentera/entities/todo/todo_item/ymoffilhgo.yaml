@@ -11,4 +11,4 @@ record:
       description: "[feat:3.0.0] Add macOS and Windows GitHub Actions jobs for `pnpm -C packages/cli test` (and related gates); CLI tests are cross-platform-hardened on darwin and linux."
       severity: normal
       status: open
-      order: 10
+      order: 9

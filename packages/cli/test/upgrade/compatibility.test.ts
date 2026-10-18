@@ -8,6 +8,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test"
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { BUNDLE_MARKER } from "../../src/state/installRoot.js";
 import { MAJOR_BOUNDARY_ITEM_TAG, STATUS_MANUAL_REVIEW_NEEDED, STATUS_NO_CHANGES_NEEDED, STATUS_READY_TO_APPLY, __resetDistributionMajorWarnedForTests, classifyInstall, cliDistributionMajor, previewCrossMajorGuard, projectInstallTrack } from "../../src/upgrade/compatibility.js";
+import { readSuiteVersion } from "../../src/upgrade/appModel.js";
 import { collectV3MigrationOperations } from "./helpers/collectV3MigrationOperations.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
 
@@ -138,6 +139,8 @@ describe("cliDistributionMajor", () => {
     fs.writeFileSync(path.join(root, "package.json"), JSON.stringify({ version: "3.1.0" }));
     expect(cliDistributionMajor(root)).toBe(3);
     expect(stderrSpy).not.toHaveBeenCalled();
+    // The distribution major stays silent; the corruption is reported by the typed authority reader.
+    expect(readSuiteVersion(root)).toMatchObject({ kind: "failure", reason: "malformed" });
   });
 
   it("returns 2 and warns when both registry.json and package.json are missing", () => {

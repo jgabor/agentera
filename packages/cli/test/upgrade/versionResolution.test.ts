@@ -10,7 +10,7 @@ import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { classifyInstall } from "../../src/upgrade/compatibility.js";
 import { resolveUpdateChannel } from "../../src/upgrade/channels.js";
 import { setSuccessorAnnouncedOverrideForTests } from "../../src/upgrade/nextMajorDoctor.js";
-import { classifyUpgradeOutcome, parseSemverMajor, resolveLatestOnChannel, resolveRunningVersion, setVersionCatalogForTests } from "../../src/upgrade/versionResolution.js";
+import { classifyUpgradeOutcome, parseSemverMajor, resolveLatestOnChannel, resolveRunningVersion, resolveRunningVersionDetail, setVersionCatalogForTests } from "../../src/upgrade/versionResolution.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -156,6 +156,40 @@ describe("resolveRunningVersion", () => {
     managedV2(appHome, "2.7.7");
     const install = classifyInstall({ appHome, sourceRoot: REPO_ROOT });
     expect(resolveRunningVersion({ appHome, sourceRoot: REPO_ROOT, install })).toBe("2.7.7");
+  });
+});
+
+describe("resolveRunningVersionDetail", () => {
+  function npxBundle(root: string, registry: string): void {
+    fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
+    fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
+    fs.writeFileSync(path.join(root, "registry.json"), registry);
+    fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), "{}");
+  }
+
+  it("reads a valid packaged authority unchanged", () => {
+    const root = path.join(tmp, "npx-valid");
+    npxBundle(root, JSON.stringify({ skills: [{ version: "3.0.0" }] }));
+    const install = classifyInstall({ appHome: root, sourceRoot: root });
+    expect(resolveRunningVersionDetail({ appHome: root, sourceRoot: root, install })).toMatchObject({ version: "3.0.0", authority: { kind: "ok", version: "3.0.0" } });
+  });
+
+  it("keeps the package version fallback but classifies corrupt packaged authority", () => {
+    const pkg = path.join(tmp, "pkg");
+    const root = path.join(pkg, "bundle");
+    npxBundle(root, "{ broken");
+    fs.writeFileSync(path.join(pkg, "package.json"), JSON.stringify({ version: "3.0.0-dev.1" }));
+    const install = classifyInstall({ appHome: root, sourceRoot: root });
+    expect(resolveRunningVersionDetail({ appHome: root, sourceRoot: root, install })).toMatchObject({ version: "3.0.0-dev.1", authority: { kind: "failure", reason: "malformed" } });
+  });
+
+  it("classifies a source root without authority as missing", () => {
+    const appHome = path.join(tmp, "v2-home");
+    managedV2(appHome, "2.7.7");
+    const sourceRoot = path.join(tmp, "no-authority");
+    fs.mkdirSync(sourceRoot, { recursive: true });
+    const install = classifyInstall({ appHome, sourceRoot });
+    expect(resolveRunningVersionDetail({ appHome, sourceRoot, install })).toMatchObject({ version: "2.7.7", authority: { kind: "failure", reason: "missing" } });
   });
 });
 
