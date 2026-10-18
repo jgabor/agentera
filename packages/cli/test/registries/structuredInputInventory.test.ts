@@ -154,7 +154,7 @@ describe("structured input inventory", () => {
     expect(inventory.closure_evidence).toMatchObject({
       behavior_changed: false,
       writer_preflight: {
-        active_payload_routes: 29,
+        active_payload_routes: 30,
         payload_disposition: "retain_all",
         normal_publication: "one_serialization_one_typed_writer_call",
         explicit_preview: "dry_run_then_apply_same_unchanged_input",

@@ -2932,6 +2932,16 @@ deferred_capability_contracts:
       implementation: active
       intended_output: read_only_terminology_drift_finding
       digest: ownership_contracts.project.proposal_digest
+      command: npx -y agentera@next report terminology-drift --input REQUEST
+      request_schema_version: agentera.terminologyDriftRequest.v1
+      effects: none
+      rule: >-
+        The command assesses one concept from cited project-file lines and
+        returns the complete canonical finding with its proposal_digest, or no
+        finding with a stable reason. The finding is reused verbatim as the
+        publication request proposal. Deliberate-decision and tracked-TODO
+        filtering stay with the Audit caller. The command never approves,
+        persists, or publishes a proposal.
     inputs:
       personal_history: ownership_contracts.personal.input
       project_file: ownership_contracts.project.input

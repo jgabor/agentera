@@ -35,8 +35,8 @@ synthetic_baseline:
 
 closure_evidence:
   behavior_changed: false
-  active_registry_routes: 29
-  classified_active_routes: 29
+  active_registry_routes: 30
+  classified_active_routes: 30
   historical_only_routes: excluded
   unresolved_rows: 0
   approved_gaps: closed
@@ -46,7 +46,7 @@ closure_evidence:
     reusable_input: Preview or review and apply the same unchanged input without regeneration.
     trust_boundary_multi_phase: Retain an evidence-bound second phase when effect confirmation or approval is required; reject changed or stale input before effects.
   writer_preflight:
-    active_payload_routes: 29
+    active_payload_routes: 30
     payload_disposition: retain_all
     normal_publication: one_serialization_one_typed_writer_call
     explicit_preview: dry_run_then_apply_same_unchanged_input
@@ -104,6 +104,7 @@ routes:
   - { id: report.personal-glossary-publish.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Approval scope, effect binding, stale-input rejection, and replay safety require the complete publication request." }
   - { id: report.personal-glossary-reviews.disposition.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Structured glossary host review is explicitly retained and unchanged; disposition effects remain bound to validated review evidence." }
   - { id: report.personal-glossary-reviews.queue.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Structured glossary host review is explicitly retained and unchanged to preserve private bounded review inputs." }
+  - { id: report.terminology-drift.input, owner: report, disposition: retain, usage_evidence: *synthetic, retention_justification: "Audit assesses one concept from bounded cited project-file lines and returns its canonical proposal digest without writes." }
   - { id: startup.build.input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Build execution requests require bounded validation of the complete caller-controlled request before capability startup." }
   - { id: startup.build.term-input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf authorizes this selected-term startup path to avoid full-event replay." }
   - { id: startup.discuss.term-input, owner: startup, disposition: retain, usage_evidence: *synthetic, retention_justification: "Firm decision gazyqhkyyf authorizes this selected-term startup path to avoid full-event replay." }

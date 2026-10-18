@@ -14,6 +14,7 @@ import { runPersonalGlossaryDecisionCommand } from "../commands/personalGlossary
 import { runPersonalGlossaryReviewRecordsCommand } from "../commands/personalGlossaryReviewRecords.js";
 import { runProfileGroundingCommand } from "../commands/profileGrounding.js";
 import { runProfileInputsCommand } from "../commands/profileInputs.js";
+import { runTerminologyDriftCommand } from "../commands/terminologyDrift.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { usageMain } from "../../analytics/usageStats.js";
 import { validatePathValue } from "../argvalidate.js";
@@ -498,6 +499,20 @@ export function runReport(argv: string[], io: Io, prog: string): number {
     return runGlossaryAdviceCommand(argv.slice(1), io);
   }
   if (argv[0] === "profile-inputs" && prog === "agentera report") return runProfileInputsCommand(argv.slice(1), io);
+  if (argv[0] === "terminology-drift") {
+    if (prog !== "agentera report") {
+      return emitInvalidInput(io, {
+        format: "json",
+        body: {
+          class: "unsupported_target",
+          message: "terminology-drift has no stats alias",
+          valid_values: ["report terminology-drift"],
+          recovery: `Run ${preCutoverCommand("report terminology-drift --input -")}; no state was changed.`,
+        },
+      });
+    }
+    return runTerminologyDriftCommand(argv.slice(1), io);
+  }
   if (argv[0] === "profile-grounding") {
     if (prog !== "agentera report") {
       return emitInvalidInput(io, {

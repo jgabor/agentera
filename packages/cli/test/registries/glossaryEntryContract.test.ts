@@ -179,6 +179,8 @@ describe("shared glossary entry authority", () => {
       proposal_output: {
         implementation: "active",
         digest: "ownership_contracts.project.proposal_digest",
+        command: "npx -y agentera@next report terminology-drift --input REQUEST",
+        effects: "none",
       },
     });
     expect(authority.deferred_capability_contracts.build_publication).toMatchObject({
@@ -449,6 +451,20 @@ describe("shared glossary entry authority", () => {
       "mutable audit proposal",
       (authority: Record<string, any>) => {
         authority.deferred_capability_contracts.audit.proposal_output.implementation = "mutable";
+      },
+      "audit findings and proposal digests must be active and read-only",
+    ],
+    [
+      "an unserved audit proposal command",
+      (authority: Record<string, any>) => {
+        delete authority.deferred_capability_contracts.audit.proposal_output.command;
+      },
+      "audit findings and proposal digests must be active and read-only",
+    ],
+    [
+      "an audit proposal command with effects",
+      (authority: Record<string, any>) => {
+        authority.deferred_capability_contracts.audit.proposal_output.effects = "writes";
       },
       "audit findings and proposal digests must be active and read-only",
     ],

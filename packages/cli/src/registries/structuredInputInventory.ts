@@ -9,6 +9,7 @@ import { PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS } from "../cli/comm
 import { PERSONAL_GLOSSARY_PUBLISH_STRUCTURED_INPUT_OPTIONS } from "../cli/commands/personalGlossaryPublish.js";
 import { PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS } from "../cli/commands/personalGlossaryReviewRecords.js";
 import { PRIME_STRUCTURED_INPUT_SPECS } from "../cli/commands/prime.js";
+import { TERMINOLOGY_DRIFT_STRUCTURED_INPUT_OPTIONS } from "../cli/commands/terminologyDrift.js";
 
 export type StructuredInputSources = {
   writerOperations: ReturnType<typeof runtimeOperationSpecs>;
@@ -16,6 +17,7 @@ export type StructuredInputSources = {
   decisionOptions: readonly string[];
   publishOptions: readonly string[];
   reviewSpecs: readonly { action: string; option: string }[];
+  terminologyDriftOptions: readonly string[];
   startupSpecs: readonly { context: string; option: string }[];
 };
 
@@ -26,6 +28,7 @@ export function activeStructuredInputSources(): StructuredInputSources {
     decisionOptions: PERSONAL_GLOSSARY_DECISION_STRUCTURED_INPUT_OPTIONS,
     publishOptions: PERSONAL_GLOSSARY_PUBLISH_STRUCTURED_INPUT_OPTIONS,
     reviewSpecs: PERSONAL_GLOSSARY_REVIEW_STRUCTURED_INPUT_SPECS,
+    terminologyDriftOptions: TERMINOLOGY_DRIFT_STRUCTURED_INPUT_OPTIONS,
     startupSpecs: PRIME_STRUCTURED_INPUT_SPECS,
   };
 }
@@ -38,6 +41,7 @@ export function activeStructuredInputRouteIds(inputs = activeStructuredInputSour
     ...inputs.decisionOptions.map((option) => `report.personal-glossary-decision.${optionName(option)}`),
     ...inputs.publishOptions.map((option) => `report.personal-glossary-publish.${optionName(option)}`),
     ...inputs.reviewSpecs.map(({ action, option }) => `report.personal-glossary-reviews.${action}.${optionName(option)}`),
+    ...inputs.terminologyDriftOptions.map((option) => `report.terminology-drift.${optionName(option)}`),
   ];
   const startup = inputs.startupSpecs.map(({ context, option }) => `startup.${context}.${optionName(option)}`);
   return [...writers, ...reports, ...startup].sort();

@@ -286,6 +286,7 @@ describe("purpose-owned report/check/recovery static guidance", () => {
       "refresh",
       "profile-grounding",
       "profile-inputs",
+      "terminology-drift",
       "glossary-advice",
       "personal-glossary-candidates list",
       "personal-glossary-candidates get",

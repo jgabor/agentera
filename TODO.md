@@ -207,3 +207,4 @@
 - [x] [id:jiumssksof] [fix:3.0.0] Surface profile and glossary absence once at startup
 - [x] [id:pwcjgwekrz] [fix:3.0.0] Keep full-evidence shards within their byte cap
 - [x] [id:vppwtwnayj] [fix:3.0.0] Abstain secret-bearing glossary candidates instead of failing the projection
+- [x] [id:pccnnqphak] [fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest

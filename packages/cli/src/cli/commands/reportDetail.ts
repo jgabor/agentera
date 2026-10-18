@@ -10,10 +10,15 @@ import { validateProtocolSelf } from "../../validate/capability.js";
 import { GuidanceInputError } from "../guidanceDetail.js";
 import { operationIndex, requireValid, type ServiceAuthority } from "./serviceDetail.js";
 import { PROFILE_INPUTS_CONTRACT } from "./profileInputs.js";
+import { TERMINOLOGY_DRIFT_CONTRACT } from "./terminologyDrift.js";
 
 export function reportDetailSections(a: ServiceAuthority, base: string, operation?: string) {
   if (operation === "profile-inputs") {
     a.add("usage", PROFILE_INPUTS_CONTRACT, "packages/cli/src/cli/commands/profileInputs.ts");
+    return;
+  }
+  if (operation === "terminology-drift") {
+    a.add("usage", TERMINOLOGY_DRIFT_CONTRACT, "packages/cli/src/cli/commands/terminologyDrift.ts");
     return;
   }
   const relative = "references/artifacts/glossary-entry-contract.yaml";
@@ -29,6 +34,7 @@ export function reportDetailSections(a: ServiceAuthority, base: string, operatio
     "refresh",
     "profile-grounding",
     "profile-inputs",
+    "terminology-drift",
     "glossary-advice",
     `${tail(candidates.candidateReadCommand)} list`,
     `${tail(candidates.candidateReadCommand)} get`,

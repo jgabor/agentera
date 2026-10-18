@@ -263,56 +263,63 @@ function verifiedEvidence(projectRoot: string, term: string, evidence: ProjectTe
   return verified.length > 0 ? verified : null;
 }
 
+export type TerminologyNoFindingReason = "confidence_out_of_range" | "unverified_evidence" | "no_drift";
+
+export type TerminologyConceptAssessment = { finding: TerminologyDriftFinding } | { reason: TerminologyNoFindingReason };
+
+/** Assess one concept against cited project files; the caller owns decision and TODO filtering. */
+export function assessTerminologyConcept(projectRoot: string, concept: AssessedTerminologyConcept, personalTerm?: string, minimumConfidence = confidenceFloor()): TerminologyConceptAssessment {
+  if (concept.confidence < minimumConfidence || concept.confidence > 100 || !Number.isInteger(concept.confidence)) return { reason: "confidence_out_of_range" };
+
+  const consolidated: Array<{ term: string; evidence: Map<string, ProjectTermEvidence> }> = [];
+  for (const candidate of concept.terms) {
+    const term = candidate.term.trim();
+    const evidence = term ? verifiedEvidence(projectRoot, term, candidate.evidence) : null;
+    if (!evidence) return { reason: "unverified_evidence" };
+    const group = consolidated.find((item) => unicodeCaselessExact(item.term, term)) ?? {
+      term,
+      evidence: new Map(),
+    };
+    for (const item of evidence) group.evidence.set(`${item.source_path}:${item.line}`, item);
+    if (!consolidated.includes(group)) consolidated.push(group);
+  }
+  if (consolidated.length < 2) return { reason: "no_drift" };
+  const terms = consolidated.map((term) => ({
+    term: term.term,
+    evidence: orderedEvidence([...term.evidence.values()]),
+  }));
+
+  const seed = {
+    family: "terminology_drift",
+    concept: concept.concept,
+    terms,
+    severity: concept.severity,
+    confidence: concept.confidence,
+  } as const;
+  let finding = canonicalProposal(seed);
+  const personal = personalTerm?.trim();
+  if (personal && !unicodeCaselessExact(personal, finding.proposed_canonical_term)) {
+    finding = canonicalProposal({
+      ...seed,
+      personal_divergence: {
+        personal_term: personal,
+        project_term: finding.proposed_canonical_term,
+      },
+    });
+  }
+  const validated = validateTerminologyProposal(finding);
+  if (!validated.proposal) throw new Error(`Audit produced an invalid terminology proposal: ${validated.violations.join("; ")}`);
+  return { finding: validated.proposal };
+}
+
 /** Generate findings from assessed concepts without writing project or personal state. */
 export function assessTerminologyDrift(input: TerminologyDriftInput): TerminologyDriftFinding[] {
   const minimumConfidence = confidenceFloor();
   const findings: TerminologyDriftFinding[] = [];
   for (const concept of input.concepts) {
-    if (concept.confidence < minimumConfidence || concept.confidence > 100 || !Number.isInteger(concept.confidence) || input.deliberateDecisionConcepts.has(concept.concept) || input.trackedIssueConcepts.has(concept.concept)) continue;
-
-    const consolidated: Array<{ term: string; evidence: Map<string, ProjectTermEvidence> }> = [];
-    let invalidEvidence = false;
-    for (const candidate of concept.terms) {
-      const term = candidate.term.trim();
-      const evidence = term ? verifiedEvidence(input.projectRoot, term, candidate.evidence) : null;
-      if (!evidence) {
-        invalidEvidence = true;
-        break;
-      }
-      const group = consolidated.find((item) => unicodeCaselessExact(item.term, term)) ?? {
-        term,
-        evidence: new Map(),
-      };
-      for (const item of evidence) group.evidence.set(`${item.source_path}:${item.line}`, item);
-      if (!consolidated.includes(group)) consolidated.push(group);
-    }
-    if (invalidEvidence || consolidated.length < 2) continue;
-    const terms = consolidated.map((term) => ({
-      term: term.term,
-      evidence: orderedEvidence([...term.evidence.values()]),
-    }));
-
-    const seed = {
-      family: "terminology_drift",
-      concept: concept.concept,
-      terms,
-      severity: concept.severity,
-      confidence: concept.confidence,
-    } as const;
-    let finding = canonicalProposal(seed);
-    const personalTerm = input.personalTerms?.get(concept.concept)?.trim();
-    if (personalTerm && !unicodeCaselessExact(personalTerm, finding.proposed_canonical_term)) {
-      finding = canonicalProposal({
-        ...seed,
-        personal_divergence: {
-          personal_term: personalTerm,
-          project_term: finding.proposed_canonical_term,
-        },
-      });
-    }
-    const validated = validateTerminologyProposal(finding);
-    if (!validated.proposal) throw new Error(`Audit produced an invalid terminology proposal: ${validated.violations.join("; ")}`);
-    findings.push(validated.proposal);
+    if (input.deliberateDecisionConcepts.has(concept.concept) || input.trackedIssueConcepts.has(concept.concept)) continue;
+    const assessment = assessTerminologyConcept(input.projectRoot, concept, input.personalTerms?.get(concept.concept), minimumConfidence);
+    if ("finding" in assessment) findings.push(assessment.finding);
   }
   return findings;
 }

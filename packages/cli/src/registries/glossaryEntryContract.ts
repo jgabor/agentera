@@ -550,6 +550,10 @@ export function validateGlossaryEntryContract(pathname: string = glossaryEntryAu
     proposalOutput?.implementation !== "active" ||
     proposalOutput?.intended_output !== "read_only_terminology_drift_finding" ||
     proposalOutput?.digest !== "ownership_contracts.project.proposal_digest" ||
+    proposalOutput?.command !== "npx -y agentera@next report terminology-drift --input REQUEST" ||
+    proposalOutput?.request_schema_version !== "agentera.terminologyDriftRequest.v1" ||
+    proposalOutput?.effects !== "none" ||
+    !nonEmpty(proposalOutput?.rule) ||
     auditInputs?.personal_history !== "ownership_contracts.personal.input" ||
     auditInputs?.project_file !== "ownership_contracts.project.input" ||
     auditInputs?.project_file_history_classification !== "forbidden" ||

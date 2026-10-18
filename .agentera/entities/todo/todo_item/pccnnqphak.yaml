@@ -1,0 +1,27 @@
+id: pccnnqphak
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Give Audit a read-only CLI path for terminology-drift proposals and their digest
+  requirements:
+    - A read-only `report terminology-drift --input <file|->` command must return the canonical terminology-drift proposal, including `proposal_digest`, for one cited concept, and never write state.
+    - Audit instructions must name the command so agents no longer hand-build canonical JSON or hash it.
+  acceptance:
+    - A temp project publishes one project glossary entry through `state glossary publish` using only CLI output for the proposal and digest.
+    - Weak, unverified, and no-drift input returns no finding with a stable reason.
+  release_blocker: false
+  severity: degraded
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest"
+      status: resolved
+      order: 156
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: Audit emits the canonical proposal and digest through report terminology-drift
+    date: 2026-10-18
