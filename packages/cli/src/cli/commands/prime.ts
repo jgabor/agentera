@@ -25,6 +25,9 @@ import { resolveStartupGlossaryAdvice } from "../capabilityContext/startupGlossa
 import { discoverSchemasDir } from "../appContext.js";
 import { registryArtifactPath } from "../orientation.js";
 import { briefUtf8Bytes } from "./prime/briefOrientation.js";
+import { resolveSourceRoot } from "../../core/sourceRoot.js";
+import { isCorruptSuiteVersion, readSuiteVersion } from "../../upgrade/appModel.js";
+import { emitStartupFailure } from "../startupFailure.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -172,6 +175,9 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     out(PRIME_BLOB);
     return 0;
   }
+  // A CLI that cannot read its own version cannot report a trustworthy startup.
+  const versionAuthority = readSuiteVersion(resolveSourceRoot());
+  if (isCorruptSuiteVersion(versionAuthority)) return emitStartupFailure(io, { classification: "version_authority_invalid", reason: versionAuthority.reason }, command);
   const collectOpts = {
     projectRoot: args.projectRoot,
     home: args.home,

@@ -19,6 +19,7 @@ import { lifecycleOwnershipJournalPath } from "../../runtime/lifecycleOwnershipJ
 import { planDeclaredMarkerManagedFileItem } from "../../upgrade/declaredRetiredResourceCleanup.js";
 import { cleanupOfferAuthorization } from "../../upgrade/cleanupOffer.js";
 import { isNpxBundleRoot } from "../../core/sourceRoot.js";
+import { classifyStartupError, emitStartupFailure } from "../startupFailure.js";
 import { projectStateCutover } from "./prime/collectOrientationState.js";
 import { enforceCompletedEntityCutover } from "../migrationRequired.js";
 import { collectEntityOrientation } from "./prime/collectEntityOrientation.js";
@@ -225,13 +226,11 @@ function renderDoctorSmoke(smoke: JsonObject): string {
 
 export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const err = io.err ?? ((t: string) => process.stderr.write(t));
   let sourceRoot: string;
   try {
     sourceRoot = resolveSourceRootStrict();
   } catch (exc) {
-    err(`doctor error: ${(exc as Error).message}\n`);
-    return 2;
+    return emitStartupFailure(io, classifyStartupError(exc), "doctor");
   }
   const home = resolvePath(expanduser(args.home ?? os.homedir()));
   const project = resolvePath(expanduser(args.project ?? process.cwd()));

@@ -1035,6 +1035,58 @@ describe("npm distribution boundary", () => {
     expect(fs.readFileSync(path.join(fixture.packageRoot, "bundle", "registry.json"), "utf8")).not.toBe("{ broken");
   });
 
+  describe("typed startup failures from a packaged copy", () => {
+    const sharedAuthorities = ["bundle/registry.json", "bundle/references/artifacts/state-storage-authority.yaml"].map((relative) => [relative, fs.readFileSync(path.join(fixture.packageRoot, relative))] as const);
+    const startupCopy = (name: string, breakCopy: (bundle: string) => void) => {
+      const root = path.join(fixture.root, `startup-failure-${name}`);
+      const packageCopy = path.join(root, "package");
+      fs.cpSync(fixture.packageRoot, packageCopy, { recursive: true, verbatimSymlinks: true });
+      breakCopy(path.join(packageCopy, "bundle"));
+      const projectRoot = path.join(root, "project");
+      fs.mkdirSync(path.join(projectRoot, ".agentera"), { recursive: true });
+      fs.writeFileSync(path.join(projectRoot, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      const home = path.join(root, "home");
+      const env = { ...packageEnvironment(home), XDG_CONFIG_HOME: path.join(home, ".config"), XDG_DATA_HOME: path.join(home, ".local/share"), XDG_CACHE_HOME: path.join(home, ".cache"), XDG_STATE_HOME: path.join(home, ".local/state") };
+      const tree = () => (fs.readdirSync(root, { recursive: true }) as string[]).filter((entry) => !entry.startsWith("package")).sort();
+      const before = tree();
+      const run = (args: string[]) => spawnSync(process.execPath, [path.join(packageCopy, "dist/bin/agentera.js"), ...args], { cwd: projectRoot, env, encoding: "utf8" });
+      return { run, unchanged: () => expect(tree()).toEqual(before) };
+    };
+    const expectFailure = (result: ReturnType<typeof spawnSync>, command: string, classification: string, reason: string) => {
+      const stdout = String(result.stdout);
+      expect(result.status, stdout + String(result.stderr)).toBe(1);
+      expect(String(result.stderr)).toBe("");
+      expect(stdout.trimEnd().split("\n")).toHaveLength(1);
+      const envelope = JSON.parse(stdout) as Record<string, unknown>;
+      expect(envelope).toMatchObject({ schemaVersion: "agentera.startupFailure.v1", status: "fail", command, classification, reason, state_changed: false });
+      expect(typeof envelope.recovery).toBe("string");
+      expect(stdout).not.toMatch(/ModuleJob|YAMLParseError|node_modules|\n\s+at /);
+      const { command: _command, ...shared } = envelope;
+      return shared;
+    };
+    const invocations = [["prime", "--context", "status", "--format", "json"], ["prime", "--context", "status"], ["doctor", "--format", "json"], ["doctor"]];
+
+    it("returns typed JSON when state authority breaks while the CLI is starting", () => {
+      const copy = startupCopy("state-authority", (bundle) => fs.writeFileSync(path.join(bundle, "references/artifacts/state-storage-authority.yaml"), "a: [\n  b: {\n"));
+      for (const args of invocations) expectFailure(copy.run(args), args[0], "runtime_authority_unavailable", "malformed");
+      copy.unchanged();
+    });
+
+    it("returns the same typed JSON from prime and doctor when the bootstrap source is missing", () => {
+      const copy = startupCopy("bootstrap-source", (bundle) => fs.rmSync(path.join(bundle, "registry.json")));
+      const outputs = invocations.map((args) => expectFailure(copy.run(args), args[0], "bootstrap_source_missing", "missing"));
+      for (const output of outputs) expect(output).toEqual(outputs[0]);
+      copy.unchanged();
+    });
+
+    it("fails prime closed on corrupt version authority", () => {
+      const copy = startupCopy("version-authority", (bundle) => fs.writeFileSync(path.join(bundle, "registry.json"), '{"skills":[{"version":""}]}'));
+      expectFailure(copy.run(["prime", "--context", "status"]), "prime", "version_authority_invalid", "invalid_version");
+      copy.unchanged();
+      for (const [relative, bytes] of sharedAuthorities) expect(fs.readFileSync(path.join(fixture.packageRoot, relative)).equals(bytes)).toBe(true);
+    });
+  });
+
   it("serves and isolates the bundled Profile contract", () => {
     const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
     const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml");

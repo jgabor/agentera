@@ -4,7 +4,7 @@ record:
   name: Return typed JSON for broken startup authority
   depends_on:
     - aucgajnzmq
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN missing, malformed, or wrong-shaped state authority, including a fault raised while the CLI is still starting, WHEN prime or doctor runs from a packaged copy, with or without `--format json`, THEN stdout holds one JSON failure with a stable schema identifier, a classification, recovery guidance, and an explicit no-mutation field, the exit code is nonzero, no state changes, and no parser or module stack appears.
     - GIVEN a version-authority classification from task 1 WHEN prime or doctor runs THEN it is reported as that typed startup failure rather than a healthy-looking result.

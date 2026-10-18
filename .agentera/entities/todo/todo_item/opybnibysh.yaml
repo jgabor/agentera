@@ -26,12 +26,16 @@ record:
     gate: null
     queue_rank: 6
     order_reason: Build the executable failure boundary after its typed version-diagnostic dependency and before stable release.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint."
+      status: resolved
+      order: 165
       severity: critical
-      status: open
-      order: 1
+  lifecycle:
+    operation: resolve
+    reason: prime and doctor now print one agentera.startupFailure.v1 JSON object with classification, reason, recovery and state_changed false, and exit 1, for broken bundled authority, an incomplete bootstrap source, or corrupt version authority
+    date: 2026-10-19

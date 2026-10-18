@@ -40,4 +40,4 @@ record:
       description: "[fix:3.0.0] Harden the unified npm Trusted Publisher for both channels."
       severity: critical
       status: open
-      order: 4
+      order: 3

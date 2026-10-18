@@ -70,3 +70,23 @@ export function resolveSourceRoot(env: Record<string, string | undefined> = proc
   // Last resort: package root two levels above dist/core.
   return path.resolve(moduleDir, "..", "..");
 }
+
+const BOOTSTRAP_SOURCE_EVIDENCE = ["skills", "skills/agentera/SKILL.md", "registry.json"] as const;
+
+/** Required bootstrap source entries absent from root. */
+export function bootstrapSourceMissing(root: string): string[] {
+  // A self-contained npx bundle ships app data without the Python source
+  // surface, so the sentinel plus skill and registry are complete evidence.
+  const required = fs.existsSync(path.join(root, NPX_BUNDLE_SENTINEL)) ? BOOTSTRAP_SOURCE_EVIDENCE.slice(1) : BOOTSTRAP_SOURCE_EVIDENCE;
+  return required.filter((entry) => !fs.existsSync(path.join(root, entry)));
+}
+
+export class BootstrapSourceMissingError extends Error {
+  constructor(
+    readonly root: string,
+    readonly missing: string[],
+  ) {
+    super(`bootstrap source root ${root} is missing: ${missing.join(", ")}`);
+    this.name = "BootstrapSourceMissingError";
+  }
+}

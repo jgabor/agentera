@@ -4,7 +4,7 @@ record:
   name: Classify version-authority failures
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN version authority that is missing, unreadable, malformed, has empty skills data, points at the wrong version field, or whose package contract cannot be read WHEN the suite version is resolved THEN a stable typed classification is returned instead of an empty value or an uncaught error.
     - GIVEN corrupt v3 version authority WHEN doctor and running-version resolution read it THEN they can tell it apart from a valid installation without a v3 version signal, and doctor no longer reports the CLI as up to date.
@@ -12,3 +12,13 @@ record:
     - GIVEN one representative fault in a source run and a packaged run WHEN the version is read THEN both report the same classification.
     - GIVEN valid version authority WHEN any reader resolves it THEN the result is unchanged, and TODO wmxyoqjjiv is resolved.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent audit evaluator report for task aucgajnzmq, 2026-10-19: 5 of 5 criteria PASS, 2 WARN"
+      recorded_at: 2026-10-19 00:48
+      writer_command: agentera state plan record-evaluation

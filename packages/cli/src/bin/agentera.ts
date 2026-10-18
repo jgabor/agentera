@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 import { isSchemaDetailQuery, runSchemaDetail } from "../cli/commands/schemaDetail.js";
 import { emitInvalidInput } from "../cli/errors.js";
+import { classifyStartupError, emitStartupFailure } from "../cli/startupFailure.js";
 import { isServiceDetailQuery, serviceDetailArgs, type ServiceOwner } from "../cli/commands/serviceDetailQuery.js";
 
 // Assigning exitCode lets Node drain piped stdout/stderr before the process
@@ -52,4 +53,17 @@ if (isServiceDetailQuery(args)) {
     );
     process.exitCode = 1;
   }
-} else process.exitCode = args[0] === "schema" && isSchemaDetailQuery(args.slice(1)) && !args.includes("--help") && !args.includes("-h") ? runSchemaDetail(args.slice(1), {}) : (await import("../cli/dispatch.js")).main(process.argv);
+} else if (args[0] === "schema" && isSchemaDetailQuery(args.slice(1)) && !args.includes("--help") && !args.includes("-h")) {
+  process.exitCode = runSchemaDetail(args.slice(1), {});
+} else {
+  // Dispatch modules load bundled authorities at import time. A fault there
+  // means no command code ran, so it is reported as a typed startup failure
+  // instead of a parser or module stack.
+  let dispatch: typeof import("../cli/dispatch.js") | null = null;
+  try {
+    dispatch = await import("../cli/dispatch.js");
+  } catch (error) {
+    process.exitCode = emitStartupFailure({}, classifyStartupError(error), args[0] ?? null);
+  }
+  if (dispatch) process.exitCode = dispatch.main(process.argv);
+}

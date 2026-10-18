@@ -97,4 +97,4 @@ record:
       description: "[fix:3.0.0] Prepare the stable TypeScript Trusted Publishing contract on main."
       severity: critical
       status: open
-      order: 2
+      order: 1

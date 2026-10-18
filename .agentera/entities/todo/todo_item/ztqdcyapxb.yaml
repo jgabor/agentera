@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval"
       severity: critical
       status: open
-      order: 6
+      order: 5

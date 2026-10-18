@@ -5,6 +5,7 @@ import type { JsonObject } from "../core/jsonValue.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { resolvePath } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { readSuiteVersion } from "../upgrade/appModel.js";
 
 /** PackageManifest registry loader and contract validator. Port of scripts/package_registry.py. */
 
@@ -126,25 +127,10 @@ export class PackageRegistry {
   }
 
   suiteVersion(packageId = "agentera"): string {
-    const record = this.get(packageId);
-    const authority = record.version_authority;
-    if (authority.persisted_authority !== "registry.json" || authority.selector !== "skills[0].version") {
-      throw new RegistryError("unsupported suite version authority selector");
-    }
-    let data: any; // cast: JSON.parse IO boundary
-    try {
-      data = JSON.parse(fs.readFileSync(path.join(this.root, authority.persisted_authority), "utf8"));
-    } catch {
-      throw new RegistryError(`registry.json missing skills[0].version`);
-    }
-    const version = data?.skills?.[0]?.version;
-    if (version === undefined) {
-      throw new RegistryError("registry.json missing skills[0].version");
-    }
-    if (typeof version !== "string" || !version) {
-      throw new RegistryError("registry.json skills[0].version must be a non-empty string");
-    }
-    return version;
+    // One reader owns version-authority classification for every consumer.
+    const result = readSuiteVersion(this.root, () => ({ get: () => this.get(packageId) }));
+    if (result.kind === "ok") return result.version;
+    throw new RegistryError(`suite version authority is ${result.reason}: ${result.message}`);
   }
 
   consumerView(consumer: string, packageId = "agentera"): JsonObject {

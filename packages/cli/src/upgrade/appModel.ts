@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { expanduser, isFile, pathExists, resolvePath } from "../core/paths.js";
 import { resolveProfileDirOverride } from "../core/envPaths.js";
-import { resolveSourceRoot } from "../core/sourceRoot.js";
+import { BootstrapSourceMissingError, bootstrapSourceMissing, resolveSourceRoot } from "../core/sourceRoot.js";
 import { Classification, SOURCE_LABELS, classifyResolvedRoot, isForeignPlatformDefaultAppHome, resolveCandidate } from "../state/installRoot.js";
 import { loadRegistry, type PackageRegistry } from "../registries/packageRegistry.js";
 import { hasBundleRootEvidence } from "./bundleEvidence.js";
@@ -41,19 +41,6 @@ export interface ActiveAppModel {
 
 function runtimeRoot(): string {
   return resolveSourceRoot();
-}
-
-const SETUP_EVIDENCE = ["skills", "skills/agentera/SKILL.md", "registry.json"] as const;
-
-function sourceRootMissing(root: string): string[] {
-  // Self-contained npx bundle: the published package ships app data without the
-  // Python source surface (scripts/hooks). The sentinel + skills + registry are
-  // sufficient evidence of a complete app root. (Sentinel never exists in a repo
-  // checkout or installed app, so checkout/app-home behavior is unchanged.)
-  if (pathExists(path.join(root, ".agentera-npx-bundle.json"))) {
-    return ["skills/agentera/SKILL.md", "registry.json"].filter((entry) => !pathExists(path.join(root, entry)));
-  }
-  return SETUP_EVIDENCE.filter((entry) => !pathExists(path.join(root, entry)));
 }
 
 /** Stable reasons the suite version authority cannot yield a version. */
@@ -181,9 +168,9 @@ function shouldRecoverForeignPlatformDefaultAppHome(candidate: string, home: str
 export function resolveSourceRootStrict(env: Env = process.env): string {
   const configured = env[BOOTSTRAP_SOURCE_ROOT_ENV];
   const root = resolvePath(configured ? expanduser(configured) : runtimeRoot());
-  const missing = sourceRootMissing(root);
+  const missing = bootstrapSourceMissing(root);
   if (missing.length > 0) {
-    throw new Error(`bootstrap source root ${root} is missing: ${missing.join(", ")}`);
+    throw new BootstrapSourceMissingError(root, missing);
   }
   return root;
 }

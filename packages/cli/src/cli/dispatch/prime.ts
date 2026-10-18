@@ -5,6 +5,8 @@ import { asEnvelopeFormat, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 import { emitStructured } from "../structured.js";
+import { BootstrapSourceMissingError } from "../../core/sourceRoot.js";
+import { classifyStartupError, emitStartupFailure } from "../startupFailure.js";
 
 function emitStateFailure(error: StateRetrievalFailure, format: string | undefined, io: Io): number {
   const output = io.out ?? ((text: string) => process.stdout.write(text));
@@ -168,6 +170,7 @@ export function runPrime(command: string, argv: string[], io: Io, _prog: string)
     return cmdPrime(args, io);
   } catch (exc) {
     if (exc instanceof StateRetrievalFailure) return emitStateFailure(exc, args.format, io);
+    if (exc instanceof BootstrapSourceMissingError) return emitStartupFailure(io, classifyStartupError(exc), command);
     return emitInvalidInput(io, {
       format: invalidInputFormat(),
       body: { class: "unsupported_target", message: (exc as Error).message },
