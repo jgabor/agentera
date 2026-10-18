@@ -5,10 +5,12 @@ record:
   target_version: 3.0.0
   title: Keep bare prime within its brief byte budget in projects with large attention lists
   requirements:
-    - Bare `prime` in ktx needs a 12,299-byte envelope against its 12,000-byte budget and fails; the published development build fails the same way.
+    - Bare `prime` fails when a project's state makes the minimum routing envelope larger than the 12,000-byte brief budget; one observed project needed 12,194 bytes, and the published development build fails the same way.
     - Prime must fit by bounding or omitting lower-priority sections with exact continuation commands, not by failing.
+    - Until it fits, the failure must not report `unsupported_target` with "Correct the input and retry", because bare `prime` takes no input.
   acceptance:
-    - GIVEN the ktx project state WHEN bare `npx -y agentera@next prime` runs THEN it exits 0 within budget and reports any omission with a continuation command.
+    - GIVEN a test fixture project whose state produces a minimum routing envelope above the brief budget WHEN bare `prime` runs THEN it exits 0 within budget and reports each omission with a continuation command.
+    - GIVEN the same fixture WHEN `prime --context status` runs THEN its output is unchanged by the fix.
   release_blocker: false
   severity: degraded
   status: open
@@ -20,13 +22,3 @@ record:
       severity: degraded
       status: open
       order: 2
-    create_batch:
-      effect_sha256: 2f3c8fcfb819d817515d7531f432aaad5d5b7785a9c92a49720c34a704d73be8
-      input_sha256: 35f157a29a2a68a763675dd03237c0b9f4cac61ed8c0ebfe10b153b5e8596901
-      local_refs:
-        reset-profile-loss: ztqdcyapxb
-        opencode-cap: oadzaijpdf
-        prime-budget: krqhlpjexq
-        validate-gitignored: lujhcenyxw
-        route-future: pzicyatkvi
-        glossary-trial: nyojrcuxlu
