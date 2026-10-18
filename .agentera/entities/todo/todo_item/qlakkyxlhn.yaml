@@ -1,0 +1,27 @@
+id: qlakkyxlhn
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Reject structural spans as personal glossary candidates
+  requirements:
+    - Explicit mining must reject cues whose term or meaning is serialized data, markup, a patch fragment, a clause, or a pronoun-led reference, using existing abstention reasons.
+    - The frozen glossary evaluation must keep passing without relaxed holdout expectations.
+  acceptance:
+    - On the 2026-10-18 tier, explicit candidates drop from 76 to 35 with mining changes alone, and verify eval glossary passes.
+    - JSON fragments, markup tags, patch markers, clause terms, and pronoun terms produce no candidate.
+  release_blocker: false
+  severity: degraded
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Reject structural spans as personal glossary candidates"
+      status: resolved
+      order: 160
+      severity: degraded
+  lifecycle:
+    operation: resolve
+    reason: Explicit mining rejects structural spans and pronoun-led terms under existing reasons; the frozen evaluation passes.
+    date: 2026-10-18

@@ -267,7 +267,9 @@ signal_semantics:
         session_meta source.subagent, OpenCode session parent_id) is agent,
         and a user-role turn that opens with a declared runtime envelope
         (instruction preamble, skill body, notification, reviewer transcript)
-        is injected_instruction unless it carries a Cursor user_query.
+        is injected_instruction unless it carries a Cursor user_query. Cursor
+        Task subagent transcripts under a subagents directory are delegated,
+        and a Cursor user turn keeps only its user_query bodies as content.
         Profile evidence counts only user-authored conversation signals.
       consumer: glossary
   preservation_rule: >-

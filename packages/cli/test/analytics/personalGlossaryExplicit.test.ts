@@ -89,6 +89,22 @@ describe("deterministic explicit cue recognition", () => {
     expect(classifyExplicitGlossaryLanguage(text)).toEqual({ term, meaning });
   });
 
+  it.each([
+    ["serialized key-value fragment", 'result: "accepted",'],
+    ["serialized identifier value", 'gitRef: "f4546b2ff2fa997baa94f0de38a768212ea446c9"'],
+    ["escaped serialized payload", 'output: "{\\n \\"success\\": true"'],
+    ["pronoun term", "It means competing aesthetics or significant visual pivots."],
+    ["markup tag in the meaning", "Use planera for mining Cursor </user_query>"],
+    ["patch marker in the meaning", 'schema_version: "leda.bench.retention_scan.v1"\n+}\n*** End Patch'],
+    ["clause crossing a list separator", "Use OKLCH, 8pt grid for spacing."],
+  ])("rejects a %s as a structural class rather than a definition", (_name, text) => {
+    expect(discoverExplicitGlossaryCues(text)).toEqual([]);
+  });
+
+  it("keeps a quoted prose meaning after rejecting serialized values", () => {
+    expect(classifyExplicitGlossaryLanguage('"ship shape" means "the complete form of a deliverable".')).toMatchObject({ term: "ship shape" });
+  });
+
   it("keeps punctuation, multiline meaning, combining marks, and multiple list entries exact", () => {
     const text = "`café`: first line: with detail\nsecond line\nAPI: Application Programming Interface.";
     const cues = discoverExplicitGlossaryCues(text);

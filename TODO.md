@@ -209,3 +209,4 @@
 - [x] [id:vppwtwnayj] [fix:3.0.0] Abstain secret-bearing glossary candidates instead of failing the projection
 - [x] [id:pccnnqphak] [fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest
 - [x] [id:vkbmdjahzk] [fix:3.0.0] Attribute delegated and injected user-role turns to their real author
+- [x] [id:qlakkyxlhn] [fix:3.0.0] Reject structural spans as personal glossary candidates

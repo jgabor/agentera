@@ -200,6 +200,17 @@ personal_mining_authority:
           output: shared_cue_segment_output
           syntax: approved_correction_prefix_quoted_or_code_term_means_meaning
           prefixes: [actually, correction, not_quite, instead, rather]
+      span_rejections:
+        structural_fragment: >-
+          A cue whose term spans a line break, a list separator, or a label
+          colon, carries an unbalanced bracket or backtick or a markdown link
+          fragment, or whose term or meaning contains a markup tag, a patch or
+          diff marker, a serialized value followed by a delimiter, an escaped
+          payload, or a format placeholder crossed structure rather than naming
+          a term in prose.
+        ambiguous_reference: >-
+          A term that starts with a pronoun or pointer word names nothing on
+          its own.
       bounds:
         maximum_term_utf8_bytes: 256
         maximum_meaning_utf8_bytes: 4096

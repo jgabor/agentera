@@ -597,6 +597,30 @@ export function candidateBounds(): CandidateBounds {
   };
 }
 
+const MARKUP_TAG_RE = /<\/?[A-Za-z_][\w:-]*(?:\s[^<>]*)?>/u;
+const PATCH_MARKER_RE = /\*\*\* (?:Begin|End|Update|Add|Delete) (?:Patch|File)|(?:^|\n)[+-](?=\S)|(?:^|\s)\+\s*$/u;
+const SERIALIZED_VALUE_RE = /^(?:"(?:[^"\\]|\\.)*"|-?\d[\d.]*|true|false|null)\s*[,}\]]|^"[^\s"]+"$|\\[n"t]|%[sd]/u;
+const REFERENCE_WORD_TERM_RE = /^(?:it|its|this|that|these|those|which|they|them|here|there)\b/iu;
+
+function unbalanced(value: string, open: string, close: string): boolean {
+  return value.split(open).length !== value.split(close).length;
+}
+
+/**
+ * Definitions name a term in prose. Spans whose term or meaning is a fragment
+ * of serialized data, markup, or a patch are structure the cue happened to
+ * cross, so they abstain as structural fragments regardless of wording.
+ */
+function structuralSpan(term: string, meaning: string): boolean {
+  // A term crossing a list separator or label colon is a clause, not a name.
+  if (term.includes("\n") || term.includes(", ") || term.includes(": ")) return true;
+  if (MARKUP_TAG_RE.test(term) || MARKUP_TAG_RE.test(meaning)) return true;
+  if (PATCH_MARKER_RE.test(term) || PATCH_MARKER_RE.test(meaning)) return true;
+  if (SERIALIZED_VALUE_RE.test(meaning)) return true;
+  if (term.includes("](") || unbalanced(term, "(", ")") || unbalanced(term, "[", "]") || (term.split("`").length - 1) % 2 === 1) return true;
+  return false;
+}
+
 export function validCue(text: string, cue: RawCue, bounds: CandidateBounds, record?: JsonObject): { cue: ValidCue | null; reason: ExplicitGlossaryReason | null } {
   if (cue.rejectionReason) return { cue: null, reason: cue.rejectionReason };
   const reason = pureCueReason(text, cue, record);
@@ -609,6 +633,9 @@ export function validCue(text: string, cue: RawCue, bounds: CandidateBounds, rec
   if (!meaning) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.emptyMeaning };
   if (!LETTER_OR_NUMBER_RE.test(term)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
   if (!LETTER_OR_NUMBER_RE.test(meaning)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.malformedSpan };
+  if (structuralSpan(term, meaning)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.structuralFragment };
+  // A term that starts with a pronoun or pointer word names nothing on its own.
+  if (REFERENCE_WORD_TERM_RE.test(term)) return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.ambiguousReference };
   if (cue.kind === "stands_for" && !acronymExpansionMatches(term, meaning)) {
     return { cue: null, reason: EXPLICIT_GLOSSARY_REASONS.unsafeSyntax };
   }
