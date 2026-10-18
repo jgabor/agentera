@@ -600,7 +600,8 @@ describe("packaged Build glossary advice seam", () => {
     const exactRoot = project();
     publishProject(exactRoot, "Ship Shape", "Project meaning");
     const malformedProfile = temporary("malformed-profile");
-    fs.writeFileSync(path.join(malformedProfile, "PROFILE.md"), "PRIVATE_MALFORMED_PROFILE");
+    // An unmatched owned-section marker is malformed; a profile without the section is absent.
+    fs.writeFileSync(path.join(malformedProfile, "PROFILE.md"), "<!-- agentera:personal-glossary:start -->\nPRIVATE_MALFORMED_PROFILE\n");
     const exactBefore = snapshotTree(exactRoot);
     const malformedBefore = snapshotTree(malformedProfile);
     const exact = advice(exactRoot, malformedProfile, {
@@ -619,6 +620,13 @@ describe("packaged Build glossary advice seam", () => {
     expect(plan.behavior_matrix.exact_project_personal_unavailable.handoff_intent).toBe("none");
     expect(snapshotTree(exactRoot)).toEqual(exactBefore);
     expect(snapshotTree(malformedProfile)).toEqual(malformedBefore);
+    expect(exact.stdout).not.toContain("PRIVATE_MALFORMED_PROFILE");
+
+    const absentProfile = temporary("absent-profile");
+    const noData = JSON.parse(advice(exactRoot, absentProfile, { schema_version: "agentera.glossaryAdviceRequest.v1", requested_term: "Ship Shape" }).stdout).advice;
+    expect(noData).toMatchObject({ outcome: "project_only", applicable_meaning: "Project meaning", advisory: null });
+    expect(noData.recovery).toMatch(/ prime --context profile$/);
+    expect(JSON.stringify(noData)).not.toContain(absentProfile);
 
     const divergentRoot = project();
     const divergentProfile = profile("Ship Shape", "PRIVATE_DIVERGENT_DEFINITION");

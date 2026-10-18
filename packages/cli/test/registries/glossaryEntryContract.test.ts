@@ -120,6 +120,13 @@ describe("shared glossary entry authority", () => {
         },
         load: (pathname) => glossaryAdviceContract(pathname),
       },
+      {
+        name: "advice recovery",
+        mutate: (authority) => {
+          authority.consumer_boundary.advice_resolution.output.recovery.personal_input_absent = "npx -y agentera@latest prime --context profile";
+        },
+        load: (pathname) => glossaryAdviceContract(pathname),
+      },
     ];
     for (const mutation of mutations) {
       const pathname = malformedAuthority(mutation.mutate);
@@ -250,7 +257,7 @@ describe("shared glossary entry authority", () => {
       outcomes: ["invalid_or_unavailable_project", "equivalent_exact_collision", "divergent_exact_collision", "project_only", "proven_project_gap", "inferred_equivalence", "invalid_or_unavailable_personal", "no_applicable_entry"],
       refreshRequired: expect.arrayContaining(["initial_meaning_sensitive_input", "later_user_requirement_change_that_can_change_meaning", "later_user_intent_change_that_can_change_meaning"]),
       refreshNotRequired: expect.arrayContaining(["unrelated_conversation_turn", "background_state_reread"]),
-      transientAllowed: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory"],
+      transientAllowed: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory", "recovery"],
       durableAllowed: ["caveat_id", "event", "capability", "reason", "ownership_state", "transition_id"],
       caveatOwner: "build",
       caveatChannel: "progress",

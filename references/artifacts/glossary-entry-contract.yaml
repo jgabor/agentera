@@ -2199,11 +2199,21 @@ consumer_boundary:
       additional_fields: forbidden
     output:
       schema_version: agentera.glossaryAdvice.v1
-      fields: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
+      fields: [outcome, applicable_meaning, applicable_owner, review, tension, advisory, recovery]
       owners: [personal, project]
       advisory_fields: [reason, ownership_state]
       advisory_reasons: [personal_input_unavailable, inferred_equivalence]
       advisory_ownership_states: [project_governs_exact]
+      recovery:
+        when: personal_input_absent
+        personal_input_absent: npx -y agentera@next prime --context profile
+        otherwise: "null"
+        rule: >-
+          An absent personal glossary is valid input with no entries, not
+          unavailable authority. Advice then names the public Profile command
+          that creates it. Recovery is not an outcome, review, tension,
+          advisory, or caveat reason; it never names the profile path and never
+          reaches progress, prime attention, or other durable surfaces.
       rule: >-
         Return exactly one matrix outcome and its authority-declared semantics.
         Include only the selected meaning and owner. An orthogonal advisory may
@@ -2365,7 +2375,9 @@ consumer_boundary:
     invalid_or_unavailable_personal:
       when: >-
         project state is gap-proving and personal input is malformed,
-        unavailable, or over bound, so no fallback can be proven
+        unreadable, ambiguous, or over bound, so no fallback can be proven.
+        An absent personal glossary is valid without an exact term and never
+        selects this row.
       match:
         project_input: [valid_gap]
         personal_input: [invalid]
@@ -2611,7 +2623,7 @@ consumer_boundary:
       - decision_conflict
   disclosure:
     transient_advice:
-      allowed: [outcome, applicable_meaning, applicable_owner, review, tension, advisory]
+      allowed: [outcome, applicable_meaning, applicable_owner, review, tension, advisory, recovery]
       minimum_rule: >-
         Include a meaning only when that meaning is selected by the matrix and
         needed for the current meaning-sensitive work. Never include unrelated entries.

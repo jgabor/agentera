@@ -241,7 +241,11 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
     !nonEmpty(hostReview?.rule) ||
     adviceInput?.additional_fields !== "forbidden" ||
     adviceOutput?.schema_version !== "agentera.glossaryAdvice.v1" ||
-    !sameStrings(adviceOutput?.fields, ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory"]) ||
+    !sameStrings(adviceOutput?.fields, ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory", "recovery"]) ||
+    mapping(adviceOutput?.recovery)?.when !== "personal_input_absent" ||
+    mapping(adviceOutput?.recovery)?.personal_input_absent !== "npx -y agentera@next prime --context profile" ||
+    mapping(adviceOutput?.recovery)?.otherwise !== "null" ||
+    !nonEmpty(mapping(adviceOutput?.recovery)?.rule) ||
     !sameStrings(adviceOutput?.owners, ["personal", "project"]) ||
     !sameStrings(adviceOutput?.advisory_fields, ["reason", "ownership_state"]) ||
     !sameStrings(adviceOutput?.advisory_reasons, ["personal_input_unavailable", "inferred_equivalence"]) ||
@@ -471,7 +475,7 @@ export function validateConsumerBoundary(consumer: Mapping | null): string[] {
   const planArtifacts = mapping(disclosure?.plan_artifacts);
   const durableForbidden = ["personal_definition", "project_definition", "personal_evidence_anchor", "personal_profile_path", "raw_personal_glossary_section", "raw_project_glossary_section", "unrelated_entry", "provenance", "project_source_path"];
   if (
-    !sameStrings(transient?.allowed, ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory"]) ||
+    !sameStrings(transient?.allowed, ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory", "recovery"]) ||
     !nonEmpty(transient?.minimum_rule) ||
     !sameStrings(durable?.surfaces, ["progress_evidence", "prime_attention", "diagnostics", "errors"]) ||
     !sameStrings(durable?.allowed, ["caveat_id", "event", "capability", "reason", "ownership_state", "transition_id"]) ||

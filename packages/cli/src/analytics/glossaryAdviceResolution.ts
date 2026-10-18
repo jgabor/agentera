@@ -18,6 +18,7 @@ export interface GlossaryAdvice {
   review: string;
   tension: string;
   advisory: { reason: string; ownership_state: string } | null;
+  recovery: string | null;
 }
 
 export interface GlossaryAdviceSelectionState {
@@ -126,7 +127,8 @@ export function classifyGlossaryAdviceInputs(requestedTerm: string, acquired: Ac
   const projectExact = exactEntry(acquired.project.entries, requestedTerm);
   const personalExact = exactEntry(acquired.personal.entries, requestedTerm);
   const projectValid = ["absent", "valid_empty", "valid_present"].includes(acquired.project.availability);
-  const personalUsable = ["valid_empty", "valid_present"].includes(acquired.personal.availability);
+  // Absence is valid input with no entries, so it never proves unavailable authority.
+  const personalUsable = ["absent", "valid_empty", "valid_present"].includes(acquired.personal.availability);
   return {
     project_input: !projectValid ? "invalid" : projectExact ? "valid_exact" : "valid_gap",
     personal_input: personalExact ? "valid_exact" : personalUsable ? "valid_without_exact" : "invalid",
@@ -162,5 +164,6 @@ export function resolveGlossaryAdvice(requestedTerm: string, acquired: AcquiredG
     review: advisory?.review ?? row.review,
     tension: row.tension,
     advisory: advisory ? { reason: advisory.caveatReason, ownership_state: advisory.ownershipState } : null,
+    recovery: acquired.personal.availability === "absent" ? contract.personalAbsentRecovery : null,
   };
 }

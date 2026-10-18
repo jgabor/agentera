@@ -1,0 +1,20 @@
+id: fckbjmaraq
+artifact: progress
+record:
+  timestamp: 2026-10-18 14:04
+  type: fix
+  phase: build
+  what: Resolved glossary caveat ehddyffpbn after fixing the acquisition defects that made glossary authority look unavailable.
+  context:
+    intent: Close the Build-owned authority_unavailable caveat once a governed advice refresh no longer reports unavailable authority.
+    scope: Glossary input acquisition and advice resolution.
+  discovered: The caveat came from a defect, not from missing authority. Acquisition read the 100 KB docs.yaml under the 64 KiB glossary source bound and classified the project glossary ambiguous; an absent personal glossary was also treated as unavailable.
+  verified: With the local build, report glossary-advice in this repository returns no_applicable_entry with no advisory, review none, and tension none, plus a Profile recovery hint.
+  glossary_caveat:
+    event: resolved
+    reason: authority_unavailable
+    ownership_state: authority_unavailable
+    caveat_id: ehddyffpbn
+    capability: build
+    transition_id: null
+  publication_order: 402

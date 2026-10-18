@@ -67,7 +67,7 @@ describe("shared glossary advice resolution", () => {
       hostReviewRelations: ["inferred_equivalence"],
       hostReviewCandidateOwners: ["personal"],
       schemaVersion: "agentera.glossaryAdvice.v1",
-      outputFields: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory"],
+      outputFields: ["outcome", "applicable_meaning", "applicable_owner", "review", "tension", "advisory", "recovery"],
       failureClasses: ["invalid_request", "invalid_acquisition", "invalid_host_review"],
     });
     expect(contract.maxRequestedTermUtf8Bytes).toBe(glossaryAcquisitionContract().maxSourceUtf8Bytes);
@@ -84,6 +84,7 @@ describe("shared glossary advice resolution", () => {
         review: "unavailable",
         tension: "authority_unavailable",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -96,6 +97,7 @@ describe("shared glossary advice resolution", () => {
         review: "none",
         tension: "none",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -108,6 +110,7 @@ describe("shared glossary advice resolution", () => {
         review: "none",
         tension: "divergent_exact_collision",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -120,6 +123,7 @@ describe("shared glossary advice resolution", () => {
         review: "none_for_primary",
         tension: "none",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -132,6 +136,7 @@ describe("shared glossary advice resolution", () => {
         review: "none",
         tension: "none",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -145,6 +150,7 @@ describe("shared glossary advice resolution", () => {
         review: "required_when_meaning_sensitive",
         tension: "inferred_equivalence",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -157,6 +163,7 @@ describe("shared glossary advice resolution", () => {
         review: "unavailable",
         tension: "input_unavailable",
         advisory: null,
+        recovery: null,
       },
     },
     {
@@ -169,6 +176,7 @@ describe("shared glossary advice resolution", () => {
         review: "none",
         tension: "none",
         advisory: null,
+        recovery: null,
       },
     },
   ])("implements $name", ({ inputs, hostReview, expected }) => {
@@ -186,6 +194,7 @@ describe("shared glossary advice resolution", () => {
         reason: "personal_input_unavailable",
         ownership_state: "project_governs_exact",
       },
+      recovery: null,
     });
 
     expect(resolveGlossaryAdvice(REQUESTED, acquired(projectExact(), personalCandidate()), inferredReview)).toEqual({
@@ -198,6 +207,7 @@ describe("shared glossary advice resolution", () => {
         reason: "inferred_equivalence",
         ownership_state: "project_governs_exact",
       },
+      recovery: null,
     });
   });
 
@@ -260,15 +270,39 @@ describe("shared glossary advice resolution", () => {
         applicable_owner: "personal",
       });
     }
-    for (const [personal, outcome] of [
-      [source("personal", "absent"), "invalid_or_unavailable_personal"],
-      [source("personal", "valid_empty"), "no_applicable_entry"],
-    ] as const) {
+    for (const personal of [source("personal", "absent"), source("personal", "valid_empty")]) {
       expect(resolveGlossaryAdvice(REQUESTED, acquired(source("project", "valid_empty"), personal))).toMatchObject({
-        outcome,
+        outcome: "no_applicable_entry",
         applicable_meaning: null,
       });
     }
+  });
+
+  it("treats an absent personal glossary as no data with Profile recovery instead of unavailable authority", () => {
+    const recovery = glossaryAdviceContract().personalAbsentRecovery;
+    expect(recovery).toMatch(/ prime --context profile$/);
+    const absent = source("personal", "absent");
+    for (const project of [source("project", "absent"), source("project", "valid_empty"), projectGap()]) {
+      expect(resolveGlossaryAdvice(REQUESTED, acquired(project, absent))).toEqual({
+        outcome: "no_applicable_entry",
+        applicable_meaning: null,
+        applicable_owner: null,
+        review: "none",
+        tension: "none",
+        advisory: null,
+        recovery,
+      });
+    }
+    expect(resolveGlossaryAdvice(REQUESTED, acquired(projectExact(), absent))).toEqual({
+      outcome: "project_only",
+      applicable_meaning: "Project meaning",
+      applicable_owner: "project",
+      review: "none_for_primary",
+      tension: "none",
+      advisory: null,
+      recovery,
+    });
+    expect(resolveGlossaryAdvice(REQUESTED, acquired(projectGap(), source("personal", "valid_empty"))).recovery).toBeNull();
   });
 
   it("derives every lawful tuple's first matching row and row semantics from the loaded authority", () => {
@@ -279,7 +313,7 @@ describe("shared glossary advice resolution", () => {
       valid_exact: () => projectExact("Same"),
     };
     const personalStates = {
-      invalid: () => source("personal", "absent"),
+      invalid: () => source("personal", "unreadable"),
       valid_without_exact: () => personalCandidate(),
       valid_exact: (meaning: string) => personalExact(meaning),
     };
