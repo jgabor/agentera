@@ -19,6 +19,7 @@ const DETAIL_COMMANDS: Record<string, string> = {
   vision: preCutoverCommand("state query vision"),
   design: preCutoverCommand("state query design"),
   profile: preCutoverCommand("report profile-grounding"),
+  glossary: preCutoverCommand("report glossary-advice --term-input <file|->"),
 };
 
 function detailCommand(family: string): string {

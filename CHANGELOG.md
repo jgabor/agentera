@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Fixed startup hiding missing profile and glossary data. `prime` now adds one low-priority attention line suggesting Profile when PROFILE.md is absent, and every capability's `glossary` availability row points at `report glossary-advice --term-input <file|->` instead of `schema`.
 - Fixed glossary advice treating a missing PROFILE.md or Glossary section as unavailable authority. Advice now returns `no_applicable_entry` (or `project_only` for an exact project term) with no advisory, so Build no longer records `glossary_caveat` events for missing data. A new `advice.recovery` field names `npx -y agentera@next prime --context profile` when the personal glossary is absent and is `null` otherwise.
 - Fixed project glossary acquisition reporting `ambiguous` whenever `.agentera/docs.yaml` exceeded 64 KiB, which made glossary advice and Build treat project authority as unavailable. The docs path mapping is now read under its own 256 KiB bound, matching other docs mapping readers; the 64 KiB bound still applies to glossary sources.
 - Fixed `--term-input` for `report glossary-advice` and `prime --context <discuss|plan|build>` keeping the trailing newline from a here-string (`<<<`), echo, or editor, so a supplied term never matched its exact glossary entry. Exactly one trailing LF or CRLF is now removed; all other bytes remain part of the term.

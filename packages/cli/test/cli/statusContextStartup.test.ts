@@ -614,6 +614,11 @@ describe("status capability self-contained startup", () => {
           availability: "deferred",
           detail_command: "npx -y agentera@next report profile-grounding",
         },
+        {
+          family: "glossary",
+          availability: "deferred",
+          detail_command: "npx -y agentera@next report glossary-advice --term-input <file|->",
+        },
       ]),
     );
     expect(capsule.context).toHaveProperty("first_invocation_read");

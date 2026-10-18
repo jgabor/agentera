@@ -250,6 +250,22 @@ describe("corpus coverage attention", () => {
   });
 });
 
+describe("profile absence attention", () => {
+  const noCoverage = { path: "", status: "missing", available_runtimes: [], selected_runtimes: [], available_but_not_selected: [] } as OrientationState["corpus_coverage"];
+
+  it("suggests Profile exactly once when PROFILE.md is absent and stays silent otherwise", () => {
+    const absent = minimalOrientationState(noCoverage);
+    absent.profile_status = "absent";
+    const items = buildOrientationAttention(absent).filter((item) => item.includes("PROFILE.md absent"));
+    expect(items).toEqual(["normal: PROFILE.md absent; suggest running profile"]);
+    for (const status of ["valid", "repair_needed"] as const) {
+      const state = minimalOrientationState(noCoverage);
+      state.profile_status = status;
+      expect(buildOrientationAttention(state).some((item) => item.includes("PROFILE.md absent"))).toBe(false);
+    }
+  });
+});
+
 describe("retired lifecycle attention", () => {
   it("keeps executable and blocker lifecycle rows bounded and truthful", () => {
     const state = minimalOrientationState({

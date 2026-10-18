@@ -44,7 +44,6 @@
 - [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
 - [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
 - [ ] [id:hgzzwyerzo] [refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
-- [ ] [id:jiumssksof] [fix:3.0.0] Surface profile and glossary absence once at startup
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -205,3 +204,4 @@
 - [x] [id:fkkwoyafum] [fix:3.0.0] Strip the shell line terminator from selected-term input
 - [x] [id:ylipwxmech] [fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound
 - [x] [id:tjrpbdfxww] [fix:3.0.0] Treat an absent personal glossary as no data instead of unavailable authority
+- [x] [id:jiumssksof] [fix:3.0.0] Surface profile and glossary absence once at startup

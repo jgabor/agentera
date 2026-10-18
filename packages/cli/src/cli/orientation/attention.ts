@@ -64,5 +64,9 @@ export function buildOrientationAttention(state: OrientationState): string[] {
       }),
     );
   }
+  // Startup lists profile and glossary only as deferred reads, so absence is
+  // otherwise invisible until a consumer silently gets no data. It ranks last
+  // so it never displaces higher-severity attention.
+  if (state.profile_status === "absent") attention.push("normal: PROFILE.md absent; suggest running profile");
   return attention;
 }
