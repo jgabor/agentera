@@ -135,6 +135,15 @@ describe("refresh candidate projection production", () => {
     expect(JSON.parse(exact.out).candidate_projection_sha256).toBe(produced.candidate_projection_sha256);
   });
 
+  it("names an unanalyzable tier state instead of reporting a generation change", () => {
+    const generation = publish();
+    const signalPath = path.join(tiersDir, "generations", generation, "signal.json");
+    // A sparse extension past the 64 MiB cap makes the current tier oversized.
+    fs.truncateSync(signalPath, 64 * 1024 * 1024 + 1);
+    expect(() => produceCurrentPersonalGlossaryProjection({ tiersDir })).toThrow(/^current evidence generation is not analyzable \(oversized\)/);
+    expect(fs.existsSync(personalGlossaryCandidateProjectionPath())).toBe(false);
+  });
+
   it("replays identical bytes and replaces missing, stale, or malformed regular derived state only", () => {
     publish();
     const profileMarker = path.join(profileDir, "profile.yaml");

@@ -322,6 +322,9 @@ export function produceCurrentPersonalGlossaryProjection(options: PersonalGlossa
 
   const explicit = mineExplicitGlossaryCandidates({ tiersDir: options.tiersDir });
   const recurring = mineRecurringGlossaryCandidates({ tiersDir: options.tiersDir });
+  for (const mined of [explicit, recurring]) {
+    if (mined.generation === null) throw new TypeError(`current evidence generation is not analyzable (${mined.state})${mined.recovery ? `; ${mined.recovery}` : ""}`);
+  }
   const after = readCurrentGeneration(options.tiersDir);
   if (!after || explicit.generation !== before.manifest.generation || recurring.generation !== before.manifest.generation || after.manifest.generation !== before.manifest.generation) {
     throw new TypeError("current evidence generation changed during projection production");

@@ -5,7 +5,8 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
-import { evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
+import { pyJsonIndentSorted } from "../../src/core/pyjson.js";
+import { evidenceTierAuthorityPath, evidenceTierBounds } from "../../src/registries/evidenceTierContract.js";
 import {
   deriveSignalRecords,
   evidenceTierCompatibility,
@@ -126,6 +127,11 @@ function representativeRecords(): JsonObjectLocal[] {
       data: { prompt: "old" },
     }),
   ];
+}
+
+/** Bytes of the signal tier file the writer produces for these records. */
+function tierFileBytes(records: SignalRecord[]): number {
+  return Buffer.byteLength(pyJsonIndentSorted({ records }), "utf-8") + 1;
 }
 
 function publish(records: JsonObjectLocal[], tiersDir = tmp, runtimeStatuses?: JsonObjectLocal[]): PublicationResult {
@@ -378,8 +384,44 @@ describe("Unknown 1 — deterministic signal bound and selection", () => {
     expect(families.has("opencode")).toBe(true);
     expect(families.has("codex")).toBe(true);
     expect(families.has("cursor")).toBe(true);
-    // Selected bytes stay under the cap.
-    expect(Buffer.byteLength(JSON.stringify({ records }), "utf-8")).toBeLessThanOrEqual(cap);
+    // The written tier file (indented payload plus newline) stays within the cap.
+    expect(tierFileBytes(records)).toBeLessThanOrEqual(cap);
+  });
+
+  it("keeps the written tier within the cap when the newest records are larger than average", () => {
+    const signals: SignalRecord[] = [];
+    // Old records are small; the recent ones a recency-first selection keeps
+    // carry long provenance, so an average-size budget would overshoot.
+    for (let i = 0; i < 400; i++) {
+      const recent = i >= 200;
+      signals.push({
+        source_id: `${recent ? "new" : "old"}${String(i).padStart(3, "0")}`,
+        source_kind: "conversation_turn",
+        signal_type: "decision",
+        timestamp: `2026-0${recent ? 2 : 1}-01T00:00:${String(i % 60).padStart(2, "0")}.000Z`,
+        project_id: recent ? "p".repeat(120) : "p",
+        runtime: i % 4 === 0 ? "codex" : "opencode",
+        source_product: i % 4 === 0 ? "codex" : "opencode",
+        evidence_anchor: `${recent ? "new" : "old"}${String(i).padStart(3, "0")}`,
+      });
+    }
+    for (const cap of [8192, 20_000, 40_000]) {
+      const { records, selection } = selectSignalsForBound(signals, cap);
+      expect(selection.capped).toBe(true);
+      expect(tierFileBytes(records)).toBeLessThanOrEqual(cap);
+      expect(new Set(records.map((s) => s.source_product))).toEqual(new Set(["codex", "opencode"]));
+      expect(selection.retained).toBe(records.length);
+      expect(selection.per_family.reduce((sum, family) => sum + family.retained, 0)).toBe(records.length);
+    }
+  });
+
+  it("retains everything when the tier file exactly fits and caps one byte below that", () => {
+    const signals = deriveSignalRecords(representativeRecords());
+    const exact = tierFileBytes(signals);
+    expect(selectSignalsForBound(signals, exact).selection.capped).toBe(false);
+    const tight = selectSignalsForBound(signals, exact - 1);
+    expect(tight.selection.capped).toBe(true);
+    expect(tierFileBytes(tight.records)).toBeLessThanOrEqual(exact - 1);
   });
 
   it("selection is deterministic: same input reproduces identical membership and order", () => {
@@ -480,5 +522,46 @@ describe("publication contract — generation identity", () => {
     const b = generationId(records.slice().reverse(), ADAPTER_VERSION, bounds.shardByteCap, bounds.signalByteCap);
     expect(a).toMatch(/^[0-9a-f]{24}$/);
     expect(b).toBe(a);
+  });
+});
+
+describe("signal tier publication bound", () => {
+  function contractWithSignalCap(cap: number): string {
+    const contract = fs.readFileSync(evidenceTierAuthorityPath(), "utf-8").replace(/^  signal_byte_cap: \d+$/m, `  signal_byte_cap: ${cap}`);
+    const file = path.join(tmp, "evidence-tier-authority.yaml");
+    fs.writeFileSync(file, contract);
+    return file;
+  }
+
+  it("writes a capped signal file no larger than the declared cap", () => {
+    const records = Array.from({ length: 60 }, (_, i) =>
+      fullRecord({
+        sourceId: `w${String(i).padStart(2, "0")}`,
+        sourceKind: "conversation_turn",
+        sourceProduct: i % 3 === 0 ? "codex" : "opencode",
+        runtime: i % 3 === 0 ? "codex" : "opencode",
+        timestamp: `2026-01-01T00:${String(i).padStart(2, "0")}:00.000Z`,
+        data: { actor: "user", signal_type: "decision", text: `decide ${"x".repeat(i * 4)}` },
+      }),
+    );
+    const tiersDir = path.join(tmp, "tiers");
+    const cap = 6000;
+    const result = publishEvidenceTiers(records as JsonObject[], { tiersDir, adapterVersion: ADAPTER_VERSION, publishedAt: "2026-01-15T00:00:00.000Z" }, contractWithSignalCap(cap));
+    expect(result.signal_selection.capped).toBe(true);
+    const signalFile = path.join(tiersDir, "generations", result.generation, "signal.json");
+    expect(fs.statSync(signalFile).size).toBeLessThanOrEqual(cap);
+    expect(fs.statSync(signalFile).size).toBe(result.signal_bytes + 1);
+  });
+
+  it("replaces a same-identity generation whose signal file differs from the current selection", () => {
+    const first = publish(representativeRecords());
+    const signalFile = path.join(tmp, "generations", first.generation, "signal.json");
+    const expected = fs.readFileSync(signalFile);
+    // A generation written by an earlier selection keeps its identity but not its bytes.
+    fs.appendFileSync(signalFile, " ".repeat(64));
+    const second = publish(representativeRecords());
+    expect(second.generation).toBe(first.generation);
+    expect(fs.readFileSync(signalFile)).toEqual(expected);
+    expect(evidenceTierCompatibility(tmp).state).not.toBe("corrupt");
   });
 });

@@ -1,0 +1,27 @@
+id: jfgcwqzblm
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Give Profile Full its destination and bounded signal inputs at startup
+  requirements:
+    - Profile Full must obtain the configured PROFILE.md destination and bounded signal status from a CLI read, never from a Prime field that is not served.
+    - Normal Prime must keep omitting profile paths and generation metadata.
+  acceptance:
+    - Served Profile instructions reference no `profile_context.profile.*` field and direct the agent to `agentera report profile-inputs`.
+    - "`report profile-inputs` returns `profile.path` and `bounded_signals` without reading history or writing."
+  release_blocker: false
+  severity: critical
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Give Profile Full its destination and bounded signal inputs at startup"
+      status: resolved
+      order: 150
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: Profile Full reads its destination and bounded signal status from report profile-inputs; a regression test guards the served instructions.
+    date: 2026-10-18

@@ -157,7 +157,15 @@ it("exposes generation metadata only through the explicit read-only input comman
     privacy: { local_history_read: false, profile_content_emitted: false, writes: false },
   });
   expect(JSON.stringify(inputs)).not.toContain("Retain the original tension");
-  expect(JSON.stringify(run(["prime", "--context", "profile"]))).not.toContain(profile);
+  const primed = run(["prime", "--context", "profile"]);
+  expect(JSON.stringify(primed)).not.toContain(profile);
+  // Prime omits the destination, so served instructions must route every
+  // destination and signal read through the explicit input command.
+  const served = String(primed.capability_context.instructions);
+  expect(served).toContain("agentera@next report profile-inputs");
+  expect(served).not.toMatch(/profile_context\.profile\./);
+  expect(served).toContain("profile_inputs.profile.path");
+  expect(served).toContain("profile_inputs.bounded_signals");
   run(["report", "profile-inputs", "--consent", "local-history"], 2);
   expect(fs.readFileSync(path.join(profile, "PROFILE.md"))).toEqual(original);
   expect(fs.existsSync(path.join(profile, "intermediate"))).toBe(false);

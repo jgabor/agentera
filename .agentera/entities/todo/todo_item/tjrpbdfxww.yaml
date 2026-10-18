@@ -1,0 +1,23 @@
+id: tjrpbdfxww
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Treat an absent personal glossary as no data instead of unavailable authority
+  requirements:
+    - Advice resolution must classify a contract-valid absent personal glossary as valid without an exact term.
+    - Advice for an absent personal glossary must carry a public Profile recovery hint that Build cannot persist as a glossary caveat.
+  acceptance:
+    - With a gap-proving project glossary and no PROFILE.md, advice returns `no_applicable_entry` with the Profile hint and no advisory.
+    - With an exact project entry and no PROFILE.md, advice returns `project_only` with no advisory.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Treat an absent personal glossary as no data instead of unavailable authority"
+      severity: degraded
+      status: open
+      order: 3

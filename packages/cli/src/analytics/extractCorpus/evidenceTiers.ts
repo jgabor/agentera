@@ -299,11 +299,32 @@ export function shardFullEvidence(
   return shards;
 }
 
+/** Tier files end with one newline after the payload; readers stat the file. */
+const TIER_FILE_TERMINATOR_BYTES = 1;
+
+function newestFirst(a: SignalRecord, b: SignalRecord): number {
+  if (a.timestamp !== b.timestamp) return a.timestamp < b.timestamp ? 1 : -1;
+  return a.source_id < b.source_id ? -1 : a.source_id > b.source_id ? 1 : 0;
+}
+
 /**
- * Deterministic signal selection applied only when the derived tier would
- * exceed `signalByteCap`. Allocates a per-family record quota proportional to
- * each family's share of the total (minimum one per family), keeps the most
- * recent within each family, and reassembles in the stable tier order.
+ * Exact byte accounting for the encoded `{ records: [...] }` signal payload.
+ * Each array member is encoded at depth two, indented by four spaces, and
+ * followed by a two-byte separator; the frame absorbs the separator the last
+ * member does not carry, so total = frame + sum(member costs).
+ */
+function signalPayloadAccounting(sample: SignalRecord): { frameBytes: number; cost: (record: SignalRecord) => number } {
+  const cost = (record: SignalRecord): number => byteSize(pyJsonIndentSorted(record, 2, 2)) + 6;
+  return { frameBytes: byteSize(encodeSorted({ records: [sample] })) - cost(sample), cost };
+}
+
+/**
+ * Deterministic signal selection applied only when the derived tier file would
+ * exceed `signalByteCap`. Gives each family a byte budget proportional to its
+ * share of records (minimum one record per family), keeps the most recent
+ * records within each family, tops up with the most recent remaining records,
+ * and reassembles in the stable tier order. Selection uses the exact encoded
+ * size, so the written file never exceeds the cap.
  */
 export function selectSignalsForBound(
   signals: SignalRecord[],
@@ -313,81 +334,72 @@ export function selectSignalsForBound(
   selection: SignalSelectionReport;
 } {
   const sorted = signals.slice().sort(tierSortKey);
-  const allEncoded = encodeSorted({ records: sorted });
-  const totalBytes = byteSize(allEncoded);
   const perFamily = new Map<string, SignalRecord[]>();
   for (const s of sorted) {
     const list = perFamily.get(s.source_product) ?? [];
     list.push(s);
     perFamily.set(s.source_product, list);
   }
-  const familyReport: SignalSelectionReport["per_family"] = [];
-  for (const family of [...perFamily.keys()].sort()) {
-    familyReport.push({
-      family,
-      total: perFamily.get(family)!.length,
-      retained: perFamily.get(family)!.length,
-    });
-  }
-  if (totalBytes <= signalByteCap) {
-    const selection: SignalSelectionReport = {
-      total: sorted.length,
-      retained: sorted.length,
-      capped: false,
-      per_family: familyReport,
-    };
-    return { records: sorted, selection };
-  }
-
-  // Per-record average from the encoded payload drives the record budget.
-  const avg = totalBytes / Math.max(sorted.length, 1);
-  const recordBudget = Math.max(1, Math.floor(signalByteCap / avg));
   const families = [...perFamily.keys()].sort();
-  const totalFamilyRecords = sorted.length;
-  const retained: SignalRecord[] = [];
-  const updatedFamilyReport: SignalSelectionReport["per_family"] = [];
-  let allocated = 0;
-  for (const family of families) {
-    const list = perFamily.get(family)!;
-    const quota = Math.max(1, Math.floor((recordBudget * list.length) / Math.max(totalFamilyRecords, 1)));
-    updatedFamilyReport.push({
-      family,
-      total: list.length,
-      retained: Math.min(quota, list.length),
-    });
-    // Most recent first: timestamp desc, then source_id asc.
-    const kept = list
-      .slice()
-      .sort((a, b) => (a.timestamp !== b.timestamp ? (a.timestamp < b.timestamp ? 1 : -1) : a.source_id < b.source_id ? -1 : 1))
-      .slice(0, quota);
-    retained.push(...kept);
-    allocated += kept.length;
-  }
-  // If proportional allocation under-fills (rounding), top up most-recent
-  // across families until the budget is reached without exceeding the cap.
-  if (allocated < recordBudget) {
-    const have = new Set(retained.map((s) => s.source_id));
-    const pool = sorted.filter((s) => !have.has(s.source_id)).sort((a, b) => (a.timestamp !== b.timestamp ? (a.timestamp < b.timestamp ? 1 : -1) : a.source_id < b.source_id ? -1 : 1));
-    for (const s of pool) {
-      const candidate = encodeSorted({ records: [...retained, s] });
-      if (byteSize(candidate) > signalByteCap) break;
-      retained.push(s);
-      allocated++;
-      if (allocated >= recordBudget) break;
-    }
-  }
-  retained.sort(tierSortKey);
-  const finalFamilyReport = updatedFamilyReport.map((f) => {
-    const count = retained.filter((s) => s.source_product === f.family).length;
-    return { ...f, retained: count };
-  });
-  const selection: SignalSelectionReport = {
+  const report = (retained: SignalRecord[], capped: boolean): SignalSelectionReport => ({
     total: sorted.length,
     retained: retained.length,
-    capped: true,
-    per_family: finalFamilyReport,
-  };
-  return { records: retained, selection };
+    capped,
+    per_family: families.map((family) => ({
+      family,
+      total: perFamily.get(family)!.length,
+      retained: retained.filter((s) => s.source_product === family).length,
+    })),
+  });
+  if (sorted.length === 0) return { records: sorted, selection: report(sorted, false) };
+
+  const { frameBytes, cost } = signalPayloadAccounting(sorted[0]!);
+  const costs = new Map(sorted.map((s) => [s, cost(s)] as const));
+  const memberBudget = signalByteCap - TIER_FILE_TERMINATOR_BYTES - frameBytes;
+  let used = 0;
+  for (const s of sorted) used += costs.get(s)!;
+  if (used <= memberBudget) return { records: sorted, selection: report(sorted, false) };
+
+  const retained = new Set<SignalRecord>();
+  used = 0;
+  for (const family of families) {
+    const list = perFamily.get(family)!.slice().sort(newestFirst);
+    const familyBudget = Math.floor((Math.max(memberBudget, 0) * list.length) / sorted.length);
+    let familyUsed = 0;
+    for (const s of list) {
+      const c = costs.get(s)!;
+      if (familyUsed > 0 && familyUsed + c > familyBudget) break;
+      retained.add(s);
+      familyUsed += c;
+    }
+    used += familyUsed;
+  }
+  // Proportional budgets round down; top up with the most recent remaining
+  // records across families while the next one still fits.
+  for (const s of sorted.slice().sort(newestFirst)) {
+    if (retained.has(s)) continue;
+    const c = costs.get(s)!;
+    if (used + c > memberBudget) break;
+    retained.add(s);
+    used += c;
+  }
+  // Minimum-one records can still overflow a tiny cap. Drop the oldest records,
+  // sparing each family's last record until nothing else remains.
+  if (used > memberBudget) {
+    const oldestFirst = [...retained].sort((a, b) => newestFirst(b, a));
+    const remaining = new Map(families.map((family) => [family, oldestFirst.filter((s) => s.source_product === family).length]));
+    for (const spareLast of [true, false]) {
+      for (const s of oldestFirst) {
+        if (used <= memberBudget) break;
+        if (!retained.has(s) || (spareLast && remaining.get(s.source_product)! <= 1)) continue;
+        retained.delete(s);
+        remaining.set(s.source_product, remaining.get(s.source_product)! - 1);
+        used -= costs.get(s)!;
+      }
+    }
+  }
+  const records = sorted.filter((s) => retained.has(s));
+  return { records, selection: report(records, true) };
 }
 
 /** Deterministic, content-addressable generation identity. */
@@ -513,6 +525,10 @@ export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenc
   const signalRel = "signal.json";
   const signalEncoded = encodeSorted({ records: selectedSignals });
   const signalBytes = byteSize(signalEncoded);
+  if (signalBytes + TIER_FILE_TERMINATOR_BYTES > bounds.signalByteCap) {
+    fs.rmSync(stageDir, { recursive: true, force: true });
+    throw new Error(`signal tier selection exceeded its cap (${signalBytes + TIER_FILE_TERMINATOR_BYTES} > ${bounds.signalByteCap} bytes); the prior generation remains current`);
+  }
   writeFileAtomic(path.join(stageDir, signalRel), signalEncoded + "\n");
 
   const manifest: EvidenceTierManifest = {
@@ -541,6 +557,13 @@ export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenc
   const priorCurrent = readCurrentPointer(opts.tiersDir);
   if (!fs.existsSync(finalDir)) {
     fs.renameSync(stageDir, finalDir);
+  } else if (publishedSignalBytes(finalDir) !== signalBytes + TIER_FILE_TERMINATOR_BYTES) {
+    // Generation identity covers record membership, not signal selection, so a
+    // same-identity directory written by a different selection is replaced.
+    const supersededDir = `${stageDir}.superseded`;
+    fs.renameSync(finalDir, supersededDir);
+    fs.renameSync(stageDir, finalDir);
+    fs.rmSync(supersededDir, { recursive: true, force: true });
   } else {
     // Idempotent: identical content already published. Replace staging copy.
     try {
@@ -572,6 +595,14 @@ export function publishEvidenceTiers(records: JsonObject[], opts: PublishEvidenc
     families: familiesAgg,
     superseded_generation: priorCurrent?.generation ?? null,
   };
+}
+
+function publishedSignalBytes(generationDir: string): number | null {
+  try {
+    return fs.statSync(path.join(generationDir, "signal.json")).size;
+  } catch {
+    return null;
+  }
 }
 
 export interface CurrentPointer {

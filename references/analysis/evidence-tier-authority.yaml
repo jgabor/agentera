@@ -442,19 +442,26 @@ bounds:
     otherwise exceed it.
   signal_selection:
     rule: >-
-      Applied only when the derived signal tier exceeds `signal_byte_cap`. The
-      derivation is otherwise total: identical full evidence yields identical
-      signal membership and ordering.
+      Applied only when the written signal tier file, the encoded payload plus
+      its trailing newline, would exceed `signal_byte_cap`. Selection measures
+      that exact encoded size rather than estimating from an average record, so
+      the written file never exceeds the cap. The derivation is otherwise total:
+      identical full evidence yields identical signal membership and ordering.
     algorithm: >-
-      Group derived signal records by source family. Allocate a per-family record
-      quota proportional to that family's share of the total record count, with a
-      minimum of one record per family so no supported source is silently
-      truncated to zero. Within each family, keep the most recent records first
-      (timestamp descending, then `source_id` ascending as the deterministic
-      tie-break). Reassemble the kept records in the stable tier order
-      (timestamp ascending, then `source_id` ascending). The generation identity
-      is derived from the retained membership so identical input reproduces an
-      identical selected tier.
+      Group derived signal records by source family. Give each family a byte
+      budget proportional to its share of the total record count, keeping at
+      least one record per family so no supported source is silently truncated
+      to zero. Within each family, keep the most recent records first (timestamp
+      descending, then `source_id` ascending as the deterministic tie-break)
+      while they fit the family budget. Top up with the most recent remaining
+      records across families while the next one fits. If the minimum records
+      alone exceed the cap, drop the oldest retained records, sparing each
+      family's last record until nothing else remains. Reassemble the kept
+      records in the stable tier order (timestamp ascending, then `source_id`
+      ascending). The generation identity is derived from full-evidence
+      membership and the declared bounds, so a republish with an existing
+      identity replaces a generation whose signal file differs; the writer
+      refuses to reveal a generation whose signal tier exceeds the cap.
     derivation: >-
       Resolves planning Unknown 1. The bound is the existing reader cap reused as
       the signal cap because a bounded consumer must load the whole signal tier in

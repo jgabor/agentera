@@ -1,0 +1,22 @@
+id: fkkwoyafum
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Strip the shell line terminator from selected-term input
+  requirements:
+    - "`--term-input` must drop exactly one trailing LF or CRLF before exact-match resolution, preserving every other byte."
+  acceptance:
+    - A term supplied through a here-string or newline-terminated file matches its exact glossary entry.
+    - Input that is blank after the terminator is removed is still rejected.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Strip the shell line terminator from selected-term input"
+      severity: degraded
+      status: open
+      order: 2

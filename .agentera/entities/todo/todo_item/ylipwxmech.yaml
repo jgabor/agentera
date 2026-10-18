@@ -1,0 +1,22 @@
+id: ylipwxmech
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Read the docs path mapping for glossary acquisition under its own bound
+  requirements:
+    - Project glossary acquisition must read `.agentera/docs.yaml` under a contract-declared docs-mapping bound, separate from the 64 KiB glossary source bound.
+  acceptance:
+    - A docs.yaml larger than 64 KiB and within the docs-mapping bound resolves the project glossary.
+    - A docs.yaml above the docs-mapping bound still classifies the project source as ambiguous.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound"
+      severity: degraded
+      status: open
+      order: 4

@@ -1,0 +1,28 @@
+id: yuhyvwklcv
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep the published signal tier within its byte cap
+  requirements:
+    - Capped signal selection must account for the exact encoded bytes the reader stats, including the trailing newline, instead of an average-record estimate.
+    - The tier writer must not publish a generation whose signal tier or shards exceed their caps.
+    - Personal glossary projection must report an unanalyzable tier state and its recovery instead of claiming the generation changed.
+  acceptance:
+    - A capped selection whose newest records are larger than average writes a signal file no larger than the cap.
+    - Projection over an oversized tier fails with the tier state, not "current evidence generation changed during projection production".
+  release_blocker: false
+  severity: critical
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep the published signal tier within its byte cap"
+      status: resolved
+      order: 151
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: Signal selection uses exact encoded bytes, the writer refuses an over-cap signal tier, and projection names an unanalyzable tier state.
+    date: 2026-10-18

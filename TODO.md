@@ -11,6 +11,9 @@
 ## ⇉ Degraded
 
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
+- [ ] [id:fkkwoyafum] [fix:3.0.0] Strip the shell line terminator from selected-term input
+- [ ] [id:tjrpbdfxww] [fix:3.0.0] Treat an absent personal glossary as no data instead of unavailable authority
+- [ ] [id:ylipwxmech] [fix:3.0.0] Read the docs path mapping for glossary acquisition under its own bound
 
 ## → Normal
 
@@ -44,6 +47,7 @@
 - [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
 - [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
 - [ ] [id:hgzzwyerzo] [refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
+- [ ] [id:jiumssksof] [fix:3.0.0] Surface profile and glossary absence once at startup
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -199,3 +203,5 @@
 - [x] [id:rimkqvqboe] [feat] Approve optimization setup as one bounded package
 - [x] [id:doqgrxxkev] [feat] Approve Discuss closeout as a concrete decision and follow-up set
 - [x] [id:secbcalqyr] [feat] Offer project migration as one explicitly approved outcome
+- [x] [id:jfgcwqzblm] [fix:3.0.0] Give Profile Full its destination and bounded signal inputs at startup
+- [x] [id:yuhyvwklcv] [fix:3.0.0] Keep the published signal tier within its byte cap
