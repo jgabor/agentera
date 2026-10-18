@@ -487,6 +487,49 @@ export interface RecordOpts {
   originId?: string | null;
   authorClass?: string | null;
   content?: string | null;
+  /** The turn belongs to a child session that a parent agent started. */
+  delegatedSession?: boolean;
+}
+
+/**
+ * Runtime envelopes that arrive with the user role but are written by the
+ * runtime: instruction preambles, skill bodies, notifications, and reviewer
+ * transcripts. A message carrying a Cursor `<user_query>` holds real user text
+ * alongside attachments, so it is never classified as injected.
+ */
+const INJECTED_ENVELOPE_PREFIXES = [
+  "# AGENTS.md instructions for",
+  "<INSTRUCTIONS>",
+  "<environment_context>",
+  "<user_instructions>",
+  "<skill>",
+  "<subagent_notification>",
+  "<codex_internal_context",
+  "<hooks_context",
+  "<turn_aborted>",
+  "<user_action>",
+  "<in-app-browser-context",
+  "<realtime_delegation>",
+  "<manually_attached_skills>",
+  "The following is the Codex agent history added since your last approval assessment",
+] as const;
+
+export function isInjectedEnvelope(content: string): boolean {
+  if (content.includes("<user_query>")) return false;
+  const start = content.trimStart();
+  return INJECTED_ENVELOPE_PREFIXES.some((prefix) => start.startsWith(prefix));
+}
+
+/**
+ * Resolve the author of a user-role turn from transport facts: a delegated
+ * child session's prompts come from its parent agent, and a runtime envelope
+ * is injected instruction rather than user text.
+ */
+function resolvedAuthorClass(opts: RecordOpts): string | null | undefined {
+  if (opts.authorClass !== "user" || (opts.sourceKind !== "conversation_turn" && opts.sourceKind !== "history_prompt")) return opts.authorClass;
+  if (opts.delegatedSession) return "agent";
+  if (typeof opts.content === "string" && isInjectedEnvelope(opts.content)) return "injected_instruction";
+  return "user";
 }
 
 export function record(opts: RecordOpts): JsonObject {
@@ -511,7 +554,8 @@ export function record(opts: RecordOpts): JsonObject {
   if (opts.originId) item.origin_id = opts.originId;
   else if (opts.origin) item.origin_id = originIdentity(opts.origin);
   else if (opts.sessionId) item.origin_id = originIdentity(`session:${opts.sessionId}`);
-  if (opts.authorClass) item.author_class = opts.authorClass;
+  const authorClass = resolvedAuthorClass(opts);
+  if (authorClass) item.author_class = authorClass;
   if (typeof opts.content === "string") item.content_fingerprint = contentFingerprint(opts.content);
   return item;
 }

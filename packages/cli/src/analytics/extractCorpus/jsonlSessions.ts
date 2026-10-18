@@ -48,6 +48,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
     let sessionId = pathStem(p);
     let sessionProvenance: TransportProvenance = { originId: null, authorClass: null };
     let projectPath: string | null = null;
+    let delegatedSession = false;
     let previousAssistant = "";
     let index = 0;
     for (const event of iterJsonl(p, errors)) {
@@ -55,6 +56,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
       const kind = eventKind(event);
       const payload = isPlainObject(event.payload) ? event.payload : {};
       if (kind === "session_meta") {
+        if (isPlainObject(payload.source) && "subagent" in payload.source) delegatedSession = true;
         const sid = payload.id || event.id;
         if (typeof sid === "string" && sid) sessionId = sid;
         sessionProvenance = updateSessionProvenance(sessionProvenance, inspectTransportProvenance(event, payload));
@@ -110,6 +112,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
           sessionId,
           originId: transport.originId,
           authorClass: transport.authorClass,
+          delegatedSession,
           content,
           data,
         }),
@@ -127,6 +130,7 @@ export function extractCodexSessions(sessionsDir: string | null, errors: string[
               sessionId,
               originId: transport.originId,
               authorClass: transport.authorClass,
+              delegatedSession,
               content,
               data: { prompt: content, signal_type: sig },
             }),

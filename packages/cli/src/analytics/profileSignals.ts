@@ -43,6 +43,16 @@ export interface ProfileSufficiencyAssessment {
   per_family: ProfileFamilyRetention[];
 }
 
+/**
+ * A profile signal describes what the user wrote. Conversation signals from
+ * agent or injected turns keep their type for glossary authorship gates but do
+ * not count as profile evidence; instruction and configuration signals have no
+ * author class.
+ */
+function isUserProfileSignal(signal: SignalRecord): boolean {
+  return PROFILE_TYPES_SET.has(signal.signal_type) && (signal.author_class === undefined || signal.author_class === "user");
+}
+
 /** Lightweight status surfaced to profile_context (no signal records in payload). */
 export interface ProfileSignalsStatus {
   state: TierAssessment["state"];
@@ -217,7 +227,7 @@ export function readProfileSignals(tiersDir: string, corpusPath?: string, contra
     };
   }
 
-  const profileSignals = tier.records.filter((s) => PROFILE_TYPES_SET.has(s.signal_type));
+  const profileSignals = tier.records.filter(isUserProfileSignal);
   const sufficiency = assessProfileSufficiency(tier.manifest.signal.selection, profileSignals, contractPath);
 
   return {
@@ -278,7 +288,7 @@ export function profileSignalsStatus(env: Env = process.env, platform: NodeJS.Pl
     };
   }
 
-  const profileSignals = tier.records.filter((s) => PROFILE_TYPES_SET.has(s.signal_type));
+  const profileSignals = tier.records.filter(isUserProfileSignal);
   const sufficiency = assessProfileSufficiency(tier.manifest.signal.selection, profileSignals, contractPath);
 
   return {

@@ -208,3 +208,4 @@
 - [x] [id:pwcjgwekrz] [fix:3.0.0] Keep full-evidence shards within their byte cap
 - [x] [id:vppwtwnayj] [fix:3.0.0] Abstain secret-bearing glossary candidates instead of failing the projection
 - [x] [id:pccnnqphak] [fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest
+- [x] [id:vkbmdjahzk] [fix:3.0.0] Attribute delegated and injected user-role turns to their real author

@@ -263,7 +263,12 @@ signal_semantics:
       derivable_from: >-
         explicit original author provenance when origin_id is transported;
         otherwise conversation_turn actor metadata when no transported origin
-        is claimed
+        is claimed. A user-role turn in a delegated child session (Codex
+        session_meta source.subagent, OpenCode session parent_id) is agent,
+        and a user-role turn that opens with a declared runtime envelope
+        (instruction preamble, skill body, notification, reviewer transcript)
+        is injected_instruction unless it carries a Cursor user_query.
+        Profile evidence counts only user-authored conversation signals.
       consumer: glossary
   preservation_rule: >-
     Fixing the contract must not remove the required meaning of any kind above

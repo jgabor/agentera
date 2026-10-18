@@ -117,6 +117,61 @@ function seedOpencode(dbp: string): void {
   db.close();
 }
 
+describe("user-role attribution", () => {
+  function codexSession(meta: Record<string, unknown>, texts: string[]): string {
+    const sessionsDir = path.join(tmp, "codex-attribution");
+    fs.mkdirSync(sessionsDir, { recursive: true });
+    const lines = [JSON.stringify({ type: "session_meta", payload: { id: "s-attr", cwd: "/project", ...meta } })];
+    texts.forEach((text, index) =>
+      lines.push(
+        JSON.stringify({
+          type: "response_item",
+          timestamp: `2026-01-01T00:00:0${index + 1}.000Z`,
+          payload: { type: "message", role: "user", content: [{ type: "input_text", text }] },
+        }),
+      ),
+    );
+    fs.writeFileSync(path.join(sessionsDir, "session.jsonl"), lines.join("\n") + "\n");
+    return sessionsDir;
+  }
+
+  it("labels a parent agent's prompts in a Codex subagent session as agent-authored", () => {
+    const dir = codexSession({ source: { subagent: { thread_spawn: { parent_thread_id: "parent", depth: 1 } } } }, ["Should we keep the bounded route?"]);
+    const turns = extractCodexSessions(dir, []).filter((r) => r.data.actor === "user");
+    expect(turns.length).toBeGreaterThan(0);
+    for (const turn of turns) expect(turn.author_class).toBe("agent");
+  });
+
+  it("labels runtime envelopes as injected but keeps user text that arrives beside attachments", () => {
+    const dir = codexSession({ source: "cli" }, [
+      "# AGENTS.md instructions for /home/user\n<INSTRUCTIONS>Follow the rules.</INSTRUCTIONS>",
+      "<skill>\n<name>planner</name>\nShould you always plan first?",
+      "The following is the Codex agent history added since your last approval assessment. Continue the review.",
+      "<manually_attached_skills>skill body</manually_attached_skills>\n<user_query>Avoid em dashes in the README.</user_query>",
+      "Should we keep the bounded route?",
+    ]);
+    const turns = extractCodexSessions(dir, []).filter((r) => r.source_kind === "conversation_turn" && r.data.actor === "user");
+    expect(turns.map((turn) => turn.author_class)).toEqual(["injected_instruction", "injected_instruction", "injected_instruction", "user", "user"]);
+  });
+
+  it("labels user turns in an OpenCode child session as agent-authored", () => {
+    const dbp = path.join(tmp, "opencode-child.db");
+    const db = new DatabaseSync(dbp);
+    db.exec("CREATE TABLE session(id TEXT, cwd TEXT, parent_id TEXT, time_created INTEGER)");
+    db.exec("CREATE TABLE message(id TEXT, sessionID TEXT, role TEXT, time_created INTEGER, content TEXT, data TEXT)");
+    db.exec("CREATE TABLE part(id TEXT, messageID TEXT, type TEXT, text TEXT, data TEXT, time_created INTEGER)");
+    db.prepare("INSERT INTO session VALUES (?,?,?,?)").run("top", "/proj/foo", null, 1700000000);
+    db.prepare("INSERT INTO session VALUES (?,?,?,?)").run("child", "/proj/foo", "top", 1700000010);
+    db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m1", "top", "user", 1700000001, null, null);
+    db.prepare("INSERT INTO message VALUES (?,?,?,?,?,?)").run("m2", "child", "user", 1700000011, null, null);
+    db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p1", "m1", "text", "why should we avoid this approach?", null, 1700000001);
+    db.prepare("INSERT INTO part VALUES (?,?,?,?,?,?)").run("p2", "m2", "text", "why should the worker avoid this approach?", null, 1700000011);
+    db.close();
+    const turns = extractOpencodeSessions(dbp, []).filter((r) => r.data.actor === "user");
+    expect(Object.fromEntries(turns.map((turn) => [turn.session_id, turn.author_class]))).toEqual({ top: "user", child: "agent" });
+  });
+});
+
 describe("SQLite extractors (node:sqlite)", () => {
   it("opencode: conversation_turn + history_prompt with signal", () => {
     const dbp = path.join(tmp, "opencode.db");

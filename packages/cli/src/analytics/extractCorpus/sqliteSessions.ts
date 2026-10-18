@@ -92,6 +92,7 @@ interface OpencodeSchema {
   sessionTime: string | null;
   sessionUpdated: string | null;
   projectCol: string | null;
+  parentCol: string | null;
   messageText: string | null;
   partText: string | null;
   partType: string | null;
@@ -106,6 +107,7 @@ interface OpencodeMessage {
   author_class: string | null;
   session_id: string;
   project_path: JsonValue;
+  delegated_session: boolean;
   timestamp: string;
   parts: string[];
   tools: OpencodeTool[];
@@ -151,6 +153,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
   const sessionTime = firstColumn(sessionCols, ["time_created", "time", "timestamp", "created_at", "createdAt"]);
   const sessionUpdated = firstColumn(sessionCols, ["time_updated", "updated_at", "updatedAt", "time_created", "time"]);
   const projectCol = firstColumn(sessionCols, ["cwd", "project_path", "projectPath", "directory", "path"]);
+  const parentCol = firstColumn(sessionCols, ["parent_id", "parentID", "parentId"]);
   const messageText = firstColumn(messageCols, ["content", "text", "message"]);
   const partText = firstColumn(partCols, ["text", "content", "input", "output"]);
   const partType = firstColumn(partCols, ["type", "kind"]);
@@ -170,6 +173,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
     sessionTime,
     sessionUpdated,
     projectCol,
+    parentCol,
     messageText,
     partText,
     partType,
@@ -180,7 +184,7 @@ function resolveOpencodeSchema(conn: SqliteDb): OpencodeSchema {
 }
 
 function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema): JsonObject[] {
-  const { sessionId, messageId, messageSession, partMessage, messageData, partData, roleCol, messageTime, partTime, projectCol, messageText, partText, partType, partId, sortExpr, recentSessionExpr } = schema;
+  const { sessionId, messageId, messageSession, partMessage, messageData, partData, roleCol, messageTime, partTime, projectCol, parentCol, messageText, partText, partType, partId, sortExpr, recentSessionExpr } = schema;
   const query = `
         WITH recent_sessions AS (
             SELECT s."${sessionId}" AS recent_session_id
@@ -193,6 +197,7 @@ function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema):
             SELECT
                 ${qualified("s", sessionId, "session_id")},
                 ${qualified("s", projectCol, "project_path")},
+                ${qualified("s", parentCol, "parent_session_id")},
                 ${qualified("m", messageId, "message_id")},
                 ${qualified("m", roleCol, "role")},
                 ${qualified("m", messageTime, "message_time")},
@@ -214,7 +219,7 @@ function opencodeRows(conn: SqliteDb, caps: SqliteCaps, schema: OpencodeSchema):
             LIMIT ?
         )
         SELECT
-            session_id, project_path, message_id, role, message_time,
+            session_id, project_path, parent_session_id, message_id, role, message_time,
             message_text, message_data, part_id, part_time, part_type,
             part_text, part_data
         FROM recent
@@ -337,6 +342,7 @@ export function extractOpencodeSessions(storePath: string | null, errors: string
           author_class: authorClassForRole(role, transport.authorClass, transport.originId),
           session_id: String(row.session_id),
           project_path: row.project_path,
+          delegated_session: row.parent_session_id !== null && row.parent_session_id !== undefined && row.parent_session_id !== "",
           timestamp: sqliteTimestamp(messageTime, fallbackTimestamp),
           parts: [] as string[],
           tools: [] as OpencodeTool[],
@@ -390,6 +396,7 @@ export function extractOpencodeSessions(storePath: string | null, errors: string
             sessionId: item.session_id,
             originId: item.origin_id,
             authorClass: item.author_class,
+            delegatedSession: item.delegated_session,
             content,
             data,
           }),
@@ -423,6 +430,7 @@ export function extractOpencodeSessions(storePath: string | null, errors: string
               sessionId: item.session_id,
               originId: item.origin_id,
               authorClass: item.author_class,
+              delegatedSession: item.delegated_session,
               content,
               data: { prompt: content, signal_type: sig },
             }),

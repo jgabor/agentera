@@ -1,0 +1,27 @@
+id: vkbmdjahzk
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Attribute delegated and injected user-role turns to their real author
+  requirements:
+    - Extraction must label user-role turns in delegated child sessions (Codex source.subagent, OpenCode parent_id) as agent, and turns that open with a declared runtime envelope as injected_instruction, without relabelling Cursor messages that carry a user_query.
+    - Profile evidence must count only user-authored conversation signals.
+  acceptance:
+    - Codex subagent and OpenCode child-session prompts extract with author_class agent; AGENTS.md preambles, skill bodies, and reviewer transcripts extract as injected_instruction.
+    - A Cursor message with attachments and a user_query stays user, and profile signals exclude agent and injected turns.
+  release_blocker: false
+  severity: critical
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Attribute delegated and injected user-role turns to their real author"
+      status: resolved
+      order: 159
+      severity: critical
+  lifecycle:
+    operation: resolve
+    reason: Extraction relabels delegated and injected user-role turns, and profile signals count only user-authored turns.
+    date: 2026-10-18

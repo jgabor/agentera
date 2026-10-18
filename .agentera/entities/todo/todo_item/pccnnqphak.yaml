@@ -19,7 +19,7 @@ record:
       present: true
       description: "[fix:3.0.0] Give Audit a read-only CLI path for terminology-drift proposals and their digest"
       status: resolved
-      order: 156
+      order: 158
       severity: degraded
   lifecycle:
     operation: resolve
