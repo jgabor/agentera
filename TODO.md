@@ -7,10 +7,13 @@
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
 - [ ] [id:qrgwnmqcdl] [fix:3.0.0] Harden the unified npm Trusted Publisher for both channels.
 - [ ] [id:huiepnrwav] [fix:3.0.0] Publish the verified TypeScript cutover candidate to npm @latest through Trusted Publishing.
+- [ ] [id:ztqdcyapxb] [fix:3.0.0] Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval
 
 ## ⇉ Degraded
 
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
+- [ ] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
+- [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
 
 ## → Normal
 
@@ -44,6 +47,9 @@
 - [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
 - [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
 - [ ] [id:hgzzwyerzo] [refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
+- [ ] [id:lujhcenyxw] [fix:3.0.0] Skip gitignored paths when state validation scans for reintroduced glossary variants
+- [ ] [id:nyojrcuxlu] [task:3.0.0] Run a real personal glossary trial once the user has written term definitions
+- [ ] [id:pzicyatkvi] [task:3.0.0] Decide the future of natural-language route request and receipt
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

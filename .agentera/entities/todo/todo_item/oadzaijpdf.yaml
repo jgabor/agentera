@@ -1,0 +1,33 @@
+id: oadzaijpdf
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
+  requirements:
+    - Choose whether the OpenCode extraction cap (60 sessions) prefers top-level sessions now that child sessions are labelled agent. Today only 5 of the newest 60 are top-level, so OpenCode adds almost no user evidence.
+    - "Align the mining-authority predicate `degraded: valid_current_actual_cap_truncation_or_flagged_incomplete` in glossary-entry-contract.yaml with that choice, together with its pinned validator in glossaryMiningAuthority.ts, so a capped generation and a capped candidate list follow one rule."
+  acceptance:
+    - A recorded decision states the cap selection rule and whether cap_selected coverage degrades a generation.
+    - A refresh over OpenCode history yields user-authored signals in proportion to top-level sessions under the chosen rule, and usage analytics document any change.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded"
+      severity: degraded
+      status: open
+      order: 3
+    create_batch:
+      effect_sha256: 2f3c8fcfb819d817515d7531f432aaad5d5b7785a9c92a49720c34a704d73be8
+      input_sha256: 35f157a29a2a68a763675dd03237c0b9f4cac61ed8c0ebfe10b153b5e8596901
+      local_refs:
+        reset-profile-loss: ztqdcyapxb
+        opencode-cap: oadzaijpdf
+        prime-budget: krqhlpjexq
+        validate-gitignored: lujhcenyxw
+        route-future: pzicyatkvi
+        glossary-trial: nyojrcuxlu

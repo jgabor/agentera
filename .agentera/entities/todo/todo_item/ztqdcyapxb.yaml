@@ -1,0 +1,33 @@
+id: ztqdcyapxb
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval
+  requirements:
+    - "`upgrade --reset-product-v1` must not delete a PROFILE.md that v3 Profile generated, unless the preview names that exact file as v3 data and the user approves its loss."
+    - The preview must show every path it will remove within the host's output limits, so a truncated tool result cannot hide a deletion from the approval question.
+  acceptance:
+    - GIVEN a home with a v3-generated PROFILE.md and v1 state WHEN the reset preview runs THEN PROFILE.md is either retained or listed by path in a compact summary that fits the first screen of output.
+    - GIVEN an applied reset WHEN `report profile-grounding` runs THEN a retained v3 profile still reports valid.
+  release_blocker: false
+  severity: critical
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval"
+      severity: critical
+      status: open
+      order: 6
+    create_batch:
+      effect_sha256: 2f3c8fcfb819d817515d7531f432aaad5d5b7785a9c92a49720c34a704d73be8
+      input_sha256: 35f157a29a2a68a763675dd03237c0b9f4cac61ed8c0ebfe10b153b5e8596901
+      local_refs:
+        reset-profile-loss: ztqdcyapxb
+        opencode-cap: oadzaijpdf
+        prime-budget: krqhlpjexq
+        validate-gitignored: lujhcenyxw
+        route-future: pzicyatkvi
+        glossary-trial: nyojrcuxlu

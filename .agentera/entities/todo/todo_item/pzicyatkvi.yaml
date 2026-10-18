@@ -1,0 +1,32 @@
+id: pzicyatkvi
+artifact: todo
+record:
+  kind: task
+  target_version: 3.0.0
+  title: Decide the future of natural-language route request and receipt
+  requirements:
+    - "Base the decision on the 2026-07-23 to 2026-10-03 OpenCode session review: the deterministic tier never fired for a real request because users type phrases such as orchestrate or create a plan rather than curated phrases or the /agentera prefix; each request returned a 5 to 13 KB capsule; routed sessions averaged 5.8 route calls; and 787 of 855 sessions that started a capability through prime never called route."
+    - Compare keeping, reworking, and retiring route request, receipt, and evaluate against the agent reading triggers and calling prime directly.
+  acceptance:
+    - A recorded decision chooses one option with its reasoning, and any follow-up work is planned.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[task:3.0.0] Decide the future of natural-language route request and receipt"
+      severity: normal
+      status: open
+      order: 33
+    create_batch:
+      effect_sha256: 2f3c8fcfb819d817515d7531f432aaad5d5b7785a9c92a49720c34a704d73be8
+      input_sha256: 35f157a29a2a68a763675dd03237c0b9f4cac61ed8c0ebfe10b153b5e8596901
+      local_refs:
+        reset-profile-loss: ztqdcyapxb
+        opencode-cap: oadzaijpdf
+        prime-budget: krqhlpjexq
+        validate-gitignored: lujhcenyxw
+        route-future: pzicyatkvi
+        glossary-trial: nyojrcuxlu

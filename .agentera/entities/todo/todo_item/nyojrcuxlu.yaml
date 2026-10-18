@@ -1,0 +1,33 @@
+id: nyojrcuxlu
+artifact: todo
+record:
+  kind: task
+  target_version: 3.0.0
+  title: Run a real personal glossary trial once the user has written term definitions
+  requirements:
+    - The user's own turns contain no explicit term definitions, so a refresh and Profile Full would mine almost nothing. Run the trial after the user writes a few definitions, such as "By ship shape I mean ...", in a supported runtime.
+    - The trial needs fresh user consent for the local-history refresh and for replacing PROFILE.md, and the user decides every glossary review card.
+  acceptance:
+    - A refresh and Profile Full produce a PROFILE.md Glossary section with at least one entry the user accepted.
+    - Glossary advice returns that personal meaning in a project whose glossary lacks the term, and the trial reports candidate precision and source coverage.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[task:3.0.0] Run a real personal glossary trial once the user has written term definitions"
+      severity: normal
+      status: open
+      order: 32
+    create_batch:
+      effect_sha256: 2f3c8fcfb819d817515d7531f432aaad5d5b7785a9c92a49720c34a704d73be8
+      input_sha256: 35f157a29a2a68a763675dd03237c0b9f4cac61ed8c0ebfe10b153b5e8596901
+      local_refs:
+        reset-profile-loss: ztqdcyapxb
+        opencode-cap: oadzaijpdf
+        prime-budget: krqhlpjexq
+        validate-gitignored: lujhcenyxw
+        route-future: pzicyatkvi
+        glossary-trial: nyojrcuxlu
