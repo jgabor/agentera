@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-10-19
-    status: open
+    status: complete
     reviewed: 2026-10-19
     critic_issues: 17 found, 17 addressed, 0 dismissed
     title: "Plan: Typed startup failures, a safe v1 reset, and two retirements"
@@ -46,5 +46,7 @@ record:
       resolve_by: Inventory reset tests and callers at the start of task 5, update them to the per-location rule in the same change, and record any surprise on the task.
   rejected:
     []
-  surprises:
-    []
+  surprises: |-
+    Task aucgajnzmq: corrupt v3 version authority next to a valid 3.x package version still resolves the distribution major as 3 without a warning, by choice, because doctor and prime now report the corruption.
+    Task rayhcanifm: the first attempt kept doctor on its repair report for corrupt version authority instead of the typed startup failure; one correction aligned doctor with prime and restored the registry.json-only version guard.
+    Task npsiefshax: the first bounded preview still grew with root path length because every path repeated its root; one correction made paths relative to a printed roots map, added count and compact fallbacks, and documented the remaining limit near 350-character roots.

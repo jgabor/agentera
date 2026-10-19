@@ -1,0 +1,29 @@
+id: awpiwfkmff
+artifact: health
+record:
+  date: 2026-10-19
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 0
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: terminal-plan closure evidence for plan mayqocppfa is current; this is a limited closure check, not a codebase-wide audit."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: "Limited closure check for plan mayqocppfa (Typed startup failures, a safe v1 reset, and two retirements), not a codebase-wide audit. Scope: seven Build tasks aucgajnzmq, rayhcanifm, npsiefshax, bnsppjkxsi, nolbaqvfzi, ftolkieffu, and khqitogidj, all complete with persisted audit PASS, over commits 3463ea24 to 74fe9168. No stale artifacts: the unreleased changelog covers all seven tasks with no released section changed; UPGRADE.md states the v1 evidence signals, root order, and per-location reset rule in line with the code; skills/agentera/SKILL.md keeps every approval rule and stays under its byte limit; docs/cli-coverage-contract.md documents agentera.startupFailure.v1; decisions awnwogtlyr and rfnokvjpre match the code; TODOs wmxyoqjjiv, opybnibysh, ztqdcyapxb, ztkgkllvru, and khhotqvxei are resolved; six follow-up TODOs are accurate and not duplicates. Evidence: vp run verify:development passed all 11 gates on HEAD; check validate state reported 0 issues; isolated probes printed no stack frames for prime or doctor on broken authority. Audit verdict: PASS."
+      findings:
+        []
+  trends:
+    improved: Broken startup authority now yields one typed JSON failure from prime and doctor, and the product-v1 reset deletes or recreates each location only on that location's own v1 evidence.
+    degraded: None in the limited terminal-plan closure scope.
+    new_findings: None.
+    resolved: A v1 project can no longer wipe a v3 data home and installation, and a v1 installation can no longer wipe a v3 project.
+    carried_forward: Raw parser message text from authorities read after dispatch is tracked as TODO bbfumjviwe; decision rfnokvjpre's satisfaction confirmation predates its 2026-10-19 amendment and is left for the user to review.
+  patterns:
+    - Terminal plans close only after Audit PASS, typed artifact_freshness health publication, and plan lifecycle completion.
+  appended_at: 2026-10-19T08:44:39.798Z
