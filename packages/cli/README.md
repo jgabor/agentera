@@ -106,8 +106,10 @@ package installer.
 Agentera product v1 is unsupported. V3 does not migrate or preserve v1 state.
 If product-v1 evidence is detected, ordinary commands stop without mutation and
 the upgrade guide's separate `--reset-product-v1` workflow is the only
-continuation. Its reviewed apply deletes all Agentera state in the listed
-project, profile, installation, and runtime scopes with no backup or restore.
+continuation. Its bounded preview names every user-data path, and
+`--full-detail` lists every deleted entry. Its reviewed apply deletes all
+Agentera state in the listed project, profile, installation, and runtime scopes
+with no backup or restore.
 That reset is destructive and irreversible. It does not replace the supported
 v2-to-v3 migration above. Current schema identifiers ending in `.v1` remain
 valid and do not identify product v1.

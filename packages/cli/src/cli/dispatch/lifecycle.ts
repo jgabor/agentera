@@ -309,6 +309,8 @@ export function runUpgrade(argv: string[], io: Io, _prog: string): number {
       args.sharedSkill = true;
     } else if (a === "--reset-product-v1") {
       args.productV1Reset = true;
+    } else if (a === "--full-detail") {
+      args.fullDetail = true;
     } else if ((v = value("--authorization")) !== null) {
       args.authorization = v;
     } else if ((v = value("--only")) !== null) {
@@ -354,6 +356,15 @@ export function runUpgrade(argv: string[], io: Io, _prog: string): number {
     }
   }
   if (jsonFlag) args.format = "json";
+  if (args.fullDetail && (!args.productV1Reset || !args.dryRun || args.yes)) {
+    return emitInvalidInput(io, {
+      format: asEnvelopeFormat(args.format),
+      body: {
+        class: "invalid_request",
+        message: "--full-detail is only valid with the product-v1 reset preview: upgrade --reset-product-v1 --dry-run --full-detail",
+      },
+    });
+  }
   if (args.productV1Reset) {
     const incompatible = args.channel !== null || (args.only?.length ?? 0) > 0 || args.force || args.verify || args.legacyCleanup !== null;
     if (incompatible || args.dryRun === args.yes || (args.yes && !args.authorization) || (!args.yes && args.authorization)) {

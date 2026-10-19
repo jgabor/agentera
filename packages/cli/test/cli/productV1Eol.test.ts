@@ -9,7 +9,9 @@ import { afterEach, describe, expect, it } from "vite-plus/test";
 import { main } from "../../src/cli/dispatch/index.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
 import { loadNativeResourceCleanupContract } from "../../src/runtime/nativeResourceCleanup.js";
-import { applyProductV1Reset, authorizeProductV1Reset, previewProductV1Reset } from "../../src/upgrade/productV1Reset.js";
+import { PROFILE_FILE_MEMBERS, USER_DATA_CATALOG_DIRS } from "../../src/migrate/v2HandoffManifest.js";
+import { ROOT_USER_STATE_DIR_NAMES, ROOT_USER_STATE_FILE_NAMES } from "../../src/upgrade/doctor.js";
+import { PRODUCT_V1_RESET_USER_DATA_NAMES, applyProductV1Reset, authorizeProductV1Reset, previewProductV1Reset } from "../../src/upgrade/productV1Reset.js";
 import { classifyProjectState } from "../../src/state/stateMode.js";
 import { applyAppContentRefresh } from "../../src/upgrade/appContentRefresh.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
@@ -59,6 +61,63 @@ function run(root: string, args: string[]): { rc: number; out: string; err: stri
   } finally {
     process.chdir(previous);
   }
+}
+
+const ROOT_ENV_KEYS = ["AGENTERA_PROFILE_DIR", "PROFILERA_PROFILE_DIR", "AGENTERA_HOME", "AGENTERA_DEFAULT_INSTALL_ROOT"] as const;
+
+function withRootEnv<T>(profile: string | null, body: () => T): T {
+  const previous = Object.fromEntries(ROOT_ENV_KEYS.map((key) => [key, process.env[key]]));
+  for (const key of ROOT_ENV_KEYS) delete process.env[key];
+  if (profile !== null) process.env.AGENTERA_PROFILE_DIR = profile;
+  try {
+    return body();
+  } finally {
+    for (const key of ROOT_ENV_KEYS) {
+      if (previous[key] === undefined) delete process.env[key];
+      else process.env[key] = previous[key];
+    }
+  }
+}
+
+function writeFile(target: string, content = "x\n"): void {
+  fs.mkdirSync(path.dirname(target), { recursive: true });
+  fs.writeFileSync(target, content);
+}
+
+/** A v1 home whose profile root is the installation root, with user data, many top-level entries and every host resource family present. */
+function worstCaseHome(): { project: string; home: string; install: string; userData: string[] } {
+  const project = fixture();
+  const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-worst-"));
+  roots.push(home);
+  const install = path.join(home, ".local", "share", "agentera");
+  writeFile(path.join(install, "registry.json"), JSON.stringify({ skills: [{ version: "1.4.0" }] }));
+  writeFile(path.join(project, "TODO.md"));
+  writeFile(path.join(install, "PROFILE.md"), "# Profile\n");
+  writeFile(path.join(install, "USAGE.md"), "# Usage\n");
+  writeFile(path.join(install, "corpus.json"));
+  writeFile(path.join(install, "intermediate", "corpus.json"));
+  for (let i = 0; i < 60; i++) writeFile(path.join(install, "history", `PROFILE-${i}.md`));
+  for (let i = 0; i < 200; i++) writeFile(path.join(install, "sessions", `session-${String(i).padStart(4, "0")}-with-a-longer-name.jsonl`));
+  for (let i = 0; i < 40; i++) writeFile(path.join(install, "benchmarks", `bench-${i}.json`));
+  for (let i = 0; i < 30; i++) writeFile(path.join(install, "corpus", `c-${i}.json`));
+  for (const top of ["skills", "references", "scripts", "agents", "docs", "schemas", "templates", "commands", "plugins", "bin", "lib", "share", "vendor", "examples"]) for (let i = 0; i < 25; i++) writeFile(path.join(install, top, `sub-${i % 5}`, `file-${i}.md`));
+  for (const name of ["TODO.md", "CHANGELOG.md", "DESIGN.md", "README.md", "LICENSE", "VERSION", "package.json", "notes.txt", "config.yaml"]) writeFile(path.join(install, name));
+  const runtime = withRootEnv(null, () => previewProductV1Reset({ project, home, installRoot: install })).deletions.find(({ id }) => id === "runtime.resources")!;
+  for (const target of runtime.targets) {
+    if (!target.path) continue;
+    if (target.declared === "{home}/.agents/skills/agentera") writeFile(path.join(target.path, "SKILL.md"), "old\n");
+    else if (target.operation === "remove_in_file_selector") {
+      fs.mkdirSync(path.dirname(target.path), { recursive: true });
+      fs.appendFileSync(target.path, `${target.selector!.value}\n`);
+    } else if (!fs.existsSync(target.path)) writeFile(path.extname(target.path) ? target.path : path.join(target.path, "SKILL.md"));
+  }
+  const userData = ["PROFILE.md", "USAGE.md", "benchmarks", "corpus", "corpus.json", "history", "intermediate", "sessions"].map((name) => path.join(install, name));
+  return { project, home, install, userData };
+}
+
+function resetPreview(project: string, home: string, install: string, extra: string[] = []) {
+  const result = run(project, ["upgrade", "--reset-product-v1", "--project", project, "--install-root", install, "--home", home, "--dry-run", ...extra, "--format", "json"]);
+  return { ...result, value: JSON.parse(result.out), bytes: Buffer.byteLength(result.out) };
 }
 
 afterEach(() => {
@@ -197,7 +256,8 @@ describe("product v1 EOL execution gate", () => {
       });
       expect(preview.deletions.map((item: { id: string }) => item.id)).toEqual(["project.state", "profile.state", "installation.state", "runtime.resources"]);
       expect(preview.recreations.map((item: { id: string }) => item.id)).toEqual(["project.fresh-v3", "installation.current-package", "runtime.canonical-skill"]);
-      expect(preview.deletions.every((item: { targets: unknown[] }) => item.targets.length > 0)).toBe(true);
+      expect(preview.detail).toBe("summary");
+      expect(preview.deletions.every((item: { entries: object; omitted_count: number }) => typeof item.entries === "object" && item.omitted_count === 0)).toBe(true);
       expect(preview.irreversible_loss).toHaveLength(4);
       expect(preview.authorization).toMatch(/^sha256:[0-9a-f]{64}$/);
       expect(preview).toMatchObject({
@@ -248,7 +308,7 @@ describe("product v1 EOL execution gate", () => {
     fs.symlinkSync(external, path.join(root, ".agentera", "external-link"));
     fs.symlinkSync(install, installAlias);
 
-    const preview = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--format", "json"]);
+    const preview = run(root, ["upgrade", "--reset-product-v1", "--project", root, "--install-root", install, "--home", home, "--dry-run", "--full-detail", "--format", "json"]);
     expect(preview.rc).toBe(0);
     const serialized = preview.out;
     expect(serialized).toContain(path.join(root, ".agentera", "external-link"));
@@ -517,5 +577,146 @@ describe("product v1 EOL execution gate", () => {
 
     expect(() => applyProductV1Reset(options, preview.authorization)).toThrow("cannot be recovered after effects may have begun");
     expect(fs.readFileSync(path.join(profile, "state"), "utf8")).toBe("must-remain\n");
+  });
+});
+
+describe("bounded product v1 reset preview", () => {
+  it("keeps the worst-case default preview within 8 KiB while naming every user-data entry by path", () => {
+    const { project, home, install, userData } = worstCaseHome();
+    const preview = withRootEnv(null, () => resetPreview(project, home, install));
+    expect(preview.rc).toBe(0);
+    expect(preview.bytes).toBeLessThanOrEqual(8192);
+    expect(preview.value.detail).toBe("summary");
+    expect(preview.value.user_data.map((entry: { path: string }) => entry.path).sort()).toEqual([...userData].sort());
+    expect(preview.value.user_data.find((entry: { path: string }) => entry.path.endsWith("sessions"))).toMatchObject({ kind: "sessions", type: "directory", entry_count: 201 });
+    const profile = preview.value.deletions.find(({ id }: { id: string }) => id === "profile.state");
+    expect(Object.keys(profile.entries)).toHaveLength(12);
+    expect(profile.omitted_count).toBeGreaterThan(0);
+    expect(Object.values(profile.entries).every((count) => typeof count === "number" && count > 0)).toBe(true);
+    expect(Object.keys(profile.entries).some((name) => userData.includes(path.join(install, name)))).toBe(false);
+    expect(preview.value.deletions.find(({ id }: { id: string }) => id === "runtime.resources").omitted_count).toBeGreaterThan(0);
+    expect(preview.out).not.toContain("session-0001-with-a-longer-name.jsonl");
+  });
+
+  it("omits nothing from a scope with at most 12 top-level names", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-small-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-small-app-"));
+    roots.push(home, install);
+    for (let i = 0; i < 12; i++) writeFile(path.join(install, `entry-${String(i).padStart(2, "0")}`));
+    const preview = withRootEnv(null, () => resetPreview(project, home, install));
+    const profile = preview.value.deletions.find(({ id }: { id: string }) => id === "profile.state");
+    expect(profile).toMatchObject({ omitted_count: 0, entry_count: 13 });
+    expect(Object.keys(profile.entries)).toHaveLength(12);
+    expect(preview.value.user_data).toEqual([]);
+  });
+
+  it("lists a tree shared by identical profile and installation roots once", () => {
+    const { project, home, install } = worstCaseHome();
+    const summary = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(summary.roots.profile_root).toBe(summary.roots.install_root);
+    expect(summary.deletions.find(({ id }: { id: string }) => id === "installation.state")).toEqual({ id: "installation.state", root: install, entry_count: 0, shared_with: "profile.state", entries: {}, omitted_count: 0 });
+    const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"]));
+    const sample = path.join(install, "sessions", "session-0001-with-a-longer-name.jsonl");
+    expect(full.out.split(`"${sample}"`).length - 1).toBe(1);
+    expect(full.value.deletions.find(({ id }: { id: string }) => id === "installation.state").targets).toEqual([{ declared: ".", operation: "remove_path", path: install, shared_with: "profile.state" }]);
+  });
+
+  it("lists separate profile and installation roots under their own scopes", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-split-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-split-app-"));
+    const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-split-profile-"));
+    roots.push(home, install, profile);
+    writeFile(path.join(install, "skills", "SKILL.md"));
+    writeFile(path.join(profile, "PROFILE.md"));
+    const preview = withRootEnv(profile, () => resetPreview(project, home, install)).value;
+    const byId = Object.fromEntries(preview.deletions.map((item: { id: string }) => [item.id, item]));
+    expect(byId["installation.state"]).not.toHaveProperty("shared_with");
+    expect(byId["installation.state"].entries).toEqual({ skills: 2 });
+    expect(preview.user_data).toEqual([{ scope: "profile.state", kind: "profile", path: path.join(profile, "PROFILE.md"), type: "file", entry_count: 1 }]);
+  });
+
+  it("lists every deleted entry only with --full-detail and advertises the option", () => {
+    const { project, home, install } = worstCaseHome();
+    const internal = withRootEnv(null, () => previewProductV1Reset({ project, home, installRoot: install }));
+    const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"])).value;
+    expect(full.detail).toBe("full");
+    expect(full).not.toHaveProperty("full_detail_command");
+    const listed = new Set(full.deletions.flatMap((item: { targets: Array<{ entries?: Array<{ path: string }> }> }) => item.targets.flatMap((target) => (target.entries ?? []).map((entry) => entry.path))));
+    const deleted = internal.deletions.flatMap((item) => item.targets.flatMap((target) => (target.entries ?? []).filter((entry) => entry.type !== "absent").map((entry) => entry.path)));
+    expect(deleted.length).toBeGreaterThan(1000);
+    expect(deleted.every((entry) => listed.has(entry))).toBe(true);
+    const summary = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(summary.full_detail_command).toBe(`npx -y agentera@next upgrade --reset-product-v1 --project ${project} --home ${home} --install-root ${install} --dry-run --full-detail --format json`);
+
+    const clean = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-help-"));
+    roots.push(clean);
+    expect(run(clean, ["upgrade", "--help"]).out).toContain("--full-detail");
+    const explain = run(clean, ["upgrade", "--explain", "--operation", "reset", "--section", "usage", "--limit", "20", "--format", "json"]);
+    expect(explain.rc).toBe(0);
+    expect(explain.out).toContain("--dry-run --full-detail");
+  });
+
+  it.each([
+    ["apply", ["--yes", "--authorization", "sha256:0"]],
+    ["ordinary upgrade", null],
+  ])("rejects --full-detail outside the reset preview: %s", (_name, extra) => {
+    const { project, home, install } = worstCaseHome();
+    const clean = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-ordinary-"));
+    roots.push(clean);
+    const args = extra === null ? ["upgrade", "--project", clean, "--dry-run", "--full-detail", "--format", "json"] : ["upgrade", "--reset-product-v1", "--project", project, "--install-root", install, "--home", home, ...extra, "--full-detail", "--format", "json"];
+    const before = [snapshot(project), snapshot(home)];
+    const result = withRootEnv(null, () => run(project, args));
+    expect(result.rc).toBe(2);
+    expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("--full-detail") });
+    expect([snapshot(project), snapshot(home)]).toEqual(before);
+  });
+
+  it("binds every deleted entry, named or not, to the default preview authorization", () => {
+    const { project, home, install } = worstCaseHome();
+    const summary = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"])).value;
+    expect(summary.authorization).toBe(full.authorization);
+    const unnamed = path.join(install, "vendor", "sub-3", "file-8.md");
+    expect(JSON.stringify(summary)).not.toContain(unnamed);
+    fs.writeFileSync(unnamed, "changed after review\n");
+    const apply = (authorization: string) => withRootEnv(null, () => run(project, ["upgrade", "--reset-product-v1", "--project", project, "--home", home, "--install-root", install, "--yes", "--authorization", authorization, "--format", "json"]));
+    const stale = apply(summary.authorization);
+    expect(stale.rc).toBe(2);
+    expect(JSON.parse(stale.out).error.message).toContain("scope changed after preview");
+    expect(fs.existsSync(path.join(install, "sessions"))).toBe(true);
+    expect(fs.existsSync(path.join(project, ".agentera", "PROGRESS.md"))).toBe(true);
+
+    const reviewed = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(apply(reviewed.authorization).rc).toBe(0);
+    expect(fs.existsSync(unnamed)).toBe(false);
+    expect(fs.existsSync(path.join(install, "sessions"))).toBe(false);
+  });
+
+  it("names deleted user data in plain words and points recovery through the previous major version", () => {
+    const { project, home, install } = worstCaseHome();
+    const preview = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(preview.question).toBe("This permanently deletes every listed reset target, including your Agentera profile, saved profile copies and history, usage report, sessions, benchmarks, and extracted evidence, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?");
+    expect(preview.question).not.toMatch(/user_data|profile\.state|scope/);
+    expect(preview.recovery).toContain("upgrade through the previous major version first");
+    expect(preview.recovery).toContain("Agentera 2.x");
+  });
+
+  it("keeps the generic question and recovery when no user data is deleted", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-nodata-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-nodata-app-"));
+    roots.push(home, install);
+    const preview = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(preview.user_data).toEqual([]);
+    expect(preview.question).toContain("including any current data within those scopes");
+    expect(preview.recovery).not.toContain("previous major version");
+  });
+
+  it("draws user data only from the handoff catalog and doctor's preserved user state", () => {
+    expect(PRODUCT_V1_RESET_USER_DATA_NAMES).toEqual(expect.arrayContaining([...PROFILE_FILE_MEMBERS, ...USER_DATA_CATALOG_DIRS]));
+    expect(PRODUCT_V1_RESET_USER_DATA_NAMES.every((name) => ROOT_USER_STATE_FILE_NAMES.has(name) || ROOT_USER_STATE_DIR_NAMES.has(name))).toBe(true);
+    expect(PRODUCT_V1_RESET_USER_DATA_NAMES).not.toEqual(expect.arrayContaining(["TODO.md"]));
   });
 });

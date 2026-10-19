@@ -4,7 +4,7 @@ record:
   name: Return typed JSON for broken startup authority
   depends_on:
     - aucgajnzmq
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN missing, malformed, or wrong-shaped state authority, including a fault raised while the CLI is still starting, WHEN prime or doctor runs from a packaged copy, with or without `--format json`, THEN stdout holds one JSON failure with a stable schema identifier, a classification, recovery guidance, and an explicit no-mutation field, the exit code is nonzero, no state changes, and no parser or module stack appears.
     - GIVEN a version-authority classification from task 1 WHEN prime or doctor runs THEN it is reported as that typed startup failure rather than a healthy-looking result.
@@ -13,12 +13,12 @@ record:
     - GIVEN the CLI coverage contract WHEN read THEN it documents the failure shape, and TODO opybnibysh is resolved.
   plan: mayqocppfa
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 2 fails for doctor: on corrupt version authority doctor prints its repair_needed report with expectedVersion unknown instead of the agentera.startupFailure.v1 envelope; only prime is gated (packages/cli/src/cli/commands/prime.ts:180); the doctor carve-out at docs/cli-coverage-contract.md:137 was not an approved plan change. Criterion 5 fails as a consequence: the opybnibysh resolve reason claims doctor prints the envelope for corrupt version authority."
     provenance:
-      attempt_id: audit-1
-      source: Independent audit evaluator report for task rayhcanifm, 2026-10-19
-      recorded_at: 2026-10-19 01:26
+      attempt_id: audit-2
+      source: "Independent audit re-evaluation of task rayhcanifm after the corrective commit, 2026-10-19: 5 of 5 criteria PASS, 1 WARN"
+      recorded_at: 2026-10-19 06:30
       writer_command: agentera state plan record-evaluation

@@ -6,7 +6,7 @@ import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { ENTITY_MODE_MARKER } from "../../state/entityCutover.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
-import { applyProductV1Reset, previewProductV1Reset, type ProductV1ResetPreview } from "../../upgrade/productV1Reset.js";
+import { applyProductV1Reset, fullDetailProductV1ResetPreview, previewProductV1Reset, summarizeProductV1ResetPreview, type ProductV1ResetPreview, type ProductV1ResetUserDataEntry, type ProductV1ResetUserDataKind } from "../../upgrade/productV1Reset.js";
 import os from "node:os";
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
@@ -38,6 +38,7 @@ export interface UpgradeArgs {
   productV1Reset?: boolean;
   authorization?: string | null;
   sharedSkill?: boolean;
+  fullDetail?: boolean;
 }
 
 /** Canonical stable-channel update entry point. */
@@ -87,6 +88,39 @@ function entityAuthorityConfirmedActive(project: string): boolean {
   } catch {
     return false;
   }
+}
+
+const RESET_USER_DATA_WORDS: Record<ProductV1ResetUserDataKind, string> = {
+  profile: "Agentera profile",
+  history: "saved profile copies and history",
+  usage_report: "usage report",
+  sessions: "sessions",
+  benchmarks: "benchmarks",
+  extracted_evidence: "extracted evidence",
+};
+
+function resetUserDataWords(userData: ProductV1ResetUserDataEntry[]): string | null {
+  const kinds = new Set(userData.map((entry) => entry.kind));
+  const words = (Object.keys(RESET_USER_DATA_WORDS) as ProductV1ResetUserDataKind[]).filter((kind) => kinds.has(kind)).map((kind) => RESET_USER_DATA_WORDS[kind]);
+  if (words.length === 0) return null;
+  return words.length === 1 ? words[0]! : `${words.slice(0, -1).join(", ")}${words.length > 2 ? "," : ""} and ${words.at(-1)}`;
+}
+
+// Operational output is JSON-only (outputPolicy rejects other formats before dispatch).
+function renderProductV1ResetPreview(preview: ProductV1ResetPreview, fullDetail: boolean): string {
+  const command = (more: string[]) => commandText(["npx", "-y", "agentera@next", "upgrade", "--reset-product-v1", "--project", preview.roots.project!, "--home", preview.roots.runtime_home!, "--install-root", preview.roots.install_root!, ...more]);
+  const applyCommand = command(["--yes", "--authorization", preview.authorization, "--format", "json"]);
+  const fullDetailCommand = command(["--dry-run", "--full-detail", "--format", "json"]);
+  const view = fullDetail ? fullDetailProductV1ResetPreview(preview) : summarizeProductV1ResetPreview(preview);
+  const words = resetUserDataWords(view.user_data);
+  const question = `This permanently deletes every listed reset target, including ${words ? `your ${words}` : "any current data within those scopes"}, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?`;
+  const recovery = [
+    "No or silence changes nothing.",
+    ...(words ? [`To keep your ${words}, answer No and upgrade through the previous major version first: bring this state to Agentera 2.x on the stable channel (npx -y agentera@latest), then use the supported v2-to-v3 upgrade.`] : []),
+    ...(fullDetail ? [] : ["Run full_detail_command to list every deleted entry; it shows the same authorization, which binds the complete snapshot."]),
+  ].join(" ");
+  const offer = { approval: "explicit_yes_only", question, apply_command: applyCommand, ...(fullDetail ? {} : { full_detail_command: fullDetailCommand }), recovery };
+  return JSON.stringify({ ...view, ...offer }, null, 2) + "\n";
 }
 
 export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
@@ -146,26 +180,12 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
 
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
-    const result = args.yes ? applyProductV1Reset(options, args.authorization ?? "") : previewProductV1Reset(options);
-    const preview = !args.yes ? (result as ProductV1ResetPreview) : null;
-    const applyCommand = preview ? commandText(["npx", "-y", "agentera@next", "upgrade", "--reset-product-v1", "--project", preview.roots.project!, "--home", preview.roots.runtime_home!, "--install-root", preview.roots.install_root!, "--yes", "--authorization", preview.authorization, "--format", "json"]) : null;
-    const question = "This permanently deletes every listed reset target, including any current data within those scopes, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?";
-    if (args.format === "json") out(JSON.stringify(preview ? { ...preview, approval: "explicit_yes_only", question, apply_command: applyCommand } : result, null, 2) + "\n");
-    else if ("deletions" in result) {
-      const lines = ["Product-v1 reset preview (no mutation)", `Authorization: ${result.authorization}`, "Roots:"];
-      for (const [name, root] of Object.entries(result.roots)) lines.push(`  ${name}: ${root}`);
-      lines.push("Deletions:");
-      for (const item of result.deletions)
-        for (const target of item.targets) {
-          lines.push(`  ${item.id}: ${target.path ?? target.declared}${target.selector ? ` (${target.selector.kind}:${target.selector.value})` : ""}`);
-          for (const entry of target.entries ?? []) lines.push(`    ${entry.type}: ${entry.path}`);
-        }
-      lines.push("Recreations:");
-      for (const item of result.recreations) for (const target of item.targets) lines.push(`  ${item.id}: ${target.declared} under ${item.root}`);
-      lines.push("Irreversible loss:", ...result.irreversible_loss.map((loss) => `  ${loss}`));
-      lines.push("", `Question: ${question}`, `Apply only after explicit Yes: ${applyCommand}`);
-      out(lines.join("\n") + "\n");
-    } else out(`Product-v1 reset complete: ${result.authorization}\nFresh v3 state initialized.\n`);
+    if (args.yes) {
+      const result = applyProductV1Reset(options, args.authorization ?? "");
+      out(args.format === "json" ? JSON.stringify(result, null, 2) + "\n" : `Product-v1 reset complete: ${result.authorization}\nFresh v3 state initialized.\n`);
+      return 0;
+    }
+    out(renderProductV1ResetPreview(previewProductV1Reset(options), args.fullDetail === true));
     return 0;
   }
 

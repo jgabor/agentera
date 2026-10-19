@@ -182,6 +182,7 @@ function runResetWorkflow(bin: string, root: string) {
   fs.writeFileSync(path.join(project, ".agentera", "progress.yaml"), "schemaVersion: agentera.progress.v1\ncycles: []\n");
   fs.writeFileSync(path.join(project, "keep.txt"), "user owned\n");
   fs.writeFileSync(path.join(profile, "state"), "legacy profile\n");
+  fs.writeFileSync(path.join(profile, "PROFILE.md"), "# Profile\n");
   spawnSync("git", ["init", "-q", project], { encoding: "utf8" });
 
   const common = ["upgrade", "--reset-product-v1", "--project", project, "--install-root", install, "--home", home];
@@ -215,6 +216,10 @@ function runResetWorkflow(bin: string, root: string) {
       deletionIds: preview.deletions.map((item: { id: string }) => item.id),
       recreationIds: preview.recreations.map((item: { id: string }) => item.id),
       irreversibleLossCount: preview.irreversible_loss.length,
+      withinBudget: Buffer.byteLength(previewResult.stdout) <= 8192,
+      detail: preview.detail,
+      userData: preview.user_data.map((entry: { path: string }) => path.relative(root, entry.path)),
+      questionNamesProfile: preview.question.includes("your Agentera profile"),
       boundApply: preview.apply_command.includes(`--project ${project}`) && preview.apply_command.includes(`--home ${home}`) && preview.apply_command.includes(`--install-root ${install}`),
     },
     applied: { status: applied.status, effects_performed: applied.effects_performed },
@@ -1177,6 +1182,7 @@ describe("npm distribution boundary", () => {
     const packed = runResetWorkflow(packageBin, path.join(fixture.root, "packed-reset"));
 
     expect(packed).toEqual(source);
+    expect(packed.preview).toMatchObject({ withinBudget: true, detail: "summary", userData: ["profile/PROFILE.md"], questionNamesProfile: true });
     expect(packed.result).toEqual({
       productV1Removed: true,
       currentSchemaRemoved: true,

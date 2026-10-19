@@ -13,6 +13,7 @@ import { applyAppContentRefresh } from "./appContentRefresh.js";
 import { loadProductV1ResetAuthority } from "./productV1ResetAuthority.js";
 import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../setup/hostSkillLifecycle.js";
 import { observeLifecyclePath, removeLifecycleResource, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
+import { PROFILE_FILE_MEMBERS, USER_DATA_CATALOG_DIRS } from "../migrate/v2HandoffManifest.js";
 
 export interface ProductV1ResetOptions {
   project?: string | null;
@@ -79,6 +80,191 @@ export interface ProductV1ResetPreview {
   irreversible_loss: string[];
   authorization: string;
   mutation_performed: false;
+}
+
+/** Top-level names the bounded preview names per deletion before it reports an omitted count. */
+export const PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT = 12;
+
+export type ProductV1ResetUserDataKind = "profile" | "history" | "usage_report" | "sessions" | "benchmarks" | "extracted_evidence";
+
+// The handoff catalog owns the user-data names. Doctor also preserves the legacy
+// root corpus.json, which is extracted evidence. Doctor's other preserved names
+// (TODO, changelog, design, handoff manifest) are not user data.
+const LEGACY_ROOT_EVIDENCE_FILE = "corpus.json";
+const USER_DATA_KINDS: Record<(typeof PROFILE_FILE_MEMBERS)[number] | (typeof USER_DATA_CATALOG_DIRS)[number] | typeof LEGACY_ROOT_EVIDENCE_FILE, ProductV1ResetUserDataKind> = {
+  "PROFILE.md": "profile",
+  "USAGE.md": "usage_report",
+  history: "history",
+  sessions: "sessions",
+  benchmarks: "benchmarks",
+  intermediate: "extracted_evidence",
+  corpus: "extracted_evidence",
+  [LEGACY_ROOT_EVIDENCE_FILE]: "extracted_evidence",
+};
+
+export const PRODUCT_V1_RESET_USER_DATA_NAMES: readonly string[] = Object.keys(USER_DATA_KINDS);
+
+function userDataKind(name: string): ProductV1ResetUserDataKind | null {
+  return Object.hasOwn(USER_DATA_KINDS, name) ? USER_DATA_KINDS[name as keyof typeof USER_DATA_KINDS] : null;
+}
+
+export interface ProductV1ResetUserDataEntry {
+  scope: string;
+  kind: ProductV1ResetUserDataKind;
+  path: string;
+  type: ScopePath["type"];
+  entry_count: number;
+}
+
+export interface ProductV1ResetDeletionSummary {
+  id: string;
+  root: string;
+  entry_count: number;
+  shared_with?: string;
+  entries: Record<string, number>;
+  omitted_count: number;
+}
+
+/** Bounded view of a preview. It carries the preview's authorization, which binds the complete snapshot. */
+export interface ProductV1ResetPreviewSummary {
+  schemaVersion: ProductV1ResetPreview["schemaVersion"];
+  mode: "preview";
+  status: "review_required";
+  detail: "summary";
+  evidence: string[];
+  roots: Record<string, string>;
+  user_data: ProductV1ResetUserDataEntry[];
+  deletions: ProductV1ResetDeletionSummary[];
+  recreations: Array<{ id: string; root: string; targets: string[] }>;
+  irreversible_loss: string[];
+  authorization: string;
+  mutation_performed: false;
+}
+
+/** Complete view of a preview: every deleted entry, with a tree shared by two scopes listed once. */
+export interface ProductV1ResetPreviewFullDetail extends Omit<ProductV1ResetPreview, "deletions"> {
+  detail: "full";
+  user_data: ProductV1ResetUserDataEntry[];
+  deletions: Array<{
+    id: string;
+    owner: string;
+    root: string;
+    targets: Array<ProductV1ResetScopeTarget | { declared: string; operation?: ProductV1ResetScopeTarget["operation"]; path?: string; shared_with: string }>;
+  }>;
+}
+
+function present(entries: ScopePath[] | undefined): ScopePath[] {
+  return (entries ?? []).filter((entry) => entry.type !== "absent");
+}
+
+/** First deletion that already lists the same whole-tree target, so a shared tree appears once. */
+function sharedTargets(preview: ProductV1ResetPreview): Map<ProductV1ResetScopeTarget, string> {
+  const owners = new Map<string, string>();
+  const shared = new Map<ProductV1ResetScopeTarget, string>();
+  for (const deletion of preview.deletions)
+    for (const target of deletion.targets) {
+      if (target.operation !== "remove_path" || !target.path) continue;
+      const owner = owners.get(target.path);
+      if (owner !== undefined) shared.set(target, owner);
+      else owners.set(target.path, deletion.id);
+    }
+  return shared;
+}
+
+function collectUserData(preview: ProductV1ResetPreview, shared: Map<ProductV1ResetScopeTarget, string>): ProductV1ResetUserDataEntry[] {
+  const result: ProductV1ResetUserDataEntry[] = [];
+  for (const deletion of preview.deletions)
+    for (const target of deletion.targets) {
+      if (target.declared !== "." || !target.path || shared.has(target)) continue;
+      const byName = new Map<string, ProductV1ResetUserDataEntry>();
+      for (const entry of present(target.entries)) {
+        const name = path.relative(target.path, entry.path).split(path.sep)[0]!;
+        const kind = name === "" ? null : userDataKind(name);
+        if (kind === null) continue;
+        const existing = byName.get(name);
+        if (existing) existing.entry_count += 1;
+        else byName.set(name, { scope: deletion.id, kind, path: path.join(target.path, name), type: entry.type, entry_count: 1 });
+      }
+      result.push(...[...byName.values()].sort((left, right) => left.path.localeCompare(right.path)));
+    }
+  return result;
+}
+
+function selectorName(target: ProductV1ResetScopeTarget): string {
+  return `${target.declared} (${target.selector!.kind}: ${target.selector!.value})`;
+}
+
+export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview): ProductV1ResetPreviewSummary {
+  const shared = sharedTargets(preview);
+  const deletions = preview.deletions.map((deletion): ProductV1ResetDeletionSummary => {
+    const counts = new Map<string, number>();
+    let entryCount = 0;
+    let sharedWith: string | undefined;
+    for (const target of deletion.targets) {
+      const owner = shared.get(target);
+      if (owner !== undefined) {
+        sharedWith = owner;
+        continue;
+      }
+      if (target.operation === "remove_in_file_selector") {
+        if (target.file_state?.type !== "file") continue;
+        counts.set(selectorName(target), 1);
+        entryCount += 1;
+        continue;
+      }
+      const entries = present(target.entries);
+      entryCount += entries.length;
+      if (entries.length === 0) continue;
+      if (target.declared !== ".") {
+        counts.set(target.declared, (counts.get(target.declared) ?? 0) + entries.length);
+        continue;
+      }
+      for (const entry of entries) {
+        const name = path.relative(target.path!, entry.path).split(path.sep)[0]!;
+        if (name === "" || userDataKind(name) !== null) continue;
+        counts.set(name, (counts.get(name) ?? 0) + 1);
+      }
+    }
+    const names = [...counts.keys()].sort();
+    return {
+      id: deletion.id,
+      root: deletion.root,
+      entry_count: entryCount,
+      ...(sharedWith !== undefined ? { shared_with: sharedWith } : {}),
+      entries: Object.fromEntries(names.slice(0, PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT).map((name) => [name, counts.get(name)!])),
+      omitted_count: Math.max(0, names.length - PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT),
+    };
+  });
+  return {
+    schemaVersion: preview.schemaVersion,
+    mode: preview.mode,
+    status: preview.status,
+    detail: "summary",
+    evidence: preview.evidence,
+    roots: preview.roots,
+    user_data: collectUserData(preview, shared),
+    deletions,
+    recreations: preview.recreations.map((item) => ({ id: item.id, root: item.root, targets: item.targets.map((target) => target.declared) })),
+    irreversible_loss: preview.irreversible_loss,
+    authorization: preview.authorization,
+    mutation_performed: preview.mutation_performed,
+  };
+}
+
+export function fullDetailProductV1ResetPreview(preview: ProductV1ResetPreview): ProductV1ResetPreviewFullDetail {
+  const shared = sharedTargets(preview);
+  return {
+    ...preview,
+    detail: "full",
+    user_data: collectUserData(preview, shared),
+    deletions: preview.deletions.map((deletion) => ({
+      ...deletion,
+      targets: deletion.targets.map((target) => {
+        const owner = shared.get(target);
+        return owner === undefined ? target : { declared: target.declared, operation: target.operation, path: target.path, shared_with: owner };
+      }),
+    })),
+  };
 }
 
 function hash(bytes: string | Buffer): string {

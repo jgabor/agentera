@@ -385,15 +385,15 @@ degraded history rather than current detail. Full records retain their existing
 temporal order; the degraded-summary segment follows in deterministic canonical-ID
 order and makes no chronology claim. Retained decision-summary satisfaction is
 inline and read-only, may be absent, and never creates a standalone satisfaction
- target. Preview reports independent source roots separately from generated
- relationship dependents: `root_blockers + dependent_blockers = blockers`, and
- each dependent names its stable `root_source_identity`. A Git-backed regression
- copies the supported `progress`, `decisions`, and `health` sources from pinned
- v2.7.11 compaction output; its protected experiment evidence remains unchanged
- and excluded. It verifies preview bindings and target hashes, marker-last
- publication and interrupted exact-target retry, canonical validation, ordinary
- list/get reads for retained full and summary entries, human/JSON prime, and
- repeated no-change upgrade behavior while aggregate source hashes remain stable.
+target. Preview reports independent source roots separately from generated
+relationship dependents: `root_blockers + dependent_blockers = blockers`, and
+each dependent names its stable `root_source_identity`. A Git-backed regression
+copies the supported `progress`, `decisions`, and `health` sources from pinned
+v2.7.11 compaction output; its protected experiment evidence remains unchanged
+and excluded. It verifies preview bindings and target hashes, marker-last
+publication and interrupted exact-target retry, canonical validation, ordinary
+list/get reads for retained full and summary entries, human/JSON prime, and
+repeated no-change upgrade behavior while aggregate source hashes remain stable.
 Inherited full-decision `high`, `medium`, and `low` confidence remains readable
 with a legacy caveat; newly supplied or amended confidence remains strict.
 
@@ -416,8 +416,23 @@ profile, installation, and runtime effects first:
 npx -y agentera@next upgrade --reset-product-v1 --dry-run
 ```
 
-The preview returns exact `deletions`, `recreations`, `irreversible_loss`, one
-question, and a complete `apply_command` bound to the selected roots and source.
+The default preview is bounded so that a host cannot truncate away what it
+deletes. `user_data` names by path every profile, saved profile copy and
+history, usage report, sessions, benchmarks, and extracted-evidence entry the
+reset deletes. Each entry in `deletions` lists up to 12 other top-level names
+with their entry counts and reports the rest as `omitted_count`. When the
+profile and installation roots are the same directory, it appears once, under
+`profile.state`. The preview also returns `recreations`, `irreversible_loss`,
+one question, a complete `apply_command` bound to the selected roots and
+source, and a `full_detail_command`. To list every deleted entry, run:
+
+```bash
+npx -y agentera@next upgrade --reset-product-v1 --dry-run --full-detail
+```
+
+Both views carry the same `authorization`. It binds the complete snapshot of
+every deleted entry, named or not, so a change to any file in a deleted scope
+makes the apply refuse.
 After reviewing the irreversible effects, only an explicit **Yes** permits the
 host to run that command unchanged. No, silence, or a changed scope/source makes
 no reset; never ask the user to copy a token or reconstruct the command. Reset
@@ -425,8 +440,12 @@ approval is separate from ordinary update and focused cleanup approval.
 
 This reset is destructive and irreversible. It deletes all Agentera state in
 the listed scopes, retains no backup, and initializes fresh v3 installation
-state. Review `irreversible_loss`, every deletion, and every recreation in the
-preview before applying it. Do not use the reset for v2 projects. Supported v2
+state. Review `user_data`, `irreversible_loss`, every deletion, and every
+recreation in the preview before applying it. To keep your profile, history,
+usage report, sessions, benchmarks, or extracted evidence, answer No and
+upgrade through the previous major version first: bring this state to
+Agentera 2.x on the stable channel, then use the supported v2-to-v3 upgrade.
+Do not use the reset for v2 projects. Supported v2
 state continues to use the one-way v2-to-v3 preview and apply commands above.
 If interrupted, retry the same approved operation with its retained reset
 journal. Report completion only when the existing executor verifies fresh-v3
