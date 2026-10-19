@@ -23,4 +23,4 @@ record:
       description: "[test:3.0.0] Verify one-question consent journeys with a live agent."
       severity: normal
       status: open
-      order: 27
+      order: 26

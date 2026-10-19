@@ -139,19 +139,6 @@ describe("state storage authority", () => {
     expect(api.cursor.append_behavior).toContain("excluded");
     expect(api.cursor.unavailable).toContain("cursor_snapshot_unavailable");
     expect(api.list.response_fields.required).toEqual(expect.arrayContaining(["entries", "counts", "snapshot", "source_contract"]));
-    expect(api.durability).toMatchObject({
-      command: "npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N]",
-      default_limit: 100,
-      maximum_limit: 100,
-      status_values: ["complete", "degraded", "unavailable"],
-      local_values: ["verified", "unavailable", "corrupt"],
-      git_values: ["verified", "degraded", "unavailable"],
-    });
-    expect(api.durability.guarantees).toMatchObject({
-      read_only: true,
-      remote_contact: "forbidden",
-      writes_independent: true,
-    });
     expect(api).toMatchObject({
       entity_migration_upgrade: {
         command: "npx -y agentera@next upgrade --channel development --project PATH --dry-run",
@@ -201,7 +188,7 @@ describe("state storage authority", () => {
       unsupported: "unsupported",
     });
     expect(authority.compatibility.no_reconstruction).toContain("does not reconstruct");
-    expect(cases.non_git.git_durability).toBe("unavailable");
+    expect(cases.non_git.behavior).toContain("no Git operation is attempted");
     expect(cases.shallow.classification).toBe("degraded");
     expect(cases.ambiguous.behavior).toContain("never choose");
     expect(cases.corrupt.behavior).toContain("preserve");

@@ -37,7 +37,7 @@ const OPERATIONAL_ROUTE_PRODUCERS = {
   stats: ["emitDeprecationAlias", "runReport"],
   schema: ["runSchema"],
   lint: ["emitDeprecationAlias", "runLint"],
-  check: ["runValidate", "runVerify", "runDurability", "runLint", "runCompact", "runGate", "emitInvalidInput"],
+  check: ["runValidate", "runVerify", "runLint", "runCompact", "runGate", "emitInvalidInput"],
   state: ["runQuery", "runState", "emitInvalidInput"],
   query: ["emitDeprecationAlias", "runQuery"],
   compact: ["emitDeprecationAlias", "runCompact", "runGate"],

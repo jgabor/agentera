@@ -4,7 +4,7 @@ record:
   name: Retire the durability diagnostic
   depends_on:
     - nolbaqvfzi
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN CLI and check help WHEN listed THEN no durability operation is advertised, and `check durability` returns the standard unknown-subcommand error.
     - GIVEN every advertised static discovery command in a packaged run WHEN each runs THEN each exits 0 and none mentions durability.

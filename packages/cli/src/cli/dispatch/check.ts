@@ -7,10 +7,6 @@ import { makeArgvValueReader } from "./argvParser.js";
 import { asEnvelopeFormat, classifyParseError, type Io } from "./shared.js";
 import { emitInvalidInput } from "../errors.js";
 import { StateWriteInputError } from "../../state/write/errors.js";
-import { cmdDurability, entityDurabilityFailure, emitDurabilityFailure, requestedDurabilityFormat, validateDurabilityArgs } from "../commands/durability.js";
-import { type DurabilityArgs } from "../../state/durability.js";
-import { resolveSourceRoot } from "../../core/sourceRoot.js";
-import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 
 /** Minimal flag parser for the `lint` command surface. */
 export function parseLintArgs(argv: string[]): LintArgs | { error: string } {
@@ -126,61 +122,6 @@ export function runCompact(argv: string[], io: Io, _prog: string): number {
       format: asEnvelopeFormat(parsed.format),
       body: { class: "unsupported_target", message: (exc as Error).message },
     });
-  }
-}
-
-export function parseDurabilityArgs(argv: string[]): DurabilityArgs | { error: string } {
-  const args: DurabilityArgs = { project: null, artifact: null, format: "json" };
-  let i = 0;
-  const value = makeArgvValueReader(
-    argv,
-    () => i,
-    (n) => {
-      i = n;
-    },
-  );
-  for (; i < argv.length; i++) {
-    const token = argv[i];
-    let parsed: string | null;
-    if ((parsed = value("--project")) !== null) args.project = parsed;
-    else if ((parsed = value("--artifact")) !== null) args.artifact = parsed;
-    else if ((parsed = value("--id")) !== null) args.id = parsed;
-    else if ((parsed = value("--number")) !== null) {
-      if (!/^[1-9][0-9]*$/.test(parsed)) return { error: `argument --number: invalid int value: '${parsed}'` };
-      const number = Number(parsed);
-      if (!Number.isSafeInteger(number)) return { error: `argument --number: invalid int value: '${parsed}'` };
-      args.number = number;
-    } else if ((parsed = value("--limit")) !== null) {
-      if (!/^[1-9][0-9]*$/.test(parsed)) return { error: `argument --limit: invalid int value: '${parsed}'` };
-      const limit = Number(parsed);
-      if (!Number.isSafeInteger(limit)) return { error: `argument --limit: invalid int value: '${parsed}'` };
-      args.limit = limit;
-    } else if ((parsed = value("--format")) !== null) {
-      if (parsed !== "json") {
-        return { error: `argument --format: invalid choice: '${parsed}' (choose from 'json')` };
-      }
-      args.format = parsed;
-    } else return { error: `unrecognized arguments: ${token}` };
-  }
-  if (args.number !== undefined && !args.artifact) {
-    return { error: "the following arguments are required: --artifact when --number is supplied" };
-  }
-  return args;
-}
-
-export function runDurability(argv: string[], io: Io, _prog: string): number {
-  const format = requestedDurabilityFormat(argv);
-  const sourceRoot = resolveSourceRoot();
-  const parsed = parseDurabilityArgs(argv);
-  if ("error" in parsed) {
-    return emitDurabilityFailure(entityDurabilityFailure(parsed.error), format, io);
-  }
-  try {
-    validateDurabilityArgs(parsed, sourceRoot);
-    return cmdDurability(parsed, io);
-  } catch (exc) {
-    if (exc instanceof StateRetrievalFailure) return emitDurabilityFailure(exc, format, io);
-    return emitDurabilityFailure(entityDurabilityFailure((exc as Error).message, parsed.artifact, parsed.id ?? undefined), format, io);
   }
 }
 

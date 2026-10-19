@@ -23,7 +23,6 @@ const CURRENT_STATE_CONSUMERS = [
   "packages/cli/src/cli/commands/state/progress.ts",
   "packages/cli/src/cli/commands/state/todo.ts",
   "packages/cli/src/cli/commands/state/write.ts",
-  "packages/cli/src/state/durability.ts",
   "packages/cli/src/state/write/transaction.ts",
 ] as const;
 
@@ -183,7 +182,7 @@ function violations(relative: string, text: string): string[] {
 }
 
 describe("current entity authority consumer inventory", () => {
-  it("keeps current startup, state, durability, and writer consumers free of local mode routing", () => {
+  it("keeps current startup, state, and writer consumers free of local mode routing", () => {
     for (const relative of CURRENT_STATE_CONSUMERS) {
       const text = source(relative);
       expect(text, relative).not.toContain("detectStateMode(");

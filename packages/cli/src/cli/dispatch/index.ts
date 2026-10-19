@@ -2,7 +2,7 @@ import { CAPABILITY_ROUTING_NAMES } from "../commands/capability.js";
 import { runRouteEvaluation, runRouteReceipt, runRouteRequest } from "../commands/route.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
 import { printCommandHelp, printStateHelp, printTopLevelHelp, splitHelpArgs, stateCommandNames } from "../help.js";
-import { compactModeOf, runCompact, runDurability, runLint, runSchema, runValidate } from "./check.js";
+import { compactModeOf, runCompact, runLint, runSchema, runValidate } from "./check.js";
 import { runQuery, runState } from "./state.js";
 import { entityListFamily } from "../../state/entityRetrievalHelp.js";
 import { ENTITY_LIST_RUNTIME_FAMILIES, runtimeEntityFamiliesForCommand, type EntityListRuntimeFamilyKey } from "../../state/entityListRuntimeRegistry.js";
@@ -147,13 +147,12 @@ export function main(argv: string[], io: Io = {}): number {
           body: {
             class: "missing_argument",
             message: "the following arguments are required: check_command",
-            valid_values: ["validate", "verify", "lint", "compact", "durability"],
+            valid_values: ["validate", "verify", "lint", "compact"],
           },
         });
       }
       if (sub === "validate") return runValidate(subArgs, io, "agentera check validate");
       if (sub === "verify") return runVerify(subArgs, io, "agentera check verify");
-      if (sub === "durability") return runDurability(subArgs, io, "agentera check durability");
       if (sub === "lint") return runLint(subArgs, io, "agentera check lint");
       if (sub === "compact") {
         const mode = compactModeOf(subArgs);
@@ -165,7 +164,7 @@ export function main(argv: string[], io: Io = {}): number {
         body: {
           class: "unsupported_target",
           message: `unknown or not-yet-ported check subcommand: ${sub}`,
-          valid_values: ["validate", "verify", "lint", "compact", "durability"],
+          valid_values: ["validate", "verify", "lint", "compact"],
         },
       });
     }

@@ -71,11 +71,6 @@ describe("shared output policy", () => {
         },
         {
           route: "check",
-          producer: "runDurability",
-          args: ["check", "durability", "--project", root, "--artifact", "progress", "--id", "aaaaaaaaaa"],
-        },
-        {
-          route: "check",
           producer: "runLint",
           args: ["check", "lint", "--artifact", "PLAN.md", "--text", "Clear draft text."],
         },
@@ -95,11 +90,6 @@ describe("shared output policy", () => {
       const failing = [
         { route: "check", producer: "runValidate", args: ["check", "validate"] },
         { route: "check", producer: "runVerify", args: ["check", "verify", "--bogus"] },
-        {
-          route: "check",
-          producer: "runDurability",
-          args: ["check", "durability", "--artifact", "progress"],
-        },
         { route: "check", producer: "runLint", args: ["check", "lint", "--text", "draft"] },
         { route: "state", producer: "runQuery", args: ["state", "query", "--bogus"] },
         { route: "state", producer: "runState", args: ["state", "progress", "bogus"] },

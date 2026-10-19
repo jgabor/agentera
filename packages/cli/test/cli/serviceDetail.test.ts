@@ -318,6 +318,14 @@ describe("purpose-owned report/check/recovery static guidance", () => {
     expect(query(["doctor", "--explain"]).code).toBe(0);
     expect(query(["app-home", "--explain"]).code).toBe(0);
   });
+  it("retires durability guidance and points recovery at entity reads and state validation", () => {
+    expect(read(["check", "explain", "--section", "operations"]).map((item: any) => item.operation)).toEqual(["validate", "verify", "lint", "compact"]);
+    expect(query(["check", "explain", "--operation", "durability"]).code).toBe(64);
+    const recovery = read(["doctor", "--explain", "--section", "recovery"]);
+    expect(recovery.local_diagnostics).toContain("entity list and exact entity get");
+    expect(recovery.commands).toEqual(expect.arrayContaining(["npx -y agentera@next state <artifact-id> list", "npx -y agentera@next state <artifact-id> get --id ID", "npx -y agentera@next check validate state"]));
+    expect(JSON.stringify(recovery)).not.toContain("durability");
+  });
   it.each([
     ["report", "explain", "--input", "-"],
     ["report", "explain", "--consent", "local-history"],
@@ -406,7 +414,7 @@ describe("purpose-owned report/check/recovery static guidance", () => {
     });
     for (const args of [
       ["report", "explain", "--operation", "personal-glossary-publish"],
-      ["check", "explain", "--operation", "durability"],
+      ["check", "explain", "--operation", "compact"],
       ["doctor", "--explain"],
       ["upgrade", "--explain", "--operation", "reset"],
       ["app-home", "--explain"],

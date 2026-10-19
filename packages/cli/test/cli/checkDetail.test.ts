@@ -4,16 +4,12 @@ import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
 import { runServiceDetail } from "../../src/cli/commands/serviceDetail.js";
+import { main } from "../../src/cli/dispatch.js";
 import { printCheckHelp } from "../../src/cli/help.js";
 import { cmdLint } from "../../src/cli/commands/lint.js";
 import { cmdCompact } from "../../src/cli/commands/compact.js";
-import { cmdDurability, validateDurabilityArgs } from "../../src/cli/commands/durability.js";
-import { parseDurabilityArgs, runDurability, runLint, runCompact } from "../../src/cli/dispatch/check.js";
-import { StateRetrievalFailure } from "../../src/state/directRetrieval.js";
-import { entityArtifactValues } from "../../src/state/entityStorage.js";
-import { stateDurabilityContract } from "../../src/state/archiveDiscovery.js";
+import { runLint, runCompact } from "../../src/cli/dispatch/check.js";
 import { loadProjectionPolicy } from "../../src/state/projectionPolicy.js";
-import * as durability from "../../src/state/durability.js";
 import * as compaction from "../../src/hooks/compaction/index.js";
 import type { CompactionOperation } from "../../src/hooks/compaction/types.js";
 import type { ProjectionRecoveryReport } from "../../src/state/archiveRecovery.js";
@@ -68,73 +64,16 @@ function covered(actual: any, guidance: any) {
 }
 
 describe("check explanation selector and producer parity", () => {
-  it("keeps durability help aligned with detail and argument rejection without inspecting state", () => {
-    const inspect = vi.spyOn(durability, "inspectDurability").mockImplementation(() => {
-      throw new Error("must not inspect");
+  it("advertises only live check operations and rejects durability as an unknown subcommand", () => {
+    expect(printCheckHelp()).toContain("usage: agentera check [-h] {validate,verify,lint,compact} ...");
+    expect(printCheckHelp()).not.toContain("durability");
+    const retired = capture((io) => main(["node", "agentera", "check", "durability", "--artifact", "progress", "--id", "qjtrmnpvka"], io));
+    expect(retired.code).toBe(2);
+    expect(retired.value.error).toMatchObject({
+      class: "unsupported_target",
+      message: "unknown or not-yet-ported check subcommand: durability",
+      valid_values: ["validate", "verify", "lint", "compact"],
     });
-    const help = printCheckHelp("durability");
-    const usage = detail("durability", "usage");
-    const selectors = detail("durability", "selectors");
-    expect(help.split("\n\n")[0].replace("usage: ", "").replace(" [-h]", "").replace(/\s+/g, " ")).toBe(usage.syntax.replace("npx -y agentera@next", "agentera"));
-    const artifacts = help.match(/--artifact ARTIFACT +Required: ([^\n]+)/)?.[1].split(", ");
-    expect(artifacts).toEqual(selectors.artifacts);
-    expect(artifacts).toHaveLength(8);
-    expect(help).toContain("Required: bare ten-lowercase-letter entity ID");
-    expect(help).toContain("--number is rejected");
-    expect(help).not.toMatch(/^ +--number /m);
-    expect(help).toContain(`Validated integer (1-${selectors.maximum_limit}); returns one entity`);
-    for (const [argv, message] of [
-      [[], "requires --artifact ARTIFACT --id ID"],
-      [["--artifact", "progress", "--id", "qjtrmnpvka", "--number", "1"], "rejects --number"],
-    ] as const) {
-      const rejected = capture((io) => runDurability([...argv], io, "agentera check durability"));
-      expect(rejected.code).toBe(2);
-      expect(rejected.value.schemaVersion).toBe("agentera.stateFailure.v1");
-      expect(rejected.value.error.class).toBe("invalid_request");
-      expect(rejected.value.error.message).toContain(message);
-      expect(help).toContain(rejected.value.error.syntax.replace("agentera check durability", "agentera check durability [-h]"));
-    }
-    expect(inspect).not.toHaveBeenCalled();
-    expect(fs.readdirSync(temporary)).toEqual([]);
-  });
-
-  it("advertises durability's current required entity selectors and a valid example without inspecting state", () => {
-    const inspect = vi.spyOn(durability, "inspectDurability").mockImplementation(() => {
-      throw new Error("must not inspect");
-    });
-    const selectors = detail("durability", "selectors");
-    const usage = detail("durability", "usage");
-    expect(selectors.required).toEqual(["artifact", "id"]);
-    expect(selectors.artifacts).toEqual(entityArtifactValues(root));
-    expect(selectors.maximum_limit).toBe(stateDurabilityContract(root).maximumLimit);
-    expect(selectors.rejected).toContain("number");
-    expect(usage.syntax).toContain("--artifact ARTIFACT --id ID");
-    expect(usage.syntax).not.toContain("--number");
-    const parsed = parseDurabilityArgs(usage.example.split(" ").slice(5));
-    expect(parsed).not.toHaveProperty("error");
-    if ("error" in parsed) throw new Error(parsed.error);
-    expect(() => validateDurabilityArgs(parsed, root)).not.toThrow();
-    expect(parsed.id).toMatch(new RegExp(selectors.id_pattern));
-    for (const artifact of selectors.artifacts) {
-      for (const limit of [selectors.minimum_limit, selectors.maximum_limit]) {
-        expect(() => validateDurabilityArgs({ ...parsed, artifact, limit }, root)).not.toThrow();
-      }
-    }
-    for (const invalid of [
-      { ...parsed, artifact: undefined },
-      { ...parsed, id: undefined },
-      { ...parsed, number: 1 },
-      { ...parsed, id: "progress:qjtrmnpvka" },
-      { ...parsed, artifact: "not-an-entity-artifact" },
-      { ...parsed, limit: 0 },
-      { ...parsed, limit: selectors.maximum_limit + 1 },
-    ])
-      expect(() => validateDurabilityArgs(invalid, root)).toThrow(StateRetrievalFailure);
-    const rejected = capture((io) => runDurability(["--artifact", "progress", "--id", "qjtrmnpvka", "--number", "1"], io, "agentera check durability"));
-    expect(rejected.code).toBe(2);
-    expect(rejected.value.error.message).toContain("rejects --number");
-    covered(rejected.value, detail("durability").failure);
-    expect(inspect).not.toHaveBeenCalled();
   });
 
   it.each([false, true])("matches lint content failure fields and advisory/strict exits (strict=%s)", (strict) => {
@@ -192,62 +131,6 @@ describe("check explanation selector and producer parity", () => {
       expect(result.value.schemaVersion).toBe(detail(operation).input_failure.schemaVersion);
       covered(result.value, detail(operation).input_failure);
     }
-  });
-
-  it.each(["complete", "degraded", "unavailable"] as const)("describes emitted durability evidence (%s) without running inspection or Git", (status) => {
-    const contract = detail("durability");
-    const values = stateDurabilityContract(root);
-    const missing = status === "unavailable";
-    const gitReason = status === "complete" ? "non_git" : "not_committed";
-    const response: durability.DurabilityResponse = {
-      command: "agentera check durability --project PATH --artifact ARTIFACT --id ID",
-      status,
-      project: temporary,
-      read_only: true,
-      remote_contact: false,
-      head: { status: status === "complete" ? "unavailable" : "stable" },
-      counts: {
-        discovered: missing ? 0 : 1,
-        returned: 1,
-        local_verified: missing ? 0 : 1,
-        local_unavailable: missing ? 1 : 0,
-        local_corrupt: 0,
-        reachable_recovery: 0,
-      },
-      entries: [
-        {
-          id: "qjtrmnpvka",
-          artifact: "progress",
-          status,
-          local: {
-            status: missing ? "unavailable" : "verified",
-            detail_availability: missing ? "unavailable" : "full",
-            path: ".agentera/entities/progress/entry/qjtrmnpvka.yaml",
-            message: "fixture",
-          },
-          git: { status: "unavailable", reason: gitReason, reachable_recovery: false },
-          retrieval: { get: "agentera state progress get --id qjtrmnpvka" },
-        },
-      ],
-      diagnostics: [{ class: gitReason, message: "fixture", recovery: "read local state" }],
-      source_contract: {
-        syntax: contract.fields.command,
-        status_values: values.statusValues,
-        local_values: values.localValues,
-        git_values: values.gitValues,
-        read_only: true,
-        remote_contact: false,
-        writes_independent: true,
-      },
-    };
-    vi.spyOn(durability, "inspectDurability").mockReturnValue(response);
-    const result = capture((io) => cmdDurability({ project: temporary, artifact: "progress", id: "qjtrmnpvka", format: "json" }, io));
-    expect(result.code).toBe(0);
-    expect(result.value).toEqual(response);
-    expect(Object.keys(result.value).sort()).toEqual(Object.keys(contract.fields).sort());
-    covered(result.value, contract.fields);
-    expect(contract.fields.source_contract.status_values).toEqual(values.statusValues);
-    expect(contract.exit_codes[0]).toContain("unavailable");
   });
 
   const recovery: ProjectionRecoveryReport = {

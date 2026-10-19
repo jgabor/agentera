@@ -7,11 +7,9 @@ import { verificationPolicyErrors, verificationPendingContract } from "../../reg
 import { validateGlossaryEvaluationAuthority, validateFrozenGlossaryHoldout, validateFrozenGlossaryBehaviorFixture, loadGlossaryEvaluationHoldout, loadGlossaryEvaluationBehaviorFixture } from "../../eval/glossaryEvaluation.js";
 import { GuidanceInputError, guidanceQuote } from "../guidanceDetail.js";
 import { operationIndex, requireValid, type ServiceAuthority } from "./serviceDetail.js";
-import { entityArtifactValues } from "../../state/entityStorage.js";
-import { stateDurabilityContract } from "../../state/archiveDiscovery.js";
 import { loadProjectionPolicy } from "../../state/projectionPolicy.js";
 
-const OPERATIONS = ["validate", "verify", "lint", "compact", "durability"];
+const OPERATIONS = ["validate", "verify", "lint", "compact"];
 export function checkDetailSections(a: ServiceAuthority, base: string, operation?: string, target?: string) {
   if (!operation) {
     operationIndex(a, base, OPERATIONS);
@@ -40,7 +38,7 @@ export function checkDetailSections(a: ServiceAuthority, base: string, operation
   const common = {
     operation,
     target: target ?? null,
-    effects: "Explaining never runs a validator, evaluator, diagnostic or repair. Normal validate/lint, compact check and durability do not mutate profile, project, host or registry. Compact fix and evaluator execution are distinct effectful operations, not implied by discovery.",
+    effects: "Explaining never runs a validator, evaluator, diagnostic or repair. Normal validate/lint and compact check do not mutate profile, project, host or registry. Compact fix and evaluator execution are distinct effectful operations, not implied by discovery.",
     output: "Operational JSON retains its owning command envelope and exit contract. Validation results are not construction guidance, user approval, semantic correctness, or permission to publish. Resolve reported violations through the owning schema/capability/writer; never edit typed entities directly.",
     correction: "Use the returned syntax and static schema details first; correct the selected input and rerun that same check. Do not infer a passing check from an available explanation.",
     construction: "npx -y agentera@next schema",
@@ -138,13 +136,6 @@ export function checkDetailSections(a: ServiceAuthority, base: string, operation
         example: `${prefix} compact --mode check`,
         input: "Check is the read-only default. Fix/--apply may write compacted projections/archives through their owners; protected overflow requires an owning content decision, not blind deletion.",
         recovery: "Inspect operations and protected_overflow before authorizing fix; follow artifact schema budget/archive and typed writer authority. A failing compact gate is not superseded by unit tests.",
-      },
-      durability: {
-        syntax: `${prefix} durability --artifact ARTIFACT --id ID [--project PATH] [--limit N] [--format FORMAT]`,
-        example: `${prefix} durability --artifact progress --id qjtrmnpvka`,
-        input:
-          "Both --artifact and --id are required. Use an artifact from selectors.artifacts and one bare ten-lowercase-letter entity ID returned by its state list; the example ID illustrates syntax, not an existing entity. --number is rejected in current entity mode, even alongside a valid ID. --limit is an integer validated against selectors.maximum_limit; this single-entity diagnostic still returns one entry, not a paginated archive list. No remote is contacted; Git is not required for local writes.",
-        recovery: "Distinguish local availability from reachable Git proof; missing Git evidence is not proof of lost local state. Use state explain/schema archive details rather than restoring or writing from this diagnostic.",
       },
     };
     a.add(
@@ -374,109 +365,6 @@ export function checkDetailSections(a: ServiceAuthority, base: string, operation
           input_failure: inputFailure,
         },
         "packages/cli/src/cli/commands/compact.ts; packages/cli/src/hooks/compaction/types.ts; packages/cli/src/state/archiveRecovery.ts; packages/cli/src/state/projectionPolicy.ts; references/artifacts/state-storage-authority.yaml",
-      );
-    } else {
-      const contract = stateDurabilityContract(a.root);
-      a.add(
-        "selectors",
-        {
-          required: ["artifact", "id"],
-          artifacts: entityArtifactValues(a.root),
-          id_pattern: "^[a-z]{10}$",
-          rejected: ["number"],
-          minimum_limit: 1,
-          maximum_limit: contract.maximumLimit,
-          limit_effect: "Accepted/validated compatibility flag; this entity-ID query returns one entry regardless of limit. It does not enable archive-number or bulk queries.",
-        },
-        "packages/cli/src/cli/commands/durability.ts#validateDurabilityArgs; packages/cli/src/state/entityStorage.ts#entityArtifactValues; references/artifacts/state-storage-authority.yaml",
-      );
-      a.add(
-        "output",
-        {
-          format: "Public durability emits JSON on stdout. Successful inspection has no schemaVersion and returns one entity entry, including when unavailable; request failures use the state-failure envelope below.",
-          fields: {
-            command: "agentera check durability --project PATH --artifact ARTIFACT --id ID",
-            status: "Same complete/degraded/unavailable assessment as the selected entry, not an exit-code flag",
-            project: "Resolved project root",
-            read_only: true,
-            remote_contact: false,
-            head: {
-              status: "stable if starting/ending HEAD agree; changed if both exist and differ; unavailable if Git or either HEAD cannot be read",
-            },
-            counts: {
-              discovered: "Matching local candidate paths, including invalid/conflicting ownership",
-              returned: 1,
-              local_verified: "0 or 1",
-              local_unavailable: "0 or 1",
-              local_corrupt: "0 or 1; the three local counters sum to 1",
-              reachable_recovery: "0 or 1 according to Git recovery evidence",
-            },
-            entries: [
-              {
-                id: "Requested bare entity ID",
-                artifact: "Requested entity artifact",
-                status: "complete when local is verified and Git is verified or non_git; unavailable when local is unavailable/corrupt and Git is unavailable; degraded otherwise",
-                local: {
-                  status: "verified for one readable canonical entity, unavailable when absent, corrupt for invalid/conflicting/unsafe/unreadable local ownership",
-                  detail_availability: "full only when local status is verified; otherwise unavailable",
-                  path: "Project-relative selected/expected canonical entity path",
-                  message: "Optional explanation of missing/invalid/conflicting local evidence",
-                },
-                git: {
-                  status: "verified, degraded or unavailable; independent of local status",
-                  reason: "Evidence reason such as reachable_head, non_git, dirty_archive, shallow_history, history_rewritten, changed_head, final_head_unavailable, not_committed, committed_content_mismatch, committed_entity_conflict or committed_entity_invalid; preserve the returned reason",
-                  reachable_recovery: "Boolean: a reachable committed recovery was observed; can be true even when overall/local/Git status is not complete/verified",
-                },
-                retrieval: {
-                  get: "Exact read command for this entity; no automatic restoration or write",
-                },
-              },
-            ],
-            diagnostics: [
-              {
-                class: "Local canonical_entity_missing/canonical_entity_corrupt or the Git evidence reason",
-                message: "What could not be verified",
-                recovery: "Scoped read/validation correction; Git is not a prerequisite for local state writes",
-              },
-            ],
-            source_contract: {
-              syntax: "The same entity-selector grammar as command",
-              status_values: contract.statusValues,
-              local_values: contract.localValues,
-              git_values: contract.gitValues,
-              read_only: true,
-              remote_contact: false,
-              writes_independent: true,
-            },
-          },
-          failure: {
-            schemaVersion: "agentera.stateFailure.v1",
-            status: "fail",
-            error: {
-              class: "invalid_request for argument/command errors; preserve any forwarded StateRetrievalFailure class",
-              message: "Rejection cause",
-              syntax: "agentera check durability --artifact ARTIFACT --id ID",
-              example: "agentera check durability --artifact progress --id qjtrmnpvka",
-              recovery: "Use a bare entity ID from the artifact list; no state was changed",
-              artifact: "Optional requested artifact",
-              id: "Optional requested ID",
-              valid_values: "Optional current entity artifact values from validation",
-            },
-          },
-          bounds: {
-            returned_entries: 1,
-            diagnostics: "At most one local and one Git diagnostic, sorted by class",
-            git_timeout_ms_per_command: 1000,
-            git_max_buffer_bytes: 2097152,
-            reflog_probe_limit: 32,
-            response: "No result cursor or separate overall JSON byte cap is implemented by this producer. --limit is selector validation only, not a bound on entity discovery or Git subprocess count. Only local Git is probed; no remote contact.",
-          },
-          exit_codes: {
-            0: "Inspection emitted, including complete, degraded or unavailable evidence. Inspect status/local/git/diagnostics rather than equating exit 0 with recoverability.",
-            2: "Malformed/missing/unsupported selectors, --number, bad limit or caught inspection/authority error; a forwarded StateRetrievalFailure retains its own exit code",
-          },
-        },
-        "packages/cli/src/cli/commands/durability.ts; packages/cli/src/state/durability.ts#DurabilityResponse,inspectEntityDurability; packages/cli/src/cli/dispatch/check.ts#runDurability",
       );
     }
   }

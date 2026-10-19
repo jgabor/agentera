@@ -24,12 +24,16 @@ record:
     gate: null
     queue_rank: 86
     order_reason: Run after the existing open queue; this cleanup is independent of the other approved items.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[refactor] Retire the unused durability diagnostic"
+      status: resolved
+      order: 167
       severity: normal
-      status: open
-      order: 20
+  lifecycle:
+    operation: resolve
+    reason: Retired agentera check durability, its check explain operation, state-authority contract, registry entries, and dedicated tests; entity list, entity get, and check validate state are the local diagnostics.
+    date: 2026-10-19

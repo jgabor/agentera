@@ -2099,9 +2099,8 @@ envelope:
     - git_ref
     - parent_commit
   provenance_rule: >-
-    Git provenance is durability evidence returned by a later diagnostic
-    surface, never per-entry commit bookkeeping and never part of immutable
-    record identity.
+    Git provenance is never per-entry commit bookkeeping and never part of
+    immutable record identity.
 
 overlays:
   location: .agentera/overlays/decisions.yaml
@@ -2352,31 +2351,6 @@ api:
       entry: [id, artifact, detail_availability, compatibility, record, provenance, retrieval]
       optional_entry: [summary, caveats]
     empty_result: status=ok with entries=[] and counts.total=0; absence is not an error
-  durability:
-    command: npx -y agentera@next check durability [--project PATH] [--artifact ARTIFACT] [--id ID] [--limit N]
-    formats: [text, json, yaml]
-    selectors:
-      artifact: optional supported entity artifact ID
-      id: optional bare entity ID; requires artifact
-      limit: optional bounded result count
-    default_limit: 100
-    maximum_limit: 100
-    status_values: [complete, degraded, unavailable]
-    local_values: [verified, unavailable, corrupt]
-    git_values: [verified, degraded, unavailable]
-    response_fields:
-      required: [command, status, project, read_only, remote_contact, head, counts, entries, diagnostics, source_contract]
-      entry: [id, artifact, status, local, git]
-    guarantees:
-      read_only: true
-      remote_contact: forbidden
-      writes_independent: true
-      head_capture: >-
-        Capture the local HEAD before inspection and after inspection. If the
-        values differ, report changed_head and do not claim committed recovery.
-      deterministic: >-
-        With unchanged local files and reachable refs, repeated checks emit the
-        same ordered result and do not create state or contact a remote.
   entity_migration_upgrade:
     command: npx -y agentera@next upgrade --channel development --project PATH --dry-run
     implementation: upgrade_only
@@ -2457,55 +2431,46 @@ compatibility:
   dimensions:
     local_read: local project state and numbered archive availability
     detail: whether full record fields are available without inference
-    git_durability: optional committed-history evidence only; never a write prerequisite
   cases:
     new:
       classification: complete
       local_read: complete
       detail: complete
-      git_durability: optional
       behavior: numbered archive is canonical; current projection is bounded
     legacy_full:
       classification: degraded
       local_read: complete
       detail: complete
-      git_durability: unavailable_until_migrated
       behavior: full inline current/legacy entry is usable, but provenance declares noncanonical storage and migration-needed
     legacy_summary:
       classification: degraded
       local_read: complete
       detail: incomplete
-      git_durability: optional
       behavior: summary and retained fields are usable; missing fields stay missing and are never reconstructed
     non_git:
       classification: complete
       local_read: complete
       detail: based_on_local_records
-      git_durability: unavailable
       behavior: local archive reads and writes remain supported; no Git operation is attempted
     shallow:
       classification: degraded
       local_read: complete_when_local_records_validate
       detail: based_on_local_records
-      git_durability: history_unavailable
       behavior: do not claim historical recovery beyond reachable local records
     ambiguous:
       classification: blocked
       local_read: affected_identity_blocked
       detail: not_safe_to_select
-      git_durability: not_evaluated
       behavior: preserve candidates and require explicit disambiguation; never choose by recency or Git guess
     corrupt:
       classification: blocked
       local_read: affected_record_blocked
       detail: not_trusted
-      git_durability: not_evaluated
       behavior: reject the affected record, preserve its bytes for diagnostics, and continue only with independently valid records
     unsupported:
       classification: unsupported
       local_read: unsupported
       detail: unavailable
-      git_durability: not_evaluated
       behavior: identify the unsupported artifact or format and return valid supported values
   precedence: corrupt > ambiguous > unsupported > degraded > complete
   no_reconstruction: >-

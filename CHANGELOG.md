@@ -298,7 +298,7 @@
 - Added a validated TODO readiness authority with phase-derived capability
   destinations, explicit triage/block/gate/dependency outcomes, and
   reviewer-assigned deterministic queue ordering.
-- Added entity-backed state views, bare-ID durability diagnostics, and read-only historical migration validation; marker-absent projects now require migration instead of exposing legacy numbered reads.
+- Added entity-backed state views and read-only historical migration validation; marker-absent projects now require migration instead of exposing legacy numbered reads.
 - Added a Git-backed entity cutover owned by the full development-channel `upgrade --yes` command, with deterministic direct publication, exact-target retries, source-bound marker-last authority activation, and first-unresolved-path handoff.
 - Added decision entities for immutable bases and content revisions, replaceable satisfaction ownership, bare-ID exact and bounded reads, deterministic effective provenance, stale-base and transition validation, and serialized same-decision ownership. Migration preserves ordered legacy amendments, including whole-alternative replacements and dateless evidence, rejects invalid or stale claims, and requires source-bound provenance for inherited legacy confidence; marker-absent aggregate files remain migration input only.
 - Added the post-cutover progress entity writer and `state progress get|list` reads with bare IDs, one canonical file per cycle, atomic replay-safe publication, full provenance, bounded snapshot pagination, and no legacy projection or archive writes; legacy projects remain unchanged until the durable cutover marker exists.
@@ -452,6 +452,7 @@
 
 ### Removed
 
+- Removed the `check durability` diagnostic, its `--number` and `--limit` selectors, and its `check explain --operation durability` guidance. `check durability` now returns the standard unknown-subcommand error. For local state diagnostics, use `npx -y agentera@next state <artifact-id> list`, `npx -y agentera@next state <artifact-id> get --id ID`, and `npx -y agentera@next check validate state`.
 - Removed Claude Code as an active runtime, runtime selector, installation target, plugin marketplace, and default analytics source. Historical transcript parsing remains available only with explicit `--import-source claude` consent and inactive provenance.
 - Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.
 - Removed `rootStatus` from public JSON output (`prime --format json` and `doctor --format json`). The field remains internal for classifier logic but is no longer exposed in diagnostic output.

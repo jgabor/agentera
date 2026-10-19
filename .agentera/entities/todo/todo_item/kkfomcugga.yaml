@@ -23,4 +23,4 @@ record:
       description: "[fix:3.0.0] Report a fresh project as ready to start, not as needing repair."
       severity: normal
       status: open
-      order: 25
+      order: 24

@@ -380,29 +380,10 @@ export function printCheckHelp(sub?: string): string {
       ...advertisedValidateFamilyNames().map((family) => (["retained-references", "activation-conjunction"].includes(family) ? `  ${family} (source checkout only)` : `  ${family}`)),
     ].join("\n");
   }
-  if (sub === "durability") {
-    return [
-      "usage: agentera check durability [-h] --artifact ARTIFACT --id ID",
-      "                                [--project PATH] [--limit N] [--format FORMAT]",
-      "",
-      "Read-only local entity and optional reachable Git durability evidence.",
-      "This is an explicit migration/readiness diagnostic, not ordinary retrieval grammar.",
-      "--number is rejected in current entity mode, even alongside a valid ID.",
-      "Git is never required for local state writes and no remote is contacted.",
-      "",
-      "options:",
-      "  -h, --help            show this help message and exit",
-      "  --project PATH        Project directory to inspect",
-      "  --artifact ARTIFACT   Required: decisions, docs, experiments, health, objective, plan, progress, todo",
-      "  --id ID               Required: bare ten-lowercase-letter entity ID from its state list",
-      "  --limit N             Validated integer (1-100); returns one entity, not a paginated archive list",
-      "  --format FORMAT       JSON output (only json; default)",
-    ].join("\n");
-  }
   if (sub) {
     return [`usage: agentera check ${sub} [-h] [options]`, "", "options:", "  -h, --help            show this help message and exit"].join("\n");
   }
-  return ["usage: agentera check [-h] {validate,verify,lint,compact,durability} ...", "Static guidance: npx -y agentera@next check explain [--operation OP] [--target T] [--section S] [--limit N] [--cursor C]", "", "Validation, verification, lint, and repository compaction gates."].join("\n");
+  return ["usage: agentera check [-h] {validate,verify,lint,compact} ...", "Static guidance: npx -y agentera@next check explain [--operation OP] [--target T] [--section S] [--limit N] [--cursor C]", "", "Validation, verification, lint, and repository compaction gates."].join("\n");
 }
 
 export function printReportHelp(): string {
