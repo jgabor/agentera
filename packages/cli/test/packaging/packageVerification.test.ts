@@ -218,7 +218,7 @@ function runResetWorkflow(bin: string, root: string) {
       irreversibleLossCount: preview.irreversible_loss.length,
       withinBudget: Buffer.byteLength(previewResult.stdout) <= 8192,
       detail: preview.detail,
-      userData: preview.user_data.map((entry: { path: string }) => path.relative(root, entry.path)),
+      userData: preview.user_data.map((entry: { root: string; path: string }) => path.relative(root, path.join(preview.roots[entry.root], entry.path))),
       questionNamesProfile: preview.question.includes("your Agentera profile"),
       boundApply: preview.apply_command.includes(`--project ${project}`) && preview.apply_command.includes(`--home ${home}`) && preview.apply_command.includes(`--install-root ${install}`),
     },

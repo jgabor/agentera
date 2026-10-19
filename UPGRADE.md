@@ -417,14 +417,20 @@ npx -y agentera@next upgrade --reset-product-v1 --dry-run
 ```
 
 The default preview is bounded so that a host cannot truncate away what it
-deletes. `user_data` names by path every profile, saved profile copy and
-history, usage report, sessions, benchmarks, and extracted-evidence entry the
-reset deletes. Each entry in `deletions` lists up to 12 other top-level names
-with their entry counts and reports the rest as `omitted_count`. When the
-profile and installation roots are the same directory, it appears once, under
-`profile.state`. The preview also returns `recreations`, `irreversible_loss`,
-one question, a complete `apply_command` bound to the selected roots and
-source, and a `full_detail_command`. To list every deleted entry, run:
+deletes. It prints each root once in `roots`, and every other location names
+one of those roots and a path relative to it. `user_data` names every profile,
+saved profile copy and history, usage report, sessions, benchmarks, and
+extracted-evidence entry the reset deletes. Each entry in `deletions` lists up
+to 12 other top-level names with their entry counts and reports the rest as
+`omitted_count`. When the profile and installation roots are the same
+directory, it appears once, under `profile.state`. If the preview would exceed
+8 KiB, it drops those other names (`name_limit: 0`) and then its indentation,
+always keeping every user-data row, count, and command. It can exceed 8 KiB
+only when the root paths are longer than about 350 characters, because the
+commands repeat each root. The preview also returns `recreations`,
+`irreversible_loss`, one question, a complete `apply_command` bound to the
+selected roots and source, and a `full_detail_command`. To list every deleted
+entry by absolute path, run:
 
 ```bash
 npx -y agentera@next upgrade --reset-product-v1 --dry-run --full-detail

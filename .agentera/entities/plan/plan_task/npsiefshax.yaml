@@ -12,3 +12,13 @@ record:
     - GIVEN a default preview's authorization WHEN apply runs THEN the authorization still covers every deleted entry, and a change to any file under a deleted scope rejects the apply.
     - GIVEN user data in a deleted scope WHEN the preview is shown THEN the question names that data in plain words, and the recovery guidance says that upgrading through the previous major version first keeps it.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Criterion 1 fails: the default preview is not bounded at 8 KiB because every user_data path and scope root repeats the full root path (packages/cli/src/upgrade/productV1Reset.ts:186); measured 9,061 B typical and 8,852 B worst case with 105-character roots, and 11,431 B (about 8.1 to 8.4 KB projected with real home paths) for split profile and installation roots that both hold user data. No long-root or split-root test exists, and CHANGELOG.md:5 claims the preview stays under 8 KiB unconditionally."
+    provenance:
+      attempt_id: audit-1
+      source: Independent audit evaluator report for task npsiefshax, 2026-10-19
+      recorded_at: 2026-10-19 07:14
+      writer_command: agentera state plan record-evaluation

@@ -85,6 +85,9 @@ export interface ProductV1ResetPreview {
 /** Top-level names the bounded preview names per deletion before it reports an omitted count. */
 export const PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT = 12;
 
+/** Stdout bound for the default preview; above it the preview keeps counts and user data but drops other names. */
+export const PRODUCT_V1_RESET_PREVIEW_BYTE_BUDGET = 8192;
+
 export type ProductV1ResetUserDataKind = "profile" | "history" | "usage_report" | "sessions" | "benchmarks" | "extracted_evidence";
 
 // The handoff catalog owns the user-data names. Doctor also preserves the legacy
@@ -116,6 +119,18 @@ export interface ProductV1ResetUserDataEntry {
   entry_count: number;
 }
 
+/** A path relative to one entry of the preview's `roots` map, so the summary prints each root once. */
+export interface ProductV1ResetRootPath {
+  root: string;
+  path: string;
+}
+
+export interface ProductV1ResetSummaryUserDataEntry extends ProductV1ResetRootPath {
+  kind: ProductV1ResetUserDataKind;
+  type: ScopePath["type"];
+  entry_count: number;
+}
+
 export interface ProductV1ResetDeletionSummary {
   id: string;
   root: string;
@@ -131,9 +146,10 @@ export interface ProductV1ResetPreviewSummary {
   mode: "preview";
   status: "review_required";
   detail: "summary";
-  evidence: string[];
+  name_limit: number;
+  evidence: ProductV1ResetRootPath[];
   roots: Record<string, string>;
-  user_data: ProductV1ResetUserDataEntry[];
+  user_data: ProductV1ResetSummaryUserDataEntry[];
   deletions: ProductV1ResetDeletionSummary[];
   recreations: Array<{ id: string; root: string; targets: string[] }>;
   irreversible_loss: string[];
@@ -194,8 +210,33 @@ function selectorName(target: ProductV1ResetScopeTarget): string {
   return `${target.declared} (${target.selector!.kind}: ${target.selector!.value})`;
 }
 
-export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview): ProductV1ResetPreviewSummary {
+const ROOT_PREFERENCE = ["project", "install_root", "profile_root", "runtime_home"];
+
+/** The most specific root containing `target`; equal roots resolve in ROOT_PREFERENCE order. */
+function rootPath(roots: Record<string, string>, target: string): ProductV1ResetRootPath {
+  let best: ProductV1ResetRootPath | null = null;
+  let bestLength = -1;
+  for (const name of [...ROOT_PREFERENCE, ...Object.keys(roots).filter((key) => !ROOT_PREFERENCE.includes(key))]) {
+    const root = roots[name];
+    if (root === undefined) continue;
+    const relative = path.relative(root, target);
+    if (relative === ".." || relative.startsWith(`..${path.sep}`) || path.isAbsolute(relative)) continue;
+    if (root.length > bestLength) {
+      best = { root: name, path: relative === "" ? "." : relative };
+      bestLength = root.length;
+    }
+  }
+  return best ?? { root: "absolute", path: target };
+}
+
+function scopeRootNames(): Map<string, string> {
+  return new Map(loadProductV1ResetAuthority().scope.map((item) => [item.id, item.boundedRoot === "runtime_declared_roots" ? "runtime_home" : item.boundedRoot]));
+}
+
+export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview, nameLimit: number = PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT): ProductV1ResetPreviewSummary {
   const shared = sharedTargets(preview);
+  const rootNames = scopeRootNames();
+  const rootName = (id: string, root: string): string => rootNames.get(id) ?? rootPath(preview.roots, root).root;
   const deletions = preview.deletions.map((deletion): ProductV1ResetDeletionSummary => {
     const counts = new Map<string, number>();
     let entryCount = 0;
@@ -228,11 +269,11 @@ export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview): 
     const names = [...counts.keys()].sort();
     return {
       id: deletion.id,
-      root: deletion.root,
+      root: rootName(deletion.id, deletion.root),
       entry_count: entryCount,
       ...(sharedWith !== undefined ? { shared_with: sharedWith } : {}),
-      entries: Object.fromEntries(names.slice(0, PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT).map((name) => [name, counts.get(name)!])),
-      omitted_count: Math.max(0, names.length - PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT),
+      entries: Object.fromEntries(names.slice(0, nameLimit).map((name) => [name, counts.get(name)!])),
+      omitted_count: Math.max(0, names.length - nameLimit),
     };
   });
   return {
@@ -240,11 +281,12 @@ export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview): 
     mode: preview.mode,
     status: preview.status,
     detail: "summary",
-    evidence: preview.evidence,
+    name_limit: nameLimit,
+    evidence: preview.evidence.map((item) => rootPath(preview.roots, item)),
     roots: preview.roots,
-    user_data: collectUserData(preview, shared),
+    user_data: collectUserData(preview, shared).map((entry) => ({ kind: entry.kind, root: rootName(entry.scope, path.dirname(entry.path)), path: path.basename(entry.path), type: entry.type, entry_count: entry.entry_count })),
     deletions,
-    recreations: preview.recreations.map((item) => ({ id: item.id, root: item.root, targets: item.targets.map((target) => target.declared) })),
+    recreations: preview.recreations.map((item) => ({ id: item.id, root: rootName(item.id, item.root), targets: item.targets.map((target) => target.declared) })),
     irreversible_loss: preview.irreversible_loss,
     authorization: preview.authorization,
     mutation_performed: preview.mutation_performed,

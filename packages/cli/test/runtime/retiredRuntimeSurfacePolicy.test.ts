@@ -11,6 +11,8 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath, servedInstruc
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
 import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
 import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
+import { renderProductV1ResetPreview } from "../../src/cli/commands/upgrade.js";
+import { previewProductV1Reset } from "../../src/upgrade/productV1Reset.js";
 import {
   preCutoverBootstrapAuthorityDiagnostics,
   preCutoverBootstrapGuidanceViolations,
@@ -1329,7 +1331,26 @@ describe("retired runtime current-surface policy", () => {
   });
 
   it("keeps complete machine help and recovery guidance on @next", () => {
+    const resetRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-recovery-"));
+    let resetGuidance: string[];
+    try {
+      const project = path.join(resetRoot, "project");
+      const home = path.join(resetRoot, "home");
+      fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+      fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
+      fs.mkdirSync(path.join(home, "app"), { recursive: true });
+      fs.writeFileSync(path.join(home, "app", "PROFILE.md"), "# Profile\n");
+      const preview = previewProductV1Reset({ project, home, installRoot: path.join(home, "app"), env: {} });
+      resetGuidance = [false, true].map((fullDetail) => {
+        const view = JSON.parse(renderProductV1ResetPreview(preview, fullDetail));
+        expect(view.recovery).toContain("previous major version");
+        return `${view.question}\n${view.recovery}`;
+      });
+    } finally {
+      fs.rmSync(resetRoot, { recursive: true, force: true });
+    }
     const surfaces: Array<[string, string]> = [
+      ["reset preview recovery", resetGuidance.join("\n")],
       ["prime guidance", PRIME_BLOB],
       ["top-level help", printTopLevelHelp()],
       ["route help", printRouteHelp()],

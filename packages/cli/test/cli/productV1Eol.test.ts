@@ -84,25 +84,59 @@ function writeFile(target: string, content = "x\n"): void {
   fs.writeFileSync(target, content);
 }
 
-/** A v1 home whose profile root is the installation root, with user data, many top-level entries and every host resource family present. */
-function worstCaseHome(): { project: string; home: string; install: string; userData: string[] } {
-  const project = fixture();
-  const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-worst-"));
-  roots.push(home);
+const USER_DATA_NAMES = ["PROFILE.md", "USAGE.md", "benchmarks", "corpus", "corpus.json", "history", "intermediate", "sessions"];
+
+function populateDataRoot(root: string): void {
+  writeFile(path.join(root, "PROFILE.md"), "# Profile\n");
+  writeFile(path.join(root, "USAGE.md"), "# Usage\n");
+  writeFile(path.join(root, "corpus.json"));
+  writeFile(path.join(root, "intermediate", "corpus.json"));
+  for (let i = 0; i < 60; i++) writeFile(path.join(root, "history", `PROFILE-${i}.md`));
+  for (let i = 0; i < 200; i++) writeFile(path.join(root, "sessions", `session-${String(i).padStart(4, "0")}-with-a-longer-name.jsonl`));
+  for (let i = 0; i < 40; i++) writeFile(path.join(root, "benchmarks", `bench-${i}.json`));
+  for (let i = 0; i < 30; i++) writeFile(path.join(root, "corpus", `c-${i}.json`));
+  for (const top of ["skills", "references", "scripts", "agents", "docs", "schemas", "templates", "commands", "plugins", "bin", "lib", "share", "vendor", "examples"]) for (let i = 0; i < 25; i++) writeFile(path.join(root, top, `sub-${i % 5}`, `file-${i}.md`));
+  for (const name of ["TODO.md", "CHANGELOG.md", "DESIGN.md", "README.md", "LICENSE", "VERSION", "package.json", "notes.txt", "config.yaml"]) writeFile(path.join(root, name));
+}
+
+/**
+ * A v1 home with user data, many top-level entries and every host resource family present.
+ * By default the profile root is the installation root; `split` gives the profile its own root with its own user data.
+ * `long` pads every root by that many characters, nesting directories so no name exceeds 200 characters.
+ */
+function worstCaseHome(options: { split?: boolean; long?: number } = {}): { project: string; home: string; install: string; profile: string | null; userData: string[] } {
+  let project: string;
+  let home: string;
+  let profile: string | null = null;
+  if (options.long) {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-long-"));
+    roots.push(base);
+    const padded = (name: string, fill: string): string => {
+      const parts = [name];
+      for (let left = options.long; left > 0; left -= 200) parts.push(fill.repeat(Math.min(200, left)));
+      return path.join(base, ...parts);
+    };
+    project = padded("project", "p");
+    home = padded("home", "h");
+    if (options.split) profile = padded("profile", "r");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
+    execFileSync("git", ["init", "-q", project]);
+  } else {
+    project = fixture();
+    home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-worst-"));
+    roots.push(home);
+    if (options.split) {
+      profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-worst-profile-"));
+      roots.push(profile);
+    }
+  }
   const install = path.join(home, ".local", "share", "agentera");
   writeFile(path.join(install, "registry.json"), JSON.stringify({ skills: [{ version: "1.4.0" }] }));
   writeFile(path.join(project, "TODO.md"));
-  writeFile(path.join(install, "PROFILE.md"), "# Profile\n");
-  writeFile(path.join(install, "USAGE.md"), "# Usage\n");
-  writeFile(path.join(install, "corpus.json"));
-  writeFile(path.join(install, "intermediate", "corpus.json"));
-  for (let i = 0; i < 60; i++) writeFile(path.join(install, "history", `PROFILE-${i}.md`));
-  for (let i = 0; i < 200; i++) writeFile(path.join(install, "sessions", `session-${String(i).padStart(4, "0")}-with-a-longer-name.jsonl`));
-  for (let i = 0; i < 40; i++) writeFile(path.join(install, "benchmarks", `bench-${i}.json`));
-  for (let i = 0; i < 30; i++) writeFile(path.join(install, "corpus", `c-${i}.json`));
-  for (const top of ["skills", "references", "scripts", "agents", "docs", "schemas", "templates", "commands", "plugins", "bin", "lib", "share", "vendor", "examples"]) for (let i = 0; i < 25; i++) writeFile(path.join(install, top, `sub-${i % 5}`, `file-${i}.md`));
-  for (const name of ["TODO.md", "CHANGELOG.md", "DESIGN.md", "README.md", "LICENSE", "VERSION", "package.json", "notes.txt", "config.yaml"]) writeFile(path.join(install, name));
-  const runtime = withRootEnv(null, () => previewProductV1Reset({ project, home, installRoot: install })).deletions.find(({ id }) => id === "runtime.resources")!;
+  populateDataRoot(install);
+  if (profile !== null) populateDataRoot(profile);
+  const runtime = withRootEnv(profile, () => previewProductV1Reset({ project, home, installRoot: install })).deletions.find(({ id }) => id === "runtime.resources")!;
   for (const target of runtime.targets) {
     if (!target.path) continue;
     if (target.declared === "{home}/.agents/skills/agentera") writeFile(path.join(target.path, "SKILL.md"), "old\n");
@@ -111,8 +145,13 @@ function worstCaseHome(): { project: string; home: string; install: string; user
       fs.appendFileSync(target.path, `${target.selector!.value}\n`);
     } else if (!fs.existsSync(target.path)) writeFile(path.extname(target.path) ? target.path : path.join(target.path, "SKILL.md"));
   }
-  const userData = ["PROFILE.md", "USAGE.md", "benchmarks", "corpus", "corpus.json", "history", "intermediate", "sessions"].map((name) => path.join(install, name));
-  return { project, home, install, userData };
+  const userData = [...(profile === null ? [] : USER_DATA_NAMES.map((name) => path.join(profile!, name))), ...USER_DATA_NAMES.map((name) => path.join(install, name))];
+  return { project, home, install, profile, userData };
+}
+
+/** Absolute paths of a summary's root-relative user-data rows. */
+function userDataPaths(value: { roots: Record<string, string>; user_data: Array<{ root: string; path: string }> }): string[] {
+  return value.user_data.map((entry) => path.join(value.roots[entry.root]!, entry.path));
 }
 
 function resetPreview(project: string, home: string, install: string, extra: string[] = []) {
@@ -586,9 +625,9 @@ describe("bounded product v1 reset preview", () => {
     const preview = withRootEnv(null, () => resetPreview(project, home, install));
     expect(preview.rc).toBe(0);
     expect(preview.bytes).toBeLessThanOrEqual(8192);
-    expect(preview.value.detail).toBe("summary");
-    expect(preview.value.user_data.map((entry: { path: string }) => entry.path).sort()).toEqual([...userData].sort());
-    expect(preview.value.user_data.find((entry: { path: string }) => entry.path.endsWith("sessions"))).toMatchObject({ kind: "sessions", type: "directory", entry_count: 201 });
+    expect(preview.value).toMatchObject({ detail: "summary", name_limit: 12 });
+    expect(userDataPaths(preview.value).sort()).toEqual([...userData].sort());
+    expect(preview.value.user_data.find((entry: { path: string }) => entry.path === "sessions")).toEqual({ kind: "sessions", root: "profile_root", path: "sessions", type: "directory", entry_count: 201 });
     const profile = preview.value.deletions.find(({ id }: { id: string }) => id === "profile.state");
     expect(Object.keys(profile.entries)).toHaveLength(12);
     expect(profile.omitted_count).toBeGreaterThan(0);
@@ -596,6 +635,35 @@ describe("bounded product v1 reset preview", () => {
     expect(Object.keys(profile.entries).some((name) => userData.includes(path.join(install, name)))).toBe(false);
     expect(preview.value.deletions.find(({ id }: { id: string }) => id === "runtime.resources").omitted_count).toBeGreaterThan(0);
     expect(preview.out).not.toContain("session-0001-with-a-longer-name.jsonl");
+  });
+
+  it("stays within 8 KiB with 150-character split roots that both hold user data, naming every user-data entry", () => {
+    const { project, home, install, profile, userData } = worstCaseHome({ long: 150, split: true });
+    expect(Math.min(project.length, home.length, install.length, profile!.length)).toBeGreaterThanOrEqual(150);
+    const preview = withRootEnv(profile, () => resetPreview(project, home, install));
+    expect(preview.rc).toBe(0);
+    expect(preview.bytes).toBeLessThanOrEqual(8192);
+    expect(preview.value.roots).toEqual({ project, profile_root: profile, install_root: install, runtime_home: home });
+    expect(userDataPaths(preview.value).sort()).toEqual([...userData].sort());
+    expect(preview.value.user_data).toHaveLength(16);
+    expect(preview.value.name_limit).toBe(0);
+    for (const deletion of preview.value.deletions) expect(deletion.entries).toEqual({});
+    expect(preview.value.deletions.find(({ id }: { id: string }) => id === "profile.state").omitted_count).toBeGreaterThan(12);
+    expect(preview.out.split(install).length - 1).toBe(3);
+    expect(preview.out).toContain("\n  ");
+    const full = withRootEnv(profile, () => resetPreview(project, home, install, ["--full-detail"])).value;
+    expect(full.authorization).toBe(preview.value.authorization);
+  });
+
+  it("drops indentation last when 250-character split roots still exceed 8 KiB without names", () => {
+    const { project, home, install, profile, userData } = worstCaseHome({ long: 250, split: true });
+    const preview = withRootEnv(profile, () => resetPreview(project, home, install));
+    expect(preview.rc).toBe(0);
+    expect(preview.bytes).toBeLessThanOrEqual(8192);
+    expect(preview.out.trimEnd()).not.toContain("\n");
+    expect(preview.value.name_limit).toBe(0);
+    expect(userDataPaths(preview.value).sort()).toEqual([...userData].sort());
+    expect(preview.value.apply_command).toContain(`--project ${project} --home ${home} --install-root ${install} --yes`);
   });
 
   it("omits nothing from a scope with at most 12 top-level names", () => {
@@ -615,7 +683,7 @@ describe("bounded product v1 reset preview", () => {
     const { project, home, install } = worstCaseHome();
     const summary = withRootEnv(null, () => resetPreview(project, home, install)).value;
     expect(summary.roots.profile_root).toBe(summary.roots.install_root);
-    expect(summary.deletions.find(({ id }: { id: string }) => id === "installation.state")).toEqual({ id: "installation.state", root: install, entry_count: 0, shared_with: "profile.state", entries: {}, omitted_count: 0 });
+    expect(summary.deletions.find(({ id }: { id: string }) => id === "installation.state")).toEqual({ id: "installation.state", root: "install_root", entry_count: 0, shared_with: "profile.state", entries: {}, omitted_count: 0 });
     const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"]));
     const sample = path.join(install, "sessions", "session-0001-with-a-longer-name.jsonl");
     expect(full.out.split(`"${sample}"`).length - 1).toBe(1);
@@ -634,7 +702,14 @@ describe("bounded product v1 reset preview", () => {
     const byId = Object.fromEntries(preview.deletions.map((item: { id: string }) => [item.id, item]));
     expect(byId["installation.state"]).not.toHaveProperty("shared_with");
     expect(byId["installation.state"].entries).toEqual({ skills: 2 });
-    expect(preview.user_data).toEqual([{ scope: "profile.state", kind: "profile", path: path.join(profile, "PROFILE.md"), type: "file", entry_count: 1 }]);
+    expect(preview.user_data).toEqual([{ kind: "profile", root: "profile_root", path: "PROFILE.md", type: "file", entry_count: 1 }]);
+    expect(preview.deletions.map(({ id, root }: { id: string; root: string }) => [id, root])).toEqual([
+      ["project.state", "project"],
+      ["profile.state", "profile_root"],
+      ["installation.state", "install_root"],
+      ["runtime.resources", "runtime_home"],
+    ]);
+    expect(JSON.stringify(preview)).not.toContain(`"root":"${install}"`);
   });
 
   it("lists every deleted entry only with --full-detail and advertises the option", () => {

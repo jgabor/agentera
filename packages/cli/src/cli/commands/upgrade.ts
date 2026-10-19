@@ -6,7 +6,7 @@ import { validateRealProjectRoot } from "../../state/projectRoot.js";
 import { ENTITY_MODE_MARKER } from "../../state/entityCutover.js";
 import { UpgradeLockError } from "../../upgrade/upgradeLock.js";
 import { fullEntityUpgradeCommand } from "../../upgrade/upgradeCommands.js";
-import { applyProductV1Reset, fullDetailProductV1ResetPreview, previewProductV1Reset, summarizeProductV1ResetPreview, type ProductV1ResetPreview, type ProductV1ResetUserDataEntry, type ProductV1ResetUserDataKind } from "../../upgrade/productV1Reset.js";
+import { PRODUCT_V1_RESET_PREVIEW_BYTE_BUDGET, applyProductV1Reset, fullDetailProductV1ResetPreview, previewProductV1Reset, summarizeProductV1ResetPreview, type ProductV1ResetPreview, type ProductV1ResetUserDataKind } from "../../upgrade/productV1Reset.js";
 import os from "node:os";
 import { expanduser, resolvePath } from "../../core/paths.js";
 import { resolveDoctorInstallRoot, resolveSourceRootStrict } from "../../upgrade/appModel.js";
@@ -99,7 +99,7 @@ const RESET_USER_DATA_WORDS: Record<ProductV1ResetUserDataKind, string> = {
   extracted_evidence: "extracted evidence",
 };
 
-function resetUserDataWords(userData: ProductV1ResetUserDataEntry[]): string | null {
+function resetUserDataWords(userData: Array<{ kind: ProductV1ResetUserDataKind }>): string | null {
   const kinds = new Set(userData.map((entry) => entry.kind));
   const words = (Object.keys(RESET_USER_DATA_WORDS) as ProductV1ResetUserDataKind[]).filter((kind) => kinds.has(kind)).map((kind) => RESET_USER_DATA_WORDS[kind]);
   if (words.length === 0) return null;
@@ -107,20 +107,27 @@ function resetUserDataWords(userData: ProductV1ResetUserDataEntry[]): string | n
 }
 
 // Operational output is JSON-only (outputPolicy rejects other formats before dispatch).
-function renderProductV1ResetPreview(preview: ProductV1ResetPreview, fullDetail: boolean): string {
+export function renderProductV1ResetPreview(preview: ProductV1ResetPreview, fullDetail: boolean): string {
   const command = (more: string[]) => commandText(["npx", "-y", "agentera@next", "upgrade", "--reset-product-v1", "--project", preview.roots.project!, "--home", preview.roots.runtime_home!, "--install-root", preview.roots.install_root!, ...more]);
   const applyCommand = command(["--yes", "--authorization", preview.authorization, "--format", "json"]);
   const fullDetailCommand = command(["--dry-run", "--full-detail", "--format", "json"]);
-  const view = fullDetail ? fullDetailProductV1ResetPreview(preview) : summarizeProductV1ResetPreview(preview);
-  const words = resetUserDataWords(view.user_data);
-  const question = `This permanently deletes every listed reset target, including ${words ? `your ${words}` : "any current data within those scopes"}, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?`;
-  const recovery = [
-    "No or silence changes nothing.",
-    ...(words ? [`To keep your ${words}, answer No and upgrade through the previous major version first: bring this state to Agentera 2.x on the stable channel (npx -y agentera@latest), then use the supported v2-to-v3 upgrade.`] : []),
-    ...(fullDetail ? [] : ["Run full_detail_command to list every deleted entry; it shows the same authorization, which binds the complete snapshot."]),
-  ].join(" ");
-  const offer = { approval: "explicit_yes_only", question, apply_command: applyCommand, ...(fullDetail ? {} : { full_detail_command: fullDetailCommand }), recovery };
-  return JSON.stringify({ ...view, ...offer }, null, 2) + "\n";
+  const render = (view: ReturnType<typeof summarizeProductV1ResetPreview> | ReturnType<typeof fullDetailProductV1ResetPreview>, indent: 0 | 2): string => {
+    const words = resetUserDataWords(view.user_data);
+    const question = `This permanently deletes every listed reset target, including ${words ? `your ${words}` : "any current data within those scopes"}, then recreates fresh v3 state. There is no backup or undo. Apply exactly this reset?`;
+    const recovery = [
+      "No or silence changes nothing.",
+      ...(words ? [`To keep your ${words}, answer No and upgrade through the previous major version first: bring this state to the stable Agentera 2.x line with the in-line upgrade in the upgrade guide's Stable v2 line section, then use the supported v2-to-v3 upgrade.`] : []),
+      ...(fullDetail ? [] : ["Run full_detail_command to list every deleted entry; it shows the same authorization, which binds the complete snapshot."]),
+    ].join(" ");
+    const offer = { approval: "explicit_yes_only", question, apply_command: applyCommand, ...(fullDetail ? {} : { full_detail_command: fullDetailCommand }), recovery };
+    return JSON.stringify({ ...view, ...offer }, null, indent) + "\n";
+  };
+  if (fullDetail) return render(fullDetailProductV1ResetPreview(preview), 2);
+  // Each fallback keeps every user-data row, count and command: first drop other names, then indentation.
+  const named = render(summarizeProductV1ResetPreview(preview), 2);
+  if (Buffer.byteLength(named) <= PRODUCT_V1_RESET_PREVIEW_BYTE_BUDGET) return named;
+  const counted = render(summarizeProductV1ResetPreview(preview, 0), 2);
+  return Buffer.byteLength(counted) <= PRODUCT_V1_RESET_PREVIEW_BYTE_BUDGET ? counted : render(summarizeProductV1ResetPreview(preview, 0), 0);
 }
 
 export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: UpgradeDependencies = {}): number {
@@ -181,8 +188,7 @@ export function cmdUpgrade(args: UpgradeArgs, io: Io = {}, dependencies: Upgrade
   if (args.productV1Reset) {
     const options = { project: args.project, installRoot: args.installRoot, home: args.home };
     if (args.yes) {
-      const result = applyProductV1Reset(options, args.authorization ?? "");
-      out(args.format === "json" ? JSON.stringify(result, null, 2) + "\n" : `Product-v1 reset complete: ${result.authorization}\nFresh v3 state initialized.\n`);
+      out(JSON.stringify(applyProductV1Reset(options, args.authorization ?? ""), null, 2) + "\n");
       return 0;
     }
     out(renderProductV1ResetPreview(previewProductV1Reset(options), args.fullDetail === true));
