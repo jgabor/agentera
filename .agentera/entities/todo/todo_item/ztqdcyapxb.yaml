@@ -3,21 +3,26 @@ artifact: todo
 record:
   kind: fix
   target_version: 3.0.0
-  title: Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval
+  title: Scope each product-v1 reset effect to v1 evidence at its own location
   requirements:
-    - "`upgrade --reset-product-v1` must not delete a PROFILE.md that v3 Profile generated, unless the preview names that exact file as v3 data and the user approves its loss."
-    - The preview must show every path it will remove within the host's output limits, so a truncated tool result cannot hide a deletion from the approval question.
+    - "`upgrade --reset-product-v1` must delete the data home, including a v3-generated PROFILE.md, the installation, and home-level host resources only when the installation itself holds v1 evidence."
+    - Project-only v1 evidence must select only that project's state and project-level host resources, and a v1 installation must not delete a v3 project.
+    - User data is deleted only for a v1 installation, after the preview names it within the host's output limits, so a truncated tool result cannot hide a deletion from the approval question.
   acceptance:
-    - GIVEN a home with a v3-generated PROFILE.md and v1 state WHEN the reset preview runs THEN PROFILE.md is either retained or listed by path in a compact summary that fits the first screen of output.
-    - GIVEN an applied reset WHEN `report profile-grounding` runs THEN a retained v3 profile still reports valid.
+    - GIVEN a v3 installation with a v3 PROFILE.md and a project holding v1 artifacts WHEN the reset previews and applies THEN only the project's state and project-level host resources are deleted, and `report profile-grounding` still reports the profile valid.
+    - GIVEN a v1 installation and a v3 project WHEN the reset previews and applies THEN the preview names the deleted user data and the project's v3 state stays byte-identical.
   release_blocker: false
   severity: critical
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[fix:3.0.0] Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval"
+      description: "[fix:3.0.0] Scope each product-v1 reset effect to v1 evidence at its own location"
+      status: resolved
+      order: 166
       severity: critical
-      status: open
-      order: 5
+  lifecycle:
+    operation: resolve
+    reason: "The product-v1 reset now scopes each effect to v1 evidence at its own location: a v1 project resets only its state and project-level host resources, and only a v1 installation resets the data home, the installation, and home-level host resources, after the preview names any user data."
+    date: 2026-10-19

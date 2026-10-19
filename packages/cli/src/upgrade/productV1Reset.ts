@@ -9,7 +9,7 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadNativeResourceCleanupContract, type NativeResourceCleanupContract } from "../runtime/nativeResourceCleanup.js";
 import { classifyProjectState } from "../state/stateMode.js";
 import { applyAppContentRefresh } from "./appContentRefresh.js";
-import { assessProductV1Evidence, loadProductV1ResetAuthority, productV1EvidencePaths, productV1InstallRootCandidate } from "./productV1ResetAuthority.js";
+import { assessProductV1Evidence, loadProductV1ResetAuthority, productV1EvidencePaths, productV1InstallRootCandidate, productV1ResetSelection, type ProductV1ResetScopeEntry, type ProductV1ResetSelection } from "./productV1ResetAuthority.js";
 import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../setup/hostSkillLifecycle.js";
 import { observeLifecyclePath, removeLifecycleResource, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 import { PROFILE_FILE_MEMBERS, USER_DATA_CATALOG_DIRS } from "../migrate/v2HandoffManifest.js";
@@ -228,14 +228,20 @@ function rootPath(roots: Record<string, string>, target: string): ProductV1Reset
   return best ?? { root: "absolute", path: target };
 }
 
-function scopeRootNames(): Map<string, string> {
-  return new Map(loadProductV1ResetAuthority().scope.map((item) => [item.id, item.boundedRoot === "runtime_declared_roots" ? "runtime_home" : item.boundedRoot]));
+function scopeRoots(): Map<string, ProductV1ResetScopeEntry["boundedRoot"]> {
+  return new Map(loadProductV1ResetAuthority().scope.map((item) => [item.id, item.boundedRoot]));
 }
 
 export function summarizeProductV1ResetPreview(preview: ProductV1ResetPreview, nameLimit: number = PRODUCT_V1_RESET_SUMMARY_NAME_LIMIT): ProductV1ResetPreviewSummary {
   const shared = sharedTargets(preview);
-  const rootNames = scopeRootNames();
-  const rootName = (id: string, root: string): string => rootNames.get(id) ?? rootPath(preview.roots, root).root;
+  const bounded = scopeRoots();
+  const rootName = (id: string, root: string): string => {
+    const declared = bounded.get(id);
+    if (declared === undefined) return rootPath(preview.roots, root).root;
+    if (declared !== "runtime_declared_roots") return declared;
+    // A runtime scope sits at the project when it selects only project destinations.
+    return root === preview.roots.runtime_home ? "runtime_home" : "project";
+  };
   const deletions = preview.deletions.map((deletion): ProductV1ResetDeletionSummary => {
     const counts = new Map<string, number>();
     let entryCount = 0;
@@ -344,6 +350,7 @@ function resolvedRoots(options: ProductV1ResetOptions): Record<string, string> {
   const env = options.env ?? process.env;
   const home = safeRoot("runtime home", options.home ?? os.homedir());
   const project = safeRoot("project root", options.project ?? process.cwd());
+  if (options.installRoot === "") throw new Error("install root must not be empty; an empty value would select the working directory");
   const installRoot = safeRoot("install root", productV1InstallRootCandidate(options.installRoot, env, home));
   const profileRoot = safeRoot("profile root", resolveProfileDirOverride(env) ?? installRoot);
   return { project, profile_root: profileRoot, install_root: installRoot, runtime_home: home };
@@ -400,26 +407,39 @@ function expandTemplate(template: string, roots: Record<string, string>): string
   return path.resolve(template.replaceAll("{project}", roots.project).replaceAll("{home}", roots.runtime_home).replaceAll("{install_root}", roots.install_root));
 }
 
-function runtimeTargets(roots: Record<string, string>, contract: NativeResourceCleanupContract): ProductV1ResetScopeTarget[] {
-  const skill = hostSkillPath(roots.runtime_home!);
-  const observed = observeLifecyclePath(skill, [roots.runtime_home!]);
-  if (observed.unsafeReason || !["missing", "symlink", "directory"].includes(observed.kind)) throw new Error("Unsafe reset host destination; preserve it for manual recovery.");
-  if (observed.kind === "directory" && fs.readdirSync(skill).some((name) => name !== "SKILL.md")) throw new Error("Reset preserves full copied host trees and unowned extras. First preview and explicitly approve upgrade --shared-skill conversion, or perform separately approved manual recovery.");
-  const targets: ProductV1ResetScopeTarget[] = [
-    {
+/** A project destination needs project evidence; a home or install-root destination needs installation evidence. */
+function selectsDestination(selection: ProductV1ResetSelection, declared: string): boolean {
+  return declared.startsWith("{project}") ? selection.project : selection.installation;
+}
+
+function selectsScope(selection: ProductV1ResetSelection, item: ProductV1ResetScopeEntry): boolean {
+  if (item.boundedRoot === "project") return selection.project;
+  // Runtime deletions select per destination; the canonical skill is a home destination.
+  if (item.boundedRoot === "runtime_declared_roots" && item.action === "delete") return selection.project || selection.installation;
+  return selection.installation;
+}
+
+function runtimeTargets(roots: Record<string, string>, contract: NativeResourceCleanupContract, selection: ProductV1ResetSelection): ProductV1ResetScopeTarget[] {
+  const targets: ProductV1ResetScopeTarget[] = [];
+  if (selection.installation) {
+    const skill = hostSkillPath(roots.runtime_home!);
+    const observed = observeLifecyclePath(skill, [roots.runtime_home!]);
+    if (observed.unsafeReason || !["missing", "symlink", "directory"].includes(observed.kind)) throw new Error("Unsafe reset host destination; preserve it for manual recovery.");
+    if (observed.kind === "directory" && fs.readdirSync(skill).some((name) => name !== "SKILL.md")) throw new Error("Reset preserves full copied host trees and unowned extras. First preview and explicitly approve upgrade --shared-skill conversion, or perform separately approved manual recovery.");
+    targets.push({
       declared: "{home}/.agents/skills/agentera",
       operation: "remove_path",
       path: skill,
       entries: hostSnapshot(skill, roots.runtime_home!),
-    },
-  ];
+    });
+  }
   for (const resource of contract.diagnosticResources) {
     const names = resource.names.length > 0 ? resource.names : [null];
     for (const name of names)
       for (const destination of resource.destinations) {
         // Product-v1 reset remains bound to its own declared roots; configured
         // OpenCode migration roots belong only to retired-resource cleanup.
-        if (destination.includes("{opencode_config}")) continue;
+        if (destination.includes("{opencode_config}") || !selectsDestination(selection, destination)) continue;
         const declared = name === null ? destination : destination.replaceAll("{name}", name);
         const target = expandTemplate(declared, roots);
         const root = declared.startsWith("{project}") ? roots.project : declared.startsWith("{install_root}") ? roots.install_root : roots.runtime_home;
@@ -438,6 +458,7 @@ function runtimeTargets(roots: Record<string, string>, contract: NativeResourceC
       }
   }
   for (const unit of contract.configuration) {
+    if (!selectsDestination(selection, unit.destination)) continue;
     const target = expandTemplate(unit.destination, roots);
     assertContained(roots.runtime_home, target);
     targets.push({
@@ -464,19 +485,22 @@ export function previewProductV1Reset(options: ProductV1ResetOptions = {}, depen
   const project = roots.project!;
   const installRoot = roots.install_root!;
   const authority = loadProductV1ResetAuthority();
-  const foundEvidence = productV1EvidencePaths(assessProductV1Evidence({ project, installRoot }, authority));
+  const assessment = assessProductV1Evidence({ project, installRoot }, authority);
+  const foundEvidence = productV1EvidencePaths(assessment);
   if (foundEvidence.length === 0) throw new Error("product-v1 reset requires declared product-v1 generation evidence");
+  const selection = productV1ResetSelection(assessment);
 
-  const rootFor = (name: string): string => (name === "runtime_declared_roots" ? roots.runtime_home! : roots[name]!);
+  // Without installation evidence, runtime deletions reach only project destinations.
+  const rootFor = (name: string): string => (name === "runtime_declared_roots" ? (selection.installation ? roots.runtime_home! : roots.project!) : roots[name]!);
   const deletions = authority.scope
-    .filter((item) => item.action === "delete")
+    .filter((item) => item.action === "delete" && selectsScope(selection, item))
     .map((item) => ({
       id: item.id,
       owner: item.owner,
       root: rootFor(item.boundedRoot),
       targets:
         item.boundedRoot === "runtime_declared_roots"
-          ? runtimeTargets(roots, dependencies.runtimeContract ?? loadNativeResourceCleanupContract())
+          ? runtimeTargets(roots, dependencies.runtimeContract ?? loadNativeResourceCleanupContract(), selection)
           : item.targets.map((declared) => {
               const target = path.resolve(rootFor(item.boundedRoot), declared);
               assertContained(rootFor(item.boundedRoot), target);
@@ -489,11 +513,11 @@ export function previewProductV1Reset(options: ProductV1ResetOptions = {}, depen
             }),
     }));
   const recreations = authority.scope
-    .filter((item) => item.action === "recreate")
+    .filter((item) => item.action === "recreate" && selectsScope(selection, item))
     .map((item) => ({
       id: item.id,
       owner: item.owner,
-      root: rootFor(item.boundedRoot),
+      root: item.boundedRoot === "runtime_declared_roots" ? roots.runtime_home! : roots[item.boundedRoot]!,
       targets: item.targets.map((declared) => ({
         declared,
         ...(item.id === "runtime.canonical-skill"
@@ -771,19 +795,31 @@ function loadResetJournal(options: ProductV1ResetOptions, authorization: string,
   return { journal, retry: false };
 }
 
+function recreates(scope: ProductV1ResetValidatedScope, id: string): boolean {
+  return scope.recreations.some((item) => item.id === id);
+}
+
+/** The approved one-file delivery still matches the bootstrap source, when the scope recreates the canonical skill. */
+function deliveryCurrent(scope: ProductV1ResetValidatedScope, sourceRoot: string): boolean {
+  if (!recreates(scope, "runtime.canonical-skill")) return true;
+  const delivery = scope.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]?.delivery;
+  return delivery !== undefined && delivery.sourceRoot === sourceRoot && delivery.fingerprint === loadHostSkillSource(sourceRoot).fingerprint;
+}
+
 function initializeFreshV3(scope: ProductV1ResetValidatedScope): void {
   const sourceRoot = resolveSourceRoot();
-  const delivery = scope.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]?.delivery;
-  if (!delivery || delivery.sourceRoot !== sourceRoot || delivery.fingerprint !== loadHostSkillSource(sourceRoot).fingerprint) throw new Error("Reset one-file delivery authority changed; preserve the reset journal and review recovery.");
-  applyAppContentRefresh(scope.roots.install_root!, sourceRoot);
-  const installed = runHostSkillLifecycle({
-    home: scope.roots.runtime_home!,
-    appHome: scope.roots.install_root!,
-    sourceRoot,
-    apply: true,
-  });
-  if (installed.status === "non_success") throw new Error(`Reset one-file delivery requires recovery: ${installed.reason}`);
-  if (classifyProjectState(scope.roots.project!, sourceRoot).state !== "fresh_uninitialized") {
+  if (!deliveryCurrent(scope, sourceRoot)) throw new Error("Reset one-file delivery authority changed; preserve the reset journal and review recovery.");
+  if (recreates(scope, "installation.current-package")) applyAppContentRefresh(scope.roots.install_root!, sourceRoot);
+  if (recreates(scope, "runtime.canonical-skill")) {
+    const installed = runHostSkillLifecycle({
+      home: scope.roots.runtime_home!,
+      appHome: scope.roots.install_root!,
+      sourceRoot,
+      apply: true,
+    });
+    if (installed.status === "non_success") throw new Error(`Reset one-file delivery requires recovery: ${installed.reason}`);
+  }
+  if (recreates(scope, "project.fresh-v3") && classifyProjectState(scope.roots.project!, sourceRoot).state !== "fresh_uninitialized") {
     throw new Error("canonical fresh-v3 project initialization did not produce fresh_uninitialized state");
   }
 }
@@ -800,8 +836,7 @@ export function applyProductV1Reset(options: ProductV1ResetOptions, authorizatio
     dependencies.afterEffect?.("journal");
   }
   const scope = validatedScope(journal.preview);
-  const delivery = scope.recreations.find((item) => item.id === "runtime.canonical-skill")?.targets[0]?.delivery;
-  if (!delivery || delivery.sourceRoot !== resolveSourceRoot() || delivery.fingerprint !== loadHostSkillSource(resolveSourceRoot()).fingerprint) throw new Error("Reset one-file delivery authority changed; preserve the journal and review recovery before further effects.");
+  if (!deliveryCurrent(scope, resolveSourceRoot())) throw new Error("Reset one-file delivery authority changed; preserve the journal and review recovery before further effects.");
   if (journal.stage !== "complete") validateRetryState(journal);
 
   if (journal.stage === "prepared") journal = setJournalStage(roots.project!, journal, "deleting");

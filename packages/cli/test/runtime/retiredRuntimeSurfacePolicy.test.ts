@@ -1340,6 +1340,7 @@ describe("retired runtime current-surface policy", () => {
       fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
       fs.mkdirSync(path.join(home, "app"), { recursive: true });
       fs.writeFileSync(path.join(home, "app", "PROFILE.md"), "# Profile\n");
+      fs.writeFileSync(path.join(home, "app", "registry.json"), JSON.stringify({ skills: [{ version: "1.4.0" }] }));
       const preview = previewProductV1Reset({ project, home, installRoot: path.join(home, "app"), env: {} });
       resetGuidance = [false, true].map((fullDetail) => {
         const view = JSON.parse(renderProductV1ResetPreview(preview, fullDetail));

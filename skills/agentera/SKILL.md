@@ -145,13 +145,14 @@ read checkout/installed companions as fallback, or change the installation.
   availability actions. Fresh initialization, migration and partial/corrupt state
   have different contracts; do not treat one as another. `upgrade --explain`
   provides current applicability and preview/apply grammar, not consent to apply.
-- For host bootstrap updates, follow the shared-skill offer above. The CLI handles
-  preview, approval binding, retained data and recovery; never prune a symlink target.
+- For host bootstrap updates, follow the shared-skill offer above; never prune a
+  symlink target.
 - For an eligible product-v1 reset, review exact deletions, recreations and
-  irreversible loss: no backup or undo. Ask the preview's question once. Only
-  explicit Yes runs its unchanged `apply_command`; No/silence does nothing.
-  Retry the same approved operation after interruption; only verified `complete`
-  is success. Reset approval never covers ordinary update or cleanup.
+  irreversible loss: no backup or undo. Each location resets on its own v1
+  evidence: a v1 project resets its state and project host files; only a v1
+  installation resets itself, its data home, home host files and preview-named
+  user data. Ask its question once; only explicit Yes runs its unchanged
+  `apply_command`. Retry it if interrupted; only verified `complete` succeeds.
 
 Read-only recovery needs no mutation approval but remains subject to host access.
 Installation, migration, reset, cleanup and history acquisition each need explicit

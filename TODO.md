@@ -6,7 +6,6 @@
 - [ ] [id:lqqmlchlyr] [fix:3.0.0] Prepare one verified TypeScript stable-cutover candidate after approval.
 - [ ] [id:qrgwnmqcdl] [fix:3.0.0] Harden the unified npm Trusted Publisher for both channels.
 - [ ] [id:huiepnrwav] [fix:3.0.0] Publish the verified TypeScript cutover candidate to npm @latest through Trusted Publishing.
-- [ ] [id:ztqdcyapxb] [fix:3.0.0] Keep a v3-generated PROFILE.md out of the product-v1 reset, or name it before approval
 
 ## ⇉ Degraded
 
@@ -219,3 +218,4 @@
 - [x] [id:pgoadaqwwx] [fix:3.0.0] Make glossary advice recovery and Profile startup wording match the actual state
 - [x] [id:wmxyoqjjiv] [fix:3.0.0] Return typed loadSuiteVersion failure classifications.
 - [x] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint.
+- [x] [id:ztqdcyapxb] [fix:3.0.0] Scope each product-v1 reset effect to v1 evidence at its own location

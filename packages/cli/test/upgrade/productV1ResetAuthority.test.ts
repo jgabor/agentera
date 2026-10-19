@@ -78,6 +78,18 @@ describe("product v1 reset authority", () => {
     }
   });
 
+  it("requires each reset effect to be selected by the evidence at its own location", () => {
+    expect(YAML.parse(fs.readFileSync(AUTHORITY_PATH, "utf8")).policy.scope_selection).toBe("per_location_evidence");
+    const anyEvidence = mutatedAuthority((data) => {
+      data.policy.scope_selection = "any_evidence";
+    });
+    try {
+      expect(() => loadProductV1ResetAuthority(anyEvidence, REPO_ROOT)).toThrow("evidence at its own location");
+    } finally {
+      fs.rmSync(path.dirname(anyEvidence), { recursive: true, force: true });
+    }
+  });
+
   it("rejects targets outside their declared roots", () => {
     const target = mutatedAuthority((data) => {
       data.scope_inventory[0].targets = ["../outside"];

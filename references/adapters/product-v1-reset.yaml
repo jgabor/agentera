@@ -5,6 +5,10 @@ policy:
   schema_identifier_suffix_is_evidence: false
   discovery: declared_roots_only
   preserve_unlisted_state: true
+  # Each reset effect needs v1 evidence at its own location: a project
+  # destination needs project evidence; a home, install-root, or profile-root
+  # destination needs installation evidence.
+  scope_selection: per_location_evidence
 
 source_authorities:
   retired_resources: references/adapters/runtime-retired-resources.yaml

@@ -180,6 +180,8 @@ function runResetWorkflow(bin: string, root: string) {
   fs.mkdirSync(profile, { recursive: true });
   fs.writeFileSync(path.join(project, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
   fs.writeFileSync(path.join(project, ".agentera", "progress.yaml"), "schemaVersion: agentera.progress.v1\ncycles: []\n");
+  // A v1 installation as well as a v1 project, so the reset selects every scope.
+  fs.writeFileSync(path.join(install, "registry.json"), JSON.stringify({ skills: [{ version: "1.4.0" }] }));
   fs.writeFileSync(path.join(project, "keep.txt"), "user owned\n");
   fs.writeFileSync(path.join(profile, "state"), "legacy profile\n");
   fs.writeFileSync(path.join(profile, "PROFILE.md"), "# Profile\n");

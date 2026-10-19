@@ -416,7 +416,8 @@ one rule, separately for the installation and the project:
   root is `--install-root` when the reset is given one, then a non-empty
   `AGENTERA_HOME`, then a non-empty `AGENTERA_DEFAULT_INSTALL_ROOT`, then the
   platform app home. The registry's top-level `version` is a schema version and
-  does not count.
+  does not count. A v1 clone at the documented `~/.agents/agentera` path is
+  assessed only when `AGENTERA_HOME` or `--install-root` points there.
 - **Project:** the project contains any of `.agentera/PROGRESS.md`,
   `.agentera/PLAN.md`, `.agentera/DECISIONS.md`, `.agentera/HEALTH.md`,
   `.agentera/DOCS.md`, or `.agentera/DESIGN.md`. A root `VISION.md` alone does
@@ -431,8 +432,23 @@ own. Plugin manifests, skill directory names, and install paths are not
 evidence, because supported v2 used them too.
 
 When v3 detects product-v1 evidence, ordinary commands stop without mutation.
-The only continuation is a fresh-v3 reset. Preview the exact bounded project,
-profile, installation, and runtime effects first:
+The only continuation is a fresh-v3 reset. Each reset effect needs v1 evidence
+at its own location:
+
+- **Project evidence** selects the project's Agentera state (`.agentera/`,
+  `TODO.md`, and `VISION.md`), the project-level host resources, such as
+  entries under `.github/hooks` or `.cursor/agents`, and the fresh-v3 project.
+- **Installation evidence** selects the data home (the profile root), the
+  installation, the home-level and install-root host resources, including the
+  shared skill at `~/.agents/skills/agentera`, and the reinstall of the current
+  package and shared skill.
+
+So a v1 project under a v3 installation resets only that project: your
+profile, usage report, history, and the rest of the data home stay untouched.
+A v1 installation never deletes a v3 project. User data is deleted only for a
+v1 installation, and only after the preview names it in `user_data`.
+
+Preview the exact bounded effects first:
 
 ```bash
 npx -y agentera@next upgrade --reset-product-v1 --dry-run
@@ -467,8 +483,8 @@ no reset; never ask the user to copy a token or reconstruct the command. Reset
 approval is separate from ordinary update and focused cleanup approval.
 
 This reset is destructive and irreversible. It deletes all Agentera state in
-the listed scopes, retains no backup, and initializes fresh v3 installation
-state. Review `user_data`, `irreversible_loss`, every deletion, and every
+the listed scopes, retains no backup, and initializes fresh v3 state at each
+location it resets. Review `user_data`, `irreversible_loss`, every deletion, and every
 recreation in the preview before applying it. To keep your profile, history,
 usage report, sessions, benchmarks, or extracted evidence, answer No and
 upgrade through the previous major version first: bring this state to

@@ -1,0 +1,19 @@
+id: awnwogtlyr
+artifact: decisions
+record:
+  date: 2026-10-19
+  question: Which v1 evidence selects each effect of the product-v1 reset?
+  context: The reset deleted every scope whenever any v1 evidence existed. A project with v1 artifacts under a v3 installation lost the data home, including a v3 PROFILE.md, the installation and home-level host resources, and a v1 installation deleted a v3 project. Decision rfnokvjpre keeps PROFILE.md, USAGE.md, history and intermediate data in the data home. The product-v1 end-of-life plan gornhwivrn put known personal profile state in the destructive scope and ruled out conversion, import and backup.
+  alternatives:
+    - name: Per-location evidence. Project evidence selects project destinations; installation evidence selects home, install-root and profile-root destinations.
+      status: chosen
+    - name: Any evidence selects every scope, as before.
+      status: rejected
+    - name: Keep the data home out of every reset and delete only installation files.
+      status: rejected
+    - name: Convert, import or back up v1 user data before the reset.
+      status: rejected
+  choice: Each reset effect needs v1 evidence at its own location. A v1 project selects only its project state, its project-level host resources and the fresh-v3 project. A v1 installation, proven by a 1.x registry.json in the install root, selects the data home, the installation, home-level and install-root host resources including the shared skill, and the reinstall of the current package and shared skill. User data is deleted only for a v1 installation, after the preview names it in user_data. Product v1 stays unsupported, with no conversion, import or backup.
+  reasoning: A location without v1 evidence holds v3 or user state that the reset has no reason to destroy. Selecting by location keeps a v3 profile and a v3 project out of a reset that another location triggered, while a v1 installation still loses its data only after the preview names it. This refines when the gornhwivrn destructive scope applies and keeps rfnokvjpre's data-home layout.
+  confidence: firm
+  feeds_into: UPGRADE.md, skills/agentera/SKILL.md, references/adapters/product-v1-reset.yaml, upgrade --reset-product-v1

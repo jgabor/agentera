@@ -77,6 +77,9 @@ export function loadProductV1ResetAuthority(authorityPath = path.join(resolveSou
   if (policy.trigger !== "any_declared_product_v1_generation_evidence" || policy.schema_identifier_suffix_is_evidence !== false || policy.discovery !== "declared_roots_only" || policy.preserve_unlisted_state !== true) {
     throw new Error("product v1 reset authority policy must require bounded product-generation evidence");
   }
+  if (policy.scope_selection !== "per_location_evidence") {
+    throw new Error("product v1 reset authority must select each reset effect by the evidence at its own location");
+  }
 
   const sources = mapping(data.source_authorities, "source_authorities");
   if (sources.retired_resources !== NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH || sources.package_inventory !== PACKAGE_REGISTRY_RELATIVE_PATH || sources.runtime_lifecycle !== RUNTIME_LIFECYCLE_RELATIVE_PATH) {
@@ -211,6 +214,18 @@ export function assessProductV1Evidence(roots: { project: string; installRoot: s
   const version = readSuiteVersion(roots.installRoot);
   const installation = version.kind === "ok" && isProductV1PackageVersion(version.version) ? version.path : null;
   return { project, installation };
+}
+
+/** Which locations hold product-v1 evidence, and so which reset effects an assessment selects. */
+export interface ProductV1ResetSelection {
+  /** Project evidence selects project-root deletions and recreations. */
+  project: boolean;
+  /** Installation evidence selects home, install-root and profile-root deletions and recreations. */
+  installation: boolean;
+}
+
+export function productV1ResetSelection(assessment: ProductV1EvidenceAssessment): ProductV1ResetSelection {
+  return { project: assessment.project.length > 0, installation: assessment.installation !== null };
 }
 
 /** Every evidence path of an assessment, sorted. */

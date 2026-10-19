@@ -376,6 +376,16 @@ export function runUpgrade(argv: string[], io: Io, _prog: string): number {
         },
       });
     }
+    if (args.installRoot === "") {
+      return emitInvalidInput(io, {
+        format: asEnvelopeFormat(args.format),
+        body: {
+          class: "invalid_request",
+          message: "--install-root must name a directory; an empty value would select the working directory as the install root",
+          recovery: "Pass the install root path, or omit --install-root to use AGENTERA_HOME, AGENTERA_DEFAULT_INSTALL_ROOT, or the platform app home.",
+        },
+      });
+    }
   }
   try {
     return cmdUpgrade(args, io);

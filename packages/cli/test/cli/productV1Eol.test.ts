@@ -28,6 +28,12 @@ function fixture(): string {
   return root;
 }
 
+/** Marks an install root as a product-v1 installation, which selects the data home, installation and home-level effects. */
+function v1Installation(install: string, version = "1.4.0"): string {
+  fs.writeFileSync(path.join(install, "registry.json"), JSON.stringify({ skills: [{ version }] }));
+  return install;
+}
+
 function snapshot(root: string, ignored: string[] = []): string {
   const hash = createHash("sha256");
   const visit = (directory: string): void => {
@@ -102,19 +108,23 @@ function populateDataRoot(root: string): void {
 /**
  * A v1 home with user data, many top-level entries and every host resource family present.
  * By default the profile root is the installation root; `split` gives the profile its own root with its own user data.
- * `long` pads every root by that many characters, nesting directories so no name exceeds 200 characters.
+ * `long` makes the project, home and profile roots exactly that many characters long, whatever the temporary directory's length,
+ * nesting directories so no name exceeds 201 characters.
  */
 function worstCaseHome(options: { split?: boolean; long?: number } = {}): { project: string; home: string; install: string; profile: string | null; userData: string[] } {
   let project: string;
   let home: string;
   let profile: string | null = null;
   if (options.long) {
-    const base = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-long-"));
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "ar-"));
     roots.push(base);
+    const length = options.long;
     const padded = (name: string, fill: string): string => {
-      const parts = [name];
-      for (let left = options.long; left > 0; left -= 200) parts.push(fill.repeat(Math.min(200, left)));
-      return path.join(base, ...parts);
+      let target = path.join(base, name);
+      let left = length - target.length;
+      if (left < 2) throw new Error(`temporary directory is too long for a ${length}-character root fixture: ${base}`);
+      for (; left > 202; left -= 201) target = path.join(target, fill.repeat(200));
+      return path.join(target, fill.repeat(left - 1));
     };
     project = padded("project", "p");
     home = padded("home", "h");
@@ -170,6 +180,7 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-app-"));
     const legacy = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-legacy-"));
     roots.push(home, install, legacy);
+    v1Installation(install);
     fs.writeFileSync(path.join(legacy, "SKILL.md"), "old runtime");
     fs.writeFileSync(path.join(legacy, "user-data"), "retain");
     const host = path.join(home, ".agents/skills/agentera");
@@ -209,6 +220,7 @@ describe("product v1 EOL execution gate", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-extras-"));
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-app-"));
     roots.push(home, install);
+    v1Installation(install);
     const host = path.join(home, ".agents/skills/agentera");
     fs.mkdirSync(host, { recursive: true });
     fs.writeFileSync(path.join(host, "SKILL.md"), "legacy");
@@ -310,6 +322,7 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
+    v1Installation(install);
     const previousProfile = process.env.AGENTERA_PROFILE_DIR;
     process.env.AGENTERA_PROFILE_DIR = profile;
     try {
@@ -433,6 +446,7 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
+    v1Installation(install);
     const codex = path.join(home, ".codex");
     fs.mkdirSync(codex);
     const config = path.join(codex, "config.toml");
@@ -569,6 +583,7 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
+    v1Installation(install);
     fs.writeFileSync(path.join(install, "owned.txt"), "approved\n");
     fs.writeFileSync(path.join(profile, "state"), "preserve-until-validation-passes\n");
     const options = {
@@ -628,6 +643,7 @@ describe("product v1 EOL execution gate", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-install-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-profile-"));
     roots.push(home, install, profile);
+    v1Installation(install);
     fs.writeFileSync(path.join(profile, "state"), "must-remain\n");
     const options = {
       project: root,
@@ -647,6 +663,146 @@ describe("product v1 EOL execution gate", () => {
 
     expect(() => applyProductV1Reset(options, preview.authorization)).toThrow("cannot be recovered after effects may have begun");
     expect(fs.readFileSync(path.join(profile, "state"), "utf8")).toBe("must-remain\n");
+  });
+});
+
+const V3_PROFILE = ["# Profile", "", "<!-- agentera:personal-glossary:start -->", "## Glossary", "", "```json", '{"schema_version":"agentera.personalGlossarySection.v1","as_of":"2026-07-30","confidence_basis":{},"entries":[]}', "```", "<!-- agentera:personal-glossary:end -->", ""].join("\n");
+const CODEX_SELECTOR = '[plugins."agentera@agentera"]';
+
+/** Home-level host resources: a codex selector, a retired Claude skill and a copied host tree with an unowned extra. */
+function populateHomeResources(home: string): void {
+  writeFile(path.join(home, ".codex", "config.toml"), ["[plugins.unrelated]", 'command = "keep-me"', "", CODEX_SELECTOR, 'command = "legacy-agentera"', ""].join("\n"));
+  writeFile(path.join(home, ".claude", "skills", "agentera", "SKILL.md"), "retired\n");
+}
+
+function applyCommand(preview: { apply_command: string }): string[] {
+  return shellCommandArgs(preview.apply_command.replace(/^npx -y agentera@next /, "agentera "));
+}
+
+describe("per-location product v1 reset scope", () => {
+  it("resets only a v1 project and its project-level host resources under a v3 installation and profile", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-v3home-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-v3app-"));
+    roots.push(home, install);
+    applyAppContentRefresh(install, resolveSourceRoot());
+    writeFile(path.join(install, "PROFILE.md"), V3_PROFILE);
+    writeFile(path.join(install, "history", "PROFILE-1.md"), "# Earlier profile\n");
+    populateHomeResources(home);
+    writeFile(path.join(home, ".agents", "skills", "agentera", "SKILL.md"), "copied\n");
+    writeFile(path.join(home, ".agents", "skills", "agentera", "private-extra"), "retain\n");
+    const projectResources = [path.join(project, ".github", "hooks", "sessionStart.json"), path.join(project, ".cursor", "agents", "agentera.md"), path.join(project, ".cursor-plugin", "plugin.json")];
+    for (const resource of projectResources) writeFile(resource);
+    const before = [snapshot(home), snapshot(install)];
+
+    const preview = withRootEnv(null, () => resetPreview(project, home, install));
+    expect(preview.rc).toBe(0);
+    expect(preview.value.evidence).toEqual([{ root: "project", path: ".agentera/PROGRESS.md" }]);
+    expect(preview.value.deletions.map(({ id, root }: { id: string; root: string }) => [id, root])).toEqual([
+      ["project.state", "project"],
+      ["runtime.resources", "project"],
+    ]);
+    expect(preview.value.recreations.map(({ id }: { id: string }) => id)).toEqual(["project.fresh-v3"]);
+    expect(preview.value.user_data).toEqual([]);
+    expect(preview.value.question).toContain("including any current data within those scopes");
+    const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"])).value;
+    const targets = full.deletions.flatMap((item: { targets: Array<{ declared: string; path?: string }> }) => item.targets);
+    expect(targets.length).toBeGreaterThan(3);
+    expect(targets.every((target: { path?: string }) => target.path !== undefined && !path.relative(project, target.path).startsWith(".."))).toBe(true);
+    expect(full.authorization).toBe(preview.value.authorization);
+
+    const applied = withRootEnv(null, () => run(project, applyCommand(preview.value)));
+    expect(applied.rc, applied.out).toBe(0);
+    expect(JSON.parse(applied.out)).toMatchObject({ status: "complete", effects_performed: true });
+    expect([snapshot(home), snapshot(install)]).toEqual(before);
+    expect(classifyProjectState(project).state).toBe("fresh_uninitialized");
+    expect(fs.readFileSync(path.join(project, "keep.txt"), "utf8")).toBe("user owned\n");
+    for (const resource of projectResources) expect(fs.existsSync(resource), resource).toBe(false);
+    const grounding = withRootEnv(null, () => {
+      process.env.AGENTERA_HOME = install;
+      return run(project, ["report", "profile-grounding", "--format", "json"]);
+    });
+    expect(grounding.rc, grounding.out).toBe(0);
+    expect(JSON.parse(grounding.out)).toMatchObject({ status: "ok", validity: { status: "valid", class: "valid" }, content: expect.stringContaining("# Profile") });
+  });
+
+  it("resets a v1 installation, its named user data and home-level host resources while a v3 project stays byte-identical", () => {
+    const project = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-v3project-"));
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-v1home-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-v1app-"));
+    roots.push(project, home, install);
+    execFileSync("git", ["init", "-q", project]);
+    writeFile(path.join(project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    writeFile(path.join(project, ".agentera", "entities", "todo", "todo_item", "keep.yaml"), "id: keep\n");
+    writeFile(path.join(project, "TODO.md"), "# TODO\n");
+    writeFile(path.join(project, ".github", "hooks", "sessionStart.json"));
+    v1Installation(install);
+    writeFile(path.join(install, "PROFILE.md"), "# Profile\n");
+    writeFile(path.join(install, "sessions", "one.jsonl"));
+    populateHomeResources(home);
+    writeFile(path.join(home, ".agents", "skills", "agentera", "SKILL.md"), "old\n");
+    const projectBefore = snapshot(project);
+
+    const preview = withRootEnv(null, () => resetPreview(project, home, install));
+    expect(preview.rc).toBe(0);
+    expect(preview.value.evidence).toEqual([{ root: "install_root", path: "registry.json" }]);
+    expect(preview.value.deletions.map(({ id, root }: { id: string; root: string }) => [id, root])).toEqual([
+      ["profile.state", "profile_root"],
+      ["installation.state", "install_root"],
+      ["runtime.resources", "runtime_home"],
+    ]);
+    expect(preview.value.recreations.map(({ id }: { id: string }) => id)).toEqual(["installation.current-package", "runtime.canonical-skill"]);
+    expect(preview.value.user_data).toEqual([
+      { kind: "profile", root: "profile_root", path: "PROFILE.md", type: "file", entry_count: 1 },
+      { kind: "sessions", root: "profile_root", path: "sessions", type: "directory", entry_count: 2 },
+    ]);
+    expect(preview.value.question).toContain("including your Agentera profile and sessions");
+    const full = withRootEnv(null, () => resetPreview(project, home, install, ["--full-detail"])).value;
+    const targets = full.deletions.flatMap((item: { targets: Array<{ path?: string }> }) => item.targets);
+    expect(targets.some((target: { path?: string }) => target.path !== undefined && !path.relative(project, target.path).startsWith(".."))).toBe(false);
+
+    const applied = withRootEnv(null, () => run(project, applyCommand(preview.value)));
+    expect(applied.rc, applied.out).toBe(0);
+    expect(snapshot(project)).toBe(projectBefore);
+    expect(fs.existsSync(path.join(install, "PROFILE.md"))).toBe(false);
+    expect(fs.existsSync(path.join(install, "sessions"))).toBe(false);
+    expect(fs.existsSync(path.join(install, "skills", "agentera", "SKILL.md"))).toBe(true);
+    expect(fs.existsSync(path.join(home, ".claude", "skills", "agentera"))).toBe(false);
+    expect(fs.readFileSync(path.join(home, ".codex", "config.toml"), "utf8")).not.toContain(CODEX_SELECTOR);
+    expect(fs.readdirSync(path.join(home, ".agents", "skills", "agentera"))).toEqual(["SKILL.md"]);
+  });
+
+  it("binds the per-location selection: new installation evidence after preview refuses the old authorization", () => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-bind-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-bind-app-"));
+    roots.push(home, install);
+    writeFile(path.join(install, "PROFILE.md"), V3_PROFILE);
+    const preview = withRootEnv(null, () => resetPreview(project, home, install)).value;
+    expect(preview.deletions.map(({ id }: { id: string }) => id)).toEqual(["project.state", "runtime.resources"]);
+    v1Installation(install);
+    const before = [snapshot(project), snapshot(install)];
+    const stale = withRootEnv(null, () => run(project, applyCommand(preview)));
+    expect(stale.rc).toBe(2);
+    expect(JSON.parse(stale.out).error.message).toContain("scope changed after preview");
+    expect([snapshot(project), snapshot(install)]).toEqual(before);
+  });
+
+  it.each([
+    ["a separate empty value", ["--install-root", ""]],
+    ["an inline empty value", ["--install-root="]],
+  ])("rejects an explicit empty install root given as %s without mutation", (_name, flag) => {
+    const project = fixture();
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-empty-"));
+    roots.push(home);
+    const before = [snapshot(project), snapshot(home)];
+    for (const mode of [["--dry-run"], ["--yes", "--authorization", "sha256:0"]]) {
+      const result = withRootEnv(null, () => run(project, ["upgrade", "--reset-product-v1", "--project", project, "--home", home, ...flag, ...mode, "--format", "json"]));
+      expect(result.rc).toBe(2);
+      expect(JSON.parse(result.out).error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("--install-root must name a directory") });
+    }
+    expect(() => previewProductV1Reset({ project, home, installRoot: "", env: {} })).toThrow("install root must not be empty");
+    expect([snapshot(project), snapshot(home)]).toEqual(before);
   });
 });
 
@@ -670,7 +826,7 @@ describe("bounded product v1 reset preview", () => {
 
   it("stays within 8 KiB with 150-character split roots that both hold user data, naming every user-data entry", () => {
     const { project, home, install, profile, userData } = worstCaseHome({ long: 150, split: true });
-    expect(Math.min(project.length, home.length, install.length, profile!.length)).toBeGreaterThanOrEqual(150);
+    expect([project.length, home.length, profile!.length]).toEqual([150, 150, 150]);
     const preview = withRootEnv(profile, () => resetPreview(project, home, install));
     expect(preview.rc).toBe(0);
     expect(preview.bytes).toBeLessThanOrEqual(8192);
@@ -688,6 +844,7 @@ describe("bounded product v1 reset preview", () => {
 
   it("drops indentation last when 250-character split roots still exceed 8 KiB without names", () => {
     const { project, home, install, profile, userData } = worstCaseHome({ long: 250, split: true });
+    expect([project.length, home.length, profile!.length]).toEqual([250, 250, 250]);
     const preview = withRootEnv(profile, () => resetPreview(project, home, install));
     expect(preview.rc).toBe(0);
     expect(preview.bytes).toBeLessThanOrEqual(8192);
@@ -702,7 +859,8 @@ describe("bounded product v1 reset preview", () => {
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-small-"));
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-small-app-"));
     roots.push(home, install);
-    for (let i = 0; i < 12; i++) writeFile(path.join(install, `entry-${String(i).padStart(2, "0")}`));
+    v1Installation(install);
+    for (let i = 0; i < 11; i++) writeFile(path.join(install, `entry-${String(i).padStart(2, "0")}`));
     const preview = withRootEnv(null, () => resetPreview(project, home, install));
     const profile = preview.value.deletions.find(({ id }: { id: string }) => id === "profile.state");
     expect(profile).toMatchObject({ omitted_count: 0, entry_count: 13 });
@@ -727,12 +885,13 @@ describe("bounded product v1 reset preview", () => {
     const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-split-app-"));
     const profile = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-reset-split-profile-"));
     roots.push(home, install, profile);
+    v1Installation(install);
     writeFile(path.join(install, "skills", "SKILL.md"));
     writeFile(path.join(profile, "PROFILE.md"));
     const preview = withRootEnv(profile, () => resetPreview(project, home, install)).value;
     const byId = Object.fromEntries(preview.deletions.map((item: { id: string }) => [item.id, item]));
     expect(byId["installation.state"]).not.toHaveProperty("shared_with");
-    expect(byId["installation.state"].entries).toEqual({ skills: 2 });
+    expect(byId["installation.state"].entries).toEqual({ "registry.json": 1, skills: 2 });
     expect(preview.user_data).toEqual([{ kind: "profile", root: "profile_root", path: "PROFILE.md", type: "file", entry_count: 1 }]);
     expect(preview.deletions.map(({ id, root }: { id: string; root: string }) => [id, root])).toEqual([
       ["project.state", "project"],

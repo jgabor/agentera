@@ -4,10 +4,20 @@ record:
   name: Agree on what proves v1 state
   depends_on:
     - npsiefshax
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the same home, roots, and project WHEN the end-of-life gate and the reset preview assess v1 evidence THEN they reach the same result for the installation and for the project.
     - GIVEN an installation layout with no reliable v1 signal WHEN either assesses it THEN it is treated as a non-v1 installation.
     - GIVEN a v1 installation, a v1 project, and v3 state WHEN each is assessed THEN only the v1 ones are reported as v1 evidence.
     - GIVEN the upgrade guide WHEN read THEN it states which signals prove a v1 installation and a v1 project.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent audit evaluator report for task bnsppjkxsi, 2026-10-19: 4 of 4 criteria PASS, 6 WARN"
+      recorded_at: 2026-10-19 08:05
+      writer_command: agentera state plan record-evaluation
