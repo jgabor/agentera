@@ -421,7 +421,6 @@ export function cmdReport(args: ReportArgs, io: Io = {}): number {
   const engineArgs: string[] = ["--corpus", corpusPath];
   if (args.project) engineArgs.push("--project", args.project);
   if (args.sources) engineArgs.push("--sources", args.sources);
-  if (outputFormat === "json") engineArgs.push("--json");
   return usageMain(engineArgs, {
     out: (t) => out(t + "\n"),
     err: (t) => err(t + "\n"),

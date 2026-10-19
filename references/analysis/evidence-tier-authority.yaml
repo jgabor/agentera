@@ -287,7 +287,7 @@ consumer_map:
   consumers:
     usage_stats:
       tier: signal
-      purpose: Skill-invocation analytics and USAGE.md reporting
+      purpose: Skill-invocation analytics reported as JSON
       required_fields:
         - source_kind
         - timestamp

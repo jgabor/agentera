@@ -40,10 +40,6 @@ mapping:
   path: '$AGENTERA_PROFILE_DIR/PROFILE.md (default: $XDG_DATA_HOME/agentera/PROFILE.md)'
   producers:
   - profile
-- artifact: USAGE.md
-  path: '$AGENTERA_USAGE_DIR/USAGE.md (default: $XDG_DATA_HOME/agentera/USAGE.md, sibling of PROFILE.md)'
-  producers:
-  - agentera report refresh
 index:
 - document: README
   path: README.md

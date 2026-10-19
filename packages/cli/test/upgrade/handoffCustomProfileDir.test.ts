@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
-import { resolveMigrationUserStatePreflight } from "../../src/migrate/v2HandoffManifest.js";
+import { appHomeHasUnrecognizedEntriesWithPreflight, resolveMigrationUserStatePreflight } from "../../src/migrate/v2HandoffManifest.js";
 import { dryRunMigration, planCleanupPhase } from "../../src/upgrade/migrateArtifactsV2ToV3.js";
 import { migrationCtx } from "./helpers/migrationCtx.js";
 
@@ -58,6 +58,30 @@ describe("handoffCustomProfileDir", () => {
 
     const removeItem = cleanup.items.find((item) => item.action === "remove-managed-app-home");
     expect(removeItem?.preserved).toContain(customProfile);
+  });
+
+  it("classifies an existing USAGE.md as preserved user data in the app home and a custom profile dir", () => {
+    const home = path.join(tmp, "home");
+    const appHome = copyFixture("v2-app-home-realistic", path.join(home, "agentera"));
+    const customProfile = path.join(home, "custom-profile");
+    fs.mkdirSync(customProfile, { recursive: true });
+    const usageBytes = Buffer.from("# Suite Usage\n\n| plan | 2 |\n");
+    fs.writeFileSync(path.join(appHome, "USAGE.md"), usageBytes);
+    fs.writeFileSync(path.join(customProfile, "USAGE.md"), usageBytes);
+    fs.writeFileSync(path.join(appHome, "NOTES.md"), "not Agentera user data\n");
+
+    const env = { HOME: home, PROFILERA_PROFILE_DIR: customProfile };
+    const preflight = resolveMigrationUserStatePreflight(appHome, { home, env });
+    expect(preflight.preservedTopLevel).toContain("USAGE.md");
+    expect(preflight.preservedAbsolutePaths).toContain(path.join(appHome, "USAGE.md"));
+    expect(preflight.preservedAbsolutePaths).toContain(path.join(customProfile, "USAGE.md"));
+    const unrecognized = appHomeHasUnrecognizedEntriesWithPreflight(appHome, preflight);
+    expect(unrecognized).not.toContain("USAGE.md");
+    expect(unrecognized).toContain("NOTES.md");
+
+    planCleanupPhase(migrationCtx(appHome, appHome, home, REPO_ROOT, env));
+    expect(fs.readFileSync(path.join(appHome, "USAGE.md")).equals(usageBytes)).toBe(true);
+    expect(fs.readFileSync(path.join(customProfile, "USAGE.md")).equals(usageBytes)).toBe(true);
   });
 
   it("does not catalog a profile dir when PROFILERA_PROFILE_DIR matches app home", () => {

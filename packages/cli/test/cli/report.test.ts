@@ -495,6 +495,28 @@ describe("cmdReport", () => {
     expect(typeof payload.generated_at).toBe("string");
     expect(payload.extracted_at).toBe("2026-01-02T03:04:05Z");
   });
+
+  it("never writes USAGE.md for a ready corpus, even when called directly with text", () => {
+    fs.mkdirSync(path.join(tmp, "intermediate"), { recursive: true });
+    fs.writeFileSync(path.join(tmp, "intermediate", "corpus.json"), JSON.stringify({ records: [{ source_kind: "conversation_turn", project_id: "agentera", timestamp: "t", text: "x" }] }));
+    const usageDir = path.join(tmp, "usage");
+    const prevUsageDir = process.env.AGENTERA_USAGE_DIR;
+    process.env.AGENTERA_USAGE_DIR = usageDir;
+    try {
+      const text = run({ format: "text" });
+      const json = run({ format: "json" });
+      expect(text.rc).toBe(0);
+      const { generated_at: _textGenerated, ...textPayload } = JSON.parse(text.out);
+      const { generated_at: _jsonGenerated, ...jsonPayload } = JSON.parse(json.out);
+      expect(textPayload).toEqual(jsonPayload);
+    } finally {
+      if (prevUsageDir === undefined) delete process.env.AGENTERA_USAGE_DIR;
+      else process.env.AGENTERA_USAGE_DIR = prevUsageDir;
+    }
+    expect(fs.existsSync(usageDir)).toBe(false);
+    expect(fs.existsSync(path.join(tmp, "USAGE.md"))).toBe(false);
+    expect(fs.existsSync(path.join(tmp, ".local", "share", "agentera", "USAGE.md"))).toBe(false);
+  });
 });
 
 describe("usageMain oversized corpus", () => {
@@ -512,7 +534,7 @@ describe("usageMain oversized corpus", () => {
     fs.ftruncateSync(fd, MAX_CORPUS_READ_BYTES + 1);
     fs.closeSync(fd);
     let err = "";
-    const rc = usageMain(["--corpus", p, "--json"], {
+    const rc = usageMain(["--corpus", p], {
       out: () => undefined,
       err: (t) => (err += t),
     });

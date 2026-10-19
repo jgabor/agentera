@@ -232,7 +232,6 @@ export function runUsage(argv: string[], io: Io, _prog: string): number {
   const engineArgv: string[] = [];
   if (corpus !== null) engineArgv.push("--corpus", corpus);
   if (project !== null) engineArgv.push("--project", project);
-  if (format === "json") engineArgv.push("--json");
   return usageMain(engineArgv, {
     out: (t) => realOut(t + "\n"),
     err: (t) => realErr(t + "\n"),

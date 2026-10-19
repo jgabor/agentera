@@ -2,9 +2,9 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 
-import { CorpusUnavailable, analyzeCorpus, buildJsonPayload, classifyTrigger, defaultCorpusPath, defaultUsageDir, findMarkers, loadCorpusOrRaise, usageMain, pairInvocations, renderMarkdown } from "../../src/analytics/usageStats.js";
+import { CORPUS_GUIDANCE, CorpusUnavailable, analyzeCorpus, buildJsonPayload, classifyTrigger, defaultCorpusPath, findMarkers, loadCorpusOrRaise, usageMain, pairInvocations } from "../../src/analytics/usageStats.js";
 import { ADAPTER_VERSION, contentFingerprint, originIdentity } from "../../src/analytics/extractCorpus/core.js";
 import { publishEvidenceTiers } from "../../src/analytics/extractCorpus/evidenceTiers.js";
 import { tiersDirForCorpusPath } from "../../src/analytics/extractCorpus/tierReader.js";
@@ -114,15 +114,8 @@ describe("analyzeCorpus", () => {
     expect(analysis.per_project).toEqual({});
   });
 
-  it("renders a markdown report and JSON payload", () => {
+  it("builds the JSON payload", () => {
     const analysis = analyzeCorpus(corpusFixture(), null);
-    const md = renderMarkdown(analysis, {
-      generatedAt: "GEN",
-      extractedAt: "2026-01-04T00:00:00Z",
-    });
-    expect(md).toContain("# Suite Usage");
-    expect(md).toContain("| build | 1 |");
-    expect(md).toContain("## Per-project totals");
     const payload = buildJsonPayload(analysis, {
       generatedAt: "GEN",
       extractedAt: "2026-01-04T00:00:00Z",
@@ -172,8 +165,6 @@ describe("analyzeCorpus", () => {
       active_runtime: false,
       records: 2,
     });
-    const markdown = renderMarkdown(all, { generatedAt: "GEN", extractedAt: null });
-    expect(markdown).toContain("| historical_import | claude-code | no | 2 |");
   });
 });
 
@@ -202,19 +193,16 @@ describe("loadCorpusOrRaise", () => {
 });
 
 describe("default paths", () => {
-  it("honors AGENTERA_USAGE_DIR and AGENTERA_PROFILE_DIR overrides", () => {
-    expect(defaultUsageDir({ AGENTERA_USAGE_DIR: "/x/usage" })).toBe("/x/usage");
-    expect(defaultUsageDir({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe("/x/prof");
+  it("honors the AGENTERA_PROFILE_DIR override", () => {
     expect(defaultCorpusPath({ AGENTERA_PROFILE_DIR: "/x/prof" })).toBe(path.join("/x/prof", "intermediate", "corpus.json"));
   });
 
   it("falls back to PROFILERA_PROFILE_DIR when AGENTERA_PROFILE_DIR is unset", () => {
-    expect(defaultUsageDir({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe("/legacy/prof");
     expect(defaultCorpusPath({ PROFILERA_PROFILE_DIR: "/legacy/prof" })).toBe(path.join("/legacy/prof", "intermediate", "corpus.json"));
   });
 
   it("uses XDG default on linux", () => {
-    expect(defaultUsageDir({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(path.join("/home/u/.local/share", "agentera"));
+    expect(defaultCorpusPath({ HOME: "/home/u", XDG_DATA_HOME: "/home/u/.local/share" }, "linux")).toBe(path.join("/home/u/.local/share", "agentera", "intermediate", "corpus.json"));
   });
 });
 
@@ -229,7 +217,7 @@ describe("usageMain engine", () => {
 
   it("returns 2 and reports an unavailable corpus on stderr", () => {
     let err = "";
-    const rc = usageMain(["--corpus", path.join(tmp, "missing.json"), "--json"], {
+    const rc = usageMain(["--corpus", path.join(tmp, "missing.json")], {
       out: () => {},
       err: (t) => (err += t),
       env: {},
@@ -256,7 +244,7 @@ describe("usageMain engine", () => {
       }),
     );
     let out = "";
-    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+    const rc = usageMain(["--corpus", corpusPath], {
       out: (t) => (out += t),
       err: () => {},
       env: {},
@@ -267,6 +255,79 @@ describe("usageMain engine", () => {
     expect(parsed.extracted_at).toBe("2026-01-02T03:04:05Z");
     expect(typeof parsed.generated_at).toBe("string");
     expect(typeof parsed.skills).toBe("object");
+  });
+
+  function isolatedUsageEnv(): Record<string, string> {
+    return {
+      HOME: path.join(tmp, "home"),
+      XDG_DATA_HOME: path.join(tmp, "xdg-data"),
+      XDG_CONFIG_HOME: path.join(tmp, "xdg-config"),
+      XDG_STATE_HOME: path.join(tmp, "xdg-state"),
+      XDG_CACHE_HOME: path.join(tmp, "xdg-cache"),
+      AGENTERA_PROFILE_DIR: path.join(tmp, "data"),
+      AGENTERA_USAGE_DIR: path.join(tmp, "usage"),
+    };
+  }
+
+  function usageReportCandidates(env: Record<string, string>): string[] {
+    return [path.join(env.AGENTERA_USAGE_DIR, "USAGE.md"), path.join(env.AGENTERA_PROFILE_DIR, "USAGE.md"), path.join(env.XDG_DATA_HOME, "agentera", "USAGE.md"), path.join(env.HOME, "USAGE.md")];
+  }
+
+  function runIsolated(argv: string[], env: Record<string, string>): { rc: number; out: string; err: string; writes: number } {
+    let out = "";
+    let err = "";
+    const writeFile = vi.spyOn(fs, "writeFileSync");
+    const mkdir = vi.spyOn(fs, "mkdirSync");
+    try {
+      const rc = usageMain(argv, { out: (t) => (out += t), err: (t) => (err += t), env });
+      return { rc, out, err, writes: writeFile.mock.calls.length + mkdir.mock.calls.length };
+    } finally {
+      writeFile.mockRestore();
+      mkdir.mockRestore();
+    }
+  }
+
+  it("emits unchanged JSON analytics for ready evidence without writing USAGE.md, ignoring AGENTERA_USAGE_DIR", () => {
+    const env = isolatedUsageEnv();
+    fs.mkdirSync(path.join(env.AGENTERA_PROFILE_DIR, "intermediate"), { recursive: true });
+    fs.writeFileSync(path.join(env.AGENTERA_PROFILE_DIR, "intermediate", "corpus.json"), JSON.stringify(corpusFixture()));
+
+    const withOverride = runIsolated([], env);
+    const { AGENTERA_USAGE_DIR: _ignored, ...withoutOverrideEnv } = env;
+    const withoutOverride = runIsolated([], withoutOverrideEnv as Record<string, string>);
+
+    const { generated_at: _generated, ...expected } = buildJsonPayload(analyzeCorpus(corpusFixture()), { generatedAt: "GEN", extractedAt: "2026-01-04T00:00:00Z" });
+    for (const run of [withOverride, withoutOverride]) {
+      expect(run.rc).toBe(0);
+      expect(run.err).toBe("");
+      expect(run.writes).toBe(0);
+      const { generated_at: generatedAt, ...payload } = JSON.parse(run.out);
+      expect(typeof generatedAt).toBe("string");
+      expect(payload).toEqual(expected);
+    }
+    expect(withOverride.out.replace(/"generated_at": "[^"]*"/, "")).toBe(withoutOverride.out.replace(/"generated_at": "[^"]*"/, ""));
+    expect(fs.existsSync(env.AGENTERA_USAGE_DIR)).toBe(false);
+    for (const candidate of usageReportCandidates(env)) expect(fs.existsSync(candidate)).toBe(false);
+  });
+
+  it("keeps privacy-safe recovery for missing or stale evidence and writes no USAGE.md", () => {
+    const env = isolatedUsageEnv();
+    const missing = runIsolated([], env);
+    expect(missing.rc).toBe(2);
+    expect(missing.out).toBe("");
+    expect(missing.err).toContain("corpus.json not found");
+    expect(missing.err).toContain(CORPUS_GUIDANCE);
+    expect(missing.writes).toBe(0);
+
+    fs.mkdirSync(path.join(env.AGENTERA_PROFILE_DIR, "intermediate"), { recursive: true });
+    fs.writeFileSync(path.join(env.AGENTERA_PROFILE_DIR, "intermediate", "corpus.json"), JSON.stringify({ records: [{ source_kind: "instruction_document" }] }));
+    const stale = runIsolated([], env);
+    expect(stale.rc).toBe(2);
+    expect(stale.out).toBe("");
+    expect(stale.err).toContain("no conversation_turn records");
+    expect(stale.err).toContain(CORPUS_GUIDANCE);
+    expect(stale.writes).toBe(0);
+    for (const candidate of usageReportCandidates(env)) expect(fs.existsSync(candidate)).toBe(false);
   });
 });
 
@@ -344,7 +405,7 @@ describe("usageMain tier-aware path", () => {
     });
 
     let out = "";
-    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+    const rc = usageMain(["--corpus", corpusPath], {
       out: (t) => (out += t),
       err: () => {},
       env: {},
@@ -372,7 +433,7 @@ describe("usageMain tier-aware path", () => {
       }),
     );
     let out = "";
-    const rc = usageMain(["--corpus", corpusPath, "--json"], {
+    const rc = usageMain(["--corpus", corpusPath], {
       out: (t) => (out += t),
       err: () => {},
       env: {},

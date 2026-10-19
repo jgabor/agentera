@@ -21,4 +21,4 @@ record:
       description: "[task] Explore reducing development-gate and source wall time"
       severity: normal
       status: open
-      order: 23
+      order: 22

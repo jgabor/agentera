@@ -22,4 +22,4 @@ record:
       description: "[refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules."
       severity: normal
       status: open
-      order: 28
+      order: 27

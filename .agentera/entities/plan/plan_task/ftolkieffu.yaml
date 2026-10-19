@@ -4,7 +4,7 @@ record:
   name: Retire the durability diagnostic
   depends_on:
     - nolbaqvfzi
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN CLI and check help WHEN listed THEN no durability operation is advertised, and `check durability` returns the standard unknown-subcommand error.
     - GIVEN every advertised static discovery command in a packaged run WHEN each runs THEN each exits 0 and none mentions durability.
@@ -12,3 +12,13 @@ record:
     - GIVEN state reads, archives, and writes WHEN they run THEN their behavior is unchanged, including durable writes.
     - GIVEN active user-facing documentation and the unreleased changelog WHEN read THEN they no longer describe the diagnostic, historical records are unchanged, and TODO ztkgkllvru is resolved.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent audit evaluator report for task ftolkieffu, 2026-10-19: 5 of 5 criteria PASS, 5 WARN"
+      recorded_at: 2026-10-19 09:31
+      writer_command: agentera state plan record-evaluation

@@ -1,0 +1,9 @@
+id: xzizsymzjy
+artifact: decisions
+record:
+  decision: rfnokvjpre
+  date: 2026-10-19
+  provenance: historical_revision
+  base_sha256: b1c0e29038b4e03c811a87a70d657940e3fc3b37975e499b6371bd5e210388d8
+  changes:
+    choice: Replace bundle terminology with app terminology across live internals, redefine default `AGENTERA_HOME` as the platform data home, place the managed Agentera app under `AGENTERA_HOME/app`, and keep `PROFILE.md`, existing `USAGE.md` files, history, and intermediate corpus data under `AGENTERA_HOME`. Usage analytics are JSON-only, so nothing writes `USAGE.md`; existing files remain preserved user data.

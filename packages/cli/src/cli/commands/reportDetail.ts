@@ -138,7 +138,7 @@ export function reportDetailSections(a: ServiceAuthority, base: string, operatio
             },
             bounds:
               "Analytics streams bounded evidence shards and applies the evidence authority's reader caps; legacy corpus fallback is bounded. The operational summary is not paginated by the static guidance cursor. invocations/per_project can contain private identifiers; a summary is not permission to export them.",
-            effects: "JSON summary reads existing evidence only and does not acquire runtime history. Explicit --format text writes USAGE.md in the user-local usage directory and prints a summary/report path. Neither form publishes PROFILE.md or project glossary entries.",
+            effects: "The JSON summary reads existing evidence only, does not acquire runtime history, and writes no files. It does not publish PROFILE.md or project glossary entries.",
             exit_codes: {
               0: "Analytics emitted (including an empty selected scope)",
               2: "Invalid request or unavailable evidence. A failure after readiness assessment can emit only stderr, not the unavailable JSON envelope; retain that diagnostic.",

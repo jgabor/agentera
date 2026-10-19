@@ -452,6 +452,7 @@
 
 ### Removed
 
+- Removed `USAGE.md` generation. `npx -y agentera@next report` and `npx -y agentera@next usage` emit their usage analytics only as JSON on stdout and write no report file, with unchanged JSON fields and missing-evidence recovery. `AGENTERA_USAGE_DIR` is now ignored. Existing `USAGE.md` files are kept: doctor, the v2-to-v3 upgrade, and its handoff still treat them as preserved user data and leave them unchanged.
 - Removed the `check durability` diagnostic, its `--number` and `--limit` selectors, and its `check explain --operation durability` guidance. `check durability` now returns the standard unknown-subcommand error. For local state diagnostics, use `npx -y agentera@next state <artifact-id> list`, `npx -y agentera@next state <artifact-id> get --id ID`, and `npx -y agentera@next check validate state`.
 - Removed Claude Code as an active runtime, runtime selector, installation target, plugin marketplace, and default analytics source. Historical transcript parsing remains available only with explicit `--import-source claude` consent and inactive provenance.
 - Removed `cursor-agent` as an independent runtime identity. Its binary and corpus source now map to the single `cursor` identity.

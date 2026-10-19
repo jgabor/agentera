@@ -6,14 +6,14 @@ record:
   title: Make usage analytics output stdout-only
   requirements:
     - Stop generating USAGE.md and retire AGENTERA_USAGE_DIR from active analytics behavior.
-    - Preserve agentera report text and JSON analytics over existing bounded evidence tiers, with text emitted to stdout.
+    - Preserve agentera report and agentera usage JSON analytics over existing bounded evidence tiers, emitted to stdout.
     - Do not delete or rewrite existing user USAGE.md files during doctor, upgrade, or handoff workflows.
     - Remove the obsolete docs mapping and reconcile prior decisions that intentionally retained persistent USAGE.md output.
   acceptance:
-    - Ready text and JSON reporting produce equivalent analytics without writing USAGE.md.
+    - Ready JSON reporting produces unchanged analytics without writing USAGE.md, and AGENTERA_USAGE_DIR has no effect.
     - Missing or stale evidence retains current privacy-safe recovery behavior.
     - Upgrade and doctor tests prove existing USAGE.md files are preserved.
-    - Active source, tests, docs, and decisions consistently describe stdout-only reporting.
+    - Active source, tests, docs, and decisions consistently describe JSON-only reporting.
   release_blocker: false
   severity: normal
   readiness:
@@ -25,12 +25,16 @@ record:
     gate: null
     queue_rank: 88
     order_reason: Run after the existing open queue; this behavior change has its own compatibility boundary.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[refactor] Make usage analytics output stdout-only"
+      status: resolved
+      order: 168
       severity: normal
-      status: open
-      order: 20
+  lifecycle:
+    operation: resolve
+    reason: Usage analytics are JSON-only; nothing writes USAGE.md, AGENTERA_USAGE_DIR is ignored, and existing USAGE.md files stay preserved user data.
+    date: 2026-10-19

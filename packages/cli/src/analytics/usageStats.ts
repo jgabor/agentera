@@ -368,20 +368,6 @@ function homeDir(env: Env): string {
   return env.HOME ?? os.homedir();
 }
 
-export function defaultUsageDir(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
-  const override = env.AGENTERA_USAGE_DIR;
-  if (override) return expanduser(override);
-  const profileOverride = resolveProfileDirOverride(env);
-  if (profileOverride) return expanduser(profileOverride);
-  const home = homeDir(env);
-  if (platform === "darwin") return path.join(home, "Library", "Application Support", "agentera");
-  if (platform === "win32") {
-    const appdata = env.APPDATA ?? path.join(home, "AppData", "Roaming");
-    return path.join(expanduser(appdata), "agentera");
-  }
-  return path.join(resolveXdgDataHome(env, home), "agentera");
-}
-
 export function defaultCorpusPath(env: Env = process.env, platform: NodeJS.Platform = process.platform): string {
   const profileOverride = resolveProfileDirOverride(env);
   if (profileOverride) return path.join(expanduser(profileOverride), "intermediate", "corpus.json");
@@ -456,85 +442,6 @@ export function renderJson(analysis: CorpusAnalysis, opts: { generatedAt: string
   return JSON.stringify(buildJsonPayload(analysis, opts), null, 2);
 }
 
-function exitStatusCounts(analysis: CorpusAnalysis, skill: string): Record<string, number> {
-  const counts: Record<string, number> = {};
-  for (const status of [...EXIT_STATUSES].sort()) counts[status] = 0;
-  for (const inv of analysis.invocations) {
-    if (inv.skill !== skill || !inv.completed || inv.exit_status === null) continue;
-    counts[inv.exit_status] = (counts[inv.exit_status] ?? 0) + 1;
-  }
-  return counts;
-}
-
-function lastSeen(analysis: CorpusAnalysis, skill: string): string {
-  const timestamps = analysis.invocations.filter((inv) => inv.skill === skill).map((inv) => inv.intro_timestamp);
-  return timestamps.length ? timestamps.reduce((a, b) => (a > b ? a : b)) : "-";
-}
-
-export function renderMarkdown(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null }): string {
-  const scope = analysis.project_filter || "all projects";
-  const extractedLine = opts.extractedAt || "unknown (corpus omitted extracted_at)";
-
-  const lines: string[] = [];
-  lines.push("# Suite Usage", "", `- Generated: ${opts.generatedAt}`, `- Corpus extracted: ${extractedLine}`, `- Scope: ${scope}`, `- Sources: ${analysis.source_view}`, "");
-  if (analysis.source_view === "all") {
-    lines.push("## Source provenance", "", "| Source class | Source product | Active runtime | Records |", "| --- | --- | --- | --- |", ...analysis.source_provenance.map((item) => `| ${item.source_class} | ${item.source_product} | ${item.active_runtime ? "yes" : "no"} | ${item.records} |`), "");
-  }
-
-  if (Object.keys(analysis.skills).length === 0) {
-    lines.push("No skill invocations found in the corpus for this scope.", "");
-    return lines.join("\n");
-  }
-
-  const totalInvocations = Object.values(analysis.skills).reduce((s, b) => s + b.total, 0);
-  const totalCompleted = Object.values(analysis.skills).reduce((s, b) => s + b.completed, 0);
-  lines.push(`- Skills observed: ${Object.keys(analysis.skills).length} · ` + `Invocations: ${totalInvocations} · Completed: ${totalCompleted}`, "");
-
-  const statuses = [...EXIT_STATUSES].sort();
-  const headerCols = ["Skill", "Invocations", ...statuses.map((s) => s.charAt(0).toUpperCase() + s.slice(1)), "Incomplete", "Slash", "Natural", "Last seen"];
-  lines.push("| " + headerCols.join(" | ") + " |");
-  lines.push("| " + headerCols.map(() => "---").join(" | ") + " |");
-
-  const skillOrder = Object.entries(analysis.skills).sort((a, b) => {
-    if (b[1].total !== a[1].total) return b[1].total - a[1].total;
-    return a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0;
-  });
-  for (const [skill, bucket] of skillOrder) {
-    const statusCounts = exitStatusCounts(analysis, skill);
-    const row = [skill, String(bucket.total), ...statuses.map((s) => String(statusCounts[s])), String(bucket.incomplete), String(bucket.trigger_slash), String(bucket.trigger_natural), lastSeen(analysis, skill)];
-    lines.push("| " + row.join(" | ") + " |");
-  }
-
-  if (analysis.project_filter === null && Object.keys(analysis.per_project).length > 0) {
-    lines.push("", "## Per-project totals", "", "| Project | Skill | Invocations | Completed | Incomplete |", "| --- | --- | --- | --- | --- |");
-    for (const pid of Object.keys(analysis.per_project).sort()) {
-      for (const skill of Object.keys(analysis.per_project[pid]).sort()) {
-        const b = analysis.per_project[pid][skill];
-        lines.push(`| ${pid} | ${skill} | ${b.total} | ${b.completed} | ${b.incomplete} |`);
-      }
-    }
-    lines.push("");
-  }
-
-  return lines.join("\n").replace(/\s+$/, "") + "\n";
-}
-
-export function writeMarkdown(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null; outputDir: string }): string {
-  fs.mkdirSync(opts.outputDir, { recursive: true });
-  const outPath = path.join(opts.outputDir, "USAGE.md");
-  fs.writeFileSync(outPath, renderMarkdown(analysis, opts));
-  return outPath;
-}
-
-export function renderStdoutSummary(analysis: CorpusAnalysis, opts: { generatedAt: string; extractedAt: string | null; reportPath: string }): string {
-  const total = Object.values(analysis.skills).reduce((s, b) => s + b.total, 0);
-  const completed = Object.values(analysis.skills).reduce((s, b) => s + b.completed, 0);
-  const rate = total ? `${Math.round((completed / total) * 100)}%` : "n/a";
-  const scope = analysis.project_filter || "all projects";
-  const extractedLine = opts.extractedAt || "unknown";
-  return [`Suite usage · scope: ${scope}`, `Skills observed: ${Object.keys(analysis.skills).length}`, `Invocations: ${total} · completed: ${completed} (${rate})`, `Report: ${opts.reportPath}`, `Run-at: ${opts.generatedAt} · Corpus extracted-at: ${extractedLine}`].join("\n");
-}
-
 export function nowIso(): string {
   return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
@@ -547,9 +454,9 @@ export interface UsageMainIo {
 }
 
 /**
- * Engine entry point mirroring scripts/usage_stats.py main(): emit a USAGE.md
- * report (default) or a JSON document (--json) from the existing corpus.
- * Returns 2 when the corpus is unavailable, matching the Python engine.
+ * Usage analytics engine: emit the JSON analytics document on stdout from
+ * bounded evidence tiers, or from a legacy corpus when no tiers are published.
+ * Returns 2 when the evidence is unavailable.
  */
 export function usageMain(argv: string[], io: UsageMainIo = {}): number {
   const out = io.out ?? ((t: string) => process.stdout.write(t + "\n"));
@@ -559,7 +466,6 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
 
   let corpus: string | null = null;
   let project: string | null = null;
-  let emitJson = false;
   let sourceView: "active" | "all" = "active";
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
@@ -567,7 +473,6 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
     else if (a.startsWith("--corpus=")) corpus = a.slice("--corpus=".length);
     else if (a === "--project") project = argv[++i] ?? null;
     else if (a.startsWith("--project=")) project = a.slice("--project=".length);
-    else if (a === "--json") emitJson = true;
     else if (a === "--sources" || a.startsWith("--sources=")) {
       const value = a === "--sources" ? argv[++i] : a.slice("--sources=".length);
       if (value !== "active" && value !== "all") {
@@ -623,16 +528,7 @@ export function usageMain(argv: string[], io: UsageMainIo = {}): number {
     extractedAt = md && typeof md === "object" && !Array.isArray(md) ? ((md.extracted_at as string) ?? null) : null;
   }
 
-  const generatedAt = nowIso();
-
-  if (emitJson) {
-    out(renderJson(analysis, { generatedAt, extractedAt }));
-    return 0;
-  }
-
-  const outputDir = defaultUsageDir(env, platform);
-  const outPath = writeMarkdown(analysis, { generatedAt, extractedAt, outputDir });
-  out(renderStdoutSummary(analysis, { generatedAt, extractedAt, reportPath: outPath }));
+  out(renderJson(analysis, { generatedAt: nowIso(), extractedAt }));
   return 0;
 }
 

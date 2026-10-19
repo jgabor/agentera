@@ -152,7 +152,8 @@ describe("purpose-owned report/check/recovery static guidance", () => {
     expect(analysis.invocations).toHaveLength(1);
     expect(Object.keys(summary.ready.invocations[0]).sort()).toEqual(Object.keys(analysis.invocations[0]).sort());
     expect(Object.keys(summary.ready.skills["<capability>"]).sort()).toEqual(Object.keys(analysis.skills.plan).sort());
-    expect(summary.effects).toContain("USAGE.md");
+    expect(summary.effects).toContain("writes no files");
+    expect(summary.effects).not.toContain("USAGE.md");
     const refresh = read(["report", "explain", "--operation", "refresh", "--section", "output"]);
     const out: string[] = [];
     expect(

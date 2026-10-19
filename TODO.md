@@ -34,7 +34,6 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
-- [ ] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 - [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
@@ -219,3 +218,4 @@
 - [x] [id:opybnibysh] [fix:3.0.0] Emit typed JSON bootstrap-authority failures at the executable entrypoint.
 - [x] [id:ztqdcyapxb] [fix:3.0.0] Scope each product-v1 reset effect to v1 evidence at its own location
 - [x] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
+- [x] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only

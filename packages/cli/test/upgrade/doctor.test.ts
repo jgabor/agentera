@@ -218,6 +218,26 @@ describe("buildDoctorStatus", () => {
     expect(status.signals.some((s: { kind?: string }) => s.kind === "unmanaged_install_root")).toBe(false);
   });
 
+  it("classifies an existing USAGE.md as preserved user data and leaves it byte-identical", () => {
+    const appHome = path.join(tmp, "usage-userdata");
+    fs.mkdirSync(appHome, { recursive: true });
+    const usage = path.join(appHome, "USAGE.md");
+    const bytes = Buffer.from("# Suite Usage\n\n| build | 3 |\n");
+    fs.writeFileSync(usage, bytes);
+    const status = buildDoctorStatus(appHome, { rootSource: "explicit --install-root", ...common });
+    expect(status.rootStatus).toBe("user_data_only");
+    expect(status.signals.some((s: { kind?: string }) => s.kind === "user_data_only_app_home")).toBe(true);
+    expect(fs.readFileSync(usage).equals(bytes)).toBe(true);
+
+    const stray = path.join(tmp, "stray-root");
+    fs.mkdirSync(stray, { recursive: true });
+    fs.writeFileSync(path.join(stray, "USAGE.md"), bytes);
+    fs.writeFileSync(path.join(stray, "NOTES.md"), "not Agentera user data\n");
+    const strayStatus = buildDoctorStatus(stray, { rootSource: "explicit --install-root", ...common });
+    expect(strayStatus.rootStatus).not.toBe("user_data_only");
+    expect(fs.readFileSync(path.join(stray, "USAGE.md")).equals(bytes)).toBe(true);
+  });
+
   it("short-circuits to APP_UP_TO_DATE for a source-checkout sourceRoot with default app home (Gap 9 fix 3)", () => {
     const appHome = path.join(tmp, "source-default-handoff");
     fs.mkdirSync(path.join(appHome, ".agentera"), { recursive: true });

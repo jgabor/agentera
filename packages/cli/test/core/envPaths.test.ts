@@ -3,7 +3,7 @@ import path from "node:path";
 
 import { describe, expect, it } from "vite-plus/test";
 
-import { defaultCorpusPath, defaultUsageDir } from "../../src/analytics/usageStats.js";
+import { defaultCorpusPath } from "../../src/analytics/usageStats.js";
 import { agenteraDataHome, startupBenchmarkDir } from "../../src/cli/capabilityContext/benchmark.js";
 import { statsCorpusPath } from "../../src/cli/commands/report.js";
 import { resolveProfileDirOverride, resolveXdgDataHome } from "../../src/core/envPaths.js";
@@ -31,10 +31,9 @@ describe("resolveXdgDataHome", () => {
     expect(resolveXdgDataHome({ XDG_DATA_HOME: "~/.local/share" }, home)).toBe(path.join(os.homedir(), ".local", "share"));
   });
 
-  it("aligns corpus and usage resolvers on the same expanded directory", () => {
+  it("aligns corpus resolvers on the same expanded directory", () => {
     const env = { XDG_DATA_HOME: "~/.local/share", HOME: "/tmp/home" };
     const xdgBase = path.join(os.homedir(), ".local", "share", "agentera");
-    expect(defaultUsageDir(env, "linux")).toBe(xdgBase);
     expect(defaultCorpusPath(env, "linux")).toBe(path.join(xdgBase, "intermediate", "corpus.json"));
     expect(statsCorpusPath(env, "linux")).toBe(path.join(xdgBase, "intermediate", "corpus.json"));
     expect(defaultProfileDir(env, "linux")).toBe(xdgBase);

@@ -19,4 +19,4 @@ record:
       description: "[task] Decide the manual development recovery version policy"
       severity: normal
       status: open
-      order: 27
+      order: 26
