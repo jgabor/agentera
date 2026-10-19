@@ -1,0 +1,36 @@
+id: bbfumjviwe
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Return typed failures, not raw parser text, for authorities read after dispatch.
+  severity: degraded
+  release_blocker: false
+  requirements:
+    - "Cover the authorities that prime or doctor read after command dispatch: references/cli/update-channels.yaml; references/adapters/runtime-lifecycle-authority.yaml, runtime-lifecycle-adapters.yaml, runtime-lifecycle-operation-contract.yaml, and runtime-retired-resources.yaml; references/analysis/evidence-tier-authority.yaml; references/cli/capability-instruction-contract.yaml; and skills/agentera/schemas/artifacts/todo.yaml."
+    - Today a malformed copy of one of these files makes prime or doctor return invalidInputEnvelope.v2 with raw YAML parser text, or print parser text on stderr while still reporting ok.
+    - Report each fault through the typed agentera.startupFailure.v1 failure or another stable typed classification with a reason and recovery, and never write state.
+    - Use one representative malformed file per authority family, plus one packaged-run check.
+  acceptance:
+    - GIVEN any listed authority is malformed WHEN prime or doctor runs THEN stdout is one typed JSON failure with a stable classification and recovery, and no parser text or stack appears on stdout or stderr.
+    - GIVEN a malformed listed authority WHEN prime or doctor runs THEN neither reports ok.
+    - GIVEN valid authorities WHEN prime and doctor run THEN their output is unchanged.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch."
+      severity: degraded
+      status: open
+      order: 4
+    create_batch:
+      effect_sha256: 061b0ee7463266a93bc8e45dbbe6d2cf38a83c27e8075045f09dd836b844429d
+      input_sha256: 44af5a6cd50b83235d69d1e0a2c4cfd68ec5885074c11a1bbeae3d392c22388a
+      local_refs:
+        typed-authority-failures: bbfumjviwe
+        lane-temp-leak: qnjpvirkjw
+        reset-root-inputs: jbetsgpyvf
+        dead-text-paths: icewmngpkk
+        tmpdir-budgets: cgalanawim
+        build-surprise-guidance: cjwvscigwu

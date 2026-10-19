@@ -1,0 +1,34 @@
+id: cjwvscigwu
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Tell Build how to record plan surprises with the plan writer.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Plan instructions say Build logs surprises, and plans carry a surprises list, but Build instructions never mention surprises or name a command, so surprises end up in progress records instead.
+    - The plan writer already accepts a plan-level surprise through state plan update --id TASK --plan PLAN with an input that holds only surprise; it needs a task ID for a plan-level write and cannot be combined with task-field changes.
+    - Name the supported surprise command in Build and Plan guidance, and make the command easy to discover from state plan explain, without adding a second surprise store.
+  acceptance:
+    - GIVEN Build guidance WHEN read THEN it names the exact command that records a plan surprise.
+    - GIVEN that command on an open plan WHEN it runs THEN the surprise appears in the plan's surprises and no task field changes.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Tell Build how to record plan surprises with the plan writer."
+      severity: normal
+      status: open
+      order: 32
+    create_batch:
+      effect_sha256: 061b0ee7463266a93bc8e45dbbe6d2cf38a83c27e8075045f09dd836b844429d
+      input_sha256: 44af5a6cd50b83235d69d1e0a2c4cfd68ec5885074c11a1bbeae3d392c22388a
+      local_refs:
+        typed-authority-failures: bbfumjviwe
+        lane-temp-leak: qnjpvirkjw
+        reset-root-inputs: jbetsgpyvf
+        dead-text-paths: icewmngpkk
+        tmpdir-budgets: cgalanawim
+        build-surprise-guidance: cjwvscigwu

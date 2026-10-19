@@ -417,7 +417,8 @@ one rule, separately for the installation and the project:
   `AGENTERA_HOME`, then a non-empty `AGENTERA_DEFAULT_INSTALL_ROOT`, then the
   platform app home. The registry's top-level `version` is a schema version and
   does not count. A v1 clone at the documented `~/.agents/agentera` path is
-  assessed only when `AGENTERA_HOME` or `--install-root` points there.
+  assessed only when that order selects it through `--install-root`,
+  `AGENTERA_HOME`, or `AGENTERA_DEFAULT_INSTALL_ROOT`.
 - **Project:** the project contains any of `.agentera/PROGRESS.md`,
   `.agentera/PLAN.md`, `.agentera/DECISIONS.md`, `.agentera/HEALTH.md`,
   `.agentera/DOCS.md`, or `.agentera/DESIGN.md`. A root `VISION.md` alone does

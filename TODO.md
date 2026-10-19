@@ -12,6 +12,7 @@
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
 - [ ] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
 - [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
+- [ ] [id:bbfumjviwe] [fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch.
 
 ## → Normal
 
@@ -45,9 +46,14 @@
 - [ ] [id:lujhcenyxw] [fix:3.0.0] Skip gitignored paths when state validation scans for reintroduced glossary variants
 - [ ] [id:nyojrcuxlu] [task:3.0.0] Run a real personal glossary trial once the user has written term definitions
 - [ ] [id:pzicyatkvi] [task:3.0.0] Decide the future of natural-language route request and receipt
+- [ ] [id:cgalanawim] [test:3.0.0] Make startup and static-detail byte-budget tests independent of TMPDIR length.
+- [ ] [id:cjwvscigwu] [fix:3.0.0] Tell Build how to record plan surprises with the plan writer.
+- [ ] [id:jbetsgpyvf] [fix:3.0.0] Validate the root inputs of the product-v1 reset.
+- [ ] [id:qnjpvirkjw] [test:3.0.0] Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
+- [ ] [id:icewmngpkk] [refactor:3.0.0] Remove dead text-output paths and orphaned code left after the JSON-only and durability retirements.
 
 ## ✓ Resolved
 

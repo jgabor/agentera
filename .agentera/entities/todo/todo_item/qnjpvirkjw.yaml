@@ -1,0 +1,34 @@
+id: qnjpvirkjw
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - fixture() in packages/cli/test/verification/laneOwnership.test.ts creates an agentera-lanes- directory under the temporary directory and never removes it.
+    - The pre-commit guards run this test, so each commit leaves about 84 directories behind; about 2,500 existed on 2026-10-19.
+    - Remove every fixture directory after each test, on success and on failure.
+  acceptance:
+    - GIVEN the laneOwnership tests pass or fail WHEN they finish THEN no agentera-lanes- directory they created remains.
+    - GIVEN a commit that runs the guards project WHEN it finishes THEN the count of agentera-lanes- directories is unchanged.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories."
+      severity: normal
+      status: open
+      order: 34
+    create_batch:
+      effect_sha256: 061b0ee7463266a93bc8e45dbbe6d2cf38a83c27e8075045f09dd836b844429d
+      input_sha256: 44af5a6cd50b83235d69d1e0a2c4cfd68ec5885074c11a1bbeae3d392c22388a
+      local_refs:
+        typed-authority-failures: bbfumjviwe
+        lane-temp-leak: qnjpvirkjw
+        reset-root-inputs: jbetsgpyvf
+        dead-text-paths: icewmngpkk
+        tmpdir-budgets: cgalanawim
+        build-surprise-guidance: cjwvscigwu

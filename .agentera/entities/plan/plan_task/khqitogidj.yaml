@@ -4,7 +4,7 @@ record:
   name: Keep usage analytics JSON-only without USAGE.md
   depends_on:
     - ftolkieffu
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN ready evidence WHEN usage analytics run THEN the JSON analytics are unchanged and no USAGE.md is written anywhere, and the old directory override no longer has an effect.
     - GIVEN missing or stale evidence WHEN usage analytics run THEN the current privacy-safe recovery is unchanged.
@@ -12,3 +12,13 @@ record:
     - GIVEN the decisions artifact, the docs mapping, the report explanation, and the unreleased changelog WHEN read THEN the data home decision is amended so nothing writes USAGE.md, no active surface describes writing it, and the changelog says generation stopped, the override is ignored, and existing files are kept.
     - GIVEN TODO khhotqvxei WHEN read THEN its acceptance describes JSON-only reporting and it is resolved.
   plan: mayqocppfa
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "Independent audit evaluator report for task khqitogidj, 2026-10-19: 5 of 5 criteria PASS, 7 WARN"
+      recorded_at: 2026-10-19 10:09
+      writer_command: agentera state plan record-evaluation

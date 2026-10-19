@@ -1,0 +1,38 @@
+id: icewmngpkk
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Remove dead text-output paths and orphaned code left after the JSON-only and durability retirements.
+  severity: annoying
+  release_blocker: false
+  requirements:
+    - Remove the unreachable text acceptance and syntax in runUsage.
+    - Remove the unreachable text default and branches in cmdReport.
+    - Fix the reachable report bogus error, which still advertises --format text|json under the retired stats name and conflicts with decision kicksvpwep.
+    - Remove the orphaned entityArtifactValues export if nothing uses it.
+    - Make check <unknown> --help return the unknown-subcommand error instead of a generic usage line.
+  acceptance:
+    - GIVEN report bogus WHEN it runs THEN its error names no text format and no stats command.
+    - GIVEN check <unknown> --help WHEN it runs THEN it returns the unknown-subcommand error.
+    - GIVEN the source tree WHEN searched THEN runUsage and cmdReport have no text-output branch and entityArtifactValues is not exported unused.
+    - GIVEN valid usage and report requests WHEN they run THEN their JSON output is unchanged.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Remove dead text-output paths and orphaned code left after the JSON-only and durability retirements."
+      severity: annoying
+      status: open
+      order: 2
+    create_batch:
+      effect_sha256: 061b0ee7463266a93bc8e45dbbe6d2cf38a83c27e8075045f09dd836b844429d
+      input_sha256: 44af5a6cd50b83235d69d1e0a2c4cfd68ec5885074c11a1bbeae3d392c22388a
+      local_refs:
+        typed-authority-failures: bbfumjviwe
+        lane-temp-leak: qnjpvirkjw
+        reset-root-inputs: jbetsgpyvf
+        dead-text-paths: icewmngpkk
+        tmpdir-budgets: cgalanawim
+        build-surprise-guidance: cjwvscigwu

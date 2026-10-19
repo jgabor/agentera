@@ -46,7 +46,7 @@ all fields present, inapplicable fields null. Preserve `request_sha256` and copy
 `semantic_capsule_sha256` unchanged. Submit `{ "request": "<original request>",
 "receipt": <complete API output> }` transiently on stdin to
 `npx -y agentera@next route receipt --input -`. Do not add tools, host instructions
-or rationale fields. The full receipt guide and runnable examples are served by
+or rationale fields. Full receipt guide and runnable examples:
 `npx -y agentera@next route explain --topic receipt`.
 
 On `selected`, start only the returned `route_provenance.startup_command`,
@@ -101,7 +101,7 @@ Discover only what the current work needs; follow the returned exact actions:
 | Command, capability and artifact inventory | `npx -y agentera@next schema` |
 | Complete capability instructions | `npx -y agentera@next prime --context <capability> --detail instructions` |
 | Capability read/write, checks, exits, delegation | Same command with `--detail artifacts`, `--detail validation`, `--detail exit`, or `--detail worker` |
-| Artifact construction, including Vision | `npx -y agentera@next schema --artifact vision` (select other advertised artifact names as needed) |
+| Artifact construction, including Vision | `npx -y agentera@next schema --artifact vision` (or another advertised artifact) |
 | Shared rules and primitive meanings | `npx -y agentera@next schema --protocol` |
 | Capability authoring | `npx -y agentera@next schema --capability-contract` |
 | Typed writer contract | `npx -y agentera@next state decisions explain` (select the advertised artifact and verb) |
@@ -155,8 +155,9 @@ read checkout/installed companions as fallback, or change the installation.
   `apply_command`. Retry it if interrupted; only verified `complete` succeeds.
 
 Read-only recovery needs no mutation approval but remains subject to host access.
-Installation, migration, reset, cleanup and history acquisition each need explicit
-approval. Never turn a recovery suggestion into apply or history refresh.
+Installation, update, migration, reset, cleanup and history acquisition each need
+explicit approval; never reuse one for another. Never turn a recovery suggestion
+into apply or history refresh.
 
 ## State and safety
 

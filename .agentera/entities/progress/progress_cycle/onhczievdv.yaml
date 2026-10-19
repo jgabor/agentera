@@ -1,0 +1,15 @@
+id: onhczievdv
+artifact: progress
+record:
+  timestamp: 2026-10-19 10:22
+  type: fix
+  phase: build
+  what: "Plan sweep: all seven tasks of the typed startup failures, safe v1 reset, and two retirements plan are complete with audit PASS. Version-authority faults now return typed classifications. Prime and doctor return one `agentera.startupFailure.v1` JSON failure for broken startup authority. The product-v1 reset preview stays within 8 KiB for roots up to about 350 characters, names user data, and offers `--full-detail`. The end-of-life gate and the reset share one v1 evidence rule, and each reset effect needs v1 evidence at its own location (decision awnwogtlyr). `check durability` is retired, and usage analytics are JSON-only with no `USAGE.md` writer (decision rfnokvjpre amended). TODOs wmxyoqjjiv, opybnibysh, ztqdcyapxb, ztkgkllvru, and khhotqvxei are resolved."
+  context:
+    intent: Record the plan-completion sweep for the typed startup failures, safe v1 reset, and two retirements plan.
+    constraints: No push, publication, or version change; plan status and archive stay with the coordinator.
+    scope: Plan sweep record, two doc corrections, and six follow-up TODOs.
+  discovered: "`cliDistributionMajor` still returns 3 without a warning when the v3 version authority is corrupt but package.json is a valid 3.x; this is intended because doctor and prime report the corruption. Task 2 needed one corrective attempt: doctor first kept its repair report instead of the typed failure. Task 3 needed one corrective attempt: the preview size bound grew with root path length. The closeout audit found two doc gaps, now fixed: `UPGRADE.md` omitted `AGENTERA_DEFAULT_INSTALL_ROOT` as a v1 clone root selector, and the shared skill had lost its rule that one approval is never reused for another operation. Six follow-up TODOs were filed: bbfumjviwe, qnjpvirkjw, jbetsgpyvf, icewmngpkk, cgalanawim, cjwvscigwu."
+  verified: Each task has a persisted audit PASS. For the closeout edits, oneFileSkill, retiredRuntimeSurfacePolicy, and 13 SKILL.md and UPGRADE.md consumer test files pass; the shared skill is 10,995 bytes under its 11,000 limit; the built bundle copy matches source; capability-contract validation, `check compact`, `vp check`, and `vp run verify:development` pass.
+  next: Run the plan closure health check, then complete the plan and run `state plan archive`. The stable Trusted Publishing and cutover TODOs follow.
+  publication_order: 403
