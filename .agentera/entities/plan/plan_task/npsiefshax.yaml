@@ -4,7 +4,7 @@ record:
   name: Keep the v1 reset preview short and explicit
   depends_on:
     - rayhcanifm
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a home with v1 state WHEN the reset preview runs with default options THEN its stdout stays within 8 KiB, names every user-data entry by path, lists each scope's other top-level entries with counts, and replaces names beyond 12 per scope with an omitted count.
     - GIVEN identical installation and profile roots WHEN the preview runs THEN the shared directory appears once.
@@ -13,12 +13,12 @@ record:
     - GIVEN user data in a deleted scope WHEN the preview is shown THEN the question names that data in plain words, and the recovery guidance says that upgrading through the previous major version first keeps it.
   plan: mayqocppfa
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 1 fails: the default preview is not bounded at 8 KiB because every user_data path and scope root repeats the full root path (packages/cli/src/upgrade/productV1Reset.ts:186); measured 9,061 B typical and 8,852 B worst case with 105-character roots, and 11,431 B (about 8.1 to 8.4 KB projected with real home paths) for split profile and installation roots that both hold user data. No long-root or split-root test exists, and CHANGELOG.md:5 claims the preview stays under 8 KiB unconditionally."
     provenance:
-      attempt_id: audit-1
-      source: Independent audit evaluator report for task npsiefshax, 2026-10-19
-      recorded_at: 2026-10-19 07:14
+      attempt_id: audit-2
+      source: "Independent audit re-evaluation of task npsiefshax after the corrective commit, 2026-10-19: 5 of 5 criteria PASS, 4 WARN"
+      recorded_at: 2026-10-19 07:36
       writer_command: agentera state plan record-evaluation

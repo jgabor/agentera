@@ -4,7 +4,7 @@ record:
   name: Agree on what proves v1 state
   depends_on:
     - npsiefshax
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the same home, roots, and project WHEN the end-of-life gate and the reset preview assess v1 evidence THEN they reach the same result for the installation and for the project.
     - GIVEN an installation layout with no reliable v1 signal WHEN either assesses it THEN it is treated as a non-v1 installation.

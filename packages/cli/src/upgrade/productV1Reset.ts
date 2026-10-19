@@ -7,10 +7,9 @@ import { resolveProfileDirOverride } from "../core/envPaths.js";
 import { expanduser } from "../core/paths.js";
 import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadNativeResourceCleanupContract, type NativeResourceCleanupContract } from "../runtime/nativeResourceCleanup.js";
-import { defaultAppHome } from "../state/installRoot.js";
 import { classifyProjectState } from "../state/stateMode.js";
 import { applyAppContentRefresh } from "./appContentRefresh.js";
-import { loadProductV1ResetAuthority } from "./productV1ResetAuthority.js";
+import { assessProductV1Evidence, loadProductV1ResetAuthority, productV1EvidencePaths, productV1InstallRootCandidate } from "./productV1ResetAuthority.js";
 import { hostSkillPath, loadHostSkillSource, runHostSkillLifecycle } from "../setup/hostSkillLifecycle.js";
 import { observeLifecyclePath, removeLifecycleResource, secureLifecycleRemovalAvailable } from "../runtime/lifecyclePublication.js";
 import { PROFILE_FILE_MEMBERS, USER_DATA_CATALOG_DIRS } from "../migrate/v2HandoffManifest.js";
@@ -345,8 +344,7 @@ function resolvedRoots(options: ProductV1ResetOptions): Record<string, string> {
   const env = options.env ?? process.env;
   const home = safeRoot("runtime home", options.home ?? os.homedir());
   const project = safeRoot("project root", options.project ?? process.cwd());
-  const installCandidate = options.installRoot ?? env.AGENTERA_HOME ?? env.AGENTERA_DEFAULT_INSTALL_ROOT ?? defaultAppHome(env, home);
-  const installRoot = safeRoot("install root", installCandidate);
+  const installRoot = safeRoot("install root", productV1InstallRootCandidate(options.installRoot, env, home));
   const profileRoot = safeRoot("profile root", resolveProfileDirOverride(env) ?? installRoot);
   return { project, profile_root: profileRoot, install_root: installRoot, runtime_home: home };
 }
@@ -461,29 +459,12 @@ function hostSnapshot(skill: string, home: string): ScopePath[] {
   });
 }
 
-function evidence(project: string, installRoot: string, manifest: string): string[] {
-  const authority = loadProductV1ResetAuthority();
-  const found = authority.projectArtifacts.filter((item) => item.triggersReset && fs.existsSync(path.join(project, item.path))).map((item) => path.join(project, item.path));
-  const registryPath = path.join(installRoot, manifest);
-  if (fs.existsSync(registryPath)) {
-    try {
-      const value = JSON.parse(fs.readFileSync(registryPath, "utf8")) as {
-        skills?: Array<{ version?: unknown }>;
-      };
-      if (typeof value.skills?.[0]?.version === "string" && value.skills[0].version.startsWith("1.")) found.push(registryPath);
-    } catch {
-      /* malformed state is not product-generation evidence */
-    }
-  }
-  return found.sort();
-}
-
 export function previewProductV1Reset(options: ProductV1ResetOptions = {}, dependencies: ProductV1ResetDependencies = {}): ProductV1ResetPreview {
   const roots = resolvedRoots(options);
   const project = roots.project!;
   const installRoot = roots.install_root!;
   const authority = loadProductV1ResetAuthority();
-  const foundEvidence = evidence(project, installRoot, authority.installationPackage.manifest);
+  const foundEvidence = productV1EvidencePaths(assessProductV1Evidence({ project, installRoot }, authority));
   if (foundEvidence.length === 0) throw new Error("product-v1 reset requires declared product-v1 generation evidence");
 
   const rootFor = (name: string): string => (name === "runtime_declared_roots" ? roots.runtime_home! : roots[name]!);

@@ -273,6 +273,37 @@ describe("product v1 EOL execution gate", () => {
     }
   });
 
+  it.each([
+    { name: "a v1 installation selected past an empty AGENTERA_HOME", project: false, version: "1.27.1", expected: ["install"] },
+    { name: "a v1 project with a v3 installation", project: true, version: "3.0.0-dev.72", expected: ["project"] },
+    { name: "a v1 project and a v1 installation", project: true, version: "1.4.0", expected: ["install", "project"] },
+    { name: "a non-semver 1.x registry selected by AGENTERA_HOME", project: false, version: "1.beta", expected: [], viaHome: true },
+    { name: "v3 state", project: false, version: "3.0.0-dev.72", expected: [] },
+  ])("the end-of-life gate and the reset preview find the same evidence for $name", ({ project, version, expected, viaHome }) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-parity-"));
+    const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-parity-home-"));
+    const install = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-parity-install-"));
+    roots.push(root, home, install);
+    fs.mkdirSync(path.join(root, ".agentera"));
+    if (project) fs.writeFileSync(path.join(root, ".agentera", "PROGRESS.md"), "# Product v1 progress\n");
+    fs.writeFileSync(path.join(install, "registry.json"), JSON.stringify({ version: "1", skills: [{ version }] }));
+    const evidence = { install: path.join(install, "registry.json"), project: path.join(root, ".agentera", "PROGRESS.md") };
+    const want = expected.map((key) => evidence[key as keyof typeof evidence]).sort();
+
+    const [gate, preview] = withRootEnv(null, () => {
+      process.env.AGENTERA_HOME = viaHome ? install : "";
+      process.env.AGENTERA_DEFAULT_INSTALL_ROOT = install;
+      return [run(root, ["state", "query", "--list-artifacts", "--format", "json"]), run(root, ["upgrade", "--reset-product-v1", "--project", root, "--home", home, "--dry-run", "--full-detail", "--format", "json"])];
+    });
+    const gateError = JSON.parse(gate.out).error;
+    const gateEvidence = gateError?.class === "product_v1_eol" ? gateError.evidence : [];
+    const previewValue = JSON.parse(preview.out);
+    const previewEvidence = preview.rc === 0 ? previewValue.evidence : [];
+    if (preview.rc !== 0) expect(previewValue.error.message).toContain("requires declared product-v1 generation evidence");
+    expect(gateEvidence).toEqual(want);
+    expect(previewEvidence).toEqual(want);
+  });
+
   it("previews every bounded reset effect and authorizes only the unchanged reviewed scope", () => {
     const root = fixture();
     const home = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-home-"));

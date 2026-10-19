@@ -6,6 +6,8 @@ import { resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
 import { loadRegistry } from "../registries/packageRegistry.js";
 import { NATIVE_RESOURCE_CLEANUP_CONTRACT_RELATIVE_PATH } from "../runtime/lifecycleAuthority.js";
+import { defaultAppHome } from "../state/installRoot.js";
+import { readSuiteVersion } from "./appModel.js";
 
 export const PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH = "references/adapters/product-v1-reset.yaml";
 
@@ -174,4 +176,44 @@ export function productV1ProjectTriggerPaths(): readonly string[] {
 
 export function isProductV1PackageVersion(version: string): boolean {
   return /^1\.\d+\.\d+(?:[-+][0-9A-Za-z.-]+)?$/.test(version);
+}
+
+/**
+ * Install root that the end-of-life gate and the reset both assess: an explicit
+ * root, then a non-empty AGENTERA_HOME, then a non-empty
+ * AGENTERA_DEFAULT_INSTALL_ROOT, then the platform app home. It is returned
+ * unresolved so each caller keeps its own symlink and alias checks.
+ */
+export function productV1InstallRootCandidate(explicit: string | null | undefined, env: Record<string, string | undefined>, home: string): string {
+  if (explicit !== null && explicit !== undefined) return explicit;
+  return env.AGENTERA_HOME || env.AGENTERA_DEFAULT_INSTALL_ROOT || defaultAppHome(env, home);
+}
+
+/** Product-v1 evidence found in one project and one install root, kept per location. */
+export interface ProductV1EvidenceAssessment {
+  /** Absolute paths of the declared v1 project artifacts that exist, sorted. */
+  project: string[];
+  /** The install root's version authority when it records a 1.x suite version; otherwise null. */
+  installation: string | null;
+}
+
+/**
+ * The one product-v1 evidence rule. An installation is v1 only when its
+ * readable version authority records a strict 1.x semver suite version. A
+ * missing, unreadable, malformed, or version-less authority, and any layout
+ * without one, is not v1 evidence.
+ */
+export function assessProductV1Evidence(roots: { project: string; installRoot: string }, authority: ProductV1ResetAuthority = loadProductV1ResetAuthority()): ProductV1EvidenceAssessment {
+  const project = authority.projectArtifacts
+    .filter(({ triggersReset, path: relative }) => triggersReset && fs.existsSync(path.join(roots.project, relative)))
+    .map(({ path: relative }) => path.join(roots.project, relative))
+    .sort();
+  const version = readSuiteVersion(roots.installRoot);
+  const installation = version.kind === "ok" && isProductV1PackageVersion(version.version) ? version.path : null;
+  return { project, installation };
+}
+
+/** Every evidence path of an assessment, sorted. */
+export function productV1EvidencePaths(assessment: ProductV1EvidenceAssessment): string[] {
+  return [...assessment.project, ...(assessment.installation === null ? [] : [assessment.installation])].sort();
 }

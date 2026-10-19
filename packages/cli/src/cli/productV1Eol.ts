@@ -1,35 +1,17 @@
-import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { resolveCandidate } from "../state/installRoot.js";
-import { isProductV1PackageVersion, loadProductV1ResetAuthority } from "../upgrade/productV1ResetAuthority.js";
+import { expanduser } from "../core/paths.js";
+import { assessProductV1Evidence, loadProductV1ResetAuthority, productV1EvidencePaths, productV1InstallRootCandidate } from "../upgrade/productV1ResetAuthority.js";
 import type { Io } from "./dispatch/shared.js";
 import { emitStructured } from "./structured.js";
 
 type Format = "text" | "json" | "yaml";
 const authority = loadProductV1ResetAuthority();
 
-function installedProductV1Evidence(): string | null {
-  const [installRoot] = resolveCandidate(null, { env: process.env, home: os.homedir() });
-  const manifest = path.join(installRoot, authority.installationPackage.manifest);
-  if (!fs.existsSync(manifest)) return null;
-  try {
-    const registry = JSON.parse(fs.readFileSync(manifest, "utf8")) as {
-      skills?: Array<{ version?: unknown }>;
-    };
-    const version = registry.skills?.[0]?.version;
-    return typeof version === "string" && isProductV1PackageVersion(version) ? manifest : null;
-  } catch {
-    return null;
-  }
-}
-
-export function productV1Evidence(projectRoot: string): string[] {
-  const evidence = authority.projectArtifacts.filter(({ triggersReset, path: relativePath }) => triggersReset && fs.existsSync(path.join(projectRoot, relativePath))).map(({ path: relativePath }) => path.join(projectRoot, relativePath));
-  const installation = installedProductV1Evidence();
-  if (installation) evidence.push(installation);
-  return evidence;
+export function productV1Evidence(projectRoot: string, env: Record<string, string | undefined> = process.env, home: string = os.homedir()): string[] {
+  const installRoot = path.resolve(expanduser(productV1InstallRootCandidate(null, env, home)));
+  return productV1EvidencePaths(assessProductV1Evidence({ project: projectRoot, installRoot }, authority));
 }
 
 /** Read-only EOL gate. */

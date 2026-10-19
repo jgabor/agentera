@@ -6,7 +6,7 @@ import { fileURLToPath } from "node:url";
 import YAML from "yaml";
 import { describe, expect, it } from "vite-plus/test";
 
-import { PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH, isProductV1PackageVersion, loadProductV1ResetAuthority, productV1ArtifactPairs, productV1ProjectTriggerPaths } from "../../src/upgrade/productV1ResetAuthority.js";
+import { PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH, assessProductV1Evidence, isProductV1PackageVersion, loadProductV1ResetAuthority, productV1ArtifactPairs, productV1InstallRootCandidate, productV1ProjectTriggerPaths } from "../../src/upgrade/productV1ResetAuthority.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
 const AUTHORITY_PATH = path.join(REPO_ROOT, PRODUCT_V1_RESET_AUTHORITY_RELATIVE_PATH);
@@ -98,5 +98,75 @@ describe("product v1 reset authority", () => {
     } finally {
       fs.rmSync(path.dirname(target), { recursive: true, force: true });
     }
+  });
+});
+
+describe("product v1 evidence assessment", () => {
+  function locations(): { project: string; installRoot: string; cleanup: () => void } {
+    const base = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-v1-evidence-"));
+    const project = path.join(base, "project");
+    const installRoot = path.join(base, "install");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.mkdirSync(installRoot);
+    return { project, installRoot, cleanup: () => fs.rmSync(base, { recursive: true, force: true }) };
+  }
+
+  function writeRegistry(installRoot: string, content: unknown): void {
+    fs.writeFileSync(path.join(installRoot, "registry.json"), typeof content === "string" ? content : JSON.stringify(content));
+  }
+
+  it("reports a v1 installation and a v1 project separately, and nothing for v2 or v3 state", () => {
+    const v1 = locations();
+    const current = locations();
+    try {
+      fs.writeFileSync(path.join(v1.project, ".agentera", "PROGRESS.md"), "# Progress\n");
+      fs.writeFileSync(path.join(v1.project, ".agentera", "DOCS.md"), "# Docs\n");
+      writeRegistry(v1.installRoot, { version: "1", skills: [{ name: "hej", version: "1.27.1" }] });
+      expect(assessProductV1Evidence(v1)).toEqual({
+        project: [path.join(v1.project, ".agentera", "DOCS.md"), path.join(v1.project, ".agentera", "PROGRESS.md")],
+        installation: path.join(v1.installRoot, "registry.json"),
+      });
+      expect(assessProductV1Evidence({ project: v1.project, installRoot: current.installRoot }).installation).toBeNull();
+      expect(assessProductV1Evidence({ project: current.project, installRoot: v1.installRoot })).toEqual({ project: [], installation: path.join(v1.installRoot, "registry.json") });
+
+      fs.writeFileSync(path.join(current.project, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+      fs.writeFileSync(path.join(current.project, ".agentera", "progress.yaml"), "schemaVersion: agentera.progress.v1\ncycles: []\n");
+      fs.writeFileSync(path.join(current.project, "VISION.md"), "# Vision\n");
+      for (const version of ["2.7.9", "3.0.0-dev.72"]) {
+        writeRegistry(current.installRoot, { version: "1", skills: [{ name: "agentera", version }] });
+        expect(assessProductV1Evidence(current)).toEqual({ project: [], installation: null });
+      }
+    } finally {
+      v1.cleanup();
+      current.cleanup();
+    }
+  });
+
+  it("treats an installation without a reliable v1 signal as non-v1", () => {
+    const layout = locations();
+    try {
+      // Per-skill v1 installs and the v1 profile directory carry no install-root registry.
+      fs.mkdirSync(path.join(layout.installRoot, "skills", "hej", ".claude-plugin"), { recursive: true });
+      fs.writeFileSync(path.join(layout.installRoot, "skills", "hej", ".claude-plugin", "plugin.json"), JSON.stringify({ version: "1.27.1" }));
+      fs.writeFileSync(path.join(layout.installRoot, "PROFILE.md"), "# Profile\n");
+      expect(assessProductV1Evidence(layout).installation).toBeNull();
+      for (const content of ["{not json", { version: "1", skills: [] }, { version: "1", skills: [{ name: "hej" }] }, { version: "1", skills: [{ version: "1.beta" }] }, { version: "1", skills: [{ version: "v1.15.0" }] }]) {
+        writeRegistry(layout.installRoot, content);
+        expect(assessProductV1Evidence(layout).installation).toBeNull();
+      }
+      fs.rmSync(path.join(layout.installRoot, "registry.json"));
+      fs.mkdirSync(path.join(layout.installRoot, "registry.json"));
+      expect(assessProductV1Evidence(layout).installation).toBeNull();
+    } finally {
+      layout.cleanup();
+    }
+  });
+
+  it("selects one install root for every reader, skipping empty environment values", () => {
+    const home = path.join(os.tmpdir(), "agentera-home");
+    expect(productV1InstallRootCandidate("/explicit", { AGENTERA_HOME: "/env" }, home)).toBe("/explicit");
+    expect(productV1InstallRootCandidate(null, { AGENTERA_HOME: "/env", AGENTERA_DEFAULT_INSTALL_ROOT: "/default" }, home)).toBe("/env");
+    expect(productV1InstallRootCandidate(undefined, { AGENTERA_HOME: "", AGENTERA_DEFAULT_INSTALL_ROOT: "/default" }, home)).toBe("/default");
+    expect(productV1InstallRootCandidate(null, { AGENTERA_HOME: "", AGENTERA_DEFAULT_INSTALL_ROOT: "", XDG_DATA_HOME: "/data" }, home)).toEqual(process.platform === "linux" ? "/data/agentera" : expect.any(String));
   });
 });

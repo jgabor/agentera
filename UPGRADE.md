@@ -408,6 +408,28 @@ Agentera product v1 is unsupported. V3 does not migrate, convert, import, back
 up, restore, or retain v1 state. Current schema identifiers that end in `.v1`
 are not product-v1 evidence and remain supported.
 
+The end-of-life check and the reset preview assess product-v1 evidence with
+one rule, separately for the installation and the project:
+
+- **Installation:** the install root holds a readable `registry.json` whose
+  `skills[0].version` is a 1.x semantic version, such as `1.27.1`. The install
+  root is `--install-root` when the reset is given one, then a non-empty
+  `AGENTERA_HOME`, then a non-empty `AGENTERA_DEFAULT_INSTALL_ROOT`, then the
+  platform app home. The registry's top-level `version` is a schema version and
+  does not count.
+- **Project:** the project contains any of `.agentera/PROGRESS.md`,
+  `.agentera/PLAN.md`, `.agentera/DECISIONS.md`, `.agentera/HEALTH.md`,
+  `.agentera/DOCS.md`, or `.agentera/DESIGN.md`. A root `VISION.md` alone does
+  not count.
+
+Nothing else proves product v1. An install root whose `registry.json` is
+missing, unreadable, or malformed, or lacks a 1.x `skills[0].version`, is a
+non-v1 installation. So are v1 layouts that never wrote a registry there, such
+as per-skill `npx skills add` installs or a data directory that holds only a
+profile. Such an installation does not trigger the end-of-life check on its
+own. Plugin manifests, skill directory names, and install paths are not
+evidence, because supported v2 used them too.
+
 When v3 detects product-v1 evidence, ordinary commands stop without mutation.
 The only continuation is a fresh-v3 reset. Preview the exact bounded project,
 profile, installation, and runtime effects first:
