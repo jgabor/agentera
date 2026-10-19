@@ -22,9 +22,10 @@ The consolidation is merged into `feat/v3`. Consumer use remains
 
 ## Contributor setup
 
-The supported combination is standalone Vite+ **1.0.0**, Node.js **24.19.0**,
-and pnpm **10.30.3** on Linux x64. Both the launcher and installed local Vite+
-must report 1.0.0. macOS and Windows are not qualified by the Linux evidence.
+The supported combination is standalone Vite+ **1.0.0**, the Node.js release
+pinned in `.node-version`, and pnpm **10.30.3** on Linux x64. Both the launcher
+and installed local Vite+ must report 1.0.0. macOS and Windows are not
+qualified by the Linux evidence.
 
 Obtain the standalone launcher from the trusted
 [Vite+ v1.0.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.0.0),
@@ -113,7 +114,7 @@ instead of selecting the root's exact Node pin. For package-directory recipes,
 use this explicit boundary rather than changing global PATH or weakening guards:
 
 ```bash
-vp env exec --node 24.19.0 vp -C packages/cli run TASK
+vp env exec --node "$(cat .node-version)" vp -C packages/cli run TASK
 ```
 
 For release and package recipes, follow the

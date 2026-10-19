@@ -12,6 +12,7 @@ import config from "../../../../vite.config.ts";
 import { canonicalContainedRegularFile, load, resolve } from "../../scripts/source-loader-hooks.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const NODE_PIN = fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim();
 
 describe("root release script argument forwarding", () => {
   it("loads current TypeScript source authority before release argument parsing", () => {
@@ -297,7 +298,7 @@ describe("root release script argument forwarding", () => {
 
     for (const [script, options, forwarded] of recipes) {
       expect(rootTasks[script]).toMatchObject({
-        command: expect.stringMatching(/^"\$VP_CLI_BIN" env exec --node 24\.19\.0 pnpm -C packages\/cli/),
+        command: expect.stringMatching(new RegExp(`^"\\$VP_CLI_BIN" env exec --node ${NODE_PIN.replaceAll(".", "\\.")} pnpm -C packages/cli`)),
         cache: false,
       });
       const flags = parseReleaseFlags([...forwarded], options);

@@ -1,0 +1,46 @@
+id: zmcmgdjtoz
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-19
+    status: open
+    reviewed: 2026-10-19
+    critic_issues: 14 found, 14 addressed, 0 dismissed
+    title: "Plan: Move the contributor toolchain to Vite+ 1.3.0 and Node 24.22.0"
+  what: Move Agentera's pinned contributor toolchain from Node.js 24.19.0 and Vite+ 1.0.0 to Node.js 24.22.0 and Vite+ 1.3.0, re-verifying the reviewed release evidence for each new pin, and let contributors run a standalone Vite+ launcher of the same major version at or above the pin. The pinned launcher stays the only qualified one; a newer accepted launcher is reported as unqualified rather than rejected. The workspace's local Vite+, managed Node.js, and pnpm stay exact pins.
+  why: The maintainer's system package manager installed Vite+ 1.3.0 as the launcher and Node.js 24.22.0 as the ambient runtime, so every session ran a newer launcher than the documented pin beside two Node versions. Guidance that told agents to match the pin produced repeated warnings and detours, and one accidental write into the real home. Pinning the current releases removes today's mismatch, and accepting a newer same-major launcher stops the next system update from reopening it. Managed Node stays exact on purpose, so a later system Node update brings back a harmless side-by-side Node that root tasks do not use.
+  constraints: Local Vite+, managed Node.js, and pnpm 10.30.3 stay exact pins. CI bootstrap downloads exactly the pinned, digest-verified Vite+ release and never runs a mutable installer. Expected digests are reviewed release bytes recorded in the repository and checked against signed provenance, never learned at runtime. Only Linux x64 glibc stays qualified. The process-version guard and the native-cache guard stay. Vite+ 1.3.0 is adopted as requested even though it was released three days before planning; if a 1.3.x patch release appears before task 2 starts, stop and ask whether to pin it instead. Version numbers in guidance, tests, and scripts derive from one source per pin where the format allows, so the next bump touches the pin and its evidence only. Preserve dated qualification history, released changelog sections, test evidence, and entity records; hosted evidence produced on Vite+ 1.0.0 is labelled as such, with hosted acceptance of 1.3.0 pending. Each task commits its own change with aligned guidance, tests, and state. Tests follow one pass and one fail per behavior. No push or publication, because a push to the development ref publishes to npm @next.
+  overall_acceptance: GIVEN all three tasks are complete WHEN a contributor runs the daily commands with the pinned launcher or a newer 1.x standalone launcher THEN the local Vite+ reports 1.3.0, root tasks run on the managed Node.js 24.22.0 distribution rather than ambient Node, the development verification lane and the named toolchain proofs pass, a newer launcher is accepted and reported as unqualified without telling the contributor to downgrade, and the CI bootstrap is pinned to the reviewed Vite+ 1.3.0 release.
+  scope:
+    included:
+      - Node.js 24.22.0 as the managed runtime pin, with guidance and tests that derive the version from the pin instead of repeating it
+      - "Reviewed Vite+ 1.3.0 evidence: immutable release, Linux x64 archive digest, npm integrity for vite-plus, its core package, and its Linux x64 platform package, verified signed provenance with source commit, workflow run, and signer, bundled tool versions (Vite 8.3.4, Vitest 5.0.5, oxlint 1.88.0, oxfmt 0.73.0), and the supported Node range"
+      - "Every current-pin site for Vite+: the workspace catalog including the Vitest pin and overrides, the lockfile, the CI bootstrap constants and every launcher and local version check in the bootstrap, baseline, managed-toolchain, and hook proofs, the hook bootstrap fixture, the pre-commit hook message, the publication adapter's install statement, the toolchain baseline authority, the bootstrap integrity authority, and current contributor guidance"
+      - Formatting, lint, and test adjustments the newer bundled tools require
+      - "A launcher rule: the pinned launcher is qualified; a newer stable 1.x launcher is accepted and reported as unqualified; prereleases, older 1.x releases, and other majors are rejected with recovery guidance"
+    excluded:
+      - Hosted CI acceptance, which needs a separately authorized push
+      - Qualifying macOS or Windows, or a distribution-packaged launcher build
+      - Changing pnpm or the published CLI's Node engine range
+      - Repairing the upstream native-cache fault tracked as Vite+ issue 2636
+    deferred:
+      - Hosted acceptance of the new bootstrap pins on the next authorized push
+  design: Move one pin at a time. First the managed Node runtime, which the current Vite+ release already supports, so its effects are isolated and its guidance stops repeating the version. Then Vite+ itself, in one step, because its recorded evidence, CI bootstrap constants, workspace pins, proofs, and tests must agree at every commit; mechanical formatting changes from the newer bundled formatter land as a separate commit inside that step, before any behavior fix. Last, relax only the contributor-facing launcher rule, keeping the exact pins and the CI bootstrap untouched, and align guidance so a newer launcher no longer produces a downgrade warning.
+  unknowns:
+    - question: How much formatting, lint, or test change do the newer bundled tools cause, including the lint warning budget and type-aware disable comments?
+      affects_task: 2
+      resolve_by: Run the checks on the new pins before other edits. Land purely mechanical formatting as its own commit inside task 2; if it touches more than 20 files, record the count as a task surprise. Fix lint findings at their cause, and record any budget change with its reason.
+    - question: Does the native-cache fault still reproduce on Vite+ 1.3.0 with the same exit status, message, and cache storage?
+      affects_task: 2
+      resolve_by: Reproduce the guard's characterization on the new pins. If the fault no longer reproduces or its exit status, message, or storage changed, keep the guard, convert the characterization to the new observed behavior, and correct the guidance that describes the fault.
+    - question: "Do Vite+ 1.1 to 1.3 behavior changes affect this repository: package-manager spec parsing for the hash-pinned pnpm, Vitest on-disk caches against the hermetic source lane, hook PATH handling, and the claim that native run and exec alone do not guarantee the runtime pin?"
+      affects_task: 2
+      resolve_by: Run the altered-pnpm rejection proof, the hook bootstrap proof, and the source lane on the new pins, re-test the runtime-pin claim before restating it, and record each outcome as evidence or a task surprise.
+    - question: Which test and verification results depend on the launcher rather than the local Vite+, such as managed Node download, env exec, task caching, and hook dispatch?
+      affects_task: 3
+      resolve_by: Identify them at the start of task 3, keep them qualified only for the pinned launcher, and state that limit in the unqualified-launcher report and guidance.
+  rejected:
+    []
+  surprises:
+    []

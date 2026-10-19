@@ -304,8 +304,8 @@ also owns hook setup, optional nested npm dependencies, and platform/offline
 limits. The commands below select existing maintainer owners through Vite+;
 run them from the repository root.
 Root `vp run` tasks select the actual pinned Node explicitly. For the advanced
-`vp -C` recipes below, prepend `vp env exec --node 24.19.0`, for example
-`vp env exec --node 24.19.0 vp -C packages/cli run verify:package`.
+`vp -C` recipes below, prepend `vp env exec --node "$(cat .node-version)"`, for example
+`vp env exec --node "$(cat .node-version)" vp -C packages/cli run verify:package`.
 Native `run` or `exec` alone can select ambient Node in Vite+ 1.0.
 
 ### Generated-output ownership

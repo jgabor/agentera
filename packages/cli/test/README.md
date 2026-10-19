@@ -24,7 +24,7 @@ Generated-output construction, consumers, package publication, and temporary-roo
 lifecycle are defined once in the
 [v3 packaging authority](../../../docs/packaging/v3-packaging.md).
 Run the table's advanced package-directory recipes as
-`vp env exec --node 24.19.0 vp -C packages/cli run TASK` from the root.
+`vp env exec --node "$(cat .node-version)" vp -C packages/cli run TASK` from the root.
 Root `vp run` tasks already select `.node-version` explicitly; native `run` and
 `exec` alone do not guarantee that pin in Vite+ 1.0.
 

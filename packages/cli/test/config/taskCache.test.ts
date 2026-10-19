@@ -10,6 +10,7 @@ import { stopGuardChild, trackGuardChild } from "../helpers/nativeCacheGuardClea
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 const packageManager = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8")).packageManager;
+const managedNode = `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(path.join(repo, ".node-version"), "utf8").trim()}`;
 const vp = path.join(repo, "node_modules/.bin/vp");
 const cacheGuard = path.join(repo, "packages/cli/scripts/guard-native-cache.mjs");
 const tasks = config.run!.tasks!;
@@ -278,16 +279,16 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     }
     expect(tasks.typecheck).toEqual(tasks["typecheck:fresh"]);
     expect(tasks.test).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli test',
+      command: `${managedNode} pnpm -C packages/cli test`,
     });
     expect(tasks.build).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli build',
+      command: `${managedNode} pnpm -C packages/cli build`,
     });
     expect(tasks.verify).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run verify:release',
+      command: `${managedNode} pnpm -C packages/cli run verify:release`,
     });
     expect(tasks["verify:development"]).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run verify:development',
+      command: `${managedNode} pnpm -C packages/cli run verify:development`,
     });
     expect(config.run!.cache).toEqual({ scripts: false, tasks: true });
     expect(tasks["_typecheck:cached"]).toMatchObject({
@@ -303,7 +304,7 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     });
     expect(tasks).not.toHaveProperty("typecheck:local");
     expect(tasks["test:local"]).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 vp test run --project local',
+      command: `${managedNode} vp test run --project local`,
       cache: false,
     });
     expect(sharedTestConfig.fsModuleCache).toBe(true);

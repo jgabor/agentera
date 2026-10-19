@@ -1,0 +1,13 @@
+id: srokhmwcek
+artifact: plan
+record:
+  name: Move the managed Node.js pin to 24.22.0
+  depends_on:
+    []
+  status: in_progress
+  acceptance:
+    - GIVEN a fresh install WHEN a contributor runs a root task THEN it runs on the managed Node.js 24.22.0 distribution, proven by its executable location under the managed toolchain home rather than by the version string, and ambient Node tools are never invoked.
+    - GIVEN contributor guidance and tests that state the runtime pin WHEN read or run THEN they derive the version from the pin, so a future Node bump changes only the pin and its evidence.
+    - GIVEN the managed-toolchain proof and the development verification lane WHEN they run THEN both pass, and their output is recorded as task evidence.
+    - GIVEN the toolchain authorities WHEN a reviewer checks them THEN Node.js 24.22.0 is recorded as the current runtime, with 24.19.0 kept as history.
+  plan: zmcmgdjtoz

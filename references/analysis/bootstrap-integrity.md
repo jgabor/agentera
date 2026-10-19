@@ -1,9 +1,10 @@
 # Verified native bootstrap
 
 The two non-OIDC development setup jobs use native Vite+ **1.0.0** to manage
-Node **24.19.0** and pnpm **10.30.3**. Corepack is not installed or executed.
-The checkout-free, action-free OIDC publisher is unchanged. Hosted acceptance
-remains outstanding; local proofs do not establish a passing hosted run.
+Node **24.22.0**, the `.node-version` pin, and pnpm **10.30.3**. Corepack is
+not installed or executed. The checkout-free, action-free OIDC publisher is
+unchanged. Hosted acceptance remains outstanding; local proofs do not establish
+a passing hosted run.
 
 ## Trust roots and selected bytes
 
@@ -26,7 +27,8 @@ The GitHub release API was rechecked on 2026-10-02:
   action, mutable fallback, or dynamically learned digest is used.
 
 Selected npm packages were separately checked with Sigstore verification from
-the npm bundled in Vite-managed Node 24.19.0, without a new dependency. The
+the npm bundled in Vite-managed Node 24.19.0, the pin at the time of that
+check, without a new dependency. The
 SLSA v1 DSSE signatures, certificate issuer/identity, transparency evidence,
 exact tarball SHA-512 subjects, workflow, and source commit passed verification:
 
@@ -108,8 +110,9 @@ CI retains pinned `actions/setup-node` v6.3.0 at
 small built-ins-only verifier, not the Node owner of later project commands.
 Vite+ acquires and verifies a separate managed Node distribution in fresh roots.
 Keeping the reviewed host action avoids introducing a second shell downloader
-or an unverified installer. The proof succeeded from host Node 24.21.0 while
-project commands used 24.19.0, so host equality is no longer required.
+or an unverified installer. Historically, the proof succeeded from host Node
+24.21.0 while project commands used 24.19.0, the managed pin at that time, so
+host equality is no longer required.
 
 Warm runtime/manager caches skip archive acquisition and verification. They are
 trusted writable user state, not a security boundary against local tampering.

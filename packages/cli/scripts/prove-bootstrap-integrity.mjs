@@ -4,7 +4,7 @@ import http from "node:http";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { prepareBootstrap, run, setupWorkflow, verifiedVpArchive } from "./bootstrap-integrity.mjs";
+import { NODE_VERSION, prepareBootstrap, run, setupWorkflow, verifiedVpArchive } from "./bootstrap-integrity.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 const [output] = process.argv.slice(2);
@@ -43,7 +43,7 @@ try {
   assert.deepEqual(leakedKeys, [], "bootstrap inherited credential/config/runtime settings");
   check("hostile inherited npm/OIDC configuration absent from managed child environment");
   fs.writeFileSync(path.join(output, "runtime.json"), await bootstrap.execute(["env", "current", "--json"], fixture));
-  check("verified native Vite+ 1.0.0 acquired managed Node 24.19.0 and digest-bound pnpm 10.30.3 in fresh private roots");
+  check(`verified native Vite+ 1.0.0 acquired managed Node ${NODE_VERSION} and digest-bound pnpm 10.30.3 in fresh private roots`);
   fs.copyFileSync(path.join(bootstrap.home, "install.log"), path.join(output, "install.log"));
   assert.deepEqual(fs.readFileSync(path.join(fixture, "pnpm-lock.yaml")), fs.readFileSync(path.join(ROOT, "pnpm-lock.yaml")));
   assert.equal(JSON.parse(fs.readFileSync(path.join(fixture, "node_modules/vite-plus/package.json"), "utf8")).version, "1.0.0");
@@ -51,7 +51,7 @@ try {
   const built = await import(pathToFileURL(path.join(fixture, "dist/proof.mjs")).href);
   assert.equal(built.answer, 42);
   for (const [command, expected] of [
-    ["node", "v24.19.0"],
+    ["node", `v${NODE_VERSION}`],
     ["pnpm", "10.30.3"],
   ]) {
     assert.equal((await run(path.join(bootstrap.home, "bin", command), ["--version"], fixture, bootstrap.env)).trim(), expected);
@@ -121,6 +121,9 @@ try {
   await assert.rejects(altered.execute(["env", "exec", "pnpm", "--version"], fixture, offline), /503/);
   const absent = prepareBootstrap(output, archive);
   await absent.execute(["env", "on"], fixture);
+  // First-run setup caches the latest LTS Node, which can be the pin itself.
+  // The offline probe needs a runtime cache without the pinned distribution.
+  for (const entry of [NODE_VERSION, `${NODE_VERSION}.lock`]) fs.rmSync(path.join(absent.env.VP_HOME, "js_runtime/node", entry), { recursive: true, force: true });
   await assert.rejects(absent.execute(["node", "--version"], fixture, offline), /503/);
   check("empty offline manager/runtime caches fail closed without ambient fallback");
   json(path.join(output, "negative-requests.json"), requests);

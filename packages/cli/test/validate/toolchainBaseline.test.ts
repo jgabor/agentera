@@ -12,6 +12,7 @@ const lockfile = YAML.parse(fs.readFileSync(path.join(ROOT, "pnpm-lock.yaml"), "
 const publicationWorkflow = YAML.parse(fs.readFileSync(path.join(ROOT, ".github/workflows/publish.yml"), "utf8"));
 const cliPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "packages/cli/package.json"), "utf8"));
 const rootViteConfig = fs.readFileSync(path.join(ROOT, "vite.config.ts"), "utf8");
+const nodePin = fs.readFileSync(path.join(ROOT, ".node-version"), "utf8").trim();
 
 const setupVpReleases = [
   ["1.0.0", "4a524139920f87f9f7080d3b8545acac019e1852"],
@@ -118,6 +119,7 @@ describe("toolchain baseline", () => {
       immutable_release: true,
     });
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
+    expect(baseline.project_contract.node).toBe(nodePin);
     expect(workspace.catalog).toEqual({
       "@typescript/typescript6": "6.0.2",
       vite: "npm:@voidzero-dev/vite-plus-core@1.0.0",

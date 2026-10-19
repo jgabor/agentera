@@ -64,7 +64,8 @@ function read(file) {
   return fs.readFileSync(path.join(current, file), "utf8");
 }
 console.log(`Hook evidence: ${sandbox}`);
-assert.equal(process.version, `v${fs.readFileSync(path.join(root, ".node-version"), "utf8").trim()}`);
+const managedNode = `v${fs.readFileSync(path.join(root, ".node-version"), "utf8").trim()}`;
+assert.equal(process.version, managedNode);
 run(["git", "init"]);
 write(
   "package.json",
@@ -93,7 +94,7 @@ export default defineConfig({ staged: ${staged}, fmt: { printWidth: 320, ignoreP
 write(
   "record.mjs",
   `import fs from 'node:fs';
-if (process.version !== 'v24.19.0') throw Error(process.version);
+if (process.version !== '${managedNode}') throw Error(process.version);
 fs.writeFileSync(process.argv[2] + '.marker', JSON.stringify({ node: process.version, cwd: process.cwd(), exec: process.execPath }));\n`,
 );
 write(
@@ -101,13 +102,13 @@ write(
   `import { test, expect } from 'vite-plus/test';
 import fs from 'node:fs';
 import { value } from './packages/cli/src/sample.js';
-test('related owner', () => { expect(value).toBe(2); expect(process.version).toBe('v24.19.0'); fs.writeFileSync('local.marker', 'passed'); });\n`,
+test('related owner', () => { expect(value).toBe(2); expect(process.version).toBe('${managedNode}'); fs.writeFileSync('local.marker', 'passed'); });\n`,
 );
 write(
   "guards.test.ts",
   `import { test, expect } from 'vite-plus/test';
 import fs from 'node:fs';
-test('guard owner', () => { expect(process.version).toBe('v24.19.0'); fs.writeFileSync('guards.marker', 'passed'); });\n`,
+test('guard owner', () => { expect(process.version).toBe('${managedNode}'); fs.writeFileSync('guards.marker', 'passed'); });\n`,
 );
 const source = "packages/cli/src/sample.js";
 const padding = "// separate hunks\n".repeat(15);
@@ -143,7 +144,7 @@ assert.equal(read("local.marker"), "passed");
 assert.equal(fs.existsSync(path.join(current, "guards.marker")), false);
 const runtime = JSON.parse(read("typecheck.marker"));
 assert.equal(runtime.cwd, current);
-assert.equal(runtime.node, "v24.19.0");
+assert.equal(runtime.node, managedNode);
 assert.ok(runtime.exec.startsWith(env.VP_HOME));
 // Consume the staged hunk through ordinary Git, retaining the unstaged hunk.
 run(["git", "commit", "-m", "exercise current worktree hook"]);

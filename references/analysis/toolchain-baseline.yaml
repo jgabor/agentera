@@ -28,7 +28,7 @@ selection:
       vitest: 5.0.1
       oxlint: 1.85.0
       oxfmt: 0.70.0
-    conclusion: compatible with the pinned Node 24.19.0 runtime
+    conclusion: compatible with the pinned Node 24.22.0 runtime
   setup_vp:
     selected:
       version: 1.18.0
@@ -103,7 +103,11 @@ selection:
       conclusion: retains the same unverified execution and mutable fallback as 1.18.0
 
 project_contract:
-  node: 24.19.0
+  node: 24.22.0
+  node_history:
+    - version: 24.19.0
+      status: superseded
+      superseded_on: 2026-10-19
   package_manager: pnpm@10.30.3
   lockfile: pnpm-lock.yaml
   frozen_install_args:
@@ -128,10 +132,12 @@ executable_proof:
     - accepts a matching frozen lockfile and rejects a changed manifest
     - executes the allowed esbuild install script and suppresses an unlisted install script
     - rejects ambient Node, pnpm and Corepack ownership with executable traps
+    - proves root task Node ownership by executable location under the fresh managed toolchain home, not by version output
     - preserves root bootstrap and child wrapper cwd, arguments, failure propagation and uncached execution
   timing: emitted as observations only; no threshold is asserted
   last_observation:
-    environment: isolated Linux x64 workspace under Node 24.19.0
+    observed: 2026-10-19
+    environment: isolated Linux x64 workspace under Node 24.22.0
     result: pass
     pnpm:
       accepted: 10.30.3
@@ -140,6 +146,8 @@ executable_proof:
       fresh_bare_vp: 0.1.19
       installed_root_vp: 1.0.0
       stale_owned_project_commands: false
+      root_task_node_executable: fresh managed toolchain home js_runtime/node/24.22.0/bin/node
+      rejected_outside_executable: true
     frozen_lockfile:
       accepted: true
       rejected_error: ERR_PNPM_OUTDATED_LOCKFILE
@@ -147,8 +155,8 @@ executable_proof:
       allowed_executed: esbuild
       rejected_suppressed: blocked-build
     elapsed_seconds:
-      fresh_frozen_install: 0.263
-      installed_vp_frozen_install: 0.362
+      fresh_frozen_install: 0.305
+      installed_vp_frozen_install: 0.359
     timing_interpretation: observational only; not a budget
 
 sources:

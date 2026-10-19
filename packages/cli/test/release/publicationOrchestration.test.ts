@@ -13,6 +13,7 @@ import YAML from "yaml";
 import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "../../scripts/release-qualification.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
+const managedNode = `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim()}`;
 const qualificationYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8");
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
 const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
@@ -225,15 +226,15 @@ describe("package publication orchestration", () => {
   it("routes preparation, verification, approval, staging, and promotion through explicit scripts", () => {
     const commands = Object.fromEntries(Object.entries(config.run!.tasks!).map(([name, task]) => [name, typeof task === "object" && !Array.isArray(task) ? task.command : task]));
     expect(commands).toMatchObject({
-      "cli:prepare:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:prepare',
-      "cli:qualify:source": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:qualify:source',
-      "cli:ready:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:ready',
-      "cli:qualify:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:qualify:candidate',
-      "cli:benchmark:qualification": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:benchmark:qualification',
-      "cli:publish:qualified:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:publish:qualified',
-      "cli:approve:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:approve',
-      "cli:stage:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:stage',
-      "cli:promote:dev": '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:promote',
+      "cli:prepare:dev": `${managedNode} pnpm -C packages/cli run release:prepare`,
+      "cli:qualify:source": `${managedNode} pnpm -C packages/cli run release:qualify:source`,
+      "cli:ready:dev": `${managedNode} pnpm -C packages/cli run release:ready`,
+      "cli:qualify:dev": `${managedNode} pnpm -C packages/cli run release:qualify:candidate`,
+      "cli:benchmark:qualification": `${managedNode} pnpm -C packages/cli run release:benchmark:qualification`,
+      "cli:publish:qualified:dev": `${managedNode} pnpm -C packages/cli run release:publish:qualified`,
+      "cli:approve:dev": `${managedNode} pnpm -C packages/cli run release:approve`,
+      "cli:stage:dev": `${managedNode} pnpm -C packages/cli run release:stage`,
+      "cli:promote:dev": `${managedNode} pnpm -C packages/cli run release:promote`,
     });
     expect(developmentPackage.scripts["release:prepare"]).toContain("publication-transaction.mjs prepare development");
     expect(developmentPackage.scripts["release:ready"]).toBe("node scripts/release-readiness.mjs development");
@@ -1657,7 +1658,7 @@ assert not responses
 
   it("keeps package verification benchmarking local after workflow removal", () => {
     expect(config.run!.tasks!["cli:benchmark:qualification"]).toMatchObject({
-      command: '"$VP_CLI_BIN" env exec --node 24.19.0 pnpm -C packages/cli run release:benchmark:qualification',
+      command: `${managedNode} pnpm -C packages/cli run release:benchmark:qualification`,
       cache: false,
     });
     expect(developmentPackage.scripts["release:benchmark:qualification"]).toContain("release-benchmark.mjs qualification");

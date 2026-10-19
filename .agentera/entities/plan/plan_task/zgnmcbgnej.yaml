@@ -1,0 +1,14 @@
+id: zgnmcbgnej
+artifact: plan
+record:
+  name: Accept a newer standalone launcher of the same major
+  depends_on:
+    - bbimpttwyi
+  status: pending
+  acceptance:
+    - GIVEN the pinned launcher WHEN the toolchain check runs THEN it passes and reports the launcher as qualified.
+    - GIVEN a newer stable 1.x launcher WHEN the toolchain check runs THEN it passes, reports the launcher as accepted but unqualified for the launcher-dependent results identified in this task, and does not tell the contributor to downgrade.
+    - GIVEN an older 1.x launcher, a prerelease, or another major version WHEN the toolchain check runs THEN it fails with recovery guidance naming the pinned version and the accepted range.
+    - GIVEN the CI bootstrap and the pre-commit hook WHEN they run THEN the bootstrap still requires exactly the launcher it downloaded, and the hook accepts the same launcher range as the toolchain check.
+    - GIVEN contributor guidance WHEN a contributor reads it THEN it states the same accepted range, says that only the pinned launcher is qualified, and explains how to obtain the official release asset for a newer launcher.
+  plan: zmcmgdjtoz

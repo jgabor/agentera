@@ -40,7 +40,7 @@ Runtime-bearing root tasks invoke the standalone launcher's `VP_CLI_BIN` with
 `env exec --node` from `.node-version`. This keeps the public `vp run` recipes
 unchanged without trusting ambient Node. In Vite+ 1.0, native `run` and `exec`
 alone do not guarantee the runtime pin. Wrap this guide's advanced `vp -C`
-recipes as `vp env exec --node 24.19.0 vp -C packages/cli run <script>`.
+recipes as `vp env exec --node "$(cat .node-version)" vp -C packages/cli run <script>`.
 Use the same wrapper for the shim directory. The actual child process version,
 not the displayed pin, is the qualification check.
 

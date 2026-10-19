@@ -108,6 +108,14 @@ function packScriptPackage(fixture, source, artifacts, name, env) {
   return `file:${path.relative(fixture, tarball)}`;
 }
 
+// Version output cannot tell managed Node from an ambient Node of the same
+// release, so ownership is proven by the executable location.
+function requireManagedExecutable(execPath, vpHome) {
+  const managedHome = `${fs.realpathSync(vpHome)}${path.sep}`;
+  assert.ok(fs.realpathSync(execPath).startsWith(managedHome), `Node.js ran from ${execPath}, outside the managed toolchain home ${vpHome}. ${RECOVERY}`);
+  return execPath;
+}
+
 function parseJsonOutput(label, result) {
   requireSuccess(label, result);
   try {
@@ -259,7 +267,7 @@ try {
 const fs = require("node:fs");
 const { spawnSync } = require("node:child_process");
 fs.appendFileSync(${JSON.stringify(taskLog)}, JSON.stringify({
-  cwd: process.cwd(), args: process.argv.slice(2), node: process.version,
+  cwd: process.cwd(), args: process.argv.slice(2), node: process.version, execPath: process.execPath,
   pnpm: spawnSync("pnpm", ["--version"], { encoding: "utf8" }).stdout.trim(),
 }) + "\\n");
 if (process.argv.includes("--fail")) process.exit(23);
@@ -273,12 +281,15 @@ if (process.argv.includes("--fail")) process.exit(23);
     .trim()
     .split("\n")
     .map((line) => JSON.parse(line));
+  for (const taskRun of taskRuns) requireManagedExecutable(taskRun.execPath, env.VP_HOME);
+  assert.throws(() => requireManagedExecutable(process.execPath, env.VP_HOME), /outside the managed toolchain home/, "an executable outside the managed toolchain home was accepted");
   assert.deepEqual(
     taskRuns,
-    Array.from({ length: 2 }, () => ({
+    Array.from({ length: 2 }, (_, index) => ({
       cwd: child,
       args: ["--", "--flag", "two words"],
       node: `v${REQUIRED_NODE}`,
+      execPath: taskRuns[index]?.execPath,
       pnpm: REQUIRED_PNPM,
     })),
     "root wrapper changed cwd, args, runtime or uncached execution",
@@ -313,6 +324,9 @@ if (process.argv.includes("--fail")) process.exit(23);
           staleOwnedProjectCommands: false,
           ambientJavaScriptToolsExecuted: false,
           launcher: VP,
+          managedVpHome: env.VP_HOME,
+          rootTaskNodeExecutables: taskRuns.map(({ execPath }) => execPath),
+          rejectedOutsideExecutable: process.execPath,
         },
         frozenLockfile: {
           accepted: true,

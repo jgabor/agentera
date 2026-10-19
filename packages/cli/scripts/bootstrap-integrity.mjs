@@ -12,7 +12,7 @@ export const VP_ARCHIVE_URL = "https://github.com/voidzero-dev/vite-plus/release
 export const VP_ARCHIVE_SHA256 = "2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a";
 export const PNPM_REFERENCE = "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017";
 const ROOT = path.resolve(import.meta.dirname, "../../..");
-const NODE_VERSION = fs.readFileSync(path.join(ROOT, ".node-version"), "utf8").trim();
+export const NODE_VERSION = fs.readFileSync(path.join(ROOT, ".node-version"), "utf8").trim();
 
 export function verifiedVpArchive(bytes) {
   assert.equal(createHash("sha256").update(bytes).digest("hex"), VP_ARCHIVE_SHA256, "Vite+ archive integrity mismatch");
