@@ -1,0 +1,22 @@
+id: brktssgsmx
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Classify the Vite+ launcher in the pre-commit hook without relying on the launcher itself
+  requirements:
+    - The pre-commit hook runs the launcher classifier through the launcher's own node subcommand, so a launcher without that subcommand stops the hook without printing the accepted range and recovery guidance.
+    - The hook must classify the launcher from its version output alone and print the same recovery as the toolchain check for every rejected launcher.
+  acceptance:
+    - GIVEN a launcher that reports an old version and has no node subcommand WHEN the hook runs THEN it stops before any check and prints the pinned version and the accepted range.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Classify the Vite+ launcher in the pre-commit hook without relying on the launcher itself"
+      severity: normal
+      status: open
+      order: 35

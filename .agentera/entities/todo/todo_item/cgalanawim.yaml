@@ -22,13 +22,3 @@ record:
       severity: normal
       status: open
       order: 31
-    create_batch:
-      effect_sha256: 061b0ee7463266a93bc8e45dbbe6d2cf38a83c27e8075045f09dd836b844429d
-      input_sha256: 44af5a6cd50b83235d69d1e0a2c4cfd68ec5885074c11a1bbeae3d392c22388a
-      local_refs:
-        typed-authority-failures: bbfumjviwe
-        lane-temp-leak: qnjpvirkjw
-        reset-root-inputs: jbetsgpyvf
-        dead-text-paths: icewmngpkk
-        tmpdir-budgets: cgalanawim
-        build-surprise-guidance: cjwvscigwu

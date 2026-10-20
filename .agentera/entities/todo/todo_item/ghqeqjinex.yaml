@@ -1,0 +1,23 @@
+id: ghqeqjinex
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stop the CI bootstrap's first-run setup from acquiring an unpinned latest-LTS Node
+  requirements:
+    - In a fresh Vite+ home, first-run setup fetches and caches the latest LTS Node regardless of the project pin; with the pin equal to the latest LTS, the CI runtime now arrives through that unpinned path.
+    - The bootstrap must acquire only the pinned runtime, and the empty-cache proof must again show that a different cached Node is never used as a fallback.
+  acceptance:
+    - GIVEN a fresh bootstrap home WHEN the CI bootstrap activates THEN the only Node it downloads is the pinned version.
+    - GIVEN a cache that holds only a different Node version and an unavailable mirror WHEN the pinned runtime is requested THEN the request fails closed.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stop the CI bootstrap's first-run setup from acquiring an unpinned latest-LTS Node"
+      severity: normal
+      status: open
+      order: 36

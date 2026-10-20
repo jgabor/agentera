@@ -13,6 +13,7 @@
 - [ ] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
 - [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
 - [ ] [id:bbfumjviwe] [fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch.
+- [ ] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load
 
 ## → Normal
 
@@ -50,6 +51,8 @@
 - [ ] [id:cjwvscigwu] [fix:3.0.0] Tell Build how to record plan surprises with the plan writer.
 - [ ] [id:jbetsgpyvf] [fix:3.0.0] Validate the root inputs of the product-v1 reset.
 - [ ] [id:qnjpvirkjw] [test:3.0.0] Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories.
+- [ ] [id:brktssgsmx] [fix:3.0.0] Classify the Vite+ launcher in the pre-commit hook without relying on the launcher itself
+- [ ] [id:ghqeqjinex] [fix:3.0.0] Stop the CI bootstrap's first-run setup from acquiring an unpinned latest-LTS Node
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

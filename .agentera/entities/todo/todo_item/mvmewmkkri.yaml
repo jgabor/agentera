@@ -1,0 +1,26 @@
+id: mvmewmkkri
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Find why native-hook spawns are slow in the main checkout under lane load
+  requirements:
+    - In the maintainer's main checkout with the ordinary managed home, the first hook spawn of the native-hooks case that accepts the old pre-commit entry point takes about 12 seconds during early lane load, so the case runs near or over its 30-second limit, while the same spawn takes under 2 seconds in a temporary worktree or a sandboxed home.
+    - Check whether the commit before the toolchain move shows the same slowness in the main checkout, then fix the cause or give the case explicit headroom with a recorded reason.
+  acceptance:
+    - GIVEN the development verification lane in the main checkout WHEN it runs three times THEN the native-hooks case passes every time with a clear margin under its limit.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load"
+      severity: degraded
+      status: open
+      order: 5
+  lifecycle:
+    operation: set-severity
+    reason: The development lane failed on this case in three of four main-checkout runs on the maintainer's machine
+    date: 2026-10-20

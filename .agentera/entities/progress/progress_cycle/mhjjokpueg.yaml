@@ -1,0 +1,14 @@
+id: mhjjokpueg
+artifact: progress
+record:
+  timestamp: 2026-10-20 18:43
+  type: chore
+  phase: build
+  what: Plan-completion sweep for the contributor toolchain move. The managed Node.js pin moved from 24.19.0 to 24.22.0, the pinned Vite+ release moved from 1.0.0 to 1.3.0 with Vitest 5.0.5, and contributors may now run any stable standalone Vite+ launcher from the pin up to the next major, which the toolchain check and the pre-commit hook report as accepted but unqualified. The CI bootstrap still downloads and requires exactly the digest-verified 1.3.0 release. Version numbers in guidance, tests, and scripts derive from .node-version and from one Vite+ version constant.
+  context:
+    intent: Remove the mismatch between the documented toolchain pins and the maintainer's installed Vite+ 1.3.0 and Node.js 24.22.0, and stop the next system update from reopening it.
+    scope: Plan zmcmgdjtoz, tasks srokhmwcek, bbimpttwyi, and zgnmcbgnej.
+  discovered: Vite+ first-run setup in a fresh home caches the latest LTS Node, which now equals the pin, so the bootstrap proof's empty-cache check had to clear the pinned runtime explicitly. The pre-commit hook checked no launcher version before this plan, so even a 0.x launcher passed. A distribution-packaged launcher reports the same version string as the official release and is classified as qualified by version alone; guidance and the check output state that limit. In the maintainer's main checkout, one native-hooks test ran close to its 30-second limit under early lane load, while worktree and sandbox runs stayed under 2 seconds per hook spawn.
+  verified: Every task passed independent audit; the Vite+ task passed on its second attempt after its baseline observation was re-sourced from the reviewed release binary. Signed provenance was verified for vite-plus, vite-plus-core, and the Linux x64 package at 1.3.0. The bootstrap integrity, toolchain baseline, managed-toolchain, and hook bootstrap proofs passed with the reviewed release binary in isolated fixtures, and the development verification lane passed all 11 gates on the final commit in a worktree and in a sandboxed home.
+  next: Hosted acceptance of the new bootstrap pins needs the next authorized push. Investigate the native-hooks spawn slowness in the main checkout, and give the hook a launcher check that does not depend on the launcher's own node subcommand.
+  publication_order: 404

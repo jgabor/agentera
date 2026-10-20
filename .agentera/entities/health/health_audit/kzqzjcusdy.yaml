@@ -1,0 +1,35 @@
+id: kzqzjcusdy
+artifact: health
+record:
+  date: 2026-10-20
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 0
+    filtered_by_confidence: 0
+  trajectory: "stable: terminal-plan closure evidence for plan zmcmgdjtoz is current; this is a limited closure check, not a codebase-wide audit."
+  grades:
+    artifact_freshness: B
+  dimension_details:
+    - name: artifact_freshness
+      grade: B
+      summary: "Limited closure check for plan zmcmgdjtoz (Move the contributor toolchain to Vite+ 1.3.0 and Node 24.22.0), not a codebase-wide audit. Scope: tasks srokhmwcek, bbimpttwyi, and zgnmcbgnej, each with a persisted audit PASS. Staleness is clean: .node-version is 24.22.0; the workspace pins Vite+ 1.3.0 with Vitest 5.0.5 and pnpm 10.30.3; one Vite+ version constant and the launcher range rule are in place; toolchain authorities, contributor guidance, and the unreleased changelog agree; a fresh login shell runs the managed Node 24.22.0 and the local Vite+ reports 1.3.0. The development lane passed all 11 gates on the final code in a temporary worktree and in a sandboxed home with the reviewed release binary, but in the maintainer's main checkout one native-hooks case timed out in three of four runs. Audit verdict: PASS with that warning."
+      findings:
+        - heading: Native-hooks case times out in the main checkout under lane load
+          location: packages/cli/test/scripts/nativeHooks.test.ts:156
+          evidence: The case that accepts the old pre-commit entry point timed out at its 30-second limit in three of four development-lane runs in the main checkout, with the first hook spawn taking about 12 to 13 seconds, while it took under 3 seconds in a temporary worktree and a sandboxed home.
+          impact: The development verification lane fails intermittently for the maintainer in the main checkout, which hides real failures and invites reruns.
+          suggested_action: "Resolve TODO mvmewmkkri: compare against the commit before the toolchain move in the main checkout, then fix the cause or give the case recorded headroom."
+          severity: warning
+          confidence: 90
+  trends:
+    improved: The contributor toolchain matches the installed Vite+ 1.3.0 and Node 24.22.0, newer same-major launchers are accepted as unqualified, and the pre-commit hook now checks the launcher version.
+    degraded: None in the limited terminal-plan closure scope.
+    new_findings: Native-hooks case timeout in the main checkout, tracked as TODO mvmewmkkri.
+    resolved: The documented toolchain pins no longer disagree with the maintainer's installed launcher and runtime.
+    carried_forward: Hosted acceptance of the new bootstrap pins waits for the next authorized push; first-run latest-LTS acquisition and the hook's launcher-check dependency are tracked as TODOs ghqeqjinex and brktssgsmx.
+  patterns:
+    - Terminal plans close only after Audit PASS, typed artifact_freshness health publication, and plan lifecycle completion.
+  appended_at: 2026-10-20T16:51:21.857Z
