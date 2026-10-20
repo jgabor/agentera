@@ -137,6 +137,31 @@ function defaultWithDeadline(promise, deadline, label, now) {
   ]).finally(() => clearTimeout(timer));
 }
 
+// A child's isolated Vite+ data home starts without the repository's pinned
+// package manager. Every Vite+ process in the child then tries to download it,
+// fails against the offline registry, and retries for several seconds before
+// it continues, so fixture hooks that start several Vite+ processes can exceed
+// their test limits. Seed the data home with the pnpm that runs this script:
+// the same bytes the launcher verified when it acquired them. Copy, never link,
+// so the child cannot write into the launcher's data home. Any other runner or
+// version leaves the data home unchanged.
+export function seedPinnedPackageManager({ repoRoot, dataHome, environment = process.env }) {
+  const pin = /^pnpm@(\d+\.\d+\.\d+)(?:\+.*)?$/.exec(JSON.parse(fs.readFileSync(path.join(repoRoot, "package.json"), "utf8")).packageManager ?? "")?.[1];
+  if (!pin || !environment.npm_execpath) return null;
+  const source = path.resolve(path.dirname(environment.npm_execpath), "..");
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(path.join(source, "package.json"), "utf8"));
+  } catch {
+    return null;
+  }
+  if (manifest.name !== "pnpm" || manifest.version !== pin) return null;
+  const target = path.join(dataHome, "vite-plus", "package_manager", "pnpm", pin, "pnpm");
+  if (fs.existsSync(target)) return null;
+  fs.cpSync(source, target, { recursive: true, errorOnExist: true, force: false });
+  return target;
+}
+
 export function startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }) {
   const started = now();
   const output = path.join(root, `${name}.log`);
@@ -151,6 +176,7 @@ export function startChild({ name, command, repoRoot, root, barrier, cleanupMarg
   for (const directory of [home, cache, path.join(stateRoot, "data"), path.join(stateRoot, "config"), path.join(stateRoot, "state"), childTmp, path.join(stateRoot, "agentera"), path.join(stateRoot, "reports"), path.join(stateRoot, "output")]) {
     fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
   }
+  seedPinnedPackageManager({ repoRoot, dataHome: path.join(stateRoot, "data") });
   const registry = offline ? `file://${path.join(stateRoot, "registry")}` : "https://registry.npmjs.org/";
   fs.writeFileSync(userConfig, `registry=${registry}\n${offline ? "offline=true\n" : ""}`, {
     mode: 0o600,

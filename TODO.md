@@ -13,7 +13,6 @@
 - [ ] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
 - [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
 - [ ] [id:bbfumjviwe] [fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch.
-- [ ] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load
 
 ## → Normal
 
@@ -228,3 +227,4 @@
 - [x] [id:ztqdcyapxb] [fix:3.0.0] Scope each product-v1 reset effect to v1 evidence at its own location
 - [x] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [x] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
+- [x] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load

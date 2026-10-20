@@ -8,7 +8,7 @@ import YAML from "yaml";
 
 import { defaultStartSourceOwner, RELEASE_CONTRACT, runNoReceiptVerificationCommand, runSourceQualificationDag } from "../../scripts/release-qualification.mjs";
 import { createPerformanceProgressReader } from "../../scripts/performance-progress.mjs";
-import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap, startChild } from "../../scripts/verify-generated-overlap.mjs";
+import { generatedOverlapParticipantEnvironment, killGroup, runGeneratedOverlap, seedPinnedPackageManager, startChild } from "../../scripts/verify-generated-overlap.mjs";
 import { sealGeneratedSourceIdentity } from "../../scripts/generated-output.mjs";
 import { observationDigest } from "../../src/validate/activationArtifactEvidence.js";
 import { performanceEvidence } from "../helpers/performanceEvidence.js";
@@ -1287,6 +1287,37 @@ describe("source qualification DAG", () => {
 
     expect(invocations).toEqual([["taskkill", ["/PID", "4321", "/T"], { windowsHide: true, stdio: "ignore" }]]);
     expect(childSignals).toEqual([]);
+  });
+
+  it.each([
+    ["the running pnpm matches the pin", "pnpm", "10.30.3", true, true],
+    ["the running pnpm has another version", "pnpm", "10.30.4", true, false],
+    ["the running package manager is not pnpm", "npm", "10.30.3", true, false],
+    ["no package manager runs the script", "pnpm", "10.30.3", false, false],
+  ])("seeds the isolated Vite+ data home only when %s", (_name, runner, version, running, seeded) => {
+    const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-seed-package-manager-"));
+    onTestFinished(() => fs.rmSync(root, { recursive: true, force: true }));
+    const repoRoot = path.join(root, "repo");
+    const runnerRoot = path.join(root, "launcher", runner);
+    const dataHome = path.join(root, "data");
+    fs.mkdirSync(repoRoot);
+    fs.writeFileSync(path.join(repoRoot, "package.json"), JSON.stringify({ packageManager: `pnpm@10.30.3+sha512.${"a".repeat(8)}` }));
+    fs.mkdirSync(path.join(runnerRoot, "bin"), { recursive: true });
+    fs.writeFileSync(path.join(runnerRoot, "package.json"), JSON.stringify({ name: runner, version }));
+    fs.writeFileSync(path.join(runnerRoot, "bin/pnpm.cjs"), "// runner\n");
+    const environment = running ? { npm_execpath: path.join(runnerRoot, "bin/pnpm.cjs") } : {};
+
+    const target = path.join(dataHome, "vite-plus/package_manager/pnpm/10.30.3/pnpm");
+    expect(seedPinnedPackageManager({ repoRoot, dataHome, environment })).toBe(seeded ? target : null);
+    if (seeded) {
+      expect(fs.readFileSync(path.join(target, "bin/pnpm.cjs"), "utf8")).toBe("// runner\n");
+      expect(fs.lstatSync(target).isSymbolicLink()).toBe(false);
+      // The launcher's copy stays untouched when the child writes into its own.
+      fs.writeFileSync(path.join(target, "bin/pnpm.cjs"), "// child\n");
+      expect(fs.readFileSync(path.join(runnerRoot, "bin/pnpm.cjs"), "utf8")).toBe("// runner\n");
+    } else {
+      expect(fs.existsSync(path.join(dataHome, "vite-plus"))).toBe(false);
+    }
   });
 
   it("keeps generated-overlap policy aligned with release qualification", () => {
