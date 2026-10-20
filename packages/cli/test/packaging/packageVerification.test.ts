@@ -1018,6 +1018,12 @@ describe("npm distribution boundary", () => {
     fs.writeFileSync(path.join(sourceBundle, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(path.join(sourceBundle, NPX_BUNDLE_SENTINEL), "{}");
     fs.writeFileSync(path.join(sourceBundle, "registry.json"), "{ broken");
+    // Doctor resolves the update channel from this bundle. Without its own
+    // authority, it falls back to the checkout's generated bundle, which exists
+    // only after a local build.
+    const channelsAuthority = path.join("references", "cli", "update-channels.yaml");
+    fs.mkdirSync(path.dirname(path.join(sourceBundle, channelsAuthority)), { recursive: true });
+    fs.copyFileSync(path.join(fixture.packageRoot, "bundle", channelsAuthority), path.join(sourceBundle, channelsAuthority));
     const source = buildDoctorStatus(sourceBundle, { rootSource: "bundled app", sourceRoot: sourceBundle, home: root, project: root, env: {} });
     const sourceSignal = source.signals.find((signal) => signal.kind === "version_authority_invalid");
 

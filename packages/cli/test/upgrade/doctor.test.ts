@@ -359,11 +359,20 @@ describe("doctor", () => {
 });
 
 describe("doctor version authority", () => {
+  // Doctor resolves the update channel from the source root. Without its own
+  // authority, a root falls back to the checkout's generated bundle, which
+  // exists only after a local build.
+  function channelsAuthority(root: string): void {
+    const relative = path.join("references", "cli", "update-channels.yaml");
+    fs.mkdirSync(path.dirname(path.join(root, relative)), { recursive: true });
+    fs.copyFileSync(path.join(REPO_ROOT, relative), path.join(root, relative));
+  }
   function npxBundle(root: string, registry: string): void {
     fs.mkdirSync(path.join(root, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(root, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(path.join(root, "registry.json"), registry);
     fs.writeFileSync(path.join(root, NPX_BUNDLE_SENTINEL), JSON.stringify({ schemaVersion: "agentera.npxBundle.v1" }));
+    channelsAuthority(root);
   }
   const options = (sourceRoot: string, expectedVersion: string | null = null) => ({
     rootSource: "explicit --install-root",
@@ -400,6 +409,7 @@ describe("doctor version authority", () => {
     fs.mkdirSync(path.join(sourceRoot, "skills", "agentera"), { recursive: true });
     fs.writeFileSync(path.join(sourceRoot, "skills", "agentera", "SKILL.md"), "x");
     fs.writeFileSync(path.join(sourceRoot, "registry.json"), JSON.stringify({ skills: [] }));
+    channelsAuthority(sourceRoot);
     const appHome = path.join(tmp, "checkout-home");
     fs.mkdirSync(appHome, { recursive: true });
     const status = buildDoctorStatus(appHome, { ...options(sourceRoot), rootSource: "default app home" });
@@ -415,6 +425,7 @@ describe("doctor version authority", () => {
     const missingRoot = path.join(tmp, "no-signal");
     fs.mkdirSync(missingRoot, { recursive: true });
     fs.writeFileSync(path.join(missingRoot, "package.json"), JSON.stringify({ version: "3.0.0" }));
+    channelsAuthority(missingRoot);
     const missing = buildDoctorStatus(appHome, options(missingRoot));
     expect(missing.expectedVersion).toBe("unknown");
     expect(missing.status).toBe(APP_OUTDATED);
@@ -425,6 +436,7 @@ describe("doctor version authority", () => {
     fs.mkdirSync(corruptRoot, { recursive: true });
     fs.writeFileSync(path.join(corruptRoot, "registry.json"), "{ broken");
     fs.writeFileSync(path.join(corruptRoot, "package.json"), JSON.stringify({ version: "3.0.0" }));
+    channelsAuthority(corruptRoot);
     const corrupt = buildDoctorStatus(appHome, options(corruptRoot));
     expect(corrupt.status).toBe(APP_REPAIR_NEEDED);
     expect(authoritySignal(corrupt)).toMatchObject({ versionAuthority: "malformed" });
