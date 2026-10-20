@@ -152,8 +152,10 @@ The first proof acquires verified native bytes and fresh managed runtime/manager
 roots, installs a manifest-only fixture using the repository lockfile, builds
 and executes TypeScript, rejects manifest drift and altered archives, and proves
 warm offline success versus empty-cache failure. The second proves root-local
-ownership, esbuild-only scripts, wrapper argument/cwd/exit behavior, and rejection
-of wrong managed Node or stale launcher before project commands. Neither writes
+ownership, esbuild-only scripts, wrapper argument/cwd/exit behavior, acceptance
+of a newer stable same-major launcher as unqualified, and rejection of wrong
+managed Node, a prerelease launcher, or a stale launcher before project commands.
+The bootstrap itself still accepts only the exact pinned launcher it downloaded. Neither writes
 state, changes global tools, or activates checkout/shared hooks.
 
 The [toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup)

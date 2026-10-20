@@ -5,6 +5,7 @@ import YAML from "yaml";
 import { describe, expect, it } from "vite-plus/test";
 
 import { VP_ARCHIVE_SHA256, VP_VERSION } from "../../scripts/bootstrap-integrity.mjs";
+import { VP_LAUNCHER_RANGE } from "../../scripts/launcher-range.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
@@ -153,5 +154,12 @@ describe("toolchain baseline", () => {
     for (const command of ["VP_GIT_HOOKS=0 vp install --frozen-lockfile", "pnpm -C packages/cli test", "pnpm -C packages/cli build", "pnpm -C packages/cli run verify:release", "pnpm -C packages/cli run typecheck"]) expect(rootViteConfig).toContain(command);
     expect(workspace.onlyBuiltDependencies).toEqual(["esbuild"]);
     expect(cliPackage.scripts["test:toolchain-baseline"]).toBe("node scripts/verify-toolchain-baseline.mjs");
+  });
+
+  it("states the launcher range that the toolchain check and hook enforce", () => {
+    expect(baseline.selection.vite_plus.launcher_policy.owner).toBe("packages/cli/scripts/launcher-range.mjs");
+    expect(fs.readFileSync(path.join(ROOT, ".vite-hooks/pre-commit"), "utf8")).toContain("vp node packages/cli/scripts/launcher-range.mjs");
+    expect(fs.readFileSync(path.join(ROOT, "packages/cli/scripts/verify-toolchain-baseline.mjs"), "utf8")).toContain('from "./launcher-range.mjs"');
+    expect(fs.readFileSync(path.join(ROOT, "docs/packaging/vite-plus-1-toolchain.md"), "utf8")).toContain(`\`${VP_LAUNCHER_RANGE}\``);
   });
 });

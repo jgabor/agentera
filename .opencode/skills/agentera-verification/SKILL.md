@@ -102,7 +102,8 @@ vp hooks enable
 vp hooks status
 ```
 
-The hook needs standalone Vite+ on Git's `PATH`; no ambient Node, pnpm, or
+The hook needs standalone Vite+ on Git's `PATH`, in the launcher range the
+toolchain check accepts; no ambient Node, pnpm, or
 Corepack is required. An old installed common hook can still call
 `run-lefthook.sh run pre-commit`, which only forwards to the native policy. Do
 not change common hooks or shared config as dependency recovery.

@@ -297,7 +297,7 @@ state, candidate projection, or publication result.
 
 ## Contributors
 
-Use the pinned standalone Vite+ setup and recovery recipe in the
+Use the standalone Vite+ setup, accepted launcher range, and recovery recipe in the
 [toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup). Vite+ supplies the pinned Node and
 pnpm; no separate JavaScript tool or hook manager installation is needed. That guide
 also owns hook setup, optional nested npm dependencies, and platform/offline

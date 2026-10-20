@@ -4,7 +4,7 @@ record:
   name: Accept a newer standalone launcher of the same major
   depends_on:
     - bbimpttwyi
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the pinned launcher WHEN the toolchain check runs THEN it passes and reports the launcher as qualified.
     - GIVEN a newer stable 1.x launcher WHEN the toolchain check runs THEN it passes, reports the launcher as accepted but unqualified for the launcher-dependent results identified in this task, and does not tell the contributor to downgrade.
@@ -12,3 +12,9 @@ record:
     - GIVEN the CI bootstrap and the pre-commit hook WHEN they run THEN the bootstrap still requires exactly the launcher it downloaded, and the hook accepts the same launcher range as the toolchain check.
     - GIVEN contributor guidance WHEN a contributor reads it THEN it states the same accepted range, says that only the pinned launcher is qualified, and explains how to obtain the official release asset for a newer launcher.
   plan: zmcmgdjtoz
+  evidence:
+    - "One rule in packages/cli/scripts/launcher-range.mjs, derived from VP_VERSION: the pin is qualified, stable releases below the next major are accepted but unqualified, and older, prerelease, build-tagged, 0.x, and 2.x launchers are rejected with recovery naming the pin and the range. The toolchain baseline proof and the pre-commit hook use it; the CI bootstrap keeps its exact pattern."
+    - "Launcher-dependent results, from launcher and local-binding string probes and VP_CLI_BIN propagation: managed Node download and selection, pnpm acquisition, dispatch to the local Vite+ including the native-cache characterization, and hook dispatch. The unqualified report and the guide list them."
+    - "With the digest-verified 1.3.0 release binary: the managed-toolchain proof passed, reporting the pin as qualified, a 1.4.0 reporting wrapper as accepted_unqualified with its results, and 1.4.0-rc.0 and 0.3.0 rejected before project commands. The sandboxed hook bootstrap proof passed, including newer acceptance and prerelease rejection."
+    - Unit and hook tests cover pinned, newer, older, prerelease, 0.x, and 2.x launchers, and a newer launcher still fails the CI bootstrap; removing the hook check fails five hook cases. vp check and typecheck passed. vp run verify:development passed 11 of 11 gates with the release binary in a sandboxed managed-mode home.
+    - In the ordinary managed-mode home with the distribution-packaged 1.3.0 launcher, verify:development fails only the nativeHooks old-entry-point test on its 30-second timeout. The same failure occurs with HEAD content and without the hook check, so it predates this task.

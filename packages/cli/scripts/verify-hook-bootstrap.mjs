@@ -7,6 +7,7 @@ import path from "node:path";
 
 import YAML from "yaml";
 import { VP_LAUNCHER_PATTERN, VP_VERSION } from "./bootstrap-integrity.mjs";
+import { VP_LAUNCHER_RANGE } from "./launcher-range.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const launcher = process.argv[2];
@@ -86,7 +87,7 @@ write(".node-version", fs.readFileSync(path.join(root, ".node-version")));
 assert.match(run([launcher, "--version"]).output, VP_LAUNCHER_PATTERN);
 write("pnpm-workspace.yaml", `allowBuilds:\n  esbuild: true\noverrides:\n  vite@*: ${vite}\n  vitest@*: ${catalog.vitest}\npeerDependencyRules:\n  allowAny: [vite, vitest]\n`);
 write(".gitignore", "node_modules/\n*.marker\n");
-for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/run-lefthook.sh", "packages/cli/scripts/pre-commit-checks.mjs"]) write(file, fs.readFileSync(path.join(root, file)));
+for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/run-lefthook.sh", "packages/cli/scripts/pre-commit-checks.mjs", "packages/cli/scripts/launcher-range.mjs", "packages/cli/scripts/bootstrap-integrity.mjs"]) write(file, fs.readFileSync(path.join(root, file)));
 fs.chmodSync(path.join(current, ".vite-hooks/pre-commit"), 0o755);
 const staged = fs.readFileSync(path.join(root, "vite.config.ts"), "utf8").match(/staged: (\{[\s\S]*?\n  \}),/)[1];
 write(
@@ -163,6 +164,27 @@ assert.equal(read("guards.marker"), "passed");
 for (const name of ["local.marker", "typecheck.marker"]) assert.equal(fs.existsSync(path.join(current, name)), false);
 assert.equal(read(".git/config"), commonConfig);
 assert.deepEqual(fs.readFileSync(globalConfig), globalBefore);
+// The hook applies the toolchain check's launcher range. These launchers report
+// another version and delegate everything else to the supplied launcher.
+const [major, minor] = VP_VERSION.split(".").map(Number);
+function reportingLauncher(version) {
+  fs.unlinkSync(path.join(bin, "vp"));
+  fs.writeFileSync(path.join(bin, "vp"), `#!/bin/sh\nif [ "$1" = --version ]; then printf 'vp v${version}\\n'; exit 0; fi\nexec '${launcher}' "$@"\n`, { mode: 0o755 });
+}
+reportingLauncher(`${major}.${minor + 1}.0`);
+fs.unlinkSync(path.join(current, "guards.marker"));
+const newerLauncher = run(["git", "hook", "run", "pre-commit"]);
+assert.match(newerLauncher.output, /accepted but unqualified/);
+assert.doesNotMatch(newerLauncher.output, /downgrade/i);
+assert.equal(read("guards.marker"), "passed");
+fs.unlinkSync(path.join(current, "guards.marker"));
+reportingLauncher(`${major}.${minor + 1}.0-rc.0`);
+const prereleaseLauncher = run(["git", "hook", "run", "pre-commit"], current, false);
+assert.notEqual(prereleaseLauncher.exit, 0);
+assert.ok(prereleaseLauncher.output.includes(`accepted range ${VP_LAUNCHER_RANGE}; only the official ${VP_VERSION} release asset is qualified`));
+assert.equal(fs.existsSync(path.join(current, "guards.marker")), false);
+fs.unlinkSync(path.join(bin, "vp"));
+fs.symlinkSync(launcher, path.join(bin, "vp"));
 // Actual missing prerequisites must fail, not silently skip checks.
 fs.renameSync(path.join(current, "node_modules"), path.join(current, "saved-dependencies"));
 const missingDependencies = run(["git", "hook", "run", "pre-commit"], current, false);
@@ -172,10 +194,10 @@ fs.renameSync(path.join(current, "saved-dependencies"), path.join(current, "node
 fs.unlinkSync(path.join(bin, "vp"));
 const missingLauncher = run(["git", "hook", "run", "pre-commit"], current, false);
 assert.notEqual(missingLauncher.exit, 0);
-assert.match(missingLauncher.output, /pinned standalone Vite\+ on Git's PATH/);
+assert.match(missingLauncher.output, /standalone Vite\+ launcher on Git's PATH/);
 // An ambient Node does not make the local vp shim a supported runtime owner.
 fs.symlinkSync(process.execPath, path.join(bin, "node"));
 const ambientFallback = run(["git", "hook", "run", "pre-commit"], current, false);
 assert.notEqual(ambientFallback.exit, 0);
-assert.match(ambientFallback.output, /pinned standalone Vite\+ on Git's PATH/);
-console.log(`PASS: native local activation, managed ordinary Git, partial hunks, owner selection, config preservation, missing prerequisites. Receipt: ${sandbox}/receipt.json`);
+assert.match(ambientFallback.output, /standalone Vite\+ launcher on Git's PATH/);
+console.log(`PASS: native local activation, managed ordinary Git, partial hunks, owner selection, config preservation, launcher range, missing prerequisites. Receipt: ${sandbox}/receipt.json`);

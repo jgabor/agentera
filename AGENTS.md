@@ -123,12 +123,14 @@ recovery, the stable path, or a change to the development ref.
 
 ## Common commands
 
-Contributors use the pinned standalone Vite+, which supplies Node.js from
-`.node-version` and pnpm from `package.json#packageManager`. Install the
-launcher, verify it, and recover a broken setup with the
-[toolchain guide](docs/packaging/vite-plus-1-toolchain.md#contributor-setup).
-Do not use an unpinned installer, an older global `vp`, or another package
-manager.
+Contributors use standalone Vite+, which supplies Node.js from `.node-version`
+and pnpm from `package.json#packageManager`. Only the pinned launcher is
+qualified; a newer stable launcher of the same major is accepted but reported
+as unqualified, and the
+[toolchain guide](docs/packaging/vite-plus-1-toolchain.md#contributor-setup)
+states the range. Install the launcher, verify it, and recover a broken setup
+with that guide. Do not use an unpinned installer, an older global `vp`, or
+another package manager.
 
 First install in a fresh checkout or worktree, from the repository root:
 

@@ -7,7 +7,8 @@ import { performance } from "node:perf_hooks";
 
 import YAML from "yaml";
 import rootConfig from "../../../vite.config.ts";
-import { VP_LAUNCHER_PATTERN, VP_LOCAL_PATTERN, VP_VERSION } from "./bootstrap-integrity.mjs";
+import { VP_LOCAL_PATTERN, VP_VERSION } from "./bootstrap-integrity.mjs";
+import { LAUNCHER_RECOVERY, classifyLauncher } from "./launcher-range.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const REQUIRED_PNPM = "10.30.3";
@@ -26,7 +27,7 @@ const VP =
     .filter((entry) => !entry.includes("node_modules"))
     .map((entry) => path.resolve(entry, "vp"))
     .find((file) => fs.existsSync(file));
-const RECOVERY = `Use the verified standalone Vite+ ${REQUIRED_VP} launcher; run vp env on, then vp install --frozen-lockfile from the repository root. Do not install Node, pnpm or Corepack separately.`;
+const RECOVERY = `${LAUNCHER_RECOVERY} Do not install Node, pnpm or Corepack separately.`;
 
 export function loadToolchainBaseline() {
   return YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
@@ -158,8 +159,9 @@ try {
   env.PNPM_CONFIG_USERCONFIG = npmrc;
   env.AGENTERA_TOOLCHAIN_MARKERS = markers;
 
-  const launcher = requireSuccess(RECOVERY, run(VP, ["--version"], { cwd: sandbox, env }));
-  assert.match(launcher.stdout, VP_LAUNCHER_PATTERN, RECOVERY);
+  const launcher = classifyLauncher(requireSuccess(RECOVERY, run(VP, ["--version"], { cwd: sandbox, env })).stdout);
+  assert.notEqual(launcher.status, "rejected", launcher.message);
+  if (launcher.status === "accepted_unqualified") console.error(launcher.message);
   if (process.env.AGENTERA_PROJECT_COMMAND_MARKER) fs.writeFileSync(process.env.AGENTERA_PROJECT_COMMAND_MARKER, "started\n");
   requireSuccess("enable Vite-managed runtime", run(VP, ["env", "on"], { cwd: sandbox, env }));
 
@@ -314,6 +316,13 @@ if (process.argv.includes("--fail")) process.exit(23);
           liveOnlyBuiltDependencies: livePolicy,
           allowedExecuted: "esbuild",
           rejectedSuppressed: "blocked-build",
+        },
+        launcher: {
+          path: VP,
+          version: launcher.version,
+          qualification: launcher.status,
+          message: launcher.message,
+          ...(launcher.unqualifiedResults ? { unqualifiedResults: launcher.unqualifiedResults } : {}),
         },
         ownership: {
           freshBareVp: staleProbe.stdout.trim(),

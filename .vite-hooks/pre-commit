@@ -16,9 +16,11 @@ IFS=$saved_ifs
 PATH=$launcher_path
 export PATH
 if ! command -v vp >/dev/null 2>&1; then
-  echo "Hooks require the pinned standalone Vite+ on Git's PATH. Restore launcher discovery, then run vp env on and vp install --frozen-lockfile." >&2
+  echo "Hooks require a standalone Vite+ launcher on Git's PATH. Restore launcher discovery, then run vp env on and vp install --frozen-lockfile." >&2
   exit 1
 fi
+# The toolchain check's launcher range applies here too; it prints its own recovery.
+vp node packages/cli/scripts/launcher-range.mjs "$(command -v vp)" || exit 1
 if [ ! -x ./node_modules/.bin/vp ]; then
   echo "Hooks require this worktree's dependencies. Run vp env on and vp install --frozen-lockfile." >&2
   exit 1

@@ -4,6 +4,8 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import config from "../../../../vite.config.ts";
+import { VP_VERSION } from "../../scripts/bootstrap-integrity.mjs";
+import { VP_LAUNCHER_RANGE } from "../../scripts/launcher-range.mjs";
 import { selectChecks } from "../../scripts/pre-commit-checks.mjs";
 import { startNativeDiagnostic } from "../../scripts/source-diagnostics.mjs";
 
@@ -11,6 +13,7 @@ const repo = path.resolve(import.meta.dirname, "../../../..");
 const packageManager = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8")).packageManager;
 const vp = path.join(repo, "node_modules/.bin/vp");
 const stagedCommand = "./node_modules/.bin/vp staged --hide-partially-staged";
+const hookFiles = [".vite-hooks/pre-commit", "packages/cli/scripts/pre-commit-checks.mjs", "packages/cli/scripts/launcher-range.mjs", "packages/cli/scripts/bootstrap-integrity.mjs"];
 const fixtureParent = process.env.AGENTERA_NATIVE_DIAGNOSTIC_ROOT ? path.join(process.env.AGENTERA_NATIVE_DIAGNOSTIC_ROOT, "hooks") : path.join(repo, ".vitest/followup/hooks");
 let nativeInvocation = 0;
 const hookFlags = ["VP_GIT_HOOKS", "VITE_GIT_HOOKS", "HUSKY"] as const;
@@ -65,7 +68,7 @@ function fixture() {
   fs.symlinkSync(path.join(repo, "node_modules"), path.join(root, "node_modules"), "dir");
   fs.copyFileSync(path.join(repo, ".node-version"), path.join(root, ".node-version"));
   write(root, "packages/cli/scripts/run-lefthook.sh", fs.readFileSync(path.join(repo, "packages/cli/scripts/run-lefthook.sh"), "utf8"));
-  for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/pre-commit-checks.mjs"]) write(root, file, fs.readFileSync(path.join(repo, file), "utf8"));
+  for (const file of hookFiles) write(root, file, fs.readFileSync(path.join(repo, file), "utf8"));
   write(root, "vite.config.ts", `export default ${JSON.stringify({ staged: config.staged, lint: config.lint, fmt: config.fmt })};\n`);
   write(root, ".gitignore", "node_modules\n");
   // Keep native workspace discovery inside this nested disposable repository.
@@ -104,6 +107,30 @@ describe("native hook boundaries", () => {
   ])("selects %s only for its contracted inputs", (_name, selected, unrelated, token) => {
     expect(selectChecks([selected]).some((command: string[]) => command.includes(token))).toBe(true);
     expect(selectChecks([unrelated]).some((command: string[]) => command.includes(token))).toBe(false);
+  });
+
+  const [major, minor, patch] = VP_VERSION.split(".").map(Number);
+  it.each([
+    ["the pinned", VP_VERSION, true],
+    ["a newer stable same-major", `${major}.${minor + 1}.0`, true],
+    ["an older same-major", patch > 0 ? `${major}.${minor}.${patch - 1}` : `${major}.${minor - 1}.0`, false],
+    ["a prerelease", `${major}.${minor + 1}.0-rc.0`, false],
+    ["a previous-major", `${major - 1}.9.0`, false],
+    ["a next-major", `${major + 1}.0.0`, false],
+  ])("applies the toolchain launcher range to %s launcher before dispatch", (_name, version, accepted) => {
+    const root = temporaryRoot("launcher-");
+    for (const file of [...hookFiles, ".node-version"]) write(root, file, fs.readFileSync(path.join(repo, file), "utf8"));
+    write(root, "node_modules/.bin/vp", "#!/bin/sh\nexit 0\n");
+    // Reports one version, runs the range check with this test's Node, and records dispatch.
+    write(root, "bin/vp", `#!/bin/sh\ncase "$1" in\n  --version) printf 'vp v${version}\\n\\nLocal vite-plus:\\n  vite-plus  v${VP_VERSION}\\n' ;;\n  node) shift; exec '${process.execPath}' "$@" ;;\n  exec) printf dispatched > dispatched.marker ;;\n  *) exit 64 ;;\nesac\n`);
+    for (const file of ["node_modules/.bin/vp", "bin/vp"]) fs.chmodSync(path.join(root, file), 0o755);
+    const result = run(root, "/bin/sh", [".vite-hooks/pre-commit"], { ...process.env, PATH: `${path.join(root, "bin")}:/usr/bin:/bin` });
+    const output = result.stdout + result.stderr;
+    expect(result.status === 0, output).toBe(accepted);
+    expect(fs.existsSync(path.join(root, "dispatched.marker"))).toBe(accepted);
+    expect(output).not.toMatch(/downgrade/i);
+    if (!accepted) expect(output).toContain(`accepted range ${VP_LAUNCHER_RANGE}; only the official ${VP_VERSION} release asset is qualified`);
+    expect(output.includes("accepted but unqualified")).toBe(accepted && version !== VP_VERSION);
   });
 
   it.each(["compact", "parity", "guards", "related", "typecheck"])("propagates %s failures and does not run later readers", (failed) => {

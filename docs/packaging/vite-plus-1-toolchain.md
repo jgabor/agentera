@@ -24,9 +24,33 @@ The consolidation is merged into `feat/v3`. Consumer use remains
 ## Contributor setup
 
 The supported combination is standalone Vite+ **1.3.0**, the Node.js release
-pinned in `.node-version`, and pnpm **10.30.3** on Linux x64. Both the launcher
-and installed local Vite+ must report 1.3.0. macOS and Windows are not
-qualified by the Linux evidence.
+pinned in `.node-version`, and pnpm **10.30.3** on Linux x64. The installed
+local Vite+ must report exactly 1.3.0. macOS and Windows are not qualified by
+the Linux evidence.
+
+The standalone launcher may be any stable release in the accepted range
+`>=1.3.0 <2.0.0`. Only the official 1.3.0 release asset is qualified:
+
+- **1.3.0:** qualified. The toolchain check reports it as `qualified`.
+- **A newer stable 1.x release:** accepted but unqualified. The toolchain check
+  and the pre-commit hook run, report the launcher as `accepted_unqualified`,
+  and list the results the repository has not qualified for it. Do not
+  downgrade it to pass a check.
+- **An older 1.x release, any prerelease or build-tagged version, 0.x, or 2.0.0
+  and later:** rejected. The toolchain check and the hook fail before project
+  commands run, with recovery naming the pin and this range.
+
+These results depend on the launcher rather than the local Vite+, so they are
+qualified only for 1.3.0:
+
+- Managed Node.js download and selection: `vp env on`, `vp env exec --node`,
+  `vp node`, and the runtime of root tasks.
+- pnpm acquisition from the hash-pinned `packageManager`: `vp install` and
+  `vp exec pnpm`.
+- Dispatch to the local Vite+ through `VP_CLI_BIN`, including the native-cache
+  guard characterization. The task cache itself is in the local Vite+, but it
+  was observed only through the pinned launcher.
+- Git hook dispatch: `vp exec` in `.vite-hooks/pre-commit`.
 
 Obtain the standalone launcher from the trusted
 [Vite+ v1.3.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.3.0),
@@ -38,6 +62,17 @@ and fresh/warm cache limits. Extract the executable into a user-owned directory
 on both the ordinary shell `PATH` and Git's `PATH`. Download and extraction
 tools are OS prerequisites, not provided by Vite+.
 
+For a newer 1.x launcher, download the same `vp-x86_64-unknown-linux-gnu.tar.gz`
+asset from that version's page under
+[Vite+ releases](https://github.com/voidzero-dev/vite-plus/releases), and check
+its SHA-256 against the digest GitHub publishes for that asset before
+extraction. The repository records reviewed digests only for the pin, so such a
+launcher stays unqualified. Distribution-packaged builds, such as the Arch Linux
+`vite-plus` package, are not qualified at any version. The version check cannot
+tell them from the official asset, so a packaged 1.3.0 also reports
+`qualified`. The CI bootstrap still downloads and accepts only the pinned,
+digest-verified 1.3.0 asset.
+
 First install, also used for dependency recovery, from the repository root:
 
 ```bash
@@ -48,7 +83,8 @@ VP_GIT_HOOKS=0 vp install --frozen-lockfile
 
 `vp run bootstrap` repeats the frozen install only after local dependencies
 exist; it is not the fresh-checkout entry point. If the launcher is missing or
-old, restore the standalone executable on `PATH` first. If the frozen lock check
+outside the accepted range, restore a standalone executable in that range on
+`PATH` first. If the frozen lock check
 fails, restore matching checked-in manifests and lockfile, then rerun the frozen
 install. Do not bypass the lock check or install another package manager.
 

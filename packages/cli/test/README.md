@@ -31,7 +31,7 @@ Root `vp run` tasks already select `.node-version` explicitly; native `run` and
 
 ## Contributor prerequisites
 
-Use the verified pinned standalone Vite+ setup in
+Use the verified standalone Vite+ setup in
 [AGENTS.md](../../../AGENTS.md#common-commands), from the repository root. It
 supplies pinned Node and pnpm plus project-local test and hook tools; it does
 not supply the operating system or Git history. Linux x64 is the verified

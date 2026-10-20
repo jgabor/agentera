@@ -33,6 +33,17 @@ selection:
       oxfmt: 0.73.0
       oxlint-tsgolint: 7.0.2004
     conclusion: compatible with the pinned Node 24.22.0 runtime
+    launcher_policy:
+      owner: packages/cli/scripts/launcher-range.mjs
+      qualified: the official release asset of the exact pinned version
+      accepted_unqualified: stable releases above the pin within the same major
+      rejected: older releases, prereleases, build-tagged versions, and other majors
+      unqualified_results_owner: packages/cli/scripts/launcher-range.mjs#LAUNCHER_DEPENDENT_RESULTS
+      consumers:
+        - packages/cli/scripts/verify-toolchain-baseline.mjs
+        - .vite-hooks/pre-commit
+      ci_bootstrap: exact pinned, digest-verified release only
+      distribution_builds: not qualified at any version; the version check cannot distinguish them
     history:
       - version: 1.0.0
         status: superseded
@@ -148,7 +159,8 @@ executable_proof:
   command: vp -C packages/cli run test:toolchain-baseline
   fixture: isolated temporary workspace; the checkout is not migrated
   coverage:
-    - reads packageManager and executes Vite-managed pinned pnpm through the pinned standalone Vite+
+    - classifies the standalone launcher before project commands; the pin is qualified, a newer stable same-major release is accepted and reported unqualified, and other versions fail with recovery
+    - reads packageManager and executes Vite-managed pinned pnpm through the standalone Vite+
     - reads onlyBuiltDependencies through live pnpm config
     - installs the exact pinned root-local vite-plus and defeats an earlier stale vp on PATH
     - accepts a matching frozen lockfile and rejects a changed manifest
@@ -164,6 +176,11 @@ executable_proof:
       managed-toolchain proof with the digest-verified Vite+ v1.3.0 release
       binary (archive sha256 3fb3a668472e1312eedd7598b3f6c511acebc2f6497c293a5ee04eba248eee7e)
     result: pass
+    launcher:
+      version: 1.3.0
+      qualification: qualified
+      accepted_unqualified_probe: 1.4.0 reporting wrapper around the same release binary passed and listed its unqualified results
+      rejected_probes: [1.4.0-rc.0, 0.3.0]
     pnpm:
       accepted: 10.30.3
       rejected: pnpm@latest
@@ -180,8 +197,8 @@ executable_proof:
       allowed_executed: esbuild
       rejected_suppressed: blocked-build
     elapsed_seconds:
-      fresh_frozen_install: 0.287
-      installed_vp_frozen_install: 0.251
+      fresh_frozen_install: 0.286
+      installed_vp_frozen_install: 0.256
     timing_interpretation: observational only; not a budget
 
 sources:

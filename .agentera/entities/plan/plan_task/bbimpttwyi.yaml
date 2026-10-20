@@ -4,7 +4,7 @@ record:
   name: Move the pinned Vite+ release to 1.3.0
   depends_on:
     - srokhmwcek
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the reviewed toolchain evidence WHEN a reviewer checks it THEN it records the immutable Vite+ 1.3.0 release, its archive digest, npm integrity for all three packages, signed provenance verified for source commit, workflow run, and signer, the bundled tool versions, and the Node range, with the 1.0.0 record and its hosted runs kept as 1.0.0 history.
     - GIVEN a fresh checkout WHEN a contributor installs dependencies THEN the local Vite+ and its bundled Vitest report the pinned 1.3.0 set with no mixed versions.
@@ -19,12 +19,12 @@ record:
     - With the release binary in a fresh managed-mode environment, vp run verify:development passed all 11 gates. Runtime-pin facts were confirmed with the same binary in managed and system-first fixtures.
     - The native cache fault reproduces unchanged; the guard stays. Formatting touched one file; lint has 0 errors and 6 of 8 allowed warnings; vp check and typecheck passed.
   evaluation:
-    attempt_count: 1
+    attempt_count: 2
     failure_count: 1
-    last_verdict: fail
+    last_verdict: pass
     last_failure_evidence: "Criterion 5 fails: executable_proof.last_observation in references/analysis/toolchain-baseline.yaml:161-181 records the baseline run from the distribution-packaged /usr/bin/vp build (timings 1.393 and 0.247), which the plan excludes from qualification, and its environment line does not name the build; a reviewed-binary run (managed-toolchain inner baseline, about 0.28-0.29 and 0.25) exists and must be the source."
     provenance:
-      attempt_id: audit-1
-      source: Independent audit evaluator report for task bbimpttwyi, 2026-10-20
-      recorded_at: 2026-10-20 17:18
+      attempt_id: audit-2
+      source: "Independent audit re-evaluation of task bbimpttwyi after the corrective commit, 2026-10-20: 5 of 5 criteria PASS, 3 WARN"
+      recorded_at: 2026-10-20 17:29
       writer_command: agentera state plan record-evaluation

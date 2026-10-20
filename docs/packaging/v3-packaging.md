@@ -12,7 +12,7 @@ packages, and the former Bun single-binary surface are retired.
 
 ## Contributor command entrypoints
 
-Complete the verified pinned standalone Vite+ setup in
+Complete the verified standalone Vite+ setup in
 the [toolchain guide](vite-plus-1-toolchain.md#contributor-setup) before using this guide's maintainer
 commands. Run them from the repository root. That guide owns launcher and
 dependency recovery, native hook setup, the optional nested npm recipe, and the
