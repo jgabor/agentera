@@ -159,7 +159,10 @@ executable_proof:
   timing: emitted as observations only; no threshold is asserted
   last_observation:
     observed: 2026-10-20
-    environment: isolated Linux x64 workspace under Node 24.22.0 with a standalone launcher reporting vp v1.3.0
+    environment: >-
+      isolated Linux x64 workspace under managed Node 24.22.0, run by the
+      managed-toolchain proof with the digest-verified Vite+ v1.3.0 release
+      binary (archive sha256 3fb3a668472e1312eedd7598b3f6c511acebc2f6497c293a5ee04eba248eee7e)
     result: pass
     pnpm:
       accepted: 10.30.3
@@ -177,8 +180,8 @@ executable_proof:
       allowed_executed: esbuild
       rejected_suppressed: blocked-build
     elapsed_seconds:
-      fresh_frozen_install: 1.393
-      installed_vp_frozen_install: 0.247
+      fresh_frozen_install: 0.287
+      installed_vp_frozen_install: 0.251
     timing_interpretation: observational only; not a budget
 
 sources:

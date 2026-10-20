@@ -15,6 +15,16 @@ record:
   evidence:
     - Re-verified the immutable v1.3.0 release, archive SHA-256 against downloaded bytes, and npm integrity for vite-plus, its core, and the Linux x64 package.
     - Sigstore 4.1.1 from npm 11.19.1 in managed Node 24.22.0 verified DSSE signatures, Rekor inclusion, issuer, signer, SHA-512 subjects, release source commit, and run for all three packages; tampered-payload and wrong-identity controls failed.
-    - Bootstrap integrity, toolchain baseline, managed-toolchain, and hook bootstrap proofs passed; altered archive and altered pnpm were rejected; the hook missing-launcher step now passes.
-    - The native cache fault reproduces unchanged; the guard stays. Formatting touched one file; lint has 0 errors and 6 of 8 allowed warnings.
-    - vp run verify:development passed all 11 gates; vp check and typecheck passed.
+    - "With the digest-verified release binary: bootstrap integrity proof passed (altered archive and altered pnpm rejected); managed-toolchain proof passed and its inner baseline run is the recorded observation; hook bootstrap proof passed in a sandboxed managed-mode environment."
+    - With the release binary in a fresh managed-mode environment, vp run verify:development passed all 11 gates. Runtime-pin facts were confirmed with the same binary in managed and system-first fixtures.
+    - The native cache fault reproduces unchanged; the guard stays. Formatting touched one file; lint has 0 errors and 6 of 8 allowed warnings; vp check and typecheck passed.
+  evaluation:
+    attempt_count: 1
+    failure_count: 1
+    last_verdict: fail
+    last_failure_evidence: "Criterion 5 fails: executable_proof.last_observation in references/analysis/toolchain-baseline.yaml:161-181 records the baseline run from the distribution-packaged /usr/bin/vp build (timings 1.393 and 0.247), which the plan excludes from qualification, and its environment line does not name the build; a reviewed-binary run (managed-toolchain inner baseline, about 0.28-0.29 and 0.25) exists and must be the source."
+    provenance:
+      attempt_id: audit-1
+      source: Independent audit evaluator report for task bbimpttwyi, 2026-10-20
+      recorded_at: 2026-10-20 17:18
+      writer_command: agentera state plan record-evaluation

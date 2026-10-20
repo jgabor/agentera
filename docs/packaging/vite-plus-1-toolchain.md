@@ -117,8 +117,9 @@ In managed mode, native `run` and `exec` at the repository root follow
 `.node-version`. Under `vp -C packages/cli`, the CLI package's `engines >=22`
 range selects a managed Node that satisfies it (24.22.0 in the re-test with a
 24.19.0 root pin) instead of the root's exact pin.
-Both behaviors were re-tested on 1.3.0 by executable location. For
-package-directory recipes, use this explicit boundary rather than changing
+These managed-mode and system-first behaviors were confirmed by executable
+location with the digest-verified Vite+ 1.3.0 release binary in a fresh
+fixture. For package-directory recipes, use this explicit boundary rather than changing
 global PATH or weakening guards:
 
 ```bash
