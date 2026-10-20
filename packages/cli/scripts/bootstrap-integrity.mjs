@@ -7,9 +7,14 @@ import { pathToFileURL } from "node:url";
 
 // Reviewed immutable release bytes. Never learn expected digests at runtime.
 // See references/analysis/bootstrap-integrity.md for provenance and trust roots.
-export const VP_VERSION = "1.0.0";
-export const VP_ARCHIVE_URL = "https://github.com/voidzero-dev/vite-plus/releases/download/v1.0.0/vp-x86_64-unknown-linux-gnu.tar.gz";
-export const VP_ARCHIVE_SHA256 = "2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a";
+export const VP_VERSION = "1.3.0";
+export const VP_ARCHIVE_URL = `https://github.com/voidzero-dev/vite-plus/releases/download/v${VP_VERSION}/vp-x86_64-unknown-linux-gnu.tar.gz`;
+export const VP_ARCHIVE_SHA256 = "3fb3a668472e1312eedd7598b3f6c511acebc2f6497c293a5ee04eba248eee7e";
+const VP_VERSION_PATTERN = VP_VERSION.replaceAll(".", "\\.");
+// Exact standalone launcher line, for example "vp v1.3.0".
+export const VP_LAUNCHER_PATTERN = new RegExp(`^vp v${VP_VERSION_PATTERN}\\s*$`, "m");
+// Root-local entry in `vp --version` output, for example "vite-plus  v1.3.0".
+export const VP_LOCAL_PATTERN = new RegExp(`vite-plus\\s+v?${VP_VERSION_PATTERN}(?![\\d.])`);
 export const PNPM_REFERENCE = "pnpm@10.30.3+sha512.c961d1e0a2d8e354ecaa5166b822516668b7f44cb5bd95122d590dd81922f606f5473b6d23ec4a5be05e7fcd18e8488d47d978bbe981872f1145d06e9a740017";
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 export const NODE_VERSION = fs.readFileSync(path.join(ROOT, ".node-version"), "utf8").trim();
@@ -99,7 +104,7 @@ export async function activateBootstrap(bootstrap, cwd) {
   assert.equal(fs.existsSync(path.join(cwd, ".npmrc")), false, "project .npmrc is not allowed in the isolated bootstrap");
   assert.equal(JSON.parse(fs.readFileSync(path.join(cwd, "package.json"), "utf8")).packageManager, "pnpm@10.30.3", "project packageManager pin rejected");
   assert.equal(fs.readFileSync(path.join(cwd, ".node-version"), "utf8").trim(), NODE_VERSION, "project Node pin rejected");
-  assert.match(await bootstrap.execute(["--version"], bootstrap.home), /^vp v1\.0\.0\s*$/m, "standalone Vite+ pin rejected");
+  assert.match(await bootstrap.execute(["--version"], bootstrap.home), VP_LAUNCHER_PATTERN, "standalone Vite+ pin rejected");
   await bootstrap.execute(["env", "on"], cwd);
   await bootstrap.execute(["env", "setup"], cwd);
   assert.equal((await bootstrap.execute(["node", "--version"], cwd)).trim(), `v${NODE_VERSION}`, "managed Node pin rejected");
@@ -123,7 +128,7 @@ export async function setupWorkflow(parent, ignoreScripts = false, cwd = ROOT) {
   console.log(output.trim());
   assert.equal(JSON.parse(fs.readFileSync(path.join(cwd, "node_modules/vite-plus/package.json"), "utf8")).version, VP_VERSION, "root-local Vite+ pin rejected");
   const version = await bootstrap.execute(["--version"], cwd);
-  assert.match(version, /vite-plus\s+v?1\.0\.0/, "root-local Vite+ entrypoint rejected");
+  assert.match(version, VP_LOCAL_PATTERN, "root-local Vite+ entrypoint rejected");
   return bootstrap;
 }
 

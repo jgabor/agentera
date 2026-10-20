@@ -7,17 +7,14 @@ import { performance } from "node:perf_hooks";
 
 import YAML from "yaml";
 import rootConfig from "../../../vite.config.ts";
+import { VP_LAUNCHER_PATTERN, VP_LOCAL_PATTERN, VP_VERSION } from "./bootstrap-integrity.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../..");
 const REQUIRED_PNPM = "10.30.3";
 const REQUIRED_PACKAGE_MANAGER = `pnpm@${REQUIRED_PNPM}`;
-const REQUIRED_VP = "1.0.0";
-const REQUIRED_TOOLS = {
-  vite: "8.3.1",
-  vitest: "5.0.1",
-  oxlint: "1.85.0",
-  oxfmt: "0.70.0",
-};
+const REQUIRED_VP = VP_VERSION;
+// The reviewed bundled tool versions live with the release evidence.
+const REQUIRED_TOOLS = loadToolchainBaseline().selection.vite_plus.bundled;
 const REQUIRED_SETUP_VP = "1.18.0";
 const REQUIRED_SETUP_VP_COMMIT = "1b32467adbe183473499fd9d5d372c3ed9641754";
 const REQUIRED_NODE = fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim();
@@ -29,7 +26,7 @@ const VP =
     .filter((entry) => !entry.includes("node_modules"))
     .map((entry) => path.resolve(entry, "vp"))
     .find((file) => fs.existsSync(file));
-const RECOVERY = "Use the verified standalone Vite+ 1.0.0 launcher; run vp env on, then vp install --frozen-lockfile from the repository root. Do not install Node, pnpm or Corepack separately.";
+const RECOVERY = `Use the verified standalone Vite+ ${REQUIRED_VP} launcher; run vp env on, then vp install --frozen-lockfile from the repository root. Do not install Node, pnpm or Corepack separately.`;
 
 export function loadToolchainBaseline() {
   return YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
@@ -162,7 +159,7 @@ try {
   env.AGENTERA_TOOLCHAIN_MARKERS = markers;
 
   const launcher = requireSuccess(RECOVERY, run(VP, ["--version"], { cwd: sandbox, env }));
-  assert.match(launcher.stdout, /^vp v1\.0\.0\s*$/m, RECOVERY);
+  assert.match(launcher.stdout, VP_LAUNCHER_PATTERN, RECOVERY);
   if (process.env.AGENTERA_PROJECT_COMMAND_MARKER) fs.writeFileSync(process.env.AGENTERA_PROJECT_COMMAND_MARKER, "started\n");
   requireSuccess("enable Vite-managed runtime", run(VP, ["env", "on"], { cwd: sandbox, env }));
 
@@ -176,13 +173,13 @@ try {
   });
   assert.equal(rootManifest.devDependencies["vite-plus"], "catalog:");
   assert.equal(workspaceConfig.catalog["vite-plus"], REQUIRED_VP);
-  assert.equal(workspaceConfig.catalog.vite, "npm:@voidzero-dev/vite-plus-core@1.0.0");
+  assert.equal(workspaceConfig.catalog.vite, `npm:@voidzero-dev/vite-plus-core@${REQUIRED_VP}`);
   assert.equal(workspaceConfig.catalog.vitest, REQUIRED_TOOLS.vitest);
   assert.equal(rootManifest.devDependencies.oxlint, undefined);
   assert.equal(rootManifest.devDependencies.oxfmt, undefined);
   const liveVp = requireSuccess("workspace Vite+ probe", runVp(REPO_ROOT, ["exec", "vp", "--version"], env));
   for (const [name, version] of Object.entries({ "vite-plus": REQUIRED_VP, ...REQUIRED_TOOLS })) {
-    assert.match(`${liveVp.stdout}${liveVp.stderr}`, new RegExp(`${name}\\s+v?${version.replaceAll(".", "\\.")}`));
+    assert.match(`${liveVp.stdout}${liveVp.stderr}`, new RegExp(`(?:^|\\s)${name}\\s+v?${version.replaceAll(".", "\\.")}(?![\\d.])`, "m"));
   }
   const livePolicy = parseJsonOutput("live onlyBuiltDependencies probe", runVp(REPO_ROOT, ["pm", "config", "get", "onlyBuiltDependencies", "--json"], env));
   assert.deepEqual(livePolicy, ["esbuild"], "live dependency-script policy drifted");
@@ -242,7 +239,7 @@ try {
   assert.ok(!fs.existsSync(path.join(markers, "blocked-build.marker")), "unlisted dependency script was not suppressed");
 
   const rootVp = requireSuccess("root-local Vite+ probe", runVp(fixture, ["exec", "vp", "--version"], staleEnv));
-  assert.match(`${rootVp.stdout}${rootVp.stderr}`, /(?:vp\s+)?1\.0\.0/);
+  assert.match(`${rootVp.stdout}${rootVp.stderr}`, VP_LOCAL_PATTERN);
   assert.ok(!fs.existsSync(staleMarker), "stale global vp owned the root-local probe");
 
   const lockfile = path.join(fixture, "pnpm-lock.yaml");

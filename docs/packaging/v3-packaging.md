@@ -12,7 +12,7 @@ packages, and the former Bun single-binary surface are retired.
 
 ## Contributor command entrypoints
 
-Complete the verified standalone Vite+ 1.0.0 setup in
+Complete the verified pinned standalone Vite+ setup in
 the [toolchain guide](vite-plus-1-toolchain.md#contributor-setup) before using this guide's maintainer
 commands. Run them from the repository root. That guide owns launcher and
 dependency recovery, native hook setup, the optional nested npm recipe, and the
@@ -38,8 +38,9 @@ typecheck cache. Mandatory verification remains fresh.
 
 Runtime-bearing root tasks invoke the standalone launcher's `VP_CLI_BIN` with
 `env exec --node` from `.node-version`. This keeps the public `vp run` recipes
-unchanged without trusting ambient Node. In Vite+ 1.0, native `run` and `exec`
-alone do not guarantee the runtime pin. Wrap this guide's advanced `vp -C`
+unchanged without trusting ambient Node. Native `run` and `exec` alone do not
+guarantee the runtime pin; under `vp -C`, the package's own `engines` range wins.
+Wrap this guide's advanced `vp -C`
 recipes as `vp env exec --node "$(cat .node-version)" vp -C packages/cli run <script>`.
 Use the same wrapper for the shim directory. The actual child process version,
 not the displayed pin, is the qualification check.
@@ -126,7 +127,7 @@ derives the base release line from the valid checked-in
 `GITHUB_RUN_NUMBER + 89`. The new workflow's runs 1, 2, and 3 map to
 `3.0.0-dev.90`, `.91`, and `.92`; the fixed offset follows the prior workflow's
 `dev.89` publication. Before construction, a no-OIDC verification job checks
-out `GITHUB_SHA`, installs the exact root Vite+ 1.0.0 and pnpm 10.30.3
+out `GITHUB_SHA`, installs the exact pinned root Vite+ and pnpm 10.30.3
 toolchain without automatic install or caching, runs bare `vp check`, then
 runs uncached `vp run verify:development`. This runs development safety,
 not full release qualification, and produces no receipt. Its

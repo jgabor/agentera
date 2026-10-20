@@ -1,6 +1,7 @@
-# Vite+ 1.0 toolchain guide
+# Vite+ toolchain guide
 
-Vite+ 1.0.0 is Agentera's contributor toolchain. It manages Node.js and pnpm,
+Vite+ is Agentera's contributor toolchain; [contributor setup](#contributor-setup)
+names the pinned release. It manages Node.js and pnpm,
 supplies the test and formatting tools, and owns local Git hooks.
 The consolidation is merged into `feat/v3`. Consumer use remains
 `npx -y agentera@next`; the toolchain does not change the published CLI contract.
@@ -22,13 +23,13 @@ The consolidation is merged into `feat/v3`. Consumer use remains
 
 ## Contributor setup
 
-The supported combination is standalone Vite+ **1.0.0**, the Node.js release
+The supported combination is standalone Vite+ **1.3.0**, the Node.js release
 pinned in `.node-version`, and pnpm **10.30.3** on Linux x64. Both the launcher
-and installed local Vite+ must report 1.0.0. macOS and Windows are not
+and installed local Vite+ must report 1.3.0. macOS and Windows are not
 qualified by the Linux evidence.
 
 Obtain the standalone launcher from the trusted
-[Vite+ v1.0.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.0.0),
+[Vite+ v1.3.0 release](https://github.com/voidzero-dev/vite-plus/releases/tag/v1.3.0),
 not the Node-dependent project shim or an unpinned installer. The verified Linux
 x64 asset is `vp-x86_64-unknown-linux-gnu.tar.gz`. Verify its SHA-256 and
 provenance against the [bootstrap authority](../../references/analysis/bootstrap-integrity.md)
@@ -105,13 +106,20 @@ Neither a local test pass nor development qualification is a release receipt.
 ### Keep the Node boundary explicit
 
 Root runtime-bearing tasks use the invoking standalone launcher's `VP_CLI_BIN`
-with `env exec --node` from `.node-version`. Native `run` or `exec` alone can
-select ambient Node, even after managed setup. A displayed pin is not proof of
-the actual child process version.
+with `env exec --node` from `.node-version`. A displayed pin is not proof of
+the actual child process version; check the executable location.
 
-The CLI package's `engines >=22` range can influence native runtime resolution
-instead of selecting the root's exact Node pin. For package-directory recipes,
-use this explicit boundary rather than changing global PATH or weakening guards:
+The managed runtime is selected only in managed mode, which `vp env on` enables
+during setup. In system-first mode, Vite+ 1.3.0 runs the system Node even for
+`env exec --node` with a different requested version. Keep managed mode on.
+
+In managed mode, native `run` and `exec` at the repository root follow
+`.node-version`. Under `vp -C packages/cli`, the CLI package's `engines >=22`
+range selects a managed Node that satisfies it (24.22.0 in the re-test with a
+24.19.0 root pin) instead of the root's exact pin.
+Both behaviors were re-tested on 1.3.0 by executable location. For
+package-directory recipes, use this explicit boundary rather than changing
+global PATH or weakening guards:
 
 ```bash
 vp env exec --node "$(cat .node-version)" vp -C packages/cli run TASK
@@ -144,8 +152,10 @@ assertions passed in the final development run.
 
 ### Known cache fault and recovery
 
-Pinned Vite+ 1.0.0 can print `Cache lookup failed` and return exit 0 without
-running the child. Never treat that skipped execution as a pass.
+Pinned Vite+ can print `Cache lookup failed` and return exit 0 without running
+the child. The fault was characterized on 1.0.0 and reproduces unchanged on
+1.3.0: same message, exit status, and `cache_entries` storage. Never treat that
+skipped execution as a pass.
 `packages/cli/scripts/guard-native-cache.mjs` rejects the known diagnostic from
 outside the native cache lookup. It is a workaround, not an upstream repair
 or a security boundary against someone who controls the checkout.
@@ -182,6 +192,9 @@ disable flags, a foreign `core.hooksPath`, or missing OS utilities such as
 Do not add package, performance, capacity, or release work to pre-commit.
 
 ## Qualification and performance
+
+The recorded hosted runs in this section used Vite+ 1.0.0 and the managed Node
+pin of that time. Hosted acceptance of Vite+ 1.3.0 is pending.
 
 The recorded final [hosted candidate job](https://github.com/jgabor/agentera/actions/runs/37062016377/job/111025358674)
 qualified code `bfb03785`. It passed **all 11 development gates** in

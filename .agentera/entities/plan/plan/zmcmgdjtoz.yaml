@@ -42,5 +42,4 @@ record:
       resolve_by: Identify them at the start of task 3, keep them qualified only for the pinned launcher, and state that limit in the unqualified-launcher report and guidance.
   rejected:
     []
-  surprises:
-    []
+  surprises: "Vite+ 1.3.0 in system-first mode runs the system Node even for env exec --node with a different version (fresh fixture: requested 24.19.0, ran /usr/bin/node v24.22.0). The maintainer's home is system-first, so root tasks there use ambient Node, and no root-task guard rejects a later system Node update. Managed mode honors the pin. Affects task 3 and overall acceptance."

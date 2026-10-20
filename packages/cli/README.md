@@ -297,7 +297,7 @@ state, candidate projection, or publication result.
 
 ## Contributors
 
-Use the standalone Vite+ 1.0.0 setup and recovery recipe in the
+Use the pinned standalone Vite+ setup and recovery recipe in the
 [toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup). Vite+ supplies the pinned Node and
 pnpm; no separate JavaScript tool or hook manager installation is needed. That guide
 also owns hook setup, optional nested npm dependencies, and platform/offline
@@ -306,7 +306,7 @@ run them from the repository root.
 Root `vp run` tasks select the actual pinned Node explicitly. For the advanced
 `vp -C` recipes below, prepend `vp env exec --node "$(cat .node-version)"`, for example
 `vp env exec --node "$(cat .node-version)" vp -C packages/cli run verify:package`.
-Native `run` or `exec` alone can select ambient Node in Vite+ 1.0.
+Native `run` or `exec` alone does not guarantee the pin; under `vp -C`, the package's own `engines` range wins.
 
 ### Generated-output ownership
 

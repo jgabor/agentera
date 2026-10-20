@@ -1,9 +1,12 @@
-// Live, independent disposable Git regression. Run with standalone Vite+ 1.0.0:
+// Live, independent disposable Git regression. Run with the pinned standalone Vite+:
 // vp node packages/cli/scripts/verify-hook-bootstrap.mjs /absolute/path/to/standalone/vp
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+
+import YAML from "yaml";
+import { VP_LAUNCHER_PATTERN, VP_VERSION } from "./bootstrap-integrity.mjs";
 
 const root = path.resolve(import.meta.dirname, "../../..");
 const launcher = process.argv[2];
@@ -65,6 +68,9 @@ function read(file) {
 }
 console.log(`Hook evidence: ${sandbox}`);
 const managedNode = `v${fs.readFileSync(path.join(root, ".node-version"), "utf8").trim()}`;
+const catalog = YAML.parse(fs.readFileSync(path.join(root, "pnpm-workspace.yaml"), "utf8")).catalog;
+const vite = `npm:@voidzero-dev/vite-plus-core@${VP_VERSION}`;
+assert.equal(catalog.vite, vite);
 assert.equal(process.version, managedNode);
 run(["git", "init"]);
 write(
@@ -72,13 +78,13 @@ write(
   JSON.stringify({
     private: true,
     packageManager: "pnpm@10.30.3",
-    devDependencies: { "vite-plus": "1.0.0", vite: "npm:@voidzero-dev/vite-plus-core@1.0.0" },
+    devDependencies: { "vite-plus": VP_VERSION, vite },
     scripts: { typecheck: "node record.mjs typecheck" },
   }),
 );
 write(".node-version", fs.readFileSync(path.join(root, ".node-version")));
-assert.match(run([launcher, "--version"]).output, /^vp v1\.0\.0\n/);
-write("pnpm-workspace.yaml", "allowBuilds:\n  esbuild: true\noverrides:\n  vite@*: npm:@voidzero-dev/vite-plus-core@1.0.0\n  vitest@*: 5.0.1\npeerDependencyRules:\n  allowAny: [vite, vitest]\n");
+assert.match(run([launcher, "--version"]).output, VP_LAUNCHER_PATTERN);
+write("pnpm-workspace.yaml", `allowBuilds:\n  esbuild: true\noverrides:\n  vite@*: ${vite}\n  vitest@*: ${catalog.vitest}\npeerDependencyRules:\n  allowAny: [vite, vitest]\n`);
 write(".gitignore", "node_modules/\n*.marker\n");
 for (const file of [".vite-hooks/pre-commit", "packages/cli/scripts/run-lefthook.sh", "packages/cli/scripts/pre-commit-checks.mjs"]) write(file, fs.readFileSync(path.join(root, file)));
 fs.chmodSync(path.join(current, ".vite-hooks/pre-commit"), 0o755);
@@ -166,10 +172,10 @@ fs.renameSync(path.join(current, "saved-dependencies"), path.join(current, "node
 fs.unlinkSync(path.join(bin, "vp"));
 const missingLauncher = run(["git", "hook", "run", "pre-commit"], current, false);
 assert.notEqual(missingLauncher.exit, 0);
-assert.match(missingLauncher.output, /standalone Vite\+ 1\.0 on Git's PATH/);
+assert.match(missingLauncher.output, /pinned standalone Vite\+ on Git's PATH/);
 // An ambient Node does not make the local vp shim a supported runtime owner.
 fs.symlinkSync(process.execPath, path.join(bin, "node"));
 const ambientFallback = run(["git", "hook", "run", "pre-commit"], current, false);
 assert.notEqual(ambientFallback.exit, 0);
-assert.match(ambientFallback.output, /standalone Vite\+ 1\.0 on Git's PATH/);
+assert.match(ambientFallback.output, /pinned standalone Vite\+ on Git's PATH/);
 console.log(`PASS: native local activation, managed ordinary Git, partial hunks, owner selection, config preservation, missing prerequisites. Receipt: ${sandbox}/receipt.json`);

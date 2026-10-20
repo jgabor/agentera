@@ -21,7 +21,7 @@ Authoritative exceptions:
   v3 packaging contract. See
   [`docs/packaging/v3-packaging.md`](./packaging/v3-packaging.md) for the v3
   npm distribution and verification-lane contract. The
-  [Vite+ 1.0 toolchain guide](./packaging/vite-plus-1-toolchain.md) covers contributor
+  [Vite+ toolchain guide](./packaging/vite-plus-1-toolchain.md) covers contributor
   commands, accepted concessions, caching, and final development qualification.
 
 Nothing else under `docs/` is packaged in the Agentera app bundle.

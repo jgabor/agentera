@@ -26,11 +26,12 @@ lifecycle are defined once in the
 Run the table's advanced package-directory recipes as
 `vp env exec --node "$(cat .node-version)" vp -C packages/cli run TASK` from the root.
 Root `vp run` tasks already select `.node-version` explicitly; native `run` and
-`exec` alone do not guarantee that pin in Vite+ 1.0.
+`exec` alone do not guarantee that pin, because under `vp -C` the package's own
+`engines` range wins.
 
 ## Contributor prerequisites
 
-Use the verified standalone Vite+ 1.0.0 setup in
+Use the verified pinned standalone Vite+ setup in
 [AGENTS.md](../../../AGENTS.md#common-commands), from the repository root. It
 supplies pinned Node and pnpm plus project-local test and hook tools; it does
 not supply the operating system or Git history. Linux x64 is the verified

@@ -4,13 +4,21 @@ import path from "node:path";
 
 import { describe, expect, it, vi } from "vite-plus/test";
 
-import { PNPM_REFERENCE, VP_ARCHIVE_SHA256, VP_ARCHIVE_URL, activateBootstrap, prepareBootstrap, provisionVpArchive, verifiedVpArchive } from "../../scripts/bootstrap-integrity.mjs";
+import { PNPM_REFERENCE, VP_ARCHIVE_SHA256, VP_ARCHIVE_URL, VP_LAUNCHER_PATTERN, VP_LOCAL_PATTERN, VP_VERSION, activateBootstrap, prepareBootstrap, provisionVpArchive, verifiedVpArchive } from "../../scripts/bootstrap-integrity.mjs";
 
 describe("bootstrap integrity prerequisites", () => {
   it("binds pnpm and native Vite+ to reviewed release digests", () => {
     const integrity = "yWHR4KLY41TsqlFmuCJRZmi39Ey1vZUSLVkN2Bki9gb1RzttI+xKW+Bef80Y6EiNR9l4u+mBhy8RRdBumnQAFw==";
     expect(PNPM_REFERENCE).toBe(`pnpm@10.30.3+sha512.${Buffer.from(integrity, "base64").toString("hex")}`);
-    expect(VP_ARCHIVE_SHA256).toBe("2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a");
+    expect(VP_ARCHIVE_SHA256).toBe("3fb3a668472e1312eedd7598b3f6c511acebc2f6497c293a5ee04eba248eee7e");
+    expect(VP_ARCHIVE_URL).toBe(`https://github.com/voidzero-dev/vite-plus/releases/download/v${VP_VERSION}/vp-x86_64-unknown-linux-gnu.tar.gz`);
+  });
+
+  it("accepts only the pinned standalone launcher and root-local Vite+ versions", () => {
+    expect(VP_LAUNCHER_PATTERN.test(`vp v${VP_VERSION}\n`)).toBe(true);
+    expect(VP_LAUNCHER_PATTERN.test(`vp v${VP_VERSION}1\n`)).toBe(false);
+    expect(VP_LOCAL_PATTERN.test(`Local vite-plus:\n  vite-plus  v${VP_VERSION}\n`)).toBe(true);
+    expect(VP_LOCAL_PATTERN.test(`Local vite-plus:\n  vite-plus  v${VP_VERSION}.1\n`)).toBe(false);
   });
 
   it("rejects altered and missing native archives before extraction or execution", () => {

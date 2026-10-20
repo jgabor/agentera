@@ -4,7 +4,7 @@ record:
   name: Move the pinned Vite+ release to 1.3.0
   depends_on:
     - srokhmwcek
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the reviewed toolchain evidence WHEN a reviewer checks it THEN it records the immutable Vite+ 1.3.0 release, its archive digest, npm integrity for all three packages, signed provenance verified for source commit, workflow run, and signer, the bundled tool versions, and the Node range, with the 1.0.0 record and its hosted runs kept as 1.0.0 history.
     - GIVEN a fresh checkout WHEN a contributor installs dependencies THEN the local Vite+ and its bundled Vitest report the pinned 1.3.0 set with no mixed versions.
@@ -12,3 +12,9 @@ record:
     - GIVEN a native-cache fault on the new pins WHEN the cache guard runs THEN a skipped execution is never reported as a pass.
     - GIVEN the bootstrap integrity, toolchain baseline, managed-toolchain, and hook bootstrap proofs and the development verification lane WHEN they run THEN all pass, the baseline's recorded observation is refreshed from that run, and every current-pin check derives its expected version from one source.
   plan: zmcmgdjtoz
+  evidence:
+    - Re-verified the immutable v1.3.0 release, archive SHA-256 against downloaded bytes, and npm integrity for vite-plus, its core, and the Linux x64 package.
+    - Sigstore 4.1.1 from npm 11.19.1 in managed Node 24.22.0 verified DSSE signatures, Rekor inclusion, issuer, signer, SHA-512 subjects, release source commit, and run for all three packages; tampered-payload and wrong-identity controls failed.
+    - Bootstrap integrity, toolchain baseline, managed-toolchain, and hook bootstrap proofs passed; altered archive and altered pnpm were rejected; the hook missing-launcher step now passes.
+    - The native cache fault reproduces unchanged; the guard stays. Formatting touched one file; lint has 0 errors and 6 of 8 allowed warnings.
+    - vp run verify:development passed all 11 gates; vp check and typecheck passed.

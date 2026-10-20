@@ -5,7 +5,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-import { activateBootstrap, prepareBootstrap, provisionVpArchive } from "./bootstrap-integrity.mjs";
+import { activateBootstrap, prepareBootstrap, provisionVpArchive, VP_VERSION } from "./bootstrap-integrity.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 const PROOF = path.join(ROOT, "packages/cli/scripts/verify-toolchain-baseline.mjs");
@@ -42,7 +42,7 @@ try {
   const staleMarker = path.join(sandbox, "stale.marker");
   const stale = run(REQUIRED_NODE, staleMarker, staleLauncher);
   assert.notEqual(stale.status, 0, "unsupported launcher unexpectedly passed");
-  assert.match(`${stale.stdout}${stale.stderr}`, /standalone Vite\+ 1\.0\.0.*vp install --frozen-lockfile/);
+  assert.match(`${stale.stdout}${stale.stderr}`, new RegExp(`standalone Vite\\+ ${VP_VERSION.replaceAll(".", "\\.")} .*vp install --frozen-lockfile`));
   assert.equal(fs.existsSync(staleMarker), false, "project commands ran after the launcher pin was rejected");
   assert.equal(sha256(LOCK), lockBefore, "managed toolchain proof changed pnpm-lock.yaml");
   console.log(
@@ -53,7 +53,7 @@ try {
         managedNode: `v${REQUIRED_NODE}`,
         rejectedManagedNode: "v24.20.0",
         pnpm: "10.30.3",
-        vitePlus: "1.0.0",
+        vitePlus: VP_VERSION,
         rejectedVitePlus: "0.3.0",
         lockSha256: lockBefore,
         vpHome: "disposable",

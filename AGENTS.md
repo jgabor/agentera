@@ -123,7 +123,7 @@ recovery, the stable path, or a change to the development ref.
 
 ## Common commands
 
-Contributors use standalone Vite+ 1.0.0, which supplies Node.js from
+Contributors use the pinned standalone Vite+, which supplies Node.js from
 `.node-version` and pnpm from `package.json#packageManager`. Install the
 launcher, verify it, and recover a broken setup with the
 [toolchain guide](docs/packaging/vite-plus-1-toolchain.md#contributor-setup).

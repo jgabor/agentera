@@ -4,6 +4,8 @@ import path from "node:path";
 import YAML from "yaml";
 import { describe, expect, it } from "vite-plus/test";
 
+import { VP_ARCHIVE_SHA256, VP_VERSION } from "../../scripts/bootstrap-integrity.mjs";
+
 const ROOT = path.resolve(import.meta.dirname, "../../../..");
 const baseline = YAML.parse(fs.readFileSync(path.join(ROOT, "references/analysis/toolchain-baseline.yaml"), "utf8"));
 const rootPackage = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
@@ -102,29 +104,37 @@ describe("toolchain baseline", () => {
 
   it("binds the executable integration proof to live project policy", () => {
     expect(baseline.executable_proof.command).toBe("vp -C packages/cli run test:toolchain-baseline");
-    expect(baseline.selection.vite_plus.version).toBe("1.0.0");
-    expect(baseline.selection.vite_plus.release_commit).toBe("fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4");
-    expect(baseline.selection.vite_plus.node_range).toBe("^22.18.0 || ^24.11.0 || >=26.0.0");
-    expect(baseline.selection.vite_plus.bundled).toEqual({
-      vite: "8.3.1",
-      vitest: "5.0.1",
-      oxlint: "1.85.0",
-      oxfmt: "0.70.0",
-    });
-    expect(lockfile.packages["vite-plus@1.0.0"].resolution.integrity).toBe(baseline.selection.vite_plus.npm_integrity);
-    expect(lockfile.packages["@voidzero-dev/vite-plus-linux-x64-gnu@1.0.0"].resolution.integrity).toBe(baseline.selection.vite_plus.npm_provenance.platform_npm_integrity);
-    expect(baseline.selection.vite_plus.native_linux_x64).toEqual({
+    // The CI bootstrap constant is the one current Vite+ pin; the baseline,
+    // workspace catalog and lockfile must all agree with it.
+    const vitePlus = baseline.selection.vite_plus;
+    expect(vitePlus.version).toBe(VP_VERSION);
+    expect(vitePlus.release_commit).toBe("afbe4a285b4ac6ffac498eae71b10ff63069a029");
+    expect(vitePlus.node_range).toBe("^22.18.0 || ^24.11.0 || >=26.0.0");
+    expect(Object.keys(vitePlus.bundled)).toEqual(["vite", "vitest", "oxlint", "oxfmt", "oxlint-tsgolint"]);
+    for (const tool of ["vitest", "oxlint", "oxfmt", "oxlint-tsgolint"]) expect(lockfile.packages, tool).toHaveProperty([`${tool}@${vitePlus.bundled[tool]}`]);
+    expect(lockfile.packages[`vite-plus@${VP_VERSION}`].resolution.integrity).toBe(vitePlus.npm_integrity);
+    expect(lockfile.packages[`@voidzero-dev/vite-plus-core@${VP_VERSION}`].resolution.integrity).toBe(vitePlus.npm_provenance.core_npm_integrity);
+    expect(lockfile.packages[`@voidzero-dev/vite-plus-linux-x64-gnu@${VP_VERSION}`].resolution.integrity).toBe(vitePlus.npm_provenance.platform_npm_integrity);
+    expect(vitePlus.native_linux_x64).toEqual({
       asset: "vp-x86_64-unknown-linux-gnu.tar.gz",
-      sha256: "2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a",
+      sha256: VP_ARCHIVE_SHA256,
       immutable_release: true,
     });
+    expect(vitePlus.history.map(({ version, status, release_commit, native_linux_x64_sha256 }: Record<string, string>) => ({ version, status, release_commit, native_linux_x64_sha256 }))).toEqual([
+      {
+        version: "1.0.0",
+        status: "superseded",
+        release_commit: "fc287d7b1c0dc008dbc65d1d2b2f51a44e2a5ea4",
+        native_linux_x64_sha256: "2adca8386c8f7e158eea4abe1a3eda9f89313c869145f788409a0be45979dd6a",
+      },
+    ]);
     expect(rootPackage.packageManager).toBe("pnpm@10.30.3");
     expect(baseline.project_contract.node).toBe(nodePin);
     expect(workspace.catalog).toEqual({
       "@typescript/typescript6": "6.0.2",
-      vite: "npm:@voidzero-dev/vite-plus-core@1.0.0",
-      "vite-plus": "1.0.0",
-      vitest: "5.0.1",
+      vite: `npm:@voidzero-dev/vite-plus-core@${VP_VERSION}`,
+      "vite-plus": VP_VERSION,
+      vitest: vitePlus.bundled.vitest,
     });
     expect(workspace.overrides).toMatchObject({ "vite@*": "catalog:", "vitest@*": "catalog:" });
     expect(rootPackage.devDependencies).not.toHaveProperty("oxfmt");

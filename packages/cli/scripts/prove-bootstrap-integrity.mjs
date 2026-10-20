@@ -4,7 +4,7 @@ import http from "node:http";
 import path from "node:path";
 import { pathToFileURL } from "node:url";
 
-import { NODE_VERSION, prepareBootstrap, run, setupWorkflow, verifiedVpArchive } from "./bootstrap-integrity.mjs";
+import { NODE_VERSION, prepareBootstrap, run, setupWorkflow, verifiedVpArchive, VP_VERSION } from "./bootstrap-integrity.mjs";
 
 const ROOT = path.resolve(import.meta.dirname, "../../..");
 const [output] = process.argv.slice(2);
@@ -43,10 +43,10 @@ try {
   assert.deepEqual(leakedKeys, [], "bootstrap inherited credential/config/runtime settings");
   check("hostile inherited npm/OIDC configuration absent from managed child environment");
   fs.writeFileSync(path.join(output, "runtime.json"), await bootstrap.execute(["env", "current", "--json"], fixture));
-  check(`verified native Vite+ 1.0.0 acquired managed Node ${NODE_VERSION} and digest-bound pnpm 10.30.3 in fresh private roots`);
+  check(`verified native Vite+ ${VP_VERSION} acquired managed Node ${NODE_VERSION} and digest-bound pnpm 10.30.3 in fresh private roots`);
   fs.copyFileSync(path.join(bootstrap.home, "install.log"), path.join(output, "install.log"));
   assert.deepEqual(fs.readFileSync(path.join(fixture, "pnpm-lock.yaml")), fs.readFileSync(path.join(ROOT, "pnpm-lock.yaml")));
-  assert.equal(JSON.parse(fs.readFileSync(path.join(fixture, "node_modules/vite-plus/package.json"), "utf8")).version, "1.0.0");
+  assert.equal(JSON.parse(fs.readFileSync(path.join(fixture, "node_modules/vite-plus/package.json"), "utf8")).version, VP_VERSION);
   fs.writeFileSync(path.join(output, "build.log"), await bootstrap.execute(["build"], fixture));
   const built = await import(pathToFileURL(path.join(fixture, "dist/proof.mjs")).href);
   assert.equal(built.answer, 42);

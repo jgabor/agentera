@@ -3,9 +3,9 @@ packages:
 
 catalog:
   "@typescript/typescript6": "6.0.2"
-  vite: npm:@voidzero-dev/vite-plus-core@1.0.0
-  vite-plus: 1.0.0
-  vitest: 5.0.1
+  vite: npm:@voidzero-dev/vite-plus-core@1.3.0
+  vite-plus: 1.3.0
+  vitest: 5.0.5
 
 # pnpm 10+ ignores the legacy `pnpm` field in package.json. The settings that
 # used to live under `pnpm.onlyBuiltDependencies` and `pnpm.overrides` now

@@ -252,9 +252,14 @@ describe("native hook boundaries", () => {
     if (_name === "nested source") {
       const related = ok(root, vp, ["test", "related", "--run", "--project", "local", "--passWithNoTests", source]);
       expect(related).toContain("1 passed");
-      for (const file of ["references/authority.yaml", "vite.config.ts", "deleted.ts"]) {
-        expect(ok(root, vp, ["test", "related", "--run", "--project", "local", "--passWithNoTests", file])).toContain("No test files found");
+      for (const file of ["references/authority.yaml", "deleted.ts"]) {
+        expect(ok(root, vp, ["test", "related", "--run", "--project", "local", "--passWithNoTests", file])).toContain("No affected test files found");
       }
+      // Vitest treats its config as related to every test, including the
+      // unrelated one, so staged selection must never pass config files.
+      const configRelated = run(root, vp, ["test", "related", "--run", "--project", "local", "--passWithNoTests", "vite.config.ts"]);
+      expect(configRelated.stdout).toContain("related to vite.config.ts");
+      expect(selectChecks(["vite.config.ts"]).some((command: string[]) => command.includes("related"))).toBe(false);
       fs.unlinkSync(path.join(root, "trace.jsonl"));
     }
     write(root, ".gitignore", "node_modules\ntrace.jsonl\n");
