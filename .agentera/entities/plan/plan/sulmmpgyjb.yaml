@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-10-22
-    status: open
+    status: complete
     reviewed: 2026-10-22
     critic_issues: 12 found, 10 addressed, 2 dismissed
     revised: Split into eight tasks, made stdin input explicit, set numeric budgets, and added the skill rule disposition, init atomicity, per-task doc criteria and a local-build eval.

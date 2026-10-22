@@ -1,0 +1,105 @@
+id: ffsmojjpan
+artifact: health
+record:
+  date: 2026-10-22
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 2
+    info: 9
+    filtered_by_confidence: 0
+  trajectory: "stable: this is a limited closure check for plan sulmmpgyjb (Prime as the single Agentera entry), not a codebase-wide audit. Delivered artifacts match the code and each other; two warnings remain (stale budget numbers in CHANGELOG, two capsules over their declared budget)."
+  grades:
+    artifact_freshness: B
+  dimensions_detail:
+    - name: artifact_freshness
+      grade: B
+      summary: Limited closure check for plan sulmmpgyjb. verify:development passed 11 of 11 gates on a clean tree. skills/agentera/SKILL.md is 36 lines and 1,340 bytes (limit 40 and 3,000). Bare prime is 10,630 bytes here and 9,731 in a fresh repo (limit 16,000 bytes and 5,000 tokens). Routed responses are 24,480, 49,460 and 32,296 bytes, under their budgets. README, UPGRADE.md, packages/cli/README.md, docs/cli-coverage-contract.md, routing-model.md, vocabulary.md, help, init --help and prime --guidance agree with the code. Gaps are stale 12,000/3,000 budget quotes in four CHANGELOG Unreleased bullets and vision/audit capsules above 55,000 bytes.
+      findings:
+        - heading: CHANGELOG Unreleased still quotes the superseded 12,000-byte and 3,000-token budgets
+          location: CHANGELOG.md:7, 10, 11, 13 (Unreleased); docs/cli-coverage-contract.md:895 (historical)
+          evidence: Line 6 raises bare prime to 16,000 bytes and 5,000 tokens. Lines 7 and 11 say bare prime is within the 12,000-byte and 3,000-token budgets. Line 10 gives routed budgets as 12,000 plus 34,500 or 37,000. Line 13 describes the failure at 12,000 bytes as current-looking.
+          impact: A reader of the release notes sees two budgets for the same surface.
+          suggested_action: Reword lines 7, 10, 11 and 13 as before values, or merge them into line 6. Leave coverage-contract line 895 as dated history.
+          severity: warning
+          confidence: 90
+        - heading: Vision and audit capsules exceed the declared 55,000-byte capsule budget in this repo
+          location: scripts/json_output_surface_manifest.yaml:155-185; references/artifacts/state-storage-authority.yaml:2573
+          evidence: prime --context vision measures 56,407 bytes and --context audit 57,651 bytes on a fresh build. Both exit 0. The declared per-capability limit is 55,000.
+          impact: The declared budget is not true for this repo, and nothing enforces it at runtime. The plan deferred capsule size reductions, so this is not plan-caused.
+          suggested_action: Track a TODO for capsule trimming or an approved budget change with measurements.
+          severity: warning
+          confidence: 85
+        - heading: init stale writer-lock recovery gives no way out
+          location: packages/cli/src/cli/migrationRequired.ts:291-304
+          evidence: An empty .agentera/.writer.lock makes init --yes return initialization_conflict. Its recovery says to check prime, then preview again. Prime reports a blocked entity-state cutover instead, and no text mentions a stale lock.
+          impact: An interrupted initializer leaves a project that init cannot repair by its own advice.
+          suggested_action: Add stale-lock guidance, or make the conflict recovery point to the exact prime recovery.
+          severity: info
+          confidence: 80
+        - heading: doctor writer_readiness.error still offers plan create with PLAN.yaml
+          location: packages/cli/src/cli/commands/recoveryDetail.ts:40; packages/cli/src/state/entityPublicationContext.ts:286
+          evidence: doctor in a fresh repo lists init first, then state plan create --input PLAN.yaml.
+          impact: Steers a new user toward a plan file they do not have, while the entry contract says init is the entry.
+          suggested_action: Show only the init preview in doctor's next step.
+          severity: info
+          confidence: 75
+        - heading: Cold-agent grader uses a path-substring rule and passes the vision hand-off on an offer
+          location: packages/cli/scripts/eval-cold-agent.mjs:31-32, 74-77
+          evidence: preview_before_approval passes if turn 1 text contains .agentera/state-mode.yaml. vision_handoff passes on a start or a matching offer sentence. The 3 of 3 pass (progress duyoqaltlz) used a package built from 2221cdb6 plus uncommitted changes.
+          impact: The eval can pass a weak preview, and its evidence is not tied to a committed tree.
+          suggested_action: Require the full writes content in the preview. Rerun the eval at HEAD before any authorized push.
+          severity: info
+          confidence: 70
+        - heading: Fresh-repo routed /agentera omits fresh_start.writes
+          location: packages/cli/src/capabilities/status/instructions.ts
+          evidence: In a fresh repo, prime --input - with /agentera returns manual, route and a status capsule with no fresh_start. The capsule's next_action.retrieval.exact is the init preview and the capsule text says to use it.
+          impact: One extra call to see the writes; consistent with the docs.
+          suggested_action: Accept as documented, or inline the writes list in the capsule.
+          severity: info
+          confidence: 75
+        - heading: route request reads stdin with readFileSync(0) and fails on a not-yet-ready pipe
+          location: packages/cli/src/cli/commands/route.ts:187-189
+          evidence: route request --input - with stdin written after 800 ms exits 2 with invalid_format. prime --input - succeeds, because it uses the retrying readBounded in the same file.
+          impact: Hosts with a non-blocking stdin can fail on route request and probably on route receipt.
+          suggested_action: Reuse the retrying reader for route request and route receipt in a later change.
+          severity: info
+          confidence: 70
+        - heading: Line-keyed package-registry classifications are fragile
+          location: references/adapters/package-registry.yaml:111-118
+          evidence: Entries use region line:N plus a normalized sha256, for example vocabulary.md line:25, 54, 124, 129.
+          impact: Any line shift in a doc needs manual re-keying; the hash catches drift but does not repair it.
+          suggested_action: Key by heading or content hash when next touched.
+          severity: info
+          confidence: 80
+        - heading: The 2,500-byte manual cap exists only as a test constant
+          location: packages/cli/test/cli/prime.test.ts:78
+          evidence: The manual is 2,423 bytes, leaving 77 bytes. The cap is not declared in references/artifacts/state-storage-authority.yaml.
+          impact: A changed cap or a one-line manual addition hits a test, not a documented budget.
+          suggested_action: Declare the manual cap in state-storage-authority.yaml.
+          severity: info
+          confidence: 80
+        - heading: README Get started step 3 omits the stdin form of prime
+          location: README.md:29-33
+          evidence: Step 3 says the agent passes your request to npx -y agentera@next prime. The skill, UPGRADE.md and packages/cli/README.md say prime --input - with a JSON request on stdin.
+          impact: Minor imprecision for a human reader.
+          suggested_action: Say that the agent sends the request on stdin to prime --input -.
+          severity: info
+          confidence: 60
+        - heading: No declared budget for help output
+          location: references/artifacts/state-storage-authority.yaml (budgets.startup)
+          evidence: The plan's overall acceptance says help stays within its declared budget, but no help budget is declared in state-storage-authority.yaml, json_output_surface_manifest.yaml or the decision. Help measures 2,333 bytes.
+          impact: That acceptance clause is not mechanically checkable.
+          suggested_action: Declare a help cap or reword the acceptance in a later plan.
+          severity: info
+          confidence: 65
+  trends:
+    comparison_target: health deffnuemyi
+    improved: Prime, init, help, the shared skill, README, UPGRADE.md and the coverage contract now agree with the code. The skill shrank from 181 to 36 lines. Bare prime is within a declared 16,000-byte and 5,000-token budget. The full development gate passes.
+    degraded: Artifact_freshness grade moves from A to B because of stale CHANGELOG budgets and over-budget vision and audit capsules.
+    stable: Working tree is clean, versions remain at 3.0.0, and 11 of 11 development gates pass.
+    new_findings: CHANGELOG 12,000/3,000 quotes; vision and audit capsule overruns; init stale-lock recovery; doctor PLAN.yaml hint; weak cold-agent grader; fresh routed /agentera without writes; route request stdin reader; line-keyed registry classifications; test-only manual cap; README stdin wording; undeclared help budget.
+    resolved: Bare prime's failure in large projects (TODO krqhlpjexq), the fresh-project repair report (TODO kkfomcugga) and the 181-line skill drift.
+    carried_forward: Capsule size above the 55,000-byte budget (capsule trimming was deferred by the plan). The previous record's clxxrzihnt count gap was not re-examined in this check.
+  appended_at: 2026-10-22T21:08:35.802Z
