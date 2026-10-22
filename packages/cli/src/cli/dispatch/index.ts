@@ -13,7 +13,7 @@ import { emitInvalidInput } from "../errors.js";
 import { applyOutputPolicy } from "../outputPolicy.js";
 import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
-import { enforceCompletedEntityCutover, migrationProject, requestedMigrationFailureFormat, requiresCompletedEntityCutover } from "../migrationRequired.js";
+import { enforceCompletedEntityCutover, migrationProject, requestedMigrationFailureFormat, requiresCompletedEntityCutover, runInit } from "../migrationRequired.js";
 import { enforceProductV1Eol } from "../productV1Eol.js";
 import { PRIME_MANUAL } from "../prime-blob.js";
 import { isSchemaDetailQuery } from "../commands/schemaDetail.js";
@@ -126,6 +126,8 @@ export function main(argv: string[], io: Io = {}): number {
       return runVersion(rest, io);
     case "prime":
       return runPrime("prime", rest, io, "agentera prime");
+    case "init":
+      return runInit(rest, io);
     case "app-home":
       return runAppHome(rest, io, "agentera app-home");
     case "doctor":

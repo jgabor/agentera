@@ -368,7 +368,7 @@ describe("Decision 94 entity authority", () => {
         absent_mode: "classified",
         invalid_behavior: "fail_without_fallback",
         detection: "read_only",
-        publication_owner: "recognized_legacy_development_upgrade_or_fresh_plan_create",
+        publication_owner: "recognized_legacy_development_upgrade_or_fresh_init_or_plan_create",
       },
       read_only_preview: {
         implementation: "implemented",

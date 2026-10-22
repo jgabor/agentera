@@ -106,6 +106,7 @@ const COMMAND_DESCRIPTIONS: Record<string, string> = {
   validate: "Deprecated alias for check validate. Validate capabilities and repository contracts.",
   upgrade: "Preview or apply one-way app and project-state migration or isolated one-file shared-skill installation.",
   doctor: "Check Agentera CLI, app, shared-skill, and project-integration status.",
+  init: "Preview, or with --yes apply, Agentera state for a fresh Git repository root. One of two initializers with state plan create; it writes only the entity state marker.",
 };
 function availableStructuredFields(command: string): string[] {
   if (command === "prime") return [...STATUS_STRUCTURED_FIELDS, "capability_context"];
@@ -129,6 +130,7 @@ const COMMAND_FILTERS_ALL: Record<string, string[]> = {
   lint: ["artifact", "file", "text", "strict", "format"],
   compact: ["project", "mode", "format"],
   doctor: ["install_root", "home", "project", "expected_version", "expect_command"],
+  init: ["project", "yes"],
   upgrade: ["project", "install_root", "home", "only", "dry_run", "yes", "force", "channel", "shared_skill"],
   schema: ["format", "artifact", "protocol", "capability-contract", "section", "limit", "cursor"],
 };
@@ -146,6 +148,7 @@ function commandDescription(name: string, kind: string, fields: string[] | null 
   else if (!outputFormats && name === "upgrade") formats = ["text", "json"];
   else if (!outputFormats && name === "schema") formats = ["json", "yaml"];
   else if (!outputFormats && name === "prime") formats = ["text", "json", "yaml"];
+  else if (!outputFormats && name === "init") formats = ["json"];
   const description = kind === "capability_routing" ? `Route to ${name} capability guidance.` : kind === "routine_state" ? `Read ${name} project state through the agentera state namespace.` : (COMMAND_DESCRIPTIONS[name] ?? "unknown");
   const alias = TRANSITIONAL_TOP_LEVEL_ALIASES.find((entry) => entry.legacy === name);
   return {
@@ -183,6 +186,7 @@ function describeCommands(): JsonObject[] {
     commandDescription("schema", "runtime_introspection"),
     commandDescription("upgrade", "upgrade", ["schemaVersion", "mode", "status", "phase", "phases", "summary", "state_validation", "startup_validation", "dryRunCommand", "applyCommand"]),
     commandDescription("doctor", "self_check"),
+    commandDescription("init", "initialization", ["schemaVersion", "command", "status", "project", "project_state", "writes", "changed", "apply_command", "next_step"]),
   );
   return commands;
 }

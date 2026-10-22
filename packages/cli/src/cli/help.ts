@@ -34,6 +34,7 @@ export function printTopLevelHelp(): string {
       ...CAPABILITY_ROUTING_NAMES.map((name) => `${name.padEnd(19)} Route to ${name} capability guidance`),
     ]),
     ...lines("User commands:", [
+      "init                Preview Agentera state for a fresh Git repository; --yes applies it",
       "upgrade             Preview or apply shared-skill delivery, migration, or legacy cleanup",
       "app-home            Resolve the platform Agentera app-home path",
       "doctor              Check Agentera CLI, app, and shared-skill status",
@@ -117,6 +118,35 @@ export function printUpgradeHelp(): string {
     `  Every deleted entry, same authorization: ${preCutoverCommand("upgrade --reset-product-v1 --dry-run --full-detail")}`,
     "  Only explicit Yes runs that unchanged CLI-provided operation; No or silence makes no changes.",
     "  Scope/source changes refuse. Retry the same approved operation after interruption; completion requires executor verification.",
+  ].join("\n");
+}
+
+export function printInitHelp(): string {
+  return [
+    "usage: agentera init [-h] [--project PROJECT] [--yes]",
+    "",
+    "Initialize Agentera state in a fresh Git repository. init and state plan create",
+    "are the two initializers; every other command needs initialized state.",
+    "",
+    "Without --yes, init previews: it prints JSON listing every file it would write",
+    "and writes nothing. With --yes it writes exactly those files: only the entity",
+    "state marker .agentera/state-mode.yaml. Run --yes only after the user approves",
+    "the preview.",
+    "",
+    "init refuses, writes nothing and exits 1 with a structured error and recovery",
+    "when the project is already initialized (already_initialized), holds v2 state",
+    "(migration_required), partial or unknown state (partial_state, unknown_state),",
+    "corrupt state (corrupt_state), is not a Git repository root (not_git_root), or",
+    "another initializer wins a race (initialization_conflict).",
+    "",
+    "options:",
+    "  -h, --help          show this help message and exit",
+    "  --project PROJECT   Git repository root to initialize (default: current directory)",
+    "  --yes               apply the previewed writes",
+    "",
+    "Exit codes: 0 preview or initialized; 1 refused; 2 invalid arguments.",
+    `Examples: ${preCutoverCommand("init")}`,
+    `  ${preCutoverCommand("init --yes")}`,
   ].join("\n");
 }
 
@@ -584,6 +614,8 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
       return printSchemaHelp();
     case "route":
       return printRouteHelp();
+    case "init":
+      return printInitHelp();
     case "upgrade":
       return printUpgradeHelp();
     case "app-home":

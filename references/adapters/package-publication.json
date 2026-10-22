@@ -310,8 +310,8 @@
           "algorithm": "sha256(sorted_utf8_ids_joined_by_lf)",
           "classes": {
             "cli": {
-              "count": 27,
-              "sha256": "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4"
+              "count": 28,
+              "sha256": "2ca20153b2af0d56a1b7067e94d45bd85046710e2b4321e43adb9822031c0687"
             },
             "capability": {
               "count": 12,
@@ -339,8 +339,8 @@
             }
           },
           "total": {
-            "count": 318,
-            "sha256": "55b75911c6ded7e351aa811e3f7dd34764c17ea80a771f7199cbf1e0653afd8f"
+            "count": 319,
+            "sha256": "39b2c8ff98aca2c49e9fe892c9efc6107edd20593e75bde18da833b659fa6aba"
           }
         }
       },

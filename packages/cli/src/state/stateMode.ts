@@ -208,6 +208,24 @@ export function freshPlanInitialization(projectRoot: string, sourceRoot = resolv
   };
 }
 
+/**
+ * Publish only the entity-mode marker at a proven fresh Git root. The marker is
+ * linked into place, so a concurrent initializer that publishes first makes this
+ * call fail with a conflict before it writes anything else.
+ */
+export function initializeFreshEntityState(projectRoot: string, sourceRoot = resolveSourceRoot()): FreshPlanInitialization | null {
+  const initialization = freshPlanInitialization(projectRoot, sourceRoot);
+  if (!initialization) return null;
+  const publicationContext = EntityPublicationContext.beginInitialization(initialization.root, initialization.markerPath);
+  try {
+    publicationContext.publishStateMarker(initialization.markerBytes);
+    publicationContext.assertValid();
+  } finally {
+    publicationContext.close();
+  }
+  return initialization;
+}
+
 function detectValidatedStateMode(projectRoot: string, sourceRoot: string): DetectedStateMode {
   const root = validateRealProjectRoot(projectRoot);
   const declared = contract(sourceRoot);

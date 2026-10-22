@@ -35,8 +35,9 @@ export function recoveryDetailSections(a: ServiceAuthority, base: string, owner:
   a.add(
     "recovery",
     {
-      fresh_project: "A fresh Git project is initialized only by state plan create. Do not use upgrade --yes to initialize it. Partial, corrupt or unknown marker-absent state remains blocked behind read-only recovery, not state migrate/backfill, projection repair, restore or downgrade.",
-      fresh_commands: [`${cli} prime --context plan`, `${cli} state plan explain --verb create`, `${cli} state plan create --input PLAN.yaml --dry-run`],
+      fresh_project:
+        "A fresh Git project has two initializers: init, which previews by default and writes only the state marker after --yes and explicit approval, and state plan create. Do not use upgrade --yes to initialize it. Partial, corrupt or unknown marker-absent state remains blocked behind read-only recovery, not state migrate/backfill, projection repair, restore or downgrade.",
+      fresh_commands: [`${cli} init`, `${cli} prime --context plan`, `${cli} state plan explain --verb create`, `${cli} state plan create --input PLAN.yaml --dry-run`],
       interrupted_migration:
         "Rerun the same full v2-to-v3 apply command after interruption; completed work converges to no change. No rollback or reconstruction of missing history is offered. Compacted progress/decision/health summaries remain immutable read-only summary entities with retained source provenance, detail_availability=summary and compatibility=degraded. Their deterministic ID segment follows full records and makes no chronology claim. They are not current full detail or standalone satisfaction targets.",
       cleanup_ownership:

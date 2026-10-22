@@ -4,7 +4,7 @@ record:
   name: Add init as a second initializer with preview and approval
   depends_on:
     - equxceodkf
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a fresh git repository WHEN `agentera init` runs without `--yes` THEN it returns JSON listing every file init would write and writes nothing; WHEN `agentera init --yes` runs THEN it writes exactly those files, exits 0, and the project becomes initialized v3 state.
     - GIVEN an already initialized, partial, corrupt or non-git directory WHEN `agentera init --yes` runs THEN it refuses with a structured error and scoped recovery and writes nothing.
@@ -12,3 +12,13 @@ record:
     - GIVEN an initialized project with no vision WHEN vision starts, self-checks and saves THEN each step succeeds and status and plan creation still read the project afterwards.
     - GIVEN the state authority, upgrade guide, operation details, gate errors and recovery text WHEN read THEN they name init and plan creation as the two initializers, and help, schema, activation and coverage views list init.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-wwfeyocaie-1
+      source: "audit evaluator report 2026-10-22: 5/5 criteria PASS, 2 WARN (stale writer lock recovery text loops, pre-existing limit shared with plan create; race test is in-process interleaving)"
+      recorded_at: 2026-10-22 20:11
+      writer_command: agentera state plan record-evaluation

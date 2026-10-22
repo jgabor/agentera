@@ -287,7 +287,7 @@ const RULES: Record<string, string[]> = {
     "Light/full header level, title, created date and lifecycle plus what, why, scope and tasks follow the field definitions. Full plans also require reviewed, critic_issues and design. critic_issues is 'N found, M addressed, K dismissed'; M+K=N and K equals rejected entries, each with issue and rationale.",
     "unknowns and rejected are optional lists of mappings: omit or use [] when empty; no minimum quota. Each unknown requires question, integer affects_task and resolve_by. Each rejected entry requires issue and rationale. Full-plan task acceptance must be non-empty; complete plan creation requires every task complete.",
     "Cannot create archived plans or superseded tasks. Missing task dependencies and acceptance normalize to empty lists where permitted by level. Strict prose lint and candidate validation run before publication.",
-    "Only plan create can initialize genuinely fresh state: the exact real Git worktree root with no .agentera directory. A non-Git directory, a Git subdirectory, or an existing marker-absent .agentera directory is not fresh. Legacy, partial or unknown state requires read-only upgrade inspection and the applicable authorized recovery path. Existing open plans block creation unless --force selects exactly one predecessor; multiple open predecessors reject. Force preserves predecessor task/evaluation history and archives it unchanged.",
+    "Plan create and init are the two initializers of genuinely fresh state; init publishes only the marker after preview and --yes. Fresh state is the exact real Git worktree root with no .agentera directory. A non-Git directory, a Git subdirectory, or an existing marker-absent .agentera directory is not fresh. Legacy, partial or unknown state requires read-only upgrade inspection and the applicable authorized recovery path. Existing open plans block creation unless --force selects exactly one predecessor; multiple open predecessors reject. Force preserves predecessor task/evaluation history and archives it unchanged.",
     "Creation allocates new identities and is not content-idempotent; inspect the returned plan before retrying an uncertain success. --dry-run validates but does not reserve the returned candidate IDs.",
   ],
   "plan.replace": [
@@ -491,7 +491,7 @@ export function currentOperationDetail(artifact: WritableArtifact, verb: string,
       guidance: explain.guidance,
     },
     preconditions: {
-      state: "Completed entity-mode state and project write permission are required to mutate. The sole fresh-state initializer is plan create; explanation is static and does not initialize, upgrade or repair state.",
+      state: "Completed entity-mode state and project write permission are required to mutate. The two fresh-state initializers are init and plan create; explanation is static and does not initialize, upgrade or repair state.",
       operation: explain.preconditions,
     },
     constraints_effects_replay: RULES[`${artifact}.${verb}`],

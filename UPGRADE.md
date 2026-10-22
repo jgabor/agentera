@@ -170,24 +170,45 @@ npx -y agentera@next doctor
 Before stable promotion, `prime --context status` is the one-call
 bootstrap for fresh, v2, partially migrated, and v3 projects. A Git-root project
 with no `.agentera` state is `fresh_uninitialized`: `prime --context plan` stays
-read-only and operable, and the first `state plan create` is its sole initializer.
+read-only and operable. It has two initializers: `init` and the first
+`state plan create`.
 Recognized v2 remains on the full upgrade route; partial, corrupt, and unknown
 marker-absent state stays bounded and blocked behind read-only recovery. No fresh
 startup response recommends `upgrade --yes`, no recovery resolves `@latest`, and
 healthy v3 needs no second dashboard call.
 
-### Fresh Plan initialization
+### Fresh project initialization
 
-For a fresh Git project, use the typed Plan writer. Its dry run previews the
-marker, plan, and task publication without changing the project; apply publishes
-the complete plan graph and then the entity-state marker, rolling back ordinary
-publication failures. Other state writers never initialize fresh state.
+A fresh Git project has two initializers. No other command or state writer
+initializes fresh state; each refuses with `fresh_initialization_required` and
+names both.
+
+`init` prepares empty v3 state. Without `--yes` it prints JSON listing every
+file it would write and writes nothing. Run `--yes` only after the user
+approves; it writes only the entity-state marker `.agentera/state-mode.yaml`.
+Vision, status, and plan creation then work on the project. `init` refuses,
+writes nothing, and exits 1 for initialized, v2, partial, corrupt, or unknown
+state, or outside a Git repository root.
+
+```bash
+npx -y agentera@next init
+npx -y agentera@next init --yes
+```
+
+The typed Plan writer initializes a fresh project with its first plan. Its dry
+run previews the marker, plan, and task publication without changing the
+project; apply publishes the complete plan graph and then the entity-state
+marker, rolling back ordinary publication failures.
 
 ```bash
 npx -y agentera@next prime --context plan
 npx -y agentera@next state plan create --input PLAN.yaml --dry-run
 npx -y agentera@next state plan create --input PLAN.yaml
 ```
+
+Both initializers publish the marker by an exclusive link. If they run at the
+same time, one wins and the other fails with a conflict and leaves nothing
+behind.
 
 `doctor` also reports bounded `retired_resources` candidates. A
 proven Agentera-installed OpenCode plugin reports `pending_automatic_removal`

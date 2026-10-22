@@ -265,7 +265,7 @@ describe("strict package publication model", () => {
       mutate((copy) => {
         copy.qualification.source.activationConjunction.census.classes.cli.count = 26;
       }),
-    ).toThrow(/count 27/);
+    ).toThrow(/count 28/);
     expect(
       mutate((copy) => {
         copy.qualification.source.activationConjunction.census.classes.capability.sha256 = "f".repeat(64);
@@ -275,6 +275,6 @@ describe("strict package publication model", () => {
       mutate((copy) => {
         copy.qualification.source.activationConjunction.census.total.sha256 = "a".repeat(64);
       }),
-    ).toThrow(/55b75911c6ded7e351aa811e3f7dd34764c17ea80a771f7199cbf1e0653afd8f/);
+    ).toThrow(/39b2c8ff98aca2c49e9fe892c9efc6107edd20593e75bde18da833b659fa6aba/);
   });
 });

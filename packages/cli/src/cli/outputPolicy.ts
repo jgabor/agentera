@@ -28,6 +28,7 @@ export const OUTPUT_PATH_POLICIES: Record<OutputPathClass, OutputPathPolicy> = {
 
 const OPERATIONAL_ROUTE_PRODUCERS = {
   prime: ["runPrime"],
+  init: ["runInit"],
   "app-home": ["runAppHome"],
   doctor: ["runDoctor"],
   usage: ["runUsage"],

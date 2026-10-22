@@ -249,7 +249,7 @@ export function createPlanEntities(req: StateWriteRequest, options: Options = {}
   return withEntityWriterLock(options.publicationContext, () => createPlanEntitiesUnderLock(req, options as Options & { publicationContext: EntityPublicationContext }));
 }
 
-/** The first Plan is the sole marker-absent entity initializer. */
+/** The first Plan is one of two marker-absent initializers; `init` publishes only the marker. */
 export function createFreshPlanEntities(req: StateWriteRequest, options: Omit<Options, "publicationContext"> = {}): StateWriteEnvelope | null {
   const sourceRoot = options.sourceRoot ?? resolveSourceRoot();
   const initialization = freshPlanInitialization(req.projectRoot, sourceRoot);

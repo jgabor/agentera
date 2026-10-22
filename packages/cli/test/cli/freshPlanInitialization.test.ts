@@ -210,6 +210,7 @@ describe("fresh Plan initialization", () => {
       class: "fresh_initialization_required",
       recovery: expect.stringContaining("state plan create"),
     });
+    expect(otherWriter.json?.error.recovery).toContain("init --project");
     expect(snapshot(fresh)).toBe(freshBefore);
 
     const legacy = project();
@@ -239,5 +240,198 @@ describe("fresh Plan initialization", () => {
     expect(unknownResult.json?.error.recovery).toContain("--dry-run");
     expect(unknownResult.out).not.toContain("upgrade --yes");
     expect(snapshot(unknown)).toBe(unknownBefore);
+  });
+});
+
+function stateFiles(root: string): string[] {
+  const agentera = path.join(root, ".agentera");
+  if (!fs.existsSync(agentera)) return [];
+  const found: string[] = [];
+  const visit = (directory: string): void => {
+    for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
+      const target = path.join(directory, entry.name);
+      found.push(path.relative(root, target) + (entry.isDirectory() ? "/" : ""));
+      if (entry.isDirectory()) visit(target);
+    }
+  };
+  visit(agentera);
+  return found.sort();
+}
+
+const VISION = [
+  "project_name: Reading list",
+  "north_star: |",
+  "  `reading-list add URL` saves a link in under 200 ms so readers on the train keep one list.",
+  "personas:",
+  "  - name: The busy reader",
+  "    description: Reads on the train and runs `reading-list add` from the phone terminal.",
+  "principles:",
+  "  - name: Fast over complete",
+  "    description: A 200 ms save beats a perfect catalog.",
+  "direction: Ship `reading-list add` and `reading-list show` first, then sync.",
+  "",
+].join("\n");
+
+describe("init", () => {
+  it("previews every write without writing, then applies exactly those writes after --yes", () => {
+    const root = project();
+    const existingFiles = userFiles(root);
+    const before = snapshot(root);
+
+    const preview = capture(root, ["init"]);
+    expect(preview.rc, preview.out).toBe(0);
+    expect(preview.json).toMatchObject({ command: "init", status: "preview", changed: false, project_state: "fresh_uninitialized", apply_command: expect.stringContaining("init --project") });
+    expect(preview.json?.apply_command).toMatch(/--yes$/);
+    expect(preview.json?.writes).toEqual([{ path: ".agentera/state-mode.yaml", action: "create", content: { schemaVersion: "agentera.stateMode.v1", mode: "entities" } }]);
+    expect(snapshot(root)).toBe(before);
+
+    const applied = capture(root, ["init", "--yes"]);
+    expect(applied.rc, applied.out).toBe(0);
+    expect(applied.json).toMatchObject({ status: "initialized", changed: true, project_state: "v3", writes: preview.json?.writes, next_step: { capability: "vision" } });
+    expect(stateFiles(root)).toEqual([".agentera/state-mode.yaml"]);
+    expect(fs.readFileSync(path.join(root, ".agentera", "state-mode.yaml"), "utf8")).toBe("schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    expect(detectStateMode(root)).toBe("entities");
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 0 });
+    for (const [name, bytes] of existingFiles) expect(fs.readFileSync(path.join(root, name))).toEqual(bytes);
+  });
+
+  it("refuses initialized, legacy, partial, unknown, corrupt and non-Git-root projects without writing", () => {
+    const cases: Array<{ name: string; setup: (root: string) => string; error: string; recovery: string }> = [
+      { name: "initialized", setup: (root) => (capture(root, ["init", "--yes"]), root), error: "already_initialized", recovery: "prime" },
+      {
+        name: "legacy",
+        setup: (root) => {
+          fs.mkdirSync(path.join(root, ".agentera"));
+          fs.writeFileSync(path.join(root, ".agentera", "plan.yaml"), "header: {}\n");
+          fs.writeFileSync(path.join(root, ".agentera", "progress.yaml"), "cycles: []\n");
+          return root;
+        },
+        error: "migration_required",
+        recovery: "--dry-run",
+      },
+      { name: "partial", setup: (root) => (fs.mkdirSync(path.join(root, ".agentera", "entities"), { recursive: true }), root), error: "partial_state", recovery: "--dry-run" },
+      { name: "unknown", setup: (root) => (fs.mkdirSync(path.join(root, ".agentera")), fs.writeFileSync(path.join(root, ".agentera", "vision.yaml"), VISION), root), error: "unknown_state", recovery: "--dry-run" },
+      { name: "corrupt", setup: (root) => (fs.mkdirSync(path.join(root, ".agentera")), fs.writeFileSync(path.join(root, ".agentera", "state-mode.yaml"), "schemaVersion: wrong\n"), root), error: "corrupt_state", recovery: "doctor" },
+      { name: "git subdirectory", setup: (root) => (fs.mkdirSync(path.join(root, "sub")), path.join(root, "sub")), error: "not_git_root", recovery: "init --project" },
+    ];
+    for (const item of cases) {
+      const root = project();
+      const cwd = item.setup(root);
+      const before = snapshot(root);
+      const refused = capture(cwd, ["init", "--yes"]);
+      expect(refused.rc, item.name).toBe(1);
+      expect(refused.json?.error, item.name).toMatchObject({ class: item.error, recovery: expect.stringContaining(item.recovery) });
+      expect(snapshot(root), item.name).toBe(before);
+      if (item.name === "git subdirectory") {
+        expect(refused.json?.error.recovery).toContain(fs.realpathSync(root));
+        expect(refused.json?.error.recovery).not.toContain("git init");
+      }
+    }
+    const nonGit = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-init-nongit-"));
+    roots.push(nonGit);
+    const nonGitResult = capture(nonGit, ["init", "--yes"]);
+    expect(nonGitResult.json?.error).toMatchObject({ class: "not_git_root", recovery: expect.stringContaining("git init") });
+    expect(fs.readdirSync(nonGit)).toEqual([]);
+
+    const invalid = capture(project(), ["init", "--force"]);
+    expect(invalid.rc).toBe(2);
+    expect(invalid.json?.error).toMatchObject({ class: "unrecognized_argument" });
+  });
+
+  it("resolves a race with plan creation to one complete state and one refusal", () => {
+    const original = EntityPublicationContext.prototype.publishImmutable;
+    const marker = EntityPublicationContext.prototype.publishStateMarker;
+    const createPlan = (root: string, title: string) => capture(root, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput(title));
+
+    // init checked freshness first and links its marker while plan creation publishes entities.
+    const initFirst = project();
+    let losingPlan: ReturnType<typeof capture> | undefined;
+    let initMarker: ReturnType<typeof marker> | undefined;
+    const markerSpy = vi.spyOn(EntityPublicationContext.prototype, "publishStateMarker").mockImplementation(function (this: EntityPublicationContext, bytes) {
+      if (losingPlan || initMarker) return marker.call(this, bytes);
+      const publishInitMarker = marker.bind(this, bytes);
+      const immutable = vi.spyOn(EntityPublicationContext.prototype, "publishImmutable").mockImplementation(function (this: EntityPublicationContext, target, entityBytes) {
+        initMarker ??= publishInitMarker();
+        return original.call(this, target, entityBytes);
+      });
+      losingPlan = createPlan(initFirst, "Lose the race");
+      immutable.mockRestore();
+      return initMarker ?? marker.call(this, bytes);
+    });
+    const winningInit = capture(initFirst, ["init", "--yes"]);
+    markerSpy.mockRestore();
+    expect(winningInit.rc, winningInit.out).toBe(0);
+    expect(losingPlan?.rc).not.toBe(0);
+    expect(`${losingPlan?.out}${losingPlan?.err}`).toContain("init and state plan create are the two initializers");
+    expect(stateFiles(initFirst)).toEqual([".agentera/state-mode.yaml"]);
+    expect(validateEntityState(initFirst)).toMatchObject({ valid: true, entityCount: 0 });
+    expect(createPlan(initFirst, "Plan after init").rc).toBe(0);
+
+    // plan creation publishes its marker after init checked freshness.
+    const planFirst = project();
+    let winningPlan: ReturnType<typeof capture> | undefined;
+    const lateMarker = vi.spyOn(EntityPublicationContext.prototype, "publishStateMarker").mockImplementation(function (this: EntityPublicationContext, bytes) {
+      winningPlan ??= createPlan(planFirst, "Win the race");
+      return marker.call(this, bytes);
+    });
+    const losingInit = capture(planFirst, ["init", "--yes"]);
+    lateMarker.mockRestore();
+    expect(winningPlan?.rc, winningPlan?.out).toBe(0);
+    expect(losingInit.rc).toBe(1);
+    expect(losingInit.json?.error).toMatchObject({ class: "initialization_conflict", recovery: expect.stringContaining("prime") });
+    expect(validateEntityState(planFirst)).toMatchObject({ valid: true, entityCount: 3 });
+
+    // init starts while plan creation holds the project writer lock.
+    const locked = project();
+    let lockedInit: ReturnType<typeof capture> | undefined;
+    const during = vi.spyOn(EntityPublicationContext.prototype, "publishImmutable").mockImplementation(function (this: EntityPublicationContext, target, bytes) {
+      lockedInit ??= capture(locked, ["init", "--yes"]);
+      return original.call(this, target, bytes);
+    });
+    const lockedPlan = createPlan(locked, "Hold the lock");
+    during.mockRestore();
+    expect(lockedPlan.rc, lockedPlan.out).toBe(0);
+    expect(lockedInit?.rc).toBe(1);
+    expect(lockedInit?.json?.error.class).toBe("initialization_conflict");
+    expect(validateEntityState(locked)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("lets vision start, self-check and save after init, and status and plan creation read the project", () => {
+    const fresh = project();
+    const refusedVision = capture(fresh, ["prime", "--context", "vision", "--format", "json"]);
+    expect(refusedVision.rc).toBe(1);
+    expect(refusedVision.json?.error).toMatchObject({ class: "fresh_initialization_required", recovery: expect.stringContaining("init --project") });
+    expect(refusedVision.json?.error.recovery).toContain("state plan create");
+
+    const root = project();
+    expect(capture(root, ["init", "--yes"]).rc).toBe(0);
+    const vision = capture(root, ["prime", "--context", "vision", "--format", "json"]);
+    expect(vision.rc, vision.err).toBe(0);
+    expect(vision.json?.capability_context.startup.outcome).toBe("ok");
+    const draft = path.join(root, "vision-draft.yaml");
+    fs.writeFileSync(draft, VISION);
+    const lint = capture(root, ["check", "lint", "--artifact", "vision", "--file", draft, "--format", "json"]);
+    expect(lint.rc, lint.out).toBe(0);
+    expect(lint.json?.status).toBe("pass");
+    fs.renameSync(draft, path.join(root, ".agentera", "vision.yaml"));
+    expect(capture(root, ["state", "query", "vision", "--format", "json"]).json?.status).toBe("ok");
+    const status = capture(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(status.rc, status.err).toBe(0);
+    expect(status.json?.capability_context.startup.outcome).toBe("ok");
+    const plan = capture(root, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput("Plan after vision"));
+    expect(plan.rc, plan.out).toBe(0);
+    expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("is listed in help, schema and its own help", () => {
+    const root = project();
+    const help = capture(root, ["--help"]);
+    expect(help.out).toMatch(/\{prime,init,/);
+    const own = capture(root, ["init", "--help"]);
+    expect(own.rc).toBe(0);
+    expect(own.out).toContain("usage: agentera init [-h] [--project PROJECT] [--yes]");
+    const schema = capture(root, ["schema", "--format", "json"]);
+    expect(schema.json?.dispatcher_top_level.commands).toContain("init");
+    expect(schema.json?.commands).toEqual(expect.arrayContaining([expect.objectContaining({ name: "init", kind: "initialization" })]));
   });
 });

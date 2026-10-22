@@ -319,6 +319,15 @@ const addedTuples: ActivationCanonicalTuple[] = [
     semantic_selector_if_any: null,
     canonical_correction: "pnpm -C packages/cli test:source -- test/runtime/runtimeLifecycle.test.ts",
   })),
+  {
+    class: "cli",
+    surface_id: "init",
+    owner_path: "packages/cli/src/cli/dispatch/commands.ts",
+    owner_symbol_or_selector: "DISPATCHER_TOP_LEVEL_COMMANDS",
+    owner_selector: null,
+    semantic_selector_if_any: null,
+    canonical_correction: "pnpm -C packages/cli test:source -- test/cli/activationConjunction.test.ts",
+  },
 ];
 const tuples = [...rawTuples, ...addedTuples].map((tuple): ActivationCanonicalTuple => {
   const reason = emittedReasons[tuple.surface_id];
@@ -334,7 +343,7 @@ export const ACTIVATION_CANONICAL_TUPLES: readonly ActivationCanonicalTuple[] = 
 export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
   algorithm: "sha256(sorted_canonical_json_tuples_joined_by_lf)" as const,
   classes: {
-    cli: { count: 27, sha256: "9d0db6cafe592da30ea3469c91dc514bdd1b3b22e8229a0519e680cbcb01c2fa" },
+    cli: { count: 28, sha256: "3c951937dee7a548c84b5bd2cd6d6e71c08c54c9caac6f0943b581e64a3c46db" },
     capability: {
       count: 12,
       sha256: "892e6e5e2a57b41064bc44fa2946453225f1b1195aff77aad05365fd0a1071c2",
@@ -360,7 +369,7 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 318, sha256: "774100232ddf655dba1ba1101ed78760c0f2fb89b91e72d776ebd73078abd58c" },
+  total: { count: 319, sha256: "9f2e1426fb46a2d8df7c36a7ba3d432a402c9ff4d445f3edeb947d49066d56d5" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

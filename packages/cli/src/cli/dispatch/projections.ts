@@ -5,6 +5,7 @@
  */
 export const DIAGNOSTIC_TOP_LEVEL_COMMANDS = Object.freeze([
   "prime",
+  "init",
   "app-home",
   "doctor",
   "usage",
@@ -35,6 +36,7 @@ export const DIAGNOSTIC_TOP_LEVEL_COMMANDS = Object.freeze([
 
 export const SCHEMA_TOP_LEVEL_COMMANDS = Object.freeze([
   "prime",
+  "init",
   "app-home",
   "doctor",
   "usage",
@@ -64,7 +66,7 @@ export const SCHEMA_TOP_LEVEL_COMMANDS = Object.freeze([
 ]);
 
 /** Commands listed in top-level `--help`: agent and user commands only. */
-export const HELP_TOP_LEVEL_COMMANDS = Object.freeze(["prime", "app-home", "doctor", "upgrade", "report", "schema", "state", "route", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]);
+export const HELP_TOP_LEVEL_COMMANDS = Object.freeze(["prime", "init", "app-home", "doctor", "upgrade", "report", "schema", "state", "route", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]);
 
 /**
  * Maintainer commands and compatibility aliases. They still dispatch, but

@@ -73,7 +73,7 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
 }> = deepFreeze({
   algorithm: "sha256(sorted_utf8_ids_joined_by_lf)",
   classes: {
-    cli: { count: 27, sha256: "986a637f5c11c57ab7a897a01bd291d0811846e5339c3831c715932cf9659ad4" },
+    cli: { count: 28, sha256: "2ca20153b2af0d56a1b7067e94d45bd85046710e2b4321e43adb9822031c0687" },
     capability: {
       count: 12,
       sha256: "007e1157a892fec54182b1803aeaa442cf8e2e332e6a055c3bd020e2b0731867",
@@ -99,7 +99,7 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
       sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e",
     },
   },
-  total: { count: 318, sha256: "55b75911c6ded7e351aa811e3f7dd34764c17ea80a771f7199cbf1e0653afd8f" },
+  total: { count: 319, sha256: "39b2c8ff98aca2c49e9fe892c9efc6107edd20593e75bde18da833b659fa6aba" },
 });
 
 /** Each dimension names the production contract it observes independently. */
