@@ -14,28 +14,32 @@ in the repository so work can continue across sessions and runtimes.
 
 ## Get started
 
-Agentera 3.0 is the self-contained TypeScript package on npm. Before the stable
-dist-tag promotion, use `@next`; after promotion, the same commands work with
-the stable npm channel or an installed CLI binary.
+1. Install the Agentera skill for your coding agents. Preview it first, then
+   apply it. It writes one file, `~/.agents/skills/agentera/SKILL.md`, and does
+   not touch your projects.
 
-```bash
-npx -y agentera@next prime --context status
-```
+   ```bash
+   npx -y agentera@next upgrade --shared-skill --dry-run
+   npx -y agentera@next upgrade --shared-skill --yes
+   ```
 
-Run that from a git project. In an editor runtime, invoke `/agentera`
-(`$agentera` in Codex) for the rendered status dashboard.
+2. Open your coding agent in a Git repository and ask for what you want. Type
+   `/agentera` for an overview of the project, `/agentera plan <topic>` to start
+   one capability, or describe the task in your own words.
 
-This is the pre-cutover bootstrap. One `@next` call returns the status
-instructions, a bounded startup outcome, and any exact recovery command. A fresh
-Git project is `fresh_uninitialized`: `prime --context plan` is operable and its
-first typed `state plan create` initializes state. Recognized v2 uses the full
-development-channel entity upgrade; partial, corrupt or unknown state stays
-blocked behind read-only recovery. A v3 project returns `ok` when no independent health degradation
-applies and needs no fallback or second dashboard call. Do not substitute bare
-or stable-channel CLI forms; those can resolve stable v2 until promotion.
+3. The agent passes your request to `npx -y agentera@next prime`. Prime tells
+   the agent how to work with Agentera, sums up where the project stands, and
+   starts the capability your request names. If the request needs a choice, the
+   agent asks you first.
 
-Use the same channel for a separate read-only doctor probe when you need full
-app, project-state, shared-skill, and CLI evidence:
+4. In a repository that does not use Agentera yet, prime offers to set it up.
+   The agent shows you what `npx -y agentera@next init` would add and runs it
+   only after you approve. Then it helps you write down where the project is
+   going.
+
+Use `@next` until the stable release; until then, other channels can still run
+version 2. When the skill needs an update, prime asks once; answer Yes to update
+it. To check the installation, the project and the CLI at any time, run:
 
 ```bash
 npx -y agentera@next doctor

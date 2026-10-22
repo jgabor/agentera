@@ -5,6 +5,7 @@ import YAML from "yaml";
 import { describe, expect, it } from "vite-plus/test";
 
 import { printUpgradeHelp } from "../../src/cli/help.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { buildSchemaPayload } from "../../src/cli/commands/schema.js";
 import { runServiceDetail } from "../../src/cli/commands/serviceDetail.js";
 
@@ -25,14 +26,15 @@ describe("v2-to-v3 one-command guidance", () => {
   it("keeps help, upgrade guidance, skill guidance, and authority on one public contract", () => {
     const help = printUpgradeHelp();
     const guide = section("UPGRADE.md", "## Upgrading v2 to v3 development channel");
-    const skill = section("skills/agentera/SKILL.md", "## Recovery: stop rather than guess");
+    // Recovery moved from the shared skill to the prime operating manual.
+    const skill = PRIME_MANUAL;
     const authority = YAML.parse(fs.readFileSync(path.join(ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     const schema = JSON.stringify(buildSchemaPayload());
 
     // The one-file bootstrap delegates migration grammar to bounded CLI
     // discovery rather than embedding a second copy under an old heading.
-    expect(skill).toContain("npx -y agentera@next upgrade --explain");
-    expect(skill).toContain("not consent to apply");
+    expect(skill).toContain("npx -y agentera@next <doctor|app-home|upgrade> --explain");
+    expect(skill).toContain("Discovery grants no permission");
     let index = "";
     expect(runServiceDetail("upgrade", [], { out: (text) => (index += text) })).toBe(0);
     const operationsCommand = JSON.parse(index).items.find((item: any) => item.name === "operations").content.detail_command;

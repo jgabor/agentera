@@ -12,6 +12,7 @@ import { BOOTSTRAP_SOURCE_ROOT_ENV } from "../../src/core/sourceRoot.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { HUMAN_REFERENCE_LABELS, HUMAN_REFERENCE_INSTRUCTIONS, humanReference, withHumanReferences } from "../../src/capabilities/humanReferences.js";
 import { OPERATING_INSTRUCTIONS, withOperatingRules } from "../../src/capabilities/operatingRules.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO_ROOT = path.resolve(__dirname, "../../../..");
@@ -24,7 +25,8 @@ describe("shared human references", () => {
     const protocol = YAML.parse(fs.readFileSync(PROTOCOL_PATH, "utf8"));
     expect(OPERATING_INSTRUCTIONS).toBe(protocol.OPERATING_RULES.instructions);
     expect(protocol.HUMAN_REFERENCES).not.toHaveProperty("instructions");
-    expect(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8")).toContain("Follow the served operating rules and human-reference rules");
+    // Every capsule carries the rules, so the shared skill no longer restates them.
+    expect(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8")).not.toContain("operating rules");
     for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) {
       expect(body.split(OPERATING_INSTRUCTIONS)).toHaveLength(2);
       expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
@@ -40,8 +42,8 @@ describe("shared human references", () => {
     expect(HUMAN_REFERENCE_LABELS).toEqual(protocol.HUMAN_REFERENCES.labels);
     expect(Object.keys(HUMAN_REFERENCE_LABELS)).toEqual(["decision", "plan", "task", "todo"]);
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
-    expect(skill).toContain("npx -y agentera@next schema --protocol");
-    expect(skill).toContain("Follow the served operating rules and human-reference rules");
+    expect(PRIME_MANUAL).toContain("`npx -y agentera@next schema [--protocol|--artifact <name>]`");
+    expect(skill).not.toContain("human-reference");
     for (const body of Object.values(CAPABILITY_INSTRUCTIONS)) expect(body).toContain(HUMAN_REFERENCE_INSTRUCTIONS);
     expect(CAPABILITY_INSTRUCTIONS.status).not.toContain("PLAN Task N:");
   });

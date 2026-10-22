@@ -167,10 +167,13 @@ npx -y agentera@next prime
 npx -y agentera@next doctor
 ```
 
-Before stable promotion, `prime --context status` is the one-call
-bootstrap for fresh, v2, partially migrated, and v3 projects. A Git-root project
-with no `.agentera` state is `fresh_uninitialized`: `prime --context plan` stays
-read-only and operable. It has two initializers: `init` and the first
+Before stable promotion, every session starts with prime on the development
+channel, for fresh, v2, partially migrated, and v3 projects. The shared skill
+sends each request as JSON on stdin to `npx -y agentera@next prime --input -`;
+bare `npx -y agentera@next prime` returns the operating manual and the project
+orientation. A Git-root project with no `.agentera` state is
+`fresh_uninitialized`: bare prime offers the `init` preview, and nothing is
+written until the user approves it. The other initializer is the first
 `state plan create`.
 Recognized v2 remains on the full upgrade route; partial, corrupt, and unknown
 marker-absent state stays bounded and blocked behind read-only recovery. No fresh

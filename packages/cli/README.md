@@ -10,13 +10,16 @@ surface.
 Until the stable dist-tag is promoted, run 3.0 through `@next`:
 
 ```bash
-npx -y agentera@next prime --context status
+npx -y agentera@next prime
 npx -y agentera@next doctor
 ```
 
-The first command is the one-call pre-cutover bootstrap. A fresh Git project is
-`fresh_uninitialized`; `prime --context plan` and the first typed Plan create
-provide initialization. Recognized v2 uses full entity-upgrade recovery;
+Every session starts with prime. Bare prime returns the operating manual and the
+project orientation; the shared skill sends each request as JSON on stdin to
+`npx -y agentera@next prime --input -`, which routes it and starts a
+deterministic route in the same call. A fresh Git project is
+`fresh_uninitialized`: bare prime offers the `init` preview, and `init --yes`
+runs only after the user approves. Recognized v2 uses full entity-upgrade recovery;
 partial, corrupt and unknown state remains blocked behind read-only recovery.
 V3 returns `ok` unless health state makes it `degraded`. Every recovery command remains on
 `@next`, and an `ok` outcome needs no fallback or second dashboard call. Served
@@ -41,8 +44,9 @@ returns detailed read-only evidence and exact user actions. It exposes bounded
 `current_health` results for the CLI, shared skill, project state,
 Prime Status startup, and typed-writer cutover preflight. Doctor's aggregate
 `status` is not `up_to_date` when startup or writer preflight is blocked, even
-when `current_health.cli` is current. Fresh Git projects allow Plan startup but
-require `state plan create` before other writers. Writer readiness is not write
+when `current_health.cli` is current. Fresh Git projects report `ready_to_start`;
+`init`, after the user approves its preview, or the first `state plan create`
+initializes state before other writers. Writer readiness is not write
 permission or validation of a particular operation. Profile absence and optional
 history do not block project cutover. Project recovery remains separate from
 explicit, ownership-bound global cleanup.

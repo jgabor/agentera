@@ -16,6 +16,7 @@ import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { main } from "../../src/cli/dispatch.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { formatNextAction } from "../../src/cli/orientation.js";
 import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { runState } from "../../src/cli/dispatch/state.js";
@@ -195,7 +196,7 @@ describe("informational status handoff", () => {
     expect(JSON.parse(out).capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.build);
   }
 
-  it("serves the same informational first handoff in status, shared skill and vocabulary", () => {
+  it("serves the same informational first handoff in status and vocabulary, not in the shared skill", () => {
     const guidance = suggestion();
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
@@ -212,12 +213,12 @@ describe("informational status handoff", () => {
     expect(guidance).toContain("Initial status: free-form continuation prompt");
     expect(guidance).toContain("native choices only if the user requested bounded choices");
     expect(guidance).toContain("scope and permissions stay unchanged, including autonomous orchestration");
-    const bootstrap = skill.replace(/\s+/g, " ");
-    expect(bootstrap).toContain("Initial status offers `next_action` free-form even for mutations; bounded choices only on request");
-    expect(bootstrap).toContain("Acceptance starts it once, no second status prompt");
-    expect(bootstrap).toContain("Decline stops; ambiguity gets one clarification");
-    expect(bootstrap).toContain("Direct routes need no confirmation");
-    expect(bootstrap).toContain("invoked capability owns mutation approvals; scope, permissions and orchestration stay unchanged");
+    // The shared skill no longer restates the handoff; the status capsule
+    // carries it whole and the manual keeps the one-start rule.
+    expect(guidance).toContain("Decline stops without invocation; ambiguity asks one clarification before invocation");
+    expect(guidance).toContain("A direct capability route is already consent to invoke it");
+    expect(skill).not.toContain("next_action");
+    expect(PRIME_MANUAL).toContain("`next_action` is a suggestion; start it once, only if the user accepts");
   });
 
   // These are explicit compliant-host traces against real CLI startup and route

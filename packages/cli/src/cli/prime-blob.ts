@@ -17,6 +17,8 @@ export const PRIME_MANUAL = preCutoverInstructionBody(
     "",
     "State: write only through typed writers, which override any path-based advice. Read `npx -y agentera@next state <artifact> explain` first; preview with `--dry-run`. Never edit `.agentera/entities/`. Find artifacts with `npx -y agentera@next state query --list-artifacts`; read raw files only after the exact detail command fails. Only the user or owning capability changes vision or objective; only the user confirms satisfaction.",
     "",
+    "Receipt: on `semantic_required`, send every receipt field, null when unused; copy both hashes unchanged; `remainder_span` ends at the request's UTF-8 byte length.",
+    "",
     "Handoffs: `next_action` is a suggestion; start it once, only if the user accepts. `route`: the user named it, start it. `suggest`: recommend, then wait. `dispatch`: only inside a flow the current capability owns. `chain`: only inside authorized orchestration.",
     "",
     "Consent: install, update, migration, reset, cleanup and history acquisition each need their own explicit Yes. Commit only when authorized; push only on explicit instruction. Never commit secrets or expose private history or profile data.",

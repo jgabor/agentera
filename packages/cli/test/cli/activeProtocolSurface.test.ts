@@ -6,6 +6,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch/index.js";
 import { printStateHelp } from "../../src/cli/help.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { semanticFindings } from "./retiredVocabulary.js";
 
@@ -92,15 +93,14 @@ describe("public runtime vocabulary", () => {
     const routingVocabulary = vocabulary.slice(vocabulary.indexOf("## Invocation and routing grammar"), vocabulary.indexOf("CLI-visible `agentera prime` labels"));
     const descriptionExample = enrichment.slice(enrichment.indexOf("### 1.1 `description`"), enrichment.indexOf("### 1.2 `disambiguates_against`"));
 
-    expect(skill).toContain("The CLI first applies deterministic explicit and curated route tiers.");
-    expect(skill).toContain("Only after the shared route contract returns `semantic_required`");
-    expect(skill).toContain("complete nullable API receipt");
-    expect(skill).toContain("receipt_contract");
-    expect(skill).toContain("semantic_capsule_sha256");
-    expect(skill).toContain("only through that returned authorization");
-    expect(skill).toMatch(/next_action` is a readiness suggestion for bare\/status\s+orientation after classification; it never classifies or overrides a non-status\s+request/);
-    expect(skill).not.toContain("next_action.capability");
-    expect(skill).toMatch(/no scores, thresholds, or\s+borderline band/);
+    // The skill sends every request to prime, which applies the deterministic
+    // tiers itself; the receipt rule moved to the operating manual, and the
+    // scoring and next_action limits are held by the routing model below.
+    expect(skill).not.toContain("route request");
+    expect(skill).toContain("Start nothing it does not return.");
+    expect(PRIME_MANUAL).toContain("Receipt: on `semantic_required`, send every receipt field, null when unused; copy both hashes unchanged");
+    expect(PRIME_MANUAL).toContain("`next_action` is a suggestion");
+    expect(skill).not.toContain("next_action");
     expect(hybridRouteContract).toContain("open-ended semantic judgment only after deterministic abstention");
     expect(hybridRouteContract).toContain("all startup authorization");
     expect(hybridRouteContract).toContain("must submit a receipt");

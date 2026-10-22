@@ -3,6 +3,7 @@ import os from "node:os";
 import path from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vite-plus/test";
 import { main } from "../../src/cli/dispatch.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { runHostSkillLifecycle, loadHostSkillSource } from "../../src/setup/hostSkillLifecycle.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { npxBundleFixture } from "../helpers/npxBundleFixture.js";
@@ -421,11 +422,35 @@ describe("one-confirmation shared-skill startup offer", () => {
     expect(snapshot()).toEqual(before);
   });
 
+  it("offers the pointer skill to an installation of the previous skill and installs it on Yes", () => {
+    const previous = fs.readFileSync(path.join(repo, "packages/cli/test/fixtures/shared-skill/previous-SKILL-3.0.0.md"), "utf8");
+    const current = fs.readFileSync(path.join(repo, "skills/agentera/SKILL.md"), "utf8");
+    expect(previous).not.toBe(current);
+    const source = path.join(temp, "previous-runtime");
+    for (const relative of ["registry.json", "references/adapters/package-registry.yaml"]) write(path.join(source, relative), fs.readFileSync(path.join(repo, relative), "utf8"));
+    write(path.join(source, "skills/agentera/SKILL.md"), previous);
+    expect(runHostSkillLifecycle({ home, appHome: app, sourceRoot: source, apply: true }).status).toBe("success");
+    expect(fs.readFileSync(path.join(target, "SKILL.md"), "utf8")).toBe(previous);
+
+    const startup = capture(["prime"]);
+    expect(startup.code, startup.err).toBe(0);
+    const offer = startup.payload.shared_skill.upgrade_offer;
+    expect(offer).toMatchObject({ question, approval: "explicit_yes_only" });
+    expect(apply(offer, "No")).toBeNull();
+    expect(fs.readFileSync(path.join(target, "SKILL.md"), "utf8")).toBe(previous);
+    expect(apply(offer, "Yes")!.payload.status).toBe("success");
+    expect(fs.readFileSync(path.join(target, "SKILL.md"), "utf8")).toBe(current);
+    expect(capture(["prime"]).payload.shared_skill.upgrade_offer).toBeNull();
+  });
+
   it("keeps the host bootstrap on one plain confirmation and CLI-verified completion", () => {
+    // The offer payload carries the exact question; the operating manual
+    // carries the confirmation and completion rules, so the skill holds neither.
     const text = fs.readFileSync(path.join(repo, "skills/agentera/SKILL.md"), "utf8");
-    expect(text).toContain(question);
-    expect(text).toContain("No, silence or an absent offer means no installation or update and no apply call");
-    expect(text).toContain("Require exit 0 and JSON `status` of `success` or `noop`");
-    expect(text).not.toContain("Unowned resources require separately");
+    expect(text).not.toContain(question);
+    expect(text).not.toContain("upgrade_offer");
+    expect(PRIME_MANUAL).toContain("ask the question verbatim once, and run the unchanged `apply_command` only on explicit Yes");
+    expect(PRIME_MANUAL).toContain("Done means exit 0 and `status` `success` or `noop`");
+    expect(PRIME_MANUAL).not.toContain("Unowned resources require separately");
   });
 });

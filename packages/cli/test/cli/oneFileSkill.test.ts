@@ -23,6 +23,22 @@ afterEach(() => {
   temporary = undefined;
 });
 
+interface SharedSkillBudget {
+  source: string;
+  max_lines: number;
+  max_utf8_bytes: number;
+}
+function sharedSkillBudget(): SharedSkillBudget {
+  return YAML.parse(fs.readFileSync(path.join(root, "references/artifacts/state-storage-authority.yaml"), "utf8")).budgets.shared_skill;
+}
+/** Newline-terminated lines and raw UTF-8 bytes, as budgets.shared_skill counts them. */
+function skillSize(text: string) {
+  return { lines: text.split("\n").length - (text.endsWith("\n") ? 1 : 0), bytes: Buffer.byteLength(text, "utf8") };
+}
+function skillBudgetViolations(text: string, budget: SharedSkillBudget): string[] {
+  const size = skillSize(text);
+  return [...(size.lines > budget.max_lines ? ["lines"] : []), ...(size.bytes > budget.max_utf8_bytes ? ["bytes"] : [])];
+}
 function args(command: string) {
   expect(command).toMatch(/^npx -y agentera@next /);
   return (command.match(/'[^']*'|\S+/g) ?? []).slice(3).map((word) => (word.startsWith("'") ? word.slice(1, -1) : word));
@@ -74,34 +90,70 @@ describe("single-file host bootstrap", () => {
     expect(out).toContain("Never fall back to checkout or installed companion reads");
     for (const command of ["<doctor|app-home|upgrade> --explain", "<report|check|route> explain", "schema"]) expect(out).toContain(`npx -y agentera@next ${command}`);
   });
-  it("stays small, version-compatible and delegates rather than copying contracts", () => {
+  it("keeps the shared skill within its declared line and byte budget", () => {
+    const budget = sharedSkillBudget();
+    expect(budget.source).toBe("skills/agentera/SKILL.md");
+    expect(skillBudgetViolations(skill, budget), JSON.stringify(skillSize(skill))).toEqual([]);
+    const tooLong = Array.from({ length: budget.max_lines + 1 }, () => "x").join("\n") + "\n";
+    expect(skillSize(tooLong).lines).toBe(budget.max_lines + 1);
+    expect(skillBudgetViolations(tooLong, budget)).toEqual(["lines"]);
+    const tooLarge = `${"x".repeat(budget.max_utf8_bytes)}\n`;
+    expect(skillBudgetViolations(tooLarge, budget)).toEqual(["bytes"]);
+  });
+
+  it("holds only the frontmatter, three prime rows, the rerun line and the stop rule", () => {
     const metadata = YAML.parse(skill.split("---")[1]);
+    expect(metadata.name).toBe("agentera");
+    expect(skill.match(/^name: agentera$/gm)).toHaveLength(1);
     expect(metadata.version).toBe("3.0.0");
     expect(metadata.capabilities.sort()).toEqual(Object.keys(CAPABILITY_INSTRUCTIONS).sort());
-    expect(Buffer.byteLength(skill)).toBeLessThan(11_000);
     expect(skill).not.toMatch(/\]\((?:\.\.\/|\.\/)|skills\/agentera\/|references\/|schemas\/|protocol\.yaml/);
-    expect(skill).not.toContain("state plan create [--force]");
-    for (const text of [
-      "No sibling files or checkout",
-      "output is malformed",
-      "guidance is incompatible",
-      "stop the affected workflow",
-      "ask the user to restore a compatible supported CLI",
-      "Do not",
-      "change the installation",
-      "not edit `.agentera/entities/` directly",
-      "satisfaction is user-only",
-      "explicit consent",
-      "only through that returned authorization",
-    ])
-      expect(skill).toContain(text);
+    const rows = skill.split("\n").filter((line) => line.startsWith("| ") && !line.startsWith("| Request"));
+    expect(rows.map((row) => row.split("|")[1].trim())).toEqual(["Bare `/agentera`", "`/agentera <capability> [topic]`", "Natural language"]);
+    for (const row of rows) expect(row).toContain("`npx -y agentera@next prime --input -`");
+    expect(skill).toContain('`{"version":"agentera.route_request.v1","request":"<original request>"}`, never in argv');
+    expect(skill).toContain("follow its `manual`");
+    expect(skill).toContain("Start nothing it does not return.");
+    expect(skill).toContain("After context loss or compaction, rerun `npx -y agentera@next prime`");
+    expect(skill).toContain("If the CLI is missing, fails or returns output that does not parse, stop and report");
+    expect(skill).toContain("read checkout or installed companion files");
+    // Rules the CLI serves stay out of the skill: the manual, the receipt
+    // contract and the offers carry them.
+    expect(skill).not.toMatch(/receipt|upgrade_offer|apply_command|explain|schema|state |--context|--dry-run/);
     expect(skill).not.toMatch(/npx -y agentera@next (?:install|upgrade[^`\n]*(?:--yes|--apply))/);
   });
 
-  it("runs every concrete bootstrap static discovery example with only the host skill", () => {
+  it("serves the rules moved out of the skill in the operating manual", () => {
+    for (const text of [
+      "Discovery grants no permission",
+      "output is malformed or incompatible",
+      "stop the affected workflow",
+      "ask the user to restore the CLI",
+      "use older guidance",
+      "Never edit `.agentera/entities/`",
+      "only the user confirms satisfaction",
+      "explicit Yes",
+      "on `semantic_required`, send every receipt field, null when unused",
+      "copy both hashes unchanged",
+      "`remainder_span` ends at the request's UTF-8 byte length",
+    ])
+      expect(PRIME_MANUAL).toContain(text);
+  });
+
+  it("runs every concrete static discovery command the manual names with only the host skill", () => {
     noCompanions();
-    const commands = [...skill.matchAll(/`(npx -y agentera@next [^`\n]+)`/g)].map((match) => match[1]);
-    const staticCommands = [...new Set(commands.filter((command) => !command.includes("<") && /(?: schema(?: |$)| explain(?: |$)| --explain$)/.test(command)))];
+    const examples: Record<string, string> = { name: "vision", capability: "build", kind: "instructions", artifact: "decisions" };
+    const expand = (command: string): string[] => {
+      const optional = /\[([^\]]+)\]/.exec(command);
+      if (optional) return [command.replace(optional[0], ""), ...optional[1].split("|").map((choice) => command.replace(optional[0], choice))].flatMap(expand);
+      const choice = /<([^>]+\|[^>]+)>/.exec(command);
+      if (choice) return choice[1].split("|").flatMap((value) => expand(command.replace(choice[0], value)));
+      const placeholder = /<(\w+)>/.exec(command);
+      if (placeholder) return expand(command.replace(placeholder[0], examples[placeholder[1]]));
+      return [command.replace(/\s+/g, " ").trim()];
+    };
+    const commands = [...PRIME_MANUAL.matchAll(/`(npx -y agentera@next [^`\n]+)`/g)].flatMap((match) => expand(match[1]));
+    const staticCommands = [...new Set(commands.filter((command) => /(?: schema(?: |$)| explain(?: |$)| --explain$|--detail )/.test(command) && !/(?:--dry-run|--input)/.test(command)))];
     expect(staticCommands.length).toBeGreaterThanOrEqual(10);
     for (const command of staticCommands) {
       const result = query(args(command));

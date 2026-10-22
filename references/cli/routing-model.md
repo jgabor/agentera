@@ -68,6 +68,13 @@ returns, or, when the project gate refuses that start, the same refusal in
 `refusal` and the same exit code. A status selection carries the manual and the
 status capsule without the bare brief, because `status_context` already orients.
 
+The shared skill sends every request this way: bare `/agentera`, a direct
+`/agentera <capability> [topic]` route and natural language all go unchanged to
+`prime --input -`. A host does not call `route request` first. After
+`semantic_required`, the host follows the returned operating manual, whose
+receipt rule says to send every receipt field, null when unused, with both
+digests copied unchanged.
+
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and
@@ -168,7 +175,9 @@ model calls.
   documentation only.
 - `packages/cli/src/eval/hybridRouteEvaluation.ts` evaluates the frozen offline
   conformance corpus; its tests verify the evaluator and protocol structure.
-- `skills/agentera/SKILL.md` remains the thin portable host integration surface.
+- `skills/agentera/SKILL.md` is the thin portable host integration surface: it
+  sends each request to `prime --input -` and holds no routing rules.
+- The prime operating manual (`prime --guidance`) owns the host receipt rule.
 
 ## Maintenance (source-only; not host recovery)
 

@@ -2648,6 +2648,14 @@ budgets:
       envelope fits, prime reports brief_output_budget with the status
       continuation, never an input error. Diagnostics are measured on stderr
       separately.
+  shared_skill:
+    # The installed host skill is a pointer to prime, not a second rule set:
+    # frontmatter, the three-row request table, the rerun-after-context-loss
+    # line and the stop rule. Rules the CLI can serve belong in the prime
+    # manual. Lines are newline-terminated lines; bytes are the raw UTF-8 file.
+    source: skills/agentera/SKILL.md
+    max_lines: 40
+    max_utf8_bytes: 3000
 validation:
   authority: this file plus the referenced JSON surface manifest
   drift_rule: tests fail if manifest IDs or byte values disagree with this contract

@@ -6,7 +6,7 @@ record:
     - lkvnhzjkxb
     - equxceodkf
     - yafxewerwp
-  status: pending
+  status: complete
   acceptance:
     - GIVEN every rule in the current skill WHEN the skill shrinks THEN each has a recorded disposition, kept in the skill, moved to the manual or dropped with a reason, and every test assertion on a moved rule now checks the manual.
     - GIVEN the shipped skill WHEN read THEN it holds the frontmatter, a three-row table for bare, direct and natural-language requests that each send the request to `prime --input -`, a line to rerun prime after context loss, and the rule to stop and report when the CLI is missing, fails or returns output that does not parse.
@@ -14,3 +14,13 @@ record:
     - GIVEN an installation holding the previous skill WHEN prime runs THEN it offers the update, and applying the offer installs the new skill.
     - GIVEN the entry docs listed in scope WHEN read THEN they describe starting with prime and init, README Get started uses no internal state terms, and none tells an agent to begin with a status capsule or plan creation.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-fqnnxvyhtz-1
+      source: "audit evaluator report 2026-10-22: 5/5 criteria PASS, 2 WARN (bare prime over 3,000 GPT-5 tokens in this repo while an update offer shows; UPGRADE.md and CLI README still mention plan create as the second initializer)"
+      recorded_at: 2026-10-22 21:42
+      writer_command: agentera state plan record-evaluation
