@@ -191,11 +191,10 @@ tag backward, or attempt rollback.
 
 ## Release qualification
 
-`vp run verify` runs `verify:release`: the twelve-gate evidence DAG in
+`vp run verify` runs `verify:release`: the eleven-gate evidence DAG in
 `package-publication.json#qualification.source.dag`. It includes generated
 overlap, typecheck, build, source, package, stress, performance, capacity,
-compact, capability-contract, activation-conjunction, and historical
-certification.
+compact, capability-contract, and activation-conjunction.
 `references/analysis/verification-policy.yaml` owns its composition; the
 verification skill describes the lanes. Performance evidence counts only from
 the policy-pinned remote runner. New source authority binds to the contracted

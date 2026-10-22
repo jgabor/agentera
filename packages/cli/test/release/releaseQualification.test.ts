@@ -849,7 +849,7 @@ describe("release qualification receipts", () => {
     expect(fs.existsSync(path.join(candidateDirectory, "source-receipt.json"))).toBe(false);
   });
 
-  it("seals all twelve governed DAG gates and execution evidence in one source receipt", async () => {
+  it("seals all eleven governed DAG gates and execution evidence in one source receipt", async () => {
     const { repo, candidateDirectory } = fixture();
     const governed = GOVERNED_GATES;
     const issued = await issueSourceReceipt({
@@ -869,7 +869,8 @@ describe("release qualification receipts", () => {
     });
 
     expect(issued.receipt.gates.map((gate: { name: string }) => gate.name)).toEqual(governed.map((gate: { name: string }) => gate.name));
-    expect(issued.receipt.gates).toHaveLength(12);
+    expect(issued.receipt.gates).toHaveLength(11);
+    expect(issued.receipt.gates.some((gate: { name: string }) => gate.name === "certification")).toBe(false);
     expect(issued.receipt.gates.every((gate: { outcome: string }) => gate.outcome === "passed")).toBe(true);
     expect(issued.receipt.execution).toMatchObject({
       strategy: "parallel-overlap-dag",
@@ -891,6 +892,31 @@ describe("release qualification receipts", () => {
     const { receiptSha256: _discarded, ...content } = invalid;
     invalid.receiptSha256 = sha256(canonicalJson(content));
     expect(() => validateSourceReceipt({ repo, receipt: invalid })).toThrow("source receipt gate 'build' has the wrong command origin");
+  });
+
+  it("rejects a digest-valid receipt that still names the retired certification gate as a gate-set mismatch", async () => {
+    const { repo, candidateDirectory } = fixture();
+    const receipt = await sourceReceipt(repo, candidateDirectory);
+    const certification = {
+      name: "certification",
+      command: ["pnpm", "-C", "packages/cli", "run", "test:certification"],
+      owner: "packages/cli/scripts/verify-lane.mjs#certification",
+      correction: "pnpm -C packages/cli run test:certification",
+    };
+    const reseal = (candidate: any) => {
+      const { receiptSha256: _discarded, ...content } = candidate;
+      candidate.receiptSha256 = sha256(canonicalJson(content));
+      return candidate;
+    };
+
+    const twelveGates = structuredClone(receipt);
+    twelveGates.gates.push(gateRecord(certification));
+    twelveGates.component.gates.push(certification);
+    expect(() => validateSourceReceipt({ repo, receipt: reseal(twelveGates) })).toThrow("source receipt gates must contain the exact governed gate set in order");
+
+    const componentOnly = structuredClone(receipt);
+    componentOnly.component.gates.push(certification);
+    expect(() => validateSourceReceipt({ repo, receipt: reseal(componentOnly) })).toThrow("source receipt component does not bind the governed gate set");
   });
 
   it("rejects source authority from a non-pinned performance runner identity", async () => {

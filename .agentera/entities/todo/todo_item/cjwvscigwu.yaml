@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Tell Build how to record plan surprises with the plan writer."
       severity: normal
       status: open
-      order: 32
+      order: 31

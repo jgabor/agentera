@@ -35,6 +35,7 @@ describe("no-receipt release verification", () => {
       expect(result.profile).toBe("development");
       expect(result.gate_identity).not.toBe(sourceQualificationGateIdentity());
       expect(result.gates.some(({ name }: any) => name === "certification")).toBe(false);
+      expect(result.gates.map(({ name }: any) => name)).toEqual(qualificationGates().map(({ name }: any) => name));
       expect(
         qualificationGates("development")
           .find(({ name }: any) => name === "performance")
@@ -139,7 +140,7 @@ describe("no-receipt release verification", () => {
     expect(result.violation).not.toContain("/private/fixture.ts");
   });
 
-  it("shares the exact twelve-gate DAG identity and reports no authority side effects", async () => {
+  it("shares the exact eleven-gate DAG identity and reports no authority side effects", async () => {
     const gates = RELEASE_CONTRACT.qualification.source.gates;
     const result = await runSourceConjunction({
       gates,
@@ -155,7 +156,7 @@ describe("no-receipt release verification", () => {
         execution: { generation: "fresh", elapsedMs: 10, reconciled: true },
       }),
     });
-    expect(gates).toHaveLength(12);
+    expect(gates).toHaveLength(11);
     expect(result.gate_identity).toBe(sourceQualificationGateIdentity());
     expect(result.gates.map(({ name }: any) => name)).toEqual(gates.map(({ name }: any) => name));
     expect(result.side_effects).toEqual({

@@ -129,14 +129,14 @@ Run these from the repository root after setup:
 | `vp run test`               | Complete source test owner                               |
 | `vp run build`              | Build the Agentera CLI                                   |
 | `vp run verify:development` | Routine development safety gates                         |
-| `vp run verify`             | Full qualification, including historical certification   |
+| `vp run verify`             | Full qualification with repeated performance measurement |
 | `vp run test:local`         | Fast local-project diagnostic, not full source assurance |
 | `vp run typecheck:fresh`    | Explicit alias for fresh typecheck                       |
 | `vp run typecheck:cached`   | Opt-in guarded developer compiler feedback               |
 
 Native `vp test` and `vp build` are **not** aliases for `vp run test` and
-`vp run build`. Full verification includes repeated measurements and historical
-certification; development verification is a smaller, distinct qualification.
+`vp run build`. Full verification includes repeated measurements; development verification is
+a smaller, distinct qualification.
 Neither a local test pass nor development qualification is a release receipt.
 
 ### Keep the Node boundary explicit
@@ -274,9 +274,8 @@ publication profile still needs a fresh passing ordinary CI run.
 - The source owner still takes about 25 minutes on the measured host.
   Reducing development-gate and source wall time is future optimization work,
   not a blocker to the completed consolidation.
-- Full historical certification has pre-existing archive-binding failures.
-  CLI long-path budget fragility also remains unresolved. Development success
-  does not claim those issues are fixed.
+- CLI long-path budget fragility remains unresolved. Development success does
+  not claim that issue is fixed.
 - Guarded compiler caching contains one known native failure mode, not every
   possible upstream fault. Keep mandatory checks fresh.
 - Linux x64 qualification does not establish support for other platforms,

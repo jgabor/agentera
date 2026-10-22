@@ -4,7 +4,7 @@ record:
   name: Make the parity drift check independent of pre-rewrite history
   depends_on:
     []
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN a clone without pre-rewrite history WHEN the parity drift check runs with the pin equal to the main branch THEN it reports no drift and exits successfully.
     - GIVEN a pin that differs from the main branch WHEN the parity drift check runs THEN it reports drift and names the changed Python paths; the text output also gives the re-pin procedure, and the machine-readable output gives the pinned commit, the main commit, and the changed paths.
@@ -13,3 +13,13 @@ record:
     - GIVEN a new commit on the main branch WHEN routine source verification runs THEN the parity drift tests still pass, because they do not depend on the live main branch.
     - GIVEN the parity re-pin procedure, the routine CI and publication tests, and current descriptions of certification WHEN read after this task THEN none requires a recorded predecessor commit or archived history for parity, and certification is described as holding only the compiler and formatter replays.
   plan: kubctcgbol
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "independent audit subagent audit-1: 6/6 criteria PASS; bundle-free targeted tests 133 pass, vp run test 5052 pass, typecheck pass; history-free clone reproduced exit 0/1/2"
+      recorded_at: 2026-10-22 10:32
+      writer_command: agentera state plan record-evaluation

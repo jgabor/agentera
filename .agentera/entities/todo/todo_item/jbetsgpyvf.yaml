@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Validate the root inputs of the product-v1 reset."
       severity: normal
       status: open
-      order: 33
+      order: 32

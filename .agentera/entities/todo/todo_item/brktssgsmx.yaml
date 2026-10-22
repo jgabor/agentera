@@ -19,4 +19,4 @@ record:
       description: "[fix:3.0.0] Classify the Vite+ launcher in the pre-commit hook without relying on the launcher itself"
       severity: normal
       status: open
-      order: 35
+      order: 34

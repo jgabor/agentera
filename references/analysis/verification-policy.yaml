@@ -8,10 +8,6 @@ inventory:
   suffix: .test.ts
   default_owner: source
   rules:
-    - owner: certification
-      path: packages/cli/test/validate/allTestTypecheckViability.test.ts
-    - owner: certification
-      path: packages/cli/test/scripts/formatterNormalizationReplay.test.ts
     - owner: stress
       path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance
@@ -83,17 +79,14 @@ release_qualification:
     authority: source tests may compare the direct checkout bundle when present;
       they never construct or clean checkout generated output
 
-# Routine development uses the same DAG without historical certification and
-# uses development-resource to run the performance workload once per target.
+# Routine development uses the same DAG and uses development-resource to run
+# the performance workload once per target.
 # Heap/output and correctness limits, scales, inspector cadence, stress,
 # capacity, generation barriers and deadlines are unchanged. This is not full
 # qualification: distinct development evidence cannot issue a source receipt.
-# Full `vp run verify` retains five repeats and certification; latency is advisory.
+# Full `vp run verify` retains five repeats; latency is advisory.
 
 owners:
-  certification:
-    config: packages/cli/vite.config.ts
-    correction: Run `pnpm -C packages/cli run test:certification`; fix the historical toolchain certification failure. This owner holds only the compiler and formatter replays, needs full Git history, and is mandatory in full qualification, not routine development.
   source:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:source`; fix the reported source test or its source setup.
@@ -245,7 +238,7 @@ policies:
   local: [source]
   merge: [source, package]
   scheduled: [source, stress, performance, capacity]
-  release: [source, stress, performance, capacity, package, certification]
+  release: [source, stress, performance, capacity, package]
 
 # Task 1 classified probabilistic stale-lock repetition as scheduled/release
 # evidence after proportional deterministic lock correctness remained in source.
@@ -255,7 +248,7 @@ policies:
 # The diagnostic `verify-lane route` API retains conservative CI ownership.
 # It is not a local hook router: Vite+ uses native related tests plus the
 # configured local_guards subset. CI keeps complete development safety; explicit
-# full qualification retains every owner including historical certification.
+# full qualification retains every owner.
 conservative_routing:
   exact:
     - .vite-hooks/pre-commit

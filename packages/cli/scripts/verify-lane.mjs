@@ -13,7 +13,7 @@ import { completePackageTimings, packageTimingSummary } from "./package-verifica
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
 import { writeVerificationTimingProfile } from "./verification-timing.mjs";
 
-const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package", "certification"];
+const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
 const packageRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const defaultRoot = path.resolve(packageRoot, "../..");
 const root = path.resolve(process.env.AGENTERA_VERIFICATION_ROOT ?? defaultRoot);

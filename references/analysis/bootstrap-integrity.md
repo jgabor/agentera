@@ -160,7 +160,7 @@ state, changes global tools, or activates checkout/shared hooks.
 
 The [toolchain guide](../../docs/packaging/vite-plus-1-toolchain.md#contributor-setup)
 summarizes contributor setup and links the final development qualification.
-Historical compiler/formatter and hook certification remain separate owners.
+Hook certification remains a separate owner.
 Local success is not hosted approval.
 
 ## Vite+ 1.0.0 history

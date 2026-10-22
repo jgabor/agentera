@@ -4,7 +4,7 @@ record:
   name: Retire the historical certification lane from full qualification
   depends_on:
     - zpouwqbssy
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN full qualification WHEN its gates are listed or executed THEN it runs exactly eleven gates in the existing order without certification.
     - GIVEN development verification WHEN it runs THEN its gates, limits, and evidence are unchanged, its gate identity stays distinct from full qualification, and its evidence still cannot issue or satisfy a source receipt.

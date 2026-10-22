@@ -35,7 +35,6 @@
 - [ ] [id:siuhfapafs] [fix:3.0.0] Replace the forced two-worker generated-overlap source run with an explicit measured concurrency policy.
 - [ ] [id:twzqqgumbv] [fix:3.0.0] Emit bounded intermediate progress for verify:release while preserving its final machine-readable result.
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
-- [ ] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 - [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
 - [ ] [id:kkfomcugga] [fix:3.0.0] Report a fresh project as ready to start, not as needing repair.
@@ -228,3 +227,4 @@
 - [x] [id:ztkgkllvru] [refactor] Retire the unused durability diagnostic
 - [x] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [x] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load
+- [x] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence

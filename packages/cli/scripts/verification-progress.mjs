@@ -6,7 +6,7 @@ import { sourceDiagnosticPattern } from "./source-diagnostics.mjs";
 // a diagnostic filter, not a security boundary against a hostile child process.
 const owners = {
   overlap: ["source", "build", "package", "invocation"],
-  qualification: ["generated-overlap", "stress", "typecheck", "certification", "performance", "capacity", "compact", "capability-contract", "activation-conjunction"],
+  qualification: ["generated-overlap", "stress", "typecheck", "performance", "capacity", "compact", "capability-contract", "activation-conjunction"],
 };
 const statuses = new Set(["started", "running", "passed", "failed", "cancelled"]);
 const linePattern = /^AGENTERA_VERIFICATION_PROGRESS scope=(overlap|qualification) owner=([a-z-]+) status=([a-z]+) elapsedMs=(\d{1,10})$/;

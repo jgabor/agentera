@@ -477,7 +477,7 @@ describe("source qualification DAG", () => {
       },
     });
 
-    expect(started.map(({ name }) => name)).toEqual(["generated-overlap", "stress", "typecheck", ...(profile === "full" ? ["certification"] : []), "performance", "capacity", "compact", "capability-contract", "activation-conjunction"]);
+    expect(started.map(({ name }) => name)).toEqual(["generated-overlap", "stress", "typecheck", "performance", "capacity", "compact", "capability-contract", "activation-conjunction"]);
     expect(started.map(({ name }) => name)).not.toEqual(expect.arrayContaining(["source", "package", "build"]));
     expect(started[0]).toMatchObject({
       name: "generated-overlap",
@@ -523,7 +523,8 @@ describe("source qualification DAG", () => {
     expect(new Set(started.map(({ reportFile }) => reportFile)).size).toBe(started.length);
     expect(cleaned).toHaveLength(started.length);
     expect(stateReads).toBe(4);
-    expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.filter((entry: any) => profile === "full" || entry.name !== "certification").map((entry: any) => entry.name));
+    expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name));
+    expect(qualification.gates).toHaveLength(11);
     expect(qualification.gates.every((entry: any) => entry.outcome === "passed")).toBe(true);
     expect(qualification.gates.filter((entry: any) => entry.origin === "generated-overlap").map((entry: any) => entry.name)).toEqual(["source", "package", "generated-overlap", "build"]);
     expect(qualification.gates.find((entry: any) => entry.name === "source").observation).toMatchObject({
@@ -555,21 +556,21 @@ describe("source qualification DAG", () => {
     });
   });
 
-  it("full qualification stops visibly at certification failure before measurement or readers", async () => {
+  it("full qualification stops visibly at a batch A failure before measurement or readers", async () => {
     const batches: string[][] = [];
     await expect(
       runSourceQualificationDag({
         clock: () => 0,
         runConcurrent: async (specifications: any[]) => {
           batches.push(specifications.map(({ name }) => name));
-          throw ownerError("certification", "historical compiler certification failed");
+          throw ownerError("typecheck", "typecheck failed");
         },
       }),
     ).rejects.toMatchObject({
-      owner: "certification",
-      message: "historical compiler certification failed",
+      owner: "typecheck",
+      message: "typecheck failed",
     });
-    expect(batches).toEqual([["generated-overlap", "stress", "typecheck", "certification"]]);
+    expect(batches).toEqual([["generated-overlap", "stress", "typecheck"]]);
   });
 
   it("full DAG rejects development measurement before capacity or readers", async () => {
@@ -594,7 +595,7 @@ describe("source qualification DAG", () => {
         },
       }),
     ).rejects.toMatchObject({ owner: "performance" });
-    expect(batches).toEqual([["generated-overlap", "stress", "typecheck", "certification"], ["performance"]]);
+    expect(batches).toEqual([["generated-overlap", "stress", "typecheck"], ["performance"]]);
   });
 
   it("keeps the parent-owned overlap root through barrier B and removes it after the DAG", async () => {
@@ -749,9 +750,9 @@ describe("source qualification DAG", () => {
         detail: "performance exceeded its remaining source deadline",
       },
     });
-    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "certification", "performance"]);
+    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "performance"]);
     expect(cleaned).toEqual(expect.arrayContaining(["generated-overlap", "stress", "typecheck", "performance"]));
-    expect(new Set(cleaned).size).toBe(5);
+    expect(new Set(cleaned).size).toBe(4);
     expect(stateReads).toBe(1);
   });
 
@@ -781,7 +782,7 @@ describe("source qualification DAG", () => {
       owner: "capacity",
       firstFailure: { name: "capacity", detail: "capacity fixture failed" },
     });
-    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "certification", "performance", "capacity"]);
+    expect(started).toEqual(["generated-overlap", "stress", "typecheck", "performance", "capacity"]);
   });
 
   it("blocks receipt completion when a post-build reader fails and cancels its peer", async () => {

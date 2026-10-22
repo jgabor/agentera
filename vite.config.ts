@@ -96,8 +96,6 @@ export default defineConfig({
       "**/node_modules/**",
       "packages/cli/test/**/fixtures/**",
       "packages/cli/test/evidence/**",
-      "packages/cli/scripts/verify-all-test-typecheck-evidence.mjs",
-      "packages/cli/test/validate/allTestTypecheckViability.test.ts",
       "**/*.generated.*",
       ".agentera/**",
       "TODO.md",

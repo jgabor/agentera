@@ -15,11 +15,13 @@ const mutate = (change: (copy: any) => void) => {
 };
 
 describe("strict package publication model", () => {
-  it("owns exactly twelve ordered gates including certification with capacity after performance and before readers", () => {
+  it("owns exactly eleven ordered gates with capacity after performance and before readers", () => {
     const model = validatePackagePublicationDocument(authority);
     expect(model.developmentRef).toBe(authority.ci.developmentPush.ref);
     expect(model.developmentRefAuthority).toBe("ci.developmentPush.ref");
+    expect(SOURCE_GATE_IDS).toEqual(["source", "stress", "performance", "capacity", "package", "generated-overlap", "typecheck", "build", "compact", "capability-contract", "activation-conjunction"]);
     expect(model.sourceGates.map(({ name }) => name)).toEqual(SOURCE_GATE_IDS);
+    expect(model.sourceDag.batchA).toEqual(["generated-overlap", "stress", "typecheck"]);
     expect(model.sourceDag.performanceBarrier).toEqual(["performance"]);
     expect(model.sourceDag.capacityBarrier).toEqual(["capacity"]);
     expect(model.sourceDag.barrierB).toEqual(["compact", "capability-contract", "activation-conjunction"]);
@@ -48,6 +50,21 @@ describe("strict package publication model", () => {
         copy.benchmark.timeouts.sourceQualificationMs = 2_400_001;
       }),
     ).toThrow(/source qualification timeout/);
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.gates.push({
+          name: "certification",
+          command: ["pnpm", "-C", "packages/cli", "run", "test:certification"],
+          owner: "packages/cli/scripts/verify-lane.mjs#certification",
+          correction: "pnpm -C packages/cli run test:certification",
+        });
+      }),
+    ).toThrow(/source gates must contain exactly 11 entries/);
+    expect(
+      mutate((copy) => {
+        copy.qualification.source.dag.batchA.push("certification");
+      }),
+    ).toThrow(/source batch A/);
   });
 
   it("accepts an arbitrary canonical non-main development ref without other changes", () => {

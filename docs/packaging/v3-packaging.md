@@ -237,7 +237,7 @@ build job and a dependent OIDC-enabled publication job with the protected
 `npm-publish` environment inside the same `.github/workflows/publish.yml`.
 
 Full source qualification runs one evidence DAG. Batch A starts generated-overlap,
-stress, typecheck, and historical certification together with separate HOME, cache, npm configs, and
+stress, and typecheck together with separate HOME, cache, npm configs, and
 report outputs. Generated-overlap invokes the exact public source, package, and
 build commands once. The build writes only its private immutable root and returns
 the owner inventories, pending-test results, and build evidence. Source, package,
@@ -336,7 +336,7 @@ child execution plus the 4,000 ms reconciliation reserve remain. The 2,400,000 m
 source envelope retains headroom over the observed 1,676,355 ms hosted failure
 with two 120-second fixture ceilings and the 516,590 ms local eleven-gate pass.
 
-The content-addressed `source-receipt.json` contains all twelve named gates with
+The content-addressed `source-receipt.json` contains all eleven named gates with
 their execution origin, `outcome: "passed"`, observations, finite durations, and
 executed/reused state. Validation requires the exact gate order, governed origin
 and phase, successful outcome, execution shape, and gate-relevant observations;
@@ -572,17 +572,16 @@ it is not a budget, package artifact receipt, approval, or publication authority
 ## Generated-output and verification ownership
 
 `references/analysis/verification-policy.yaml` is the executable authority for
-test inventory ownership and policy composition. The six test owners are
+test inventory ownership and policy composition. The five test owners are
 independent:
 
-| Owner         | Entry point                                 | Owns                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
-| ------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Source        | `vp run test` (`test:source`)               | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
-| Stress        | `vp -C packages/cli run test:stress`        | Repeated probabilistic stress evidence assigned by the policy inventory.                                                                                                                                                                                                                                                                                                                                                                                 |
-| Performance   | `vp -C packages/cli run test:performance`   | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check.                                                                                                                                                                                                             |
-| Capacity      | `vp -C packages/cli run test:capacity`      | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing.                                                                                                                                                                                                                                                                                                                                              |
-| Package       | `vp -C packages/cli run verify:package`     | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke.                                                                                                                                                                     |
-| Certification | `vp -C packages/cli run test:certification` | Historical all-test compiler viability and formatter normalization replay, including tamper rejection. Only the two explicitly named policy files belong here; behavioral product parity and the parity drift check remain source-owned. Mandatory in full qualification, omitted from routine development.                                                                                                                                              |
+| Owner       | Entry point                               | Owns                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ----------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Source      | `vp run test` (`test:source`)             | Deterministic correctness, including the complete 190-row source/package bootstrap matrix, detailed command and failure behavior in feature-owned tests, response-cap behavior, and every other source-assigned test. Its transient TypeScript subprocess output lives in an operating-system temporary directory. Source never writes checkout generated output, but may compare a settled bundled schema when the generated bundle is already present. |
+| Stress      | `vp -C packages/cli run test:stress`      | Repeated probabilistic stress evidence assigned by the policy inventory.                                                                                                                                                                                                                                                                                                                                                                                 |
+| Performance | `vp -C packages/cli run test:performance` | Advisory latency targets and blocking correctness, heap/output and evidence checks, including its required structured evidence producer, one-worker execution, pinned remote runner policy, captured runner identity, and integration check.                                                                                                                                                                                                             |
+| Capacity    | `vp -C packages/cli run test:capacity`    | Large deterministic scale evidence that is too resource-heavy for source correctness or performance timing.                                                                                                                                                                                                                                                                                                                                              |
+| Package     | `vp -C packages/cli run verify:package`   | Distribution-only checks against two independently constructed package roots and one extracted regular tree: safe construction, deterministic package bytes, exact layout and integrity, source-map absence, executable mode, inventory, path independence, and one extracted smoke.                                                                                                                                                                     |
 
 Build is a separate generated-output participant, not a test owner. Routine
 builds synchronize staged output into checkout `dist/` and `bundle/`; release
@@ -635,7 +634,7 @@ optimization, or performance certification. Machine-sensitive performance
 remains with its separate isolated owner. Assertions, two independent
 constructions, isolation, sequencing, and local default workers are unchanged, as is
 the active 2,400,000 ms parent qualification deadline. These historical failed
-qualifications remain failed history; hosted development run [34527789220](https://github.com/jgabor/agentera/actions/runs/34527789220) passed and published `3.0.0-dev.113` to `@next`. Historical full re-certification remains open under `vcrmaxuasq`.
+qualifications remain failed history; hosted development run [34527789220](https://github.com/jgabor/agentera/actions/runs/34527789220) passed and published `3.0.0-dev.113` to `@next`.
 The controlled shell timings include command-launch overhead, so they
 conservatively bound the owner process measured by `verify-lane.mjs`. An invalid
 limit fails before test execution. A successful test process that exceeds the
@@ -643,15 +642,15 @@ limit fails with the package correction command.
 
 The canonical policy compositions are:
 
-| Policy      | Owners, in order                                              |
-| ----------- | ------------------------------------------------------------- |
-| `targeted`  | Source                                                        |
-| `precommit` | Source                                                        |
-| `fast`      | Source                                                        |
-| `local`     | Source                                                        |
-| `merge`     | Source, package                                               |
-| `scheduled` | Source, stress, performance, capacity                         |
-| `release`   | Source, stress, performance, capacity, package, certification |
+| Policy      | Owners, in order                               |
+| ----------- | ---------------------------------------------- |
+| `targeted`  | Source                                         |
+| `precommit` | Source                                         |
+| `fast`      | Source                                         |
+| `local`     | Source                                         |
+| `merge`     | Source, package                                |
+| `scheduled` | Source, stress, performance, capacity          |
+| `release`   | Source, stress, performance, capacity, package |
 
 Pre-commit uses native staged checks and import-related source tests, with a small
 reader-selection bridge. Root native discovery contains disjoint `local`,
@@ -704,7 +703,7 @@ This diagnostic verification is not a step before or after `cli:ready:dev` in a
 normal package-readiness run. Doing both would repeat owners that the
 coordinator already executes once.
 
-`verify:release` (root `vp run verify`) runs that same twelve-gate source verification DAG against the
+`verify:release` (root `vp run verify`) runs that same eleven-gate source verification DAG against the
 current source tree, including dirty or staged work, in check-only mode. It
 emits one bounded result and creates no source receipt, package artifact, registry
 request, activation, or publication action. Receipt verification retains its
@@ -713,9 +712,9 @@ clean committed-tree and explicit external artifact directory requirements.
 ### Routine development safety versus full qualification
 
 `vp run verify:development` is the required routine push/PR gate. It reuses the
-qualification DAG and first-failure cancellation/cleanup, with two explicit
-differences: no historical certification owner, and a single cold sample per
-declared measurement target instead of five. It retains:
+qualification DAG and first-failure cancellation/cleanup, with one explicit
+difference: a single cold sample per declared measurement target instead of
+five. It retains:
 
 - Source correctness and state-integrity regression tests, plus typecheck.
 - Clean private builds and self-contained package construction/extracted smoke.
@@ -733,8 +732,7 @@ declared measurement target instead of five. It retains:
 
 Latency remains advisory in both profiles. No deadline or limit is increased.
 One sample can detect observed live heap/output excess but does not establish
-repeatability, a latency SLO, historical toolchain certification, or full release
-qualification. Local measurement is diagnostic, not hosted performance authority.
+repeatability, a latency SLO, or full release qualification. Local measurement is diagnostic, not hosted performance authority.
 Development emits `agentera.developmentConjunction.v1` with `profile: development`
 and a distinct gate identity; its measurement emits
 `agentera.developmentResourceEvidence.v1`. Full consumers reject that evidence,
@@ -744,29 +742,13 @@ No development result issues or replaces a source receipt.
 Full qualification remains explicitly reachable without a scheduled workflow:
 
 ```bash
-# Meet the historical certification prerequisites below first.
 vp run verify
-# Focused historical certification diagnosis (not full qualification):
-vp -C packages/cli run test:certification
 ```
 
-Full qualification still executes all five cold repetitions, stress, capacity,
-and both historical certification suites. Failures remain blocking and visible;
-development success does not dismiss an unresolved certification failure. Receipt
+Full qualification still executes all five cold repetitions, stress, and
+capacity. Failures remain blocking and visible. Receipt
 issuance and manual release benchmark commands retain their existing authority
 requirements and repeated work. Routine CI fetches no history beyond its full checkout.
-
-Historical certification prerequisites (required together):
-
-- Formatter replay needs its manifest-pinned base
-  `5cdee5b35830d7d7404a083c4db5b11aade07f0a` and normalized commit
-  `0afd213355c8ca5a09d95d643f2e793c44dfb760`, which full branch history
-  contains, and the pinned tools.
-- Compiler replay needs the retained inputs, source binding, raw compressed
-  diagnostics and normalized evidence under
-  `packages/cli/test/evidence/all-test-typecheck-replay/`, plus its pinned
-  compiler/tool dependencies. Missing inputs or changed replay diagnostics
-  remain failures; development success is not historical certification.
 
 `vp -C packages/cli run verify:generated-overlap` starts the exact public
 source, package, and build owners concurrently. The build owner writes one

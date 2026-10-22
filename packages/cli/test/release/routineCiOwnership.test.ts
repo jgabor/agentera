@@ -140,7 +140,7 @@ describe("routine CI owner DAG", () => {
     const source = publicationContract.qualification.source;
     const gateNames = source.gates.map((entry: { name: string }) => entry.name);
     expect(gateNames).toEqual(expect.arrayContaining(["typecheck", "compact", "stress", "performance", "capacity"]));
-    expect(verificationPolicy.policies.release).toEqual(["source", "stress", "performance", "capacity", "package", "certification"]);
+    expect(verificationPolicy.policies.release).toEqual(["source", "stress", "performance", "capacity", "package"]);
     expect(verificationPolicy.inventory.default_owner).toBe("source");
     // Hermetic parity drift tests stay in routine source verification.
     expect(verificationPolicy.inventory.rules.filter((rule: { path?: string; prefix?: string }) => rule.path === "packages/cli/test/scripts/pyTsParity.test.ts" || "packages/cli/test/scripts/pyTsParity.test.ts".startsWith(rule.prefix ?? "never/"))).toEqual([]);

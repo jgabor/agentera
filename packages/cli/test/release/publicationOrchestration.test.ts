@@ -138,7 +138,7 @@ function requireReviewedOidcPublicationSteps(workflow: any) {
 }
 
 describe("package publication orchestration", () => {
-  it.each([["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }]])("provides complete history without historical certification fetches before %s verification", (_name, job, checkoutInputs) => {
+  it.each([["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }]])("provides complete history without archival fetches before %s verification", (_name, job, checkoutInputs) => {
     const archivalCommand = `git fetch --depth=1 origin '${"9".repeat(40)}'`;
     type Step = {
       name?: string;
@@ -156,8 +156,8 @@ describe("package publication orchestration", () => {
       expect(checkoutIndex).toBeLessThan(verifyIndex);
       expect(steps.filter((step) => step.uses === "actions/checkout@v5")).toHaveLength(1);
       expect(steps[checkoutIndex]!.with).toEqual(checkoutInputs);
-      // Ordinary source fixtures still need history; archived toolchain
-      // certification is owned by explicit full qualification only.
+      // Ordinary source fixtures need full checkout history, and no
+      // verification step fetches archived commits.
       expect(steps.filter((step) => /\bgit\s+fetch\b/.test(step.run ?? ""))).toEqual([]);
       for (const step of [steps[checkoutIndex], steps[verifyIndex]]) {
         expect(step).not.toHaveProperty("if");

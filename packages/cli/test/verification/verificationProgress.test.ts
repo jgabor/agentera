@@ -48,6 +48,12 @@ describe("verification progress diagnostics", () => {
     expect(vi.getTimerCount()).toBe(0);
   });
 
+  it("rejects the retired certification owner as a qualification progress label", () => {
+    const write = vi.fn();
+    expect(() => createVerificationProgress("qualification", "certification", { write })).toThrow("unknown verification progress owner");
+    expect(write).not.toHaveBeenCalled();
+  });
+
   it("forwards only complete whitelisted overlap records across chunk boundaries", () => {
     const lines: string[] = [];
     const forwarder = createOverlapProgressForwarder((line: string) => {

@@ -91,8 +91,7 @@ export function checkDetailSections(a: ServiceAuthority, base: string, operation
             "Runs the isolated bounded product-behavior harness against frozen fixtures and exact metric denominators; returns metric report plus fail-closed gate. No live history/profile is read. Corpus records and holdout labels are not emitted by explanation. A quantitative pass does not enable inferred automatic admission.",
         },
         output: "JSON command/status/family/target/engine/diagnostics/safety, plus glossary_evaluation for glossary. Diagnostic stdout/stderr lines are bounded by the executor. A failing or not-run gate is non-authorizing; preserve its reason and rerun only after correction.",
-        qualification:
-          "Source, package, stress, performance, capacity, generated-overlap and historical certification are maintainer lane owners, not additional check verify targets. Historical certification requires the retained Git history and OS prerequisites; npm consumers cannot reproduce it by looking up installed files. Smoke is retired here.",
+        qualification: "Source, package, stress, performance, capacity and generated-overlap are maintainer lane owners, not additional check verify targets; npm consumers cannot reproduce them by looking up installed files. Smoke is retired here.",
       },
       "packages/cli/src/cli/commands/verify.ts",
     );

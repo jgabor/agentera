@@ -78,10 +78,8 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   contract, and activation-conjunction readers. It runs the live CLI resource workload once per target
   at unchanged scales and limits; latency is advisory. Its evidence is not full
   qualification or a receipt.
-- `vp run verify` is full qualification: five cold repetitions plus historical
-  certification (`test:certification`), which holds only the compiler and
-  formatter replays. See the packaging guide for their prerequisites.
-  Certification failures stay visible.
+- `vp run verify` is full qualification: the same eleven gates with five cold
+  performance repetitions. Its failures stay visible.
 
 After a verification failure, correct the first reported owner and rerun the
 owning command. Do not run an omitted owner separately.

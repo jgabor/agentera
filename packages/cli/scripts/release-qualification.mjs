@@ -199,17 +199,15 @@ export function qualificationGates(profile = "full") {
   measurementProfile(profile); // Closed selection; never infer qualification from the environment.
   return profile === "full"
     ? sourceGateSet()
-    : sourceGateSet()
-        .filter(({ name }) => name !== "certification")
-        .map((gate) =>
-          gate.name === "performance"
-            ? {
-                ...gate,
-                command: ["pnpm", "-C", "packages/cli", "run", "test:development-resource"],
-                correction: "pnpm -C packages/cli run test:development-resource",
-              }
-            : gate,
-        );
+    : sourceGateSet().map((gate) =>
+        gate.name === "performance"
+          ? {
+              ...gate,
+              command: ["pnpm", "-C", "packages/cli", "run", "test:development-resource"],
+              correction: "pnpm -C packages/cli run test:development-resource",
+            }
+          : gate,
+      );
 }
 
 function governedSourceGates(gates, profile = "full") {
@@ -951,20 +949,6 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     ]),
   );
   const entries = {
-    ...(profile === "full"
-      ? {
-          certification: {
-            name: "certification",
-            origin: "certification",
-            phase: "batch-a",
-            outcome: "passed",
-            elapsedMs: batch.certification.elapsedMs,
-            executed: "command",
-            reused: false,
-            observation: outputObservation(batch.certification),
-          },
-        }
-      : {}),
     ...originEntries,
     "generated-overlap": {
       name: "generated-overlap",

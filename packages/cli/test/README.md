@@ -54,8 +54,7 @@ contributor environment, not a claim of macOS or Windows qualification.
   remote with `git fetch --unshallow origin`, then repeat the check. If that
   remote cannot supply it, restore it from a trusted retained checkout or Git
   bundle. Do not reset the working tree, replace the fixture with current
-  plugin code, or skip the test. This source prerequisite is separate from
-  the historical certification prerequisites for full qualification below.
+  plugin code, or skip the test.
 
 - First provisioning needs network for uncached Node, pnpm, and dependencies.
   Warm cached offline execution is verified; an empty offline runtime cache
@@ -106,7 +105,7 @@ ordinary source verification. Full runs reuse baseline capability observations
 for parity and compare fresh post-command protected-root snapshots with the
 runtime/state baseline. They retain all 190 matrix rows and nine protected roots.
 Standalone parity selections still execute the direct runtime observers.
-The overlap process runs beside isolated stress, typecheck and historical certification owners. After those batch owners
+The overlap process runs beside isolated stress and typecheck owners. After those batch owners
 pass and the private build settles, performance runs alone
 with one worker in fresh state on the pinned remote runner, and records runner
 identity so CPU contention cannot invalidate its machine-sensitive evidence.
@@ -139,13 +138,10 @@ Root native discovery retains the three projects needed by local hooks.
 Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative
 development safety through `vp run verify:development`; explicit full
-`vp run verify` retains historical certification and repeated performance.
-Only `allTestTypecheckViability.test.ts` and `formatterNormalizationReplay.test.ts`
-are certification-owned (`test:certification`); no arbitrary source exclusion is
+`vp run verify` retains repeated performance. No arbitrary source exclusion is
 supported. Behavioral `cli/npmParityMatrix.test.ts` and the parity drift tests in
 `scripts/pyTsParity.test.ts`, which use a self-contained fixture repository rather
-than the live main branch, remain source-owned; historical
-prerequisites are listed together in `docs/packaging/v3-packaging.md`.
+than the live main branch, remain source-owned.
 Development retains stress, capacity and all private-generation and
 package contracts, but its distinct success is not full qualification. The hook accepts no receipt
 or environment bypass.

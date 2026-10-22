@@ -14,12 +14,16 @@ record:
     - Invalid or missing evidence still blocks full qualification; routine development publication remains separately governed.
   release_blocker: true
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[test:3.0.0] Re-certify historical all-test typecheck evidence"
+      status: resolved
+      order: 170
       severity: normal
-      status: open
-      order: 20
+  lifecycle:
+    operation: resolve
+    reason: "Retired instead of re-certified: full qualification no longer runs the historical compiler or formatter replays, and their evidence is deleted, so source receipts cover eleven gates and nothing remains to re-certify."
+    date: 2026-10-22

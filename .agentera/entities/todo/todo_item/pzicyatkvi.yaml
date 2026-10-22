@@ -19,4 +19,4 @@ record:
       description: "[task:3.0.0] Decide the future of natural-language route request and receipt"
       severity: normal
       status: open
-      order: 30
+      order: 29
