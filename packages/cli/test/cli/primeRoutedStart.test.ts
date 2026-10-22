@@ -193,6 +193,93 @@ describe("prime routes a request from --input", () => {
   });
 });
 
+describe("calls per documented entry path", () => {
+  const CLI = "npx -y agentera@next ";
+  const CALL_BUDGET = { bare: 1, direct: 1, phrase: 1, natural: 3 } as const;
+  type EntryPath = keyof typeof CALL_BUDGET;
+  type Invoke = (args: string[], stdin?: string) => { rc: number; out: string; err: string };
+
+  const cliArgs = (command: string) => {
+    expect(command.startsWith(CLI), command).toBe(true);
+    return command.slice(CLI.length).split(" ");
+  };
+
+  // The skill's pointer table is the documented entry; every row must name one command.
+  function documentedEntry(): string[] {
+    const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
+    const rows = skill.split("\n").filter((line) => line.startsWith("| ") && line.includes(CLI));
+    const commands = new Set(rows.map((row) => /`(npx -y agentera@next [^`]+)`/.exec(row)?.[1]));
+    expect(rows).toHaveLength(3);
+    expect([...commands]).toEqual([`${CLI}prime --input -`]);
+    return cliArgs(`${CLI}prime --input -`);
+  }
+
+  // Follows the CLI's own replies until a capability's startup capsule arrives.
+  function follow(request: string, receiptCapability: string, invoke: Invoke): { calls: string[]; capability: string } {
+    const calls: string[] = [];
+    const call = (args: string[], stdin?: string) => {
+      calls.push(args.join(" "));
+      const result = invoke(args, stdin);
+      expect(result.rc, `${args.join(" ")}: ${result.out}${result.err}`).toBe(0);
+      return json(result.out);
+    };
+    const finish = (capsule: Record<string, any>) => {
+      expect(capsule.capability_context.instructions.length, request).toBeGreaterThan(0);
+      return { calls, capability: capsule.capability_context.capability as string };
+    };
+    const entry = call(documentedEntry(), routeBody(request));
+    if (entry.start) return finish(entry.start);
+    const { route } = entry;
+    if (route.outcome !== "semantic_required") return finish(call(cliArgs(`${CLI}prime --context ${route.capability}`)));
+    const receipt = { version: route.receipt_contract.version, request_sha256: route.request_sha256, semantic_capsule_sha256: route.semantic_capsule_sha256, outcome: "select", capability: receiptCapability, compound: "none", question: null, remainder_span: null };
+    const selected = call(cliArgs(route.receipt_contract.stdin_command), JSON.stringify({ request, receipt }));
+    return finish(call(cliArgs(selected.route_provenance.startup_command)));
+  }
+
+  function measure(invoke: Invoke) {
+    const corpus = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "fixtures/routing/hybrid-corpus.yaml"), "utf8"));
+    const natural = corpus.receipt_cases.find((entry: { id: string }) => entry.id === "DEV-RECEIPT-SELECT-PASS");
+    const phrases = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/route-phrases.yaml"), "utf8")).phrases;
+    const phrase = phrases.find((entry: { status: string; capability: string }) => entry.status === "active" && entry.capability === "plan");
+    const requests: Record<EntryPath, [string, string]> = {
+      bare: ["/agentera", "status"],
+      direct: ["/agentera build", "build"],
+      phrase: [phrase.phrase, phrase.capability],
+      natural: [natural.request, natural.receipt.capability],
+    };
+    const results = Object.fromEntries(
+      Object.entries(requests).map(([name, [request, capability]]) => {
+        const result = follow(request, capability, invoke);
+        expect(result.capability, name).toBe(capability);
+        return [name, result.calls];
+      }),
+    ) as Record<EntryPath, string[]>;
+    const over = (Object.keys(CALL_BUDGET) as EntryPath[]).filter((name) => results[name].length > CALL_BUDGET[name]);
+    return { results, over };
+  }
+
+  it("needs one call for bare, direct and curated-phrase requests and three for natural language", () => {
+    entityProject();
+    const { results, over } = measure(run);
+    expect(over).toEqual([]);
+    expect(Object.fromEntries(Object.entries(results).map(([name, calls]) => [name, calls.length]))).toEqual(CALL_BUDGET);
+    expect(results.natural).toEqual(["prime --input -", "route receipt --input -", "prime --context plan"]);
+  });
+
+  it("fails a deterministic path whose reply lacks the startup capsule", () => {
+    entityProject();
+    const withoutStart: Invoke = (args, stdin) => {
+      const result = run(args, stdin);
+      if (args.join(" ") !== "prime --input -") return result;
+      const { start: _start, ...rest } = json(result.out);
+      return { ...result, out: JSON.stringify(rest) };
+    };
+    const { results, over } = measure(withoutStart);
+    expect(over).toEqual(["bare", "direct", "phrase"]);
+    expect(results.direct).toEqual(["prime --input -", "prime --context build"]);
+  });
+});
+
 describe("prime stdin reads", () => {
   function spawnBuilt(args: string[]) {
     return spawn(process.execPath, [path.join(sourceBuildOutputRoot(), "bin/agentera.js"), ...args], {

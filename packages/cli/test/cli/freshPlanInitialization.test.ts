@@ -435,16 +435,20 @@ describe("init", () => {
     expect(bare.json?.fresh_start).toEqual({
       about: expect.stringMatching(/^Agentera keeps .+\. Prime .+\.$/),
       written: "Nothing has been written to this project yet.",
+      writes: [{ path: ".agentera/state-mode.yaml", action: "create", content: { schemaVersion: "agentera.stateMode.v1", mode: "entities" } }],
       preview_command: expect.stringMatching(/ init --project \S+$/),
       apply_command: expect.stringMatching(/ init --project \S+ --yes$/),
-      approval: expect.stringContaining("only after the user approves"),
+      approval: expect.stringMatching(/^Show the user the files in writes and ask; run apply_command only after the user approves\./),
     });
     expect(bare.json?.next_action).toMatchObject({ object: "Agentera init preview", capability: "status", retrieval: { exact: bare.json?.fresh_start.preview_command } });
     expect(snapshot(fresh)).toBe(before);
 
     const preview = capture(fresh, bare.json?.fresh_start.preview_command.split(" ").slice(3));
     expect(preview.json).toMatchObject({ status: "preview", apply_command: bare.json?.fresh_start.apply_command });
-    expect(capture(fresh, ["init", "--yes"]).rc).toBe(0);
+    expect(preview.json?.writes).toEqual(bare.json?.fresh_start.writes);
+    const applied = capture(fresh, ["init", "--yes"]);
+    expect(applied.rc).toBe(0);
+    expect(applied.json?.writes).toEqual(bare.json?.fresh_start.writes);
 
     const initialized = capture(fresh, ["prime"]);
     expect(initialized.json).not.toHaveProperty("fresh_start");

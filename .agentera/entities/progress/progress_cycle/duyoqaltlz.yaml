@@ -1,0 +1,16 @@
+id: duyoqaltlz
+artifact: progress
+record:
+  timestamp: 2026-10-22 22:56
+  type: feat
+  phase: build
+  what: Bare prime's fresh_start now carries init's writes list with an approval rule to show those files and ask; the cold-agent eval rerun passed 3 of 3 runs.
+  context:
+    intent: Make a cold agent show init's writes before asking, and requalify the cold-agent setup eval against the local build.
+    constraints: No skill text, route contract, budget or version change; no publish or push.
+    unknowns: None for this task; the eval qualifies only OpenCode with one model.
+    scope: packages/cli/src/cli/migrationRequired.ts, packages/cli/src/capabilities/status/instructions.ts, packages/cli/scripts/eval-cold-agent.mjs, the fresh-start, routed-start and grader tests, UPGRADE.md, CHANGELOG.md, packages/cli/test/README.md.
+  discovered: With writes in fresh_start, every run named .agentera/state-mode.yaml in turn 1 and asked before applying; none ran init without --yes. One run also sent a route receipt for status in turn 1. The grader now accepts the shown writes list as the preview and requires a vision start or an explicit vision offer, not a bare mention.
+  verified: "Cold-agent eval rerun 2026-10-22: PASS, 3/3 passes (2 required). Runtime opencode 1.19.3 headless, no auto-approve, isolated HOME with only the installed skill and the github-copilot login; model github-copilot/claude-sonnet-5. Package agentera 3.0.0-dev.84 constructed by pack-package.mjs from git 2221cdb6 plus uncommitted changes (package inputs: migrationRequired.ts, status instructions.ts, the eval:cold-agent script entry); tarball sha256 0e14029e16ec6a06836b25e833e4856b649eea9f2dc59f5cfd40577568173809, dist tree sha256 c37d8f9fbf0b271d66c4ac24782e75b9b71681d01834e21458f45b07c0830d7f. Installed SKILL.md matched skills/agentera/SKILL.md. In every run init --yes ran only in turn 2 and turn 2 offered vision. Fresh-repo bare prime at a 37-character path: 9,530 bytes and 2,459 GPT-5 tokens, within 16,000 and 5,000. After the last source change: vp check, typecheck and build passed; vp run test passed 5093 with 6 skipped; verify:development passed all 11 gates. Supersedes the 0/3 result in progress zdzsxeehnf."
+  next: Evaluate task bimpkzdnlv against its criteria.
+  publication_order: 407

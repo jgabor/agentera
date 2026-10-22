@@ -187,7 +187,9 @@ initializes fresh state; each refuses with `fresh_initialization_required` and
 names both, the `init` preview first.
 
 Bare `prime` in a fresh project adds `fresh_start`: what Agentera is, that
-nothing has been written, and the `init` preview and apply commands. Its
+nothing has been written, the files `init` would write (`writes`, the same list
+the `init` preview prints), and the `init` preview and apply commands. Show the
+user those files and ask before running the apply command. Its
 `next_action` is the `init` preview. `doctor` reports the same next step under
 `current_health.project_readiness` with status `ready_to_start`, not
 `repair_needed`. After `init`, the next step is vision, with discuss as the

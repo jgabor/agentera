@@ -1,0 +1,16 @@
+id: zdzsxeehnf
+artifact: progress
+record:
+  timestamp: 2026-10-22 22:39
+  type: test
+  phase: build
+  what: Added a calls-per-entry-path contract check and an opt-in cold-agent eval lane (vp -C packages/cli run eval:cold-agent -- --out DIR); the first eval passed 0 of 3 runs.
+  context:
+    intent: Guard the single prime entry with a deterministic call count and a real-agent setup eval against the local build.
+    constraints: No skill text, route contract, budget or version change; no publish or push.
+    unknowns: Resolved that OpenCode runs the scenario headless against the locally constructed package through a PATH-first npx shim. Open whether a fresh_start change makes the preview reliable.
+    scope: packages/cli/test/cli/primeRoutedStart.test.ts, packages/cli/scripts/eval-cold-agent.mjs, packages/cli/test/scripts/coldAgentEval.test.ts, packages/cli/package.json, packages/cli/test/README.md.
+  discovered: In all three runs the agent read fresh_start from the first prime call, showed the preview and apply commands, and asked for approval without running the init preview. It applied init --yes only after the approval turn and handed off to vision each time. The skipped preview is the only failed check.
+  verified: "Cold-agent eval 2026-10-22: FAIL, 0/3 passes (2 required). Runtime opencode 1.19.3 headless, no auto-approve, isolated HOME with only the installed skill and the github-copilot login; model github-copilot/claude-sonnet-5. Package agentera 3.0.0-dev.84 constructed by pack-package.mjs from git 2221cdb6 plus uncommitted lane files (only package input change: the eval:cold-agent script entry); tarball sha256 e8da2aa53bd4b0a9e6363c862e779de8b931a7a2124177cac53e300c1259f51f, dist tree sha256 e03a502cf50b66a108e767d3fdc9a2db3c4ccd0d25e15fca136e5afd816a6e7e. Installed SKILL.md matched skills/agentera/SKILL.md byte for byte. Contract check: bare, direct and curated-phrase requests take 1 call and natural language takes 3; a reply without start fails the check. After the last source change: vp check, typecheck and build passed; vp run test passed 5089 with 6 skipped; verify:development passed all 11 gates."
+  next: Decide how a cold agent reliably runs the init preview before asking, for example a fresh_start that carries the preview itself, then rerun the eval.
+  publication_order: 406

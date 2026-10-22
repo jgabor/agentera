@@ -43,6 +43,7 @@
     "test:watch": "pnpm exec vp test watch --config vite.config.ts",
     "verify:package": "node scripts/verify-lane.mjs package",
     "verify:prime-budget": "node scripts/measure-prime-budget.mjs",
+    "eval:cold-agent": "node scripts/eval-cold-agent.mjs",
     "verify:generated-overlap": "node scripts/verify-generated-overlap.mjs",
     "pack:dry-run": "node scripts/pack-package.mjs --dry-run",
     "release:prepare": "node scripts/publication-transaction.mjs prepare development",

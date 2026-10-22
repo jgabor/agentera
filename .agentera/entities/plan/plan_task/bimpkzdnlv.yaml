@@ -4,9 +4,19 @@ record:
   name: Check calls per entry path and run a cold-agent eval
   depends_on:
     - fqnnxvyhtz
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the skill's documented paths in a v3 project WHEN the contract check sends bare, direct, curated-phrase and natural-language requests THEN they need one, one, one and three CLI calls, and the check fails when any path needs more.
     - GIVEN a fresh git repository, one supported runtime, the locally built package and only the installed skill WHEN the agent is asked to set up Agentera, three times THEN at least two runs reach the init preview, apply init only after a user approval turn in the transcript, and hand off to vision with no other help.
     - GIVEN the cold-agent eval WHEN it runs THEN it is an opt-in lane outside routine gates, and its result is recorded with the runtime, its version and the package build used.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 2
+    failure_count: 1
+    last_verdict: pass
+    last_failure_evidence: "Cold-agent eval passed 0 of 3 runs (2 required). In every run turn 1 made one call (prime --input -), printed the init preview and apply commands from fresh_start, and asked for approval without showing the files init would write; no run ran init without --yes before approval. Grader packages/cli/scripts/eval-cold-agent.mjs:36-49. Grader leniency: vision_handoff matches any mention of vision (eval-cold-agent.mjs:43)."
+    provenance:
+      attempt_id: audit-bimpkzdnlv-2
+      source: "audit evaluator report 2026-10-22, corrective attempt: criteria 1 and 3 PASS, criterion 2 met with WARN (path-substring preview rule is loose, vision hand-off by offer only, run 1 wording vague); cold-agent eval 3 of 3"
+      recorded_at: 2026-10-22 22:59
+      writer_command: agentera state plan record-evaluation

@@ -81,15 +81,23 @@ export function freshInitNextAction(project: string): NextAction {
   };
 }
 
+/** The files `agentera init` writes for a fresh project. Init's preview and
+ *  apply output and Prime's `fresh_start` all list exactly these writes. */
+export function initWrites(markerPath: string): Array<{ path: string; action: "create"; content: ReturnType<typeof freshEntityStateMarker> }> {
+  return [{ path: markerPath, action: "create", content: freshEntityStateMarker() }];
+}
+
 /** Bare-prime onboarding for a fresh project: what Agentera is, what has been
- *  written, and the init preview and apply commands. */
-export function freshStart(project: string): Record<string, string> {
+ *  written, the files init would write, and the init preview and apply
+ *  commands. Carrying the writes lets an agent show them before it asks. */
+export function freshStart(project: string): Record<string, unknown> {
   return {
     about: "Agentera keeps a project's direction, plans, decisions and progress as typed state in .agentera, so each coding-agent session starts where the last one stopped. Prime orients every session and routes each request to one of twelve capabilities, such as vision, plan and build.",
     written: "Nothing has been written to this project yet.",
+    writes: initWrites(classifyProjectState(project).markerPath),
     preview_command: initPreviewCommand(project),
     apply_command: initApplyCommand(project),
-    approval: "Show the preview to the user. Run apply_command only after the user approves; init then hands off to vision.",
+    approval: "Show the user the files in writes and ask; run apply_command only after the user approves. Init then hands off to vision.",
   };
 }
 
@@ -286,8 +294,7 @@ export function runInit(argv: string[], io: Io = {}): number {
   }
   const refusal = initRefusal(project, classification.state, stateRoot, classification.reason);
   if (refusal) return refuse(refusal, classification.state);
-  const marker = freshEntityStateMarker();
-  const writes = [{ path: classification.markerPath, action: "create", content: marker }];
+  const writes = initWrites(classification.markerPath);
   const nextStep = {
     capability: "vision",
     command: commandText(["npx", "-y", "agentera@next", "prime", "--context", "vision"]),
