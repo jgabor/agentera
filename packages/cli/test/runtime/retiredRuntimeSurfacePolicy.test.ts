@@ -9,7 +9,7 @@ import YAML from "yaml";
 
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath, servedInstructions } from "../../src/capabilities/index.js";
 import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
-import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
 import { renderProductV1ResetPreview } from "../../src/cli/commands/upgrade.js";
 import { previewProductV1Reset } from "../../src/upgrade/productV1Reset.js";
@@ -161,7 +161,10 @@ function collectTextSurfaces(relativePath: string, surfaces: Set<string>): void 
 describe("retired runtime current-surface policy", () => {
   it("keeps complete effective and served guidance free of retired native support", async () => {
     const skill = read("skills/agentera/SKILL.md");
-    const surfaces: Array<[string, string]> = [["skills/agentera/SKILL.md", skill]];
+    const surfaces: Array<[string, string]> = [
+      ["skills/agentera/SKILL.md", skill],
+      ["prime operating manual", PRIME_MANUAL],
+    ];
 
     for (const [capability, served] of Object.entries(CAPABILITY_INSTRUCTIONS)) {
       const modulePath = capabilityInstructionModulePath(capability);
@@ -171,7 +174,7 @@ describe("retired runtime current-surface policy", () => {
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
       const expected = servedInstructions(capability === "status" ? statusStartupInstructions(canonical) : canonical);
       // Historical literals transformed by the module are not current guidance;
-      // check the complete effective export, including its contract-access tail.
+      // check the complete effective export as served.
       surfaces.push([`${modulePath} effective instructions`, canonical]);
       surfaces.push([`${modulePath} served instructions`, expected]);
       expect(expected, `${capability} served instructions`).toBe(served);
@@ -1352,7 +1355,7 @@ describe("retired runtime current-surface policy", () => {
     }
     const surfaces: Array<[string, string]> = [
       ["reset preview recovery", resetGuidance.join("\n")],
-      ["prime guidance", PRIME_BLOB],
+      ["prime guidance", PRIME_MANUAL],
       ["top-level help", printTopLevelHelp()],
       ["route help", printRouteHelp()],
       ["upgrade help", printUpgradeHelp()],
@@ -1363,7 +1366,7 @@ describe("retired runtime current-surface policy", () => {
       expect(body, `${surface} stable channel`).not.toContain("agentera@latest");
     }
     expect(printTopLevelHelp()).toContain("Examples: npx -y agentera@next prime --context status");
-    expect(PRIME_BLOB).toContain("npx -y agentera@next doctor");
+    expect(PRIME_MANUAL).toContain("npx -y agentera@next <doctor|app-home|upgrade> --explain");
   });
 
   it("keeps inventoried active command producers free of redundant JSON selectors", () => {
@@ -1422,7 +1425,7 @@ describe("retired runtime current-surface policy", () => {
       {
         category: "existing active source sets",
         name: "generated CLI help",
-        body: [PRIME_BLOB, printTopLevelHelp(), printRouteHelp(), printUpgradeHelp(), ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability) => printCapabilityHelp(capability)), ...stateCommandNames().map((artifact) => printStateHelp(artifact))].join("\n"),
+        body: [PRIME_MANUAL, printTopLevelHelp(), printRouteHelp(), printUpgradeHelp(), ...Object.keys(CAPABILITY_INSTRUCTIONS).map((capability) => printCapabilityHelp(capability)), ...stateCommandNames().map((artifact) => printStateHelp(artifact))].join("\n"),
       },
     );
 

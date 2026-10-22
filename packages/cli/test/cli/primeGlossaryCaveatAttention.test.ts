@@ -10,6 +10,7 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { collectOrientationState } from "../../src/cli/commands/prime.js";
 import { buildOrientationJsonPayload, printOrientationTextBriefing } from "../../src/cli/commands/prime/orientationOutput.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { discoverEntities, validateEntityState } from "../../src/state/entityStorage.js";
 import { projectCurrentGlossaryCaveats, validateProgressGlossaryCaveat } from "../../src/state/progressGlossaryCaveat.js";
 import { glossaryCaveatContract } from "../../src/registries/glossaryCaveatContract.js";
@@ -337,11 +338,14 @@ describe("prime glossary caveat attention", () => {
     fs.mkdirSync(path.dirname(target), { recursive: true });
     fs.writeFileSync(target, `id: privatepath\nartifact: progress\nrecord:\n  timestamp: 2000-01-01 00:00\n  type: test\n  phase: build\n  what: SECRET_RAW_VALUE\n  context:\n    intent: SECRET_PRIVATE_PATH\n`);
     const forbidden = /privatepath|SECRET_RAW_VALUE|SECRET_PRIVATE_PATH|aaaaaaaaaa\.yaml|\.agentera\/entities/;
+    // The fixed manual names the entity directory as a rule; only state-derived
+    // output must stay free of private paths.
+    const manual = JSON.stringify(PRIME_MANUAL);
     for (const args of [["prime", "--format", "json"], ["prime"], ["prime", "--context", "status", "--format", "json"]])
       expectReadOnly(() => {
         const result = runBuilt(args);
         expect(result.rc, `${args.join(" ")}: ${result.out}${result.err}`).toBe(0);
-        expect(`${result.out}${result.err}`).not.toMatch(forbidden);
+        expect(`${result.out.replace(manual, '""')}${result.err}`).not.toMatch(forbidden);
       });
     for (const args of [
       ["state", "progress", "list", "--format", "json"],

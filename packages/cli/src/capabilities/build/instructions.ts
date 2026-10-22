@@ -60,7 +60,7 @@ Assign one verification owner. Give any worker the exact task, acceptance, const
 
 ### Step 6: Verify
 
-Check the diff against scope. Establish structural correctness and observe changed behavior through the relevant entrypoint on realistic inputs. Use applicable passing worker evidence rather than rerunning covered checks; the parent checks attribution and coverage. Run only uncovered or invalidated checks plus mandatory project/host/trust gates. A fresh build is needed before local runtime observation when relevant inputs changed.
+Check the diff against scope. Establish structural correctness and observe changed behavior through the relevant entrypoint on realistic inputs. Use applicable passing worker evidence rather than rerunning covered checks; the parent checks attribution and coverage. Missing, stale, unrelated or insufficient worker evidence never establishes PASS or authorizes downstream execution; request corrected, attributed evidence. Run only uncovered or invalidated checks plus mandatory project/host/trust gates. A fresh build is needed before local runtime observation when relevant inputs changed.
 
 If verification fails, diagnose and fix within scope, then repeat affected checks. A blocker does not authorize other work.
 

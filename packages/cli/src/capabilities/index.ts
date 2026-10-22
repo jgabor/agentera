@@ -35,16 +35,9 @@ const canonicalInstructions: Record<string, string> = {
   orchestrate: orchestrateInstructions,
 };
 
-export const servedInstructions = (body: string): string =>
-  withOperatingRules(withHumanReferences(preCutoverInstructionBody(body))) +
-  `
-
-## Current contract access
-
-Use startup guidance_details or \`npx -y agentera@next prime --context <capability> --detail instructions\` and related actions to read complete applicable artifacts, validation, exit, worker delegation/evaluator and protocol sections before reliance or handoff. Read every required next_command part; an index is not complete guidance. Schema paths are provenance only: use \`npx -y agentera@next schema\` exact detail actions, not file reads. Typed entity readers/writers override historical aggregate-path write advice; before authorized mutation, read \`npx -y agentera@next state <artifact> explain\` verb/section actions. Static completeness is not permission or state readiness. Missing, stale, unrelated or insufficient worker evidence never establishes PASS or authorizes downstream execution. Preserve gaps, request corrected attributed evidence; verify only uncovered/invalidated scope and mandatory gates.
-
-Missing, malformed or incompatible CLI/guidance: stop the affected workflow. Invalid selector/stale cursor: use the structured error's exact recovery/restart command, not guessed flags or another capability. Runtime authority failure: use \`npx -y agentera@next doctor --explain\`, \`npx -y agentera@next app-home --explain\` and \`npx -y agentera@next upgrade --explain\`. If unavailable, report bounded non-secret failure; ask user to restore a compatible supported CLI; retry discovery. Never fall back to checkout or installed companion reads, silently use older guidance, change installation or acquire history without explicit approval.
-`;
+// Recovery, discovery and consent rules live once in the prime operating
+// manual; capsules carry only execution and human-reference rules.
+export const servedInstructions = (body: string): string => withOperatingRules(withHumanReferences(preCutoverInstructionBody(body)));
 
 export const CAPABILITY_INSTRUCTIONS: Record<string, string> = Object.fromEntries(Object.entries(canonicalInstructions).map(([capability, body]) => [capability, servedInstructions(body)]));
 

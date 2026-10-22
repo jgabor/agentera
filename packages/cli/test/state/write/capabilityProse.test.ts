@@ -16,6 +16,7 @@ import { CAPABILITY_INSTRUCTIONS } from "../../../src/capabilities/index.js";
 import { withHumanReferences } from "../../../src/capabilities/humanReferences.js";
 import { withOperatingRules } from "../../../src/capabilities/operatingRules.js";
 import { preCutoverInstructionBody } from "../../../src/cli/preCutoverCommand.js";
+import { PRIME_MANUAL } from "../../../src/cli/prime-blob.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../../..");
 
@@ -277,9 +278,8 @@ describe("producer capability writer integration", () => {
 
   it("keeps the source capability index aligned with plan instructions", () => {
     const base = withOperatingRules(withHumanReferences(preCutoverInstructionBody(planInstructions)));
-    expect(CAPABILITY_INSTRUCTIONS.plan.slice(0, base.length)).toBe(base);
-    expect(CAPABILITY_INSTRUCTIONS.plan.slice(base.length)).toMatch(/^\n\n## Current contract access\n/);
-    expect(CAPABILITY_INSTRUCTIONS.plan).toContain("Typed entity readers/writers override historical aggregate-path write advice");
+    expect(CAPABILITY_INSTRUCTIONS.plan).toBe(base);
+    expect(PRIME_MANUAL).toContain("write only through typed writers, which override any path-based advice");
   });
 
   it("replaces conflicting execution mandates on source and served surfaces", () => {

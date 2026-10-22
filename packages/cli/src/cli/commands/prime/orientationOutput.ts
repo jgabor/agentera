@@ -8,6 +8,7 @@ import { emitStructured } from "../../structured.js";
 import { emitInvalidInput } from "../../errors.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
+import { PRIME_MANUAL } from "../../prime-blob.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
@@ -143,6 +144,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
   return {
     command,
     outcome: startup.outcome,
+    manual: PRIME_MANUAL,
     app_home: appHome,
     app: bundlePublic,
     mode: state.mode,

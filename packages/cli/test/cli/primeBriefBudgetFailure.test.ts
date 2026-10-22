@@ -1,6 +1,7 @@
 import { describe, expect, it, vi } from "vite-plus/test";
 
 import { BriefBudgetError } from "../../src/cli/commands/prime/briefByteBudget.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 
 // Bare prime takes no input, so an unfittable brief must never be reported as
 // an input error. The command is replaced so the dispatcher's failure mapping
@@ -37,6 +38,7 @@ describe("prime brief budget failure", () => {
     expect(JSON.parse(out)).toEqual({
       command: "prime",
       outcome: "blocked",
+      manual: PRIME_MANUAL,
       error: {
         class: "brief_output_budget",
         message: "brief budget 12000 bytes cannot contain the minimum routing envelope (12290 bytes); use prime --context status",

@@ -7,6 +7,7 @@ import path from "node:path";
 import { afterEach, describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch/index.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
 import { loadNativeResourceCleanupContract } from "../../src/runtime/nativeResourceCleanup.js";
 import { PROFILE_FILE_MEMBERS, USER_DATA_CATALOG_DIRS } from "../../src/migrate/v2HandoffManifest.js";
@@ -259,6 +260,30 @@ describe("product v1 EOL execution gate", () => {
     expect(bare.rc).toBe(1);
     expect(JSON.parse(bare.out).error.class).toBe("product_v1_eol");
     expect(bare).toEqual(prime);
+    expect(snapshot(root)).toBe(before);
+  });
+
+  it("carries the operating manual on the bare prime gate only", () => {
+    const root = fixture();
+    const before = snapshot(root);
+
+    const prime = run(root, ["prime"]);
+    const query = run(root, ["state", "query", "--list-artifacts", "--format", "json"]);
+
+    expect(prime.rc).toBe(1);
+    expect(JSON.parse(prime.out)).toMatchObject({ status: "fail", manual: PRIME_MANUAL, error: { class: "product_v1_eol" } });
+    expect(query.rc).toBe(1);
+    expect(JSON.parse(query.out)).not.toHaveProperty("manual");
+    expect(snapshot(root)).toBe(before);
+  });
+
+  it("prints the operating manual for prime --guidance without mutation", () => {
+    const root = fixture();
+    const before = snapshot(root);
+
+    const guidance = run(root, ["prime", "--guidance"]);
+
+    expect(guidance).toEqual({ rc: 0, out: `${PRIME_MANUAL}\n`, err: "" });
     expect(snapshot(root)).toBe(before);
   });
 

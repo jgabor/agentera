@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from "vite-plus/test";
 import YAML from "yaml";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { main } from "../../src/cli/dispatch.js";
-import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
 const skill = fs.readFileSync(path.join(root, "skills/agentera/SKILL.md"), "utf8");
@@ -59,7 +59,7 @@ function noCompanions() {
 }
 
 describe("single-file host bootstrap", () => {
-  it("serves the same no-fallback recovery in the native-tools guide", () => {
+  it("serves the no-fallback recovery once, in the operating manual", () => {
     let out = "";
     expect(
       main(["node", "agentera", "prime", "--guidance"], {
@@ -68,11 +68,11 @@ describe("single-file host bootstrap", () => {
         },
       }),
     ).toBe(0);
-    expect(out).toBe(PRIME_BLOB);
+    expect(out).toBe(`${PRIME_MANUAL}\n`);
     expect(out).not.toContain("managedAppRoot");
-    expect(out).toContain("Stop the affected workflow");
+    expect(out).toContain("stop the affected workflow");
     expect(out).toContain("Never fall back to checkout or installed companion reads");
-    for (const command of ["doctor --explain", "app-home --explain", "upgrade --explain", "report explain", "check explain"]) expect(out).toContain(`npx -y agentera@next ${command}`);
+    for (const command of ["<doctor|app-home|upgrade> --explain", "<report|check|route> explain", "schema"]) expect(out).toContain(`npx -y agentera@next ${command}`);
   });
   it("stays small, version-compatible and delegates rather than copying contracts", () => {
     const metadata = YAML.parse(skill.split("---")[1]);
@@ -130,8 +130,10 @@ describe("single-file host bootstrap", () => {
       }
       expect(prose).toBe(expected);
       expect(prose, capability).not.toMatch(forbidden);
-      expect(prose).toContain("stop the affected workflow");
-      expect(prose).toContain("Never fall back to checkout or installed companion reads");
+      // Recovery and discovery rules are served once, by the prime manual.
+      expect(prose, capability).not.toContain("stop the affected workflow");
+      expect(prose, capability).not.toContain("Never fall back to checkout or installed companion reads");
+      expect(prose, capability).not.toContain("## Current contract access");
     }
     expect(CAPABILITY_INSTRUCTIONS.vision).toContain("npx -y agentera@next schema --artifact vision");
     expect(CAPABILITY_INSTRUCTIONS.profile).toContain("npx -y agentera@next schema --artifact glossary --section entry");

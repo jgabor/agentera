@@ -4,10 +4,20 @@ record:
   name: Serve the operating manual from bare prime
   depends_on:
     - otodzeskmx
-  status: pending
+  status: complete
   acceptance:
     - GIVEN any project WHEN bare prime runs THEN its response carries a manual of at most 2,500 bytes covering the shared-skill offer, migration and reset offers, recovery when the CLI fails or a selector is stale, discovery commands, state-write rules, handoff verbs, next_action as a suggestion, and the consent, commit and push rules.
     - GIVEN `prime --guidance` WHEN it runs THEN it prints the same manual as text, with no second copy of the rules.
     - GIVEN any capability capsule WHEN it is served THEN it no longer repeats the manual's recovery and discovery text, while its execution rules and human-reference rules remain, and the tests that asserted the removed text now assert it on the manual.
     - GIVEN bare prime with the manual in the three measured projects WHEN measured THEN it stays within its declared budgets, or work stops for the user's approval of a change.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-ugzbenmczp-1
+      source: "audit evaluator report 2026-10-22: 4/4 criteria PASS, 4 WARN (guidance help wording, stale skill row, manual budget test-only, worker-evidence rule moved to build)"
+      recorded_at: 2026-10-22 18:01
+      writer_command: agentera state plan record-evaluation

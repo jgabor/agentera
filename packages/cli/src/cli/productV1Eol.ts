@@ -14,8 +14,9 @@ export function productV1Evidence(projectRoot: string, env: Record<string, strin
   return productV1EvidencePaths(assessProductV1Evidence({ project: projectRoot, installRoot }, authority));
 }
 
-/** Read-only EOL gate. */
-export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io = {}): number | null {
+/** Read-only EOL gate. Bare prime passes the operating manual so a v1
+ *  project still receives the reset and consent rules with the error. */
+export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io = {}, options: { manual?: string } = {}): number | null {
   const evidence = productV1Evidence(path.resolve(projectRoot));
   if (evidence.length === 0) return null;
 
@@ -27,7 +28,7 @@ export function enforceProductV1Eol(projectRoot: string, format: Format, io: Io 
     recovery: "Preview the product-v1 reset, then apply with --yes and the preview authorization; this command did not change state.",
   };
   if (format === "json" || format === "yaml") {
-    emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", error }, format, io.out ?? ((text) => process.stdout.write(text)));
+    emitStructured({ schemaVersion: "agentera.stateFailure.v1", status: "fail", ...(options.manual === undefined ? {} : { manual: options.manual }), error }, format, io.out ?? ((text) => process.stdout.write(text)));
   } else {
     const err = io.err ?? ((text: string) => process.stderr.write(text));
     err(`Error: ${error.message}\nReset workflow: ${error.reset_workflow.join(" ")}\nRecovery: ${error.recovery}\n`);

@@ -9,15 +9,18 @@ import { BootstrapSourceMissingError } from "../../core/sourceRoot.js";
 import { classifyStartupError, emitStartupFailure } from "../startupFailure.js";
 import { BriefBudgetError } from "../commands/prime/briefByteBudget.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
+import { PRIME_MANUAL } from "../prime-blob.js";
 
 /** Bare prime takes no input, so an unfittable brief is an output failure,
- *  not an input error. Status startup is the continuation. */
+ *  not an input error. Status startup is the continuation, and the manual
+ *  still arrives because its recovery rules matter most here. */
 function emitBriefBudgetFailure(error: BriefBudgetError, command: string, io: Io): number {
   const output = io.out ?? ((text: string) => process.stdout.write(text));
   emitStructured(
     {
       command,
       outcome: "blocked",
+      manual: PRIME_MANUAL,
       error: {
         class: "brief_output_budget",
         message: error.message,

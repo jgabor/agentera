@@ -357,7 +357,8 @@ describe("source-owned runtime bootstrap integration", () => {
     expect(Object.keys(source.modules)).toHaveLength(12);
     expect(source.modules).toEqual(source.runtimeRegistry);
     for (const body of Object.values(source.modules)) {
-      expect(body).toContain("## Current contract access");
+      expect(body).toContain("## Execution rules");
+      expect(body).not.toContain("## Current contract access");
     }
     // Full runs reach this assertion after baseline assembly. Reuse the exact
     // independently observed bodies instead of spawning the same 24 CLI reads.

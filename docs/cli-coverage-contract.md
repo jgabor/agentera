@@ -159,12 +159,12 @@ merely because a validator accepts its source.
 
 ### Shared files (4)
 
-| Source                            | Obligation / owner                                                                        | Exact discovery path                                                                                           | Evidence       |
-| --------------------------------- | ----------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | -------------- |
-| `SKILL.md`                        | Bootstrap, routing, handoffs, safety, state access, dashboard delegation; bootstrap/prime | `agentera --help` → `agentera prime --context status`; `agentera prime --guidance`; follow owner actions below | E1, E4, E5, E9 |
-| `protocol.yaml`                   | All shared primitives, rules, relationships and rendering meanings; schema                | `agentera schema` → `agentera schema --protocol` → `--section S`                                               | E2, E4         |
-| `capability_schema_contract.yaml` | Complete authoring contract, not only runtime validation; schema                          | `agentera schema` → `agentera schema --capability-contract` → `--section S`                                    | E2, E7         |
-| `route-phrases.yaml`              | Full curated phrase registry, aliases, normalization, precedence and provenance; route    | `agentera route explain` → `agentera route explain --topic phrases`                                            | E5             |
+| Source                            | Obligation / owner                                                                        | Exact discovery path                                                                                          | Evidence       |
+| --------------------------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | -------------- |
+| `SKILL.md`                        | Bootstrap, routing, handoffs, safety, state access, dashboard delegation; bootstrap/prime | `agentera prime` → `agentera prime --context status`; `agentera prime --guidance`; follow owner actions below | E1, E4, E5, E9 |
+| `protocol.yaml`                   | All shared primitives, rules, relationships and rendering meanings; schema                | `agentera schema` → `agentera schema --protocol` → `--section S`                                              | E2, E4         |
+| `capability_schema_contract.yaml` | Complete authoring contract, not only runtime validation; schema                          | `agentera schema` → `agentera schema --capability-contract` → `--section S`                                   | E2, E7         |
+| `route-phrases.yaml`              | Full curated phrase registry, aliases, normalization, precedence and provenance; route    | `agentera route explain` → `agentera route explain --topic phrases`                                           | E5             |
 
 ### Artifact files (12)
 
@@ -786,11 +786,11 @@ Full-source execution exposed additional incomplete seams from tasks 1–11:
   installation remains forbidden. Plan lifecycle inventory names its static
   recovery and executable dispatch adapters. Package-lane inventory includes the
   new extracted traversal file, without changing ownership or lane composition.
-- Effective capability exports are compared with the complete serving adapter,
-  including the contract-access tail. Historical raw literal commentary is not
-  treated as current executable guidance; retired-native-support and full
-  wrong-channel/invalid-command checks remain. The raw literal decoder no longer
-  consumes later transformations as part of JSON.
+- Effective capability exports are compared with the complete serving adapter.
+  Historical raw literal commentary is not treated as current executable
+  guidance; retired-native-support and full wrong-channel/invalid-command checks
+  remain. The raw literal decoder no longer consumes later transformations as
+  part of JSON.
 - Help now distinguishes FORMAT grammar from runnable command examples, explicitly
   retaining JSON as the only public value/default. Shared-skill syntax uses the
   development constructor; approval prose no longer appears as shell grouping

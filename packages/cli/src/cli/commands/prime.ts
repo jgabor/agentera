@@ -1,6 +1,6 @@
 import fs from "node:fs";
 
-import { PRIME_BLOB } from "../prime-blob.js";
+import { PRIME_MANUAL } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
 import { buildOrientationJsonPayload, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, PRIME_BRIEF_MAX_UTF8_BYTES, PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "./prime/orientationOutput.js";
@@ -172,7 +172,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
   const retiredFieldRejection = rejectRetiredPrimeFields(command, format, args.fields, out, err);
   if (retiredFieldRejection !== null) return retiredFieldRejection;
   if (guidance) {
-    out(PRIME_BLOB);
+    out(`${PRIME_MANUAL}\n`);
     return 0;
   }
   // A CLI that cannot read its own version cannot report a trustworthy startup.

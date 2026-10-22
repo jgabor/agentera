@@ -12,7 +12,8 @@ import { cmdPrime, collectOrientationState } from "../../src/cli/commands/prime.
 import { buildOrientationJsonPayload } from "../../src/cli/commands/prime/orientationOutput.js";
 import { dumpYamlMapping } from "../../src/core/yaml.js";
 import { planSummary } from "../../src/cli/orientation.js";
-import { PRIME_BLOB } from "../../src/cli/prime-blob.js";
+import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
+import { briefOrientationPayload, briefUtf8Bytes } from "../../src/cli/commands/prime/briefOrientation.js";
 import { appendHealthEntity } from "../../src/state/healthEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
@@ -70,19 +71,56 @@ function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }
 }
 
 describe("cli prime", () => {
-  it("prints the static guidance for --guidance", () => {
+  it("prints the operating manual as text for --guidance", () => {
     const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
     expect(rc).toBe(0);
-    expect(out).toBe(PRIME_BLOB);
-    expect(out).toContain("npx -y agentera@next state <artifact> explain");
-    expect(out).toContain("Supported typed writes:");
-    expect(out).toContain("--dry-run");
-    expect(out).toContain("If required CLI guidance is missing, malformed or incompatible:");
-    expect(out).toContain("Never fall back to checkout or installed companion reads");
-    expect(out.endsWith("Static discovery grants no execution or mutation permission.\n")).toBe(true);
+    expect(out).toBe(`${PRIME_MANUAL}\n`);
+    expect(Buffer.byteLength(PRIME_MANUAL, "utf8")).toBeLessThanOrEqual(2_500);
+    for (const rule of [
+      "`shared_skill.upgrade_offer`",
+      "`state_cutover.migration_offer`",
+      "npx -y agentera@next upgrade --reset-product-v1 --dry-run",
+      "ask the question verbatim once",
+      "stop the affected workflow",
+      "Never fall back to checkout or installed companion reads",
+      "Invalid selector or stale cursor: run the error's exact recovery command",
+      "npx -y agentera@next <doctor|app-home|upgrade> --explain",
+      "npx -y agentera@next schema",
+      "npx -y agentera@next <report|check|route> explain",
+      "npx -y agentera@next state <artifact> explain",
+      "`--dry-run`",
+      "Never edit `.agentera/entities/`",
+      "typed writers, which override any path-based advice",
+      "`next_action` is a suggestion",
+      "`route`:",
+      "`suggest`:",
+      "`dispatch`:",
+      "`chain`:",
+      "Commit only when authorized; push only on explicit instruction",
+    ])
+      expect(out, rule).toContain(rule);
+    expect(out).not.toContain("—");
     expect(out.endsWith("\n\n")).toBe(false);
-    expect(out).toContain("Optional draft prose preview; the writer validates published bytes");
-    expect(out).not.toContain("Pre-write artifact prose self-audit");
+  });
+
+  it("carries the --guidance manual unchanged in bare prime", () => {
+    const bare = capture((io) => cmdPrime({ command: "prime" }, io));
+    const guidance = capture((io) => cmdPrime({ guidance: true }, io));
+    expect(bare.rc).toBe(0);
+    const payload = JSON.parse(bare.out);
+    expect(payload.manual).toBe(PRIME_MANUAL);
+    expect(guidance.out).toBe(`${payload.manual}\n`);
+  });
+
+  it("keeps the whole manual when the bare brief degrades over budget", () => {
+    const { out } = capture((io) => cmdPrime({ command: "prime" }, io));
+    const raw = JSON.parse(out) as Record<string, unknown>;
+    delete raw.brief;
+    const budgetBytes = briefUtf8Bytes(briefOrientationPayload(raw)) - 10;
+    const degraded = briefOrientationPayload(raw, { budgetBytes });
+    expect((degraded.brief as Record<string, unknown>).projection).toBe("degraded");
+    expect(degraded.manual).toBe(PRIME_MANUAL);
+    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(budgetBytes);
   });
 
   it("renders the default JSON orientation briefing", () => {

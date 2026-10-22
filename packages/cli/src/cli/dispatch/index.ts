@@ -15,6 +15,7 @@ import { verbsForArtifact } from "../../state/write/operations.js";
 import { REMOVED_TOP_LEVEL_CORRECTIONS } from "../commands/schema.js";
 import { enforceCompletedEntityCutover, migrationProject, requestedMigrationFailureFormat, requiresCompletedEntityCutover } from "../migrationRequired.js";
 import { enforceProductV1Eol } from "../productV1Eol.js";
+import { PRIME_MANUAL } from "../prime-blob.js";
 import { isSchemaDetailQuery } from "../commands/schemaDetail.js";
 import { isCapabilityDetailQuery, runCapabilityDetail } from "../commands/capabilityDetail.js";
 import { isStateExplainDetail, runStateExplainDetail } from "../commands/state/explainDetail.js";
@@ -102,8 +103,12 @@ export function main(argv: string[], io: Io = {}): number {
   }
 
   const productV1Reset = command === "upgrade" && rest.includes("--reset-product-v1");
-  if (command !== "--version" && command !== "version" && !productV1Reset) {
-    const failure = enforceProductV1Eol(migrationProject(args), requestedMigrationFailureFormat(args), io);
+  // The operating manual is static text, like the version, and it names the
+  // product-v1 reset; a v1 project can still read it.
+  const primeGuidance = command === "prime" && rest.includes("--guidance");
+  const barePrime = command === "prime" && !rest.some((arg) => ["--context", "--fields", "--guidance", "--dashboard", "--orientation"].includes(arg));
+  if (command !== "--version" && command !== "version" && !productV1Reset && !primeGuidance) {
+    const failure = enforceProductV1Eol(migrationProject(args), requestedMigrationFailureFormat(args), io, barePrime ? { manual: PRIME_MANUAL } : {});
     if (failure !== null) return failure;
   }
 

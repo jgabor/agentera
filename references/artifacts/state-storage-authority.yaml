@@ -2614,8 +2614,9 @@ budgets:
       are not repeated. The brief does
       not repeat the structured field list, which schema owns. When even the
       projected brief exceeds the budget, emit a measured bounded degraded
-      envelope that keeps command, status, mode, state_presence, a brief
-      source_contract, and the byte-budget error with a recovery command; never
+      envelope that keeps command, status, the whole operating manual, mode,
+      state_presence, a brief source_contract, and the byte-budget error with a
+      recovery command; never
       emit an over-budget payload or shorten a command or identity. If no
       envelope fits, prime reports brief_output_budget with the status
       continuation, never an input error. Diagnostics are measured on stderr

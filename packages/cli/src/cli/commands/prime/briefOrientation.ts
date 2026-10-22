@@ -603,6 +603,9 @@ function degradedBody(payload: Record<string, unknown>, projection: SourceContra
   const out: Record<string, unknown> = {
     command: boundedEnvelopeScalar(payload.command, "prime"),
     outcome: boundedEnvelopeScalar(payload.outcome, "ok"),
+    // The operating manual is fixed-size rules, not state: every tier keeps it
+    // whole so a degraded project still gets recovery and consent rules.
+    ...(typeof payload.manual === "string" ? { manual: payload.manual } : {}),
     mode: boundedEnvelopeScalar(payload.mode, "unknown"),
     state_presence: briefStatePresence(payload.state_presence),
     source_contract: briefSourceContract(payload.source_contract, projection),
