@@ -4,7 +4,7 @@ record:
   name: Retire the historical certification lane from full qualification
   depends_on:
     - zpouwqbssy
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN full qualification WHEN its gates are listed or executed THEN it runs exactly eleven gates in the existing order without certification.
     - GIVEN development verification WHEN it runs THEN its gates, limits, and evidence are unchanged, its gate identity stays distinct from full qualification, and its evidence still cannot issue or satisfy a source receipt.
@@ -13,3 +13,13 @@ record:
     - GIVEN current maintainer guidance, CLI check details, verification references, and publication adapter prose WHEN they describe full qualification THEN they name eleven gates and contain no instruction to restore archived history or run historical certification, while dated records stay unchanged.
     - GIVEN the source suite, typecheck, build, package lane, compact check, and development verification WHEN run on the final tree THEN they pass.
   plan: kubctcgbol
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "independent audit subagent audit-1 on staged tree 9284e0ed: 6/6 criteria plus vcrmaxuasq PASS; bundle/dist-free vp run test 5053 pass 6 skipped, typecheck pass, vp check 0 errors; WARN clxxrzihnt fixed in f71d4e20"
+      recorded_at: 2026-10-22 11:32
+      writer_command: agentera state plan record-evaluation

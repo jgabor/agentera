@@ -1,0 +1,57 @@
+id: deffnuemyi
+artifact: health
+record:
+  date: 2026-10-22
+  dimensions:
+    - artifact_freshness
+  findings_summary:
+    critical: 0
+    warning: 1
+    info: 3
+    filtered_by_confidence: 0
+  trajectory: "stable: terminal-plan closure evidence for plan kubctcgbol is current; this is a limited closure check, not a codebase-wide audit."
+  grades:
+    artifact_freshness: A
+  dimension_details:
+    - name: artifact_freshness
+      grade: A
+      summary: "Limited artifact_freshness closure check for plan kubctcgbol (Retire the historical certification lane), not a codebase-wide audit. Full qualification, the source receipt, policy, adapter, package scripts, skills, CLI detail text and packaging guides describe eleven gates with no certification owner, script or history-restore instruction; dated records are unchanged. A bundle- and dist-free vp run verify:development passed all 11 gates in 3m54s on the retirement change with the closure state; the later wording fix in recoveryDetail.ts and bootstrap-integrity.md passed targeted tests, guards and typecheck. Remaining: the lint TODO clxxrzihnt says eight diagnostics, lists seven, and lint reports six; a dead test/evidence/** ignore pattern; one obsolete coverage-contract clause; the fresh-clone clause is unverified because pre-rewrite backup refs exist locally."
+      findings:
+        - heading: Lint TODO count disagrees with its own list and with lint output
+          location: .agentera/entities/todo/todo_item/clxxrzihnt.yaml; vite.config.ts lint ignorePatterns
+          evidence: The title says eight retained CLI lint diagnostics, the requirements list seven, and vp check reports 0 errors and 6 warnings at the six listed source locations. The remaining status.js fixture item is lint-ignored through packages/cli/test/**/fixtures/**. Both fixture paths were already ignored before this plan, so the six-versus-eight gap predates it; removing the deleted evidence fixture left the title disagreeing with the list. The eight-warning ceiling still matches maxWarnings 8.
+          impact: The TODO misstates how many diagnostics need review. No behavior is affected.
+          suggested_action: Through the typed TODO writer, in a later substantive commit, retitle it to six retained diagnostics and drop or annotate the lint-ignored fixture item; keep the ceiling wording.
+          severity: warning
+          confidence: 95
+        - heading: Coverage contract keeps an obsolete historical-qualification labeling clause
+          location: docs/cli-coverage-contract.md:239
+          evidence: The current requirement row for check explain --operation verify says to label checkout-only retained-reference/activation and historical qualification needs honestly. Check detail no longer has a historical lane.
+          impact: Low. The requirement is satisfied vacuously but implies a historical qualification lane still exists.
+          suggested_action: Drop "and historical qualification" from the clause.
+          severity: info
+          confidence: 85
+        - heading: Dead ignore pattern for the deleted test evidence directory
+          location: vite.config.ts:69 and :98; packages/cli/scripts/verify-hook-bootstrap.mjs:96; packages/cli/test/config/formatterSurface.test.ts:52; packages/cli/test/scripts/nativeHooks.test.ts:185
+          evidence: packages/cli/test/evidence/ held only the retired compiler and formatter replay evidence and no longer exists, but the packages/cli/test/evidence/** lint and format exclusions and the tests' preserved-path samples remain.
+          impact: None at runtime. Dead configuration suggests a retained evidence location.
+          suggested_action: Remove the pattern and update the two tests and the hook-bootstrap fixture together, or keep it deliberately as a reserved byte-stable location and say so.
+          severity: info
+          confidence: 90
+        - heading: Fresh-clone clause of the overall acceptance not re-proven locally
+          location: plan kubctcgbol overall_acceptance; local refs refs/backup/pre-rewrite/* and refs/remotes/origin/backup/feat-v3-pre-rewrite
+          evidence: Pre-rewrite objects are present in the shared object store, so the development verification pass ran with them available. No current file references the pre-rewrite commit, refs/backup or previous_python_commit; pinned commit IDs in tests, scripts and references are reachable from origin/feat/v3 or origin/main or never resolved through git; py_ts_parity.sh --check reported no drift against refs/remotes/origin/main; the parity task audit reproduced the check in a history-free clone.
+          impact: Residual risk that an unrelated test needs history a fresh clone lacks; static evidence says it is low.
+          suggested_action: Run vp run verify:development from a fresh clone of feat/v3 with no backup refs, for example in CI on the next authorized push.
+          severity: info
+          confidence: 80
+  trends:
+    comparison_target: Health kzqzjcusdy, the previous limited closure check
+    improved: Full qualification is reachable again with eleven gates and no gate that cannot pass; the parity drift check needs only a main ref; current CLI detail text, the verification and release skills, packaging and toolchain guides, verification-policy.yaml, package-publication.json and bootstrap-integrity.md match the code.
+    degraded: The clxxrzihnt title now disagrees with its own seven-item list, a side effect of correctly removing a deleted fixture; the six-versus-eight gap predates the plan.
+    new_findings: Obsolete coverage-contract clause, dead test/evidence/** ignore pattern, fresh-clone clause unverified.
+    resolved: The historical certification lane is retired and its re-certification release blocker vcrmaxuasq is resolved; the historical certification part of health qkxpqslido's carried_forward is resolved.
+    carried_forward: The clxxrzihnt count gap, which predates the plan; CLI long-path budget fragility from qkxpqslido.
+  patterns:
+    - Terminal plans close only after Audit PASS, typed artifact_freshness health publication, and plan lifecycle completion.
+  appended_at: 2026-10-22T09:56:35.561Z

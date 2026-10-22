@@ -1,0 +1,14 @@
+id: jyyyiitpcc
+artifact: progress
+record:
+  timestamp: 2026-10-22 11:35
+  type: chore
+  phase: build
+  what: Plan-completion sweep for retiring the historical certification lane. Full qualification and the source receipt now cover eleven gates in the existing order. The compiler and formatter replay suites, their verifiers, fixture, and retained evidence are deleted and stay recoverable from Git history; the certification owner, package script, release DAG gate, progress label, and formatter ignore entries are gone. The receipt schema stays agentera.releaseQualification.v1 because it names the document shape shared by source, candidate, approval, and CI attestation receipts, while the gate set is bound by content, so a receipt that still names certification fails as a gate-set mismatch. Development verification keeps its gates, limits, evidence, and distinct gate identity. The Python parity drift check now compares the oracle pin with refs/remotes/origin/main, else refs/heads/main, needs no pre-rewrite history, and exits 2 with a fetch command when neither ref exists. Its tests build a self-contained repository and run in routine source verification. The re-certification release-blocker TODO is resolved because nothing remains to re-certify.
+  context:
+    intent: Make full qualification and qualified publication reachable again by removing a gate that could never pass, and make the pre-commit parity check pass in a fresh clone.
+    scope: Plan kubctcgbol, tasks zpouwqbssy and asnvzdrvcl.
+  discovered: The open lint-diagnostics TODO still names eight retained diagnostics in its title and acceptance, but vp check reports 6 warnings and 0 errors. The count was left unchanged for that TODO's separate review.
+  verified: Both tasks passed independent audit on the first attempt. The parity task met all six criteria; the source suite passed 5052 tests, typecheck passed, and a history-free clone reproduced exit codes 0, 1, and 2 for no drift, drift, and a missing main reference. The retirement task met all six criteria plus the resolved release blocker; the source suite without bundle or dist passed 5053 tests with 6 skipped, typecheck passed, and vp check reported 0 errors. The audit's one warning, a stale lint TODO citing a deleted fixture and shifted line numbers, was fixed in the same change.
+  next: The closure audit and a limited health record follow. feat/v3 is not fast-forwarded and nothing is pushed until the user agrees. Re-pinning or retiring the Python parity oracle after the v3 cutover moves main stays deferred.
+  publication_order: 405
