@@ -54,6 +54,20 @@ and the presented array order) for exactly that capsule. It excludes private
 request text, request digests, diagnostics, state, and matcher authorities the
 host did not see.
 
+### Prime as a carrier
+
+`npx -y agentera@next prime --input -` takes the same
+`agentera.route_request.v1` mapping on stdin (at most 32,768 bytes), runs the
+same resolver in-process, and returns its result unchanged in `route`. Prime is
+a carrier of that result, not a second contract: the request text never comes
+from argv, the frozen corpus gives the same result through both commands, and
+`semantic_required` keeps its `receipt_contract` and starts nothing. For a
+deterministic selection, prime also starts the capability in the same call. It
+returns in `start` exactly what `npx -y agentera@next prime --context <capability>`
+returns, or, when the project gate refuses that start, the same refusal in
+`refusal` and the same exit code. A status selection carries the manual and the
+status capsule without the bare brief, because `status_context` already orients.
+
 ## Phase two: semantic receipt
 
 For `semantic_required`, the host sends the same transient original request and

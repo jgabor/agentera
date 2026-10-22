@@ -1,4 +1,5 @@
 import fs from "node:fs";
+import { TextDecoder } from "node:util";
 
 import { loadYamlMapping } from "../../core/yaml.js";
 import { HybridRouteRegistryError, resolveRouteRequest } from "../../registries/hybridRoute.js";
@@ -8,6 +9,7 @@ import { emitStructured } from "../structured.js";
 import { emitInvalidInput, type InvalidInputErrorBody } from "../errors.js";
 import type { Io } from "../dispatch/shared.js";
 import { preCutoverCommand } from "../preCutoverCommand.js";
+import { BUILD_EXECUTION_REQUEST_SCHEMA } from "./prime/buildExecutionRequest.js";
 
 type RouteInput = { version?: unknown; request?: unknown };
 type RouteIo = Omit<Io, "stdin"> & { stdin?: () => string | Buffer };
@@ -83,6 +85,21 @@ function parse(argv: string[]): { input: string; format: "json" } | InvalidInput
   return { input, format };
 }
 
+/** The request text from an agentera.route_request.v1 mapping, or the input
+ *  error that rejects it. Route request and prime --input share this check. */
+export function routeRequestText(input: RouteInput): string | InvalidInputErrorBody {
+  if (Object.keys(input).some((key) => key !== "version" && key !== "request")) {
+    return { class: "schema_violation", message: "route request input contains unsupported fields" };
+  }
+  if (input.version !== undefined && input.version !== "agentera.route_request.v1") {
+    return { class: "schema_violation", message: "route request version must be agentera.route_request.v1" };
+  }
+  if (typeof input.request !== "string") {
+    return { class: "invalid_request", message: "route request input requires a string request field" };
+  }
+  return input.request;
+}
+
 export function runRouteRequest(argv: string[], io: Io): number;
 export function runRouteRequest(argv: string[], io: RouteIo): number;
 export function runRouteRequest(argv: string[], io: RouteIo): number {
@@ -98,26 +115,10 @@ export function runRouteRequest(argv: string[], io: RouteIo): number {
       syntax: "--input PATH",
     });
   }
-  if (Object.keys(input).some((key) => key !== "version" && key !== "request")) {
-    return invalidRouteInput(io, {
-      class: "schema_violation",
-      message: "route request input contains unsupported fields",
-    });
-  }
-  if (input.version !== undefined && input.version !== "agentera.route_request.v1") {
-    return invalidRouteInput(io, {
-      class: "schema_violation",
-      message: "route request version must be agentera.route_request.v1",
-    });
-  }
-  if (typeof input.request !== "string") {
-    return invalidRouteInput(io, {
-      class: "invalid_request",
-      message: "route request input requires a string request field",
-    });
-  }
+  const request = routeRequestText(input);
+  if (typeof request !== "string") return invalidRouteInput(io, request);
   try {
-    emitStructured(resolveRouteRequest(input.request), parsed.format, io.out ?? ((text) => process.stdout.write(text)));
+    emitStructured(resolveRouteRequest(request), parsed.format, io.out ?? ((text) => process.stdout.write(text)));
     return 0;
   } catch (error) {
     if (error instanceof HybridRouteRegistryError) {
@@ -185,4 +186,112 @@ export function runRouteEvaluation(argv: string[], io: RouteIo): number {
 
 function readStdin(): Buffer {
   return process.stdin.isTTY ? Buffer.alloc(0) : fs.readFileSync(0);
+}
+
+/** Bound for the route request mapping prime reads through --input. */
+export const PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES = 32 * 1024;
+const READ_CHUNK_BYTES = 8 * 1024;
+
+export class PrimeRouteRequestError extends Error {
+  constructor(readonly body: InvalidInputErrorBody) {
+    super(body.message);
+  }
+}
+
+function fail(body: InvalidInputErrorBody): never {
+  throw new PrimeRouteRequestError(body);
+}
+
+const SYNTAX = preCutoverCommand("prime --input <file|->");
+
+function unreadable(): never {
+  return fail({ class: "invalid_format", message: "route request input must be one readable file or a piped stdin stream", syntax: SYNTAX });
+}
+
+function oversized(): never {
+  return fail({ class: "schema_violation", message: `route request input exceeds the ${PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES}-byte UTF-8 bound` });
+}
+
+const RETRY_WAIT = new Int32Array(new SharedArrayBuffer(4));
+
+/** A host that spawns the CLI may hand it a non-blocking stdin that has no
+ *  bytes yet; wait for them instead of failing with EAGAIN. */
+function readChunk(fd: number, chunk: Buffer): number {
+  for (;;) {
+    try {
+      return fs.readSync(fd, chunk, 0, chunk.byteLength, null);
+    } catch (error) {
+      if ((error as NodeJS.ErrnoException).code !== "EAGAIN") throw error;
+      Atomics.wait(RETRY_WAIT, 0, 0, 10);
+    }
+  }
+}
+
+/** Read at most one byte past the bound, so an oversized stream is never read whole. */
+function readBounded(fd: number): Buffer {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  while (total <= PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES) {
+    const chunk = Buffer.allocUnsafe(Math.min(READ_CHUNK_BYTES, PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES + 1 - total));
+    const count = readChunk(fd, chunk);
+    if (count === 0) break;
+    chunks.push(chunk.subarray(0, count));
+    total += count;
+  }
+  if (total > PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES) oversized();
+  return Buffer.concat(chunks, total);
+}
+
+function readBytes(source: string, readStdin?: () => string | Buffer): Buffer {
+  try {
+    if (source === "-") {
+      if (readStdin) {
+        const value = readStdin();
+        return typeof value === "string" ? Buffer.from(value, "utf8") : value;
+      }
+      // An interactive terminal has no request mapping to read.
+      if (process.stdin.isTTY) return Buffer.alloc(0);
+      return readBounded(0);
+    }
+    // Check the path before opening it, so a FIFO or device never blocks the open.
+    const observed = fs.lstatSync(source);
+    if (observed.isSymbolicLink() || !observed.isFile()) unreadable();
+    const fd = fs.openSync(source, fs.constants.O_RDONLY | (fs.constants.O_NOFOLLOW ?? 0));
+    try {
+      const opened = fs.fstatSync(fd);
+      if (!opened.isFile() || opened.ino !== observed.ino || opened.dev !== observed.dev) unreadable();
+      return readBounded(fd);
+    } finally {
+      fs.closeSync(fd);
+    }
+  } catch (error) {
+    if (error instanceof PrimeRouteRequestError) throw error;
+    return unreadable();
+  }
+}
+
+/** Load the agentera.route_request.v1 mapping that route request accepts and
+ *  return its request text. Request text never comes from argv. */
+export function loadPrimeRouteRequest(source: string, readStdin?: () => string | Buffer): string {
+  const bytes = readBytes(source, readStdin);
+  if (bytes.byteLength > PRIME_ROUTE_REQUEST_MAX_UTF8_BYTES) oversized();
+  if (bytes.byteLength === 0) {
+    fail({ class: "invalid_format", message: "route request input is empty", syntax: SYNTAX });
+  }
+  let input: Record<string, unknown>;
+  try {
+    input = loadYamlMapping(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
+  } catch {
+    return fail({ class: "invalid_format", message: "route request input must be one valid UTF-8 YAML or JSON mapping", syntax: SYNTAX });
+  }
+  if (input.schema_version === BUILD_EXECUTION_REQUEST_SCHEMA) {
+    fail({
+      class: "unsupported_target",
+      message: `an ${BUILD_EXECUTION_REQUEST_SCHEMA} request needs prime --context build`,
+      syntax: preCutoverCommand("prime --context build --input <file|->"),
+    });
+  }
+  const request = routeRequestText(input);
+  if (typeof request !== "string") fail({ ...request, syntax: SYNTAX });
+  return request;
 }

@@ -212,6 +212,21 @@ describe("state storage authority", () => {
     expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(surfaces["prime-dashboard"]);
     expect(authority.budgets.startup.surfaces.prime_status_context.max_utf8_bytes).toBe(surfaces["prime-status-context"]);
     expect(authority.budgets.startup.surfaces.prime_sparse.max_utf8_bytes).toBe(surfaces["prime-fields-sparse"]);
+    const routed = authority.budgets.startup.surfaces.prime_routed_start;
+    const routedRow = manifest.surfaces.find((surface: any) => surface.id === routed.manifest_id);
+    const capsules = manifest.surfaces.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability;
+    const statusRow = manifest.surfaces.find((surface: any) => surface.id === "prime-status-context");
+    const briefRow = manifest.surfaces.find((surface: any) => surface.id === "prime-briefing");
+    expect(routed.brief_max_utf8_bytes).toBe(briefRow.byte_budget);
+    expect(routed.max_utf8_bytes_by_carried).toEqual(Object.fromEntries(Object.entries(routedRow.budget_by_carried).map(([carried, budget]: [string, any]) => [carried, budget.byte_budget])));
+    expect(routed.max_utf8_bytes_by_carried.status).toBe(routed.brief_max_utf8_bytes + statusRow.byte_budget);
+    expect(routed.max_utf8_bytes_by_carried.semantic_required).toBe(routed.brief_max_utf8_bytes + routed.semantic_route_max_utf8_bytes);
+    expect(routedRow.budget_by_carried.status.token_budget).toBe(briefRow.token_budget + statusRow.token_budget);
+    for (const [capability, budget] of Object.entries(capsules) as Array<[string, any]>) {
+      if (capability === "status") continue;
+      expect(routed.max_utf8_bytes_by_carried.capability, capability).toBe(routed.brief_max_utf8_bytes + budget.byte_budget);
+      expect(routedRow.budget_by_carried.capability.token_budget, capability).toBe(briefRow.token_budget + budget.token_budget);
+    }
     expect(authority.budgets.projection.omission_semantics).toContain("Never split UTF-8");
     expect(authority.budgets.projection.omission_semantics).toContain("measured minimal degraded envelope");
     expect(authority.budgets.startup.omission_semantics).toContain("distinguish omitted detail");
@@ -249,5 +264,7 @@ describe("state storage authority", () => {
     const manifest = loadYaml(BUDGET_MANIFEST_PATH);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").byte_budget);
     expect(authority.budgets.projection.omission_semantics).not.toContain("Never split UTF-8");
+    authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status = 35000;
+    expect(authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-routed-start").budget_by_carried.status.byte_budget);
   });
 });

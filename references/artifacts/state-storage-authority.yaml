@@ -2597,6 +2597,23 @@ budgets:
       prime_sparse:
         manifest_id: prime-fields-sparse
         max_utf8_bytes: 28000
+      prime_routed_start:
+        manifest_id: prime-routed-start
+        # `prime --input <file|->` with an agentera.route_request.v1 mapping
+        # carries the unchanged route result. Its budget is the bare brief
+        # budget plus the budget of what it carries: the status capsule (sent
+        # with the manual and no brief), another capability's capsule, or the
+        # semantic_required route result. The brief gets the bytes the carried
+        # result leaves, at most its own budget, and degrades as bare prime
+        # does; when no brief fits, the manual stays and the response names
+        # bare prime for the orientation. A response that still cannot fit
+        # fails with routed_output_budget and the direct command.
+        brief_max_utf8_bytes: 12000
+        semantic_route_max_utf8_bytes: 25000
+        max_utf8_bytes_by_carried:
+          status: 34500
+          capability: 67000
+          semantic_required: 37000
     required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
     omission_semantics: >-
       Omit optional historical detail and retain counts, actionable IDs,

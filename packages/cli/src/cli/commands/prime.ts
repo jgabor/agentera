@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { PRIME_MANUAL } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
-import { buildOrientationJsonPayload, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, PRIME_BRIEF_MAX_UTF8_BYTES, PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "./prime/orientationOutput.js";
+import { bareBriefPayload, buildOrientationJsonPayload, fitRoutedResponse, routedStartBudgetBytes, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, PRIME_BRIEF_MAX_UTF8_BYTES, PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 
@@ -28,6 +28,10 @@ import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { isCorruptSuiteVersion, readSuiteVersion } from "../../upgrade/appModel.js";
 import { emitStartupFailure } from "../startupFailure.js";
+import { emitStructured } from "../structured.js";
+import { enforceCompletedEntityCutover, migrationProject, requiresCompletedEntityCutover } from "../migrationRequired.js";
+import { HybridRouteRegistryError, resolveRouteRequest, type RouteResponse } from "../../registries/hybridRoute.js";
+import { loadPrimeRouteRequest, PrimeRouteRequestError } from "./route.js";
 
 export type { OrientationState } from "../contracts/orientationState.js";
 export type { PrimeArgs } from "./prime/types.js";
@@ -93,6 +97,74 @@ export function finalizeStatusCapabilityContextPayload(payload: Record<string, u
   return payload;
 }
 
+/** The payload `prime --context <capability>` emits. */
+function capabilityStartPayload(state: OrientationState, capability: string, command: string, buildRequest: BuildExecutionRequest | null = null, glossaryAdvice: Parameters<typeof buildPrimeCapabilityContextPayload>[4] = null): Record<string, unknown> {
+  return capability === "status" ? buildStatusCapabilityContextPayload(state, command) : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest, glossaryAdvice);
+}
+
+/** The refusal a direct `prime --context <capability>` start gets from the
+ *  project gate, with its exit code, or null when the start may proceed. */
+function directStartRefusal(capability: string, projectRoot: string | null): { body: Record<string, unknown>; exitCode: number } | null {
+  const argv = ["prime", "--context", capability];
+  if (!requiresCompletedEntityCutover(argv)) return null;
+  let text = "";
+  const capture = (chunk: string) => {
+    text += chunk;
+  };
+  const exitCode = enforceCompletedEntityCutover(migrationProject(argv, projectRoot ?? process.cwd()), "json", { out: capture, err: capture }, argv);
+  return exitCode === null ? null : { body: JSON.parse(text) as Record<string, unknown>, exitCode };
+}
+
+/** Route one request in-process and carry the unchanged route result. A
+ *  deterministic selection starts its capability in the same call: status
+ *  gets the manual and its capsule (status_context already orients), others
+ *  get the bare brief and their capsule. semantic_required starts nothing. */
+function runRoutedPrime(request: string, command: string, collectOpts: Parameters<typeof collectOrientationState>[0], projectRoot: string | null, out: (text: string) => void, rejectInput: (body: Parameters<typeof emitInvalidInput>[1]["body"]) => number): number {
+  let route: RouteResponse;
+  try {
+    route = resolveRouteRequest(request);
+  } catch (error) {
+    if (error instanceof HybridRouteRegistryError) return rejectInput({ class: "conflict", message: "routing authority validation failed before routing" });
+    return rejectInput({ class: "invalid_request", message: "route request could not be resolved" });
+  }
+  const capability = route.outcome === "deterministic_selection" ? route.capability : null;
+  const budget = routedStartBudgetBytes(route);
+  const overBudget = (bytes: number): number => {
+    const recovery = capability === null ? preCutoverCommand("route request --input -") : preCutoverCommand(`prime --context ${capability}`);
+    emitStructured(
+      {
+        command,
+        outcome: "blocked",
+        manual: PRIME_MANUAL,
+        route,
+        error: { class: "routed_output_budget", message: `routed prime output needs ${bytes} UTF-8 bytes, over its ${budget}-byte budget`, budget_utf8_bytes: budget, utf8_bytes: bytes, recovery: `Run \`${recovery}\`.` },
+      },
+      "json",
+      out,
+    );
+    return 1;
+  };
+  const refusal = capability === null ? null : directStartRefusal(capability, projectRoot);
+  const state = collectOrientationState(collectOpts);
+  if (capability === "status") {
+    // Status is never gated; its capsule already carries the orientation.
+    const start = capabilityStartPayload(state, capability, command);
+    const response = { command, manual: PRIME_MANUAL, route, start };
+    const bytes = briefUtf8Bytes(response);
+    // A status capsule a direct start would refuse as over budget is refused here too.
+    if (bytes > budget || briefUtf8Bytes(start) > PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES) return overBudget(bytes);
+    emitStructured(response, "json", out);
+    return 0;
+  }
+  // The start uses its own copy because capsule builders reshape shared state.
+  const start = capability !== null && refusal === null ? capabilityStartPayload(structuredClone(state), capability, command) : null;
+  const carried = { route, ...(refusal ? { refusal: refusal.body } : {}), ...(start ? { start } : {}) };
+  const fit = fitRoutedResponse(budget, { command, manual: PRIME_MANUAL }, carried, (briefBudget) => bareBriefPayload(buildOrientationJsonPayload(state, command), briefBudget), preCutoverCommand("prime"));
+  if (!fit.fits) return overBudget(fit.bytes);
+  emitStructured(fit.response, "json", out);
+  return refusal ? refusal.exitCode : 0;
+}
+
 /**
  * prime orientation command. Port of scripts/agentera cmd_prime / cmd_status.
  * The JSON orientation, --guidance, deprecated --dashboard, and --context
@@ -118,11 +190,20 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       valid_values: ["json"],
     });
   }
-  if (input !== null && (!capability || !PRIME_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
+  // Without --context, --input carries a route request; with it, a build request.
+  const routedInput = input !== null && capability === null && !dashboard && !guidance;
+  if (routedInput && args.fields !== undefined && args.fields !== null) {
+    return rejectInput({
+      class: "mutually_exclusive",
+      message: "prime --input and prime --fields are mutually exclusive",
+      syntax: preCutoverCommand("prime --input <file|->"),
+    });
+  }
+  if (input !== null && !routedInput && (!capability || !PRIME_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
     return rejectInput({
       class: "unsupported_target",
-      message: "--input is valid only with prime --context build",
-      syntax: preCutoverCommand("prime --context build --input <file|->"),
+      message: "--input is valid alone, as a route request, or with prime --context build",
+      syntax: `${preCutoverCommand("prime --input <file|->")} | ${preCutoverCommand("prime --context build --input <file|->")}`,
     });
   }
   if (termInput !== null && (!capability || !PRIME_TERM_INPUT_CONTEXTS.has(capability) || dashboard || guidance)) {
@@ -185,6 +266,17 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
     expectedVersion: args.expectedVersion,
   };
 
+  if (routedInput) {
+    let request: string;
+    try {
+      request = loadPrimeRouteRequest(input, io.stdin);
+    } catch (error) {
+      if (error instanceof PrimeRouteRequestError) return rejectInput(error.body);
+      return rejectInput({ class: "invalid_format", message: "route request input could not be read" });
+    }
+    return runRoutedPrime(request, command, collectOpts, args.projectRoot ?? null, out, rejectInput);
+  }
+
   if (capability !== null) {
     try {
       validatePrimeCapability(capability);
@@ -240,7 +332,7 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
         });
       }
     }
-    const payload = capability === "status" ? buildStatusCapabilityContextPayload(state, command) : buildPrimeCapabilityContextPayload(state, capability, command, buildRequest, glossaryAdvice);
+    const payload = capabilityStartPayload(state, capability, command, buildRequest, glossaryAdvice);
     return emitPrime(command, payload, format, args.fields, out, err, {
       maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
     });

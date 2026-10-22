@@ -330,7 +330,6 @@ describe("Build no-plan execution context", () => {
 
 describe("prime --context build --input", () => {
   it.each([
-    ["bare", []],
     ["status", ["--context", "status"]],
     ["other capability", ["--context", "audit"]],
     ["dashboard", ["--context", "build", "--dashboard"]],

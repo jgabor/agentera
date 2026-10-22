@@ -182,6 +182,34 @@ surfaces:
     orchestrate:
       byte_budget: 55000
       token_budget: 14000
+- id: prime-routed-start
+  command: agentera prime --input -
+  selector: --input - (agentera.route_request.v1 mapping on stdin)
+  argv:
+  - prime
+  - --input
+  - '-'
+  stdin: '{"version": "agentera.route_request.v1", "request": "<request>"}'
+  inventory_classification: change
+  budget_classification: bounded_routed_start
+  measurement_scope: primary
+  fixture: repo_root
+  enforcement_tier: enforce
+  # A routed response may use the bare brief budget (prime-briefing) plus the
+  # budget of what it carries: the status capsule (prime-status-context, sent
+  # with the manual and no brief), another capability's capsule
+  # (prime-capability-context), or the unchanged semantic_required route
+  # result (25000 bytes and 6000 tokens of its own).
+  budget_by_carried:
+    status:
+      byte_budget: 34500
+      token_budget: 9000
+    capability:
+      byte_budget: 67000
+      token_budget: 17000
+    semantic_required:
+      byte_budget: 37000
+      token_budget: 9000
 - id: state-plan
   command: agentera state plan list
   selector:

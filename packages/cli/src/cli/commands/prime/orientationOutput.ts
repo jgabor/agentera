@@ -13,6 +13,8 @@ import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
 import { briefOrientationPayload, briefUtf8Bytes } from "./briefOrientation.js";
+import { BriefBudgetError, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefByteBudget.js";
+import type { RouteResponse } from "../../../registries/hybridRoute.js";
 import { capabilityContext } from "../../capabilityContext/contract.js";
 import { startupAggregation } from "../../capabilityContext/startupAggregation.js";
 
@@ -275,6 +277,11 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
   };
 }
 
+/** The bare prime brief exactly as bare prime emits it. */
+export function bareBriefPayload(payload: Record<string, unknown>, budgetBytes?: number): Record<string, unknown> {
+  return briefOrientationPayload(omitInactiveConditionalDefaults(payload), { budgetBytes });
+}
+
 export function emitPrime(command: string, payload: Record<string, unknown>, format: string, fieldsArg: string | null | undefined, out: (t: string) => void, err: (t: string) => void, options: { bareBrief?: boolean; briefBudgetBytes?: number; maxUtf8Bytes?: number } = {}): number {
   const retiredRejection = rejectRetiredPrimeFields(command, format, fieldsArg, out, err);
   if (retiredRejection !== null) return retiredRejection;
@@ -286,8 +293,7 @@ export function emitPrime(command: string, payload: Record<string, unknown>, for
   // selection and `--context` use their governed payloads. Dashboard history is
   // already projected at collection time so ordinary list detail is not copied
   // into startup (see default_emission_omission_contract + brief_omission_contract).
-  const conditional = requested.length === 0 && options.bareBrief ? omitInactiveConditionalDefaults(payload) : payload;
-  const effectivePayload = requested.length === 0 && options.bareBrief ? briefOrientationPayload(conditional, { budgetBytes: options.briefBudgetBytes }) : conditional;
+  const effectivePayload = requested.length === 0 && options.bareBrief ? bareBriefPayload(payload, options.briefBudgetBytes) : payload;
   if (requested.length === 0) {
     if (format === "json" && options.maxUtf8Bytes !== undefined) {
       const bytes = briefUtf8Bytes(effectivePayload);
@@ -429,4 +435,45 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out(`- raw_artifact_reads_required=${String(startup.raw_artifact_reads_required).toLowerCase()}; policy=${startup.raw_artifact_read_policy}\n`);
   const deferred = (startup.availability as JsonObject[]).filter((entry) => entry.availability === "deferred").map((entry) => String(entry.family));
   out(`- deferred_detail=${deferred.join(", ") || "none"}\n`);
+}
+
+/** Mirrors references/artifacts/state-storage-authority.yaml
+ *  budgets.startup.source_work.serialized_output and
+ *  budgets.startup.surfaces.prime_routed_start; archiveAuthority.test.ts binds
+ *  the authority to scripts/json_output_surface_manifest.yaml. */
+export const PRIME_CAPABILITY_CONTEXT_MAX_UTF8_BYTES = 55000;
+/** The unchanged semantic_required route result prime carries in place of a capsule. */
+export const PRIME_SEMANTIC_ROUTE_MAX_UTF8_BYTES = 25000;
+
+/** A routed prime response may use the bare brief budget plus the budget of
+ *  what the route selects: the status capsule, another capability's capsule, or
+ *  the semantic_required result. */
+export function routedStartBudgetBytes(route: RouteResponse): number {
+  if (route.outcome !== "deterministic_selection") return PRIME_BRIEF_MAX_UTF8_BYTES + PRIME_SEMANTIC_ROUTE_MAX_UTF8_BYTES;
+  return PRIME_BRIEF_MAX_UTF8_BYTES + (route.capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : PRIME_CAPABILITY_CONTEXT_MAX_UTF8_BYTES);
+}
+
+export type RoutedFit = { response: Record<string, unknown>; bytes: number; fits: boolean };
+
+/** Fit the orientation brief next to what a routed response carries. The
+ *  brief gets the bytes the carried keys leave, at most its bare budget, and
+ *  degrades as bare prime does. When no brief fits, the response keeps the
+ *  manual and points to bare prime for the orientation. When even that is
+ *  over budget, the caller reports the failure. */
+export function fitRoutedResponse(budget: number, head: { command: string; manual: string }, carried: Record<string, unknown>, buildBrief: (budgetBytes: number) => Record<string, unknown>, orientationCommand: string): RoutedFit {
+  // Appending the carried keys to the brief adds their bytes less the 3 bytes
+  // of an object's own braces and final newline.
+  const briefBudget = Math.min(PRIME_BRIEF_MAX_UTF8_BYTES, budget - (briefUtf8Bytes(carried) - 3));
+  if (briefBudget > 0) {
+    try {
+      const response = { ...buildBrief(briefBudget), ...carried };
+      const bytes = briefUtf8Bytes(response);
+      if (bytes <= budget) return { response, bytes, fits: true };
+    } catch (error) {
+      if (!(error instanceof BriefBudgetError)) throw error;
+    }
+  }
+  const response = { ...head, ...carried, omitted: { orientation: orientationCommand } };
+  const bytes = briefUtf8Bytes(response);
+  return { response, bytes, fits: bytes <= budget };
 }

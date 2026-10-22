@@ -4,7 +4,7 @@ record:
   name: Let prime take a request on stdin and start deterministic routes
   depends_on:
     - ugzbenmczp
-  status: pending
+  status: complete
   acceptance:
     - GIVEN `prime --input -` with the same request mapping that route request accepts WHEN the request is `/agentera build` THEN one JSON response carries the manual, the orientation, the route result selecting build, and the capsule `prime --context build` returns.
     - GIVEN the bare request `/agentera` WHEN prime routes it THEN the response carries the manual and the status capsule without repeating the orientation, and stays within 12,000 plus 22,500 bytes; other routed responses stay within 12,000 bytes plus that capability's capsule budget.
@@ -12,3 +12,13 @@ record:
     - GIVEN a request with no deterministic match, or a selected capability the project gate refuses WHEN prime runs THEN it returns the unchanged semantic_required result, or the same refusal and recovery as a direct start, and no capsule.
     - GIVEN an empty, malformed or oversized request body WHEN `prime --input -` runs THEN it fails with a structured invalid-input error and changes nothing; GIVEN bare prime with no input flag and a stdin that never closes THEN it returns without reading stdin.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-lkvnhzjkxb-1
+      source: "audit evaluator report 2026-10-22: 5/5 criteria PASS, 2 WARN (new 25,000-byte semantic route budget, accepted by the user; vision and audit capsules over 55,000 bytes in this repo, not caused by this change)"
+      recorded_at: 2026-10-22 18:45
+      writer_command: agentera state plan record-evaluation
