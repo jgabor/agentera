@@ -79,8 +79,9 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   at unchanged scales and limits; latency is advisory. Its evidence is not full
   qualification or a receipt.
 - `vp run verify` is full qualification: five cold repetitions plus historical
-  certification (`test:certification`). See the packaging guide for the
-  archived-history prerequisite. Certification failures stay visible.
+  certification (`test:certification`), which holds only the compiler and
+  formatter replays. See the packaging guide for their prerequisites.
+  Certification failures stay visible.
 
 After a verification failure, correct the first reported owner and rerun the
 owning command. Do not run an omitted owner separately.
@@ -121,7 +122,9 @@ unstaged hunks. `vp check --fix` runs first, then
   with Oxfmt. A missing local binary fails; recover with `vp install`.
 - `.agentera/` or `TODO.md` changes run `agentera check compact` within a
   10-second budget.
-- Extract-corpus changes run the Python/TypeScript parity check.
+- Extract-corpus changes run the Python/TypeScript parity check. It compares
+  the oracle pin with `refs/remotes/origin/main`, else `refs/heads/main`, and
+  needs no other history; with neither ref it fails with recovery guidance.
 - Root config, scripts, tests, skills, references, workflow, or hook changes
   run the `guards` project. This is limited local feedback, not proof of those
   artifacts' behavior.

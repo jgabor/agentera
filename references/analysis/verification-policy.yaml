@@ -12,8 +12,6 @@ inventory:
       path: packages/cli/test/validate/allTestTypecheckViability.test.ts
     - owner: certification
       path: packages/cli/test/scripts/formatterNormalizationReplay.test.ts
-    - owner: certification
-      path: packages/cli/test/scripts/pyTsParity.test.ts
     - owner: stress
       path: packages/cli/test/stress/entityStorageStress.test.ts
     - owner: performance
@@ -95,7 +93,7 @@ release_qualification:
 owners:
   certification:
     config: packages/cli/vite.config.ts
-    correction: Run `pnpm -C packages/cli run test:certification`; fix the historical toolchain certification failure. This owner requires archived pre-rewrite history and is mandatory in full qualification, not routine development.
+    correction: Run `pnpm -C packages/cli run test:certification`; fix the historical toolchain certification failure. This owner holds only the compiler and formatter replays, needs full Git history, and is mandatory in full qualification, not routine development.
   source:
     config: packages/cli/vite.config.ts
     correction: Run `pnpm -C packages/cli test:source`; fix the reported source test or its source setup.

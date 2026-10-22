@@ -4,7 +4,7 @@ record:
   name: Make the parity drift check independent of pre-rewrite history
   depends_on:
     []
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN a clone without pre-rewrite history WHEN the parity drift check runs with the pin equal to the main branch THEN it reports no drift and exits successfully.
     - GIVEN a pin that differs from the main branch WHEN the parity drift check runs THEN it reports drift and names the changed Python paths; the text output also gives the re-pin procedure, and the machine-readable output gives the pinned commit, the main commit, and the changed paths.

@@ -1,150 +1,157 @@
-import { spawnSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
+
+import { gitCommitArgs } from "../helpers/git.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PKG_ROOT = path.resolve(__dirname, "..", "..");
-const REPO_ROOT = path.resolve(PKG_ROOT, "..", "..");
 const SCRIPT = path.join(PKG_ROOT, "scripts", "py_ts_parity.sh");
-const FIXTURE = path.join(PKG_ROOT, "test/cli/fixtures/oracle/parity-remaining-families.json");
+const FIXTURE_PATH = "packages/cli/test/cli/fixtures/oracle/parity-remaining-families.json";
+const FIXTURE = path.join(PKG_ROOT, "..", "..", FIXTURE_PATH);
+const RECOVERY = "fetch origin refs/heads/main:refs/remotes/origin/main";
 
-function runCheck(extraEnv: NodeJS.ProcessEnv = {}): {
-  status: number | null;
-  stdout: string;
-  stderr: string;
-} {
-  const result = spawnSync("bash", [SCRIPT, "--check"], {
-    cwd: REPO_ROOT,
-    env: { ...process.env, ...extraEnv },
-    encoding: "utf8",
-  });
-  return { status: result.status, stdout: result.stdout, stderr: result.stderr };
+type Fixture = { python_commit: string; families: Record<string, { python_commit: string }> };
+
+const temporary: string[] = [];
+afterEach(() => temporary.splice(0).forEach((root) => fs.rmSync(root, { recursive: true, force: true })));
+
+// The check must not read the live checkout, a caller's hook index, or user Git config.
+function hermeticEnv(): NodeJS.ProcessEnv {
+  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith("GIT_")));
+  return { ...env, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: os.devNull };
 }
 
-function runCheckJson(extraEnv: NodeJS.ProcessEnv = {}): {
-  status: number | null;
-  payload: Record<string, unknown>;
-  diagnostic: string;
-} {
-  const result = spawnSync("bash", [SCRIPT, "--check", "--json"], {
-    cwd: REPO_ROOT,
-    env: { ...process.env, ...extraEnv },
-    encoding: "utf8",
-  });
-  const line = (result.stdout || "").trim().split("\n").pop() ?? "{}";
-  return {
-    status: result.status,
-    payload: JSON.parse(line) as Record<string, unknown>,
-    diagnostic: `stdout: ${result.stdout.slice(-4096)}\nstderr: ${result.stderr.slice(-4096)}`,
-  };
+function git(root: string, ...args: string[]): string {
+  return execFileSync("git", args, { cwd: root, env: hermeticEnv(), encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+}
+
+function commit(root: string, files: Record<string, string>, message: string): string {
+  for (const [file, content] of Object.entries(files)) {
+    fs.mkdirSync(path.dirname(path.join(root, file)), { recursive: true });
+    fs.writeFileSync(path.join(root, file), content);
+    git(root, "add", file);
+  }
+  git(root, ...gitCommitArgs("--quiet", "-m", message));
+  return git(root, "rev-parse", "HEAD");
+}
+
+// A self-contained clone: main-branch Python history, no main ref yet, and the
+// real script at its checkout path so it resolves this repository as its root.
+function repository() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-"));
+  temporary.push(root);
+  git(root, "init", "--quiet", "-b", "fixture");
+  const base = commit(root, { "scripts/agentera": "#!/usr/bin/env python3\n" }, "python cli");
+  const docs = commit(root, { "README.md": "docs\n" }, "docs only");
+  const python = commit(root, { "scripts/agentera_upgrade.py": "print('upgrade')\n", "src/agentera/cli.py": "print('cli')\n", "NOTES.md": "notes\n" }, "python change");
+  fs.mkdirSync(path.join(root, "packages/cli/scripts"), { recursive: true });
+  fs.copyFileSync(SCRIPT, path.join(root, "packages/cli/scripts/py_ts_parity.sh"));
+  return { root, base, docs, python };
+}
+
+function pin(root: string, sha: string): void {
+  const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Fixture;
+  fixture.python_commit = sha;
+  for (const family of Object.values(fixture.families)) family.python_commit = sha;
+  fs.mkdirSync(path.dirname(path.join(root, FIXTURE_PATH)), { recursive: true });
+  fs.writeFileSync(path.join(root, FIXTURE_PATH), JSON.stringify(fixture, null, 2));
+}
+
+function check(root: string, json = false) {
+  const result = spawnSync("bash", [path.join(root, "packages/cli/scripts/py_ts_parity.sh"), "--check", ...(json ? ["--json"] : [])], { cwd: root, env: hermeticEnv(), encoding: "utf8" });
+  const diagnostic = `stdout: ${result.stdout.slice(-4096)}\nstderr: ${result.stderr.slice(-4096)}`;
+  return { status: result.status, stdout: result.stdout, diagnostic, payload: () => JSON.parse(result.stdout.trim().split("\n").at(-1) ?? "{}") as Record<string, unknown> };
 }
 
 describe("packages/cli/scripts/py_ts_parity.sh --check", () => {
-  it("replays owner evidence when python_commit matches origin/main HEAD", () => {
-    const mainRef = spawnSync("git", ["-C", REPO_ROOT, "rev-parse", "origin/main"], {
-      encoding: "utf8",
-    });
-    expect(mainRef.status, mainRef.stderr).toBe(0);
-    const mainHead = mainRef.stdout.trim();
-
-    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as {
-      python_commit: string;
-      families: Record<string, { python_commit: string }>;
-      pinEvidence: {
-        owner: string;
-        previous_python_commit: string;
-        target_python_commit: string;
-        sourceEquivalence: { previousSha256: string; targetSha256: string };
-      };
-    };
-    expect(fixture.python_commit).toBe(mainHead);
-    expect(fixture.pinEvidence.owner).toBe("packages/cli/scripts/py_ts_parity.sh");
-    expect(fixture.pinEvidence.target_python_commit).toBe(mainHead);
-    expect(fixture.pinEvidence.sourceEquivalence.previousSha256).toBe(fixture.pinEvidence.sourceEquivalence.targetSha256);
-
-    const { status, payload, diagnostic } = runCheckJson();
-    expect(status, diagnostic).toBe(0);
-    expect(payload).toMatchObject({
-      drift: "none",
-      pinned: mainHead,
-      main: mainHead,
-      owner_evidence: {
-        previous: fixture.pinEvidence.previous_python_commit,
-        target: mainHead,
-        source_equivalent: true,
-        previous_sha256: fixture.pinEvidence.sourceEquivalence.previousSha256,
-        target_sha256: fixture.pinEvidence.sourceEquivalence.targetSha256,
-      },
-    });
+  it("keeps one 40-character pin that every family mirrors, with no predecessor record", () => {
+    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Fixture;
+    expect(fixture.python_commit).toMatch(/^[0-9a-f]{40}$/);
+    expect(Object.keys(fixture.families).length).toBeGreaterThan(0);
+    for (const family of Object.values(fixture.families)) expect(family.python_commit).toBe(fixture.python_commit);
+    expect(fixture).not.toHaveProperty("pinEvidence");
   });
 
-  it("fails closed with actionable diagnostics when the historical proof is absent", () => {
-    const directory = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-absent-"));
-    try {
-      const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8"));
-      fixture.pinEvidence.previous_python_commit = "0".repeat(40);
-      const target = path.join(directory, "fixture.json");
-      fs.writeFileSync(target, JSON.stringify(fixture));
-      const { status, payload, diagnostic } = runCheckJson({ PY_TS_PARITY_FIXTURE: target });
-      expect(status, diagnostic).toBe(2);
-      expect(payload.reason).toBe("pin_evidence_source_mismatch");
-      expect(diagnostic).toContain("Historical parity prerequisite unavailable: " + "0".repeat(40));
-      expect(diagnostic).toContain("trusted retained checkout/bundle");
-    } finally {
-      fs.rmSync(directory, { recursive: true, force: true });
-    }
+  it("reports no drift when the pin equals origin/main in a clone without a local main branch", () => {
+    const { root, python } = repository();
+    git(root, "update-ref", "refs/remotes/origin/main", python);
+    pin(root, python);
+
+    const text = check(root);
+    expect(text.status, text.diagnostic).toBe(0);
+    expect(text.stdout).toContain("drift: none");
+    expect(text.stdout).toContain(`main:   ${python} (refs/remotes/origin/main)`);
+    const json = check(root, true);
+    expect(json.status, json.diagnostic).toBe(0);
+    expect(json.payload()).toEqual({ drift: "none", pinned: python, main: python, main_ref: "refs/remotes/origin/main", paths: ["scripts", "src/agentera"] });
   });
 
-  it("rejects altered owner source-equivalence evidence", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-owner-"));
-    const alteredFixture = path.join(tmpDir, "parity-remaining-families.json");
-    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as any;
-    fixture.pinEvidence.sourceEquivalence.targetSha256 = "0".repeat(64);
-    fs.writeFileSync(alteredFixture, JSON.stringify(fixture));
+  it("falls back to local main and prefers origin/main when both exist", () => {
+    const { root, docs, python } = repository();
+    git(root, "update-ref", "refs/heads/main", python);
+    pin(root, python);
+    const local = check(root, true);
+    expect(local.status, local.diagnostic).toBe(0);
+    expect(local.payload()).toMatchObject({ drift: "none", main: python, main_ref: "refs/heads/main" });
 
-    const { status, payload, diagnostic } = runCheckJson({ PY_TS_PARITY_FIXTURE: alteredFixture });
-    expect(status, diagnostic).toBe(2);
-    expect(payload.reason).toBe("pin_evidence_source_mismatch");
+    git(root, "update-ref", "refs/remotes/origin/main", docs);
+    const remote = check(root, true);
+    expect(remote.status, remote.diagnostic).toBe(1);
+    expect(remote.payload()).toMatchObject({ drift: "detected", pinned: python, main: docs, main_ref: "refs/remotes/origin/main" });
   });
 
-  it("exits 1 with drift:detected and rebase procedure for a divergent pin", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-"));
-    const divergentFixture = path.join(tmpDir, "parity-remaining-families.json");
-    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
-    const divergentPin = "0".repeat(40);
-    fixture.python_commit = divergentPin;
-    const families = fixture.families as Record<string, { python_commit: string }>;
-    for (const family of Object.values(families)) {
-      family.python_commit = divergentPin;
-    }
-    fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
+  it("reports drift with the changed Python paths, the re-pin procedure, and both commits", () => {
+    const { root, base, python } = repository();
+    git(root, "update-ref", "refs/remotes/origin/main", python);
+    pin(root, base);
 
-    const { status, stdout, stderr } = runCheck({ PY_TS_PARITY_FIXTURE: divergentFixture });
-    expect(status, `stdout: ${stdout.slice(-4096)}\nstderr: ${stderr.slice(-4096)}`).toBe(1);
-    expect(stdout).toContain("drift: detected");
-    expect(stdout).toContain("Rebase procedure:");
-    expect(stdout).toContain("pnpm -C packages/cli test -- npmParityMatrix");
-    expect(stdout).toContain("version_break: true");
+    const text = check(root);
+    expect(text.status, text.diagnostic).toBe(1);
+    expect(text.stdout).toContain("drift: detected");
+    expect(text.stdout).toContain(`pinned: ${base}`);
+    expect(text.stdout).toContain("    - scripts/agentera_upgrade.py\n    - src/agentera/cli.py\n");
+    expect(text.stdout).not.toMatch(/README\.md|NOTES\.md/);
+    expect(text.stdout).toContain("Re-pin procedure:");
+    expect(text.stdout).toContain(`every per-family python_commit in`);
+    expect(text.stdout).toContain(`to ${python}.`);
+    expect(text.stdout).toContain("vp run test");
+    expect(text.stdout).toContain("version_break: true");
+    const json = check(root, true);
+    expect(json.status, json.diagnostic).toBe(1);
+    expect(json.payload()).toEqual({ drift: "detected", pinned: base, main: python, main_ref: "refs/remotes/origin/main", diff_paths: ["scripts/agentera_upgrade.py", "src/agentera/cli.py"] });
   });
 
-  it("emits drift:detected in --json mode for a divergent pin", () => {
-    const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "py-ts-parity-json-"));
-    const divergentFixture = path.join(tmpDir, "parity-remaining-families.json");
-    const fixture = JSON.parse(fs.readFileSync(FIXTURE, "utf8")) as Record<string, unknown>;
-    fixture.python_commit = "1".repeat(40);
-    fs.writeFileSync(divergentFixture, JSON.stringify(fixture, null, 2));
+  it("still reports drift, without paths, when the pinned commit is absent from the clone", () => {
+    const { root, python } = repository();
+    git(root, "update-ref", "refs/remotes/origin/main", python);
+    pin(root, "0".repeat(40));
 
-    const { status, payload, diagnostic } = runCheckJson({
-      PY_TS_PARITY_FIXTURE: divergentFixture,
-    });
-    expect(status, diagnostic).toBe(1);
-    expect(payload.drift).toBe("detected");
-    expect(payload.pinned).toBe("1".repeat(40));
-    expect(typeof payload.main).toBe("string");
-    expect(Array.isArray(payload.diff_paths)).toBe(true);
+    const json = check(root, true);
+    expect(json.status, json.diagnostic).toBe(1);
+    expect(json.payload()).toMatchObject({ drift: "detected", pinned: "0".repeat(40), main: python, diff_paths: [], diff_error: "pinned_commit_unavailable" });
+    expect(check(root).stdout).toContain("changed Python paths: unavailable");
+  });
+
+  it("reports a configuration error with recovery guidance when no main reference exists", () => {
+    const { root, python } = repository();
+    // Neither HEAD nor a tag named main stands in for the main branch.
+    git(root, "tag", "main", python);
+    pin(root, python);
+
+    const text = check(root);
+    expect(text.status, text.diagnostic).toBe(2);
+    expect(text.stdout).toContain("configuration error: no main branch reference");
+    expect(text.stdout).toContain("checked: refs/remotes/origin/main refs/heads/main");
+    expect(text.stdout).toContain(RECOVERY);
+    expect(text.stdout).not.toContain("drift: detected");
+    const json = check(root, true);
+    expect(json.status, json.diagnostic).toBe(2);
+    expect(json.payload()).toMatchObject({ drift: "error", reason: "main_ref_missing", pinned: python, checked_refs: ["refs/remotes/origin/main", "refs/heads/main"] });
+    expect(json.payload().recovery).toContain(RECOVERY);
   });
 });

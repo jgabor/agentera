@@ -55,7 +55,7 @@ contributor environment, not a claim of macOS or Windows qualification.
   remote cannot supply it, restore it from a trusted retained checkout or Git
   bundle. Do not reset the working tree, replace the fixture with current
   plugin code, or skip the test. This source prerequisite is separate from
-  the additional archived-history requirements for full qualification below.
+  the historical certification prerequisites for full qualification below.
 
 - First provisioning needs network for uncached Node, pnpm, and dependencies.
   Warm cached offline execution is verified; an empty offline runtime cache
@@ -140,9 +140,11 @@ Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative
 development safety through `vp run verify:development`; explicit full
 `vp run verify` retains historical certification and repeated performance.
-Only `allTestTypecheckViability.test.ts`, `formatterNormalizationReplay.test.ts`, and `pyTsParity.test.ts`
+Only `allTestTypecheckViability.test.ts` and `formatterNormalizationReplay.test.ts`
 are certification-owned (`test:certification`); no arbitrary source exclusion is
-supported. Behavioral `cli/npmParityMatrix.test.ts` remains source-owned; historical
+supported. Behavioral `cli/npmParityMatrix.test.ts` and the parity drift tests in
+`scripts/pyTsParity.test.ts`, which use a self-contained fixture repository rather
+than the live main branch, remain source-owned; historical
 prerequisites are listed together in `docs/packaging/v3-packaging.md`.
 Development retains stress, capacity and all private-generation and
 package contracts, but its distinct success is not full qualification. The hook accepts no receipt

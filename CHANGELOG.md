@@ -268,6 +268,7 @@
   input from a file or stdin, converge exact logical-content retries before ID
   allocation, expose complete structured descriptors, and keep Discuss append,
   amend, and flag-only satisfaction guidance aligned with execution.
+- Fixed the contributor pre-commit Python/TypeScript parity check failing in fresh clones, which lack the pre-rewrite commit its pin proof required. `bash packages/cli/scripts/py_ts_parity.sh --check` now compares the oracle pin with `origin/main`, else local `main`, and needs no other history. Drift output lists the changed Python files. With no main reference it exits 2 with a configuration error and the fetch command to recover, instead of comparing against `HEAD` and reporting drift.
 
 ### Added
 
