@@ -55,6 +55,9 @@
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
 - [ ] [id:icewmngpkk] [refactor:3.0.0] Remove dead text-output paths and orphaned code left after the JSON-only and durability retirements.
+- [ ] [id:cewzpiysiw] [chore:3.0.0] Decide whether to keep the formatter and lint ignore for the deleted test evidence folder
+- [ ] [id:krapibtcjp] [chore:3.0.0] Correct the retained lint diagnostic count in TODO clxxrzihnt
+- [ ] [id:osazlarklk] [docs:3.0.0] Remove the historical qualification label from the CLI coverage contract
 
 ## ✓ Resolved
 

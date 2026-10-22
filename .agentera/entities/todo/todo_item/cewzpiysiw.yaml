@@ -1,0 +1,29 @@
+id: cewzpiysiw
+artifact: todo
+record:
+  kind: chore
+  target_version: 3.0.0
+  title: Decide whether to keep the formatter and lint ignore for the deleted test evidence folder
+  requirements:
+    - vite.config.ts lines 69 and 98 still ignore packages/cli/test/evidence/**, which no longer exists after certification retirement; formatterSurface.test.ts:52 and nativeHooks.test.ts:185 pin evidence paths as preserved bytes.
+    - Either remove the ignore and the matching test expectations together, or keep it with a recorded reason that the folder name stays reserved for byte-sensitive evidence.
+  acceptance:
+    - GIVEN the formatter and lint configuration WHEN reviewed THEN every ignore pattern matches a current folder or carries a recorded reason, and the formatter surface tests pass.
+  release_blocker: false
+  severity: annoying
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore:3.0.0] Decide whether to keep the formatter and lint ignore for the deleted test evidence folder"
+      severity: annoying
+      status: open
+      order: 3
+    create_batch:
+      effect_sha256: 6dae0e74bc792ed3182548d055849a9098896ae23de8c4240a3ef9284b860bd5
+      input_sha256: a0eff6f1b60bb90db8f62d0c14b4acee42e00904958fbfc70e359d7357f1831e
+      local_refs:
+        coverage-contract-historical: osazlarklk
+        dead-evidence-ignore: cewzpiysiw
+        lint-diagnostic-count: krapibtcjp
