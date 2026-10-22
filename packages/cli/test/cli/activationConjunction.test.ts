@@ -7,6 +7,7 @@ import path from "node:path";
 import { describe, expect, it } from "vite-plus/test";
 
 import { DISPATCHER_TOP_LEVEL_COMMANDS } from "../../src/cli/dispatch/commands.js";
+import { OWN_HELP_TOP_LEVEL_COMMANDS } from "../../src/cli/dispatch/projections.js";
 import { printTopLevelHelp } from "../../src/cli/help.js";
 import { cmdSchema } from "../../src/cli/commands/schema.js";
 import { ACTIVATION_CENSUS_AUTHORITY, ACTIVATION_CLASSES, ACTIVATION_CLASS_AUTHORITIES, ACTIVATION_DIMENSIONS, ACTIVATION_EVIDENCE_SOURCES, ACTIVATION_CANONICAL_TUPLES, ACTIVATION_TUPLE_AUTHORITY, canonicalTupleJson, type ActivationClassId } from "../../src/registries/activationContract.js";
@@ -39,8 +40,7 @@ function omitUsage(inputs: ActivationProductionInputs): void {
   cli.dimensions.diagnostics.commands = cli.dimensions.diagnostics.commands.filter((id: string) => id !== "usage");
   cli.dimensions.diagnostics.runtimeDiagnosticCommands = cli.dimensions.diagnostics.runtimeDiagnosticCommands.filter((id: string) => id !== "usage");
   cli.dimensions.package_projection.commands = cli.dimensions.package_projection.commands.filter((id: string) => id !== "usage");
-  cli.dimensions.instructions.helpText = cli.dimensions.instructions.helpText.replace(",usage,", ",");
-  cli.dimensions.instructions.declaredCommands = cli.dimensions.instructions.declaredCommands.filter((id: string) => id !== "usage");
+  delete cli.dimensions.instructions.ownHelp.usage;
   cli.dimensions.adversarial.commands = cli.dimensions.adversarial.commands.filter((id: string) => id !== "usage");
 }
 
@@ -342,7 +342,9 @@ describe("activation conjunction", () => {
   });
 
   it("projects the exact dispatcher independently through help and schema", () => {
-    expect(printTopLevelHelp()).toContain(`{${DISPATCHER_TOP_LEVEL_COMMANDS.join(",")}}`);
+    const listed = /usage: agentera \[-h\] \[--version\] \{([^}]+)\}/.exec(printTopLevelHelp())![1]!.split(",");
+    expect([...listed, ...OWN_HELP_TOP_LEVEL_COMMANDS].sort()).toEqual([...DISPATCHER_TOP_LEVEL_COMMANDS].sort());
+    expect(listed.filter((id) => OWN_HELP_TOP_LEVEL_COMMANDS.includes(id))).toEqual([]);
     let output = "";
     expect(
       cmdSchema(
@@ -385,7 +387,19 @@ describe("activation conjunction", () => {
     [
       "instructions",
       (inputs: ActivationProductionInputs) => {
-        inputs.classes.cli.dimensions.instructions.helpText = inputs.classes.cli.dimensions.instructions.helpText.replace(",usage,", ",");
+        inputs.classes.cli.dimensions.instructions.helpText = inputs.classes.cli.dimensions.instructions.helpText.replace(",doctor,", ",");
+      },
+    ],
+    [
+      "instructions",
+      (inputs: ActivationProductionInputs) => {
+        inputs.classes.cli.dimensions.instructions.ownHelp.lint = null;
+      },
+    ],
+    [
+      "instructions",
+      (inputs: ActivationProductionInputs) => {
+        inputs.classes.cli.dimensions.instructions.helpText = inputs.classes.cli.dimensions.instructions.helpText.replace(",doctor,", ",doctor,check,");
       },
     ],
     [

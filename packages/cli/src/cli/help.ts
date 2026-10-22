@@ -23,6 +23,9 @@ export function printTopLevelHelp(): string {
     "",
     "agentera: read and write project state, upgrade installs, and print priming guidance",
     "",
+    `Start with prime: ${preCutoverCommand("prime")}`,
+    "With no arguments, the CLI runs prime and prints the same JSON brief.",
+    "",
     ...lines("Agent commands:", [
       "prime               Composite orientation briefing, capability startup context, or static guidance",
       "schema              Runtime CLI/schema introspection",
@@ -37,15 +40,14 @@ export function printTopLevelHelp(): string {
       "report              Privacy-gated usage analytics",
       "--version           Print the installed Agentera CLI version",
     ]),
-    ...lines("Maintainer commands:", ["check               Validation, verification, lint, and repository compaction gates"]),
     "Static discovery: schema; prime --context NAME --detail KIND; state ARTIFACT explain;",
-    "                  route explain; report explain; check explain; upgrade --explain.",
+    "                  route explain; report explain; upgrade --explain.",
     "Follow returned section and next_command actions. Discovery grants no execution permission.",
     "options:",
     "  -h, --help          show this help message and exit",
     "  --version           print the installed Agentera CLI version and exit",
     "",
-    [`Examples: ${preCutoverCommand("prime --context status")}`, `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`, `  ${preCutoverCommand("check verify eval skills --dry-run")}`, `  ${preCutoverCommand("report refresh --dry-run")}`].join("\n"),
+    [`Examples: ${preCutoverCommand("prime --context status")}`, `  ${preCutoverCommand(planListExample.slice("agentera ".length))}`, `  ${preCutoverCommand("report refresh --dry-run")}`].join("\n"),
   ].join("\n");
 }
 
@@ -597,7 +599,14 @@ export function printCommandHelp(command: string, rest: string[] = []): string |
     case "stats":
       return printReportHelp();
     case "verify":
-      return printCheckHelp("verify");
+    case "lint":
+    case "compact":
+    case "validate":
+      return printCheckHelp(command);
+    case "query":
+      return printStateHelp("query");
+    case "usage":
+      return ["usage: agentera usage [-h] [--corpus PATH] [--project VALUE]", "", "Compatibility command for usage analytics; agentera report is the current command."].join("\n");
     case "--version":
     case "version":
       return "usage: agentera --version\n\nPrint the installed Agentera CLI version as text; no format selector.\n";

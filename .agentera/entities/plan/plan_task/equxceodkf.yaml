@@ -4,10 +4,20 @@ record:
   name: Make the bare command run prime and trim help
   depends_on:
     - otodzeskmx
-  status: pending
+  status: complete
   acceptance:
     - GIVEN any directory WHEN `npx agentera@next` runs with no arguments THEN it emits the same JSON as bare prime, with the same project guards, and does not read stdin.
     - GIVEN `npx agentera@next --help` WHEN it runs THEN the text lists only agent and user commands, no maintainer commands or deprecated aliases, and says to start with prime.
     - GIVEN a maintainer command WHEN it runs or its own help is requested THEN it still works and is documented there.
     - GIVEN the command inventory and output-policy checks WHEN they run THEN help, schema, activation and coverage views agree with the new list, and the changelog records the bare-output change.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-equxceodkf-1
+      source: "audit evaluator report 2026-10-22: 4/4 criteria PASS, no warnings"
+      recorded_at: 2026-10-22 17:15
+      writer_command: agentera state plan record-evaluation

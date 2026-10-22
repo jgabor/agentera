@@ -47,7 +47,8 @@ function splitNestedSubcommand(argv: string[]): [string | undefined, string[]] {
 export function main(argv: string[], io: Io = {}): number {
   const err = io.err ?? ((t: string) => process.stderr.write(t));
   const out = io.out ?? ((t: string) => process.stdout.write(t));
-  const requestedArgs = argv.slice(2);
+  // Bare `agentera` is prime: one entry, the same JSON brief and project guards.
+  const requestedArgs = argv.length > 2 ? argv.slice(2) : ["prime"];
   if (isServiceDetailQuery(requestedArgs)) {
     return runServiceDetail(requestedArgs[0] as ServiceOwner, serviceDetailArgs(requestedArgs), io);
   }
@@ -60,7 +61,7 @@ export function main(argv: string[], io: Io = {}): number {
   const governedArgs = applyOutputPolicy(requestedArgs, io);
   if (typeof governedArgs === "number") return governedArgs;
   const args = governedArgs;
-  if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {
+  if (args[0] === "--help" || args[0] === "-h") {
     out(printTopLevelHelp() + "\n");
     return 0;
   }

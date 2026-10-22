@@ -42,7 +42,7 @@ describe("shared output policy", () => {
   it("classifies every success and error path", () => {
     expect(Object.keys(OUTPUT_PATH_POLICIES).sort()).toEqual(["help", "operational", "prime_guidance", "version"]);
     const operationalRoutes = LIVE_OUTPUT_ROUTE_INVENTORY.filter(({ kind }) => kind === "operational").map(({ route }) => route);
-    expect(operationalRoutes).toEqual(["version", ...DISPATCHER_TOP_LEVEL_COMMANDS]);
+    expect(operationalRoutes).toEqual(["<bare>", "version", ...DISPATCHER_TOP_LEVEL_COMMANDS]);
     expect(LIVE_OUTPUT_ROUTE_INVENTORY.every(({ producers }) => producers.length > 0)).toBe(true);
     expect(LIVE_OUTPUT_ROUTE_INVENTORY.every(({ error }) => error === "json")).toBe(true);
     expect(LIVE_OUTPUT_ROUTE_INVENTORY.filter(({ kind }) => kind === "exception").every(({ success }) => success === "text")).toBe(true);
@@ -195,15 +195,29 @@ describe("shared output policy", () => {
   });
 
   it("keeps each text exception text-only", () => {
-    for (const args of [[], ["--help"], ["--version"], ["prime", "--guidance"]]) {
+    for (const args of [["--help"], ["--version"], ["prime", "--guidance"]]) {
       const result = capture(args);
       expect(result.rc).toBe(0);
       expect(() => JSON.parse(result.out)).toThrow();
     }
   });
 
+  it("runs bare agentera as prime with the same JSON and rejects a commandless selector", () => {
+    withEntityProject(() => {
+      const bare = capture([]);
+      const prime = capture(["prime"]);
+      expect(bare.rc).toBe(0);
+      expect(bare.err).toBe("");
+      expect(JSON.parse(bare.out)).toEqual(JSON.parse(prime.out));
+      expect(JSON.parse(bare.out).command).toBe("prime");
+    });
+
+    const failure = capture(["--format", "json"]);
+    expect(failure.rc).toBe(2);
+    expect(JSON.parse(failure.out).error).toMatchObject({ class: "unrecognized_argument", message: "a format selector must follow a command" });
+  });
+
   it.each([
-    ["bare", [], ["--format", "json"]],
     ["top-level help", ["--help"], ["--help", "unexpected"]],
     ["command help", ["schema", "--help"], ["unexpected", "--help"]],
     ["version", ["--version"], ["--version", "unexpected"]],

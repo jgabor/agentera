@@ -63,32 +63,11 @@ export const SCHEMA_TOP_LEVEL_COMMANDS = Object.freeze([
   "orchestrate",
 ]);
 
-export const HELP_TOP_LEVEL_COMMANDS = Object.freeze([
-  "prime",
-  "app-home",
-  "doctor",
-  "usage",
-  "upgrade",
-  "verify",
-  "report",
-  "stats",
-  "schema",
-  "lint",
-  "check",
-  "state",
-  "query",
-  "compact",
-  "validate",
-  "route",
-  "vision",
-  "discuss",
-  "research",
-  "plan",
-  "build",
-  "optimize",
-  "audit",
-  "document",
-  "profile",
-  "design",
-  "orchestrate",
-]);
+/** Commands listed in top-level `--help`: agent and user commands only. */
+export const HELP_TOP_LEVEL_COMMANDS = Object.freeze(["prime", "app-home", "doctor", "upgrade", "report", "schema", "state", "route", "vision", "discuss", "research", "plan", "build", "optimize", "audit", "document", "profile", "design", "orchestrate"]);
+
+/**
+ * Maintainer commands and compatibility aliases. They still dispatch, but
+ * top-level help leaves them out; each is documented by its own `--help`.
+ */
+export const OWN_HELP_TOP_LEVEL_COMMANDS = Object.freeze(["usage", "verify", "stats", "lint", "check", "query", "compact", "validate"]);

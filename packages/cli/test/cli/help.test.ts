@@ -2,6 +2,7 @@ import { describe, expect, it } from "vite-plus/test";
 
 import { main } from "../../src/cli/dispatch.js";
 import { printCommandHelp, stateCommandNames, printStateHelp, printTopLevelHelp, printUpgradeHelp, wantsHelp } from "../../src/cli/help.js";
+import { HELP_TOP_LEVEL_COMMANDS, OWN_HELP_TOP_LEVEL_COMMANDS } from "../../src/cli/dispatch/projections.js";
 import { describeRouteReceipt } from "../../src/registries/hybridRoute.js";
 
 function capture(fn: (io: { out: (t: string) => void; err: (t: string) => void }) => number): {
@@ -22,14 +23,28 @@ describe("cli help", () => {
     expect(wantsHelp(["--format", "json"])).toBe(false);
   });
 
-  it("prints audience-grouped top-level help", () => {
+  it("lists only agent and user commands in top-level help and starts with prime", () => {
     const text = printTopLevelHelp();
     expect(text).toContain("Agent commands:");
     expect(text).toContain("User commands:");
-    expect(text).toContain("Maintainer commands:");
-    expect(text).toContain("prime");
-    expect(text).toContain("upgrade");
-    expect(text).toContain("check");
+    expect(text).toContain("Start with prime: npx -y agentera@next prime\n");
+    expect(text).not.toContain("Maintainer commands:");
+    const listed = /\{([^}]+)\}/.exec(text)![1]!.split(",");
+    expect(listed).toEqual([...HELP_TOP_LEVEL_COMMANDS]);
+    for (const hidden of OWN_HELP_TOP_LEVEL_COMMANDS) {
+      expect(listed).not.toContain(hidden);
+      expect(text).not.toMatch(new RegExp(`^  ${hidden} `, "m"));
+      expect(text).not.toMatch(new RegExp(`(?:agentera@next|;) ${hidden} `));
+    }
+  });
+
+  it("documents each maintainer command and compatibility alias in its own help", () => {
+    for (const command of OWN_HELP_TOP_LEVEL_COMMANDS) {
+      const { rc, out } = capture((io) => main(["node", "agentera", command, "--help"], io));
+      expect(rc, command).toBe(0);
+      expect(out, command).toMatch(/^usage: agentera /);
+    }
+    expect(printCommandHelp("not-a-command")).toBeNull();
   });
 
   it("prints upgrade subcommand help with channel and dry-run flags", () => {
@@ -186,7 +201,7 @@ describe("cli help", () => {
     const { rc, out } = capture((io) => main(["node", "agentera", "--help"], io));
     expect(rc).toBe(0);
     expect(out).toContain("usage: agentera [-h]");
-    expect(out).toContain("Maintainer commands:");
+    expect(out).toContain("User commands:");
   });
 
   it("routes top-level -h through main", () => {

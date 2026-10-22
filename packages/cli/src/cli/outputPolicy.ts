@@ -71,13 +71,6 @@ export interface OutputRouteInventoryEntry {
  */
 export const LIVE_OUTPUT_ROUTE_INVENTORY: readonly OutputRouteInventoryEntry[] = [
   {
-    route: "<bare>",
-    kind: "exception",
-    producers: ["applyOutputPolicy", "printTopLevelHelp"],
-    success: "text",
-    error: "json",
-  },
-  {
     route: "--help",
     kind: "exception",
     producers: ["applyOutputPolicy", "printTopLevelHelp"],
@@ -103,6 +96,13 @@ export const LIVE_OUTPUT_ROUTE_INVENTORY: readonly OutputRouteInventoryEntry[] =
     kind: "exception",
     producers: ["applyOutputPolicy", "runPrime", "cmdPrime"],
     success: "text",
+    error: "json",
+  },
+  {
+    route: "<bare>",
+    kind: "operational",
+    producers: ["applyOutputPolicy", "runPrime"],
+    success: "json",
     error: "json",
   },
   {
@@ -140,7 +140,7 @@ function hasHelp(args: readonly string[]): boolean {
 }
 
 export function classifyOutputPath(args: readonly string[]): OutputPathPolicy {
-  if (args.length === 0 || hasHelp(args)) return OUTPUT_PATH_POLICIES.help;
+  if (hasHelp(args)) return OUTPUT_PATH_POLICIES.help;
   if (args[0] === "--version") return OUTPUT_PATH_POLICIES.version;
   if (args[0] === "prime" && args.includes("--guidance")) return OUTPUT_PATH_POLICIES.prime_guidance;
   return OUTPUT_PATH_POLICIES.operational;
@@ -180,8 +180,8 @@ export function applyOutputPolicy(args: readonly string[], io: { out?: (text: st
       format: "json",
       body: {
         class: "unrecognized_argument",
-        message: "bare output does not accept --format",
-        recovery: "Supply a command without a format selector and retry; no state was changed.",
+        message: "a format selector must follow a command",
+        recovery: "Run agentera with no arguments for the prime JSON brief, or supply a command before the selector; no state was changed.",
       },
     });
   }

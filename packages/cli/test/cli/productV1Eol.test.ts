@@ -249,6 +249,19 @@ describe("product v1 EOL execution gate", () => {
     }
   });
 
+  it("gates bare agentera exactly like bare prime", () => {
+    const root = fixture();
+    const before = snapshot(root);
+
+    const bare = run(root, []);
+    const prime = run(root, ["prime"]);
+
+    expect(bare.rc).toBe(1);
+    expect(JSON.parse(bare.out).error.class).toBe("product_v1_eol");
+    expect(bare).toEqual(prime);
+    expect(snapshot(root)).toBe(before);
+  });
+
   it("keeps help and version available without mutation", () => {
     const root = fixture();
     const before = snapshot(root);

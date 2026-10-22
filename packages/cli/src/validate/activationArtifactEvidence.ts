@@ -510,7 +510,7 @@ function genericDimensionObservation(classId: string, dimension: string, input: 
     if (dimension === "discovery") return { commands: input.commands };
     if (dimension === "behavior") return { dispatchSourceDigest: observationDigest(input.dispatchSource), capabilityRoutes: input.capabilityRoutes };
     if (dimension === "diagnostics") return { diagnosticCommands: input.commands, runtimeCommands: input.runtimeDiagnosticCommands };
-    if (dimension === "instructions") return { helpDigest: observationDigest(input.helpText), declaredCommands: input.declaredCommands };
+    if (dimension === "instructions") return { helpDigest: observationDigest(input.helpText), declaredCommands: input.declaredCommands, ownHelp: Object.entries(input.ownHelp ?? {}).map(([command, text]) => ({ command, helpDigest: typeof text === "string" ? observationDigest(text) : null })) };
     return { commandClassifications: input.commands.map((command: string) => ({ command, safe: !/\s|[;&|]/.test(command) })) };
   }
   if (classId === "runtime") {

@@ -63,7 +63,7 @@ if (isServiceDetailQuery(args)) {
   try {
     dispatch = await import("../cli/dispatch.js");
   } catch (error) {
-    process.exitCode = emitStartupFailure({}, classifyStartupError(error), args[0] ?? null);
+    process.exitCode = emitStartupFailure({}, classifyStartupError(error), args[0] ?? "prime");
   }
   if (dispatch) process.exitCode = dispatch.main(process.argv);
 }

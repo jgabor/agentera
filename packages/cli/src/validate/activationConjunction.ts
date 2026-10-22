@@ -6,8 +6,8 @@ import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../cap
 import { capabilityInstructionTarget } from "../cli/capabilityContext/contract.js";
 import { CAPABILITY_ROUTING_NAMES } from "../cli/commands/capability.js";
 import { DISPATCHER_COMMANDS, DISPATCHER_TOP_LEVEL_COMMANDS } from "../cli/dispatch/commands.js";
-import { DIAGNOSTIC_TOP_LEVEL_COMMANDS, HELP_TOP_LEVEL_COMMANDS, SCHEMA_TOP_LEVEL_COMMANDS } from "../cli/dispatch/projections.js";
-import { printTopLevelHelp } from "../cli/help.js";
+import { DIAGNOSTIC_TOP_LEVEL_COMMANDS, HELP_TOP_LEVEL_COMMANDS, OWN_HELP_TOP_LEVEL_COMMANDS, SCHEMA_TOP_LEVEL_COMMANDS } from "../cli/dispatch/projections.js";
+import { printCommandHelp, printTopLevelHelp } from "../cli/help.js";
 import type { JsonObject } from "../core/jsonValue.js";
 import { isNpxBundleRoot, resolveSourceRoot } from "../core/sourceRoot.js";
 import { loadYamlMapping } from "../core/yaml.js";
@@ -141,6 +141,18 @@ function parseDispatchCases(source: string): string[] {
 function helpCommandIds(text: string): string[] {
   const match = /usage: agentera \[-h\] \[--version\] \{([^}]+)\}/.exec(text);
   return match?.[1]?.split(",") ?? [];
+}
+/**
+ * Listed commands are documented by top-level help. Maintainer commands and
+ * compatibility aliases are documented by their own help and must stay out of
+ * the top-level list, so a command in both places fails closure.
+ */
+function cliInstructionIds(input: { helpText: string; declaredCommands: string[]; ownHelp: Record<string, string | null> }): string[] {
+  const listed = helpCommandIds(input.helpText);
+  const ownHelp = Object.entries(input.ownHelp)
+    .filter(([id, text]) => typeof text === "string" && text.length > 0 && !listed.includes(id))
+    .map(([id]) => id);
+  return [...listed.filter((id) => input.declaredCommands.includes(id)), ...ownHelp];
 }
 function capabilityTargets(instructions: Record<string, string>): any[] {
   return Object.entries(instructions).map(([id, body]) => {
@@ -303,7 +315,7 @@ export function loadActivationProductionInputs(root: string, generationRoot?: st
           behavior: { dispatchSource: fs.readFileSync(path.join(root, "packages/cli/src/cli/dispatch/index.ts"), "utf8"), capabilityRoutes: [...CAPABILITY_ROUTING_NAMES] },
           diagnostics: { commands: [...DIAGNOSTIC_TOP_LEVEL_COMMANDS], runtimeDiagnosticCommands: [...DISPATCHER_COMMANDS] },
           package_projection: { commands: [...SCHEMA_TOP_LEVEL_COMMANDS] },
-          instructions: { helpText: printTopLevelHelp(), declaredCommands: [...HELP_TOP_LEVEL_COMMANDS] },
+          instructions: { helpText: printTopLevelHelp(), declaredCommands: [...HELP_TOP_LEVEL_COMMANDS], ownHelp: Object.fromEntries(OWN_HELP_TOP_LEVEL_COMMANDS.map((id) => [id, printCommandHelp(id)])) },
           adversarial: { commands: [...DISPATCHER_COMMANDS] },
         },
       },
@@ -352,11 +364,7 @@ export function collectActivationProductionEvidence(root: string, productionInpu
         inputs.cli.dimensions.diagnostics.commands.filter((id: string) => inputs.cli.dimensions.diagnostics.runtimeDiagnosticCommands.includes(id)),
       ),
       package_projection: evidence("cli", "package_projection", inputs.cli.dimensions.package_projection.commands),
-      instructions: evidence(
-        "cli",
-        "instructions",
-        helpCommandIds(inputs.cli.dimensions.instructions.helpText).filter((id) => inputs.cli.dimensions.instructions.declaredCommands.includes(id)),
-      ),
+      instructions: evidence("cli", "instructions", cliInstructionIds(inputs.cli.dimensions.instructions)),
       adversarial: evidence(
         "cli",
         "adversarial",
