@@ -1,0 +1,33 @@
+id: vlgaofobpn
+artifact: decisions
+record:
+  date: 2026-10-22
+  question: How should Agentera's entry contract (bare command, prime and the shared SKILL.md) make onboarding easy for an agent and its user, in a new project and in a new session?
+  context: "The user finds that `npx agentera@next` and `npx agentera@next prime` onboard poorly. Decision czkquqhuwm already chose a thin SKILL.md that hands off to prime, but the skill has grown to 181 lines and 11 KB. It now carries the routing table, the receipt protocol, the shared-skill offer, a recovery ladder, reset rules, a discovery table and state and safety rules. Measured on 2026-10-22: bare `npx agentera@next` prints argparse help with 27 subcommands, including maintainer `check`, and no next step. Bare `prime` returns about 12 KB, much of it source_contract field lists. Status in an empty git repository returns 19.5 KB with no state in it. The discuss capsule is 55 KB. A `discuss: ...` request took three CLI calls and hand-copied hashes. A fresh repository stays fresh_uninitialized, and no init command exists. Related open TODOs: pzicyatkvi asks for a decision on natural-language route request and receipt, and cites session data where 787 of 855 sessions never called route. krqhlpjexq sets a 12,000-byte bare prime budget. kkfomcugga asks for a fresh project to be reported as ready to start. lvxezpcpvv asks for a user-facing README Get started."
+  alternatives:
+    - name: Prime is the one entry. Bare `npx agentera@next` runs prime and emits JSON. Prime reads the user's request on stdin and returns the operating manual, orientation, the route result and, for deterministic routes, the capability capsule. The skill becomes a three-row pointer table. A fresh repository gets an init preview, and on approval init writes state and hands off to vision.
+      status: chosen
+    - name: Bare command initializes the project on first run, writing without a preview.
+      status: rejected
+    - name: Skill keeps only the entry command and no routing table.
+      status: rejected
+    - name: Skill keeps today's full routing table with no prime routing.
+      status: rejected
+    - name: The host classifies natural-language requests from a skill-side trigger list.
+      status: rejected
+    - name: Collapse the receipt into one step with no hash copying.
+      status: rejected
+    - name: Every capability capsule carries the operating manual.
+      status: rejected
+    - name: Capsules carry the manual only on a host-flagged session start.
+      status: rejected
+    - name: Bare command prints readable text on a terminal and JSON when piped.
+      status: rejected
+    - name: Bare command stays plain help with a start footer.
+      status: rejected
+    - name: No init; the first capability write creates state.
+      status: rejected
+  choice: "(1) Bare `npx agentera@next` runs prime and emits JSON, as decision kicksvpwep requires. `--help` stays plain text and lists only agent and user commands, not maintainer commands. (2) Every session starts with prime. Prime reads the user's request on stdin, never argv. Its first reply carries the operating manual, the orientation dashboard data, and the route result. For bare, direct and curated routes it also includes the selected capability capsule, so those paths take one call. The manual covers the shared-skill offer, recovery, discovery, state rules and safety rules. Capability capsules do not repeat the manual. (3) SKILL.md shrinks to a frontmatter index, a three-row pointer table (bare, direct, natural language), each row pointing to prime, and one rule: if the CLI is missing, fails or returns output that does not parse, stop and report. Everything else moves to prime. This restores the intent of decision czkquqhuwm. (4) In a fresh repository, prime explains Agentera and offers an init preview that lists exactly what init would write. Init writes nothing without explicit approval. After approval it hands off to vision, or to discuss when direction is unclear. Vision keeps its own approvals. (5) Success requires hard budgets for skill length, bare prime size and calls per entry path, plus a cold-agent eval. In the eval a fresh agent in a scratch repository goes from install to a vision hand-off with no other help. (6) Out of scope: natural-language routing after semantic_required keeps today's route receipt mechanics until TODO pzicyatkvi decides them. Prime forwards that result unchanged. Capability capsule size is also out of scope."
+  reasoning: "The user wants onboarding that takes one obvious first step for both agents and humans. The skill drifted from a thin stub because rules for edge cases collected in the host layer. Only the stop-on-broken-CLI rule cannot come from the CLI itself, so everything else can move to prime and stay versioned with the code. Starting every session with prime and letting it route and start deterministic capabilities removes the extra call that a skill-side routing table would otherwise save. The pointer table remains so the host knows the three paths before its first call. Keeping JSON preserves one output contract; humans see the agent's rendering. Init with a preview keeps the preview-before-apply rule and gives a clear adoption moment, and the vision hand-off means the first session ends with direction, not an empty folder. Budgets guard against the drift that already happened once, and the cold-agent eval tests the real experience. Natural-language routing stays open because the session data in TODO pzicyatkvi questions the receipt's value. That question deserves its own decision. Open tensions for planning: the manual must fit the 12,000-byte bare prime budget (TODO krqhlpjexq) or the budget must be revised with evidence; init must agree with the ready-to-start fresh status (TODO kkfomcugga); the user-facing README Get started (TODO lvxezpcpvv) should describe this entry."
+  confidence: firm
+  feeds_into: plan
