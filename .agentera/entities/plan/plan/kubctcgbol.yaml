@@ -1,0 +1,39 @@
+id: kubctcgbol
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-20
+    status: open
+    reviewed: 2026-10-20
+    critic_issues: 9 found, 9 addressed, 0 dismissed
+    revised: Parity tests made hermetic so routine verification never tracks live main; task 1 names the surfaces it touches and the interim certification state; dates corrected; unknowns narrowed to open questions; development and full qualification separation protected; retired evidence separated from preserved dated records; vague and layout-based criteria rewritten.
+    title: "Plan: Retire the historical certification lane"
+  what: Remove historical certification from full qualification. Its three suites are one-time proofs of early-September work. Full qualification and the source receipt then cover eleven gates. The Python parity drift check keeps detecting a pin that lags the main branch, without needing commits that only survive in one local clone, and its routine tests no longer depend on the live main branch.
+  why: Certification cannot pass. The compiler replay binds every source file's digest, so it broke with the first source commit after its last refresh on 2026-09-07. The formatter replay binds the parity matrix test, which changed on 2026-09-10. The parity re-pin proof needs a pre-rewrite commit that a fresh clone cannot fetch. Guidance calls the gate mandatory for full qualification, yet the gate cannot pass, so full qualification and qualified publication are unreachable. The pre-commit parity check also fails in clones without that commit.
+  constraints: Start only after plan zmcmgdjtoz closes, from a worktree rebased onto current feat/v3, because both plans edit the toolchain and packaging guides. Keep every other gate, its order, its limits, and development verification behavior unchanged. Do not weaken any remaining test to pass. The retired replay evidence is deleted and stays recoverable from Git history; dated qualification records, released changelog sections, and entity records stay unchanged. Each task commits its own change with aligned guidance, tests, and state. No push or publication, because a push to the development ref publishes to npm @next.
+  overall_acceptance: GIVEN both tasks are complete WHEN a maintainer works from a fresh clone that has no pre-rewrite history THEN the pre-commit parity check, the source suite, the package lane, and development verification pass, full qualification and the source receipt name exactly eleven gates with no certification gate, and no current surface names a certification gate, a twelve-gate count, or an instruction to restore archived history or run historical certification.
+  scope:
+    included:
+      - The Python parity drift check, made independent of pre-rewrite history, with hermetic routine tests and an explicit error when no main reference exists
+      - Retiring the compiler replay and formatter replay suites with their verifiers, fixture, and dedicated retained evidence
+      - Removing the certification owner, its package script, and its gate from the release DAG, gate inventories, source receipt, progress reporting, and formatter ignore lists
+      - Tests that count, order, or assign gates, owners, or lanes
+      - Current maintainer guidance, CLI check detail text, verification references, and publication adapter prose that describe certification, a twelve-gate count, or archived-history prerequisites
+    excluded:
+      - Deleting or pushing the local pre-rewrite backup refs, which is the maintainer's decision
+      - Changing any other gate, owner, budget, or development verification behavior
+      - Rewriting dated qualification records, released changelog sections, or entity history
+      - The parity oracle's future after the v3 cutover moves main
+    deferred:
+      - Re-pinning or retiring the Python parity oracle when main stops holding the Python CLI
+  design: First make the parity drift check stand alone, since pre-commit and source verification depend on it. Its tests join routine source verification using a self-contained repository, so commits to main never fail them; the live comparison with main stays in pre-commit and the maintainer command. Retiring the re-pin proof is deliberate, since it proved one finished re-pin. Certification already fails; after task 1 its formatter replay also fails on the changed parity files until task 2. Task 2 removes the lane at once, because the owner, gate inventories, receipt contract, tests, and guidance must agree at every commit.
+  unknowns:
+    - question: Does removing a gate require a new source receipt schema version, given that receipt validation already rejects a gate set that differs from the current contract?
+      affects_task: 2
+      resolve_by: Inspect whether the receipt version identifies the gate contract or only the document shape. Bump the version if it identifies the contract; otherwise record why the existing version stays valid.
+    - question: Which mentions of certification in the CLI coverage contract and other guidance are dated records, and which describe current behavior?
+      affects_task: 2
+      resolve_by: Classify each mention before editing. Update current statements, leave dated statements unchanged, and record the classification in the task evidence.
+  surprises:
+    []

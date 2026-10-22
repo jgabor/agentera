@@ -1,0 +1,15 @@
+id: zpouwqbssy
+artifact: plan
+record:
+  name: Make the parity drift check independent of pre-rewrite history
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN a clone without pre-rewrite history WHEN the parity drift check runs with the pin equal to the main branch THEN it reports no drift and exits successfully.
+    - GIVEN a pin that differs from the main branch WHEN the parity drift check runs THEN it reports drift and names the changed Python paths; the text output also gives the re-pin procedure, and the machine-readable output gives the pinned commit, the main commit, and the changed paths.
+    - GIVEN a clone with no main branch reference WHEN the parity drift check runs THEN it reports a configuration error with recovery guidance instead of reporting drift.
+    - GIVEN a commit that touches extract-corpus inputs in a clone without pre-rewrite history WHEN the pre-commit hook runs THEN the parity check passes.
+    - GIVEN a new commit on the main branch WHEN routine source verification runs THEN the parity drift tests still pass, because they do not depend on the live main branch.
+    - GIVEN the parity re-pin procedure, the routine CI and publication tests, and current descriptions of certification WHEN read after this task THEN none requires a recorded predecessor commit or archived history for parity, and certification is described as holding only the compiler and formatter replays.
+  plan: kubctcgbol

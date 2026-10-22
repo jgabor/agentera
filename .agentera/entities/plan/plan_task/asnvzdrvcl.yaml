@@ -1,0 +1,15 @@
+id: asnvzdrvcl
+artifact: plan
+record:
+  name: Retire the historical certification lane from full qualification
+  depends_on:
+    - zpouwqbssy
+  status: pending
+  acceptance:
+    - GIVEN full qualification WHEN its gates are listed or executed THEN it runs exactly eleven gates in the existing order without certification.
+    - GIVEN development verification WHEN it runs THEN its gates, limits, and evidence are unchanged, its gate identity stays distinct from full qualification, and its evidence still cannot issue or satisfy a source receipt.
+    - GIVEN a source receipt WHEN it is issued or validated THEN it names exactly the eleven remaining gates, and a receipt that still names a certification gate is rejected with a reason that names the gate-set mismatch.
+    - GIVEN the maintainer commands WHEN a maintainer looks for historical certification THEN no command runs the compiler or formatter replay proofs, and no evidence remains that only those proofs read.
+    - GIVEN current maintainer guidance, CLI check details, verification references, and publication adapter prose WHEN they describe full qualification THEN they name eleven gates and contain no instruction to restore archived history or run historical certification, while dated records stay unchanged.
+    - GIVEN the source suite, typecheck, build, package lane, compact check, and development verification WHEN run on the final tree THEN they pass.
+  plan: kubctcgbol
