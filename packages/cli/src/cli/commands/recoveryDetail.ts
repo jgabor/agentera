@@ -77,7 +77,8 @@ export function recoveryDetailSections(a: ServiceAuthority, base: string, owner:
         syntax: `${cli} doctor [--install-root PATH] [--home HOME] [--project PATH] [--expected-version VERSION] [--expect-command CMD] [--retired-resource ID] [--smoke] [--allow-live-model] [--format json]`,
         behavior: "Read-only diagnosis of app/package version and command presence, project-state readiness, shared skill and retired resources. --smoke is bounded offline; no live model call by default. Diagnosis never repairs automatically.",
         corrections: {
-          up_to_date: "App and shared skill are current, Prime Status startup is operable, and the project passes the typed-writer cutover preflight. This is not host trust, write permission, or validation of a particular mutation.",
+          up_to_date:
+            "App and shared skill are current, Prime Status startup is operable, and the project passes the typed-writer cutover preflight or is a fresh Git project ready to start (current_health.project_readiness.status ready_to_start, whose next_action is the init preview). This is not host trust, write permission, or validation of a particular mutation.",
           outdated: "Select the intended distribution/channel, then preview upgrade; do not confuse npm package version with durable data version.",
           repair_needed: "Separate missing package/runtime data from broken shared-skill projection. Retry a valid package invocation; preview only the scoped owned repair.",
           migration_needed: `${cli} upgrade --channel development --dry-run`,

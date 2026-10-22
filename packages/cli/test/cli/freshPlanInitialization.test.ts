@@ -402,6 +402,10 @@ describe("init", () => {
     expect(refusedVision.rc).toBe(1);
     expect(refusedVision.json?.error).toMatchObject({ class: "fresh_initialization_required", recovery: expect.stringContaining("init --project") });
     expect(refusedVision.json?.error.recovery).toContain("state plan create");
+    // The refusal leads with the init preview; plan creation stays the second initializer.
+    const initPreview = refusedVision.json?.error.initializers[0];
+    expect(initPreview).toMatch(/ init --project \S+$/);
+    expect(refusedVision.json?.error.recovery.indexOf(initPreview)).toBeLessThan(refusedVision.json?.error.recovery.indexOf("state plan create"));
 
     const root = project();
     expect(capture(root, ["init", "--yes"]).rc).toBe(0);
@@ -421,6 +425,43 @@ describe("init", () => {
     const plan = capture(root, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput("Plan after vision"));
     expect(plan.rc, plan.out).toBe(0);
     expect(validateEntityState(root)).toMatchObject({ valid: true, entityCount: 3 });
+  });
+
+  it("points a fresh project at the init preview, and an initialized one at vision with discuss as the alternative", () => {
+    const fresh = project();
+    const before = snapshot(fresh);
+    const bare = capture(fresh, ["prime"]);
+    expect(bare.rc, bare.err).toBe(0);
+    expect(bare.json?.fresh_start).toEqual({
+      about: expect.stringMatching(/^Agentera keeps .+\. Prime .+\.$/),
+      written: "Nothing has been written to this project yet.",
+      preview_command: expect.stringMatching(/ init --project \S+$/),
+      apply_command: expect.stringMatching(/ init --project \S+ --yes$/),
+      approval: expect.stringContaining("only after the user approves"),
+    });
+    expect(bare.json?.next_action).toMatchObject({ object: "Agentera init preview", capability: "status", retrieval: { exact: bare.json?.fresh_start.preview_command } });
+    expect(snapshot(fresh)).toBe(before);
+
+    const preview = capture(fresh, bare.json?.fresh_start.preview_command.split(" ").slice(3));
+    expect(preview.json).toMatchObject({ status: "preview", apply_command: bare.json?.fresh_start.apply_command });
+    expect(capture(fresh, ["init", "--yes"]).rc).toBe(0);
+
+    const initialized = capture(fresh, ["prime"]);
+    expect(initialized.json).not.toHaveProperty("fresh_start");
+    expect(initialized.json?.next_action).toMatchObject({ capability: "vision" });
+    const status = capture(fresh, ["prime", "--context", "status", "--format", "json"]);
+    const next = status.json?.capability_context.context.status_context.next_action;
+    expect(next).toMatchObject({ capability: "vision", alternatives: [expect.objectContaining({ capability: "discuss" })] });
+  });
+
+  it("keeps discuss first for a project with saved state but no vision", () => {
+    const root = project();
+    expect(capture(root, ["init", "--yes"]).rc).toBe(0);
+    const appended = capture(root, ["state", "progress", "append", "--input", "-", "--format", "json"], JSON.stringify({ type: "test", phase: "build", what: "saved context", verified: "fixture", context: { intent: "keep discuss routing" } }));
+    expect(appended.rc, appended.out).toBe(0);
+    const bare = capture(root, ["prime"]);
+    expect(bare.json).not.toHaveProperty("fresh_start");
+    expect(bare.json?.next_action).toMatchObject({ capability: "discuss", reason: "saved context without vision" });
   });
 
   it("is listed in help, schema and its own help", () => {

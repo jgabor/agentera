@@ -9,6 +9,7 @@ import { emitInvalidInput } from "../../errors.js";
 import type { JsonObject } from "../../../core/jsonValue.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { PRIME_MANUAL } from "../../prime-blob.js";
+import { freshStart } from "../../migrationRequired.js";
 import { truncateCodePoints } from "../../../core/text.js";
 import type { BundleStatus } from "../../contracts/bundleStatus.js";
 import type { NextAction, OrientationState } from "../../contracts/orientationState.js";
@@ -141,6 +142,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
     benchmark_context: null,
     execution_context: null,
   };
+  const fresh = state.state_cutover.status === "fresh_uninitialized";
   const render = command === "status" ? "caller-owned README-style prime orientation dashboard" : "caller-owned README-style prime orientation dashboard";
   const access = command === "status" ? "single installed CLI call; app/reset/profile safety included; no preflight glob/read/import/doctor calls during normal prime" : "single installed CLI call; app/reset/profile safety included; no preflight glob/read/import/doctor calls during normal prime";
   return {
@@ -150,6 +152,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
     app_home: appHome,
     app: bundlePublic,
     mode: state.mode,
+    ...(fresh ? { fresh_start: freshStart(state.project_root) } : {}),
     shared_skill: state.shared_skill,
     project_integration: state.project_integration,
     ...(state.todo_reconciliation?.status === "action_required" ? { todo_reconciliation: state.todo_reconciliation } : {}),
@@ -176,7 +179,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
       artifacts_present: state.mode === "returning",
     },
     source_contract: {
-      fields: state.todo_reconciliation?.status === "action_required" ? [...STATUS_STRUCTURED_FIELDS, "todo_reconciliation"] : STATUS_STRUCTURED_FIELDS,
+      fields: [...STATUS_STRUCTURED_FIELDS, ...(state.todo_reconciliation?.status === "action_required" ? ["todo_reconciliation"] : []), ...(fresh ? ["fresh_start"] : [])],
       render,
       access,
       empty_state: "fresh: summaries absent; zero TODO items",

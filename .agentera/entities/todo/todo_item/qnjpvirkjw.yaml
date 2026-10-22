@@ -21,4 +21,4 @@ record:
       description: "[test:3.0.0] Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories."
       severity: normal
       status: open
-      order: 33
+      order: 32

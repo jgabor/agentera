@@ -9,6 +9,7 @@ import { StateWriteInputError } from "../state/write/errors.js";
 import { emitInvalidInput } from "./errors.js";
 import { commandText, fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { preCutoverCommand } from "./preCutoverCommand.js";
+import type { NextAction } from "./contracts/orientationState.js";
 
 type Format = "text" | "json" | "yaml";
 
@@ -58,12 +59,38 @@ function freshPlanCreateCommand(project: string): string {
   return commandText(["npx", "-y", "agentera@next", "state", "plan", "create", "--project", project, "--input", "PLAN.yaml", "--format", "json"]);
 }
 
-function initPreviewCommand(project: string): string {
+export function initPreviewCommand(project: string): string {
   return commandText(["npx", "-y", "agentera@next", "init", "--project", project]);
 }
 
-function initApplyCommand(project: string): string {
+export function initApplyCommand(project: string): string {
   return commandText(["npx", "-y", "agentera@next", "init", "--project", project, "--yes"]);
+}
+
+/** The one next step for a fresh project, shared by Prime and Doctor. Init
+ *  must run before any capability that needs state, so vision and discuss
+ *  wait behind its preview. The reason stays short because the bare brief
+ *  bounds it; the exact command travels in `retrieval.exact`. */
+export function freshInitNextAction(project: string): NextAction {
+  return {
+    object: "Agentera init preview",
+    capability: "status",
+    reason: "fresh project; nothing is written until the user approves init",
+    phase: "envision",
+    retrieval: { exact: initPreviewCommand(project) },
+  };
+}
+
+/** Bare-prime onboarding for a fresh project: what Agentera is, what has been
+ *  written, and the init preview and apply commands. */
+export function freshStart(project: string): Record<string, string> {
+  return {
+    about: "Agentera keeps a project's direction, plans, decisions and progress as typed state in .agentera, so each coding-agent session starts where the last one stopped. Prime orients every session and routes each request to one of twelve capabilities, such as vision, plan and build.",
+    written: "Nothing has been written to this project yet.",
+    preview_command: initPreviewCommand(project),
+    apply_command: initApplyCommand(project),
+    approval: "Show the preview to the user. Run apply_command only after the user approves; init then hands off to vision.",
+  };
 }
 
 /** Recovery for a fresh project: the two initializers, preview first. */

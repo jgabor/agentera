@@ -188,6 +188,11 @@ export function classifyProjectState(projectRoot: string, sourceRoot = resolveSo
   return { state: "entities", root, markerPath: declared.markerPath, markerBytes: bytes };
 }
 
+/** Project-relative path of the entity-mode marker that init writes. */
+export function entityStateMarkerPath(sourceRoot = resolveSourceRoot()): string {
+  return contract(sourceRoot).markerPath;
+}
+
 export function freshEntityStateMarker(sourceRoot = resolveSourceRoot()): {
   schemaVersion: string;
   mode: string;

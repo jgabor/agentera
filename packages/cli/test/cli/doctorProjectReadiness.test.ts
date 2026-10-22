@@ -113,20 +113,36 @@ describe("Doctor project readiness", () => {
       );
       expect(created.rc, JSON.stringify(created)).toBe(0);
     }
-    const prime = capture(project, ["prime", "--fields", "startup"]);
+    const prime = capture(project, ["prime", "--fields", "startup,next_action"]);
     const doctor = capture(project, ["doctor"]);
     expect(doctor.json.current_health.cli).toBe("up_to_date");
     expect(doctor.json.current_health.project_state).toEqual(prime.json.startup.state_cutover);
     expect(doctor.json.current_health.capability_startup.outcome).toBe(prime.json.startup.outcome);
     expect(doctor.json.current_health.writer_readiness.status).toBe(kind === "valid" ? "ready" : "blocked");
     expect(doctor.json.current_health.writer_readiness.permission_granted).toBe(false);
-    if (kind === "valid") {
-      expect(doctor.rc).toBe(0);
+    const readinessSignal = doctor.json.signals.find((signal: { kind: string }) => signal.kind === "project_readiness");
+    if (kind === "valid" || kind === "fresh") {
+      expect(doctor.rc, JSON.stringify(doctor.json.signals)).toBe(0);
       expect(doctor.json.status).toBe("up_to_date");
+      expect(readinessSignal).toBeUndefined();
     }
-    if (kind !== "valid") {
+    if (kind === "valid") expect(doctor.json.current_health.project_readiness).toEqual({ status: "ready" });
+    if (kind === "fresh") {
+      // A fresh project is ready to start, and doctor names the same next step as prime.
+      const { alternatives: _alternatives, ...primeNext } = prime.json.next_action;
+      expect(doctor.json.current_health.project_readiness).toMatchObject({ status: "ready_to_start", next_action: primeNext });
+      expect(primeNext.retrieval.exact).toBe(commandText(["npx", "-y", "agentera@next", "init", "--project", project]));
+      expect(doctor.json.current_health.project_readiness.apply_command).toBe(commandText(["npx", "-y", "agentera@next", "init", "--project", project, "--yes"]));
+      expect(JSON.stringify(doctor.json.current_health.project_readiness)).not.toContain("PLAN.yaml");
+      expect(fs.existsSync(path.join(project, ".agentera"))).toBe(false);
+    }
+    if (kind !== "valid" && kind !== "fresh") {
       expect(doctor.rc).toBe(1);
       expect(doctor.json.status).not.toBe("up_to_date");
+      expect(readinessSignal.status).toBe("repair_needed");
+      expect(doctor.json.current_health.project_readiness).toEqual({ status: "repair_needed", recovery_command: readinessSignal.recoveryCommand });
+    }
+    if (kind !== "valid") {
       const writer = capture(project, ["state", "progress", "append", "--input", "-"], "{}");
       expect(writer.rc).toBe(1);
       expect(doctor.json.current_health.writer_readiness.error).toEqual(writer.json.error);

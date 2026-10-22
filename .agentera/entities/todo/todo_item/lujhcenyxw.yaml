@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Skip gitignored paths when state validation scans for reintroduced glossary variants"
       severity: normal
       status: open
-      order: 27
+      order: 26

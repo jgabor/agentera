@@ -20,7 +20,7 @@ export function statusStartupInstructions(canonical: string): string {
       "**Exit marker**: after the closing code fence of the dashboard, emit `⌂ status · <status>` on its own line, followed by a one-sentence summary of what you delivered. For `waiting`, `flagged`, or `stuck`, add a `▸` bullet below the summary identifying what the user needs to decide or act on next. The exit marker MUST appear on every invocation regardless of mode (fresh welcome or returning briefing).",
       "**Exit marker**: always follow the Exit signals format below.",
     ],
-    ["Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.", "For entity targets, follow the shared human-reference rules; retain exact IDs. Other objects include `OBJECTIVE: <metric>` and `VISION refresh`."],
+    ["Valid objects: `PLAN Task N: <title>`, `TODO: <item>`, `DECISION N follow-up`, `OBJECTIVE: <metric>`, or `VISION refresh`.", "For entity targets, follow the shared human-reference rules; retain exact IDs. Other objects include `OBJECTIVE: <metric>`, `VISION refresh` and `Agentera init preview`."],
     ["Use the `mode` field from `agentera prime` to detect fresh vs returning:", "Use the `mode` field from `capability_context.context.status_context` to detect fresh vs returning:"],
     [
       "- todo open items → select the highest-severity open item, then route by shape: narrow one-cycle todo items suggest ⧉ build; contract-shaped, multi-surface, dependency-heavy, migration, schema, metadata, validation, or acceptance-risky todo items suggest ≡ plan first. Prefer items that unlock product evidence or future plans.",

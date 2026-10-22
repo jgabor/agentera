@@ -21,7 +21,7 @@ import { cleanupOfferAuthorization } from "../../upgrade/cleanupOffer.js";
 import { isNpxBundleRoot } from "../../core/sourceRoot.js";
 import { classifyStartupError, emitStartupFailure } from "../startupFailure.js";
 import { projectStateCutover } from "./prime/collectOrientationState.js";
-import { enforceCompletedEntityCutover } from "../migrationRequired.js";
+import { enforceCompletedEntityCutover, freshInitNextAction, initApplyCommand, initPreviewCommand } from "../migrationRequired.js";
 import { collectEntityOrientation } from "./prime/collectEntityOrientation.js";
 import { startupAggregation } from "../capabilityContext/startupAggregation.js";
 import { capabilityContext } from "../capabilityContext/contract.js";
@@ -36,6 +36,11 @@ import { renderProjectMigrationOffer } from "../../upgrade/projectMigrationOffer
 
 type Io = { out?: (t: string) => void; err?: (t: string) => void };
 
+/** Project readiness for a fresh Git project with no Agentera state. It is a
+ *  project status, not an app lifecycle status: the app can be up to date
+ *  while the project waits for init. */
+const PROJECT_READY_TO_START = "ready_to_start";
+
 const PLAIN_STATUS: Record<string, string> = {
   pending: "ready to fix",
   applied: "fixed",
@@ -43,6 +48,7 @@ const PLAIN_STATUS: Record<string, string> = {
   blocked: "needs a decision",
   failed: "failed",
   skipped: "skipped",
+  [PROJECT_READY_TO_START]: "ready to start",
   [APP_UP_TO_DATE]: "up to date",
   [APP_REPAIR_NEEDED]: "needs repair",
   [APP_OUTDATED]: "outdated",
@@ -280,12 +286,21 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     startup.outcome = "blocked";
     startup.recovery_command = stateRecoveryCommand;
   }
-  if (startup.outcome !== "ok" || writerReadiness.status === "blocked") {
+  // A fresh project blocks every writer until init, by design. That is the
+  // normal starting point, so it reports the shared next step, not damage.
+  const freshReady = cutover.status === "fresh_uninitialized" && startup.outcome === "ok" && writerReadiness.error?.class === "fresh_initialization_required";
+  const projectRecoveryCommand = writerReadiness.error?.recovery ?? startup.recovery_command ?? cutover.recovery_command ?? stateRecoveryCommand;
+  const projectReadiness: JsonObject = freshReady
+    ? { status: PROJECT_READY_TO_START, next_action: freshInitNextAction(project) as unknown as JsonObject, apply_command: initApplyCommand(project) }
+    : startup.outcome !== "ok" || writerReadiness.status === "blocked"
+      ? { status: APP_REPAIR_NEEDED, recovery_command: projectRecoveryCommand }
+      : { status: "ready" };
+  if (!freshReady && (startup.outcome !== "ok" || writerReadiness.status === "blocked")) {
     status.signals.push({
       status: APP_REPAIR_NEEDED,
       kind: "project_readiness",
       message: `Project state is ${cutover.project_state}; Prime startup is ${String(startup.outcome)} and writer cutover preflight is ${writerReadiness.status}.`,
-      recoveryCommand: writerReadiness.error?.recovery ?? startup.recovery_command ?? cutover.recovery_command ?? stateRecoveryCommand,
+      recoveryCommand: projectRecoveryCommand,
     });
   }
   if (isNpxBundleRoot(sourceRoot)) status.userDataRoot = installRoot;
@@ -340,7 +355,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     if (status.status === APP_UP_TO_DATE) status.status = APP_REPAIR_NEEDED;
   }
   const sharedSkill = diagnoseCanonicalSkill(home, { sourceRoot, appHome: installRoot });
-  if (status.status === APP_UP_TO_DATE && (sharedSkill.status !== "pass" || startup.outcome !== "ok" || writerReadiness.status === "blocked")) status.status = APP_REPAIR_NEEDED;
+  if (status.status === APP_UP_TO_DATE && (sharedSkill.status !== "pass" || startup.outcome !== "ok" || (writerReadiness.status === "blocked" && !freshReady))) status.status = APP_REPAIR_NEEDED;
   const offer =
     appStatus === APP_UP_TO_DATE && sharedSkill.status === "pass"
       ? cleanupOffer(
@@ -372,6 +387,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
         recovery_command: startup.recovery_command ?? cutover.recovery_command,
       },
       writer_readiness: writerReadiness,
+      project_readiness: projectReadiness,
       runtime_package_root: sourceRoot,
       durable_user_data_root: installRoot,
     };
@@ -395,7 +411,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
     });
     const body =
       prependNextMajorDoctorSection(renderDoctorStatus(status, retiredResources), nextMajorLines) +
-      `\nProject readiness\n  state: ${cutover.project_state}\n  capability startup: ${String(startup.outcome)}\n  writer preflight: ${writerReadiness.status}\n  recovery: ${String(writerReadiness.error?.recovery ?? startup.recovery_command ?? cutover.recovery_command ?? "none")}\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` +
+      `\nProject readiness\n  state: ${cutover.project_state}\n  capability startup: ${String(startup.outcome)}\n  writer preflight: ${writerReadiness.status}\n  readiness: ${plainStatus(String(projectReadiness.status))}\n  ${freshReady ? `next: preview init with ${initPreviewCommand(project)}; apply it with ${initApplyCommand(project)} only after the user approves` : `recovery: ${String(writerReadiness.error?.recovery ?? startup.recovery_command ?? cutover.recovery_command ?? "none")}`}\nShared skill\n  ${String(sharedSkill.status)}: ${String(sharedSkill.message)}\n  path: ${String(sharedSkill.path)}\n` +
       (smokeReport ? renderDoctorSmoke(smokeReport) : "");
     out(body + renderProjectMigrationOffer(cutover.migration_offer) + "\n");
   }

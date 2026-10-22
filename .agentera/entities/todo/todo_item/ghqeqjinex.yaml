@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Stop the CI bootstrap's first-run setup from acquiring an unpinned latest-LTS Node"
       severity: normal
       status: open
-      order: 35
+      order: 34

@@ -20,4 +20,4 @@ record:
       description: "[task:3.0.0] Run a real personal glossary trial once the user has written term definitions"
       severity: normal
       status: open
-      order: 28
+      order: 27

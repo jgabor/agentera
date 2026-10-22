@@ -36,7 +36,6 @@
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 - [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
-- [ ] [id:kkfomcugga] [fix:3.0.0] Report a fresh project as ready to start, not as needing repair.
 - [ ] [id:lvxezpcpvv] [feat:3.0.0] Help users discover capabilities they have not used yet.
 - [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
 - [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
@@ -231,3 +230,4 @@
 - [x] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load
 - [x] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [x] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
+- [x] [id:kkfomcugga] [fix:3.0.0] Report a fresh project as ready to start, not as needing repair.

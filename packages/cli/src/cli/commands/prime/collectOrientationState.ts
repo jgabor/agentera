@@ -18,6 +18,8 @@ import { classifyEntityCutoverProject } from "../../../state/entityMigrationPrev
 import { fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../../../upgrade/upgradeCommands.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { projectMigrationOffer } from "../../../upgrade/projectMigrationOffer.js";
+import { entityStateMarkerPath } from "../../../state/stateMode.js";
+import { freshInitNextAction } from "../../migrationRequired.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 
@@ -58,6 +60,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     savedContext = false;
   }
   const mode = savedContext ? "returning" : "fresh";
+  const directionContext = savedContext && hasStateBeyondMarker(project, sourceRoot);
   const acquiredProfile = acquireProfile(schemasDir, env);
   const profile = acquiredProfile.profilePath ?? "";
   const profileStatus = acquiredProfile.validity.status;
@@ -109,7 +112,7 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     installClassification: install,
     successorAnnounced,
   });
-  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, savedContext, entity.todoReadiness);
+  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, directionContext, entity.todoReadiness);
   const reconciliationReadiness =
     entity.todoReconciliation?.status === "action_required"
       ? withRecommended(readiness, {
@@ -118,7 +121,9 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
           reason: entity.todoReconciliation.recovery_command,
           phase: entity.todoReconciliation.state === "unsafe_inactive" ? "build" : entity.todoReconciliation.state === "invalid_lifecycle" ? "audit" : "build",
         })
-      : readiness;
+      : cutover.status === "fresh_uninitialized"
+        ? withRecommended(readiness, freshInitNextAction(project))
+        : readiness;
   const nextAction =
     cutover.status === "required" || cutover.status === "invalid_lifecycle"
       ? withRecommended(readiness, {
@@ -190,6 +195,30 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     attention,
     history,
   };
+}
+
+/** Whether the project holds state beyond the bare entity-mode marker that
+ *  init writes. A marker-only project has no saved direction to clarify, so
+ *  its next step is vision rather than discuss. */
+function hasStateBeyondMarker(project: string, sourceRoot: string): boolean {
+  const stateRoot = path.join(project, ".agentera");
+  let marker: string;
+  try {
+    marker = path.resolve(project, entityStateMarkerPath(sourceRoot));
+  } catch {
+    return true;
+  }
+  try {
+    for (const name of fs.readdirSync(stateRoot)) {
+      const entry = path.join(stateRoot, name);
+      if (entry === marker) continue;
+      if (name.endsWith(".yaml")) return true;
+      if (fs.statSync(entry).isDirectory() && fs.readdirSync(entry).length > 0) return true;
+    }
+  } catch {
+    return true;
+  }
+  return false;
 }
 
 /** Promote `newRecommended` to position 1, demoting the prior recommendation

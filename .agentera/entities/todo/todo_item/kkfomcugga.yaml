@@ -15,12 +15,16 @@ record:
     - GIVEN a fresh git project WHEN doctor runs THEN it reports a ready-to-start status and the same next capability as prime, and asks the user to create no file.
     - GIVEN partial or corrupt project state WHEN doctor runs THEN it still reports repair_needed with scoped recovery.
     - One success and one refusal case cover the behavior.
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Report a fresh project as ready to start, not as needing repair."
+      status: resolved
+      order: 172
       severity: normal
-      status: open
-      order: 22
+  lifecycle:
+    operation: resolve
+    reason: Doctor reports a fresh project as ready_to_start under current_health.project_readiness with prime's init-preview next step; partial, corrupt and unknown state keep repair_needed.
+    date: 2026-10-22

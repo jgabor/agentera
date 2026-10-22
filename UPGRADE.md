@@ -181,7 +181,14 @@ healthy v3 needs no second dashboard call.
 
 A fresh Git project has two initializers. No other command or state writer
 initializes fresh state; each refuses with `fresh_initialization_required` and
-names both.
+names both, the `init` preview first.
+
+Bare `prime` in a fresh project adds `fresh_start`: what Agentera is, that
+nothing has been written, and the `init` preview and apply commands. Its
+`next_action` is the `init` preview. `doctor` reports the same next step under
+`current_health.project_readiness` with status `ready_to_start`, not
+`repair_needed`. After `init`, the next step is vision, with discuss as the
+alternative.
 
 `init` prepares empty v3 state. Without `--yes` it prints JSON listing every
 file it would write and writes nothing. Run `--yes` only after the user

@@ -21,4 +21,4 @@ record:
       description: "[test:3.0.0] Make startup and static-detail byte-budget tests independent of TMPDIR length."
       severity: normal
       status: open
-      order: 30
+      order: 29
