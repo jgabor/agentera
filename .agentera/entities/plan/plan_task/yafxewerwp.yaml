@@ -1,0 +1,13 @@
+id: yafxewerwp
+artifact: plan
+record:
+  name: Point fresh projects at init and report them ready
+  depends_on:
+    - wwfeyocaie
+  status: pending
+  acceptance:
+    - GIVEN a fresh git repository WHEN bare prime runs THEN it explains Agentera in one or two sentences, states that nothing has been written, and offers the init preview and its apply command.
+    - GIVEN a fresh repository WHEN a capability that needs state starts THEN its refusal points to the init preview, while plan creation keeps working.
+    - GIVEN an initialized project with no vision WHEN prime runs THEN its next step is vision, with discuss as the alternative.
+    - GIVEN a fresh repository WHEN doctor runs THEN it reports ready to start with the same next step as prime, keeps repair_needed for partial or corrupt state, and the changelog records the changed status value.
+  plan: sulmmpgyjb

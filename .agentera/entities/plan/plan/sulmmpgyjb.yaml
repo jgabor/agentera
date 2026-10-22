@@ -1,0 +1,57 @@
+id: sulmmpgyjb
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-22
+    status: open
+    reviewed: 2026-10-22
+    critic_issues: 12 found, 10 addressed, 2 dismissed
+    revised: Split into eight tasks, made stdin input explicit, set numeric budgets, and added the skill rule disposition, init atomicity, per-task doc criteria and a local-build eval.
+    title: "Plan: Prime as the single Agentera entry"
+  what: Make prime the one entry for agents and their users. Bare `npx agentera@next` runs prime. Prime serves a short operating manual, accepts the user's request through an explicit stdin input, and starts deterministic routes in the same call. A fresh repository gets an init preview, and after approval init prepares state and hands off to vision. The shared skill shrinks to a three-row pointer table and one stop rule. Budgets and a cold-agent eval guard the result.
+  why: Decision vlgaofobpn fixes this entry contract. The skill has drifted to 181 lines. Bare `npx agentera@next` prints help with no next step. Bare prime spends its budget on field lists and fails in large projects. A fresh repository cannot start vision. New users and sessions need one obvious first step.
+  constraints: "Firm decisions are hard constraints: vlgaofobpn (entry contract), kicksvpwep (JSON for operational output; text only for help, version and guidance), mpulyomlyl (the hybrid route contract and receipt stay as they are), nksvqmnevm and imumkmffwh (the shared skill plus the CLI are the only integration surface), czkquqhuwm (thin skill, CLI serves instructions). Natural-language routing after semantic_required keeps today's receipt until TODO pzicyatkvi decides it; the route contract and its corpus do not change. Request text never travels in argv, and neither the bare command nor bare prime ever reads stdin. Nothing writes project files without a preview and explicit approval; approval is a rule the manual states, not something the CLI can enforce against an agent that passes `--yes`. Raising a declared budget needs the user's approval with measurements. Versions stay at 3.0.0. No push, tag or publish without explicit user authorization. Each task updates the docs, changelog and command inventories its behavior touches. Tests: one passing and one failing case per testable unit unless a task states otherwise."
+  design: "Work runs in three phases. Phase one reshapes prime: it stops failing on large projects and sheds low-value fields, gains the manual, then routes a request in the same call, each step measured against the last. Prime reuses the existing route resolver and returns its results unchanged; prime is a carrier of that result, not a second contract. Phase two changes the front doors: the bare command and help, then the init command and the gate that lets an initialized project start vision, then the fresh-project next step and doctor. Phase three removes the old host-side text: every rule in the skill gets a recorded destination before the skill shrinks, and the docs move with it. The eval runs last against the locally built package. Known risk: the manual reaches only sessions that start with prime; the skill tells a host to rerun prime after context loss."
+  overall_acceptance: GIVEN a fresh git repository and an agent whose only Agentera context is the installed skill WHEN the user asks it to set up Agentera THEN the agent reaches an init preview, applies init only after the user approves, and hands off to vision without other help. GIVEN an existing project WHEN a new session starts with bare, direct or curated-phrase requests THEN each takes one CLI call, and a natural-language request takes three. GIVEN the shipped skill, bare prime, prime with a routed capsule, and help WHEN measured THEN each stays within its declared budget.
+  scope:
+    included:
+      - Bare prime staying within budget in large projects (TODO krqhlpjexq) and trimming low-value fields
+      - A bare prime operating manual that also replaces the separate prime guidance text
+      - Removal of the manual's recovery and discovery text from capability capsules
+      - Explicit stdin request input for prime, with in-call routing and capsule startup for deterministic routes
+      - Bare `npx agentera@next` running prime, and help limited to agent and user commands
+      - "`agentera init`: preview by default, `--yes` to apply, a second allowed initializer next to plan creation"
+      - The fresh-project gate, the next step after init, and doctor's fresh status (TODO kkfomcugga)
+      - Shared skill reduced to frontmatter, a three-row pointer table and the stop rule, with a rule-by-rule disposition
+      - The entry docs README Get started, UPGRADE.md, docs/cli-coverage-contract.md, references/cli/routing-model.md, references/cli/vocabulary.md and packages/cli/README.md
+      - A calls-per-entry-path contract check and a cold-agent eval against the local build
+    excluded:
+      - Changes to route request, route receipt, the route contract file, its version or its frozen corpus (TODO pzicyatkvi)
+      - Host-side classification of natural-language requests
+      - Reducing capability capsule size
+      - Suggesting unused capabilities in status (the rest of TODO lvxezpcpvv)
+      - Version bumps, publication, tags and pushes
+    deferred:
+      - Natural-language routing redesign, after TODO pzicyatkvi is decided
+      - Capsule size budgets below today's per-capability limits
+  unknowns:
+    - question: Do a manual of at most 2,500 bytes and the orientation fit the 12,000-byte and 3,000-token bare prime budget after trimming, in this repository, a fresh repository and the large-attention fixture?
+      affects_task: 2
+      resolve_by: Measure after task 1's trimming with the drafted manual. If it does not fit, stop and ask the user to approve a budget change with the measurements.
+    - question: Does a project holding only the state marker pass entity validation and every state reader, and does a later vision write keep it readable?
+      affects_task: 5
+      resolve_by: Probe a marker-only project with the existing readers before building init. If it fails, init writes the smallest state that passes, and the preview lists exactly that.
+    - question: Is a semantic_required response enough for a cold agent to build a valid receipt, including clarify and compound requests, with no receipt rules in the skill?
+      affects_task: 7
+      resolve_by: Before removing the receipt rules, feed one clarify and one compound request to a cold agent with only the response. If it fails, the manual keeps a short receipt rule.
+    - question: Can a supported runtime run the cold-agent scenario headless against the locally built package, without changing the shipped skill text?
+      affects_task: 8
+      resolve_by: Try one supported runtime with a local package override first. If none works, record the gap; the full eval then cannot qualify before an authorized push.
+  rejected:
+    - issue: Require a new decision before any budget increase.
+      rationale: Decision vlgaofobpn already allows a budget revision backed by evidence. The plan instead requires trimming first and the user's explicit approval with measurements, which keeps the hard limit without a second deliberation.
+    - issue: The scripted calls-per-path session is circular because the script encodes the expected calls.
+      rationale: It is a contract check on the documented paths and the CLI responses, by design. Agent behavior is tested by the cold-agent eval, which asserts on the real tool-call transcript.
+  surprises:
+    []

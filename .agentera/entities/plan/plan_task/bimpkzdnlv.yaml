@@ -1,0 +1,12 @@
+id: bimpkzdnlv
+artifact: plan
+record:
+  name: Check calls per entry path and run a cold-agent eval
+  depends_on:
+    - fqnnxvyhtz
+  status: pending
+  acceptance:
+    - GIVEN the skill's documented paths in a v3 project WHEN the contract check sends bare, direct, curated-phrase and natural-language requests THEN they need one, one, one and three CLI calls, and the check fails when any path needs more.
+    - GIVEN a fresh git repository, one supported runtime, the locally built package and only the installed skill WHEN the agent is asked to set up Agentera, three times THEN at least two runs reach the init preview, apply init only after a user approval turn in the transcript, and hand off to vision with no other help.
+    - GIVEN the cold-agent eval WHEN it runs THEN it is an opt-in lane outside routine gates, and its result is recorded with the runtime, its version and the package build used.
+  plan: sulmmpgyjb

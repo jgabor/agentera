@@ -1,0 +1,12 @@
+id: otodzeskmx
+artifact: plan
+record:
+  name: Keep bare prime within budget and trim low-value fields
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN a fixture project whose attention lists exceed the brief budget WHEN bare prime runs THEN it exits 0 within budget and names each omission with a continuation command, and never reports an unsupported target.
+    - GIVEN bare prime in this repository, a fresh repository and that fixture WHEN measured THEN each stays within the declared byte and token budgets with measurable headroom recorded for the manual.
+    - GIVEN a removed or renamed bare prime field WHEN the change ships THEN the changelog records it as a version break and the compatibility fixtures change deliberately.
+  plan: sulmmpgyjb

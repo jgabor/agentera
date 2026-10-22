@@ -1,0 +1,14 @@
+id: wwfeyocaie
+artifact: plan
+record:
+  name: Add init as a second initializer with preview and approval
+  depends_on:
+    - equxceodkf
+  status: pending
+  acceptance:
+    - GIVEN a fresh git repository WHEN `agentera init` runs without `--yes` THEN it returns JSON listing every file init would write and writes nothing; WHEN `agentera init --yes` runs THEN it writes exactly those files, exits 0, and the project becomes initialized v3 state.
+    - GIVEN an already initialized, partial, corrupt or non-git directory WHEN `agentera init --yes` runs THEN it refuses with a structured error and scoped recovery and writes nothing.
+    - GIVEN init and plan creation racing in one fresh repository WHEN both run THEN the result is one complete initialized state and at most one refusal, never partial state, and plan creation still initializes a fresh repository alone.
+    - GIVEN an initialized project with no vision WHEN vision starts, self-checks and saves THEN each step succeeds and status and plan creation still read the project afterwards.
+    - GIVEN the state authority, upgrade guide, operation details, gate errors and recovery text WHEN read THEN they name init and plan creation as the two initializers, and help, schema, activation and coverage views list init.
+  plan: sulmmpgyjb
