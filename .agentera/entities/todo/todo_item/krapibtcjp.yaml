@@ -20,10 +20,3 @@ record:
       severity: annoying
       status: open
       order: 4
-    create_batch:
-      effect_sha256: 6dae0e74bc792ed3182548d055849a9098896ae23de8c4240a3ef9284b860bd5
-      input_sha256: a0eff6f1b60bb90db8f62d0c14b4acee42e00904958fbfc70e359d7357f1831e
-      local_refs:
-        coverage-contract-historical: osazlarklk
-        dead-evidence-ignore: cewzpiysiw
-        lint-diagnostic-count: krapibtcjp

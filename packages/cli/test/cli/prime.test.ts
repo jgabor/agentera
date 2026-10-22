@@ -116,15 +116,17 @@ describe("cli prime", () => {
     expect(capture((io) => cmdPrime({ dashboard: true, guidance: true }, io)).rc).toBe(2);
   });
 
-  it("emits a default JSON orientation payload (bespoke contexts null)", () => {
+  it("emits a default JSON orientation payload without inactive bespoke contexts", () => {
     const { rc, out, err } = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
     expect(rc).toBe(0);
     const payload = JSON.parse(out);
     expect(payload.command).toBe("prime");
     expect(payload.outcome).toBe("blocked");
-    expect(payload.orchestration_context).toBeNull();
-    expect(payload.closeout_context).toBeNull();
-    expect(payload.execution_context).toBeNull();
+    for (const field of ["orchestration_context", "closeout_context", "evidence_context", "benchmark_context", "execution_context"]) {
+      expect(payload).not.toHaveProperty(field);
+      const selected = JSON.parse(capture((io) => cmdPrime({ command: "prime", format: "json", fields: field }, io)).out);
+      expect(selected[field]).toBeNull();
+    }
     expect(payload.source_contract.capability_context).not.toBeNull();
     expect(typeof payload.source_contract.capability_context).toBe("object");
     expect(payload.source_contract.capability_context.capability).toBe("status");
@@ -137,9 +139,12 @@ describe("cli prime", () => {
     });
     expect(payload.startup).not.toHaveProperty("write_contract");
     expect(payload.brief.projection).toBe("ok");
-    expect(payload.source_contract.fields).toContain("todo");
-    expect(payload.source_contract.fields).not.toContain("issues");
-    expect(payload.source_contract.fields).toContain("next_action");
+    // The bare brief does not repeat the field list; explicit selection does.
+    expect(payload.source_contract).not.toHaveProperty("fields");
+    const selectedFields = JSON.parse(capture((io) => cmdPrime({ command: "prime", format: "json", fields: "source_contract" }, io)).out).source_contract.fields;
+    expect(selectedFields).toContain("todo");
+    expect(selectedFields).not.toContain("issues");
+    expect(selectedFields).toContain("next_action");
     expect(payload.todo).toEqual(
       expect.objectContaining({
         critical: expect.any(Number),
@@ -187,8 +192,12 @@ describe("cli prime", () => {
     expect(typeof nextAction.reason).toBe("string");
     expect(typeof nextAction.phase).toBe("string");
     expect((nextAction.phase as string).length).toBeGreaterThan(0);
-    const alternatives = nextAction.alternatives as Array<Record<string, unknown>>;
-    expect(Array.isArray(alternatives)).toBe(true);
+    // The bare brief routes to the recommended action and names the status
+    // startup for the ranked alternatives; explicit selection keeps them.
+    expect(nextAction.alternatives).toEqual([]);
+    expect(JSON.parse(out).brief.omitted["next_action.alternatives"]).toBe("npx -y agentera@next prime --context status");
+    const selected = JSON.parse(capture((io) => cmdPrime({ command: "prime", format: "json", fields: "next_action" }, io)).out).next_action;
+    const alternatives = selected.alternatives as Array<Record<string, unknown>>;
     expect(alternatives.length).toBeGreaterThan(0);
     for (const alt of alternatives) {
       expect(typeof alt.object).toBe("string");
@@ -821,21 +830,14 @@ describe("orkestrera orchestration_context task_queue", () => {
       },
     });
     for (const artifact of ["progress", "decisions", "health"]) {
-      expect(payload.history[artifact]).toMatchObject({
+      expect(payload.history[artifact]).toEqual({
         status: "degraded",
         compatibility: "mixed",
-        counts: { total: 2, returned: 0, remaining: 2, full: 1, summary: 1 },
+        counts: { total: 2, full: 1, summary: 1 },
         caveats: [expect.stringContaining("incomplete historical evidence")],
         degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },
-        retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20`,
-          get: `npx -y agentera@next state ${artifact} get --id ID`,
-        },
-        source_contract: {
-          authority: "references/artifacts/state-storage-authority.yaml",
-          detail: "mixed",
-        },
       });
+      expect(payload.brief.omitted[`history.${artifact}.entries`]).toBe(`npx -y agentera@next state ${artifact} list --limit 20`);
     }
     expect(payload.decision_attention).toMatchObject({
       entries: [
@@ -843,7 +845,6 @@ describe("orkestrera orchestration_context task_queue", () => {
           id: "ssssssssss",
           title: "Compacted decision evidence",
           state: "open",
-          review_needed: true,
         },
       ],
     });

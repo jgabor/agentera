@@ -46,7 +46,7 @@ export class BriefBudgetError extends Error {
   readonly minimumBytes: number;
 
   constructor(budgetBytes: number, minimumBytes: number) {
-    super(`brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); increase the budget or use prime --context status`);
+    super(`brief budget ${budgetBytes} bytes cannot contain the minimum routing envelope (${minimumBytes} bytes); use prime --context status`);
     this.name = "BriefBudgetError";
     this.budgetBytes = budgetBytes;
     this.minimumBytes = minimumBytes;

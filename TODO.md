@@ -10,7 +10,6 @@
 ## ⇉ Degraded
 
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
-- [ ] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
 - [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
 - [ ] [id:bbfumjviwe] [fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch.
 
@@ -231,3 +230,4 @@
 - [x] [id:khhotqvxei] [refactor] Make usage analytics output stdout-only
 - [x] [id:mvmewmkkri] [test:3.0.0] Find why native-hook spawns are slow in the main checkout under lane load
 - [x] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
+- [x] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists

@@ -66,11 +66,7 @@ export function createPrimeBudgetFixture(repoRoot, temporaryRoot) {
   const registry = fs.readFileSync(path.join(repoRoot, "registry.json"), "utf8");
   fs.writeFileSync(path.join(appHome, "registry.json"), registry);
   fs.writeFileSync(path.join(appHome, ".agentera-npx-bundle.json"), `${JSON.stringify({ kind: "agentera-npx-bundle", suiteVersion: JSON.parse(registry).skills[0].version }, null, 2)}\n`);
-  const writeEntity = (artifact, boundary, id, record) => {
-    const directory = path.join(project, ".agentera/entities", artifact, boundary);
-    fs.mkdirSync(directory, { recursive: true });
-    fs.writeFileSync(path.join(directory, `${id}.yaml`), `${JSON.stringify({ id, artifact, record }, null, 2)}\n`);
-  };
+  const writeEntity = (artifact, boundary, id, record) => writeFixtureEntity(project, artifact, boundary, id, record);
   fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
   fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
   writeEntity("plan", "plan", "abcdefghij", {
@@ -95,6 +91,79 @@ export function createPrimeBudgetFixture(repoRoot, temporaryRoot) {
     publication_order: 1,
   });
   return { appHome, home, profile, project };
+}
+
+function writeFixtureEntity(project, artifact, boundary, id, record) {
+  const directory = path.join(project, ".agentera/entities", artifact, boundary);
+  fs.mkdirSync(directory, { recursive: true });
+  fs.writeFileSync(path.join(directory, `${id}.yaml`), `${JSON.stringify({ id, artifact, record }, null, 2)}\n`);
+}
+
+function fixtureId(prefix, index) {
+  return `${prefix}${String.fromCharCode(97 + Math.floor(index / 26))}${String.fromCharCode(97 + (index % 26))}`;
+}
+
+/** The bounded fixture plus state whose attention and decision lists are long
+ *  enough that projecting every list at full prose fidelity exceeds the brief
+ *  budget: a stale audit, many review-needed decisions, long task and progress
+ *  prose, and a large docs index. */
+export function createPrimeLargeAttentionFixture(repoRoot, temporaryRoot) {
+  const roots = createPrimeBudgetFixture(repoRoot, temporaryRoot);
+  const writeEntity = (artifact, boundary, id, record) => writeFixtureEntity(roots.project, artifact, boundary, id, record);
+  const prose = (subject, words) => `${subject}: ${"bounded routing evidence keeps every continuation exact ".repeat(words).trim()}`;
+  writeEntity("plan", "plan", "abcdefghij", {
+    header: { level: "full", created: "2026-09-04", status: "open", title: prose("Large attention plan", 6) },
+    what: "Bound Prime routing.",
+    why: "Avoid live state.",
+    scope: { included: ["budget"], excluded: ["live state"] },
+  });
+  const dependencies = Array.from({ length: 6 }, (_, index) => fixtureId("dependsx", index));
+  for (const id of dependencies) {
+    writeEntity("plan", "plan_task", id, { plan: "abcdefghij", name: prose(`Dependency ${id}`, 8), status: "complete", depends_on: [], acceptance: ["Done."] });
+  }
+  writeEntity("plan", "plan_task", "bcdefghijk", {
+    plan: "abcdefghij",
+    name: prose("Verify Prime", 8),
+    status: "pending",
+    depends_on: dependencies,
+    acceptance: Array.from({ length: 6 }, (_, index) => prose(`Criterion ${index + 1}`, 8)),
+  });
+  writeEntity("progress", "progress_cycle", "cdefghijkl", {
+    timestamp: "2026-09-04 12:00",
+    type: "test",
+    phase: "build",
+    what: prose("Seed Prime evidence", 8),
+    context: { intent: "Fixture." },
+    next: prose("Verify Prime", 8),
+    publication_order: 1,
+  });
+  for (let index = 0; index < 12; index += 1) {
+    writeEntity("decisions", "decision", fixtureId("decision", index), {
+      date: "2026-09-04",
+      question: prose(`Decision ${index + 1}`, 8),
+      context: "Fixture.",
+      alternatives: [{ name: "Keep the route bounded.", status: "chosen" }],
+      choice: "Keep the route bounded.",
+      reasoning: "Fixture.",
+      confidence: "firm",
+    });
+  }
+  writeEntity("health", "health_audit", "healthxxaa", {
+    date: "2026-01-04",
+    dimensions: ["artifact_freshness"],
+    findings_summary: { critical: 2, warning: 4, info: 1, filtered_by_confidence: 0 },
+    trajectory: prose("degrading", 8),
+    grades: { artifact_freshness: "D" },
+  });
+  for (let index = 0; index < 40; index += 1) {
+    writeEntity("docs", "documentation_inventory_entry", fixtureId("docsxxxx", index), {
+      document: prose(`Document ${index + 1}`, 2),
+      path: `docs/${"nested/".repeat(8)}document-${index + 1}.md`,
+      last_updated: "2026-09-04",
+      status: "stale",
+    });
+  }
+  return roots;
 }
 
 export function runPrimeBudget(repoRoot = defaultRepoRoot) {

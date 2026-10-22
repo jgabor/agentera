@@ -298,7 +298,9 @@ describe("final lifecycle protocol", () => {
     });
     entity(root, "objective", "objective", "zzzzzzzzzc", objectiveRecord("active", "2020-01-01", "Older active objective"));
 
-    const result = capture(root, ["prime", "--format", "json"]);
+    // Ranked alternatives are not repeated in the bare brief; explicit
+    // selection returns the full readiness cascade.
+    const result = capture(root, ["prime", "--format", "json", "--fields", "plan,state_presence,next_action"]);
     expect(result.rc, result.out).toBe(0);
     const orientation = JSON.parse(result.out);
     expect(orientation).toMatchObject({
@@ -347,7 +349,6 @@ describe("final lifecycle protocol", () => {
     const orientation = JSON.parse(prime.out);
     expect(orientation.plan).toMatchObject({
       total: 21,
-      task_count: 21,
       first_pending: {
         id: readyId,
         artifact: "plan",

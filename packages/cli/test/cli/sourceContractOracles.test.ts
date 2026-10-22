@@ -17,7 +17,6 @@ interface PrimeCommandSpec {
   sourceContractLocation: string;
   description: string;
   requiredTopLevelKeys: string[];
-  fieldsValueType: "array<string>";
   renderValueType: "string";
   renderSubstring: string;
   accessValueType: "string";

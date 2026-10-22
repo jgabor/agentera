@@ -99,14 +99,16 @@ describe("prime runtime compatibility boundary", () => {
   it("keeps inactive conditional fields out of the default briefing", () => {
     const { payload } = primePayload();
     expect(payload).toHaveProperty("state_presence");
-    for (const field of ["docs", "objective"]) {
+    for (const field of ["docs", "objective", "orchestration_context", "closeout_context", "evidence_context", "benchmark_context", "execution_context"]) {
       expect(payload).not.toHaveProperty(field);
     }
   });
 
   it("uses one canonical field set for source_contract and schema discovery", () => {
-    const { payload } = primePayload();
-    const sourceContract = payload.source_contract as Record<string, unknown>;
+    // The bare brief does not repeat the field list; explicit selection and
+    // schema discovery both carry the same canonical set.
+    expect(primePayload().payload.source_contract).not.toHaveProperty("fields");
+    const sourceContract = primePayload("source_contract").payload.source_contract as Record<string, unknown>;
     expect([...(sourceContract.fields as string[])].sort()).toEqual([...PRIME_STRUCTURED_FIELDS].sort());
 
     const schema = buildSchemaPayload("schema") as Record<string, unknown>;

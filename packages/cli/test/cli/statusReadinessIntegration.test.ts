@@ -166,7 +166,12 @@ describe("status TODO readiness integration", () => {
       retrieval: { exact: "npx -y agentera@next state todo get --id aaaaaaaaaa" },
     };
     expect(json.payload!.next_action).toMatchObject(expected);
-    expect(host.payload!.capability_context.context.status_context.next_action).toEqual(json.payload!.next_action);
+    // The bare brief routes to the recommendation only and names status for
+    // the ranked alternatives; the recommendation fields stay byte-exact.
+    const { alternatives, ...recommendation } = host.payload!.capability_context.context.status_context.next_action;
+    expect(alternatives.length).toBeGreaterThan(0);
+    expect(json.payload!.next_action).toEqual({ ...recommendation, alternatives: [] });
+    expect(json.payload!.brief.omitted["next_action.alternatives"]).toBe("npx -y agentera@next prime --context status");
   });
 
   it("projects blocked recovery without selecting an implementation destination", () => {

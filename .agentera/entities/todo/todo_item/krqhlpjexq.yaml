@@ -13,12 +13,16 @@ record:
     - GIVEN the same fixture WHEN `prime --context status` runs THEN its output is unchanged by the fix.
   release_blocker: false
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists"
+      status: resolved
+      order: 171
       severity: degraded
-      status: open
-      order: 2
+  lifecycle:
+    operation: resolve
+    reason: Bare prime now bounds every list itself and stays within its brief budget in large-attention projects, naming each omission in brief.omitted; an unfittable brief reports brief_output_budget, not unsupported_target. Status startup output is unchanged.
+    date: 2026-10-22

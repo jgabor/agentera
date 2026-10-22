@@ -540,19 +540,14 @@ describe("summary entity ordinary reads", () => {
     expect(fullPrime.rc, fullPrime.err || fullPrime.out).toBe(0);
     const fullPayload = JSON.parse(fullPrime.out);
     for (const artifact of ["progress", "decisions", "health"]) {
-      expect(fullPayload.history[artifact]).toMatchObject({
+      // The brief keeps history counts; the list command that returns the
+      // omitted entries is named in brief.omitted.
+      expect(fullPayload.history[artifact]).toEqual({
         status: "ok",
         compatibility: "current",
-        counts: { total: 1, returned: 0, remaining: 1, full: 1, summary: 0 },
-        retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20`,
-          get: `npx -y agentera@next state ${artifact} get --id ID`,
-        },
-        source_contract: {
-          authority: "references/artifacts/state-storage-authority.yaml",
-          detail: "full",
-        },
+        counts: { total: 1, full: 1, summary: 0 },
       });
+      expect(fullPayload.brief.omitted[`history.${artifact}.entries`]).toBe(`npx -y agentera@next state ${artifact} list --limit 20`);
       expect(fullPayload.history[artifact]).not.toHaveProperty("caveats");
       expect(fullPayload.history[artifact]).not.toHaveProperty("degraded_history");
     }
@@ -586,27 +581,20 @@ describe("summary entity ordinary reads", () => {
       expect(history).toMatchObject({
         status: "degraded",
         compatibility: "degraded",
-        detail_availability: "omitted",
-        counts: { total: 1, returned: 0, remaining: 1, full: 0, summary: 1 },
+        counts: { total: 1, full: 0, summary: 1 },
         caveats: [expect.stringContaining("incomplete historical evidence")],
         degraded_history: {
           summary_count: 1,
           returned_count: 0,
           omitted_count: 1,
         },
-        retrieval: {
-          list: `npx -y agentera@next state ${artifact} list --limit 20`,
-          get: `npx -y agentera@next state ${artifact} get --id ID`,
-        },
-        source_contract: {
-          authority: "references/artifacts/state-storage-authority.yaml",
-          detail: "mixed",
-        },
       });
       expect(history).not.toHaveProperty("entries");
+      const list = compactedPayload.brief.omitted[`history.${artifact}.entries`];
+      expect(list).toBe(`npx -y agentera@next state ${artifact} list --limit 20`);
       const recovery = cli(
         compactedRoot,
-        String(history.retrieval.list)
+        String(list)
           .replace(/^npx -y agentera@next /, "")
           .split(" "),
       );

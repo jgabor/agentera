@@ -23,4 +23,4 @@ record:
       description: "[fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch."
       severity: degraded
       status: open
-      order: 4
+      order: 3

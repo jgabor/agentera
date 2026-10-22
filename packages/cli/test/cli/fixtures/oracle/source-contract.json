@@ -43,16 +43,14 @@
       "argv": ["prime", "--format", "json"],
       "exitCode": 0,
       "sourceContractLocation": "payload.source_contract",
-      "description": "Top-level `source_contract` for `agentera prime` (no `--context`) holds orientation metadata and the status capability pointer. The separate `startup` aggregate owns the only bounded availability projection, aggregate outcome, read policy, and schema discovery pointer. Writer payloads are never emitted by prime.",
-      "requiredTopLevelKeys": ["fields", "render", "access", "empty_state", "capability_context"],
+      "description": "Top-level `source_contract` for `agentera prime` (no `--context`) holds orientation metadata and the status capability pointer. The separate `startup` aggregate owns the only bounded availability projection, aggregate outcome, read policy, and schema discovery pointer. Writer payloads are never emitted by prime. Intentional 3.0.0 version break: the bare brief no longer repeats the structured field list (`fields`); `agentera schema` (`structured_fields`) and `prime --fields source_contract` carry it.",
+      "requiredTopLevelKeys": ["render", "access", "empty_state", "capability_context"],
       "fieldTypes": {
-        "fields": "array<string>",
         "render": "string",
         "access": "string",
         "empty_state": "string",
         "capability_context": "object"
       },
-      "fieldsValueType": "array<string>",
       "renderValueType": "string",
       "renderSubstring": "README-style",
       "accessValueType": "string",

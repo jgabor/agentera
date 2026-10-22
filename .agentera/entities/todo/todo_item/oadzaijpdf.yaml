@@ -20,4 +20,4 @@ record:
       description: "[fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded"
       severity: degraded
       status: open
-      order: 3
+      order: 2

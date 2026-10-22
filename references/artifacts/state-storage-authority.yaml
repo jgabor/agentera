@@ -2602,15 +2602,24 @@ budgets:
       Omit optional historical detail and retain counts, actionable IDs,
       compatibility, source_contract, and exact get/list command pointers. The
       caller must be able to distinguish omitted detail from unavailable detail.
-      The bare default briefing is a bounded decision brief: every required
+      The bare default briefing is a bounded decision brief: every active
       top-level field stays present (content projected to routing-essential
-      leaves), missing versus present-but-empty stays distinguishable through
-      state_presence, and each omitted rich-state family carries a named
-      authoritative recovery command. When even the projected brief exceeds the
-      budget, emit a measured bounded degraded envelope that keeps command,
-      status, mode, state_presence, a brief source_contract, and the
-      byte-budget error with a recovery command; never emit an over-budget
-      payload. Diagnostics are measured on stderr separately.
+      leaves), inactive conditional fields and null bespoke contexts are
+      omitted but stay selectable through --fields, missing versus
+      present-but-empty stays distinguishable through state_presence, and
+      every list is bounded by construction. brief.omitted maps each field path
+      whose detail the brief omits or cuts to its exact continuation command.
+      Each history family keeps status, compatibility, counts, and caveats in
+      history; its list command is named in brief.omitted, and storage pointers
+      are not repeated. The brief does
+      not repeat the structured field list, which schema owns. When even the
+      projected brief exceeds the budget, emit a measured bounded degraded
+      envelope that keeps command, status, mode, state_presence, a brief
+      source_contract, and the byte-budget error with a recovery command; never
+      emit an over-budget payload or shorten a command or identity. If no
+      envelope fits, prime reports brief_output_budget with the status
+      continuation, never an input error. Diagnostics are measured on stderr
+      separately.
 validation:
   authority: this file plus the referenced JSON surface manifest
   drift_rule: tests fail if manifest IDs or byte values disagree with this contract

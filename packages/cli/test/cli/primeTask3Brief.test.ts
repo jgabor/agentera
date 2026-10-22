@@ -251,21 +251,18 @@ describe("Task 3 AC1: bare prime reports routing signals across project states",
 });
 
 describe("Task 3 AC4: omitted rich state has named recovery without raw artifact access", () => {
-  it("every omitted_rich_state entry has a named recovery command (not a raw artifact read)", () => {
+  it("every brief.omitted entry maps a field path to a named recovery command (not a raw artifact read)", () => {
     returningFixture();
     const { payload } = capturePrime();
     const brief = payload.brief as Record<string, unknown>;
     expect(brief.projection, "ok brief for returning fixture").toBe("ok");
 
-    const omitted = brief.omitted_rich_state as Array<Record<string, unknown>>;
-    expect(Array.isArray(omitted), "omitted_rich_state is an array").toBe(true);
-    expect(omitted.length, "omitted_rich_state has ≥1 entry").toBeGreaterThan(0);
+    const omitted = brief.omitted as Record<string, unknown>;
+    expect(Object.keys(omitted).length, "brief.omitted names at least one omission").toBeGreaterThan(0);
 
-    for (const entry of omitted) {
-      expect(typeof entry.field, "entry.field is a string").toBe("string");
-      expect(typeof entry.reason, "entry.reason is a string").toBe("string");
-      const recovery = entry.recovery as string;
-      expect(typeof recovery, "entry.recovery is a string").toBe("string");
+    for (const [field, recovery] of Object.entries(omitted) as Array<[string, string]>) {
+      expect(field, "omission key is a dotted field path").toMatch(/^[a-z_]+(\.[a-z_]+)*$/);
+      expect(typeof recovery, "recovery is a string").toBe("string");
       // Recovery must be a named agentera command, not a raw file path read
       expect(recovery.startsWith("npx -y agentera@next "), "recovery starts with the pre-cutover development channel").toBe(true);
       expect(recovery, "recovery is NOT a raw artifact read (no .agentera/ path)").not.toMatch(/\.agentera\//);
@@ -308,9 +305,16 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         phase: "build",
         alternatives: [],
       },
+      // Prose that the degraded tiers shorten, so a fallback can be smaller
+      // than the normal projection and the 32-point tier is reachable.
+      progress: { exists: true, latest: { what: "p".repeat(200), next: "p".repeat(200) } },
+      health: { exists: true, trajectory: "p".repeat(200) },
+      plan: { exists: true, title: "p".repeat(200) },
+      project_integration: { recommendation: "stay", message: "p".repeat(200) },
+      shared_skill: { name: "canonical_skill", status: "pass", message: "p".repeat(200) },
     };
     let irreducible = false;
-    for (const budgetBytes of [12000, 2000, 1500, 1000, 900, 800, 700]) {
+    for (const budgetBytes of [12000, 2000, 1725, 1500, 1000]) {
       try {
         const result = briefOrientationPayload(payload, { budgetBytes });
         const action = result.next_action as Record<string, string>;
@@ -352,60 +356,44 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(bytes, "ok brief is within budget").toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
   });
 
-  it("keeps readable docs summaries without claiming omitted records are full detail", () => {
+  it("keeps docs to a summary and names the docs list for omitted entries", () => {
     returningFixture();
     const { payload } = capturePrime();
-    for (const readable of [
-      {
-        text: "Packaging guide",
-        source: "record.document",
-        availability: "included",
-        metadata: { status: "current" },
-        detail_availability: null,
+    const result = briefOrientationPayload({
+      ...payload,
+      docs: {
+        exists: true,
+        status: "summary_only",
+        indexed_documents: 1,
+        entries: [{ id: "abcdefghij", artifact: "docs", retrieval: { get: "agentera state docs get --id abcdefghij" } }],
       },
-      undefined,
-    ]) {
-      const result = briefOrientationPayload({
-        ...payload,
-        docs: {
-          exists: true,
-          status: "summary_only",
-          indexed_documents: 1,
-          entries: [
-            {
-              id: "abcdefghij",
-              artifact: "docs",
-              ...(readable ? { readable } : {}),
-              retrieval: { get: "agentera state docs get --id abcdefghij" },
-            },
-          ],
-        },
-      }) as any;
-      expect(result.docs.source_contract.detail_availability).toBe("summary");
-      expect(result.docs.entries[0].record).toBeUndefined();
-      expect(result.docs.entries[0].readable).toEqual(readable);
-      expect(result.docs.entries[0].retrieval.get).toContain("state docs get --id abcdefghij");
-      expect(briefUtf8Bytes(result)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
-    }
+    }) as any;
+    expect(result.docs).toEqual({ exists: true, status: "summary_only", indexed_documents: 1 });
+    expect(result.brief.omitted["docs.entries"]).toBe("npx -y agentera@next state docs list");
+    expect(briefUtf8Bytes(result)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
+
+    const empty = briefOrientationPayload({ ...payload, docs: { exists: false, status: "missing", indexed_documents: 0, entries: [] } }) as any;
+    expect(empty.brief.omitted).not.toHaveProperty("docs.entries");
   });
 
   it("briefOrientationPayload returns projection=degraded when projected brief exceeds budget", () => {
-    // Use a real returning-fixture payload with a reduced budget so the
-    // projected brief (~9475 bytes) exceeds it, forcing the degraded envelope.
-    // The budget sits between the degraded envelope size (~5165 bytes) and the
-    // full projected brief, so the envelope fits within the production budget.
+    // Use a real returning-fixture payload with a budget one byte below its
+    // projected brief, forcing the degraded envelope.
     returningFixture();
     const { payload } = capturePrime();
     const rawPayload = { ...payload } as Record<string, unknown>;
     delete rawPayload.brief;
-    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 9000 });
+    // A smaller budget can drop a digit from budget_utf8_bytes, so leave a
+    // margin that no digit change can close.
+    const budgetBytes = briefUtf8Bytes(briefOrientationPayload(rawPayload)) - 10;
+    const degraded = briefOrientationPayload(rawPayload, { budgetBytes });
     const brief = degraded.brief as Record<string, unknown>;
     expect(brief.projection, "reduced budget forces degraded").toBe("degraded");
-    expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(9000);
-    // The degraded envelope must satisfy the configured 7000-byte gate, not
-    // merely the production 12000-byte authority.
+    expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(budgetBytes);
+    // The degraded envelope must satisfy the configured gate, not merely the
+    // production 12000-byte authority.
     const bytes = briefUtf8Bytes(degraded);
-    expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(9000);
+    expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(budgetBytes);
     expect(brief.utf8_bytes, "degraded utf8_bytes matches exact output bytes").toBe(bytes);
     // The degraded envelope keeps routing-essential fields
     expect(degraded, "degraded keeps command").toHaveProperty("command");
@@ -423,6 +411,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const { payload } = capturePrime();
     const rawPayload = { ...payload } as Record<string, unknown>;
     delete rawPayload.brief;
+    const budgetBytes = briefUtf8Bytes(briefOrientationPayload(rawPayload)) - 10;
 
     let canonicalOut = "";
     let canonicalErr = "";
@@ -433,7 +422,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       undefined,
       (text) => (canonicalOut += text),
       (text) => (canonicalErr += text),
-      { bareBrief: true, briefBudgetBytes: 9000 },
+      { bareBrief: true, briefBudgetBytes: budgetBytes },
     );
     expect(canonicalRc).toBe(0);
     expect(canonicalErr).toBe("");
@@ -451,7 +440,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       "todo,issues",
       (text) => (rejectedOut += text),
       (text) => (rejectedErr += text),
-      { bareBrief: true, briefBudgetBytes: 9000 },
+      { bareBrief: true, briefBudgetBytes: budgetBytes },
     );
     expect(rejectedRc).toBe(2);
     expect(rejectedErr).toBe("");
@@ -641,34 +630,18 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     const docsRich = briefOrientationPayload({ ...rawPayload, docs }, { degradedMode: "status_routing" });
     const docsRichBytes = briefUtf8Bytes(docsRich);
     const projectedDocs = docsRich.docs as Record<string, any>;
-    expect((docsRich.brief as Record<string, unknown>).projection).toBe("degraded");
+    // Docs entries never enter the brief, so a docs-rich project stays in the
+    // normal projection with room to spare.
+    expect((docsRich.brief as Record<string, unknown>).projection).toBe("ok");
     expect(PRIME_BRIEF_MAX_UTF8_BYTES - docsRichBytes).toBeGreaterThanOrEqual(1_000);
-    expect(projectedDocs).toMatchObject({
+    expect(projectedDocs).toEqual({
       exists: true,
       status: "available",
       indexed_documents: 94,
-      counts: { total: 94, returned: 1, remaining: 93 },
       caveats: (docs as any).caveats,
-      source_contract: {
-        detail_availability: "summary",
-        retrieval: "npx -y agentera@next state docs list",
-      },
-      entries: [
-        {
-          id: "addddddddd",
-          artifact: "docs",
-          record: {
-            path: ".agentera/archive/documentation-inventory-01.md",
-            status: "stale",
-            caveats: ["This stale entry needs exact review before update."],
-          },
-          retrieval: { get: "agentera state docs get --id addddddddd" },
-        },
-      ],
     });
-    expect(projectedDocs.entries).toHaveLength(1);
-    expect(projectedDocs.entries[0]).not.toHaveProperty("provenance");
-    expect(JSON.stringify(docsRich)).not.toContain("dddddddddd");
+    expect((docsRich.brief as Record<string, any>).omitted["docs.entries"]).toBe("npx -y agentera@next state docs list");
+    expect(JSON.stringify(docsRich)).not.toContain("ddddddddd");
     expect((docs as any).entries).toHaveLength(20);
     for (const artifact of ["progress", "health"] as const) {
       const projected = docsRich[artifact] as Record<string, any>;
@@ -680,9 +653,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         caveats: [expect.stringContaining("summary history remains exact")],
       });
       expect(projected.degraded_history).not.toHaveProperty("retrieval");
-      for (const route of [`agentera state ${artifact} list --limit 20`, `agentera state ${artifact} get --id ID`]) {
-        expect(JSON.stringify(docsRich).split(route)).toHaveLength(2);
-      }
+      // The list route appears once, as the history continuation.
+      expect(JSON.stringify(docsRich).split(`agentera state ${artifact} list --limit 20`)).toHaveLength(2);
     }
 
     const longPath = `/tmp/${"nested/".repeat(350)}project`;
@@ -722,9 +694,10 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(pathPressured.app).not.toHaveProperty("sourceRoot");
     expect(pathPressured.shared_skill).not.toHaveProperty("path");
 
-    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: 8_100 });
+    const degradedBudget = briefUtf8Bytes(normal) - 10;
+    const degraded = briefOrientationPayload(rawPayload, { budgetBytes: degradedBudget });
     expect((degraded.brief as Record<string, unknown>).projection).toBe("degraded");
-    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(8_100);
+    expect(briefUtf8Bytes(degraded)).toBeLessThanOrEqual(degradedBudget);
 
     for (const payload of [normal, pathPressured, degraded]) {
       expect(payload.plan).toMatchObject({
@@ -745,7 +718,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         retrieval: { exact: "agentera state plan tasks get --id vvvvvvvvvv" },
       });
       expect(payload.history).toMatchObject({
-        progress: { counts: { total: 13, returned: 0, remaining: 13, full: 1, summary: 12 } },
+        progress: { counts: { total: 13, full: 1, summary: 12 } },
         decisions: {
           caveats: expect.arrayContaining([
             expect.objectContaining({
@@ -755,13 +728,13 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
               review_needed: true,
             }),
           ]),
-          source_contract: {
-            authority: "references/artifacts/state-storage-authority.yaml",
-            detail: "mixed",
-          },
         },
         health: { degraded_history: { summary_count: 12, omitted_count: 12 } },
       });
+      for (const artifact of ["progress", "decisions", "health"]) {
+        expect((payload.history as Record<string, any>)[artifact]).not.toHaveProperty("source_contract");
+        expect((payload.history as Record<string, any>)[artifact]).not.toHaveProperty("retrieval");
+      }
       expect(payload.progress).toMatchObject({
         status: "degraded_history",
         degraded_history: { summary_count: 12, returned_count: 0, omitted_count: 12 },
@@ -828,9 +801,8 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       available: { docs: false },
       absence: { docs: "missing docs mapping" },
     });
-    expect(payload.source_contract).toMatchObject({
-      fields: ["plan", "state_presence", "source_contract"],
-      capability_context: { fetch_command: "agentera prime --context status" },
+    expect(payload.source_contract).toEqual({
+      capability_context: { capability: "status", fetch_command: "agentera prime --context status", required_before_rendering: true },
     });
   });
 
@@ -884,19 +856,22 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
           progress: {
             counts: {
               total: expect.any(Number),
-              returned: expect.any(Number),
-              remaining: expect.any(Number),
               full: expect.any(Number),
               summary: expect.any(Number),
             },
-            retrieval: { list: expect.any(String), get: expect.any(String) },
           },
-          decisions: { retrieval: { list: expect.any(String), get: expect.any(String) } },
-          health: { retrieval: { list: expect.any(String), get: expect.any(String) } },
+          decisions: { counts: { total: expect.any(Number) } },
+          health: { counts: { total: expect.any(Number) } },
+        },
+        brief: {
+          omitted: {
+            "history.progress.entries": "npx -y agentera@next state progress list --limit 20",
+            "history.decisions.entries": "npx -y agentera@next state decisions list --limit 20",
+            "history.health.entries": "npx -y agentera@next state health list --limit 20",
+          },
         },
       });
       expect(["ok", "degraded"]).toContain((bare.payload.brief as Record<string, unknown>).projection);
-      expect((bare.payload.brief as Record<string, unknown>).path_diagnostics_recovery).toBe("npx -y agentera@next doctor");
       expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);
       outputs.push({ bytes: Buffer.byteLength(bare.out, "utf8"), payload: bare.payload });
     }
@@ -927,7 +902,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     ).toThrow(BriefBudgetError);
   });
 
-  it("keeps compact status routing inside the public budget and rejects the byte below it", () => {
+  it("keeps a fixed status-routing envelope inside the public budget and rejects a smaller budget", () => {
     const payload = {
       command: "prime",
       outcome: "ok",
@@ -943,17 +918,17 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       todo: {
         exists: true,
         total: 1,
-        // The previous compact metadata made this same minimum envelope 12,030
-        // bytes. Keep the payload fixed so prose growth cannot consume the gate.
+        // Keep the payload fixed so metadata growth cannot silently consume
+        // the gate: the envelope size below is pinned.
         items: [{ id: "vvvvvvvvvv", text: "x".repeat(11_145) }],
       },
     };
-    const compact = briefOrientationPayload(payload, {
+    const brief = briefOrientationPayload(payload, {
       budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES,
       degradedMode: "status_routing",
     });
-    const compactBytes = briefUtf8Bytes(compact);
-    expect(compact).toMatchObject({
+    const briefBytes = briefUtf8Bytes(brief);
+    expect(brief).toEqual({
       command: "prime",
       outcome: "ok",
       mode: "v3",
@@ -962,20 +937,17 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       todo: payload.todo,
       brief: {
         budget_utf8_bytes: PRIME_BRIEF_MAX_UTF8_BYTES,
-        projection: "degraded",
-        utf8_bytes: compactBytes,
-        error: {
-          class: "brief_output_budget",
-          message: "brief exceeds byte budget",
-          recovery: "Run `npx -y agentera@next prime --context status`.",
-        },
+        projection: "ok",
+        omitted: {},
+        utf8_bytes: briefBytes,
       },
     });
-    expect(compactBytes).toBe(11_906);
-    expect(PRIME_BRIEF_MAX_UTF8_BYTES - compactBytes).toBe(94);
+    expect(briefBytes).toBe(11_624);
+    // Every degraded tier repeats the same TODO payload and adds error
+    // metadata, so none fits where the normal projection does not.
     expect(() =>
       briefOrientationPayload(payload, {
-        budgetBytes: compactBytes - 1,
+        budgetBytes: briefBytes - 10,
         degradedMode: "status_routing",
       }),
     ).toThrow(BriefBudgetError);
@@ -1012,10 +984,13 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
         todo_reconciliation: reconciliation,
         availability: [],
       },
-      todo: { detail: "x".repeat(9_000) },
+      // Sized so the normal projection, which repeats the reconciliation in
+      // startup, exceeds the budget and the degraded envelope does not.
+      todo: { detail: "x".repeat(10_000) },
     };
 
     const compact = briefOrientationPayload(payload, { degradedMode: "status_routing" });
+    expect((compact.brief as Record<string, unknown>).projection).toBe("degraded");
     expect(compact.todo_reconciliation).toEqual(reconciliation);
     expect(compact.startup).not.toHaveProperty("todo_reconciliation");
     expect(briefUtf8Bytes(compact)).toBeLessThanOrEqual(PRIME_BRIEF_MAX_UTF8_BYTES);

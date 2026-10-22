@@ -7,6 +7,30 @@ import { StateRetrievalFailure } from "../../state/directRetrieval.js";
 import { emitStructured } from "../structured.js";
 import { BootstrapSourceMissingError } from "../../core/sourceRoot.js";
 import { classifyStartupError, emitStartupFailure } from "../startupFailure.js";
+import { BriefBudgetError } from "../commands/prime/briefByteBudget.js";
+import { preCutoverCommand } from "../preCutoverCommand.js";
+
+/** Bare prime takes no input, so an unfittable brief is an output failure,
+ *  not an input error. Status startup is the continuation. */
+function emitBriefBudgetFailure(error: BriefBudgetError, command: string, io: Io): number {
+  const output = io.out ?? ((text: string) => process.stdout.write(text));
+  emitStructured(
+    {
+      command,
+      outcome: "blocked",
+      error: {
+        class: "brief_output_budget",
+        message: error.message,
+        budget_utf8_bytes: error.budgetBytes,
+        minimum_utf8_bytes: error.minimumBytes,
+        recovery: `Run \`${preCutoverCommand("prime --context status")}\`.`,
+      },
+    },
+    "json",
+    output,
+  );
+  return 1;
+}
 
 function emitStateFailure(error: StateRetrievalFailure, format: string | undefined, io: Io): number {
   const output = io.out ?? ((text: string) => process.stdout.write(text));
@@ -171,6 +195,7 @@ export function runPrime(command: string, argv: string[], io: Io, _prog: string)
   } catch (exc) {
     if (exc instanceof StateRetrievalFailure) return emitStateFailure(exc, args.format, io);
     if (exc instanceof BootstrapSourceMissingError) return emitStartupFailure(io, classifyStartupError(exc), command);
+    if (exc instanceof BriefBudgetError) return emitBriefBudgetFailure(exc, command, io);
     return emitInvalidInput(io, {
       format: invalidInputFormat(),
       body: { class: "unsupported_target", message: (exc as Error).message },

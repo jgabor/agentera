@@ -4,9 +4,19 @@ record:
   name: Keep bare prime within budget and trim low-value fields
   depends_on:
     []
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a fixture project whose attention lists exceed the brief budget WHEN bare prime runs THEN it exits 0 within budget and names each omission with a continuation command, and never reports an unsupported target.
     - GIVEN bare prime in this repository, a fresh repository and that fixture WHEN measured THEN each stays within the declared byte and token budgets with measurable headroom recorded for the manual.
     - GIVEN a removed or renamed bare prime field WHEN the change ships THEN the changelog records it as a version break and the compatibility fixtures change deliberately.
   plan: sulmmpgyjb
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-otodzeskmx-1
+      source: "audit evaluator report 2026-10-22: 3/3 criteria PASS, 3 WARN (headroom not enforced by test, blocked envelope shape, removed next_action alternatives)"
+      recorded_at: 2026-10-22 16:54
+      writer_command: agentera state plan record-evaluation
