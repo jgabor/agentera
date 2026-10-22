@@ -127,7 +127,7 @@ describe("one-confirmation shared-skill startup offer", () => {
     const before = snapshot();
     const startup = capture(["prime", ...flags]);
     expect(startup.code, startup.out + startup.err).toBe(0);
-    expect(Buffer.byteLength(startup.out)).toBeLessThanOrEqual(flags.length ? 22500 : 12000);
+    expect(Buffer.byteLength(startup.out)).toBeLessThanOrEqual(flags.length ? 22500 : 16000);
     if (flags.length) expect(startup.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
     const offer = startup.payload.shared_skill.upgrade_offer;
     expect(offer).toMatchObject({

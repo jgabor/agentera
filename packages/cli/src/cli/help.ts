@@ -532,7 +532,7 @@ export function printPrimeHelp(): string {
     "  --fields FIELDS       Comma-separated field filter for startup JSON output",
     "",
     "Dashboard consumers must use `npx -y agentera@next prime --context status` and read capability_context.context.status_context.",
-    "JSON output uses bounded surfaces: bare prime is at most 12000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
+    "JSON output uses bounded surfaces: bare prime is at most 16000 UTF-8 bytes and status context at most 22500; startup contains one availability projection and aggregate outcome, while schema discovery owns writer detail.",
   ].join("\n");
 }
 

@@ -93,8 +93,10 @@ surfaces:
   # recovery pointers for omitted rich state; pretty UTF-8 JSON + trailing
   # newline is measured and an over-budget brief is rejected in favor of a
   # bounded degraded envelope. prime-dashboard (35000) keeps full fidelity.
-  byte_budget: 12000
-  token_budget: 3000
+  # At the measured 3.8 to 3.9 bytes per token, the 16000-byte budget is the
+  # limit the brief reaches before 5000 tokens.
+  byte_budget: 16000
+  token_budget: 5000
 - id: prime-fields-sparse
   command: agentera prime
   selector: --fields plan,progress,docs
@@ -202,14 +204,14 @@ surfaces:
   # result (25000 bytes and 6000 tokens of its own).
   budget_by_carried:
     status:
-      byte_budget: 34500
-      token_budget: 9000
+      byte_budget: 38500
+      token_budget: 11000
     capability:
-      byte_budget: 67000
-      token_budget: 17000
+      byte_budget: 71000
+      token_budget: 19000
     semantic_required:
-      byte_budget: 37000
-      token_budget: 9000
+      byte_budget: 41000
+      token_budget: 11000
 - id: state-plan
   command: agentera state plan list
   selector:

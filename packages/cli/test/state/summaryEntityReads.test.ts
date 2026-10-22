@@ -620,7 +620,7 @@ describe("summary entity ordinary reads", () => {
     expect(json.rc, json.err).toBe(0);
     const payload = JSON.parse(json.out);
     expect(implicit).toEqual(json);
-    expect(Buffer.byteLength(json.out, "utf8")).toBeLessThanOrEqual(12_000);
+    expect(Buffer.byteLength(json.out, "utf8")).toBeLessThanOrEqual(16_000);
     expect(payload.progress).toMatchObject({
       status: "degraded_history",
       degraded_history: { summary_count: 1, returned_count: 0, omitted_count: 1 },

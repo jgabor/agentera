@@ -2595,7 +2595,11 @@ budgets:
         # diagnostics stay on stderr. prime_dashboard keeps full current state
         # while omitting duplicated ordinary history entries with recovery. The
         # deprecated prime_dashboard alias emits the same status capsule.
-        max_utf8_bytes: 12000
+        # max_gpt5_tokens is counted with the pinned tokenizer named in the
+        # manifest's measurement.tokens. At the measured 3.8 to 3.9 bytes per
+        # token, the byte budget is the one reached first.
+        max_utf8_bytes: 16000
+        max_gpt5_tokens: 5000
       prime_dashboard:
         manifest_id: prime-dashboard
         max_utf8_bytes: 22500
@@ -2618,12 +2622,12 @@ budgets:
         # does; when no brief fits, the manual stays and the response names
         # bare prime for the orientation. A response that still cannot fit
         # fails with routed_output_budget and the direct command.
-        brief_max_utf8_bytes: 12000
+        brief_max_utf8_bytes: 16000
         semantic_route_max_utf8_bytes: 25000
         max_utf8_bytes_by_carried:
-          status: 34500
-          capability: 67000
-          semantic_required: 37000
+          status: 38500
+          capability: 71000
+          semantic_required: 41000
     required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
     omission_semantics: >-
       Omit optional historical detail and retain counts, actionable IDs,
@@ -2658,7 +2662,7 @@ budgets:
     max_utf8_bytes: 3000
 validation:
   authority: this file plus the referenced JSON surface manifest
-  drift_rule: tests fail if manifest IDs or byte values disagree with this contract
+  drift_rule: tests fail if manifest IDs, byte values or the prime_briefing token value disagree with this contract
 
 # The mutation grammar is the only declarative inventory of public state writes.
 # Runtime code owns execution; this section owns the vocabulary, shape, bounds,

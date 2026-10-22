@@ -1,0 +1,22 @@
+id: xqkbfphfbw
+artifact: plan
+record:
+  plan: sulmmpgyjb
+  name: Raise the bare prime budgets to 5,000 tokens and 16,000 bytes
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN the budget authority and the output manifest WHEN read THEN both declare a 5,000-token and 16,000-byte budget for bare prime, routed budgets that include the brief rise by the same amounts, and the drift check between them passes.
+    - GIVEN bare prime in this repository while a shared-skill update offer shows WHEN measured THEN it stays within the declared budgets, and a test project that carries an update offer covers that case.
+    - GIVEN the changelog WHEN read THEN it records the new budgets and the measurements behind them.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-xqkbfphfbw-1
+      source: "audit evaluator report 2026-10-22: 3/3 criteria PASS, 1 WARN (drift fail case is an in-memory check, matching the existing byte and routed cases)"
+      recorded_at: 2026-10-22 22:19
+      writer_command: agentera state plan record-evaluation

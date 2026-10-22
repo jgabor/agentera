@@ -424,7 +424,7 @@ describe("status capability self-contained startup", () => {
           expect(text).toContain("satisfaction unavailable");
         } else expect(text).toContain(family === "task" ? "pending" : text === attention ? "open" : "actionable");
       }
-      expect(Buffer.byteLength(out)).toBeLessThanOrEqual(context ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : 12000);
+      expect(Buffer.byteLength(out)).toBeLessThanOrEqual(context ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : 16000);
       expect(err).toBe("");
       const actionLine = formatNextAction(action);
       expect(actionLine).toContain(`${label} ${id}`);

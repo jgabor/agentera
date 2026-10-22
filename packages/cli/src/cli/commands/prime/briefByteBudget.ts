@@ -7,7 +7,7 @@ import type { JsonObject } from "../../../core/jsonValue.js";
  *  archiveAuthority.test.ts binds the authority to the manifest; the
  *  primeProjectionContract.test.ts suite binds this constant to the authority
  *  so the contract and implementation cannot drift apart. */
-export const PRIME_BRIEF_MAX_UTF8_BYTES = 12000;
+export const PRIME_BRIEF_MAX_UTF8_BYTES = 16000;
 
 /** Deterministic pretty-JSON UTF-8 byte length (including the trailing newline)
  *  used by the brief byte gate. Identical to the projection-policy serializer

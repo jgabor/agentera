@@ -4,7 +4,7 @@
  * AC1: GIVEN returning, fresh, empty, missing, and degraded project fixtures
  *      WHEN bare prime runs THEN it reports mode, work summary, attention, next
  *      action, and startup completeness needed for routing.
- * AC2: Covered by primeProjectionContract.test.ts (large fixture ≤12000 bytes, stderr
+ * AC2: Covered by primeProjectionContract.test.ts (large fixture ≤16000 bytes, stderr
  *      separation).
  * AC3: GIVEN state is missing versus present-but-empty WHEN an agent reads the
  *      brief THEN the two conditions remain behaviorally distinguishable.
@@ -314,7 +314,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       shared_skill: { name: "canonical_skill", status: "pass", message: "p".repeat(200) },
     };
     let irreducible = false;
-    for (const budgetBytes of [12000, 2000, 1725, 1500, 1000]) {
+    for (const budgetBytes of [16000, 2000, 1725, 1500, 1000]) {
       try {
         const result = briefOrientationPayload(payload, { budgetBytes });
         const action = result.next_action as Record<string, string>;
@@ -337,7 +337,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
   });
 
   it("briefByteGate rejects a large payload (bytes > budget)", () => {
-    // Build a payload that exceeds 12000 bytes
+    // Build a payload that exceeds the brief budget
     const large: Record<string, unknown> = {};
     for (let i = 0; i < 500; i += 1) {
       large[`field_${i}`] = "x".repeat(50);
@@ -391,7 +391,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
     expect(brief.projection, "reduced budget forces degraded").toBe("degraded");
     expect(brief.attempted_utf8_bytes, "attempted bytes recorded").toBeGreaterThan(budgetBytes);
     // The degraded envelope must satisfy the configured gate, not merely the
-    // production 12000-byte authority.
+    // production 16000-byte authority.
     const bytes = briefUtf8Bytes(degraded);
     expect(bytes, "degraded envelope is within the configured budget").toBeLessThanOrEqual(budgetBytes);
     expect(brief.utf8_bytes, "degraded utf8_bytes matches exact output bytes").toBe(bytes);
@@ -986,7 +986,7 @@ describe("Task 3 AC5: byte gate accepts passing and rejects over-budget fixtures
       },
       // Sized so the normal projection, which repeats the reconciliation in
       // startup, exceeds the budget and the degraded envelope does not.
-      todo: { detail: "x".repeat(10_000) },
+      todo: { detail: "x".repeat(PRIME_BRIEF_MAX_UTF8_BYTES - 2_000) },
     };
 
     const compact = briefOrientationPayload(payload, { degradedMode: "status_routing" });

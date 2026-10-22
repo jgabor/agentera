@@ -7,16 +7,39 @@ import YAML from "yaml";
 
 import { cmdPrime } from "../../src/cli/commands/prime.js";
 import { PRIME_STRUCTURED_FIELDS } from "../../src/cli/stateQuery.js";
+import { runHostSkillLifecycle } from "../../src/setup/hostSkillLifecycle.js";
 import { createPrimeBudgetFixture, createPrimeLargeAttentionFixture, GPT5_TOKENIZER, measurePrimeOutput } from "../../scripts/measure-prime-budget.mjs";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
-type FixtureFactory = (repoRoot: string, temporaryRoot: string) => { appHome: string; home: string; profile: string; project: string };
+type FixtureFactory = (repoRoot: string, temporaryRoot: string) => { appHome: string; home: string; profile: string; project: string; sourceRoot?: string };
 
 function briefingBudget(): { bytes: number; gpt5_tokens: number } {
   const manifest = YAML.parse(fs.readFileSync(path.join(REPO_ROOT, "scripts/json_output_surface_manifest.yaml"), "utf8"));
   const surface = manifest.surfaces.find(({ id }: { id: string }) => id === "prime-briefing");
   return { bytes: surface.byte_budget, gpt5_tokens: surface.token_budget };
+}
+
+/** The bounded fixture with the previous shared skill installed in the
+ *  isolated home, so bare prime carries shared_skill.upgrade_offer. As in a
+ *  real npx run, the bundle that supplies the current host skill is separate
+ *  from the app home that holds install state; an overlap blocks the offer. */
+function createPrimeSkillOfferFixture(repoRoot: string, temporaryRoot: string) {
+  const roots = createPrimeBudgetFixture(repoRoot, temporaryRoot);
+  const sourceRoot = path.join(temporaryRoot, "bundle");
+  fs.cpSync(roots.appHome, sourceRoot, { recursive: true });
+  fs.mkdirSync(path.join(sourceRoot, "host/agentera"), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, "skills/agentera/SKILL.md"), path.join(sourceRoot, "host/agentera/SKILL.md"));
+  const source = path.join(temporaryRoot, "previous-runtime");
+  for (const relative of ["registry.json", "references/adapters/package-registry.yaml"]) {
+    fs.mkdirSync(path.dirname(path.join(source, relative)), { recursive: true });
+    fs.copyFileSync(path.join(repoRoot, relative), path.join(source, relative));
+  }
+  fs.mkdirSync(path.join(source, "skills/agentera"), { recursive: true });
+  fs.copyFileSync(path.join(repoRoot, "packages/cli/test/fixtures/shared-skill/previous-SKILL-3.0.0.md"), path.join(source, "skills/agentera/SKILL.md"));
+  const installed = runHostSkillLifecycle({ home: roots.home, appHome: roots.appHome, sourceRoot: source, apply: true });
+  if (installed.status !== "success") throw new Error(`previous shared skill install failed: ${JSON.stringify(installed)}`);
+  return { ...roots, sourceRoot };
 }
 
 /** Run prime in a disposable fixture with an isolated home and bundle. */
@@ -31,12 +54,12 @@ function runPrimeIn(createFixture: FixtureFactory, fields?: string): { rc: numbe
     AGENTERA_BOOTSTRAP_SOURCE_ROOT: process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT,
   };
   try {
-    const { appHome, home, profile, project } = createFixture(REPO_ROOT, temporaryRoot);
+    const { appHome, home, profile, project, sourceRoot = appHome } = createFixture(REPO_ROOT, temporaryRoot);
     process.env.HOME = home;
     process.env.AGENTERA_HOME = appHome;
     process.env.AGENTERA_PROFILE_DIR = profile;
     process.env.PROFILERA_PROFILE_DIR = profile;
-    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = appHome;
+    process.env.AGENTERA_BOOTSTRAP_SOURCE_ROOT = sourceRoot;
     process.chdir(project);
 
     let out = "";
@@ -127,6 +150,21 @@ describe("prime GPT-5 token budget", () => {
     }
   });
 
+  it("keeps a fixture carrying a shared-skill update offer within its byte and GPT-5 token budgets", () => {
+    const { rc, out, err } = runPrimeIn(createPrimeSkillOfferFixture);
+    const result = measurePrimeOutput(out, briefingBudget());
+    const payload = JSON.parse(out) as Record<string, any>;
+
+    expect(rc, out).toBe(0);
+    expect(err).toBe("");
+    expect(payload.shared_skill.upgrade_offer).toMatchObject({
+      question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
+      approval: "explicit_yes_only",
+    });
+    expect(payload.brief.projection).toBe("ok");
+    expect(result.violations, JSON.stringify(result)).toEqual([]);
+  });
+
   it("measures the large-attention fixture's unprojected state above the brief budget", () => {
     const { rc, out } = runPrimeIn(createPrimeLargeAttentionFixture, PRIME_STRUCTURED_FIELDS.join(","));
 
@@ -134,9 +172,11 @@ describe("prime GPT-5 token budget", () => {
     expect(measurePrimeOutput(out, briefingBudget()).violations).toContain("bytes");
   });
 
-  it("rejects a deliberately oversized briefing", () => {
-    const result = measurePrimeOutput("x ".repeat(3_001), { bytes: 12_000, gpt5_tokens: 3_000 });
+  it("rejects a briefing one token over the declared budget", () => {
+    const budget = briefingBudget();
+    const result = measurePrimeOutput("x ".repeat(budget.gpt5_tokens + 1), budget);
 
+    expect(result.measurement.bytes).toBeLessThanOrEqual(budget.bytes);
     expect(result.violations).toEqual(["gpt5_tokens"]);
   });
 });

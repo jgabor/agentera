@@ -35,7 +35,7 @@ adjacent ordered stable-v2 preview/apply pair in `UPGRADE.md` may execute
 `@latest`. The second command is an independent read-only evidence probe on the
 same channel.
 
-`prime` returns a bounded decision brief (at most 12000 UTF-8
+`prime` returns a bounded decision brief (at most 16000 UTF-8
 bytes). Status startup returns
 `capability_context.instructions` and bounded
 `capability_context.context.status_context` together (at most 25000 UTF-8

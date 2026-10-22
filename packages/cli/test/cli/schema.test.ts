@@ -53,7 +53,7 @@ describe("cli schema", () => {
     expect(Array.isArray(payload.commands)).toBe(true);
     expect(payload.routine_state_commands).toContain("plan");
     const prime = (payload.commands as Array<{ name: string; description: string }>).find((command) => command.name === "prime");
-    expect(prime?.description).toContain("12000 UTF-8 bytes");
+    expect(prime?.description).toContain("16000 UTF-8 bytes");
     expect(prime?.description).toContain("status startup at most 22500");
     expect(payload).not.toHaveProperty("state_backfill");
     expect(payload).not.toHaveProperty("state_migration");

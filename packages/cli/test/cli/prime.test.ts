@@ -846,7 +846,7 @@ describe("orkestrera orchestration_context task_queue", () => {
 
     const emitted = capture((io) => cmdPrime({ command: "prime", format: "json" }, io));
     expect(emitted.rc, emitted.err || emitted.out).toBe(0);
-    expect(Buffer.byteLength(emitted.out, "utf8")).toBeLessThanOrEqual(12_000);
+    expect(Buffer.byteLength(emitted.out, "utf8")).toBeLessThanOrEqual(16_000);
     const payload = JSON.parse(emitted.out);
     expect(payload.brief.projection).toMatch(/^(ok|degraded)$/);
     expect(payload.plan).toMatchObject({

@@ -64,7 +64,7 @@ export function runSharedSkillUpgradeWorkflow(root: string, current: string, inv
   const doctor = run(["doctor"]);
   assert.equal(prime.code, 0);
   assert.equal(status.code, 0);
-  assert.ok(Buffer.byteLength(prime.out) <= 12000);
+  assert.ok(Buffer.byteLength(prime.out) <= 16000);
   assert.ok(Buffer.byteLength(status.out) <= 22500);
   const offer = prime.payload.shared_skill.upgrade_offer;
   assert.equal(offer.question, "Agentera’s installed skill needs an update. Update it now? Your project files will not change.");

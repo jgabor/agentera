@@ -209,6 +209,7 @@ describe("state storage authority", () => {
     expect(authority.budgets.measurement.bytes).toContain("serialized byte length");
     expect(authority.budgets.projection.max_utf8_bytes).toBe(32768);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).toBe(surfaces["prime-briefing"]);
+    expect(authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens).toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").token_budget);
     expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(surfaces["prime-dashboard"]);
     expect(authority.budgets.startup.surfaces.prime_status_context.max_utf8_bytes).toBe(surfaces["prime-status-context"]);
     expect(authority.budgets.startup.surfaces.prime_sparse.max_utf8_bytes).toBe(surfaces["prime-fields-sparse"]);
@@ -264,6 +265,8 @@ describe("state storage authority", () => {
     const manifest = loadYaml(BUDGET_MANIFEST_PATH);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").byte_budget);
     expect(authority.budgets.projection.omission_semantics).not.toContain("Never split UTF-8");
+    authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens = 3000;
+    expect(authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").token_budget);
     authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status = 35000;
     expect(authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-routed-start").budget_by_carried.status.byte_budget);
   });

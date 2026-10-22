@@ -29,7 +29,7 @@ function dispatch(error: Error): { rc: number; out: string; err: string } {
 
 describe("prime brief budget failure", () => {
   it("reports an unfittable brief as an output failure with the status continuation", () => {
-    const { rc, out, err } = dispatch(new BriefBudgetError(12_000, 12_290));
+    const { rc, out, err } = dispatch(new BriefBudgetError(16_000, 16_290));
 
     expect(rc).toBe(1);
     expect(err).toBe("");
@@ -41,9 +41,9 @@ describe("prime brief budget failure", () => {
       manual: PRIME_MANUAL,
       error: {
         class: "brief_output_budget",
-        message: "brief budget 12000 bytes cannot contain the minimum routing envelope (12290 bytes); use prime --context status",
-        budget_utf8_bytes: 12_000,
-        minimum_utf8_bytes: 12_290,
+        message: "brief budget 16000 bytes cannot contain the minimum routing envelope (16290 bytes); use prime --context status",
+        budget_utf8_bytes: 16_000,
+        minimum_utf8_bytes: 16_290,
         recovery: "Run `npx -y agentera@next prime --context status`.",
       },
     });
