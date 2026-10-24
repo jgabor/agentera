@@ -52,17 +52,18 @@ export function deferredStartupFamilies(contract: JsonObject): string[] {
  * Prime aggregates read availability. Mutation grammar remains discoverable
  * only through `agentera schema`, never through a startup payload.
  */
-export function startupAggregation(contract: JsonObject, health: JsonObject, cutover: JsonObject | null = null, todoReconciliation: JsonObject | null = null): JsonObject {
+export function startupAggregation(contract: JsonObject, health: JsonObject, cutover: JsonObject | null = null, todoReconciliation: JsonObject | null = null, todoBound: JsonObject | null = null): JsonObject {
   const cutoverRequired = cutover?.status === "required" || cutover?.status === "invalid_lifecycle";
   const reconciliationRequired = todoReconciliation?.status === "action_required";
   const blocked = cutoverRequired || reconciliationRequired || (typeof contract.schema_error === "string" && contract.schema_error.length > 0);
-  const degraded = health.startup_outcome === "degraded";
+  const degraded = health.startup_outcome === "degraded" || todoBound !== null;
   const outcome: StartupOutcome = blocked ? "blocked" : degraded ? "degraded" : "ok";
   return {
     schemaVersion: "agentera.primeStartup.v1",
     outcome,
     state_cutover: cutover ?? { status: "complete", project_state: "v3", recovery_command: null },
     ...(reconciliationRequired ? { todo_reconciliation: todoReconciliation } : {}),
+    ...(todoBound ? { todo_bound: todoBound } : {}),
     availability: Array.isArray(contract.availability) ? contract.availability : [],
     detail_discovery: { schema: preCutoverCommand("schema") },
     raw_artifact_reads_required: false,

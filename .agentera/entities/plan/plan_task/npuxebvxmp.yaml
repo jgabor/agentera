@@ -1,0 +1,14 @@
+id: npuxebvxmp
+artifact: plan
+record:
+  name: Count only open TODO items toward the TODO.md limit
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN resolved rows that push TODO.md past 256 rows WHEN a create leaves at most 256 items open THEN it succeeds and no resolved row is dropped.
+    - GIVEN 256 open TODO items WHEN another is created or reopened THEN it refuses with a recovery naming resolving open items; no row-limit refusal suggests compaction, and the retained legacy row limit keeps its total with its own refusal.
+    - GIVEN more than 256 open TODO items from hand-edited state WHEN any start runs THEN it starts degraded with an attention item naming that recovery and next_action is not drawn from an incomplete TODO set; each resolve then succeeds and the next start within the limit is not degraded.
+    - GIVEN prime and the TODO writer WHEN they count open items THEN they use the same definition, and the storage authority states the open-item limits, the unchanged legacy row total and what the transaction target bounds.
+    - GIVEN a project with at most 256 TODO.md rows WHEN prime or a TODO write runs THEN its behavior is unchanged apart from refusal wording.
+  plan: bvovjefuaq

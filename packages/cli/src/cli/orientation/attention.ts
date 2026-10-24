@@ -15,6 +15,9 @@ export function buildOrientationAttention(state: OrientationState): string[] {
       todoReconciliation.state === "unsafe_inactive" ? `action-required: TODO reconciliation is ${label}; ${todoReconciliation.recovery_command}` : `action-required: TODO reconciliation is ${label}; preview \`${todoReconciliation.preview_command ?? "n/a"}\`; apply \`${todoReconciliation.apply_command ?? "n/a"}\``,
     );
   }
+  if (state.todo_bound) {
+    attention.push(`degraded: ${state.todo_bound.open_count} open TODO items exceed the ${state.todo_bound.limit}-item startup limit, so TODO readiness is skipped; ${state.todo_bound.recovery}`);
+  }
   const skillDivergenceSignals = (state.app.signals ?? []).filter((s) => s.kind === "skill_root_divergence");
   for (const signal of skillDivergenceSignals) {
     attention.push(`degraded: skill-root divergence — ${signal.message ?? "a recognized skill root is below expected"}; run \`npx -y agentera@next upgrade --dry-run --channel development\` to preview repair`);

@@ -1,0 +1,45 @@
+id: bvovjefuaq
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-24
+    status: open
+    reviewed: 2026-10-24
+    critic_issues: 15 found, 14 addressed, 1 dismissed
+    title: "Plan: Status redesign and autonomy inside capabilities"
+  what: Implement decisions buplkzyydk and imlryhrjcn. The CLI decides and status renders. Prime serves status_context as plain data, next_action can suggest resuming unfinished work, offers declare whether they block, a first run leads with the init preview, and budgets come from each capability's job in tokens and degrade instead of refusing. The operating manual gains the one-question rule and the in-capability autonomy rule. The status instructions are then rewritten through the capability audit prompt.
+  why: Two cold agents rendering from the status capsule hit five rules whose fields the capsule lacks, made extra CLI calls, asked two questions in one reply, and on a first run were told to upgrade before init. The status capsule sits about 1 KB under a byte cap that fails hard. The vision's act-first stance conflicts with approval gates on routine writes. A project with more than 256 open TODO items still cannot start at all.
+  constraints: "Firm decisions buplkzyydk, imlryhrjcn, vlgaofobpn (prime is the single entry; capsules do not repeat the manual) and kicksvpwep (JSON operational output) are hard constraints. The manual owns offers, consent, handoffs and the autonomy rule. Raising a declared budget, and any new budget value, needs user approval with measurements. Decisions, vision and objective change only with explicit user approval. Versions stay at 3.0.0. No commit, push or merge without explicit authorization. Task 1 may reach feat/v3 alone; tasks 2 to 8 reach it together after task 8. Paid live-model evals need consent first. Tests: one passing and one failing case per testable unit."
+  scope:
+    included:
+      - Startup degrading instead of refusing when more than 256 TODO items are open (follows the degrade-not-refuse rule in buplkzyydk)
+      - Job-derived token budgets with runtime degradation for status starts and routed starts (TODO bjeggbtixw), absorbing the status share of TODO frlmcqkrwh
+      - Unfinished-work resume in next_action and the override rule (TODO idscqacjdm)
+      - status_context as renderable data (TODO vbnhmqjuho), the north-star line, profile expiry, the status share of TODO pblyboavnd, and the unused-capability hint from TODO lvxezpcpvv
+      - Blocking flag on offers and the one-question rule (TODO jyitpcmnos)
+      - First-run init preview and non-blocking skill offer (TODO pqzldtmyui)
+      - The autonomy rule in the operating manual (TODO irpspuslza)
+      - The status audit and instruction rewrite (TODO ziymlghyzi), including status's own share of TODO nqbnvhenng
+    excluded:
+      - Vision tension wording (TODO akotzfooco); it needs the vision capability and an intent-recording approval
+      - Approval-gate removal in other capabilities (TODO nqbnvhenng); each rides its own audit
+      - Discuss closeout handoff (TODO hlryvcuzyu); it belongs to the discuss audit
+      - Offer template wording (TODO ttwpziwvol), live consent journeys (TODO sqkaukicrr), handoff verb vocabulary (TODO ujqomryeao), skill diagnosis labels (TODO wrkrtdbfdn)
+      - Shared patch policy (TODO hgzzwyerzo), composition rewrites (TODO bkamepjltd), spine authority (TODO lemblhfbom), channel binding (TODO kcqywfaykb), stale evals (TODO rflurhoxel), instruction reuse (TODO cybxkpsyut), route receipts (TODO pzicyatkvi), beyond status's own share
+      - Other capabilities' budgets and capsule fit, the README part of TODO lvxezpcpvv, whole-vision query (TODO mstlnghews), fresh-project upgrade (TODO oxbwnuwkub), TMPDIR-sensitive tests (TODO cgalanawim)
+    deferred:
+      []
+  design: "Three phases. Phase one makes starts survive state growth: more open TODO items than the bound, then token budgets whose answer to growth is trimming. Budgets precede new capsule data because status has little headroom under a hard cap. Phase two changes what the CLI decides and serves, then adds the one-question and autonomy rules to the manual. Phase three audits status and rewrites its instructions to render only what phase two serves; the cold-agent eval pins the result. Related TODOs are narrowed when the absorbing task closes."
+  unknowns:
+    - question: Does the current status instruction text fit the instruction budget derived from its job?
+      affects_task: 2
+      resolve_by: Measure in task 2. If it does not fit, task 2 records the approved value and task 8 adds the failing instruction-budget check.
+    - question: Can the CLI observe that a host has no native Agentera integration, and what makes the skill offer repeat once per session?
+      affects_task: 6
+      resolve_by: Probe at the start of task 6. If neither is observable, stop and re-plan the offer rule with the user.
+  rejected:
+    - issue: Fields constraints and design exceed the 100-word entry bound.
+      rationale: The writer's strict lint and schema validation passed a dry run of these fields; the bound does not apply per field.
+  overall_acceptance: GIVEN this repository and a fresh one WHEN a cold agent runs bare /agentera THEN status starts in one call, shows attention, one next step and the north star when a vision exists, asks at most one question, and never refuses because state grew. GIVEN an invoked capability that has adopted the rule WHEN it writes routine project state THEN it reports the change and its undo without asking, and it still asks before irreversible effects, intent-recording writes and starting another capability.
+  surprises: "Task 1 probe: in a fresh project the TODO writer refused the 257th create with the TODO.md 256-row bound, which also counts resolved rows still listed. More than 256 open items cannot arise through typed writers, only through hand edits or items absent from TODO.md. The live risk is the create bound: its recovery names resolved-row compaction even when every row is open, and this repository sits at about 225 rows."

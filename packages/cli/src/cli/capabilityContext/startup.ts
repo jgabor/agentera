@@ -208,6 +208,7 @@ export function slimCapabilityContext(
   bespokeContexts: JsonObject | null,
   cutover: JsonObject | null = null,
   todoReconciliation: JsonObject | null = null,
+  todoBound: JsonObject | null = null,
 ): JsonObject {
   const context: JsonObject = capabilityContext(capability) ?? {
     capability,
@@ -241,7 +242,7 @@ export function slimCapabilityContext(
     capability,
     mode,
     app: capabilityContextAppSummary(appHome, bundle),
-    startup: startupAggregation(context, health, cutover, todoReconciliation),
+    startup: startupAggregation(context, health, cutover, todoReconciliation, todoBound),
     context: boundStartupValue(contextPayload) as JsonObject,
     instructions: capability === "status" && cutover?.migration_offer ? servedInstructions(PROJECT_MIGRATION_STARTUP_GUIDANCE) : (CAPABILITY_INSTRUCTIONS[capability] ?? ""),
     ...(capability === "status" && cutover?.migration_offer ? { instruction_mode: "project_migration_offer", capability_instructions_deferred: true } : {}),
@@ -275,12 +276,13 @@ export function buildPrimeCapabilityContextPayload(state: OrientationState, capa
   const contract = capabilityContext(capabilityName) ?? {};
   const cutover = stateDict.state_cutover as JsonObject;
   const todoReconciliation = (stateDict.todo_reconciliation as JsonObject | null | undefined) ?? null;
-  const startup = startupAggregation(contract, stateDict.health as JsonObject, cutover, todoReconciliation);
+  const todoBound = (stateDict.todo_bound as JsonObject | null | undefined) ?? null;
+  const startup = startupAggregation(contract, stateDict.health as JsonObject, cutover, todoReconciliation, todoBound);
   const payload: JsonObject = {
     command,
     outcome: startup.outcome,
     shared_skill: stateDict.shared_skill,
-    capability_context: slimCapabilityContext(capabilityName, state.mode, appHome, bundlePublic as unknown as JsonObject, stateDict.plan as JsonObject, stateDict.docs as JsonObject, stateDict.progress as JsonObject, stateDict.health as JsonObject, state.todo_items, bespoke, cutover, todoReconciliation),
+    capability_context: slimCapabilityContext(capabilityName, state.mode, appHome, bundlePublic as unknown as JsonObject, stateDict.plan as JsonObject, stateDict.docs as JsonObject, stateDict.progress as JsonObject, stateDict.health as JsonObject, state.todo_items, bespoke, cutover, todoReconciliation, todoBound),
   };
   if (capabilityName === "plan") {
     // Match the existing Status summary: keep health/ownership facts and the

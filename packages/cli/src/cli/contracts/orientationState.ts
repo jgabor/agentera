@@ -131,6 +131,13 @@ export interface IssueCounts {
   annoying: number;
 }
 
+/** Present when more TODO items are open than startup can project. */
+export interface TodoStartupBound {
+  open_count: number;
+  limit: number;
+  recovery: string;
+}
+
 export interface TodoDetailSummary {
   total: number;
   returned: number;
@@ -227,6 +234,7 @@ export interface OrientationState {
   todo_items: JsonObject[];
   todo_detail: TodoDetailSummary;
   todo_reconciliation?: TodoReconciliationInspection | null;
+  todo_bound?: TodoStartupBound | null;
   counts: IssueCounts;
   decision_attention: DecisionReviewAttention | null;
   glossary_caveat_attention: string | null;

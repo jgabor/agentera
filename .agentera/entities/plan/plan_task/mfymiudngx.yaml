@@ -1,0 +1,13 @@
+id: mfymiudngx
+artifact: plan
+record:
+  name: Derive status budgets from its job, in tokens
+  depends_on:
+    []
+  status: pending
+  acceptance:
+    - GIVEN the budget authority WHEN read THEN it states one rule, a token target per capability split into instruction and state budgets derived from the job, and the user has approved the status values and their derivation.
+    - GIVEN the manifest, authority and tests WHEN compared THEN every status surface, including routed starts, has one value and one measurement definition.
+    - GIVEN status instructions over their budget WHEN tests run THEN they fail, unless unknown 1 moved that check to task 8.
+    - GIVEN state that pushes a status or routed start over its state budget WHEN it starts THEN it succeeds, trims attention detail and alternatives, reports the trim, and keeps the dashboard lines and next_action.
+  plan: bvovjefuaq

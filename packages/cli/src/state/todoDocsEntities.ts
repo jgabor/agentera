@@ -43,6 +43,7 @@ import {
   ID,
   SHA256,
   TODO,
+  assertOpenTodoRowsWithinLimit,
   assertState,
   assertTodoReconciliationReadable,
   contract,
@@ -66,7 +67,7 @@ import {
   type TodoEntityView,
   type TodoReadView,
 } from "./todoDocsReconciliation.js";
-export { assertTodoReconciliationReadable, inspectTodoReconciliationDrift, managedRows, projectTodoReadEntities, relevant, todoPublicPath, todoReconciliationBinding, type ManagedRow, type ManagedRowScan } from "./todoDocsReconciliation.js";
+export { assertTodoReconciliationReadable, inspectTodoReconciliationDrift, isOpenTodoStatus, managedRows, OpenTodoBoundFailure, projectTodoReadEntities, relevant, todoPublicPath, todoReconciliationBinding, type ManagedRow, type ManagedRowScan } from "./todoDocsReconciliation.js";
 import { inactiveTodoMutation, activationEnvelope, repairEnvelope, ownerCorrectionEnvelope, envelope, targetPath, transitionRecord, mutationRecord, assertTodoReferences, todoReadinessRecovery, reconcileTodoRecords } from "./todoDocsWrite.js";
 export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   const artifact = req.artifact as "todo" | "docs";
@@ -203,7 +204,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
         let activationBytesAfter = todoReconciliationActivationBytes(scan.retainedLegacyRows, "0".repeat(64));
         const activationAfter = JSON.parse(activationBytesAfter) as TodoReconciliationActivation;
-        const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+        const finalScan = managedRows(rendered, activationAfter, todoEntities);
+        assertOpenTodoRowsWithinLimit(scan, finalScan);
+        const finalRows = finalScan.rows;
         for (const [todoId, record] of reconciled.records) {
           const row = finalRows.get(todoId);
           reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));
@@ -423,7 +426,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
         const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows);
         const activationAfter = activation ?? (JSON.parse(activationBytesAfter) as TodoReconciliationActivation);
-        const finalRows = managedRows(rendered, activationAfter, [...todoEntities, ...[...localIds.values()].map((id) => ({ boundary: TODO.boundary, id, record: reconciled.records.get(id)! }) as DiscoveredEntity)]).rows;
+        const finalScan = managedRows(rendered, activationAfter, [...todoEntities, ...[...localIds.values()].map((id) => ({ boundary: TODO.boundary, id, record: reconciled.records.get(id)! }) as DiscoveredEntity)]);
+        assertOpenTodoRowsWithinLimit(scan, finalScan);
+        const finalRows = finalScan.rows;
         for (const [todoId, record] of reconciled.records) {
           const row = finalRows.get(todoId);
           reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));
@@ -539,7 +544,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
         const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows);
         const activationAfter = activation ?? (JSON.parse(activationBytesAfter) as TodoReconciliationActivation);
-        const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+        const finalScan = managedRows(rendered, activationAfter, todoEntities);
+        assertOpenTodoRowsWithinLimit(scan, finalScan);
+        const finalRows = finalScan.rows;
         for (const [todoId, record] of reconciled.records) {
           const row = finalRows.get(todoId);
           reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));
@@ -616,7 +623,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
         const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
         const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows);
         const activationAfter = activation ?? (JSON.parse(activationBytesAfter) as TodoReconciliationActivation);
-        const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+        const finalScan = managedRows(rendered, activationAfter, todoEntities);
+        assertOpenTodoRowsWithinLimit(scan, finalScan);
+        const finalRows = finalScan.rows;
         for (const [todoId, record] of reconciled.records) {
           const row = finalRows.get(todoId);
           reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));
@@ -699,7 +708,9 @@ export function mutateTodoDocsEntity(req: StateWriteRequest, options: Options = 
       const rendered = renderManagedMarkdown(markdown, visibleRecords, rows);
       const activationBytesAfter = activation ? loadedActivation!.bytes.toString("utf8") : todoReconciliationActivationBytes(scan.retainedLegacyRows);
       const activationAfter = activation ?? (JSON.parse(activationBytesAfter) as TodoReconciliationActivation);
-      const finalRows = managedRows(rendered, activationAfter, todoEntities).rows;
+      const finalScan = managedRows(rendered, activationAfter, todoEntities);
+      assertOpenTodoRowsWithinLimit(scan, finalScan);
+      const finalRows = finalScan.rows;
       for (const [todoId, record] of reconciled.records) {
         const row = finalRows.get(todoId);
         reconciled.records.set(todoId, withBaseline(record, row ? rowSnapshot(row, record) : { present: false }));

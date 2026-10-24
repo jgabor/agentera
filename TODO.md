@@ -74,6 +74,7 @@
 - [ ] [id:nqbnvhenng] [refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited.
 - [ ] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.
 - [ ] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
+- [ ] [id:zlaqdzrnvg] [fix:3.0.0] Keep resolved TODO text that exists only in TODO.md before compaction can drop it.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

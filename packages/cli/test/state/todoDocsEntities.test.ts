@@ -2345,12 +2345,57 @@ describe("TODO item and documentation inventory entity authority", () => {
     const resolvedHeavy = capture(root, ["prime", "--context", "status", "--format", "json"]);
     expect(resolvedHeavy.rc, resolvedHeavy.err || resolvedHeavy.out).toBe(0);
     expect(resolvedHeavy.json.capability_context.context.status_context.todo.critical).toBe(10);
+  });
 
-    const { root: openHeavy } = todoReadProject(250);
-    for (let index = 250; index < 257; index += 1) seedAbsentTodoEntity(openHeavy, indexedId(index), `Open absent item ${index}`, index + 1);
-    const refused = capture(openHeavy, ["prime", "--context", "status", "--format", "json"]);
+  it("keeps resolved TODO.md rows and counts only open rows toward the create limit", () => {
+    const { root } = todoReadProject(300, { resolvedCount: 100 });
+    const resolvedRows = (): number => (fs.readFileSync(path.join(root, "TODO.md"), "utf8").match(/^- \[x\] /gm) ?? []).length;
+    expect(resolvedRows()).toBe(100);
+    const created = todo(root, "Fits beside resolved history");
+    expect(created.status).toBe("pass");
+    expect(resolvedRows()).toBe(100);
+
+    const { root: full } = todoReadProject(256);
+    const refused = capture(full, ["state", "todo", "create", "--input", "-", "--format", "json"], { kind: "task", target_version: "3.0.0", title: "One too many", requirements: [], acceptance: [], release_blocker: false, severity: "normal" });
     expect(refused.rc).not.toBe(0);
-    expect(refused.out + refused.err).toContain("open TODO projection exceeds the 256-entity startup bound");
+    expect(refused.json.error.message).toContain("257 open items, above the 256-item limit");
+    expect(refused.json.error.recovery).toContain("state todo resolve");
+    expect(refused.json.error.recovery).not.toMatch(/compact/i);
+  });
+
+  it("starts degraded past the open TODO limit and recovers through resolve", () => {
+    const { root, criticalOpenIds } = todoReadProject(258);
+    const degraded = capture(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(degraded.rc, degraded.err || degraded.out).toBe(0);
+    const startup = degraded.json.capability_context.startup;
+    expect(startup).toMatchObject({ outcome: "degraded", todo_bound: { open_count: 258, limit: 256 } });
+    expect(startup.todo_bound.recovery).toContain("state todo resolve");
+    const statusContext = degraded.json.capability_context.context.status_context;
+    expect(statusContext.attention.join("\n")).toContain("258 open TODO items exceed the 256-item startup limit");
+    const actions = [statusContext.next_action, ...statusContext.next_action.alternatives];
+    expect(statusContext.next_action.reason).toContain("state todo resolve");
+    expect(statusContext.todo.critical).toBe(258);
+    expect(actions.filter((action: any) => action.artifact === "todo")).toEqual([]);
+
+    for (const id of criticalOpenIds.slice(0, 2)) {
+      const resolved = capture(root, transitionSingletonArgs("resolve", id));
+      expect(resolved.rc, resolved.err || resolved.out).toBe(0);
+    }
+    const recovered = capture(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(recovered.rc, recovered.err || recovered.out).toBe(0);
+    expect(recovered.json.capability_context.startup.outcome).toBe("ok");
+    expect(recovered.json.capability_context.startup.todo_bound).toBeUndefined();
+  });
+
+  it("refuses retained legacy rows past their total without suggesting compaction", () => {
+    const root = project();
+    fs.unlinkSync(path.join(root, TODO_RECONCILIATION_ACTIVATION_PATH));
+    const rows = Array.from({ length: 257 }, (_, index) => `- [ ] [note] Legacy note ${index}`);
+    fs.writeFileSync(path.join(root, "TODO.md"), ["# TODO", "", "## → Normal", ...rows, ""].join("\n"));
+    const refused = capture(root, ["state", "todo", "activate", "--dry-run", "--format", "json"]);
+    expect(refused.rc).not.toBe(0);
+    expect(refused.json.error.message).toContain("retains 257 legacy rows without an ID");
+    expect(refused.json.error.recovery).not.toMatch(/compact/i);
   });
 
   it("preserves filtered TODO continuation and pre-filter queue rank", () => {

@@ -859,7 +859,7 @@ entity_target:
         hard_crash_recovery: consume_exact_original_previous_replacement_tmp_and_replacement_metadata_before_target_replay
         startup_selection:
           ordering_authority: skills/agentera/schemas/artifacts/todo.yaml#READINESS.ordering.modes.projected_startup
-          projected_entity_bound: 256
+          projected_open_entity_bound: 256
         public_replacement: >-
           Stage and fsync complete replacement bytes plus exact prior bytes on the
           target filesystem, then replace each regular file with standard Node
@@ -878,7 +878,10 @@ entity_target:
           TODO reads project Markdown-owned public fields and order with
           Agentera-owned operational fields, report bounded field-level drift,
           and have no reconciliation effects. Startup builds one complete
-          bounded projection through that same read authority; readiness,
+          projection through that same read authority while at most 256 items
+          are open; resolved items never count. Past that limit startup
+          degrades, reports the open count with its recovery, and leaves TODO
+          readiness out of selection instead of ranking a partial set; readiness,
           dependency state, selection, and counts all consume its projected
           status, severity, and order while retaining operational readiness and
           gates. Eligibility and severity grouping apply before managed Markdown
@@ -893,7 +896,11 @@ entity_target:
           exact retry returns that ID without allocating another entity, while a
           different request rejects before recovery effects. Missing post-activation
           baselines, divergent edits, duplicate or orphaned IDs, and removal of an
-          unchecked row reject before effects. One bounded activation
+          unchecked row reject before effects. A mutation that would raise the
+          open managed rows in TODO.md above 256 rejects with a recovery that
+          names resolving open items; resolved rows stay as history and never
+          count, and a mutation that does not raise the open count succeeds in
+          an over-limit project. One bounded activation
           transaction admits exact legacy state
           without treating retained unmatched rows as managed. The durable
           journal is the Agentera-visible commit barrier:
@@ -912,10 +919,10 @@ entity_target:
           boundary conflict; it retains the pending journal and bounded per-target role
           evidence for only the targets that could not be restored.
         bounds:
-          managed_items: 256
-          startup_projected_entities: 256
+          managed_open_items: 256
+          startup_projected_open_entities: 256
           retained_pre_activation_legacy_rows: 256
-          transaction_targets: 258
+          transaction_targets: changed_targets_within_journal_utf8_bytes
           activation_utf8_bytes: 32768
           journal_utf8_bytes: 4194304
           todo_markdown_utf8_bytes: 1048576

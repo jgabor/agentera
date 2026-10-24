@@ -1,0 +1,20 @@
+id: kgijwobroy
+artifact: plan
+record:
+  name: Audit and rewrite the status instructions
+  depends_on:
+    - npuxebvxmp
+    - mfymiudngx
+    - dkdxxombkz
+    - mfiujpelbc
+    - oboljsuljr
+    - aqbmwrllwi
+    - ashzoykves
+  status: pending
+  acceptance:
+    - GIVEN the audit prompt WHEN the task runs THEN the user confirms the north-star statements, findings, related-TODO dispositions, outline and complete draft before it is applied.
+    - GIVEN a cold agent with only the installed skill, in this repository and a fresh one, WHEN the user runs bare /agentera THEN it renders the dashboard in one CLI call with no follow-up reads and at most one question; if the user declines the paid eval, the task ends flagged.
+    - GIVEN the served capsule WHEN compared with the instructions THEN every rendered line maps to a field and every field is rendered or drives exit or recovery.
+    - GIVEN status startup facts WHEN status exits THEN blocked means stuck, else degraded means flagged, else a pending suggestion means waiting, else complete; the exit schema matches.
+    - GIVEN served instructions WHEN read THEN they come from one base text with no patch chain or startup adapter, follow the six-section spine, use MUST NOT, take voice from identity.voice, restate no offer or plan-replacement guidance, show a correct logo, ask before no routine write, fit the task 2 budget, and the appended audit decision records bytes before and after.
+  plan: bvovjefuaq

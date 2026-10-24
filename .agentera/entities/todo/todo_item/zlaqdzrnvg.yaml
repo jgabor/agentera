@@ -1,0 +1,25 @@
+id: zlaqdzrnvg
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep resolved TODO text that exists only in TODO.md before compaction can drop it.
+  requirements:
+    - In this repository, 55 resolved TODO.md rows with an ID carry resolution text their entity lacks (empty lifecycle reason), and 20 resolved rows have no ID, so TODO.md is their only copy.
+    - TODO compaction drops the oldest resolved rows with Git-only recovery, so compacting now loses that text from working state.
+    - Move each row-only resolution text into its entity and give each legacy row a durable home, through typed writers and with a preview.
+  acceptance:
+    - GIVEN a resolved row whose text is missing from its entity WHEN the migration runs THEN the entity holds that text and the row can be compacted without loss.
+    - GIVEN a legacy resolved row without an ID WHEN the migration runs THEN its text is preserved outside TODO.md or the migration reports it for a decision.
+    - GIVEN the migration preview WHEN reviewed THEN it lists every row it would change and changes nothing.
+  severity: normal
+  release_blocker: false
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep resolved TODO text that exists only in TODO.md before compaction can drop it."
+      severity: normal
+      status: open
+      order: 50

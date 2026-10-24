@@ -20,17 +20,3 @@ record:
       severity: normal
       status: open
       order: 47
-    create_batch:
-      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
-      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
-      local_refs:
-        resume-work: idscqacjdm
-        status-context-data: vbnhmqjuho
-        offer-blocking: jyitpcmnos
-        first-run: pqzldtmyui
-        job-budgets: bjeggbtixw
-        write-then-report: irpspuslza
-        status-rewrite: ziymlghyzi
-        vision-yolo: akotzfooco
-        adopt-autonomy: nqbnvhenng
-        discuss-closeout: hlryvcuzyu

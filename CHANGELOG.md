@@ -182,7 +182,15 @@
 
 - Fixed `prime` refusing every start once a project held more than 256 TODO
   items in total. Resolved items no longer count toward the startup bound;
-  only open items do, and the error now says to resolve open items.
+  only open items do. Past 256 open items, every start now runs degraded with
+  an attention line and a resolve recovery instead of refusing, and no next
+  step is drawn from the partial TODO set.
+- Fixed TODO writes refusing once TODO.md held more than 256 rows, resolved
+  history included, with a compaction recovery that could drop resolution
+  text kept nowhere else. Only open rows count now: a write that would raise
+  the open items past 256 refuses and names `state todo resolve`, while
+  resolving still works in an over-limit project. Legacy rows without an ID
+  keep their own 256-row activation limit and message.
 - Fixed a fresh project that a crashed writer left with only a stale
   `.agentera/.writer.lock`. Prime, doctor, `init` and `state plan create` now
   treat it as fresh when the lock's owner process is gone, and both

@@ -1,0 +1,14 @@
+id: dkdxxombkz
+artifact: plan
+record:
+  name: Suggest resuming unfinished work
+  depends_on:
+    - mfymiudngx
+  status: pending
+  acceptance:
+    - GIVEN an initialized project with uncommitted changes on a feature branch WHEN status starts THEN next_action suggests resuming it, naming the branch, the changed-file count, the suggested capability and a reason.
+    - GIVEN a clean working tree WHEN status starts THEN routing is unchanged.
+    - GIVEN any working tree WHEN status starts THEN output contains no file names or content.
+    - GIVEN the operating manual WHEN read THEN it states once that the agent overrides next_action only on what the user said in the session, and says why.
+    - GIVEN many changed files WHEN status starts THEN the read stays within the startup latency target.
+  plan: bvovjefuaq

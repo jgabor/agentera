@@ -178,6 +178,34 @@ export interface ManagedRowScan {
   retainedLegacyRows: string[];
   matchedRows: number;
   convertedRows: number;
+  openRows: number;
+}
+
+/** The one open-item predicate behind both the startup and TODO.md limits. */
+export function isOpenTodoStatus(status: unknown): boolean {
+  return status !== "resolved";
+}
+
+export const OPEN_TODO_LIMIT_RECOVERY = `Resolve open TODO items with 'agentera state todo resolve --id ID' until at most ${TODO_RECONCILIATION_ITEM_LIMIT} remain, then retry once; no state was changed.`;
+
+export class OpenTodoBoundFailure extends StateRetrievalFailure {
+  constructor(public readonly openCount: number) {
+    super(failure("unsupported_state", "todo", `open TODO projection exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-entity startup bound`, OPEN_TODO_LIMIT_RECOVERY).body, 1);
+  }
+}
+
+/**
+ * Resolved rows stay in TODO.md as history and never count toward the limit.
+ * A write may leave more than the limit open only when it does not add to the
+ * open count, so resolving remains possible in an over-limit project.
+ */
+export function assertOpenTodoRowsWithinLimit(before: ManagedRowScan, after: ManagedRowScan): void {
+  if (after.openRows <= TODO_RECONCILIATION_ITEM_LIMIT || after.openRows <= before.openRows) return;
+  reject({
+    class: "conflict",
+    message: `TODO.md would hold ${after.openRows} open items, above the ${TODO_RECONCILIATION_ITEM_LIMIT}-item limit`,
+    recovery: OPEN_TODO_LIMIT_RECOVERY,
+  });
 }
 export type TodoEntityView = Pick<DiscoveredEntity, "boundary" | "id" | "record">;
 export const RECONCILIATION_VERSION = "agentera.todoReconciliation.v1";
@@ -357,13 +385,14 @@ export function managedRows(markdown: string, activation: TodoReconciliationActi
       retainedLegacyRows.push(fingerprint);
     }
   }
-  if (result.size > TODO_RECONCILIATION_ITEM_LIMIT || retainedLegacyRows.length > TODO_RECONCILIATION_ITEM_LIMIT)
+  if (retainedLegacyRows.length > TODO_RECONCILIATION_ITEM_LIMIT)
     reject({
       class: "conflict",
-      message: `TODO.md exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-item reconciliation or legacy-activation bound`,
-      recovery: `Compact retained resolved rows until each bounded set has at most ${TODO_RECONCILIATION_ITEM_LIMIT} items, then retry once; no state was changed.`,
+      message: `TODO.md retains ${retainedLegacyRows.length} legacy rows without an ID, above the ${TODO_RECONCILIATION_ITEM_LIMIT}-row activation limit`,
+      recovery: `Give legacy rows their canonical '[id:abcdefghij]' tag, or move them outside managed sections, until at most ${TODO_RECONCILIATION_ITEM_LIMIT} remain, then retry once; no state was changed.`,
     });
-  return { rows: result, retainedLegacyRows, matchedRows, convertedRows };
+  const openRows = [...result.values()].filter((row) => isOpenTodoStatus(row.item.status)).length;
+  return { rows: result, retainedLegacyRows, matchedRows, convertedRows, openRows };
 }
 
 export function rowSnapshot(row: ManagedRow, record: JsonObject): TodoPublicSnapshot {
@@ -517,12 +546,13 @@ export function projectTodoReadEntities(
 }> {
   assertTodoReconciliationReadable(root, sourceRoot);
   const entities = relevant(root, sourceRoot, "todo", discovery).filter(({ boundary }) => boundary === TODO.boundary);
-  // Resolved items accumulate for the life of a project and have no compaction
-  // path, so only open items count toward the startup bound. Readiness still
-  // needs resolved items to settle dependencies.
-  const openCount = entities.filter(({ record }) => record?.status !== "resolved").length;
-  if (openCount > TODO_RECONCILIATION_ITEM_LIMIT) throw failure("unsupported_state", "todo", `open TODO projection exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-entity startup bound`, `Resolve open TODO items until at most ${TODO_RECONCILIATION_ITEM_LIMIT} remain, then retry this read.`);
   const view = inspectTodoReadView(root, sourceRoot, entities);
+  // Resolved items accumulate for the life of a project, so only open items
+  // count toward the startup bound. Readiness still needs resolved items to
+  // settle dependencies. Status is the public one TODO.md projects, the same
+  // status the TODO.md row limit counts.
+  const openCount = entities.filter((entity) => isOpenTodoStatus(publicReadRecord(entity.record!, view.rows.get(entity.id!)).status)).length;
+  if (openCount > TODO_RECONCILIATION_ITEM_LIMIT) throw new OpenTodoBoundFailure(openCount);
   const projected = view.drift.status !== "inactive";
   const sorted = entities
     .filter(({ boundary }) => boundary === TODO.boundary)

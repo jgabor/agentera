@@ -154,14 +154,15 @@ describe("Decision 94 entity authority", () => {
         },
         startup_selection: {
           ordering_authority: "skills/agentera/schemas/artifacts/todo.yaml#READINESS.ordering.modes.projected_startup",
-          projected_entity_bound: 256,
+          projected_open_entity_bound: 256,
         },
         public_replacement: expect.stringMatching(/standard Node filesystem operations.*complete old or new bytes.*not a global multi-file atomic snapshot.*validation boundary.*rolls back every attempted target/s),
         semantics: expect.stringMatching(/Interrupted create retry.*original created ID.*without allocating another entity.*Missing post-activation baselines.*reject before effects/s),
         bounds: {
-          managed_items: 256,
+          managed_open_items: 256,
+          startup_projected_open_entities: 256,
           retained_pre_activation_legacy_rows: 256,
-          transaction_targets: 258,
+          transaction_targets: "changed_targets_within_journal_utf8_bytes",
           activation_utf8_bytes: 32768,
         },
       },

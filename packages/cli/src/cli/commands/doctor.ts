@@ -280,7 +280,7 @@ export function cmdDoctor(args: DoctorArgs, io: Io = {}): number {
   const stateRecoveryCommand = commandText(["npx", "-y", "agentera@next", "check", "validate", "state", "--cwd", project]);
   try {
     const entity = collectEntityOrientation(project, sourceRoot);
-    startup = startupAggregation(capabilityContext("status") ?? {}, entity.health as unknown as JsonObject, cutover, entity.todoReconciliation as unknown as JsonObject | null);
+    startup = startupAggregation(capabilityContext("status") ?? {}, entity.health as unknown as JsonObject, cutover, entity.todoReconciliation as unknown as JsonObject | null, entity.todoBound as unknown as JsonObject | null);
   } catch {
     startup = startupAggregation(capabilityContext("status") ?? {}, {}, cutover);
     startup.outcome = "blocked";

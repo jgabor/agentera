@@ -6,15 +6,16 @@ import { listDecisionEntities } from "../../../state/decisionEntities.js";
 import { listHealthEntities } from "../../../state/healthEntities.js";
 import { listPlanEntities, listPlanTaskEntities, openPlanConflictDiagnostic } from "../../../state/planEntities.js";
 import { listObjectiveEntities, listExperimentEntities } from "../../../state/objectiveExperimentEntities.js";
-import { assertTodoReconciliationReadable, listTodoDocsEntities, projectTodoReadEntities } from "../../../state/todoDocsEntities.js";
+import { assertTodoReconciliationReadable, isOpenTodoStatus, listTodoDocsEntities, OpenTodoBoundFailure, projectTodoReadEntities } from "../../../state/todoDocsEntities.js";
 import { inspectTodoReconciliationState, type TodoReconciliationInspection } from "../../../state/todoReconciliationInspection.js";
+import { TODO_RECONCILIATION_ITEM_LIMIT } from "../../../state/todoReconciliationActivation.js";
 import { StateRetrievalFailure } from "../../../state/directRetrieval.js";
 import { discoverEntities } from "../../../state/entityStorage.js";
 import { summaryCaveat } from "../../../state/summaryEntityRead.js";
 import { boundStartupValue, STARTUP_ARRAY_LIMIT } from "../../../state/startupProjection.js";
 import { rememberPlanTaskIndex } from "../../planTaskIndex.js";
 import { firstActionablePlanTask } from "../../capabilityContext/planState.js";
-import type { DecisionFollowUp, DecisionReviewAttention, DocsSummary, HealthSummary, IssueCounts, ObjectiveSummary, PlanSummary, ProgressSummary, StartupHistorySummary, TodoDetailSummary } from "../../contracts/orientationState.js";
+import type { DecisionFollowUp, DecisionReviewAttention, DocsSummary, HealthSummary, IssueCounts, ObjectiveSummary, PlanSummary, ProgressSummary, StartupHistorySummary, TodoDetailSummary, TodoStartupBound } from "../../contracts/orientationState.js";
 import { issueCounts } from "../../orientation.js";
 import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { evaluateTodoReadinessQueue, type TodoReadinessQueueSelection } from "../../todoReadinessSelection.js";
@@ -218,6 +219,7 @@ export interface EntityOrientationProjection {
   todoDetail: TodoDetailSummary;
   todoReadiness: TodoReadinessQueueSelection;
   todoReconciliation: TodoReconciliationInspection | null;
+  todoBound: TodoStartupBound | null;
   decision: DecisionFollowUp | null;
   decisionAttention: DecisionReviewAttention | null;
   glossaryCaveatAttention: string | null;
@@ -477,11 +479,23 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
       }
     : { exists: closedObjectiveCount > 0, active: false, closed_count: closedObjectiveCount };
 
-  const completeTodoEntities = projectTodoReadEntities(projectRoot, sourceRoot, discovery);
-  const todoReadiness = evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot);
+  let completeTodoEntities: ReturnType<typeof projectTodoReadEntities> | null;
+  let todoBound: TodoStartupBound | null = null;
+  try {
+    completeTodoEntities = projectTodoReadEntities(projectRoot, sourceRoot, discovery);
+  } catch (error) {
+    if (!(error instanceof OpenTodoBoundFailure)) throw error;
+    // Too many open items to project the complete set: start degraded and
+    // keep TODO readiness out of selection rather than rank a partial queue.
+    completeTodoEntities = null;
+    todoBound = { open_count: error.openCount, limit: TODO_RECONCILIATION_ITEM_LIMIT, recovery: error.body.error.recovery ?? "" };
+  }
+  const todoReadiness: TodoReadinessQueueSelection = completeTodoEntities ? evaluateTodoReadinessQueue(completeTodoEntities, sourceRoot) : { selected: null, evaluations: [], triage: { count: 0, bounded: true, recovery: null }, abstainRecovery: todoBound!.recovery };
   // This same authoritative read already owns queue readiness and total counts.
   // Join only the bounded list's selected IDs; do not reread entities or paginate.
-  const todoRecords = new Map(completeTodoEntities.map((entry) => [entry.id, entry.record]));
+  // Past the open limit, show the bounded list from canonical entity records.
+  const knownTodos = completeTodoEntities ?? discovery.entities.filter((entry) => entry.boundary === "todo_item" && entry.id && entry.record).map((entry) => ({ id: entry.id!, record: entry.record! }));
+  const todoRecords = new Map(knownTodos.map((entry) => [entry.id, entry.record]));
   const todoItems = todoEntries.map((entry) => {
     const todo = todoRecords.get(String(entry.id)) ?? {};
     return {
@@ -500,7 +514,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
       ...(Object.keys(todo).length ? {} : { detail_availability: "unavailable", retrieval: entry.retrieval }),
     };
   });
-  const todoCounts = issueCounts(completeTodoEntities.filter((entry) => entry.record.status === "open").map((entry) => ({ severity: String(entry.record.severity ?? "normal") })));
+  const todoCounts = issueCounts(knownTodos.filter((entry) => isOpenTodoStatus(entry.record.status)).map((entry) => ({ severity: String(entry.record.severity ?? "normal") })));
   const todoListCounts = todoList.counts as JsonObject | undefined;
   const todoDetail: TodoDetailSummary = {
     total: Number(todoListCounts?.total ?? todoEntries.length),
@@ -573,7 +587,7 @@ export function collectEntityOrientation(projectRoot: string, sourceRoot: string
   });
   // The opaque continuation cursor is already list-budget bounded and must stay
   // byte-exact so omitted TODO detail remains recoverable.
-  const result = { ...projection, todoDetail, todoReadiness, todoReconciliation };
+  const result = { ...projection, todoDetail, todoReadiness, todoReconciliation, todoBound };
   rememberPlanTaskIndex(result.plan as unknown as JsonObject, allTaskEntries);
   return result;
 }

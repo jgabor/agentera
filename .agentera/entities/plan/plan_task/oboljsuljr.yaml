@@ -1,0 +1,12 @@
+id: oboljsuljr
+artifact: plan
+record:
+  name: Mark offers as blocking and ask one question per reply
+  depends_on:
+    - mfymiudngx
+  status: pending
+  acceptance:
+    - GIVEN any offer prime or doctor returns WHEN read THEN it carries a blocking flag the CLI declares.
+    - GIVEN a stale shared skill WHEN prime runs THEN its offer is non-blocking; GIVEN a required project migration THEN its offer is blocking.
+    - GIVEN the operating manual WHEN read THEN it states once that a reply asks one question, blocking offers come before the next-step suggestion, and a non-blocking offer is asked only when nothing else is pending.
+  plan: bvovjefuaq

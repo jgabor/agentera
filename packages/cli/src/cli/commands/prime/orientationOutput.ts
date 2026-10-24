@@ -134,7 +134,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
   const bundlePublic = publicDoctorStatus(bundle);
   const appHome = orientationAppHome(bundle);
   const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation, (state.todo_bound as unknown as JsonObject | null | undefined) ?? null);
   const bespoke: JsonObject = {
     orchestration_context: null,
     closeout_context: null,
@@ -191,7 +191,7 @@ export function buildOrientationJsonPayload(state: OrientationState, command: st
 /** The status dashboard consumes a compact view of the one startup aggregation. */
 export function buildStatusContextState(state: OrientationState, _command = "prime", _options: { budgetBytes?: number; degradedMode?: "minimal" | "status_routing" } = {}): Record<string, unknown> {
   const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation, (state.todo_bound as unknown as JsonObject | null | undefined) ?? null);
   const plan = state.plan;
   const firstPending = plan.first_pending && typeof plan.first_pending === "object" && !Array.isArray(plan.first_pending) ? (plan.first_pending as JsonObject) : null;
   const risks = todoReconciliation?.risks;
@@ -380,7 +380,7 @@ export function printOrientationTextBriefing(state: OrientationState, command: s
   out(`shared_skill: status=${String(state.shared_skill.status)} | path=${String(state.shared_skill.path)}\n`);
   out(renderProjectMigrationOffer(state.state_cutover.migration_offer));
   const todoReconciliation = (state.todo_reconciliation as unknown as JsonObject | null | undefined) ?? null;
-  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation);
+  const startup = startupAggregation(capabilityContext("status") ?? {}, state.health as unknown as JsonObject, state.state_cutover as unknown as JsonObject, todoReconciliation, (state.todo_bound as unknown as JsonObject | null | undefined) ?? null);
   out(`outcome: ${String(startup.outcome)}\n`);
   if (health.exists && health.id) {
     const worst = health.worst;

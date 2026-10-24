@@ -1,0 +1,13 @@
+id: aqbmwrllwi
+artifact: plan
+record:
+  name: Lead a first run with the init preview
+  depends_on:
+    - dkdxxombkz
+    - oboljsuljr
+  status: pending
+  acceptance:
+    - GIVEN a fresh Git repository and an empty home WHEN bare prime runs THEN next_action is the init preview, shown from that one call, ahead of any resume suggestion, and nothing recommends an upgrade.
+    - GIVEN a missing app home and no other gap WHEN prime runs THEN no upgrade is reported.
+    - GIVEN a host with no native Agentera integration WHEN prime runs THEN the skill offer is non-blocking and asked once per session.
+  plan: bvovjefuaq
