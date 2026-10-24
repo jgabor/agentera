@@ -1,0 +1,40 @@
+id: idscqacjdm
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Let next_action suggest resuming unfinished work in the working tree.
+  requirements:
+    - "Prime reports a narrow unfinished-work signal: current branch and changed-file count, never file content."
+    - next_action can select resuming that work ahead of state-based routing, with a stated reason.
+    - The agent may override next_action only on what the user said in the session, and says why (decision buplkzyydk).
+    - The Git read stays within the startup latency and token budgets.
+  acceptance:
+    - A repository with uncommitted changes on a feature branch gets a resume suggestion naming the branch.
+    - A clean repository routes exactly as today.
+    - Tests cover both cases and the absence of file content in output.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree."
+      severity: normal
+      status: open
+      order: 44
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

@@ -1,0 +1,38 @@
+id: pqzldtmyui
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Lead a first run with the init preview instead of an upgrade suggestion.
+  requirements:
+    - A missing app home alone is not reported as an Agentera upgrade.
+    - On a fresh repository without an installed skill, next_action is the init preview.
+    - The shared-skill offer is non-blocking and repeats once per session while the host has no native Agentera integration.
+  acceptance:
+    - A fresh repository with an empty HOME gets the init preview as next_action and no upgrade recommendation.
+    - The skill offer appears once per session as a non-blocking item.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion."
+      severity: degraded
+      status: open
+      order: 9
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

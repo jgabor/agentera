@@ -1,0 +1,38 @@
+id: hlryvcuzyu
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Give Discuss a closeout handoff to plan or TODOs for decisions that call for work.
+  requirements:
+    - Closeout offers one concrete next step when the decision calls for work, such as plan from these decisions, using suggest-then-wait.
+    - Define when follow-up work is justified, so "do not invent follow-ups" no longer blocks work a decision explicitly calls for.
+    - State when follow-up belongs in a plan (multi-step) versus a single TODO.
+    - Under decision imlryhrjcn, follow-up TODOs are routine writes that Discuss may file and report; the decision itself still asks.
+  acceptance:
+    - A deliberation that decides to build something ends with a plan or TODO suggestion as an option.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Give Discuss a closeout handoff to plan or TODOs for decisions that call for work."
+      severity: normal
+      status: open
+      order: 43
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

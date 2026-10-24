@@ -1,0 +1,39 @@
+id: bjeggbtixw
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Derive startup budgets from each capability's job, in tokens.
+  requirements:
+    - "The budget authority states one shared rule: a token target per capability, split into an instruction budget and a state budget, derived from what the job needs rather than measured output plus headroom."
+    - Tests fail when instructions exceed their budget; at runtime, state growth degrades output (trimming attention detail and alternatives) instead of refusing.
+    - Status gets its target first; each later capability audit derives its own.
+    - Supersedes the value reconciliation in TODO frlmcqkrwh for status.
+  acceptance:
+    - One status budget value across manifest, authority and tests.
+    - An over-budget status capsule degrades and keeps the dashboard lines and next_action.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Derive startup budgets from each capability's job, in tokens."
+      severity: degraded
+      status: open
+      order: 8
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

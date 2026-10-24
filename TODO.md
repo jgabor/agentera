@@ -16,6 +16,8 @@
 - [ ] [id:mstlnghews] [fix:3.0.0] Return the whole vision from state query vision.
 - [ ] [id:wfxffubfhd] [fix:3.0.0] Split worker detail sections only at real headings, not at "## " lines inside fenced templates.
 - [ ] [id:yiuvanndof] [fix:3.0.0] Serve the user's topic to a routed capability, not only its byte offsets.
+- [ ] [id:bjeggbtixw] [refactor:3.0.0] Derive startup budgets from each capability's job, in tokens.
+- [ ] [id:pqzldtmyui] [fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion.
 
 ## → Normal
 
@@ -65,6 +67,13 @@
 - [ ] [id:evjcrdvkoh] [chore] Rebalance the development source shards so no shard sets the critical path.
 - [ ] [id:nwmjxztigu] [chore] Take npm availability confirmation off the development publish critical path.
 - [ ] [id:ueffpmnzdr] [chore] Shard package-owner test files across runners with cross-host tarball equality.
+- [ ] [id:hlryvcuzyu] [fix:3.0.0] Give Discuss a closeout handoff to plan or TODOs for decisions that call for work.
+- [ ] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.
+- [ ] [id:irpspuslza] [feat:3.0.0] Add the in-capability autonomy rule to the operating manual.
+- [ ] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.
+- [ ] [id:nqbnvhenng] [refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited.
+- [ ] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.
+- [ ] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -74,6 +83,7 @@
 - [ ] [id:osazlarklk] [docs:3.0.0] Remove the historical qualification label from the CLI coverage contract
 - [ ] [id:oxbwnuwkub] [fix:3.0.0] Stop upgrade from blocking a fresh project as unrecognized v2 state.
 - [ ] [id:pjtcwpgdzd] [docs:3.0.0] Fix the AGENTS.md local CLI recipe so help flags reach the CLI.
+- [ ] [id:akotzfooco] [docs:3.0.0] Clarify in the vision that acting first applies inside an invoked capability.
 
 ## ✓ Resolved
 

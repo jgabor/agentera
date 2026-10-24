@@ -1,0 +1,37 @@
+id: irpspuslza
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Add the in-capability autonomy rule to the operating manual.
+  requirements:
+    - "Per decision imlryhrjcn: inside an invoked capability, write routine project state without asking and report each change with its undo (exact paths and hunks while uncommitted, typed reversal verbs once committed)."
+    - Ask first only for irreversible or out-of-project effects and for intent-recording writes (decisions, vision, objective). Starting another capability still waits.
+  acceptance:
+    - The manual states the rule once within the bare prime budget.
+    - No capability capsule restates it.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add the in-capability autonomy rule to the operating manual."
+      severity: normal
+      status: open
+      order: 45
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

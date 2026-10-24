@@ -1,0 +1,37 @@
+id: jyitpcmnos
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Mark offers as blocking or non-blocking and ask one question per reply.
+  requirements:
+    - Every offer the CLI returns carries a CLI-declared blocking flag.
+    - The operating manual states once that a reply asks one question; blocking offers come before the next-step suggestion, and non-blocking offers render as an attention line asked only when nothing else is pending.
+  acceptance:
+    - Prime output for a stale shared skill marks the offer non-blocking; a required project migration is blocking.
+    - The cold-agent eval asks at most one question per reply.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply."
+      severity: normal
+      status: open
+      order: 46
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu

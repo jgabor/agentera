@@ -1,0 +1,39 @@
+id: vbnhmqjuho
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Serve status_context as data the dashboard renders without interpretation.
+  requirements:
+    - Attention arrives as structured items (severity, family, id, short title, reason) instead of pre-rendered strings; bookkeeping such as satisfaction state stays out.
+    - status_context carries the vision's one-line north star.
+    - status_context carries one profile freshness value that includes an expiring state; the CLI owns the expiry window.
+    - Conditions such as a missing profile, a stale audit or a stalled objective arrive only as attention items or next_action.
+  acceptance:
+    - The status capsule carries no field the status instructions do not render, and every rendered line has its field.
+    - Tests pin the attention item shape and the profile expiring state.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Serve status_context as data the dashboard renders without interpretation."
+      severity: normal
+      status: open
+      order: 48
+    create_batch:
+      effect_sha256: f52e433b8fea5f4dc5fe6e2bcdeffb4ab55030d9d30a9edd9b9d7d5d5ff90297
+      input_sha256: b034c32a7f13dc75f44e9eea47a9716b11d4ab2fdede5a81f9a25c734bed2f6f
+      local_refs:
+        resume-work: idscqacjdm
+        status-context-data: vbnhmqjuho
+        offer-blocking: jyitpcmnos
+        first-run: pqzldtmyui
+        job-budgets: bjeggbtixw
+        write-then-report: irpspuslza
+        status-rewrite: ziymlghyzi
+        vision-yolo: akotzfooco
+        adopt-autonomy: nqbnvhenng
+        discuss-closeout: hlryvcuzyu
