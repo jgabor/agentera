@@ -1,0 +1,25 @@
+id: mliblxbveo
+artifact: decisions
+record:
+  date: 2026-10-24
+  question: How should Discuss be redesigned so it reaches the user's intent before it closes, and what context should it start with?
+  context: "The discuss audit measured the served instructions (17.4 KB) and the capsule (55,022 bytes on the manifest measure, 56,000 as full stdout, against a 55,000 budget). Cold agents showed three gaps. Closeout proposed no plan or TODO after the user said they wanted to start the work that week. A draft decision used \"Confidence: medium\", which the append writer rejects. Startup carried 20 open TODOs in full (22.8 KB) while prior decisions and the profile needed separate calls. When the closeout block replaced the Done section, it dropped the prior audit's readiness check and the confidence labels. Voice delegation dropped v2's \"Reflect back before asking the next question. This is the core move.\" This repo holds 74 decisions (282 KB) and 20 open TODOs (23 KB). The baseline verdicts were confirmed: the prior discuss audit, the closeout coherence decision, the glossary startup decision and voice delegation hold with amendment, and the remaining shared decisions hold."
+  alternatives:
+    - name: Hybrid deliberation that must reach clear intent, starts from prior decisions and work, feeds the glossary, and suggests the next step
+      status: chosen
+    - name: Keep Socratic questioning for every decision, with a pick only on request; it ignores decisions that evidence can settle
+      status: rejected
+    - name: Lead with a pick before the user's lean; it anchors the user
+      status: rejected
+    - name: Keep the readiness check as a warning that never blocks; closing with unclear intent means Discuss failed
+      status: rejected
+    - name: Refuse Done while intent is unclear; it takes control away from the user
+      status: rejected
+    - name: Start with a topic-matched subset or index only; it can miss related items worded differently
+      status: rejected
+    - name: Cut glossary advice from Discuss; terminology would drift between discussion and execution
+      status: rejected
+  choice: "Discuss reads the decision type. Values or unclear problems get questions. For decisions that evidence can settle, it shows options with evidence and win conditions, asks the user's lean, then gives its pick with confidence. Each scratchpad adds a \"Heard:\" line restating the last answer. Done must leave the user's intent clear. Discuss probes checkable facts itself and records facts it cannot check as conditions in the decision. If the user picks Done with intent unclear, Discuss names the gap once, then honors Done: nothing is saved as firm, and the exit is flagged with the gap named. Every question labels Done as ending the whole discussion. Closeout drafts the decision with firm, provisional or exploratory confidence, and the decision write asks first. Follow-up work that one build cycle can finish is filed as a TODO and reported with its undo. Larger work is suggested as ≡ plan, which starts only when the user says yes. Discuss reads glossary advice and, at closeout, proposes entries for terms the decision coined or sharpened; publishing stays with its owner. Startup carries every prior decision, open TODO and plan. The goal is about 20k tokens: full text while it fits, otherwise a one-line index of everything plus full text for items on the topic. A consolidation mechanism keeps decisions and TODOs within that goal. Writer recovery shrinks to one line: save through each writer and report what saved and what did not. The CLI carries the vision's voice in the capsule."
+  reasoning: The user wants Discuss to be a marathon toward understanding intent, not a sprint toward a TODO. A decision relied on for a long time is worth a costly start, because rework from unclear decisions costs more. Asking the user's lean before showing a pick keeps the challenge honest without hiding evidence. Facts are checked instead of asked. Named gaps keep a failed closeout visible while the user stays in control. The 20k-token goal and consolidation bound the start cost that the vision's token principle warns about. Discuss only proposes glossary entries, so the glossary keeps a single publishing owner.
+  confidence: firm
+  feeds_into: packages/cli/src/capabilities/discuss/instructions.ts, skills/agentera/capabilities/discuss/schemas/validation.yaml, skills/agentera/capabilities/discuss/schemas/exit.yaml, packages/cli/src/cli/capabilityContext/startup.ts, vision

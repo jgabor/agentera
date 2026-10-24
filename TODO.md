@@ -74,6 +74,13 @@
 - [ ] [id:qudrlknzlt] [feat:3.0.0] Keep the vision north star short when the vision capability writes it.
 - [ ] [id:ozhcboueiy] [refactor:3.0.0] Decide which capsule metadata each capability startup keeps.
 - [ ] [id:mesptlylox] [fix:3.0.0] Make next_action alternatives distinct and truthful.
+- [ ] [id:akfxobcpbi] [fix:3.0.0] Route curated phrases sent after the /agentera prefix.
+- [ ] [id:isxnszhath] [feat:3.0.0] Consolidate decisions and TODOs so Discuss's prior context stays near 20k tokens.
+- [ ] [id:mqsojuasjb] [fix:3.0.0] Detect instruction patches that apply but are overwritten by a later patch.
+- [ ] [id:osakqozckv] [feat:3.0.0] Start Discuss with every prior decision, open TODO and plan within a 20k-token goal.
+- [ ] [id:vjdobcaiso] [feat:3.0.0] Let Discuss propose glossary entries for terms a decision coins or sharpens.
+- [ ] [id:ycnfuhmffy] [refactor:3.0.0] Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term.
+- [ ] [id:zgjozzimtt] [fix:3.0.0] Carry the vision's identity.voice in capsules that delegate voice to it.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

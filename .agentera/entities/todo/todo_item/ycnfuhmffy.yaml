@@ -1,0 +1,33 @@
+id: ycnfuhmffy
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term.
+  requirements:
+    - Move the glossary consumer rules (about 2.6 KB in Discuss, also in Plan and Build) into one block composed at serve time.
+    - A routed start through prime --input cannot pass --term-input, so a meaning-sensitive start costs a second full capsule; let the routed start carry the term.
+  acceptance:
+    - Discuss, Plan and Build serve identical glossary rules from one source, and a routed start returns glossary advice without a second prime call.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term."
+      severity: normal
+      status: open
+      order: 55
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb

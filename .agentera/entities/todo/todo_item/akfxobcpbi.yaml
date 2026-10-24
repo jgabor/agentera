@@ -1,0 +1,33 @@
+id: akfxobcpbi
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Route curated phrases sent after the /agentera prefix.
+  requirements:
+    - '"help me decide" routes to Discuss by phrase, but "/agentera help me decide" returns semantic_required, and SKILL.md sends requests unchanged.'
+    - The routing corpus has no prefixed phrase case. Resolve under pzicyatkvi.
+  acceptance:
+    - Every active curated phrase routes deterministically with and without the /agentera prefix, with corpus cases for both.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Route curated phrases sent after the /agentera prefix."
+      severity: normal
+      status: open
+      order: 50
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb

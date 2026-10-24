@@ -1,0 +1,33 @@
+id: vjdobcaiso
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Let Discuss propose glossary entries for terms a decision coins or sharpens.
+  requirements:
+    - At closeout Discuss proposes entries in the same proposal form audit uses; publishing stays with state glossary publish and its approval.
+    - Amend the glossary publication contract so a Discuss proposal is an accepted source.
+  acceptance:
+    - A decision that settles a term ends with a glossary proposal the user can approve and publish.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Let Discuss propose glossary entries for terms a decision coins or sharpens."
+      severity: normal
+      status: open
+      order: 54
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb

@@ -1,0 +1,34 @@
+id: osakqozckv
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Start Discuss with every prior decision, open TODO and plan within a 20k-token goal.
+  requirements:
+    - "capabilityContext/startup.ts carries decisions, open TODOs and plans for Discuss: full text while the set fits about 20k tokens, otherwise a one-line index of everything plus full text for items on the topic."
+    - The index line is each decision's question and choice, and each TODO and plan title.
+    - Replaces today's full TODO payload (22.8 KB) that Discuss does not read, and supersedes the Discuss part of pblyboavnd.
+  acceptance:
+    - A Discuss start in this repository needs no separate decisions call and stays within the capsule and routed-start budgets.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Start Discuss with every prior decision, open TODO and plan within a 20k-token goal."
+      severity: normal
+      status: open
+      order: 53
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb

@@ -1,0 +1,32 @@
+id: zgjozzimtt
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Carry the vision's identity.voice in capsules that delegate voice to it.
+  requirements:
+    - Discuss and other capabilities tell the agent to adopt identity.voice, but vision is deferred and state query vision returns only personas.
+  acceptance:
+    - Each capsule whose instructions delegate voice includes identity.voice, or states it is absent.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Carry the vision's identity.voice in capsules that delegate voice to it."
+      severity: normal
+      status: open
+      order: 56
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb

@@ -1,0 +1,33 @@
+id: mqsojuasjb
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Detect instruction patches that apply but are overwritten by a later patch.
+  requirements:
+    - "In Discuss, 4 of 9 patches leave nothing in served text: one matches nothing, three apply to text a later regex patch replaces."
+    - The audit prompt's replace instrumentation catches only the first kind. Track with hgzzwyerzo.
+  acceptance:
+    - A check reports every patch whose replacement text is absent from the served instructions.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Detect instruction patches that apply but are overwritten by a later patch."
+      severity: normal
+      status: open
+      order: 52
+    create_batch:
+      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
+      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
+      local_refs:
+        consolidate: isxnszhath
+        discuss-startup: osakqozckv
+        glossary-shared: ycnfuhmffy
+        glossary-feed: vjdobcaiso
+        voice: zgjozzimtt
+        phrase-prefix: akfxobcpbi
+        patch-overwrite: mqsojuasjb
