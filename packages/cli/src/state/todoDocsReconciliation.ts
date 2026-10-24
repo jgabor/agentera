@@ -517,7 +517,11 @@ export function projectTodoReadEntities(
 }> {
   assertTodoReconciliationReadable(root, sourceRoot);
   const entities = relevant(root, sourceRoot, "todo", discovery).filter(({ boundary }) => boundary === TODO.boundary);
-  if (entities.length > TODO_RECONCILIATION_ITEM_LIMIT) throw failure("unsupported_state", "todo", `complete TODO projection exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-entity startup bound`, "Compact resolved TODO entities within the declared reconciliation bound, then retry this read.");
+  // Resolved items accumulate for the life of a project and have no compaction
+  // path, so only open items count toward the startup bound. Readiness still
+  // needs resolved items to settle dependencies.
+  const openCount = entities.filter(({ record }) => record?.status !== "resolved").length;
+  if (openCount > TODO_RECONCILIATION_ITEM_LIMIT) throw failure("unsupported_state", "todo", `open TODO projection exceeds the ${TODO_RECONCILIATION_ITEM_LIMIT}-entity startup bound`, `Resolve open TODO items until at most ${TODO_RECONCILIATION_ITEM_LIMIT} remain, then retry this read.`);
   const view = inspectTodoReadView(root, sourceRoot, entities);
   const projected = view.drift.status !== "inactive";
   const sorted = entities

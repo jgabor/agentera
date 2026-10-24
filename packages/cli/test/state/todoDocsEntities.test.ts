@@ -2333,6 +2333,26 @@ describe("TODO item and documentation inventory entity authority", () => {
     REALISTIC_TODO_CURSOR_TIMEOUT_MS,
   );
 
+  it("counts only open TODO items toward the startup bound", () => {
+    const { root } = todoReadProject(250, { resolvedCount: 240 });
+    for (let index = 250; index < 270; index += 1) {
+      const target = seedTodoEntity(root, indexedId(index), `Resolved absent item ${index}`);
+      const envelope = loadYamlMapping(fs.readFileSync(target, "utf8"));
+      (envelope.record as any).status = "resolved";
+      (envelope.record as any).reconciliation = { schema_version: "agentera.todoReconciliation.v1", public: { present: false } };
+      fs.writeFileSync(target, dumpYamlMapping(envelope));
+    }
+    const resolvedHeavy = capture(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(resolvedHeavy.rc, resolvedHeavy.err || resolvedHeavy.out).toBe(0);
+    expect(resolvedHeavy.json.capability_context.context.status_context.todo.critical).toBe(10);
+
+    const { root: openHeavy } = todoReadProject(250);
+    for (let index = 250; index < 257; index += 1) seedAbsentTodoEntity(openHeavy, indexedId(index), `Open absent item ${index}`, index + 1);
+    const refused = capture(openHeavy, ["prime", "--context", "status", "--format", "json"]);
+    expect(refused.rc).not.toBe(0);
+    expect(refused.out + refused.err).toContain("open TODO projection exceeds the 256-entity startup bound");
+  });
+
   it("preserves filtered TODO continuation and pre-filter queue rank", () => {
     const { root, orderedIds } = todoReadProject(8, { normalOpenCount: 5, resolvedCount: 1 });
     const before = files(root);

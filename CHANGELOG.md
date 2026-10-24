@@ -180,6 +180,9 @@
 
 ### Fixed
 
+- Fixed `prime` refusing every start once a project held more than 256 TODO
+  items in total. Resolved items no longer count toward the startup bound;
+  only open items do, and the error now says to resolve open items.
 - Fixed a fresh project that a crashed writer left with only a stale
   `.agentera/.writer.lock`. Prime, doctor, `init` and `state plan create` now
   treat it as fresh when the lock's owner process is gone, and both
