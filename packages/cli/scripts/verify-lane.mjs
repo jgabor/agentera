@@ -11,6 +11,7 @@ import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendi
 import { validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
+import { SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionErrors, sourcePartitionFiles } from "./source-partition.mjs";
 import { writeVerificationTimingProfile } from "./verification-timing.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
@@ -154,11 +155,13 @@ function inventory(contract, policyBytes) {
     if (!Array.isArray(definition.integration.command) || definition.integration.command.length < 2) errors.push(`${owner} integration command is invalid`);
   }
 
+  const sourceFiles = files.filter((file) => assignments.get(file) === "source");
   try {
-    validatePendingAuthority(policyBytes, Buffer.from(JSON.stringify(files.filter((file) => assignments.get(file) === "source"))), root);
+    validatePendingAuthority(policyBytes, Buffer.from(JSON.stringify(sourceFiles)), root);
   } catch (error) {
     errors.push(error.message);
   }
+  errors.push(...sourcePartitionErrors(contract.source_partitions, sourceFiles, [contract.overlap.allowed_pending_assertion.path]));
 
   return { files, assignments, evidenceProducers, errors };
 }
@@ -199,6 +202,19 @@ function canonicalInventoryFile(filter, state) {
   return matches[0];
 }
 
+function partitionSelection(owner, state) {
+  const value = process.env[SOURCE_PARTITION_ENVIRONMENT];
+  // The partition selects source files only; other owners in a partitioned
+  // run keep their complete inventories.
+  if (owner !== "source" || value === undefined || value === "") return undefined;
+  const partition = parseSourcePartition(value, state.contract.source_partitions);
+  return sourcePartitionFiles(
+    state.files.filter((file) => state.assignments.get(file) === "source"),
+    state.contract.source_partitions,
+    partition,
+  );
+}
+
 function normalizedSelection(owner, state, forwarded) {
   const definition = state.contract.owners[owner];
   const safe = definition.forwarding?.safe_options ?? {};
@@ -232,6 +248,11 @@ function normalizedSelection(owner, state, forwarded) {
     if (safe[option] === "none" && argument.includes("=")) throw new Error(`safe flag '${option}' does not accept a value`);
     if (safe[option] !== "none") throw new Error(`invalid forwarding contract for '${option}'`);
     options.push(option);
+  }
+  const partitioned = partitionSelection(owner, state);
+  if (partitioned !== undefined) {
+    if (files.length > 0) throw new Error(`${SOURCE_PARTITION_ENVIRONMENT} cannot be combined with explicit file filters`);
+    files.push(...partitioned);
   }
   const producer = state.evidenceProducers.get(owner);
   if (files.length > 0 && producer !== undefined && !files.includes(producer)) {
@@ -303,6 +324,10 @@ async function runOwner(owner, state, forwarded = [], profile = "full") {
     runnerEnv.AGENTERA_VERIFICATION_WORKERS = String(definition.execution.workers);
   }
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
+  // Partition selection ends here; tests that start coordinators must not
+  // inherit their runner's partition.
+  delete runnerEnv[SOURCE_PARTITION_ENVIRONMENT];
+  delete runnerEnv.AGENTERA_SOURCE_PARTITION_DIRECTORY;
   const timingRoot = owner === "package" && !resultChannel ? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-timing-")) : undefined;
   const timingFile = owner === "package" ? (resultChannel ? `${resultChannel}.timings.json` : path.join(timingRoot, "timings.json")) : undefined;
   if (timingFile) runnerEnv.AGENTERA_VERIFICATION_PACKAGE_TIMINGS = timingFile;

@@ -259,7 +259,10 @@ fixture deletion; asynchronous cleanup must not race still-running work.
 
 The migration-only comparison workflow and its dedicated test are retired; the
 linked run remains historical qualification evidence. Ordinary `publish.yml`
-development verification now uses that candidate's one-source-worker profile.
+development verification later split source into a core partition and three
+shards on separate runners (see
+[v3 packaging](v3-packaging.md#preparation-verification-and-publication)). The core runs two source
+workers beside the package owner; shards use the four-worker default.
 Local source defaults and the package's one-worker allocation stay unchanged.
 The policy now allows 600 seconds for the whole package owner, explicitly
 authorized after publication run [37080534700](https://github.com/jgabor/agentera/actions/runs/37080534700)
@@ -271,9 +274,10 @@ publication profile still needs a fresh passing ordinary CI run.
 
 ## Remaining limits
 
-- The source owner still takes about 25 minutes on the measured host.
-  Reducing development-gate and source wall time is future optimization work,
-  not a blocker to the completed consolidation.
+- With one source worker, the source owner took about 25 minutes on the
+  measured host. CI now distributes it across partitions; see
+  [verification performance](../verification-performance.md#distributed-development-ci)
+  for the hosted measurement.
 - CLI long-path budget fragility remains unresolved. Development success does
   not claim that issue is fixed.
 - Guarded compiler caching contains one known native failure mode, not every

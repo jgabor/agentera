@@ -1,6 +1,6 @@
 # Verified native bootstrap
 
-The two non-OIDC development setup jobs use native Vite+ **1.3.0** to manage
+The non-OIDC development setup jobs use native Vite+ **1.3.0** to manage
 Node **24.22.0**, the `.node-version` pin, and pnpm **10.30.3**. Corepack is
 not installed or executed. The checkout-free, action-free OIDC publisher is
 unchanged. Hosted acceptance of the 1.3.0 bootstrap remains outstanding; local
@@ -92,7 +92,7 @@ acquisition entrypoint. Subsequent native installation uses that verified cache.
 
 Frozen install retains lockfile integrity/store checks and root-local Vite+
 version verification. Native install forwards pnpm-only flags after `--`.
-Both CI jobs retain `--ignore-scripts`; contributor policy still allows only
+Every CI setup job retains `--ignore-scripts`; contributor policy still allows only
 esbuild. No task-result or dependency cache is added. The baseline proof verifies
 the allowed and blocked lifecycle scripts separately.
 

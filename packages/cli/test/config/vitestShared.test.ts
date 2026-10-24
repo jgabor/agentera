@@ -139,14 +139,24 @@ describe("source worker policy", () => {
     const sourceOwnerStep = workflow.jobs["verify-development"].steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
     expect(sourceOwnerStep.env).toEqual({
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
-      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "1",
+      AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
       AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
+      AGENTERA_SOURCE_PARTITION: "core",
+      AGENTERA_SOURCE_PARTITION_DIRECTORY: "${{ runner.temp }}/agentera-verification",
     });
     expect(workerPolicyFor(sourceOwnerStep.env)).toEqual({
       name: UNMEASURED_WORKER_POLICY,
       workers: 4,
+    });
+    // Shards run alone on their runners, so they keep the unmeasured default.
+    const shardStep = workflow.jobs["verify-source-shard"].steps.find((step: { name?: string }) => step.name === "Verify development source shard");
+    expect(shardStep.env).toEqual({
+      AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
+      VITEST_TEST_TIMEOUT_MS: "120000",
+      AGENTERA_SOURCE_PARTITION: "shard:${{ matrix.shard }}/3",
+      AGENTERA_SOURCE_PARTITION_DIRECTORY: "${{ runner.temp }}/agentera-verification",
     });
   });
 });

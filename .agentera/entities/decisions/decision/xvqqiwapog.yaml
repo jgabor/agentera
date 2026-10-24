@@ -1,0 +1,19 @@
+id: xvqqiwapog
+artifact: decisions
+record:
+  date: 2026-10-24
+  question: How should development CI run the source owner so a publish run takes about 15 minutes instead of 32?
+  context: "The Publish Agentera run took about 32 minutes. The source owner alone took 27 minutes because publish.yml pinned it to one Vitest worker: source, package and stress shared one 4-vCPU runner, and four source workers pushed the package owner past its 600 second budget. verification-policy.yaml named generated-overlap as the only execution origin for source, package and build evidence, and the overlap and release checks required one source report covering the exact inventory."
+  alternatives:
+    - name: Split source into a core partition inside the unchanged generated-overlap DAG and source-only shards on separate runners, with an assemble job that proves the union
+      status: chosen
+    - name: Keep one job and buy a larger GitHub runner
+      status: rejected
+    - name: Keep one job and only speed up the slowest source test files
+      status: rejected
+    - name: Run each owner standalone in separate jobs and drop the in-CI conjunction
+      status: rejected
+  choice: Development CI runs the core partition (runtimeBootstrapMatrix and the declared Darwin-skip file) inside the full verify:development DAG, which reports partial; three shard jobs run the remaining source files through a source-only generated overlap; verify:development:assemble passes only when the core passed every gate and all partition reports cover the exact source inventory once for the same source identity. Receipts and vp run verify refuse any partition.
+  reasoning: The source owner never used the private build, so splitting it loses only the property that all owners ran on one host. Activation evidence, the package budget and barrier B stay on the core runner unchanged, and the assemble job keeps exact inventory coverage, the single allowed skip and aggregate checks through the existing validatePendingTests. A larger runner costs money on every push; trimming tests alone leaves the run above 15 minutes; standalone jobs would drop the coverage proof.
+  confidence: provisional
+  feeds_into: verification-policy.yaml#source_partitions and .github/workflows/publish.yml development verification jobs

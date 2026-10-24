@@ -78,6 +78,13 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   contract, and activation-conjunction readers. It runs the live CLI resource workload once per target
   at unchanged scales and limits; latency is advisory. Its evidence is not full
   qualification or a receipt.
+- Development CI splits the source owner by
+  `verification-policy.yaml#source_partitions`: the core job runs
+  `vp run verify:development` with `AGENTERA_SOURCE_PARTITION=core` and reports
+  `partial`, each shard job runs `vp run verify:development:shard`, and
+  `vp run verify:development:assemble` passes only when every partition passed
+  and together they cover the exact source inventory once. Receipts and
+  `vp run verify` refuse a partition.
 - `vp run verify` is full qualification: the same eleven gates with five cold
   performance repetitions. Its failures stay visible.
 

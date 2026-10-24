@@ -45,9 +45,11 @@ recipes as `vp env exec --node "$(cat .node-version)" vp -C packages/cli run <sc
 Use the same wrapper for the shim directory. The actual child process version,
 not the displayed pin, is the qualification check.
 
-Ordinary `publish.yml` development verification uses the qualified one-source-worker
-profile, with the package owner's 600-second whole-owner budget from the verification
-policy. The migration-only baseline/candidate comparison workflow is retired.
+Ordinary `publish.yml` development verification splits the source owner into a
+core partition and three source-only shards on separate runners, then assembles
+their evidence. The core job runs two source workers next to the package owner,
+which keeps its 600-second whole-owner budget from the verification policy. The
+migration-only baseline/candidate comparison workflow is retired.
 See [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)
 for the recorded hosted development pass and its limits. A new passing publication
 still requires fresh ordinary CI verification.
@@ -126,21 +128,35 @@ derives the base release line from the valid checked-in
 `packages/cli/package.json#version` and allocates the candidate ordinal as
 `GITHUB_RUN_NUMBER + 89`. The new workflow's runs 1, 2, and 3 map to
 `3.0.0-dev.90`, `.91`, and `.92`; the fixed offset follows the prior workflow's
-`dev.89` publication. Before construction, a no-OIDC verification job checks
-out `GITHUB_SHA`, installs the exact pinned root Vite+ and pnpm 10.30.3
-toolchain without automatic install or caching, runs bare `vp check`, then
-runs uncached `vp run verify:development`. This runs development safety,
-not full release qualification, and produces no receipt. Its
-40-minute step deadline retains the 2,400,000 ms authority deadline, while the
-45-minute job allows setup, an explicit `vp run build` of the checkout CLI, and
-all five L1 source-migration scenarios: `happy-path-clean`, `stable-safety`,
-`noisy-app-home`, `codex-plugin-vs-copied`, and `partial-only-runtime`.
+`dev.89` publication. Before construction, no-OIDC verification jobs check
+out `GITHUB_SHA` and install the exact pinned root Vite+ and pnpm 10.30.3
+toolchain without automatic install or caching:
+
+- The core job runs bare `vp check`, then uncached `vp run verify:development`
+  with `AGENTERA_SOURCE_PARTITION=core`. It runs every development gate, but its
+  source participant runs only the `verification-policy.yaml#source_partitions`
+  core files, so it reports `partial`.
+- Three shard jobs each run `vp run verify:development:shard` for one
+  `shard:N/3` partition: the remaining source files through a source-only
+  generated overlap with the same isolation and pending-test validation.
+- The assemble job runs `vp run verify:development:assemble`. It passes only
+  when the core passed every gate and the core and shard reports cover the
+  exact source inventory once, all for the same source identity. Jobs exchange
+  only these JSON reports as `agentera-verification-*` artifacts.
+
+This runs development safety, not full release qualification, and produces no
+receipt. Each verification step keeps a 40-minute deadline within the 2,400,000
+ms authority deadline. The 45-minute core job also allows an explicit
+`vp run build` of the checkout CLI and all five L1 source-migration scenarios:
+`happy-path-clean`, `stable-safety`, `noisy-app-home`,
+`codex-plugin-vs-copied`, and `partial-only-runtime`.
 The private verification build is cleaned up and cannot serve those scenarios.
 Each scenario must satisfy its typed outcome and preservation assertions;
 expected refusal is a passing safety test, not successful migration. No Bun or
 uv setup is needed. The dependent candidate build retains its separate
-construction allowance. A build or scenario failure therefore prevents candidate
-construction, artifact upload, and registry effects. After verification, CI
+construction allowance. A failed, cancelled, or skipped partition, build, or
+scenario skips assembly and therefore prevents candidate construction, artifact
+upload, and registry effects. After verification, CI
 builds once from `GITHUB_SHA`, and sets the
 candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
 construction manifest. It
@@ -677,8 +693,8 @@ Byte-stable fixtures/evidence and typed-state output are not rewritten.
 Missing local tools fail; recover with `VP_GIT_HOOKS=0 vp install`. Only network
 state compaction retains a 10-second watchdog; Python/TS parity stays narrowly
 triggered. The local hook never executes a specialized owner or release lane.
-The configured development-ref workflow invokes development safety once.
-Generated
+The configured development-ref workflow invokes development safety once per
+source partition and assembles the result. Generated
 overlap is therefore the sole execution origin for source, package, and build;
 the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,
 one-sample live resource safety, and capacity evidence without standalone duplicate steps. Full release
@@ -720,7 +736,9 @@ five. It retains:
 - Clean private builds and self-contained package construction/extracted smoke.
   Generated-overlap remains the sole source/package/build execution origin;
   source identity, stale/mixed-generation rejection, pending-test validation,
-  and fresh-build reader barriers are unchanged.
+  and fresh-build reader barriers are unchanged. In CI, source runs as one core
+  and three shard partitions whose union assembly proves; a partition is never
+  accepted on its own, and receipts always require one complete run.
 - Stress and deterministic capacity, not just small correctness fixtures.
 - Live resource correctness through `test:development-resource`: the same seven
   targets at the existing 100/1,000 entity/archive scales, one fresh CLI process

@@ -8,9 +8,10 @@ import { fileURLToPath, pathToFileURL } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
-import { validatePendingTests } from "./overlap-pending.mjs";
+import { loadVerificationPolicy, validatePendingTests } from "./overlap-pending.mjs";
 import { npmChildEnvironment } from "./package-construction.mjs";
 import { readPackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
+import { SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionFiles } from "./source-partition.mjs";
 import { createVerificationProgress, createOverlapProgressForwarder } from "./verification-progress.mjs";
 
 const scriptPath = fileURLToPath(import.meta.url);
@@ -20,6 +21,7 @@ const participants = {
   source: ["pnpm", "-C", "packages/cli", "run", "test:source"],
   package: ["pnpm", "-C", "packages/cli", "run", "verify:package"],
 };
+export const SOURCE_PARTITION_EVIDENCE_SCHEMA = "agentera.sourcePartitionEvidence.v1";
 
 function overlapFailure(message) {
   const error = new Error(message);
@@ -371,6 +373,17 @@ export async function runGeneratedOverlap(options = {}) {
   const operationDeadline = overallDeadline - cleanupMarginMs;
   const handoffDeadline = overallDeadline - parentReconciliationMarginMs;
   const ownedSettlementDeadline = operationDeadline + Math.floor((cleanupMarginMs - parentReconciliationMarginMs) / 2);
+  const policyBytes = options.policyBytes ?? fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
+  const partitionValue = options.environment?.[SOURCE_PARTITION_ENVIRONMENT] ?? process.env[SOURCE_PARTITION_ENVIRONMENT];
+  let partition;
+  try {
+    partition = partitionValue ? parseSourcePartition(partitionValue, loadVerificationPolicy(policyBytes).source_partitions) : undefined;
+  } catch (error) {
+    throw overlapFailure(error.message);
+  }
+  // A shard runs only its source files; the core partition keeps every other
+  // participant and all generated evidence.
+  const sourceOnly = partition?.kind === "shard";
   const root = options.workRoot ?? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-real-overlap-"));
   const buildId = sourceIdentity.identitySha256;
   const buildRoot = path.join(root, "private-build", buildId);
@@ -379,7 +392,6 @@ export async function runGeneratedOverlap(options = {}) {
   const start = options.startParticipant ?? ((name, command) => startChild({ name, command, repoRoot, root, barrier, cleanupMarginMs, now, sourceIdentity }));
   const loadInventory = options.loadInventory ?? (() => readInventory(packageRoot, operationDeadline - now()));
   const ready = options.waitForReady ?? ((names) => waitForReady(names, barrier, operationDeadline, now));
-  const policyBytes = options.policyBytes ?? fs.readFileSync(path.join(repoRoot, "references/analysis/verification-policy.yaml"));
   const handles = [];
   const observations = [];
   let primaryFailure;
@@ -424,11 +436,14 @@ export async function runGeneratedOverlap(options = {}) {
   try {
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before inventory");
     const inventory = loadInventory();
-    const commands = {
-      source: participants.source,
-      build: ["pnpm", "-C", "packages/cli", "build", "--", "--output-root", buildRoot],
-      package: participants.package,
-    };
+    const partitionFiles = partition ? sourcePartitionFiles(inventory.files.source, loadVerificationPolicy(policyBytes).source_partitions, partition) : undefined;
+    const commands = sourceOnly
+      ? { source: participants.source }
+      : {
+          source: participants.source,
+          build: ["pnpm", "-C", "packages/cli", "build", "--", "--output-root", buildRoot],
+          package: participants.package,
+        };
     for (const [name, command] of Object.entries(commands)) {
       if (now() >= operationDeadline) throw overlapFailure(`generated-overlap deadline expired before starting ${name}`);
       const handle = start(name, command);
@@ -438,7 +453,7 @@ export async function runGeneratedOverlap(options = {}) {
     await awaitWork(Promise.resolve(ready(Object.keys(commands))), operationDeadline, "participant readiness");
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before releasing participants");
     fs.writeFileSync(path.join(barrier, "release"), "release\n");
-    const settled = await awaitWork(settlement(), operationDeadline, "source/build/package settlement");
+    const settled = await awaitWork(settlement(), operationDeadline, sourceOnly ? "source settlement" : "source/build/package settlement");
     const failed = settled.find((entry) => entry.status === "rejected");
     if (failed) throw primaryFailure ?? failed.reason;
     const completed = {};
@@ -447,8 +462,10 @@ export async function runGeneratedOverlap(options = {}) {
       options.readOwnerResult ??
       ((owner) => {
         const bytes = fs.readFileSync(path.join(root, `${owner}.json`));
-        const expectedFiles = inventory.files[owner];
-        const pending = validatePendingTests(owner, bytes, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
+        const expectedFiles = owner === "source" && partitionFiles ? partitionFiles : inventory.files[owner];
+        // Shards hold no declared pending assertion, so they validate as an
+        // owner that permits none.
+        const pending = validatePendingTests(owner === "source" && sourceOnly ? "source-shard" : owner, bytes, Buffer.from(JSON.stringify(expectedFiles)), policyBytes, repoRoot, process.platform);
         return {
           files: expectedFiles.length,
           tests: JSON.parse(bytes.toString("utf8")).numTotalTests,
@@ -457,9 +474,30 @@ export async function runGeneratedOverlap(options = {}) {
       });
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading source evidence");
     const source = readOwnerResult("source");
+    const expectedSourceFiles = partitionFiles?.length ?? inventory.counts.source;
+    if (sourceOnly) {
+      if (source.files !== expectedSourceFiles) throw overlapFailure(`source partition count mismatch: ${JSON.stringify({ source, expected: expectedSourceFiles })}`);
+      if (!sameGeneratedSourceIdentity(generatedSourceIdentity(packageRoot), sourceIdentity)) {
+        throw overlapFailure("generated-overlap source changed while owners were executing");
+      }
+      return {
+        schemaVersion: SOURCE_PARTITION_EVIDENCE_SCHEMA,
+        status: "pass",
+        partition: { name: partition.label, index: partition.index, count: partition.count, files: expectedSourceFiles },
+        source_identity: sourceIdentity,
+        inventory: inventory.counts,
+        participants: {
+          source: {
+            ...source,
+            command: completed.source.command,
+            elapsedMs: completed.source.elapsedMs,
+          },
+        },
+      };
+    }
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before reading package evidence");
     const packageResult = readOwnerResult("package");
-    if (source.files !== inventory.counts.source || packageResult.files !== inventory.counts.package) {
+    if (source.files !== expectedSourceFiles || packageResult.files !== inventory.counts.package) {
       throw overlapFailure(`real overlap owner count mismatch: ${JSON.stringify({ source, package: packageResult, inventory: inventory.counts })}`);
     }
     if (now() >= operationDeadline) throw overlapFailure("generated-overlap deadline expired before selecting generated output");
@@ -506,6 +544,7 @@ export async function runGeneratedOverlap(options = {}) {
       status: "pass",
       source_identity: sourceIdentity,
       inventory: inventory.counts,
+      ...(partition ? { source_scope: { partition: partition.label, files: expectedSourceFiles } } : {}),
       participants: {
         source: {
           ...source,

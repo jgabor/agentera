@@ -256,8 +256,45 @@ At that stage, development CI selected `AGENTERA_GENERATED_OVERLAP_SOURCE_WORKER
 only for its development verification step, without changing owner budgets or
 local defaults. The failed four-worker control kept the diagnostic workflow red
 even though the two-worker overlap passed. This is historical allocation evidence.
-Current ordinary publication verification instead uses the qualified one-worker
-profile and the authorized 600-second package budget; see the
+Ordinary publication verification then used the qualified one-worker profile
+and the authorized 600-second package budget; see the
 [toolchain guide](packaging/vite-plus-1-toolchain.md#qualification-and-performance).
+The distributed layout below replaced it.
 The migration-only comparison workflow is retired. Local defaults, coverage,
 deadlines, independent builds and package constructions remain unchanged.
+
+## Distributed development CI
+
+[Run 40096015987](https://github.com/jgabor/agentera/actions/runs/40096015987)
+took about 32 minutes from push to confirmed availability. Its verification
+job spent 1,744 s in `vp run verify:development`. The one-worker source
+participant took 1,607 s: about 1,422 s of test cases and 185 s of collection.
+The package participant took 483 s in parallel. Every other gate took under
+two minutes.
+
+Development CI now splits source by `verification-policy.yaml#source_partitions`.
+The core job runs the unchanged DAG with only the activation evidence producer
+and the declared Darwin-skip file as source, and two source workers beside the
+package owner. Three shard jobs run the other source files through a
+source-only generated overlap with the four-worker default. The assemble job
+merges the reports and reruns the full inventory, pending-identity, and
+aggregate checks. The policy's weights are per-file wall times from that run;
+they balance shards and never change membership.
+
+A local rehearsal on October 24, 2026 used separate clones of one source
+identity on Linux x64, Node 24.22.0, and an AMD Ryzen 7 9800X3D with 16
+logical CPUs. The core ran alone; the shards then ran concurrently on the same
+host. This is one local sample, not hosted evidence.
+
+| Partition | Source files | Elapsed |
+| --------- | ------------ | ------- |
+| core      | 2            | 169 s   |
+| shard 1   | 99           | 115 s   |
+| shard 2   | 98           | 50 s    |
+| shard 3   | 100          | 67 s    |
+
+Assembly passed with 299 files, 5,126 tests, and the one declared skip. It
+failed closed on a missing shard, a shard from another source identity, and a
+file reported by two partitions. Shard 2 first failed only because its clone
+path contained a UUID, which the public vocabulary test rejects; it passed
+from a UUID-free path, as CI checkouts are.

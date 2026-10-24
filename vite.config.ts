@@ -13,6 +13,8 @@ const freshCommands = {
   build: "pnpm -C packages/cli build",
   verify: "pnpm -C packages/cli run verify:release",
   "verify:development": "pnpm -C packages/cli run verify:development",
+  "verify:development:shard": "pnpm -C packages/cli run verify:development:shard",
+  "verify:development:assemble": "pnpm -C packages/cli run verify:development:assemble",
   typecheck: "pnpm -C packages/cli run typecheck",
   "typecheck:fresh": "pnpm -C packages/cli run typecheck",
   "cli:prepare:dev": "pnpm -C packages/cli run release:prepare",

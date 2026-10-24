@@ -8,8 +8,11 @@ import { fileURLToPath } from "node:url";
 import { stripVTControlCharacters } from "node:util";
 
 import { npmChildEnvironment, normalizeConstruction } from "./package-construction.mjs";
-import { readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
+import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
+import { loadVerificationPolicy, validatePendingTests } from "./overlap-pending.mjs";
+import { SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionFiles } from "./source-partition.mjs";
+import { SOURCE_PARTITION_EVIDENCE_SCHEMA } from "./verify-generated-overlap.mjs";
 import { deriveLatencyAdvisory, measurementProfile, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import YAML from "yaml";
 import { retainQualificationDiagnostics } from "./verification-timing.mjs";
@@ -558,7 +561,7 @@ async function runConcurrentSourceOwners(specifications, options = {}) {
   }
 }
 
-function validateOverlapEvidence(evidence, gates) {
+function validateOverlapEvidence(evidence, gates, partition) {
   const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
   try {
     validateGeneratedSourceIdentity(evidence.source_identity, "generated-overlap source identity");
@@ -600,8 +603,11 @@ function validateOverlapEvidence(evidence, gates) {
       throw sourceProcessFailure("generated-overlap", `generated-overlap did not execute the exact ${name} command`, "failed");
     }
   }
+  const sourceScopeReconciles = partition
+    ? evidence.source_scope?.partition === partition.label && Number.isInteger(evidence.source_scope?.files) && evidence.participants.source.files === evidence.source_scope.files
+    : evidence.source_scope === undefined && evidence.participants.source.files === evidence.inventory.source;
   if (
-    evidence.participants.source.files !== evidence.inventory.source ||
+    !sourceScopeReconciles ||
     evidence.participants.package.files !== evidence.inventory.package ||
     !Number.isInteger(evidence.participants.source.tests) ||
     !Number.isInteger(evidence.participants.package.tests) ||
@@ -614,7 +620,7 @@ function validateOverlapEvidence(evidence, gates) {
   return evidence;
 }
 
-function parseOverlapEvidence(result, gates) {
+function parseOverlapEvidence(result, gates, partition) {
   const schema = RELEASE_CONTRACT.qualification.source.overlapEvidenceSchema;
   const records = result.stdout.split("\n").flatMap((line) => {
     try {
@@ -627,7 +633,7 @@ function parseOverlapEvidence(result, gates) {
   if (records.length !== 1) {
     throw sourceProcessFailure("generated-overlap", "generated-overlap returned invalid JSON evidence", "failed");
   }
-  return validateOverlapEvidence(records[0], gates);
+  return validateOverlapEvidence(records[0], gates, partition);
 }
 
 function generatedState(buildRoot, generation, sourceIdentity) {
@@ -814,7 +820,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     common,
   );
   const batchElapsedMs = Math.max(0, Math.round(clock() - batchStarted));
-  const overlap = parseOverlapEvidence(batch["generated-overlap"], gates);
+  const overlap = parseOverlapEvidence(batch["generated-overlap"], gates, options.sourcePartition);
   const expectedBuildRoot = path.join(overlapRoot, "private-build", overlap.generation);
   if (overlap.build_root !== expectedBuildRoot) {
     throw sourceProcessFailure("generated-overlap", "generated-overlap returned a build outside its parent-owned root", "failed");
@@ -1057,14 +1063,25 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       generation: afterBarrier.generation,
       leasesAfterBarrier: afterBarrier.leases.length,
       activationEvidence: overlap.activation_evidence,
+      ...(overlap.source_scope ? { sourceScope: overlap.source_scope } : {}),
     },
   };
+}
+
+// Partition jobs check out the same commit at different paths, so retained
+// reports name suites relative to their repository root.
+function writePortableSourceReport(sourceFile, targetFile, repo) {
+  const report = JSON.parse(fs.readFileSync(sourceFile, "utf8"));
+  for (const suite of report.testResults) suite.name = path.relative(repo, path.resolve(repo, suite.name)).split(path.sep).join("/");
+  fs.writeFileSync(targetFile, JSON.stringify(report), { flag: "wx", mode: 0o600 });
 }
 
 export async function runSourceQualificationDag(options = {}) {
   const overlapRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-release-overlap-"));
   try {
-    return await executeSourceQualificationDag(options, overlapRoot);
+    const result = await executeSourceQualificationDag(options, overlapRoot);
+    if (options.sourceReportFile) writePortableSourceReport(path.join(overlapRoot, "source.json"), options.sourceReportFile, options.repo ?? REPO_ROOT);
+    return result;
   } finally {
     try {
       retainQualificationDiagnostics(overlapRoot, process.env.AGENTERA_QUALIFICATION_DIAGNOSTICS);
@@ -1077,6 +1094,7 @@ export async function runSourceQualificationDag(options = {}) {
 
 export async function issueSourceReceipt(options = {}) {
   if (options.profile !== undefined && options.profile !== "full") throw new Error("source receipts require full qualification");
+  if ((options.environment ?? process.env)[SOURCE_PARTITION_ENVIRONMENT]) throw new Error(`source receipts require the complete source inventory; unset ${SOURCE_PARTITION_ENVIRONMENT}`);
   const repo = options.repo ?? REPO_ROOT;
   const clock = options.clock ?? (() => performance.now());
   const started = clock();
@@ -1143,12 +1161,44 @@ export function sourceQualificationGateIdentity(profile = "full") {
   );
 }
 
+const SOURCE_PARTITION_DIRECTORY_ENVIRONMENT = "AGENTERA_SOURCE_PARTITION_DIRECTORY";
+const SOURCE_SHARD_SCHEMA = "agentera.developmentSourceShard.v1";
+
+function verificationPolicy(repo = REPO_ROOT) {
+  return loadVerificationPolicy(fs.readFileSync(path.join(repo, "references/analysis/verification-policy.yaml")));
+}
+
+function sourcePartitionRequest(environment, repo = REPO_ROOT) {
+  const partition = parseSourcePartition(environment[SOURCE_PARTITION_ENVIRONMENT], verificationPolicy(repo).source_partitions);
+  if (partition === undefined) return undefined;
+  const directory = environment[SOURCE_PARTITION_DIRECTORY_ENVIRONMENT];
+  if (!directory || !path.isAbsolute(directory)) throw new Error(`${SOURCE_PARTITION_ENVIRONMENT} requires an absolute ${SOURCE_PARTITION_DIRECTORY_ENVIRONMENT}`);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  return {
+    partition,
+    resultFile: path.join(directory, `${partition.label}.json`),
+    sourceReportFile: path.join(directory, `${partition.label}-source.json`),
+  };
+}
+
+const NO_SIDE_EFFECTS = Object.freeze({
+  receipt: false,
+  candidate: false,
+  registry: false,
+  activation: false,
+  publication: false,
+});
+
 /** Run the receipt-qualified DAG against the current tree without issuing authority. */
 export async function runSourceConjunction(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const started = performance.now();
   const profile = options.profile ?? "full";
   const gates = governedSourceGates(options.gates, profile);
+  const request = options.sourcePartitionRequest;
+  if (request && (profile !== "development" || request.partition.kind !== "core")) {
+    throw new Error(`${SOURCE_PARTITION_ENVIRONMENT} in verify accepts only the core partition of the development profile; shards use verify-shard and receipts need the complete inventory`);
+  }
   const identity = {
     schemaVersion: profile === "development" ? "agentera.developmentConjunction.v1" : "agentera.releaseConjunction.v1",
     profile,
@@ -1160,6 +1210,8 @@ export async function runSourceConjunction(options = {}) {
       repo,
       gates,
       startedAt: started,
+      sourcePartition: request?.partition,
+      sourceReportFile: request?.sourceReportFile,
       environment: {
         ...process.env,
         ...options.environment,
@@ -1169,7 +1221,9 @@ export async function runSourceConjunction(options = {}) {
     });
     return {
       ...identity,
-      status: "pass",
+      // A core partition proves every gate except complete source coverage;
+      // only assemble can turn it into a passing development conjunction.
+      status: request ? "partial" : "pass",
       gate_count: gates.length,
       gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({
         name,
@@ -1189,13 +1243,7 @@ export async function runSourceConjunction(options = {}) {
         generation: result.execution.generation,
         path: `private-build/${result.execution.generation}/dist/bin/agentera.js`,
       },
-      side_effects: {
-        receipt: false,
-        candidate: false,
-        registry: false,
-        activation: false,
-        publication: false,
-      },
+      side_effects: { ...NO_SIDE_EFFECTS },
     };
   } catch (error) {
     const owner = error?.owner ?? "full-qualification";
@@ -1211,13 +1259,219 @@ export async function runSourceConjunction(options = {}) {
       violation: sourceDiagnostic(error instanceof Error ? error.message : error),
       correction: gate?.correction ?? (gate ? gate.command.join(" ") : `pnpm -C packages/cli run verify:${profile === "development" ? "development" : "release"}`),
       generated_artifact: null,
-      side_effects: {
-        receipt: false,
-        candidate: false,
-        registry: false,
-        activation: false,
-        publication: false,
+      side_effects: { ...NO_SIDE_EFFECTS },
+    };
+  }
+}
+
+function validateSourcePartitionEvidence(evidence, gates, partition) {
+  try {
+    validateGeneratedSourceIdentity(evidence?.source_identity, "source partition identity");
+  } catch {
+    throw sourceProcessFailure("generated-overlap", "source partition identity is incomplete", "failed");
+  }
+  const source = evidence.participants?.source;
+  if (
+    evidence.status !== "pass" ||
+    evidence.partition?.name !== partition.label ||
+    evidence.partition?.index !== partition.index ||
+    evidence.partition?.count !== partition.count ||
+    !isGovernedParticipantCommand("source", source?.command, gates.get("source").command) ||
+    source.files !== evidence.partition.files ||
+    !Number.isInteger(source.tests) ||
+    !Array.isArray(source.pending) ||
+    source.pending.length !== 0 ||
+    !Number.isFinite(source.elapsedMs)
+  ) {
+    throw sourceProcessFailure("generated-overlap", "source partition evidence is incomplete", "failed");
+  }
+  return evidence;
+}
+
+/** Run one source shard through the generated-overlap isolation without other owners. */
+export async function runSourceShard(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const started = performance.now();
+  const request = options.sourcePartitionRequest;
+  const gates = sourceGateMap(qualificationGates("development"), "development");
+  const identity = { schemaVersion: SOURCE_SHARD_SCHEMA, profile: "development", gate_identity: sourceQualificationGateIdentity("development") };
+  const overlapRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-shard-"));
+  try {
+    if (request?.partition.kind !== "shard") throw sourceProcessFailure("generated-overlap", `verify-shard requires ${SOURCE_PARTITION_ENVIRONMENT}=shard:INDEX/COUNT`, "failed");
+    const deadlineMs = RELEASE_MODEL.sourceQualificationMs;
+    const cleanupMarginMs = SOURCE_DAG.overlapCleanupMarginMs;
+    const batch = await (options.runConcurrent ?? runConcurrentSourceOwners)(
+      [
+        {
+          name: "generated-overlap",
+          command: gates.get("generated-overlap").command,
+          repo,
+          timeoutMs: deadlineMs - cleanupMarginMs,
+          cancellable: false,
+          cooperativeStop: true,
+          environment: {
+            AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(Date.now() + deadlineMs),
+            AGENTERA_SOURCE_CLEANUP_MARGIN_MS: String(cleanupMarginMs),
+            AGENTERA_GENERATED_OVERLAP_ROOT: overlapRoot,
+          },
+        },
+      ],
+      {
+        repo,
+        createState: options.createState,
+        startOwner: options.startOwner,
+        environment: {
+          ...process.env,
+          ...options.environment,
+          AGENTERA_OFFLINE: "1",
+          AGENTERA_ISOLATION_TMP_ROOT: process.env.AGENTERA_ISOLATION_TMP_ROOT ?? process.env.TMPDIR ?? os.tmpdir(),
+        },
       },
+    );
+    const records = batch["generated-overlap"].stdout.split("\n").flatMap((line) => {
+      try {
+        const parsed = JSON.parse(line);
+        return parsed?.schemaVersion === SOURCE_PARTITION_EVIDENCE_SCHEMA ? [parsed] : [];
+      } catch {
+        return [];
+      }
+    });
+    if (records.length !== 1) throw sourceProcessFailure("generated-overlap", "source shard returned invalid JSON evidence", "failed");
+    const evidence = validateSourcePartitionEvidence(records[0], gates, request.partition);
+    writePortableSourceReport(path.join(overlapRoot, "source.json"), request.sourceReportFile, repo);
+    return {
+      ...identity,
+      status: "pass",
+      partition: evidence.partition,
+      source_identity: evidence.source_identity,
+      source: {
+        files: evidence.participants.source.files,
+        tests: evidence.participants.source.tests,
+        elapsedMs: evidence.participants.source.elapsedMs,
+      },
+      execution: { elapsedMs: Math.max(0, Math.round(performance.now() - started)) },
+      first_failure: null,
+      owner: null,
+      correction: null,
+      side_effects: { ...NO_SIDE_EFFECTS },
+    };
+  } catch (error) {
+    const owner = error?.owner ?? "generated-overlap";
+    return {
+      ...identity,
+      status: "fail",
+      partition: request ? { name: request.partition.label } : null,
+      execution: { elapsedMs: Math.max(0, Math.round(performance.now() - started)) },
+      first_failure: owner,
+      owner: gates.get(owner)?.owner ?? `packages/cli/scripts/release-qualification.mjs#${owner}`,
+      violation: sourceDiagnostic(error instanceof Error ? error.message : error),
+      correction: gates.get("source").correction,
+      side_effects: { ...NO_SIDE_EFFECTS },
+    };
+  } finally {
+    fs.rmSync(overlapRoot, { recursive: true, force: true });
+  }
+}
+
+function readPartitionJson(directory, name, label) {
+  const file = path.join(directory, name);
+  if (!fs.existsSync(file)) throw new Error(`${label} is missing: ${name}`);
+  return fs.readFileSync(file);
+}
+
+function mergedSourceReport(reports) {
+  const aggregates = ["numTotalTestSuites", "numPassedTestSuites", "numFailedTestSuites", "numPendingTestSuites", "numTotalTests", "numPassedTests", "numFailedTests", "numPendingTests", "numTodoTests"];
+  const merged = { success: reports.every((report) => report.success === true) };
+  for (const field of aggregates) merged[field] = reports.reduce((total, report) => total + report[field], 0);
+  merged.testResults = reports.flatMap((report) => report.testResults);
+  return Buffer.from(JSON.stringify(merged));
+}
+
+function sourceInventoryFiles(repo) {
+  const result = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
+    cwd: path.join(repo, "packages/cli"),
+    encoding: "utf8",
+  });
+  if (result.status !== 0) throw new Error(`verification inventory failed: ${result.stderr || result.stdout || result.error?.message}`);
+  return JSON.parse(result.stdout).files.source;
+}
+
+/** Combine a core development conjunction with every source shard into one development conjunction. */
+export function assembleDevelopmentConjunction(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const directory = options.directory;
+  const identity = {
+    schemaVersion: "agentera.developmentConjunction.v1",
+    profile: "development",
+    gate_identity: sourceQualificationGateIdentity("development"),
+  };
+  try {
+    if (!directory || !path.isAbsolute(directory)) throw new Error(`assemble requires an absolute ${SOURCE_PARTITION_DIRECTORY_ENVIRONMENT}`);
+    const partitions = verificationPolicy(repo).source_partitions;
+    if (partitions === undefined) throw new Error("assemble requires verification-policy.yaml#source_partitions");
+    const sourceIdentity = options.sourceIdentity ?? generatedSourceIdentity(path.join(repo, "packages/cli"));
+    const governed = qualificationGates("development");
+    const core = JSON.parse(readPartitionJson(directory, "core.json", "core conjunction"));
+    if (
+      core.schemaVersion !== identity.schemaVersion ||
+      core.profile !== "development" ||
+      core.status !== "partial" ||
+      core.gate_identity !== identity.gate_identity ||
+      core.gate_count !== governed.length ||
+      !Array.isArray(core.gates) ||
+      core.gates.length !== governed.length ||
+      core.gates.some((gate, index) => gate.name !== governed[index].name || gate.outcome !== "passed") ||
+      core.execution?.sourceScope?.partition !== "core" ||
+      core.execution?.generation !== sourceIdentity.identitySha256
+    ) {
+      throw new Error("core conjunction is not a passing partial development result for this source identity");
+    }
+    const sourceFiles = options.sourceFiles ?? sourceInventoryFiles(repo);
+    const names = ["core", ...Array.from({ length: partitions.shards }, (_, index) => `shard-${index + 1}`)];
+    const distribution = [{ name: "core", files: core.execution.sourceScope.files, elapsedMs: core.execution.elapsedMs }];
+    for (const name of names.slice(1)) {
+      const shard = JSON.parse(readPartitionJson(directory, `${name}.json`, "source shard result"));
+      if (shard.schemaVersion !== SOURCE_SHARD_SCHEMA || shard.status !== "pass" || shard.gate_identity !== identity.gate_identity || shard.partition?.name !== name || shard.partition?.count !== partitions.shards || shard.source_identity?.identitySha256 !== sourceIdentity.identitySha256) {
+        throw new Error(`${name} is not a passing source shard for this source identity`);
+      }
+      distribution.push({ name, files: shard.source.files, elapsedMs: shard.execution.elapsedMs });
+    }
+    const reports = names.map((name) => {
+      const report = JSON.parse(readPartitionJson(directory, `${name}-source.json`, "source partition report"));
+      const partition = parseSourcePartition(name === "core" ? "core" : `shard:${name.slice("shard-".length)}/${partitions.shards}`, partitions);
+      const expected = sourcePartitionFiles(sourceFiles, partitions, partition);
+      const observed = (report.testResults ?? []).map((suite) => suite.name).sort();
+      if (canonicalJson(observed) !== canonicalJson(expected)) throw new Error(`${name} source report does not cover exactly its partition files`);
+      return report;
+    });
+    const policyBytes = fs.readFileSync(path.join(repo, "references/analysis/verification-policy.yaml"));
+    const merged = mergedSourceReport(reports);
+    const pending = validatePendingTests("source", merged, Buffer.from(JSON.stringify(sourceFiles)), policyBytes, repo, options.platform ?? process.platform);
+    const { sourceScope: _sourceScope, ...execution } = core.execution;
+    return {
+      ...core,
+      status: "pass",
+      execution: {
+        ...execution,
+        distribution: {
+          source: { files: sourceFiles.length, tests: reports.reduce((total, report) => total + report.numTotalTests, 0), pending },
+          partitions: distribution,
+        },
+      },
+    };
+  } catch (error) {
+    return {
+      ...identity,
+      status: "fail",
+      gate_count: qualificationGates("development").length,
+      gates: [],
+      execution: {},
+      first_failure: "source",
+      owner: "packages/cli/scripts/release-qualification.mjs#assemble",
+      violation: sourceDiagnostic(error instanceof Error ? error.message : error),
+      correction: "Rerun the failed or missing partition job for this commit, then rerun assemble.",
+      generated_artifact: null,
+      side_effects: { ...NO_SIDE_EFFECTS },
     };
   }
 }
@@ -2021,11 +2275,18 @@ export function runSourceReceiptCheckCommand(flags, options = {}) {
   }
 }
 
+function writePartitionResult(request, result) {
+  if (request) fs.writeFileSync(request.resultFile, `${JSON.stringify(result)}\n`, { flag: "wx", mode: 0o600 });
+}
+
 export async function runNoReceiptVerificationCommand(flags, options = {}) {
+  const request = options.sourcePartitionRequest ?? sourcePartitionRequest(options.environment ?? process.env);
   const result = await runSourceConjunction({
     ...options,
+    sourcePartitionRequest: request,
     profile: flags.get("--profile") ?? options.profile ?? "full",
   });
+  writePartitionResult(request, result);
   const json = Boolean(flags.get("--json"));
   if (json) process.stdout.write(`${JSON.stringify(result)}\n`);
   else {
@@ -2035,23 +2296,42 @@ export async function runNoReceiptVerificationCommand(flags, options = {}) {
       for (const [target, entry] of Object.entries(result.performance.latencyAdvisory)) process.stdout.write(`latency advisory ${target}: targetMs=${entry.targetMs}; maxObservedMs=${entry.maxObservedMs}; exceededRepetitions=${entry.exceededRepetitions}\n`);
     }
   }
+  if (result.status !== (request ? "partial" : "pass")) process.exitCode = 1;
+  return result;
+}
+
+export async function runSourceShardCommand(flags, options = {}) {
+  const request = options.sourcePartitionRequest ?? sourcePartitionRequest(options.environment ?? process.env);
+  const result = await runSourceShard({ ...options, sourcePartitionRequest: request });
+  writePartitionResult(request, result);
+  process.stdout.write(`${JSON.stringify(result)}\n`);
+  if (result.status !== "pass") process.exitCode = 1;
+  return result;
+}
+
+export function runAssembleCommand(flags, options = {}) {
+  const environment = options.environment ?? process.env;
+  const result = assembleDevelopmentConjunction({ ...options, directory: options.directory ?? environment[SOURCE_PARTITION_DIRECTORY_ENVIRONMENT] });
+  process.stdout.write(`${JSON.stringify(result)}\n`);
   if (result.status !== "pass") process.exitCode = 1;
   return result;
 }
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["verify", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <verify|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
+  if (!["verify", "verify-shard", "assemble", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <verify|verify-shard|assemble|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
   }
-  const valueFlags = command === "verify" ? ["--profile"] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
+  const valueFlags = command === "verify" ? ["--profile"] : ["verify-shard", "assemble"].includes(command) ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
   if (command === "candidate") valueFlags.push("--source-commit");
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {
-    boolean: ["verify", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
+    boolean: ["verify", "verify-shard", "assemble", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
     value: valueFlags,
   });
   if (command === "verify") await runNoReceiptVerificationCommand(flags);
+  else if (command === "verify-shard") await runSourceShardCommand(flags);
+  else if (command === "assemble") runAssembleCommand(flags);
   else if (command === "source-check") runSourceReceiptCheckCommand(flags);
   else await runCommand(command, flags);
 }

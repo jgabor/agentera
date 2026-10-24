@@ -1268,6 +1268,74 @@ describe("source qualification DAG", () => {
     }
   });
 
+  it("runs only the source participant for a shard and validates the shard's files", async () => {
+    let now = 1_000;
+    const workRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-overlap-shard-test-"));
+    fs.mkdirSync(path.join(workRoot, "barrier"));
+    const packageRoot = createOverlapPackageRoot(workRoot);
+    const started: string[] = [];
+    const readOwners: string[] = [];
+    const source = ["a.test.ts", "b.test.ts", "c.test.ts", "d.test.ts", "packages/cli/test/integration/runtimeBootstrapMatrix.test.ts", "packages/cli/test/build/generatedOutputPublication.test.ts"];
+    try {
+      const evidence = await runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        environment: {
+          AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000",
+          AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000",
+          AGENTERA_SOURCE_PARTITION: "shard:2/3",
+        },
+        now: () => now,
+        packageRoot,
+        workRoot,
+        handleSignals: false,
+        loadInventory: () => ({ counts: { source: source.length, package: 1, stress: 1, performance: 1, capacity: 1 }, files: { source, package: ["package.test.ts"] } }),
+        waitForReady: async () => undefined,
+        startParticipant: (name: string, command: string[]) => {
+          started.push(name);
+          now += 10;
+          return { name, promise: Promise.resolve({ command, elapsedMs: 10, stdout: "" }), cancel: () => undefined };
+        },
+        withDeadline: async (promise: Promise<unknown>) => promise,
+        readOwnerResult: (owner: string) => {
+          readOwners.push(owner);
+          return { files: 1, tests: 3, pending: [] };
+        },
+        writeActivationEvidence: async () => {
+          throw new Error("a shard must not assemble activation evidence");
+        },
+      });
+      expect(started).toEqual(["source"]);
+      expect(readOwners).toEqual(["source"]);
+      expect(evidence).toMatchObject({
+        schemaVersion: "agentera.sourcePartitionEvidence.v1",
+        status: "pass",
+        partition: { name: "shard-2", index: 2, count: 3, files: 1 },
+        participants: { source: { files: 1, tests: 3, command: gate("source").command, elapsedMs: 10 } },
+      });
+      expect(evidence).not.toHaveProperty("participants.package");
+    } finally {
+      fs.rmSync(workRoot, { recursive: true, force: true });
+    }
+  });
+
+  it("rejects an unknown source partition before starting any participant", async () => {
+    const started: string[] = [];
+    await expect(
+      runGeneratedOverlap({
+        contract: RELEASE_CONTRACT,
+        environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: "301000", AGENTERA_SOURCE_CLEANUP_MARGIN_MS: "10000", AGENTERA_SOURCE_PARTITION: "shard:9/3" },
+        now: () => 1_000,
+        handleSignals: false,
+        sourceIdentity: { identitySha256: "a".repeat(64) },
+        startParticipant: (name: string) => {
+          started.push(name);
+          throw new Error("must not start");
+        },
+      }),
+    ).rejects.toMatchObject({ owner: "generated-overlap", message: expect.stringContaining("shard index 9 exceeds 3") });
+    expect(started).toEqual([]);
+  });
+
   it("cancels the complete Windows child process tree", () => {
     const invocations: unknown[][] = [];
     const childSignals: string[] = [];

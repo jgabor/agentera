@@ -3,5 +3,5 @@ artifact: docs
 record:
   document: Verification workflow
   path: .github/workflows/publish.yml
-  last_updated: 2026-09-10
+  last_updated: 2026-10-24
   status: current

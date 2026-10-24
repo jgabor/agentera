@@ -42,6 +42,7 @@ const setupVpReleases = [
 ];
 const SETUP_NODE = "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f";
 const BOOTSTRAP = "node packages/cli/scripts/bootstrap-integrity.mjs";
+const SETUP_JOBS = ["assemble-development-verification", "build-development", "verify-development", "verify-source-shard"];
 
 function validateSetupJobs(workflows: any[]): void {
   const jobs = workflows.flatMap((workflow) => Object.entries(workflow.jobs as Record<string, any>).map(([name, job]) => ({ name, job })));
@@ -50,9 +51,9 @@ function validateSetupJobs(workflows: any[]): void {
       .filter(({ job }) => job.steps.some((step: { run?: string }) => /bootstrap-integrity\.mjs|vp run build|pack-package\.mjs/u.test(step.run ?? "")))
       .map(({ name }) => name)
       .sort(),
-  ).toEqual(["build-development", "verify-development"]);
+  ).toEqual(SETUP_JOBS);
   const setupJobs = jobs.filter(({ job }) => job.steps.some((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@")));
-  expect(setupJobs.map(({ name }) => name).sort()).toEqual(["build-development", "verify-development"]);
+  expect(setupJobs.map(({ name }) => name).sort()).toEqual(SETUP_JOBS);
   for (const { job } of setupJobs) {
     const setupIndex = job.steps.findIndex((step: { uses?: string }) => step.uses?.startsWith("actions/setup-node@"));
     const setup = job.steps[setupIndex];

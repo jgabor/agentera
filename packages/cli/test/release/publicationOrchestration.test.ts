@@ -15,6 +15,7 @@ import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const managedNode = `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim()}`;
 const qualificationYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8");
+const VERIFICATION_JOBS = ["verify-development", "verify-source-shard", "assemble-development-verification"];
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
 const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
 const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
@@ -138,7 +139,10 @@ function requireReviewedOidcPublicationSteps(workflow: any) {
 }
 
 describe("package publication orchestration", () => {
-  it.each([["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }]])("provides complete history without archival fetches before %s verification", (_name, job, checkoutInputs) => {
+  it.each([
+    ["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }, "vp run verify:development"],
+    ["development source shard", YAML.parse(qualificationYaml).jobs["verify-source-shard"], { ref: "${{ github.sha }}", "fetch-depth": 0 }, "vp run verify:development:shard"],
+  ])("provides complete history without archival fetches before %s verification", (_name, job, checkoutInputs, verifyCommand) => {
     const archivalCommand = `git fetch --depth=1 origin '${"9".repeat(40)}'`;
     type Step = {
       name?: string;
@@ -151,7 +155,7 @@ describe("package publication orchestration", () => {
     };
     const requireHistory = (steps: Step[]) => {
       const checkoutIndex = steps.findIndex((step) => step.uses === "actions/checkout@v5");
-      const verifyIndex = steps.findIndex((step) => step.run === "vp run verify:development");
+      const verifyIndex = steps.findIndex((step) => step.run === verifyCommand);
       expect(checkoutIndex).toBeGreaterThanOrEqual(0);
       expect(checkoutIndex).toBeLessThan(verifyIndex);
       expect(steps.filter((step) => step.uses === "actions/checkout@v5")).toHaveLength(1);
@@ -176,7 +180,7 @@ describe("package publication orchestration", () => {
       expect(() => requireHistory(steps.map((step) => (step === checkout ? { ...checkout, with: inputs } : step)))).toThrow();
     }
     expect(() => requireHistory([...steps, { run: archivalCommand }])).toThrow();
-    for (const target of [checkout, steps.find((step) => step.run === "vp run verify:development")]) {
+    for (const target of [checkout, steps.find((step) => step.run === verifyCommand)]) {
       for (const override of [{ if: "always()" }, { "continue-on-error": true }]) {
         expect(() => requireHistory(steps.map((step) => (step === target ? { ...step, ...override } : step)))).toThrow();
       }
@@ -336,8 +340,9 @@ describe("package publication orchestration", () => {
     expect(JSON.stringify(developmentPackage.scripts)).not.toContain(".env");
     expect(JSON.stringify(stablePackage.scripts)).not.toContain(".env");
     const ciWorkflow = YAML.parse(qualificationYaml);
-    const verification = JSON.stringify(ciWorkflow.jobs["verify-development"]);
-    expect(verification).not.toMatch(/NPM_TOKEN|publish-next|publish-latest|npm publish/);
+    for (const job of VERIFICATION_JOBS) {
+      expect(JSON.stringify(ciWorkflow.jobs[job])).not.toMatch(/NPM_TOKEN|publish-next|publish-latest|npm publish/);
+    }
     expect(ciWorkflow.on).toEqual({ push: null });
   });
 
@@ -400,13 +405,22 @@ describe("package publication orchestration", () => {
     const sourceVerification = verification.steps.find((step: { name?: string }) => step.name === "Verify development safety without receipt");
     expect(sourceVerification.run).toBe("vp run verify:development");
     expect(sourceVerification["timeout-minutes"] * 60_000).toBeGreaterThanOrEqual(publicationContract.benchmark.timeouts.sourceQualificationMs);
-    expect(JSON.stringify(verification)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|upload-artifact|npm publish|id-token/i);
+    for (const job of VERIFICATION_JOBS) {
+      const definition = workflow.jobs[job];
+      expect(definition.permissions).toEqual({ contents: "read" });
+      expect(definition.if).toBe("needs.publication-state.outputs.mode == 'build'");
+      expect(JSON.stringify(definition)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|npm publish|id-token/i);
+      // Verification jobs share only partition evidence, never package bytes.
+      for (const step of definition.steps.filter((entry: { uses?: string }) => /actions\/(upload|download)-artifact@/.test(entry.uses ?? ""))) {
+        expect(step.with.name ?? step.with.pattern).toMatch(/^agentera-verification-/);
+      }
+    }
     expect(workflow.jobs["build-development"].permissions).toEqual({
       contents: "read",
       actions: "read",
     });
     expect(workflow.jobs["build-development"].permissions).not.toHaveProperty("id-token");
-    expect(workflow.jobs["build-development"].needs).toBe("verify-development");
+    expect(workflow.jobs["build-development"].needs).toBe("assemble-development-verification");
     expect(workflow.jobs["build-development"]).not.toHaveProperty("if");
     expect(workflow.jobs["publish-development"].permissions).toEqual({
       actions: "read",

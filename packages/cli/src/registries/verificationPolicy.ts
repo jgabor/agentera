@@ -81,6 +81,19 @@ export function verificationPolicyErrors(policy: Record<string, unknown>): strin
   for (const [name, owners] of Object.entries(object(required(policy, "policies", "verification"), "verification.policies"))) {
     for (const [index, owner] of array(owners, `verification.policies.${name}`).entries()) string(owner, `verification.policies.${name}[${index}]`);
   }
+  if (policy.source_partitions !== undefined) {
+    const label = "verification.source_partitions";
+    const partitions = object(policy.source_partitions, label);
+    for (const [index, file] of array(required(partitions, "core", label), `${label}.core`).entries()) string(file, `${label}.core[${index}]`);
+    for (const field of ["shards", "default_weight_ms"]) {
+      const value = required(partitions, field, label);
+      if (!Number.isSafeInteger(value) || (value as number) < 1) issue(`${label}.${field} must be a positive safe integer`);
+    }
+    for (const [file, weight] of Object.entries(object(partitions.weights_ms ?? {}, `${label}.weights_ms`))) {
+      string(file, `${label}.weights_ms key`);
+      if (!Number.isSafeInteger(weight) || (weight as number) < 1) issue(`${label}.weights_ms.${file} must be a positive safe integer`);
+    }
+  }
   if (policy.conservative_routing !== undefined) {
     const routing = object(policy.conservative_routing, "verification.conservative_routing");
     for (const field of ["exact", "prefixes"]) {

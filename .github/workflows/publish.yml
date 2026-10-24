@@ -239,11 +239,13 @@ jobs:
         timeout-minutes: 40
         env:
           AGENTERA_VITEST_RUNNER_POLICY: unmeasured
-          # Leave CPU capacity for the independent package owner on this runner.
-          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "1"
+          # Only the core source partition shares this runner with the package owner.
+          AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
           VITEST_TEST_TIMEOUT_MS: "120000"
           AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
           AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+          AGENTERA_SOURCE_PARTITION: core
+          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
         run: vp run verify:development
       # The private verification build is cleaned up; migration needs checkout dist.
       - name: Build checkout CLI for migration
@@ -259,9 +261,99 @@ jobs:
           for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
             bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
           done
+      - name: Upload core verification evidence
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 1
+        with:
+          name: agentera-verification-core
+          path: ${{ runner.temp }}/agentera-verification
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  # Every source file outside the core partition runs in exactly one shard.
+  # The matrix size must equal verification-policy.yaml#source_partitions.shards.
+  verify-source-shard:
+    if: needs.publication-state.outputs.mode == 'build'
+    needs: publication-state
+    name: Verify development source shard ${{ matrix.shard }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    strategy:
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
+        timeout-minutes: 1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verified bootstrap and frozen install
+        timeout-minutes: 3
+        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
+      - name: Verify development source shard
+        timeout-minutes: 40
+        env:
+          AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+          VITEST_TEST_TIMEOUT_MS: "120000"
+          AGENTERA_SOURCE_PARTITION: shard:${{ matrix.shard }}/3
+          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
+        run: vp run verify:development:shard
+      - name: Upload shard verification evidence
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 1
+        with:
+          name: agentera-verification-shard-${{ matrix.shard }}
+          path: ${{ runner.temp }}/agentera-verification
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
+  # The implicit success() condition skips assembly when any partition failed,
+  # was cancelled, or was skipped, and the skip carries into build-development.
+  assemble-development-verification:
+    if: needs.publication-state.outputs.mode == 'build'
+    needs: [publication-state, verify-development, verify-source-shard]
+    name: Assemble development verification
+    runs-on: ubuntu-24.04
+    timeout-minutes: 8
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
+        timeout-minutes: 1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verified bootstrap and frozen install
+        timeout-minutes: 3
+        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
+      - name: Download partition verification evidence
+        uses: actions/download-artifact@v4
+        timeout-minutes: 1
+        with:
+          pattern: agentera-verification-*
+          path: ${{ runner.temp }}/agentera-verification
+          merge-multiple: true
+      - name: Assemble development verification
+        timeout-minutes: 2
+        env:
+          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
+        run: vp run verify:development:assemble
 
   build-development:
-    needs: verify-development
+    needs: assemble-development-verification
     name: Build and classify development candidate
     runs-on: ubuntu-24.04
     timeout-minutes: 8

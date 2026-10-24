@@ -99,7 +99,10 @@ JavaScript objects, including proxies and accessors, are outside this runtime
 boundary.
 
 Release source verification uses the policy-owned DAG. One generated-overlap
-process is the sole origin for source, package, build, and overlap evidence. It
+process is the sole origin for source, package, build, and overlap evidence.
+Development CI runs the `source_partitions` core inside that process and the
+other source files in source-only overlaps on separate runners; assembly
+proves their union covers the inventory once. The core keeps the files below. It
 runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
 and the adversarial activation-evidence cases instead of repeating them in
 ordinary source verification. Full runs reuse baseline capability observations
@@ -138,7 +141,9 @@ The full source owner uses one project and one transient runtime compilation.
 Root native discovery retains the three projects needed by local hooks.
 Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative
-development safety through `vp run verify:development`; explicit full
+development safety through `vp run verify:development` for the core partition,
+`vp run verify:development:shard` per shard, and
+`vp run verify:development:assemble`; explicit full
 `vp run verify` retains repeated performance. No arbitrary source exclusion is
 supported. Behavioral `cli/npmParityMatrix.test.ts` and the parity drift tests in
 `scripts/pyTsParity.test.ts`, which use a self-contained fixture repository rather

@@ -49,10 +49,50 @@ overlap:
     executes_when:
       platform: darwin
 
+# Development CI splits the source owner into a core partition, which runs inside
+# the complete generated-overlap DAG, and source-only shards on separate
+# runners. The core keeps the activation evidence producer and the declared
+# pending assertion; every other source file goes to exactly one shard. Weights
+# are observed per-file milliseconds that only balance shards; unlisted files
+# use the default. Assembly proves that core plus shards is the exact inventory.
+source_partitions:
+  core:
+    - packages/cli/test/integration/runtimeBootstrapMatrix.test.ts
+    - packages/cli/test/build/generatedOutputPublication.test.ts
+  shards: 3
+  default_weight_ms: 1000
+  weights_ms:
+    packages/cli/test/cli/projectMigrationJourney.test.ts: 157000
+    packages/cli/test/cli/discussCloseoutJourney.test.ts: 125000
+    packages/cli/test/state/todoDocsEntities.test.ts: 82000
+    packages/cli/test/cli/glossaryAdviceWorkflow.test.ts: 72000
+    packages/cli/test/release/releaseQualification.test.ts: 64000
+    packages/cli/test/runtime/retiredRuntimeSurfacePolicy.test.ts: 62000
+    packages/cli/test/upgrade/upgradeEntityCutover.test.ts: 60000
+    packages/cli/test/scripts/nativeHooks.test.ts: 54000
+    packages/cli/test/verification/laneOwnership.test.ts: 43000
+    packages/cli/test/cli/findingsFilingJourney.test.ts: 35000
+    packages/cli/test/cli/profileFullGlossaryWorkflow.test.ts: 35000
+    packages/cli/test/config/guardedTypecheckCache.test.ts: 25000
+    packages/cli/test/state/planEntities.test.ts: 22000
+    packages/cli/test/upgrade/upgradeOrchestrator.test.ts: 20000
+    packages/cli/test/release/publicationOrchestration.test.ts: 18000
+    packages/cli/test/cli/primeGlossaryCaveatAttention.test.ts: 16000
+    packages/cli/test/cli/validate.test.ts: 14000
+    packages/cli/test/cli/prime.test.ts: 14000
+    packages/cli/test/cli/primeRoutedStart.test.ts: 14000
+    packages/cli/test/cli/productV1Eol.test.ts: 13000
+    packages/cli/test/config/taskCache.test.ts: 11000
+    packages/cli/test/cli/primeProjectionContract.test.ts: 11000
+    packages/cli/test/cli/routeWorkerDetail.test.ts: 10000
+    packages/cli/test/release/sourceQualificationDag.test.ts: 10000
+    packages/cli/test/state/write/mutationGrammar.test.ts: 10000
+
 # Release source qualification executes this evidence DAG without changing the
 # public owner commands above. generated-overlap is the only
 # private generated-output owner and the only execution origin for source,
-# package, build, and overlap evidence.
+# package, build, and overlap evidence. Development CI may run source_partitions
+# as separate generated-overlap origins; receipts always need one complete run.
 release_qualification:
   schedule_authority: references/adapters/package-publication.json#qualification.source.dag
   deadline_authority: references/adapters/package-publication.json#benchmark.timeouts.sourceQualificationMs
@@ -269,6 +309,7 @@ conservative_routing:
     - packages/cli/scripts/generate-extract-corpus-parity.mjs
     - packages/cli/scripts/verification-barrier.mjs
     - packages/cli/scripts/verify-generated-overlap.mjs
+    - packages/cli/scripts/source-partition.mjs
     - packages/cli/scripts/observe-capability-source.mjs
     - packages/cli/scripts/observe-runtime-artifact.mjs
     - packages/cli/scripts/pack-package.mjs
