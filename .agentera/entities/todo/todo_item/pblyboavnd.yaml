@@ -1,0 +1,40 @@
+id: pblyboavnd
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Fit startup capsule state to what each capability uses.
+  requirements:
+    - The vision, discuss and design capsules each carry about 20 KB of TODO data from capabilityContext/startup.ts.
+    - Optimize declares `benchmark_context` as a consumed artifact, so its availability row falls back to `schema` as its detail command.
+    - Every capsule repeats about 900 bytes of `first_invocation_read` metadata telling the agent to read the capsule it is reading.
+  acceptance:
+    - Each included family is used by the capability's instructions, and each availability row names a real reader.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Fit startup capsule state to what each capability uses."
+      severity: normal
+      status: open
+      order: 38
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel

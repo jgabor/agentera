@@ -12,6 +12,10 @@
 - [ ] [id:znfwaksueb] [fix:3.0.0] Isolate legacy v2 pre-commit tests from contributor worktrees.
 - [ ] [id:oadzaijpdf] [fix:3.0.0] Decide how the OpenCode extraction cap selects sessions and whether a capped generation is degraded
 - [ ] [id:bbfumjviwe] [fix:3.0.0] Return typed failures, not raw parser text, for authorities read after dispatch.
+- [ ] [id:frlmcqkrwh] [fix:3.0.0] Reconcile capability capsule budgets with their authority and enforce them as declared.
+- [ ] [id:mstlnghews] [fix:3.0.0] Return the whole vision from state query vision.
+- [ ] [id:wfxffubfhd] [fix:3.0.0] Split worker detail sections only at real headings, not at "## " lines inside fenced templates.
+- [ ] [id:yiuvanndof] [fix:3.0.0] Serve the user's topic to a routed capability, not only its byte offsets.
 
 ## → Normal
 
@@ -49,6 +53,14 @@
 - [ ] [id:qnjpvirkjw] [test:3.0.0] Stop laneOwnership.test.ts from leaking /tmp/agentera-lanes-* directories.
 - [ ] [id:brktssgsmx] [fix:3.0.0] Classify the Vite+ launcher in the pre-commit hook without relying on the launcher itself
 - [ ] [id:ghqeqjinex] [fix:3.0.0] Stop the CI bootstrap's first-run setup from acquiring an unpinned latest-LTS Node
+- [ ] [id:bkamepjltd] [fix:3.0.0] Fail loudly when shared instruction composition rewrites stop matching.
+- [ ] [id:kcqywfaykb] [fix:3.0.0] Bind every Agentera command in served instructions to the development channel.
+- [ ] [id:lemblhfbom] [docs:3.0.0] Give the capability instruction spine a current authority.
+- [ ] [id:pblyboavnd] [fix:3.0.0] Fit startup capsule state to what each capability uses.
+- [ ] [id:rflurhoxel] [fix:3.0.0] Retire or repair capability evals that no longer exercise v3 behavior.
+- [ ] [id:svlmflnetx] [fix:3.0.0] Stop top-level capability commands from pointing agents at checkout source.
+- [ ] [id:ujqomryeao] [docs:3.0.0] Reconcile handoff verbs between the operating manual and the vocabulary.
+- [ ] [id:vvmgsvwlrg] [fix:3.0.0] Make check explain describe what capability validators actually check.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -57,6 +69,7 @@
 - [ ] [id:krapibtcjp] [chore:3.0.0] Correct the retained lint diagnostic count in TODO clxxrzihnt
 - [ ] [id:osazlarklk] [docs:3.0.0] Remove the historical qualification label from the CLI coverage contract
 - [ ] [id:oxbwnuwkub] [fix:3.0.0] Stop upgrade from blocking a fresh project as unrecognized v2 state.
+- [ ] [id:pjtcwpgdzd] [docs:3.0.0] Fix the AGENTS.md local CLI recipe so help flags reach the CLI.
 
 ## ✓ Resolved
 

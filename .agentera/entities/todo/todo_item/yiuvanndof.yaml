@@ -1,0 +1,41 @@
+id: yiuvanndof
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Serve the user's topic to a routed capability, not only its byte offsets.
+  requirements:
+    - "`prime --input -` returns the topic only as `route.topic_span` offsets; the started capsule carries no topic text, and no served surface says how to use the span."
+    - docs/cli-coverage-contract.md marks the former "topic is the user's instruction" skill rule as "Kept, changed", but neither SKILL.md, the operating manual nor any capsule serves it.
+    - Decide one owner (manual or prime output) for topic extraction so capabilities only state how they scope from a topic, deferred intent, or no topic.
+  acceptance:
+    - A host given only the routed reply can recover the exact topic text without slicing bytes itself.
+    - The coverage contract row matches the served behavior.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Serve the user's topic to a routed capability, not only its byte offsets."
+      severity: degraded
+      status: open
+      order: 7
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel

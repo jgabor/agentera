@@ -1,0 +1,38 @@
+id: pjtcwpgdzd
+artifact: todo
+record:
+  kind: docs
+  target_version: 3.0.0
+  title: Fix the AGENTS.md local CLI recipe so help flags reach the CLI.
+  requirements:
+    - "`vp node packages/cli/dist/bin/agentera.js ... --help` prints vp help; `vp node -- packages/cli/dist/bin/agentera.js ...` works."
+  acceptance:
+    - AGENTS.md shows a recipe that passes every flag, including --help, to the CLI.
+  release_blocker: false
+  severity: annoying
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[docs:3.0.0] Fix the AGENTS.md local CLI recipe so help flags reach the CLI."
+      severity: annoying
+      status: open
+      order: 7
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel

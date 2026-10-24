@@ -1,0 +1,39 @@
+id: svlmflnetx
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stop top-level capability commands from pointing agents at checkout source.
+  requirements:
+    - "`agentera <capability>` (capability.ts) returns a checkout `instructions_path`, which the operating manual forbids agents to read."
+    - capability_schema_contract.yaml ROUTE_ALIASES.cli_boundary says not to add capability or alias commands to the CLI, yet eleven exist.
+  acceptance:
+    - The commands are removed or return only CLI routes, and the contract and help agree with the result.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stop top-level capability commands from pointing agents at checkout source."
+      severity: normal
+      status: open
+      order: 40
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel

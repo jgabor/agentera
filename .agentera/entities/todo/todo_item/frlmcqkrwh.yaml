@@ -1,0 +1,43 @@
+id: frlmcqkrwh
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Reconcile capability capsule budgets with their authority and enforce them as declared.
+  requirements:
+    - "`scripts/json_output_surface_manifest.yaml` budget_by_capability.status is 25000 bytes while prime-status-context and state-storage-authority.yaml say 22500."
+    - state-storage-authority.yaml declares measure_before_emit and a 55000-byte generic capsule, but non-status `prime --context` is not measured at runtime; only tests on a synthetic 25-entity fixture check it.
+    - The manifest measures `--fields capability_context` at the repository root while tests measure full stdout; the audit capsule in this repository is about 500 bytes under budget by one definition and over it by the other.
+    - "`verify:prime-budget` is named the authoritative command but measures only bare prime."
+  acceptance:
+    - One budget value per surface across manifest, authority and tests.
+    - One documented measurement definition used by tests and any runtime check.
+    - The authority's enforcement claim matches what runs.
+  release_blocker: false
+  severity: degraded
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Reconcile capability capsule budgets with their authority and enforce them as declared."
+      severity: degraded
+      status: open
+      order: 4
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel

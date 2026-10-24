@@ -1,0 +1,40 @@
+id: rflurhoxel
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Retire or repair capability evals that no longer exercise v3 behavior.
+  requirements:
+    - "`check verify eval skills` finds only SKILL.md, so its per-capability trigger prompts never run."
+    - "`check verify eval semantic` grades captured text, and status-routing-plan-priority.md still uses v2 names."
+    - "The status trigger T5 sets `fallback: true`, which the loader reads but the semantic capsule drops and no contract documents."
+  acceptance:
+    - Each eval either exercises current served behavior or is removed, and T5 fallback is documented or deleted.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Retire or repair capability evals that no longer exercise v3 behavior."
+      severity: normal
+      status: open
+      order: 39
+    create_batch:
+      effect_sha256: 979d08caf14324a6c2510f4d5157e170634df9d35c8088578c90b15837d7790b
+      input_sha256: 961d22135818f413d405200bed536cfb2a4328671d79ad727f40d7dcf9b7278a
+      local_refs:
+        worker-splitter: wfxffubfhd
+        topic-delivery: yiuvanndof
+        command-binding: kcqywfaykb
+        capsule-budgets: frlmcqkrwh
+        composition-rewrites: bkamepjltd
+        handoff-verbs: ujqomryeao
+        capability-commands: svlmflnetx
+        check-explain-scope: vvmgsvwlrg
+        capability-structure-authority: lemblhfbom
+        capsule-state-fit: pblyboavnd
+        vision-query: mstlnghews
+        vp-node-help: pjtcwpgdzd
+        dead-evals: rflurhoxel
