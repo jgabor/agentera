@@ -1,0 +1,21 @@
+id: buplkzyydk
+artifact: decisions
+record:
+  date: 2026-10-24
+  question: How should the status capability be redesigned in its second audit?
+  context: Status is the first thing a user sees in every session. The July audit made it the reference for direct-contract delegation, but since then prime became the single entry, status_context replaced source_contract.capability_startup, and the CLI's next_action took over routing. Two cold agents rendering from the served capsule alone hit five rules whose fields the capsule lacks, would have made two to five extra CLI calls, asked two questions in one reply, and on a first run without the skill were told to upgrade before init. The status capsule (`packages/cli/src/cli/commands/prime/orientationOutput.ts`) is 21503 bytes against a 22500-byte budget that fails hard, and that budget is a May 2026 baseline plus headroom rather than a target derived from the job.
+  alternatives:
+    - name: The CLI decides and status renders, in one tested call.
+      status: chosen
+    - name: Keep the prose routing priority list next to next_action.
+      status: rejected
+    - name: Restore every missing field so all five dead rules render.
+      status: rejected
+    - name: Keep the hard budget failure and raise the cap when output grows.
+      status: rejected
+    - name: Leave the unused-capability hint out of this rewrite.
+      status: rejected
+  choice: "Status renders what the CLI decides. The briefing adds one north-star line from the vision every time. The CLI owns routing through next_action, which also reports unfinished work (branch and changed-file count) so resuming it can be the next step; the agent may override only on what the user said in the session, and says why. The rules for the optimize line, app status, health staleness and fresh_start writes are cut, and conditions arrive as attention items or next_action; the profile line stays, shown only when the profile has expired or is close to expiring, with the window owned by the CLI. Exit signals follow observable facts: waiting when a suggestion is pending, complete when nothing is suggested, flagged when startup is degraded, stuck when startup is blocked. Each reply asks one question; offers carry a CLI-declared blocking flag and the manual orders blocking offers before the suggestion. On a first run, the init preview leads and the skill offer is non-blocking, repeated once per session while the host has no native integration; a missing app home alone is not reported as an upgrade. Budgets are derived from the job in tokens as a shared rule: tests guard instruction growth, and the runtime degrades on state growth by trimming attention detail and alternatives. Bare /agentera is one self-sufficient call, pinned in the cold-agent eval. Attention arrives as structured items and renders as compact lines without bookkeeping. At most one CLI-made unused-capability hint appears, only when attention is otherwise empty. Structurally, one base literal in `packages/cli/src/capabilities/status/instructions.ts` replaces the patch chain and `status/startupInstructions.ts`; NEVER rules become MUST NOT; voice refers to identity.voice; restated offer and plan-replacement guidance is removed; the six-section spine is restored; artifacts, validation and exit schemas follow; the logo's top row is fixed."
+  reasoning: "Two routing brains disagree silently: the old highest-severity rule would send the user to a TODO blocked by 31 dependencies that next_action correctly skips. Rules for absent data cost bytes on every start and confuse agents. A budget that follows output cannot push back on it, while a refusal punishes the user for project growth they control. Tying exits and offer order to facts the CLI declares makes behavior testable rather than a matter of agent judgment. Unfinished work is the strongest resume signal and belongs in the tested selection. The north-star line keeps every session anchored to direction, which the briefing never showed. This amends the July status audit: its dashboard ownership holds, while its source_contract delegation and verbatim routing list no longer do."
+  confidence: firm
+  feeds_into: status capability rewrite, operating manual, budget authority, prime next_action and status_context

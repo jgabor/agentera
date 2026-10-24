@@ -1,0 +1,19 @@
+id: imlryhrjcn
+artifact: decisions
+record:
+  date: 2026-10-24
+  question: When may an Agentera capability act without asking the user first?
+  context: The vision's tension says the agent "acts first and asks later (YOLO by default)", while the operating manual and the prime-entry decision say next_action starts only when the user accepts, and many capabilities ask before their own writes (findings filing, Document patch sets, plan task updates). The status audit surfaced the conflict. The profile describes the user as fast and directive on routine steps and deliberate on design. Agentera requires a Git root, so uncommitted state changes are visible and restorable.
+  alternatives:
+    - name: Act inside an invoked capability; ask only before irreversible effects and intent-recording writes; starting another capability still waits.
+      status: chosen
+    - name: Ask only before irreversible effects, including for decisions, vision and objective writes.
+      status: rejected
+    - name: Keep preview-then-approve for every project-state write.
+      status: rejected
+    - name: Let capabilities start the next capability without asking.
+      status: rejected
+  choice: '"YOLO by default" applies inside an invoked capability. A capability writes routine project state (TODO filing, progress, health, docs patches, plan task updates) without asking, then reports each change with its undo: the exact paths and hunks while uncommitted, and the typed reversal verb (resolve, supersede, amend) once committed. It asks first only for irreversible or out-of-project effects (install, update, migration, reset, cleanup, history acquisition, Git, push, private data) and for writes that record user intent (decisions, vision, objective). Starting another capability remains a suggestion that waits for the user. The rule lives once in the operating manual; each capability adopts it and removes its own approval gates during its audit.'
+  reasoning: Autonomy inside a capability matches the vision without letting work chain beyond what the user started. Intent-recording writes keep asking because a wrong decision or vision entry misrepresents the user, which conflicts with Discuss's rule not to decide for the user and with the profile's deliberate stance on design. Git already provides undo while changes are uncommitted, so no new undo mechanism is needed; listing exact hunks avoids restoring a user's unrelated edits in shared files such as TODO.md. One shared rule with per-capability adoption keeps each change reviewable inside the audits already under way.
+  confidence: firm
+  feeds_into: operating manual, every capability audit, vision tension wording
