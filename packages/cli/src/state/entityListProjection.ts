@@ -76,7 +76,12 @@ function assignSelected(target: JsonObject, field: string, value: JsonValue): vo
   current[parts.at(-1)!] = structuredClone(value);
 }
 
-export function resolveEntityListSelector(input: EntityListSelectorInput | undefined, entries: JsonObject[], options: EntityListProjectionOptions): ResolvedEntityListSelector {
+function recordFieldPaths(entries: JsonObject[]): string[] {
+  return [...new Set(entries.flatMap((entry) => fieldPaths(entry.record)))].sort();
+}
+
+/** `familyEntries` yields every row of the family before filters, built like `entries`. */
+export function resolveEntityListSelector(input: EntityListSelectorInput | undefined, entries: JsonObject[], options: EntityListProjectionOptions, familyEntries?: () => JsonObject[]): ResolvedEntityListSelector {
   if (input?.idsOnly && input.fields !== undefined) {
     fail(options, "--ids-only and --fields cannot be combined", "Choose one bounded selector and retry; no state was changed.", 2);
   }
@@ -90,10 +95,18 @@ export function resolveEntityListSelector(input: EntityListSelectorInput | undef
     fail(options, "--fields contains a duplicate field path", "Remove duplicate field paths and retry; no state was changed.", 2);
   }
   const fields = [...requested].sort();
-  const available = [...new Set(entries.flatMap((entry) => fieldPaths(entry.record)))].sort();
+  let available = recordFieldPaths(entries);
+  // A filter can match no rows, or only rows that omit an optional field, so a
+  // field that any record of the family carries stays selectable.
+  if (familyEntries && fields.some((field) => !available.includes(field))) {
+    const family = familyEntries();
+    // An empty family has no record to check a field against and no row to return.
+    if (family.length === 0) return { mode: "fields", fields };
+    available = recordFieldPaths(family);
+  }
   const unsupported = fields.find((field) => !available.includes(field));
   if (unsupported) {
-    fail(options, `unsupported record field '${unsupported}' for this filtered ${options.artifact} snapshot; available fields: ${available.join(", ") || "none"}`, "Choose a listed field or change the filters, then restart without --cursor; no state was changed.", 2, available);
+    fail(options, `unsupported record field '${unsupported}' for ${options.artifact} records; available fields: ${available.join(", ") || "none"}`, "Choose a listed field, then restart without --cursor; no state was changed.", 2, available);
   }
   return { mode: "fields", fields };
 }

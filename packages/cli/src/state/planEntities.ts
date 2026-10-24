@@ -828,6 +828,7 @@ function boundedList(
     selectorInput,
     selected.map((entity) => entry(root, entity)),
     projectionOptions,
+    () => allEntities.filter((entity) => entity.boundary === projectionOptions.boundary).map((entity) => entry(root, entity)),
   );
   const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, allEntities);

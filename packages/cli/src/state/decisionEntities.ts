@@ -508,7 +508,8 @@ export function listDecisionEntities(
   const effectiveLimit = limit ?? declared.defaultLimit;
   if (!Number.isSafeInteger(effectiveLimit) || effectiveLimit < 1 || effectiveLimit > declared.maximumLimit) throw failure("invalid_request", `decisions list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.");
   const all = decisionEntities(root, sourceRoot, options.discovery);
-  let bases = all.filter((entity) => [BASE, SUMMARY].includes(entity.boundary ?? "")).sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
+  const family = all.filter((entity) => [BASE, SUMMARY].includes(entity.boundary ?? "")).sort((a, b) => String(b.record!.date ?? "").localeCompare(String(a.record!.date ?? "")) || a.id!.localeCompare(b.id!));
+  let bases = family;
   if (topic) {
     const needle = topic.toLowerCase();
     bases = bases.filter((entity) => canonicalRecordJson(entity.record).toLowerCase().includes(needle));
@@ -526,6 +527,7 @@ export function listDecisionEntities(
     options.selector,
     bases.map((entity) => listEntry(root, entity, all, sourceRoot)),
     projectionOptions,
+    () => family.map((entity) => listEntry(root, entity, all, sourceRoot)),
   );
   const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, bases, all, sourceRoot, topic, declared.entityRoot);

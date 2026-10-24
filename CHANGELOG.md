@@ -180,6 +180,25 @@
 
 ### Fixed
 
+- Fixed a fresh project that a crashed writer left with only a stale
+  `.agentera/.writer.lock`. Prime, doctor, `init` and `state plan create` now
+  treat it as fresh when the lock's owner process is gone, and both
+  initializers remove the lock, so `init --yes` still leaves only
+  `.agentera/state-mode.yaml`. An empty `.agentera/` directory is also fresh
+  now, not unknown. While the owner still runs, `init` names the process to
+  wait for; when Agentera cannot tell, or the pid belongs to another program,
+  it asks the user to confirm before the exact lock is removed, instead of
+  advising another preview.
+- Fixed fresh-project guidance that named a `PLAN.yaml` file that does not
+  exist. Doctor, gate errors and recovery detail now lead with `init` and give
+  plan creation as `state plan create --input -`, with its input built by the
+  plan capability (`npx -y agentera@next prime --context plan`).
+- Fixed `state <artifact> list --fields` failing with "available fields: none"
+  when a filter matched no record. Fields are now checked against every record
+  of the family, so an empty match returns an empty list, and a field that no
+  record carries is still rejected with the valid fields listed. When the
+  family has no records at all, any well-formed field path is accepted and
+  returns no rows.
 - Fixed slow schema, report and check explanations and recovery guidance by reusing immutable parsed contracts, while reading current authority bytes and validating each invocation.
 - Fixed same-ID writer lock contention so a competing committed entity returns
   the canonical duplicate-ID conflict instead of a generic lock timeout.

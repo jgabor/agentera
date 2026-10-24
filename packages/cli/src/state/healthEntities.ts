@@ -302,6 +302,7 @@ export function listHealthEntities(
     options.selector,
     filtered.map((entity) => entry(root, entity)),
     projectionOptions,
+    () => all.map((entity) => entry(root, entity)),
   );
   const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, filtered, dimension, declared.entityRoot);

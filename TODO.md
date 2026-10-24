@@ -56,6 +56,7 @@
 - [ ] [id:cewzpiysiw] [chore:3.0.0] Decide whether to keep the formatter and lint ignore for the deleted test evidence folder
 - [ ] [id:krapibtcjp] [chore:3.0.0] Correct the retained lint diagnostic count in TODO clxxrzihnt
 - [ ] [id:osazlarklk] [docs:3.0.0] Remove the historical qualification label from the CLI coverage contract
+- [ ] [id:oxbwnuwkub] [fix:3.0.0] Stop upgrade from blocking a fresh project as unrecognized v2 state.
 
 ## ✓ Resolved
 
@@ -231,3 +232,6 @@
 - [x] [id:vcrmaxuasq] [test:3.0.0] Re-certify historical all-test typecheck evidence
 - [x] [id:krqhlpjexq] [fix:3.0.0] Keep bare prime within its brief byte budget in projects with large attention lists
 - [x] [id:kkfomcugga] [fix:3.0.0] Report a fresh project as ready to start, not as needing repair.
+- [x] [id:zbhflseksu] [fix:3.0.0] Stop init from refusing forever when a crashed writer left a stale project lock.
+- [x] [id:pjwnakwnqg] [fix:3.0.0] Stop naming a PLAN.yaml file that does not exist in fresh-project guidance.
+- [x] [id:crzsyjlgsr] [fix:3.0.0] Return an empty list, not an error, when --fields meets a filter with no matches.

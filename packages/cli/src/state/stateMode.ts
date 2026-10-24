@@ -7,6 +7,7 @@ import { dumpYamlMapping, loadYamlMapping } from "../core/yaml.js";
 import { EntityPublicationContext } from "./entityPublicationContext.js";
 import { validateRealProjectRoot, type ValidatedProjectRoot } from "./projectRoot.js";
 import { readProjectFileSnapshot } from "./safeProjectFile.js";
+import { acquireWriterLock, inspectWriterLockOwnership, isWriterLockEntry } from "./write/lock.js";
 
 export type StateMode = "legacy" | "entities";
 
@@ -125,6 +126,23 @@ function classifyMarkerAbsentProject(root: ValidatedProjectRoot, markerPath: str
     };
   }
 
+  // An empty state directory, or one holding only the lock a writer left when it
+  // died before publishing the marker, has no state yet; the next writer reclaims the lock.
+  const stateDirectory = path.join(root.path, ".agentera");
+  let entries: string[] | null;
+  try {
+    entries = fs.readdirSync(stateDirectory);
+  } catch {
+    entries = null;
+  }
+  if (entries?.every(isWriterLockEntry) && ["absent", "reclaimable"].includes(inspectWriterLockOwnership(stateDirectory).state)) {
+    return {
+      state: isGitWorktreeRoot(root) ? "fresh_uninitialized" : "unknown",
+      root,
+      markerPath,
+    };
+  }
+
   const entities = pathKind(root, ".agentera/entities");
   if (entities !== "missing" && entities !== "directory") {
     return {
@@ -221,6 +239,9 @@ export function freshPlanInitialization(projectRoot: string, sourceRoot = resolv
 export function initializeFreshEntityState(projectRoot: string, sourceRoot = resolveSourceRoot()): FreshPlanInitialization | null {
   const initialization = freshPlanInitialization(projectRoot, sourceRoot);
   if (!initialization) return null;
+  // Reclaim a dead writer's lock so init leaves only the marker. The lock is
+  // released before publication, which stays the race arbiter.
+  if (fs.existsSync(path.join(initialization.root.path, ".agentera"))) acquireWriterLock(initialization.root.path, 2000, initialization.root).release();
   const publicationContext = EntityPublicationContext.beginInitialization(initialization.root, initialization.markerPath);
   try {
     publicationContext.publishStateMarker(initialization.markerBytes);

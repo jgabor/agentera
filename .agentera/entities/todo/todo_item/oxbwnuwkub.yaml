@@ -1,0 +1,26 @@
+id: oxbwnuwkub
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stop upgrade from blocking a fresh project as unrecognized v2 state.
+  severity: annoying
+  release_blocker: false
+  requirements:
+    - 'In an exact Git root with no `.agentera` directory, `agentera upgrade --dry-run` exits 1 with status blocked. The entities phase reports action `unsupported-state-source`: "marker-absent state has no recognized v2 entity input; preserve it and follow the manual source recovery instructions in UPGRADE.md".'
+    - The message comes from `readyEntityCutoverPhase` in `packages/cli/src/upgrade/upgradeOrchestrator.ts`, which treats zero entity records as unsupported source state. A fresh project has no state to preserve or recover, so the advice sends a new user to a manual recovery path that does not apply.
+    - Prime, doctor, and init already classify the same project as `fresh_uninitialized` and point at `agentera init`. Upgrade should use the same classification and say there is nothing to migrate.
+    - Keep the blocked result for a marker-absent `.agentera` that holds unrecognized content.
+  acceptance:
+    - GIVEN an exact Git root with no .agentera directory WHEN upgrade --dry-run runs THEN the entities phase is noop, the run does not report blocked, and the output names agentera init as the next step.
+    - GIVEN a marker-absent .agentera with unrecognized content WHEN upgrade --dry-run runs THEN it still reports unsupported-state-source as blocked.
+    - One test covers each case.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stop upgrade from blocking a fresh project as unrecognized v2 state."
+      severity: annoying
+      status: open
+      order: 6

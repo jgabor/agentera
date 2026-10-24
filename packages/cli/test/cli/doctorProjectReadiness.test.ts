@@ -91,6 +91,8 @@ describe("Doctor project readiness", () => {
     }
     if (kind === "partial") fs.mkdirSync(path.join(project, ".agentera/entities"));
     if (kind === "corrupt") fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "mode: invalid\n");
+    // An empty state directory holds nothing to adopt, so unknown state needs an unrecognized file.
+    if (kind === "unknown") fs.writeFileSync(path.join(project, ".agentera/unrecognized.yaml"), "retain: true\n");
     if (kind === "valid") {
       const created = capture(
         project,
@@ -134,6 +136,11 @@ describe("Doctor project readiness", () => {
       expect(primeNext.retrieval.exact).toBe(commandText(["npx", "-y", "agentera@next", "init", "--project", project]));
       expect(doctor.json.current_health.project_readiness.apply_command).toBe(commandText(["npx", "-y", "agentera@next", "init", "--project", project, "--yes"]));
       expect(JSON.stringify(doctor.json.current_health.project_readiness)).not.toContain("PLAN.yaml");
+      // Fresh guidance names no plan file that may not exist; plan creation reads stdin.
+      const freshError = doctor.json.current_health.writer_readiness.error;
+      expect(JSON.stringify(freshError)).not.toContain("PLAN.yaml");
+      expect(freshError.initializers[1]).toBe(commandText(["npx", "-y", "agentera@next", "state", "plan", "create", "--project", project, "--input", "-", "--format", "json"]));
+      expect(freshError.recovery.indexOf(freshError.initializers[0])).toBeLessThan(freshError.recovery.indexOf("prime --context plan"));
       expect(fs.existsSync(path.join(project, ".agentera"))).toBe(false);
     }
     if (kind !== "valid" && kind !== "fresh") {

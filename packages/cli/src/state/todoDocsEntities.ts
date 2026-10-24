@@ -857,7 +857,8 @@ export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", li
   if (!Number.isSafeInteger(take) || take < 1 || take > declared.maximumLimit) throw failure("invalid_request", artifact, `${artifact} list limit must be 1..${declared.maximumLimit}`, "Use a limit in the declared range.", undefined, 2);
   const all = relevant(root, sourceRoot, artifact, options.discovery).filter(({ boundary }) => boundary === definition(artifact).boundary);
   const view = artifact === "todo" ? inspectTodoReadView(root, sourceRoot, all) : null;
-  let selected = sorted(artifact, all, view?.rows);
+  const family = sorted(artifact, all, view?.rows);
+  let selected = family;
   const queueRanks = artifact === "todo" ? new Map(selected.map((entity, index) => [entity.id!, index + 1])) : new Map<string, number>();
   const actionability = artifact === "todo" ? todoActionability(selected, view!, sourceRoot) : new Map<string, TodoReadinessEvaluation>();
   if (artifact === "todo")
@@ -874,6 +875,7 @@ export function listTodoDocsEntities(root: string, artifact: "todo" | "docs", li
     options.selector,
     selected.map((entity) => entry(root, entity, view?.rows.get(entity.id!), queueRanks.get(entity.id!), actionability.get(entity.id!), view?.drift)),
     projectionOptions,
+    () => family.map((entity) => entry(root, entity, view?.rows.get(entity.id!), queueRanks.get(entity.id!), actionability.get(entity.id!), view?.drift)),
   );
   const selectorKey = entityListSelectorKey(selector);
   const filterOrder = artifact === "todo" ? ["severity", "status"] : ["topic", "status"];

@@ -471,6 +471,7 @@ export function listProgressEntities(projectRoot: string, limit: number | undefi
     options.selector,
     filtered.map((entity) => entry(projectRoot, entity)),
     projectionOptions,
+    () => all.map((entity) => entry(projectRoot, entity)),
   );
   const selectorKey = entityListSelectorKey(selector);
   let afterKey = "";

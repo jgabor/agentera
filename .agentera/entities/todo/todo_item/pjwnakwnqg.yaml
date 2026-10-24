@@ -1,0 +1,29 @@
+id: pjwnakwnqg
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stop naming a PLAN.yaml file that does not exist in fresh-project guidance.
+  severity: annoying
+  release_blocker: false
+  requirements:
+    - On a fresh project, `doctor` `current_health.writer_readiness.error` lists `state plan create --input PLAN.yaml` as the second initializer, and its recovery text repeats it. No PLAN.yaml exists, so an agent can follow a command that cannot run.
+    - The same command comes from `freshPlanCreateCommand` in `migrationRequired.ts` and also reaches state-writer gate errors.
+    - Lead with init. Describe plan creation as the alternative and point at `state plan explain --verb create` (or `prime --context plan`) to build the input, instead of a literal file name.
+    - Keep both initializers listed and keep existing JSON fields.
+  acceptance:
+    - GIVEN a fresh git project WHEN doctor runs THEN no recovery or initializer text names PLAN.yaml as if it exists, and init is the first step.
+    - GIVEN a fresh git project WHEN a state writer other than plan create runs THEN its gate error gives the same guidance.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stop naming a PLAN.yaml file that does not exist in fresh-project guidance."
+      status: resolved
+      order: 174
+      severity: annoying
+  lifecycle:
+    operation: resolve
+    reason: Fresh-project guidance leads with init and gives plan creation as state plan create --input - with its input built by prime --context plan; doctor, gate errors, recovery detail, the initializer conflict and UPGRADE.md no longer name PLAN.yaml.
+    date: 2026-10-23

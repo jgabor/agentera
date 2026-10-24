@@ -370,6 +370,17 @@ describe("bounded entity list projection", () => {
     expect(() => projectEntityList(response(rows), selected, selectedConfig)).toThrow(/selected fields cannot fit/);
   });
 
+  it("accepts a field that only unfiltered family rows carry, and still rejects one no row carries", () => {
+    const family = entries(3);
+    (family[2].record as JsonObject).optional = "present";
+    const config = options({ fields: "optional" });
+    expect(resolveEntityListSelector({ fields: "optional" }, family.slice(0, 1), config, () => family)).toEqual({ mode: "fields", fields: ["optional"] });
+    expect(resolveEntityListSelector({ fields: "status" }, [], config, () => family)).toEqual({ mode: "fields", fields: ["status"] });
+    expect(resolveEntityListSelector({ fields: "status" }, [], config, () => [])).toEqual({ mode: "fields", fields: ["status"] });
+    expect(() => resolveEntityListSelector({ fields: "missing" }, [], config, () => family)).toThrow(/unsupported record field 'missing'/);
+    expect(() => resolveEntityListSelector({ fields: "optional" }, family.slice(0, 1), config)).toThrow(/unsupported record field 'optional'/);
+  });
+
   it("rejects malformed, duplicate, absent, and combined selectors without partial output", () => {
     const rows = entries(1);
     for (const selector of [{ fields: "missing" }, { fields: "status,status" }, { fields: "Status" }, { idsOnly: true, fields: "status" }]) {

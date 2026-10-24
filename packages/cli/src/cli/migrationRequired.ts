@@ -6,6 +6,7 @@ import type { Io } from "./dispatch/shared.js";
 import { emitStructured } from "./structured.js";
 import { classifyProjectState, detectStateMode, initializeFreshEntityState, freshEntityStateMarker } from "../state/stateMode.js";
 import { StateWriteInputError } from "../state/write/errors.js";
+import { inspectWriterLockOwnership } from "../state/write/lock.js";
 import { emitInvalidInput } from "./errors.js";
 import { commandText, fullEntityUpgradeCommand, fullEntityUpgradePreviewCommand } from "../upgrade/upgradeCommands.js";
 import { preCutoverCommand } from "./preCutoverCommand.js";
@@ -55,8 +56,9 @@ function permitsFreshPlanInitialization(argv: string[]): boolean {
   return (command === "state" && subcommand === "plan" && verb === "create") || (command === "prime" && value(argv, "--context") === "plan");
 }
 
+/** Plan creation reads its input from stdin, so the command names no file that may not exist. */
 function freshPlanCreateCommand(project: string): string {
-  return commandText(["npx", "-y", "agentera@next", "state", "plan", "create", "--project", project, "--input", "PLAN.yaml", "--format", "json"]);
+  return commandText(["npx", "-y", "agentera@next", "state", "plan", "create", "--project", project, "--input", "-", "--format", "json"]);
 }
 
 export function initPreviewCommand(project: string): string {
@@ -103,7 +105,7 @@ export function freshStart(project: string): Record<string, unknown> {
 
 /** Recovery for a fresh project: the two initializers, preview first. */
 function freshInitializationRecovery(project: string): string {
-  return `Initialize the project with one of the two initializers. Preview init with ${initPreviewCommand(project)} and apply it with ${initApplyCommand(project)} only after the user approves, or create the first plan with ${freshPlanCreateCommand(project)}.`;
+  return `Initialize the project with one of the two initializers. Preview init with ${initPreviewCommand(project)} and apply it with ${initApplyCommand(project)} only after the user approves, or start the plan capability with ${commandText(["npx", "-y", "agentera@next", "prime", "--context", "plan"])}, which builds the first plan from ${commandText(["npx", "-y", "agentera@next", "state", "plan", "explain", "--verb", "create"])} and sends it on stdin to ${freshPlanCreateCommand(project)}.`;
 }
 
 /** Read-only cutover gate. It only inspects the durable marker and emits a failure. */
@@ -278,19 +280,28 @@ export function runInit(argv: string[], io: Io = {}): number {
   } catch {
     stateRoot = false;
   }
-  const conflict = (reason: string): number =>
+  const conflict = (reason: string, recovery = `Check the project with ${commandText(["npx", "-y", "agentera@next", "prime"])}; if it is still uninitialized, preview again with ${initPreviewCommand(project)}.`): number =>
     refuse(
       {
         class: "initialization_conflict",
         message: "Another Agentera writer, most likely state plan create, is initializing or changing this project; init wrote nothing.",
-        recovery: `Check the project with ${commandText(["npx", "-y", "agentera@next", "prime"])}; if it is still uninitialized, preview again with ${initPreviewCommand(project)}.`,
+        recovery,
         reason,
       },
       classifyProjectState(project).state,
     );
-  // The other initializer holds the project writer lock while it publishes.
-  if ((classification.state === "unknown" || classification.state === "partial") && fs.existsSync(path.join(project, ".agentera", ".writer.lock"))) {
-    return conflict("the project writer lock is held");
+  // The other initializer holds the project writer lock while it publishes. A
+  // lock whose owner died is classified as fresh and never reaches this check.
+  if (classification.state === "unknown" || classification.state === "partial") {
+    const lockPath = path.join(project, ".agentera", ".writer.lock");
+    const owner = inspectWriterLockOwnership(path.join(project, ".agentera"));
+    const holder = owner.pid === undefined ? "another process" : `process ${owner.pid}`;
+    if (owner.state === "live") {
+      return conflict(`the project writer lock is held by ${holder}`, `Wait for ${holder} to finish, then run ${initPreviewCommand(project)} again. If ${holder} is not an Agentera command (its pid may be reused after a reboot), ask the user to confirm, then remove ${lockPath} and preview again.`);
+    }
+    if (owner.state === "indeterminate") {
+      return conflict(`Agentera cannot tell whether ${holder} still owns the project writer lock`, `Ask the user to confirm that no Agentera command is running in this project. Only then remove ${lockPath} and any .agentera/.writer.*.tmp directory, and run ${initPreviewCommand(project)} again.`);
+    }
   }
   const refusal = initRefusal(project, classification.state, stateRoot, classification.reason);
   if (refusal) return refuse(refusal, classification.state);

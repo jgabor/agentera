@@ -1,0 +1,30 @@
+id: crzsyjlgsr
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Return an empty list, not an error, when --fields meets a filter with no matches.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "`resolveEntityListSelector` in `packages/cli/src/state/entityListProjection.ts` builds the allowed `--fields` set from the records left after filtering. When a filter matches nothing, every field is rejected: `state decisions list --topic NOMATCH --fields question` fails with \"unsupported record field 'question' ... available fields: none\", while the same command without `--fields` returns an empty list with status ok."
+    - The selector is shared, so other families fail the same way; `state progress list --topic NOMATCH --fields date` reproduces it.
+    - The same rule also rejects a valid optional field when no matched record happens to carry it.
+    - Validate `--fields` against the family's record schema, not the filtered snapshot. Keep rejecting fields the schema does not define, and keep listing the valid fields in the error.
+  acceptance:
+    - GIVEN a filter that matches no records WHEN list runs with a schema-valid --fields value THEN it returns status ok with zero entries.
+    - GIVEN a field the family schema does not define WHEN list runs with --fields THEN it still fails with invalid_request and lists the family's valid fields, even when the filter matches nothing.
+    - One test covers an empty match and one covers an unknown field, on at least two families.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Return an empty list, not an error, when --fields meets a filter with no matches."
+      status: resolved
+      order: 175
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: List --fields now falls back to every record of the family when the filtered rows lack a field, so an empty match returns an empty list and unknown fields still fail with the family's valid fields; an empty family accepts any well-formed field.
+    date: 2026-10-23

@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import fs from "node:fs";
 import os from "node:os";
@@ -338,6 +338,70 @@ describe("init", () => {
     expect(invalid.json?.error).toMatchObject({ class: "unrecognized_argument" });
   });
 
+  it("reclaims lock residue a dead writer left before publishing, and waits on a live one", () => {
+    const writeLock = (root: string, pid: number): void => {
+      fs.mkdirSync(path.join(root, ".agentera", ".writer.lock"), { recursive: true });
+      fs.writeFileSync(path.join(root, ".agentera", ".writer.lock", "owner.json"), JSON.stringify({ pid, token: "crashed-writer", created_at: "2026-10-22T10:00:00.000Z" }));
+    };
+    // spawnSync reaps the child, so its pid names a process that no longer runs.
+    const deadPid = (): number => spawnSync("true").pid!;
+
+    const stale = project();
+    writeLock(stale, deadPid());
+    const before = snapshot(stale);
+    const startup = capture(stale, ["prime", "--context", "plan", "--format", "json"]);
+    expect(startup.json?.capability_context.startup.state_cutover).toMatchObject({ status: "fresh_uninitialized", recovery_command: null });
+    const preview = capture(stale, ["init"]);
+    expect(preview.json).toMatchObject({ status: "preview", project_state: "fresh_uninitialized" });
+    expect(snapshot(stale)).toBe(before);
+    const applied = capture(stale, ["init", "--yes"]);
+    expect(applied.rc, applied.out).toBe(0);
+    expect(stateFiles(stale)).toEqual([".agentera/state-mode.yaml"]);
+    expect(validateEntityState(stale)).toMatchObject({ valid: true, entityCount: 0 });
+    const planned = capture(stale, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput());
+    expect(planned.rc, planned.out).toBe(0);
+    expect(stateFiles(stale).some((file) => file.includes(".writer"))).toBe(false);
+
+    // The other initializer reclaims the same residue.
+    const stalePlan = project();
+    writeLock(stalePlan, deadPid());
+    const created = capture(stalePlan, ["state", "plan", "create", "--input", "-", "--format", "json"], planInput());
+    expect(created.rc, created.out).toBe(0);
+    expect(validateEntityState(stalePlan)).toMatchObject({ valid: true, entityCount: 3 });
+
+    // A live owner keeps init waiting, with a recovery that ends when the owner does.
+    const live = project();
+    writeLock(live, process.pid);
+    const liveBefore = snapshot(live);
+    const waiting = capture(live, ["init", "--yes"]);
+    expect(waiting.rc).toBe(1);
+    expect(waiting.json?.error).toMatchObject({ class: "initialization_conflict", recovery: expect.stringContaining(`Wait for process ${process.pid} to finish`) });
+    expect(waiting.json?.error.recovery).not.toContain("Check the project with");
+    expect(snapshot(live)).toBe(liveBefore);
+
+    // Residue without an owner pid cannot be judged, so the user confirms before the exact lock is removed.
+    const unknownOwner = project();
+    fs.mkdirSync(path.join(unknownOwner, ".agentera", ".writer.123e4567-e89b-12d3-a456-426614174000.tmp"), { recursive: true });
+    const unknownBefore = snapshot(unknownOwner);
+    const unjudged = capture(unknownOwner, ["init", "--yes"]);
+    expect(unjudged.json?.error).toMatchObject({ class: "initialization_conflict", recovery: expect.stringContaining("Ask the user to confirm") });
+    expect(unjudged.json?.error.recovery).toContain(path.join(".agentera", ".writer.lock"));
+    expect(snapshot(unknownOwner)).toBe(unknownBefore);
+
+    // A writer that reclaims the lock and then fails leaves an empty state directory, which is still fresh.
+    const emptied = project();
+    fs.mkdirSync(path.join(emptied, ".agentera"));
+    expect(capture(emptied, ["init"]).json).toMatchObject({ status: "preview", project_state: "fresh_uninitialized" });
+    expect(capture(emptied, ["init", "--yes"]).rc).toBe(0);
+    expect(stateFiles(emptied)).toEqual([".agentera/state-mode.yaml"]);
+
+    // Lock residue never makes other marker-absent state fresh.
+    const partial = project();
+    fs.mkdirSync(path.join(partial, ".agentera", "entities"), { recursive: true });
+    writeLock(partial, deadPid());
+    expect(capture(partial, ["init", "--yes"]).json?.error.class).toBe("partial_state");
+  });
+
   it("resolves a race with plan creation to one complete state and one refusal", () => {
     const original = EntityPublicationContext.prototype.publishImmutable;
     const marker = EntityPublicationContext.prototype.publishStateMarker;
@@ -402,6 +466,7 @@ describe("init", () => {
     expect(refusedVision.rc).toBe(1);
     expect(refusedVision.json?.error).toMatchObject({ class: "fresh_initialization_required", recovery: expect.stringContaining("init --project") });
     expect(refusedVision.json?.error.recovery).toContain("state plan create");
+    expect(JSON.stringify(refusedVision.json?.error)).not.toContain("PLAN.yaml");
     // The refusal leads with the init preview; plan creation stays the second initializer.
     const initPreview = refusedVision.json?.error.initializers[0];
     expect(initPreview).toMatch(/ init --project \S+$/);

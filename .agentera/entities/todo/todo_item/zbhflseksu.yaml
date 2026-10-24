@@ -1,0 +1,30 @@
+id: zbhflseksu
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Stop init from refusing forever when a crashed writer left a stale project lock.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "`init` refuses with `initialization_conflict` whenever `.agentera/.writer.lock` exists in unknown or partial state. It checks only that the path exists, not whether its owner is alive."
+    - A lock left by a crashed `state plan create` therefore blocks init on every run, and the recovery text ("check with prime, then preview again") sends the agent back into the same refusal.
+    - "Use the writer lock's existing owner inspection: treat a lock whose owner is dead as absent or recover it, and keep refusing only while the owner is live or indeterminate."
+    - When init must still refuse, give a recovery step that ends the loop, such as how to confirm the owner is gone and clear the lock, not "preview again".
+  acceptance:
+    - GIVEN a fresh git project with a writer lock whose owner process is dead WHEN init runs THEN it previews (or applies with --yes) as on a clean project.
+    - GIVEN a writer lock held by a live process WHEN init runs THEN it still refuses with initialization_conflict and writes nothing.
+    - The refusal recovery never points only at rerunning the same init command.
+  status: resolved
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Stop init from refusing forever when a crashed writer left a stale project lock."
+      status: resolved
+      order: 173
+      severity: normal
+  lifecycle:
+    operation: resolve
+    reason: Lock residue whose owner process is gone now classifies as fresh, so prime, doctor, init and plan create proceed and the next writer reclaims the lock; a live owner gets a wait recovery naming its pid, and an unjudgeable one asks the user to confirm before removing the exact lock.
+    date: 2026-10-23

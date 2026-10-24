@@ -18,7 +18,8 @@ authority:
     experiment, TODO-item, and documentation-inventory family writers and retrieval,
     plus one-way forward import, are implemented but activate entity authority only
     from the durable cutover marker. A marker-absent Git root with no .agentera
-    residue is fresh_uninitialized and may publish that marker only through one of
+    state, or only writer-lock residue whose owner process is gone, is
+    fresh_uninitialized and may publish that marker only through one of
     two initializers: init, which publishes only the marker after preview and
     explicit --yes approval, or its first complete Plan create. The preserved
     singleton families remain legacy files. The
@@ -116,7 +117,7 @@ entity_target:
             description: Return only canonical minimum identity, exact-get recovery, and required family minimum fields such as TODO queue_rank.
           fields:
             flag: --fields FIELDS
-            description: Select comma-separated lowercase record paths present in the filtered snapshot; identity and exact-get recovery remain present.
+            description: Select comma-separated lowercase record paths that any record of the family carries, even when filters match no row; a family with no records accepts any well-formed path and returns no rows. Identity and exact-get recovery remain present.
           mutual_exclusion: true
         bounds: { minimum: 1, default: 20, maximum: 100, max_utf8_bytes: 32768 }
         formats: [text, json, yaml]
@@ -1280,15 +1281,18 @@ entity_migration:
       Project state and CLI installation state are independent dimensions. A v3
       CLI selects this cutover for recognized marker-absent v2 aggregate state
       whether the CLI runs from a self-contained npm package or a source
-      checkout. A Git-root project with no .agentera path is fresh_uninitialized:
+      checkout. A Git-root project with no .agentera path, an empty one, or one
+      holding only reclaimable writer-lock residue is fresh_uninitialized:
       Plan startup remains read-only, and init or its first Plan create are the
       two initializers. Pending v1 Markdown, partial, corrupt, and unknown
       marker-absent state are rejected with their read-only recovery instructions.
   fresh_initialization:
     classification: >-
-      fresh_uninitialized requires an exact Git root, absent .agentera state
-      root, no entity records, no recognized aggregate migration input, and no
-      unknown Agentera-owned residue. Ordinary root documents, table-based TODO
+      fresh_uninitialized requires an exact Git root, an .agentera state root
+      that is absent, empty, or holds only writer-lock residue whose owner
+      process is gone (the next writer reclaims it), no entity records, no
+      recognized aggregate migration input, and no unknown Agentera-owned
+      residue. Lock residue with a live or unjudgeable owner is not fresh. Ordinary root documents, table-based TODO
       files, and report directories are user-owned and do not participate.
     startup: plan_context_is_read_only_and_operable_without_upgrade_apply
     writers: [init, state_plan_create]

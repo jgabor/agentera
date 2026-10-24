@@ -210,12 +210,13 @@ npx -y agentera@next init --yes
 The typed Plan writer initializes a fresh project with its first plan. Its dry
 run previews the marker, plan, and task publication without changing the
 project; apply publishes the complete plan graph and then the entity-state
-marker, rolling back ordinary publication failures.
+marker, rolling back ordinary publication failures. The plan capability builds
+the input from `state plan explain --verb create` and sends it on stdin.
 
 ```bash
 npx -y agentera@next prime --context plan
-npx -y agentera@next state plan create --input PLAN.yaml --dry-run
-npx -y agentera@next state plan create --input PLAN.yaml
+npx -y agentera@next state plan create --input - --dry-run
+npx -y agentera@next state plan create --input -
 ```
 
 Both initializers publish the marker by an exclusive link. If they run at the

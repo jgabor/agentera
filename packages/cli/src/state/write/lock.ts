@@ -742,6 +742,63 @@ function openProjectDirectory(projectRoot: string, expectedRoot?: ValidatedProje
   }
 }
 
+export interface WriterLockOwnership {
+  state: "absent" | "reclaimable" | "live" | "indeterminate";
+  pid?: number;
+}
+
+/** Whether a state-directory entry is writer-lock bookkeeping rather than project state. */
+export function isWriterLockEntry(name: string): boolean {
+  return name === ".writer.lock" || PRIVATE_NAME.test(name);
+}
+
+/**
+ * Read-only view of writer-lock residue in a state directory. It applies the
+ * rule acquisition uses to reclaim a lock, so "reclaimable" residue is what the
+ * next writer would remove, and it never mutates the lock.
+ */
+export function inspectWriterLockOwnership(stateDirectory: string): WriterLockOwnership {
+  const rank = { absent: 0, reclaimable: 1, indeterminate: 2, live: 3 } as const;
+  let result: WriterLockOwnership = { state: "absent" };
+  const observe = (state: WriterLockOwnership["state"], pid?: number): void => {
+    if (rank[state] > rank[result.state]) result = pid === undefined ? { state } : { state, pid };
+  };
+  const ownerState = (pid: number): WriterLockOwnership["state"] => {
+    const state = pidState(pid);
+    return state === "dead" ? "reclaimable" : state;
+  };
+  let inspection: LockInspection;
+  try {
+    inspection = inspectLock(path.join(stateDirectory, ".writer.lock"));
+  } catch {
+    return { state: "indeterminate" };
+  }
+  try {
+    if (inspection.state === "directory") {
+      if (inspection.owner.state === "valid") observe(ownerState(inspection.owner.record!.pid), inspection.owner.record!.pid);
+      // A malformed owner inside its grace period is still being prepared.
+      else observe(inspection.owner.stale ? "reclaimable" : "live");
+    } else if (inspection.state !== "absent") {
+      observe("indeterminate");
+    }
+  } finally {
+    closeInspection(inspection);
+  }
+  let names: string[] = [];
+  try {
+    names = fs.readdirSync(stateDirectory);
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") observe("indeterminate");
+  }
+  for (const name of names) {
+    const match = PRIVATE_NAME.exec(name);
+    if (!match) continue;
+    if (match[1] === undefined) observe("indeterminate");
+    else observe(ownerState(Number(match[1])), Number(match[1]));
+  }
+  return result;
+}
+
 export interface WriterLock {
   path: string;
   release: () => void;

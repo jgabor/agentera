@@ -696,6 +696,30 @@ describe("final entity retrieval public-contract parity", () => {
     }
   });
 
+  it("checks --fields against the whole family, so a filter that matches no row returns an empty list", () => {
+    const root = cutoverProject();
+    seedAliasRecords(root);
+    for (const [key, field] of [
+      ["progress", "phase"],
+      ["decisions", "confidence"],
+    ] as const) {
+      const family = entityListFamilies(REPO_ROOT).find((candidate) => candidate.key === key)!;
+      const empty = capture(root, ["state", ...family.commandTokens, "list", "--topic", "matches-no-record", "--fields", field, "--format", "json"]);
+      expect(empty.rc, `${key}: ${empty.out}`).toBe(0);
+      expect(JSON.parse(empty.out)).toMatchObject({ status: "ok", entries: [] });
+
+      const unknown = capture(root, ["state", ...family.commandTokens, "list", "--topic", "matches-no-record", "--fields", "not_a_field", "--format", "json"]);
+      expect(unknown.rc, key).toBe(2);
+      const error = JSON.parse(unknown.out).error;
+      expect(error).toMatchObject({ class: "invalid_request", message: expect.stringContaining("unsupported record field 'not_a_field'") });
+      expect(error.valid_values, key).toContain(field);
+    }
+    const fresh = cutoverProject();
+    const none = capture(fresh, ["state", "decisions", "list", "--fields", "confidence", "--format", "json"]);
+    expect(none.rc, none.out).toBe(0);
+    expect(JSON.parse(none.out)).toMatchObject({ status: "ok", entries: [] });
+  });
+
   it("routes and discovers every registry family", () => {
     const commandRoots = new Set(stateCommandNames());
     for (const family of ENTITY_LIST_RUNTIME_FAMILIES) expect(commandRoots.has(family.commandTokens[0]), family.key).toBe(true);

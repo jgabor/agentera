@@ -283,7 +283,7 @@ function initializationConflict(markerPath: string): never {
   reject({
     class: "conflict",
     message: `state mode marker '${markerPath}' appeared during fresh initialization; init and state plan create are the two initializers and only one can publish it`,
-    syntax: "agentera init --yes | agentera state plan create --input PLAN.yaml",
+    syntax: "agentera init --yes | agentera state plan create --input -",
     example: "remove no files; the competing initializer already initialized the project, so run agentera prime and retry state plan create if a plan is still needed",
   });
 }

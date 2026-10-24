@@ -421,6 +421,7 @@ function boundedList(root: string, sourceRoot: string, artifact: string, boundar
     selectorInput,
     selected.map((entity) => entry(root, entity)),
     projectionOptions,
+    () => all.filter((entity) => entity.boundary === boundary).map((entity) => entry(root, entity)),
   );
   const selectorKey = entityListSelectorKey(selector);
   const snap = snapshot(root, all);
