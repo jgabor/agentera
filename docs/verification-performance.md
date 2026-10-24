@@ -298,3 +298,20 @@ failed closed on a missing shard, a shard from another source identity, and a
 file reported by two partitions. Shard 2 first failed only because its clone
 path contained a UUID, which the public vocabulary test rejects; it passed
 from a UUID-free path, as CI checkouts are.
+
+[Run 40109973358](https://github.com/jgabor/agentera/actions/runs/40109973358)
+measured the layout on GitHub-hosted `ubuntu-24.04` runners through a temporary
+branch-only workflow. All jobs passed. Verification took 10 min 58 s from run
+creation to assembly, against about 29.5 minutes for the single job before.
+
+| Job      | Wall time   | Detail                                                                                                           |
+| -------- | ----------- | ---------------------------------------------------------------------------------------------------------------- |
+| core     | 10 min 26 s | overlap 468 s (package 447 s, source 241 s), capacity 78 s, performance 15 s, plus build and migration scenarios |
+| shard 1  | 3 min 24 s  | 99 files                                                                                                         |
+| shard 2  | 4 min 24 s  | 98 files                                                                                                         |
+| shard 3  | 2 min 47 s  | 100 files                                                                                                        |
+| assemble | 26 s        | 299 files, 5,133 tests, one declared skip                                                                        |
+
+The core job is now the critical path, bounded by the package owner at 447 s of
+its 600 s budget. Faster shards would not shorten the run; package
+verification or the serial performance and capacity barriers would.
