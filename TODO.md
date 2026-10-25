@@ -81,6 +81,7 @@
 - [ ] [id:vjdobcaiso] [feat:3.0.0] Let Discuss propose glossary entries for terms a decision coins or sharpens.
 - [ ] [id:ycnfuhmffy] [refactor:3.0.0] Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term.
 - [ ] [id:zgjozzimtt] [fix:3.0.0] Carry the vision's identity.voice in capsules that delegate voice to it.
+- [ ] [id:forcnazdcb] [fix:3.0.0] Rewrite the injected Human references section so agents can apply it.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

@@ -20,14 +20,3 @@ record:
       severity: normal
       status: open
       order: 50
-    create_batch:
-      effect_sha256: 12b17246adb5345a0d01e34738280b54c726c4899c772241c2ae76d292edd46f
-      input_sha256: 6e68ffaa5c6e288bfcbdbfe29cc93d2e7c01aeceae70ae5145b0edcfeb280fd9
-      local_refs:
-        consolidate: isxnszhath
-        discuss-startup: osakqozckv
-        glossary-shared: ycnfuhmffy
-        glossary-feed: vjdobcaiso
-        voice: zgjozzimtt
-        phrase-prefix: akfxobcpbi
-        patch-overwrite: mqsojuasjb
