@@ -3,7 +3,7 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const discussScenarios = ["bundle", "decision-only", "refusal", "silence", "changed-proposal", "scoped-pivot", "qualified-gap", "resume", "writer-failure"];
+export const discussScenarios = ["bundle", "refusal", "silence", "changed-proposal", "scoped-pivot", "qualified-gap", "resume", "writer-failure"];
 
 // Cooperative host model, not an LLM/UI test or enforcement of human consent.
 // Every observable save/read uses the supplied real CLI; no production consent store.
@@ -136,9 +136,9 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
     trace.push({
       kind: "question",
       text: "Save this exact closeout?",
-      options: ["Approve displayed bundle", "Decision only", "Done (skip saving)"],
+      options: ["Approve", "Revise", "Done (skip saving)"],
     });
-    const response = scenario === "refusal" ? "Done (skip saving)" : scenario === "silence" ? null : scenario === "decision-only" ? "Decision only" : "Approve displayed bundle";
+    const response = scenario === "refusal" ? "Done (skip saving)" : scenario === "silence" ? null : "Approve";
     trace.push({ kind: "host-response", value: response });
     if (!response || response === "Done (skip saving)") {
       assert.deepEqual(snapshot(), before);
@@ -154,10 +154,7 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
     }
     const saved = await call(["state", "decisions", "append", "--input", "-"], decision);
     assert.deepEqual((await call(["state", "decisions", "get", "--id", saved.id])).entry.record, decision);
-    if (response === "Decision only") {
-      assert.equal((await call(["state", "todo", "list"])).entries.length, 0);
-      assert.deepEqual((await call(["state", "plan", "get", "--id", plan.id])).tasks[0].record, task.record);
-    } else {
+    {
       const apply = [...create, "--effect-sha256", preview.effect_sha256, "--yes"];
       if (scenario === "resume" || scenario === "writer-failure") {
         if (scenario === "writer-failure") {

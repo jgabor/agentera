@@ -3,17 +3,19 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      Deliberation reached a conclusion the user chose to act on; any
-      required exact approved changes were verified through their owners, and
-      decision confidence was captured. Refusal saves nothing. Failed or
-      unverified required saves are INCOMPLETE, never complete.
+      The user's intent is clear and the deliberation reached a conclusion the
+      user chose to act on; any required exact approved changes were verified
+      through their owners, and decision confidence was captured. Refusal saves
+      nothing. Failed or unverified required saves are INCOMPLETE, never
+      complete.
     exit_signal: complete
   2:
     id: E2
     condition: flagged
     description: >-
       Deliberation concluded but the decision remains unresolved or
-      provisional: the user wrapped up without a clear choice, significant
+      provisional: the user ended with an intent gap that Discuss named,
+      the user wrapped up without a clear choice, significant
       tensions could not be resolved, or the conclusion contradicts prior
       affected commitments without explicit acknowledgment. Missing authority
       stays an explicit gap; intentional pivots or exceptions record their scope.

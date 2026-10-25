@@ -1,7 +1,7 @@
 import { spawnSync } from "node:child_process";
 import path from "node:path";
 import { describe, expect, it } from "vite-plus/test";
-import { closeout } from "../../src/capabilities/discuss/instructions.js";
+import instructions from "../../src/capabilities/discuss/instructions.js";
 import { discussCloseoutJourney, discussScenarios } from "../helpers/discussCloseoutJourney.mjs";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 import { useSourceAppHome } from "../helpers/managedAppStub.js";
@@ -10,6 +10,8 @@ import { mutateTodoDocsEntity } from "../../src/state/todoDocsEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 
 useSourceAppHome();
+
+const closeout = instructions.slice(instructions.indexOf('### When the user picks "Done"'), instructions.indexOf("## Safety rails"));
 
 describe("Discuss closeout, cooperative host with built CLI writers", () => {
   it.each([...discussScenarios, "pending-transaction"])("%s", async (scenario) => {

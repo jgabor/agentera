@@ -4,7 +4,8 @@ VALIDATION:
     rule: one_question_per_turn
     description: >-
       Discuss MUST ask exactly one question per turn. Compound questions
-      are not allowed. Every question MUST include a Done option.
+      are not allowed. Every question MUST include a Done option labeled as
+      ending the whole discussion.
     severity: critical
     checks:
       - "At most one question per response"
@@ -13,18 +14,20 @@ VALIDATION:
     id: V2
     rule: user_approval_for_artifact_writes
     description: >-
-      Discuss MUST show the concrete decision and only directly justified
-      affected-artifact patches together before one explicit approval, without a
-      preliminary destination menu. Offer decision-only and Done (skip saving).
-      Approval covers only exact shown in-scope changes through supported writers
-      or owners, including TODO, plan, objective, vision or design when justified.
+      Discuss MUST show the concrete decision, plus any vision or objective
+      patch it calls for, before one explicit approval, without a preliminary
+      destination menu. Offer Approve, Revise and Done (skip saving). Approval
+      covers only the exact shown changes through supported writers or owners.
       Named vision patches require explicit vision-task permission. Refusal or
-      silence writes nothing; changed proposals need fresh approval. No execution,
-      Git, global-installation, personal-data or final-satisfaction permission follows.
+      silence writes nothing; changed proposals need fresh approval. Follow-up
+      TODOs are routine writes: Discuss files them after approval and reports
+      each with its undo. A plan is only suggested and starts on the user's yes.
+      No execution, Git, global-installation, personal-data or
+      final-satisfaction permission follows.
     severity: critical
     checks:
-      - "One exact displayed proposal approved before owner-scoped writes"
-      - "Decision-only and skip choices retained; no invented follow-ups"
+      - "One exact displayed proposal approved before decision, vision or objective writes"
+      - "Skip choice retained; follow-up TODOs reported with their undo"
       - "Unseen changes and broader permissions are not inferred"
   3:
     id: V3
@@ -171,15 +174,46 @@ VALIDATION:
     id: V14
     rule: native_closeout_recovery
     description: >-
-      Reuse operation-level writer transactions and recovery, not global atomicity.
-      Retain verified saves between operations, stop dependent writes on failure,
-      and report saved and remaining work as INCOMPLETE until required approved
-      changes are verified. A read barrier does not verify partial saves. Recover
-      pending transactions with their exact original operation, not a subset batch.
-      Prove actual state before continuing unchanged approved work; avoid duplicates
-      and mechanical reapproval. Changed proposals require fresh approval.
+      Save through each writer and rely on its replay and recovery. On failure,
+      stop dependent writes and report what saved and what did not; closeout
+      stays INCOMPLETE until required approved changes are verified. Changed
+      proposals require fresh approval.
     severity: critical
     checks:
-      - "Verified saves retained and dependent writes stopped after failure"
-      - "Saved, unverified and remaining work reported without false completion"
-      - "Exact native recovery and replay used without duplicate records"
+      - "Dependent writes stopped after failure"
+      - "Saved and unsaved work reported without false completion"
+  15:
+    id: V15
+    rule: intent_clear_before_close
+    description: >-
+      Discuss MUST NOT close as firm while the user's intent is unclear. It
+      probes checkable facts itself and records unchecked facts as conditions
+      in the decision. If the user picks Done with intent unclear, Discuss
+      names the gap once; if the user still ends, nothing is saved as firm and
+      the exit is flagged with the gap named.
+    severity: critical
+    checks:
+      - "Checkable facts are probed, not asked"
+      - "Unchecked facts appear as conditions in the decision"
+      - "An early Done names the gap once, then exits flagged"
+  16:
+    id: V16
+    rule: lean_before_pick
+    description: >-
+      For a decision that evidence can settle, Discuss MUST show options with
+      evidence and win conditions, ask which way the user leans, and only then
+      give its pick with confidence. A provisional recommendation on request is
+      allowed. Values-driven or unclear decisions start with questions.
+    severity: warning
+    checks:
+      - "Options and evidence precede the pick"
+      - "The user's lean is asked before the pick is shown"
+  17:
+    id: V17
+    rule: heard_line
+    description: >-
+      Each scratchpad MUST include a Heard line restating the user's last
+      answer in one line.
+    severity: warning
+    checks:
+      - "Scratchpad has a Heard line after each answer"

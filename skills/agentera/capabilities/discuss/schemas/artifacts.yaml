@@ -26,8 +26,9 @@ ARTIFACTS:
     artifact: todo
     local_role: produces_and_consumes
     description: >-
-      Discuss may add tech debt items surfaced during deliberation only with
-      explicit user confirmation. Severity per protocol SI1-SI4.
+      Discuss files follow-up work that one build cycle can finish as a TODO
+      after the decision is approved, and reports each write with its undo.
+      Severity per protocol SI1-SI4. Larger work is suggested as a plan.
   4:
     id: A4
     artifact: objective
@@ -41,7 +42,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Discuss reads only sanitized non-glossary content from `npx -y agentera@next report
-      profile-grounding` at session start. It never direct-reads
+      profile-grounding` at session start, in full. It never direct-reads
       the profile path. It uses content only when the shared validity object is
       valid; absent or repair-needed results fail closed with exact recovery.
   6:
@@ -56,7 +57,8 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Discuss consumes bounded read-only terminology advice at governed
-      meaning-sensitive events. It never reads the glossary path directly,
+      meaning-sensitive events and may propose entries for terms a decision
+      coined or sharpened. It never reads the glossary path directly,
       publishes project terminology, or mutates personal profile state.
   8:
     id: A8
