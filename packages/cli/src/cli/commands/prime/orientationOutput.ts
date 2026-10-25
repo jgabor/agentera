@@ -61,6 +61,7 @@ function nextActionEntry(action: NextAction): Record<string, unknown> {
     ...(action.outcome ? { outcome: action.outcome } : {}),
     ...(typeof action.eligible === "boolean" ? { eligible: action.eligible } : {}),
     ...(action.retrieval ? { retrieval: action.retrieval } : {}),
+    ...(action.unfinished_work ? { unfinished_work: { ...action.unfinished_work } } : {}),
   };
 }
 

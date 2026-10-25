@@ -20,4 +20,4 @@ record:
       description: "[feat:3.0.0] Add the in-capability autonomy rule to the operating manual."
       severity: normal
       status: open
-      order: 45
+      order: 44

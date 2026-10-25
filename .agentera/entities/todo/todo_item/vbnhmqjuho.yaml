@@ -22,4 +22,4 @@ record:
       description: "[feat:3.0.0] Serve status_context as data the dashboard renders without interpretation."
       severity: normal
       status: open
-      order: 48
+      order: 47

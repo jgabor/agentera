@@ -15,12 +15,16 @@ record:
     - Tests cover both cases and the absence of file content in output.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree."
+      status: resolved
+      order: 176
       severity: normal
-      status: open
-      order: 44
+  lifecycle:
+    operation: resolve
+    reason: next_action suggests resuming uncommitted work with branch and changed-file count; the manual states the override rule
+    date: 2026-10-25

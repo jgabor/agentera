@@ -4,7 +4,7 @@ record:
   name: Suggest resuming unfinished work
   depends_on:
     - mfymiudngx
-  status: pending
+  status: complete
   acceptance:
     - GIVEN an initialized project with uncommitted changes on a feature branch WHEN status starts THEN next_action suggests resuming it, naming the branch, the changed-file count, the suggested capability and a reason.
     - GIVEN a clean working tree WHEN status starts THEN routing is unchanged.

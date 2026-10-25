@@ -68,7 +68,6 @@
 - [ ] [id:nwmjxztigu] [chore] Take npm availability confirmation off the development publish critical path.
 - [ ] [id:ueffpmnzdr] [chore] Shard package-owner test files across runners with cross-host tarball equality.
 - [ ] [id:hlryvcuzyu] [fix:3.0.0] Give Discuss a closeout handoff to plan or TODOs for decisions that call for work.
-- [ ] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.
 - [ ] [id:irpspuslza] [feat:3.0.0] Add the in-capability autonomy rule to the operating manual.
 - [ ] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.
 - [ ] [id:nqbnvhenng] [refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited.
@@ -263,3 +262,4 @@
 - [x] [id:zbhflseksu] [fix:3.0.0] Stop init from refusing forever when a crashed writer left a stale project lock.
 - [x] [id:pjwnakwnqg] [fix:3.0.0] Stop naming a PLAN.yaml file that does not exist in fresh-project guidance.
 - [x] [id:crzsyjlgsr] [fix:3.0.0] Return an empty list, not an error, when --fields meets a filter with no matches.
+- [x] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.

@@ -156,6 +156,13 @@ export interface NextAction {
   outcome?: string;
   eligible?: boolean;
   retrieval?: JsonObject;
+  unfinished_work?: UnfinishedWork;
+}
+
+/** Uncommitted work in the project's Git working tree, without file names. */
+export interface UnfinishedWork {
+  branch: string;
+  changed_files: number;
 }
 
 /** Ranked state-readiness hint: position 1 (`recommended`) is the cascade winner;

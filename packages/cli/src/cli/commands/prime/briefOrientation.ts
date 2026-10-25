@@ -421,6 +421,7 @@ function briefAction(action: unknown, maxChars: number): Record<string, unknown>
     if (bounded !== undefined) out[key] = bounded;
   }
   if (isObject(action.retrieval)) out.retrieval = pick(action.retrieval, ["exact", "get"]);
+  if (isObject(action.unfinished_work)) out.unfinished_work = pick(action.unfinished_work, ["branch", "changed_files"]);
   return out;
 }
 

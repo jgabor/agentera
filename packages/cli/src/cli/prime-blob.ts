@@ -19,7 +19,7 @@ export const PRIME_MANUAL = preCutoverInstructionBody(
     "",
     "Receipt: on `semantic_required`, send every receipt field, null when unused; copy both hashes unchanged; `remainder_span` ends at the request's UTF-8 byte length.",
     "",
-    "Handoffs: `next_action` is a suggestion; start it once, only if the user accepts. `route`: the user named it, start it. `suggest`: recommend, then wait. `dispatch`: only inside a flow the current capability owns. `chain`: only inside authorized orchestration.",
+    "Handoffs: `next_action` is a suggestion; start it once, only if the user accepts. Override it only on what the user said this session, and say why. `route`: the user named it, start it. `suggest`: recommend, then wait. `dispatch`: only inside a flow the current capability owns. `chain`: only inside authorized orchestration.",
     "",
     "Consent: install, update, migration, reset, cleanup and history acquisition each need their own explicit Yes. Commit only when authorized; push only on explicit instruction. Never commit secrets or expose private history or profile data.",
   ].join("\n"),

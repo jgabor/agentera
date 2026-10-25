@@ -6,6 +6,7 @@ import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration
 import type { SchemaInfo } from "../../appContext.js";
 import { selectStatusReadiness, statePresence } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
+import { readUnfinishedWork, resumeNextAction } from "../../orientation/unfinishedWork.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
 import { profileSignalsStatus } from "../../../analytics/profileSignals.js";
 import type { NextAction, OrientationState, ProfileSummary, ReadinessHint } from "../../contracts/orientationState.js";
@@ -112,7 +113,11 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     installClassification: install,
     successorAnnounced,
   });
-  const readiness = selectStatusReadiness(plan, health, objective, todoItems, decision, directionContext, entity.todoReadiness);
+  // Uncommitted work is the strongest resume signal, so it leads state-based
+  // routing; blocking recovery, init and upgrade steps below still lead it.
+  const stateReadiness = selectStatusReadiness(plan, health, objective, todoItems, decision, directionContext, entity.todoReadiness);
+  const unfinishedWork = readUnfinishedWork(project);
+  const readiness = unfinishedWork ? withRecommended(stateReadiness, resumeNextAction(unfinishedWork)) : stateReadiness;
   const reconciliationReadiness =
     entity.todoReconciliation?.status === "action_required"
       ? withRecommended(readiness, {

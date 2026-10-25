@@ -220,6 +220,7 @@ describe("informational status handoff", () => {
     expect(guidance).toContain("A direct capability route is already consent to invoke it");
     expect(skill).not.toContain("next_action");
     expect(PRIME_MANUAL).toContain("`next_action` is a suggestion; start it once, only if the user accepts");
+    expect(PRIME_MANUAL.match(/Override it only on what the user said this session, and say why\./g)).toHaveLength(1);
   });
 
   // These are explicit compliant-host traces against real CLI startup and route
