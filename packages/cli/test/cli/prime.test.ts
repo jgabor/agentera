@@ -18,6 +18,7 @@ import { appendHealthEntity } from "../../src/state/healthEntities.js";
 import { operationSpec } from "../../src/state/write/operations.js";
 import type { SchemaInfo } from "../../src/cli/appContext.js";
 import { cmdQuery } from "../../src/cli/commands/query.js";
+import { CAPABILITY_ROUTING_NAMES } from "../../src/cli/commands/capability.js";
 import { STATE_FAMILY_LIST_COMMANDS } from "../../src/cli/capabilityContext/types.js";
 import { CHANGELOG_MAX_HEADING_BYTES, CHANGELOG_MAX_OUTPUT_BYTES, CHANGELOG_MAX_SOURCE_PATH_BYTES } from "../../src/state/changelog.js";
 import { seedPrimeEvidenceProject } from "../helpers/primeEvidenceProject.js";
@@ -98,10 +99,25 @@ describe("cli prime", () => {
       "`dispatch`:",
       "`chain`:",
       "Commit only when authorized; push only on explicit instruction",
+      "Inside an invoked capability, write routine state (TODO, progress, health, docs, plan tasks) without asking, then report each change with its undo: exact paths and hunks while uncommitted, the typed reversal verb once committed.",
+      "Show a `--dry-run` and ask before decision, vision or objective writes",
+      "A capability that still asks keeps its gate until its audit.",
+      "Consent: ask first for irreversible or out-of-project effects; install,",
     ])
       expect(out, rule).toContain(rule);
     expect(out).not.toContain("—");
     expect(out.endsWith("\n\n")).toBe(false);
+  });
+
+  it("states the autonomy rule once, in the manual and no capability capsule", () => {
+    expect(PRIME_MANUAL.match(/without asking/g)).toHaveLength(1);
+    expect(PRIME_MANUAL.match(/typed reversal verb/g)).toHaveLength(1);
+    for (const capability of ["status", ...CAPABILITY_ROUTING_NAMES]) {
+      const { rc, out } = capture((io) => cmdPrime({ context: capability }, io));
+      expect(rc, capability).toBe(0);
+      expect(out, capability).not.toContain("typed reversal verb");
+      expect(out, capability).not.toContain("write routine state");
+    }
   });
 
   it("carries the --guidance manual unchanged in bare prime", () => {
