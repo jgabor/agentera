@@ -5,7 +5,7 @@ record:
   depends_on:
     - dkdxxombkz
     - oboljsuljr
-  status: pending
+  status: complete
   acceptance:
     - GIVEN a fresh Git repository and an empty home WHEN bare prime runs THEN next_action is the init preview, shown from that one call, ahead of any resume suggestion, and nothing recommends an upgrade.
     - GIVEN a missing app home and no other gap WHEN prime runs THEN no upgrade is reported.

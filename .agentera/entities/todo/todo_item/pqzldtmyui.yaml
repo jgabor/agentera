@@ -13,12 +13,16 @@ record:
     - The skill offer appears once per session as a non-blocking item.
   release_blocker: false
   severity: degraded
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion."
+      status: resolved
+      order: 178
       severity: degraded
-      status: open
-      order: 9
+  lifecycle:
+    operation: resolve
+    reason: First runs lead with the init preview ahead of resume, a missing app home reports no upgrade, and the shared-skill offer is non-blocking and asked at most once per session
+    date: 2026-10-25

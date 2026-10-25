@@ -2647,10 +2647,11 @@ budgets:
         # and token counts differ by model. Pretty UTF-8 stdout has two parts:
         # the served instructions as a JSON string, and state, which is
         # everything else, startup rows included, since their size follows
-        # project state. The state target is 2000 tokens at 3.8 bytes per
-        # token, the lowest ratio measured on status state (3.81 in this
-        # repository; 4.07 and 4.10 in the largest and fresh fixtures), and a
-        # calibration test fails when a measured state falls below it. Both
+        # project state. The state target is 2000 tokens at 3.7 bytes per
+        # token, the lowest ratio measured on status state rounded down (3.77
+        # in the packaged reference fixture; 3.81 in this repository; 4.07
+        # and 4.10 in the largest and fresh fixtures), and a calibration test
+        # fails when a measured state falls below it. Both
         # parts are held by ratchet ceilings at the largest measured value
         # rounded up to 1000, which may only go down: instructions 11927, and
         # state 12252 with blocked TODO reconciliation in startup. Runtime
@@ -2661,8 +2662,8 @@ budgets:
         max_utf8_bytes: 25000
         instruction_max_utf8_bytes: 12000
         state_max_utf8_bytes: 13000
-        state_target_utf8_bytes: 7600
-        state_bytes_per_token: 3.8
+        state_target_utf8_bytes: 7400
+        state_bytes_per_token: 3.7
         max_gpt5_tokens: 4000
         instruction_gpt5_tokens: 2000
         state_gpt5_tokens: 2000

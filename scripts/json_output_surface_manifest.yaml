@@ -65,7 +65,7 @@ surfaces:
   byte_budget: 25000
   instruction_byte_budget: 12000
   state_byte_budget: 13000
-  state_target_byte_budget: 7600
+  state_target_byte_budget: 7400
   token_budget: 4000
   instruction_token_budget: 2000
   state_token_budget: 2000
@@ -85,7 +85,7 @@ surfaces:
   byte_budget: 25000
   instruction_byte_budget: 12000
   state_byte_budget: 13000
-  state_target_byte_budget: 7600
+  state_target_byte_budget: 7400
   token_budget: 4000
   instruction_token_budget: 2000
   state_token_budget: 2000
@@ -164,7 +164,7 @@ surfaces:
       byte_budget: 25000
       instruction_byte_budget: 12000
       state_byte_budget: 13000
-      state_target_byte_budget: 7600
+      state_target_byte_budget: 7400
       token_budget: 4000
       instruction_token_budget: 2000
       state_token_budget: 2000

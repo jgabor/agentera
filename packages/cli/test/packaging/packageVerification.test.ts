@@ -860,6 +860,44 @@ describe("npm distribution boundary", () => {
     });
   });
 
+  it("leads a packaged first run with the init preview and never recommends an upgrade", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const firstRun = (withAppHome: boolean) => {
+      const root = path.join(fixture.root, `first-run-${withAppHome ? "app-home" : "no-app-home"}`),
+        home = path.join(root, "home"),
+        project = path.join(root, "project");
+      fs.mkdirSync(project, { recursive: true });
+      if (withAppHome) fs.mkdirSync(path.join(home, ".local/share/agentera"), { recursive: true });
+      else fs.mkdirSync(home, { recursive: true });
+      const git = (...args: string[]) => expect(spawnSync("git", ["-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid", "-c", "commit.gpgsign=false", ...args], { cwd: project, env: { ...packageEnvironment(home), GIT_CONFIG_NOSYSTEM: "1" } }).status).toBe(0);
+      // Existing history with uncommitted work: init still leads resuming it.
+      git("init", "-q", "-b", "main");
+      fs.writeFileSync(path.join(project, "README.md"), "first\n");
+      git("add", "-A");
+      git("commit", "-q", "-m", "first");
+      fs.writeFileSync(path.join(project, "README.md"), "changed\n");
+      const prime = (args: string[]) => {
+        const result = spawnSync(process.execPath, [bin, ...args], { cwd: project, env: { ...packageEnvironment(home), XDG_DATA_HOME: path.join(home, ".local/share") }, encoding: "utf8" });
+        expect(result.status, result.stderr).toBe(0);
+        return JSON.parse(result.stdout) as Record<string, any>;
+      };
+      // The bare brief omits alternatives; the sparse read carries them.
+      return { ...prime(["prime"]), alternatives: prime(["prime", "--fields", "next_action"]).next_action.alternatives };
+    };
+    for (const withAppHome of [false, true]) {
+      const payload = firstRun(withAppHome);
+      expect(payload.next_action, `app home ${withAppHome}`).toMatchObject({ object: "Agentera init preview", capability: "status" });
+      expect(payload.alternatives.map((action: { object: string }) => action.object)).toContain("Resume unfinished work on main");
+      expect(payload.fresh_start.writes).toEqual([expect.objectContaining({ path: ".agentera/state-mode.yaml", action: "create" })]);
+      expect(payload.project_integration.recommendation).toBe("stay");
+      expect(payload.app.status).toBe("up_to_date");
+      expect(JSON.stringify([payload.next_action, payload.attention])).not.toMatch(/upgrade/i);
+      const offer = payload.shared_skill.upgrade_offer;
+      if (withAppHome) expect(offer).toMatchObject({ question: expect.stringContaining("Install it now?"), blocking: false });
+      else if (offer !== null) expect(offer.blocking).toBe(false);
+    }
+  });
+
   it("matches fresh host installation and ownership-bound Doctor cleanup across constructed and extracted runtimes", () => {
     const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observations = bins.map((bin, index) => {

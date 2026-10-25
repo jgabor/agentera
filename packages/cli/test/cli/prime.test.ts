@@ -81,7 +81,7 @@ describe("cli prime", () => {
       "`state_cutover.migration_offer`",
       "npx -y agentera@next upgrade --reset-product-v1 --dry-run",
       "ask the question verbatim once",
-      "Ask one question per reply: a blocking offer before the next-step suggestion, a non-blocking offer only when nothing else is pending.",
+      "Ask one question per reply: a blocking offer before the next-step suggestion, a non-blocking offer only when nothing else is pending, at most once per session.",
       "stop the affected workflow",
       "Never fall back to checkout or installed companion reads",
       "Invalid selector or stale cursor: run the error's exact recovery command",

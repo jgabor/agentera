@@ -17,7 +17,6 @@
 - [ ] [id:wfxffubfhd] [fix:3.0.0] Split worker detail sections only at real headings, not at "## " lines inside fenced templates.
 - [ ] [id:yiuvanndof] [fix:3.0.0] Serve the user's topic to a routed capability, not only its byte offsets.
 - [ ] [id:bjeggbtixw] [refactor:3.0.0] Derive startup budgets from each capability's job, in tokens.
-- [ ] [id:pqzldtmyui] [fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion.
 
 ## → Normal
 
@@ -266,3 +265,4 @@
 - [x] [id:crzsyjlgsr] [fix:3.0.0] Return an empty list, not an error, when --fields meets a filter with no matches.
 - [x] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.
 - [x] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.
+- [x] [id:pqzldtmyui] [fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion.
