@@ -1,0 +1,22 @@
+id: dbtvjwestz
+artifact: todo
+record:
+  kind: test
+  target_version: 3.0.0
+  title: Rewrite the Discuss closeout journey test to follow the current closeout.
+  requirements:
+    - The journey in test/helpers/discussCloseoutJourney.mjs still files a TODO through a bundle and patches a plan task, which the Discuss instructions no longer describe. Discuss now asks one approval for the decision, files follow-up TODOs afterward and reports their undo, and only suggests a plan.
+    - "Cover the current paths: approve, refuse, silence, changed proposal, early Done with an intent gap exiting flagged, and writer failure with a reported partial save."
+  acceptance:
+    - No scenario patches a plan task or offers a decision-only choice, and each scenario matches a rule in the served Discuss instructions.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[test:3.0.0] Rewrite the Discuss closeout journey test to follow the current closeout."
+      severity: normal
+      status: open
+      order: 58

@@ -1,0 +1,9 @@
+id: rerskgpubu
+artifact: decisions
+record:
+  decision: mliblxbveo
+  date: 2026-10-25
+  provenance: historical_revision
+  base_sha256: f607e4b586b1e8a2272dc1614cabe0f032c389e2194d713732071f649bbddeaf
+  changes:
+    reasoning: "The user wants Discuss to be a marathon toward understanding intent, not a sprint toward a TODO. A decision relied on for a long time is worth a costly start, because rework from unclear decisions costs more. Asking the user's lean before showing a pick keeps the challenge honest without hiding evidence. Facts are checked instead of asked. Named gaps keep a failed closeout visible while the user stays in control. The 20k-token goal and consolidation bound the start cost that the vision's token principle warns about. Discuss only proposes glossary entries, so the glossary keeps a single publishing owner. Applied in the Discuss instructions rewrite: served instructions fell from 17,197 to 13,365 bytes, the capsule from 55,022 to 51,154 bytes on the manifest measure (56,000 to 52,132 as full stdout), and the routed start from 68,576 to 64,708 bytes. The nine chained patches, four of which left no trace in the served text, were folded into one base. The glossary section keeps its original wording because plan and build tests pin it. Verdicts on earlier decisions: xoocjbvyee, gritewpjou, gazyqhkyyf and mukojyaeof hold with amendment; jqnmapqoru holds with amendment across all capabilities; the spine, modal vocabulary, prime entry, direct contract and routing decisions hold. No spine deviation. Startup context, glossary sharing, voice, phrase routing and consolidation remain open TODOs."
