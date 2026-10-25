@@ -181,6 +181,7 @@ export async function projectMigrationJourney(binary, fixture, scenario, baseEnv
     assert.equal(offer?.status, "ready", JSON.stringify(preview));
     assert.equal(offer.project, project);
     assert.equal(offer.target, "v3");
+    assert.equal(offer.blocking, true, "a required project migration blocks other work");
     assert.match(offer.warning, /rollback.*return to v2/);
     assert.match(offer.loss, /removed without a migration backup/);
     assert.ok(offer.effects.some((effect) => effect.sources?.includes(".cursor/hooks.json")));

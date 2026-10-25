@@ -119,7 +119,8 @@ export function renderProductV1ResetPreview(preview: ProductV1ResetPreview, full
       ...(words ? [`To keep your ${words}, answer No and upgrade through the previous major version first: bring this state to the stable Agentera 2.x line with the in-line upgrade in the upgrade guide's Stable v2 line section, then use the supported v2-to-v3 upgrade.`] : []),
       ...(fullDetail ? [] : ["Run full_detail_command to list every deleted entry; it shows the same authorization, which binds the complete snapshot."]),
     ].join(" ");
-    const offer = { approval: "explicit_yes_only", question, apply_command: applyCommand, ...(fullDetail ? {} : { full_detail_command: fullDetailCommand }), recovery };
+    // Product-v1 state cannot run until it is reset, so the offer blocks.
+    const offer = { approval: "explicit_yes_only", blocking: true, question, apply_command: applyCommand, ...(fullDetail ? {} : { full_detail_command: fullDetailCommand }), recovery };
     return JSON.stringify({ ...view, ...offer }, null, indent) + "\n";
   };
   if (fullDetail) return render(fullDetailProductV1ResetPreview(preview), 2);

@@ -122,6 +122,7 @@ describe("status startup budget", () => {
     const offer = {
       question: "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
       approval: "explicit_yes_only",
+      blocking: false,
       apply_command: "npx -y agentera@next upgrade --shared-skill --home /tmp/home --install-root /tmp/app --yes --authorization sha256:" + "a".repeat(64),
     };
     const crowded = {

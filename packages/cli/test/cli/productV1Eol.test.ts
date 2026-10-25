@@ -383,6 +383,7 @@ describe("product v1 EOL execution gate", () => {
       expect(preview.authorization).toMatch(/^sha256:[0-9a-f]{64}$/);
       expect(preview).toMatchObject({
         approval: "explicit_yes_only",
+        blocking: true,
         question: expect.stringContaining("no backup or undo"),
         apply_command: expect.stringContaining(`--project ${root}`),
       });

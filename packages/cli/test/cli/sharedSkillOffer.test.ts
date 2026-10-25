@@ -135,6 +135,7 @@ describe("one-confirmation shared-skill startup offer", () => {
     expect(offer).toMatchObject({
       question,
       approval: "explicit_yes_only",
+      blocking: false,
       apply_command: expect.stringContaining(`--home ${home} --install-root ${app} --yes --authorization sha256:`),
     });
     expect(snapshot()).toEqual(before);

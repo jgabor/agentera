@@ -125,6 +125,8 @@ function cleanupOffer(
   return {
     question: `Remove only these ${operations.length} ownership-proven retired Agentera resource${operations.length === 1 ? "" : "s"}: ${operations.map((operation) => operation.id).join(", ")}? Other files, shared configuration and symlink targets remain untouched.`,
     approval: "explicit_yes_only",
+    // Retired resources do not stop current work.
+    blocking: false,
     operations,
     remaining_eligible_resource_ids: eligible.filter((resource) => !operations.some((operation) => operation.id === resource.id)).map((resource) => resource.id),
     manual_review_resource_ids: resources.filter((resource) => resource.status === "manual_review").map((resource) => resource.id),

@@ -75,12 +75,13 @@ describe("cli prime", () => {
     const { rc, out } = capture((io) => cmdPrime({ guidance: true }, io));
     expect(rc).toBe(0);
     expect(out).toBe(`${PRIME_MANUAL}\n`);
-    expect(Buffer.byteLength(PRIME_MANUAL, "utf8")).toBeLessThanOrEqual(2_500);
+    expect(Buffer.byteLength(PRIME_MANUAL, "utf8")).toBeLessThanOrEqual(3_000);
     for (const rule of [
       "`shared_skill.upgrade_offer`",
       "`state_cutover.migration_offer`",
       "npx -y agentera@next upgrade --reset-product-v1 --dry-run",
       "ask the question verbatim once",
+      "Ask one question per reply: a blocking offer before the next-step suggestion, a non-blocking offer only when nothing else is pending.",
       "stop the affected workflow",
       "Never fall back to checkout or installed companion reads",
       "Invalid selector or stale cursor: run the error's exact recovery command",

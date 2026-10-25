@@ -67,6 +67,8 @@ export function diagnoseCanonicalSkill(home: string, options: { sourceRoot?: str
           upgradeOffer = {
             question: shape === "missing" ? "Agentera’s shared skill is missing. Install it now? Your project files will not change." : "Agentera’s installed skill needs an update. Update it now? Your project files will not change.",
             approval: "explicit_yes_only",
+            // A stale or missing skill never stops project work.
+            blocking: false,
             apply_command: commandText(["npx", "-y", "agentera@next", "upgrade", "--shared-skill", "--home", home, ...(includeAppHome ? ["--install-root", appHome] : []), "--yes", "--authorization", preview.authorization]),
           };
         else details.push("Shared-skill updates require Linux safe publication; no update was offered or applied.");

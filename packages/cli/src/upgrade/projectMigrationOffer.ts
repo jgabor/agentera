@@ -88,6 +88,8 @@ export type ProjectMigrationOffer = {
   loss: string;
   warning: string;
   approval: "explicit_yes_only";
+  /** Startup stays blocked until the project migrates. */
+  blocking: true;
   question: string;
   apply_command: string;
 };
@@ -393,6 +395,7 @@ export function projectMigrationOffer(args: UpgradeOrchestratorArgs, supplied?: 
         : "No original state records or existing Git history are deleted.",
       warning: "Forward-only: rollback/return to v2 unsupported; missing history stays missing.",
       approval: "explicit_yes_only",
+      blocking: true,
       question: "Migrate this project to v3?",
       apply_command: commandText(apply),
     };

@@ -88,6 +88,7 @@ it("separates healthy runtime and shared skill from retired attention with exact
   });
   const offer = result.payload.cleanup_offer;
   expect(offer.approval).toBe("explicit_yes_only");
+  expect(offer.blocking).toBe(false);
   expect(offer.operations.map((op: { id: string }) => op.id)).toEqual(["codex.agent-descriptor.build", "codex.agent-descriptor.plan"]);
   expect(offer.question).toContain("ownership-proven retired Agentera resources");
   expect(offer.manual_review_resource_ids).toContain("codex.agent-descriptor.status");
