@@ -11,7 +11,7 @@ import { loadVerificationPolicy, normalizeReporterSuiteAggregates, validatePendi
 import { validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import { completePackageTimings, packageTimingSummary } from "./package-verification-timing.mjs";
 import { createPerformanceProgressReader } from "./performance-progress.mjs";
-import { SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionErrors, sourcePartitionFiles } from "./source-partition.mjs";
+import { ISOLATED_OWNERS_ENVIRONMENT, SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionErrors, sourcePartitionFiles } from "./source-partition.mjs";
 import { writeVerificationTimingProfile } from "./verification-timing.mjs";
 
 const OWNER_NAMES = ["source", "stress", "performance", "capacity", "package"];
@@ -325,8 +325,9 @@ async function runOwner(owner, state, forwarded = [], profile = "full") {
   }
   delete runnerEnv.AGENTERA_VERIFICATION_RESULT;
   // Partition selection ends here; tests that start coordinators must not
-  // inherit their runner's partition.
+  // inherit their runner's partition or owner delegation.
   delete runnerEnv[SOURCE_PARTITION_ENVIRONMENT];
+  delete runnerEnv[ISOLATED_OWNERS_ENVIRONMENT];
   delete runnerEnv.AGENTERA_SOURCE_PARTITION_DIRECTORY;
   const timingRoot = owner === "package" && !resultChannel ? fs.mkdtempSync(path.join(os.tmpdir(), "agentera-package-timing-")) : undefined;
   const timingFile = owner === "package" ? (resultChannel ? `${resultChannel}.timings.json` : path.join(timingRoot, "timings.json")) : undefined;

@@ -11,7 +11,7 @@ import { npmChildEnvironment, normalizeConstruction } from "./package-constructi
 import { generatedSourceIdentity, readGeneratedSourceIdentity, sameGeneratedSourceIdentity, validateGeneratedSourceIdentity, validateRegularTree } from "./generated-output.mjs";
 import { gitSourceTreeDigest } from "./git-source-tree.mjs";
 import { loadVerificationPolicy, validatePendingTests } from "./overlap-pending.mjs";
-import { SOURCE_PARTITION_ENVIRONMENT, parseSourcePartition, sourcePartitionFiles } from "./source-partition.mjs";
+import { ISOLATED_OWNERS_ENVIRONMENT, SOURCE_PARTITION_ENVIRONMENT, parseIsolatedOwnersDelegation, parseSourcePartition, sourcePartitionFiles } from "./source-partition.mjs";
 import { SOURCE_PARTITION_EVIDENCE_SCHEMA } from "./verify-generated-overlap.mjs";
 import { deriveLatencyAdvisory, measurementProfile, normalizedLatencyAdvisory, performanceAuthority, performanceEvidenceRecords, validateDevelopmentResourceEvidence, validatePerformanceEvidence } from "./performance-evidence.mjs";
 import YAML from "yaml";
@@ -789,6 +789,9 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   const remaining = () => Math.floor(deadlineMs - (clock() - started));
   const sourceDeadlineEpochMs = wallClock() + remaining();
   const runConcurrent = options.runConcurrent ?? runConcurrentSourceOwners;
+  // Delegated owners run in the isolated-owner partition on another runner.
+  // This DAG then neither starts nor orders them; assembly gates on both.
+  const delegated = options.delegatedGates ?? [];
   const common = {
     repo,
     createState: options.createState,
@@ -801,7 +804,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     throw sourceProcessFailure("full-qualification", "source verification has no safe overlap execution window before its cleanup margin", "failed");
   }
   const batch = await runConcurrent(
-    SOURCE_BATCH_A.filter((name) => gates.has(name)).map((name) => ({
+    SOURCE_BATCH_A.filter((name) => gates.has(name) && !delegated.includes(name)).map((name) => ({
       name,
       command: gates.get(name).command,
       repo,
@@ -830,52 +833,60 @@ async function executeSourceQualificationDag(options, overlapRoot) {
   if (afterBatch.generation !== overlap.generation || afterBatch.leases.length !== 0) {
     throw sourceProcessFailure("reader-barrier", "generated-overlap did not settle one lease-free generation", "failed");
   }
-  const performanceStarted = clock();
-  const performanceRemaining = remaining();
-  if (performanceRemaining <= reconciliationMarginMs) {
-    throw sourceProcessFailure("performance", "source verification has no safe performance execution window before reconciliation", "failed");
-  }
-  const performanceResult = (
-    await runConcurrent(
-      SOURCE_PERFORMANCE_BARRIER.map((name) => ({
-        name,
-        command: gates.get(name).command,
-        repo,
-        timeoutMs: performanceRemaining - reconciliationMarginMs,
-        cancellable: true,
-        environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
-      })),
-      common,
-    )
-  ).performance;
-  const performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
-  const performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance, options.requireAuthoritativePerformance === true, profile);
-  const afterPerformance = readState(repo);
-  if (afterPerformance.generation !== afterBatch.generation || afterPerformance.leases.length !== 0) {
-    throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
-  }
-  const capacityStarted = clock();
-  const capacityRemaining = remaining();
-  if (capacityRemaining <= reconciliationMarginMs) {
-    throw sourceProcessFailure("capacity", "source verification has no safe capacity execution window before reconciliation", "failed");
-  }
-  const capacityResult = (
-    await runConcurrent(
-      SOURCE_CAPACITY_BARRIER.map((name) => ({
-        name,
-        command: gates.get(name).command,
-        repo,
-        timeoutMs: capacityRemaining - reconciliationMarginMs,
-        cancellable: true,
-        environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
-      })),
-      common,
-    )
-  ).capacity;
-  const capacityElapsedMs = Math.max(0, Math.round(clock() - capacityStarted));
-  const beforeBarrier = readState(repo);
-  if (beforeBarrier.generation !== afterPerformance.generation || beforeBarrier.leases.length !== 0) {
-    throw sourceProcessFailure("capacity", "capacity barrier changed the settled generation or retained leases", "failed");
+  let performanceResult;
+  let performanceElapsedMs = 0;
+  let performanceEvidence;
+  let capacityResult;
+  let capacityElapsedMs = 0;
+  let beforeBarrier = afterBatch;
+  if (delegated.length === 0) {
+    const performanceStarted = clock();
+    const performanceRemaining = remaining();
+    if (performanceRemaining <= reconciliationMarginMs) {
+      throw sourceProcessFailure("performance", "source verification has no safe performance execution window before reconciliation", "failed");
+    }
+    performanceResult = (
+      await runConcurrent(
+        SOURCE_PERFORMANCE_BARRIER.map((name) => ({
+          name,
+          command: gates.get(name).command,
+          repo,
+          timeoutMs: performanceRemaining - reconciliationMarginMs,
+          cancellable: true,
+          environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+        })),
+        common,
+      )
+    ).performance;
+    performanceElapsedMs = Math.max(0, Math.round(clock() - performanceStarted));
+    performanceEvidence = performanceObservation(performanceResult, overlap.inventory.performance, options.requireAuthoritativePerformance === true, profile);
+    const afterPerformance = readState(repo);
+    if (afterPerformance.generation !== afterBatch.generation || afterPerformance.leases.length !== 0) {
+      throw sourceProcessFailure("performance", "performance barrier changed the settled generation or retained leases", "failed");
+    }
+    const capacityStarted = clock();
+    const capacityRemaining = remaining();
+    if (capacityRemaining <= reconciliationMarginMs) {
+      throw sourceProcessFailure("capacity", "source verification has no safe capacity execution window before reconciliation", "failed");
+    }
+    capacityResult = (
+      await runConcurrent(
+        SOURCE_CAPACITY_BARRIER.map((name) => ({
+          name,
+          command: gates.get(name).command,
+          repo,
+          timeoutMs: capacityRemaining - reconciliationMarginMs,
+          cancellable: true,
+          environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(sourceDeadlineEpochMs) },
+        })),
+        common,
+      )
+    ).capacity;
+    capacityElapsedMs = Math.max(0, Math.round(clock() - capacityStarted));
+    beforeBarrier = readState(repo);
+    if (beforeBarrier.generation !== afterPerformance.generation || beforeBarrier.leases.length !== 0) {
+      throw sourceProcessFailure("capacity", "capacity barrier changed the settled generation or retained leases", "failed");
+    }
   }
   const barrierStarted = clock();
   const barrierTimeout = remaining();
@@ -966,39 +977,43 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       reused: false,
       observation: overlap,
     },
-    stress: {
-      name: "stress",
-      origin: "stress",
-      phase: "batch-a",
-      outcome: "passed",
-      elapsedMs: batch.stress.elapsedMs,
-      executed: "command",
-      reused: false,
-      observation: { inventoryFiles: overlap.inventory.stress, ...outputObservation(batch.stress) },
-    },
-    performance: {
-      name: "performance",
-      origin: "performance",
-      phase: "performance-barrier",
-      outcome: "passed",
-      elapsedMs: performanceResult.elapsedMs,
-      executed: "command",
-      reused: false,
-      observation: performanceEvidence,
-    },
-    capacity: {
-      name: "capacity",
-      origin: "capacity",
-      phase: "capacity-barrier",
-      outcome: "passed",
-      elapsedMs: capacityResult.elapsedMs,
-      executed: "command",
-      reused: false,
-      observation: {
-        inventoryFiles: overlap.inventory.capacity,
-        ...outputObservation(capacityResult),
-      },
-    },
+    ...(delegated.length === 0
+      ? {
+          stress: {
+            name: "stress",
+            origin: "stress",
+            phase: "batch-a",
+            outcome: "passed",
+            elapsedMs: batch.stress.elapsedMs,
+            executed: "command",
+            reused: false,
+            observation: { inventoryFiles: overlap.inventory.stress, ...outputObservation(batch.stress) },
+          },
+          performance: {
+            name: "performance",
+            origin: "performance",
+            phase: "performance-barrier",
+            outcome: "passed",
+            elapsedMs: performanceResult.elapsedMs,
+            executed: "command",
+            reused: false,
+            observation: performanceEvidence,
+          },
+          capacity: {
+            name: "capacity",
+            origin: "capacity",
+            phase: "capacity-barrier",
+            outcome: "passed",
+            elapsedMs: capacityResult.elapsedMs,
+            executed: "command",
+            reused: false,
+            observation: {
+              inventoryFiles: overlap.inventory.capacity,
+              ...outputObservation(capacityResult),
+            },
+          },
+        }
+      : {}),
     typecheck: {
       name: "typecheck",
       origin: "typecheck",
@@ -1047,7 +1062,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
     },
   };
   return {
-    gates: gateSet.map((gate) => entries[gate.name]),
+    gates: gateSet.filter((gate) => !delegated.includes(gate.name)).map((gate) => entries[gate.name]),
     execution: {
       strategy: "parallel-overlap-dag",
       deadlineMs,
@@ -1055,8 +1070,8 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       overlapParentReconciliationMarginMs: SOURCE_DAG.overlapParentReconciliationMarginMs,
       elapsedMs,
       batchAElapsedMs: batchElapsedMs,
-      performanceElapsedMs,
-      capacityElapsedMs,
+      // Delegated barrier timings belong to the isolated-owner partition.
+      ...(delegated.length === 0 ? { performanceElapsedMs, capacityElapsedMs } : {}),
       barrierBElapsedMs: barrierElapsedMs,
       unattributedElapsedMs,
       reconciled: batchElapsedMs + performanceElapsedMs + capacityElapsedMs + barrierElapsedMs + unattributedElapsedMs === elapsedMs,
@@ -1064,6 +1079,7 @@ async function executeSourceQualificationDag(options, overlapRoot) {
       leasesAfterBarrier: afterBarrier.leases.length,
       activationEvidence: overlap.activation_evidence,
       ...(overlap.source_scope ? { sourceScope: overlap.source_scope } : {}),
+      ...(delegated.length === 0 ? {} : { delegatedGates: [...delegated] }),
     },
   };
 }
@@ -1095,6 +1111,7 @@ export async function runSourceQualificationDag(options = {}) {
 export async function issueSourceReceipt(options = {}) {
   if (options.profile !== undefined && options.profile !== "full") throw new Error("source receipts require full qualification");
   if ((options.environment ?? process.env)[SOURCE_PARTITION_ENVIRONMENT]) throw new Error(`source receipts require the complete source inventory; unset ${SOURCE_PARTITION_ENVIRONMENT}`);
+  if ((options.environment ?? process.env)[ISOLATED_OWNERS_ENVIRONMENT]) throw new Error(`source receipts require every owner on one host; unset ${ISOLATED_OWNERS_ENVIRONMENT}`);
   const repo = options.repo ?? REPO_ROOT;
   const clock = options.clock ?? (() => performance.now());
   const started = clock();
@@ -1199,6 +1216,12 @@ export async function runSourceConjunction(options = {}) {
   if (request && (profile !== "development" || request.partition.kind !== "core")) {
     throw new Error(`${SOURCE_PARTITION_ENVIRONMENT} in verify accepts only the core partition of the development profile; shards use verify-shard and receipts need the complete inventory`);
   }
+  const delegated = options.delegatedGates;
+  // Only assembly can combine a delegating core with the isolated-owner part,
+  // and assembly takes the core from the source core partition.
+  if (delegated && (profile !== "development" || request?.partition.kind !== "core")) {
+    throw new Error(`${ISOLATED_OWNERS_ENVIRONMENT} in verify requires the development profile with ${SOURCE_PARTITION_ENVIRONMENT}=core; full qualification and receipts run every owner on one host`);
+  }
   const identity = {
     schemaVersion: profile === "development" ? "agentera.developmentConjunction.v1" : "agentera.releaseConjunction.v1",
     profile,
@@ -1212,6 +1235,7 @@ export async function runSourceConjunction(options = {}) {
       startedAt: started,
       sourcePartition: request?.partition,
       sourceReportFile: request?.sourceReportFile,
+      delegatedGates: delegated,
       environment: {
         ...process.env,
         ...options.environment,
@@ -1224,6 +1248,7 @@ export async function runSourceConjunction(options = {}) {
       // A core partition proves every gate except complete source coverage;
       // only assemble can turn it into a passing development conjunction.
       status: request ? "partial" : "pass",
+      ...(delegated ? { delegated_gates: [...delegated] } : {}),
       gate_count: gates.length,
       gates: result.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({
         name,
@@ -1233,9 +1258,11 @@ export async function runSourceConjunction(options = {}) {
         origin,
       })),
       execution: result.execution,
-      performance: {
-        latencyAdvisory: profile === "development" ? result.gates.find(({ name }) => name === "performance").observation.evidence.latencyAdvisory : normalizedLatencyAdvisory(result.gates.find(({ name }) => name === "performance").observation.evidence, performanceAuthority(REPO_ROOT)),
-      },
+      performance: delegated
+        ? null
+        : {
+            latencyAdvisory: profile === "development" ? result.gates.find(({ name }) => name === "performance").observation.evidence.latencyAdvisory : normalizedLatencyAdvisory(result.gates.find(({ name }) => name === "performance").observation.evidence, performanceAuthority(REPO_ROOT)),
+          },
       first_failure: null,
       owner: null,
       correction: null,
@@ -1298,6 +1325,7 @@ export async function runSourceShard(options = {}) {
   const overlapRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-source-shard-"));
   try {
     if (request?.partition.kind !== "shard") throw sourceProcessFailure("generated-overlap", `verify-shard requires ${SOURCE_PARTITION_ENVIRONMENT}=shard:INDEX/COUNT`, "failed");
+    if ((options.environment ?? process.env)[ISOLATED_OWNERS_ENVIRONMENT]) throw sourceProcessFailure("generated-overlap", `verify-shard runs source files only and cannot delegate owners; unset ${ISOLATED_OWNERS_ENVIRONMENT}`, "failed");
     const deadlineMs = RELEASE_MODEL.sourceQualificationMs;
     const cleanupMarginMs = SOURCE_DAG.overlapCleanupMarginMs;
     const batch = await (options.runConcurrent ?? runConcurrentSourceOwners)(
@@ -1373,6 +1401,113 @@ export async function runSourceShard(options = {}) {
   }
 }
 
+const ISOLATED_OWNERS_SCHEMA = "agentera.developmentIsolatedOwners.v1";
+const ISOLATED_OWNERS_RESULT = "isolated.json";
+
+function isolatedOwnerGates(repo) {
+  const owners = verificationPolicy(repo).isolated_owners;
+  if (owners === undefined) throw new Error("isolated owners require verification-policy.yaml#isolated_owners");
+  return owners;
+}
+
+function isolatedOwnersDelegation(environment, repo = REPO_ROOT) {
+  const value = environment[ISOLATED_OWNERS_ENVIRONMENT];
+  return value ? parseIsolatedOwnersDelegation(value, isolatedOwnerGates(repo)) : undefined;
+}
+
+/** Run the delegated owners on this host: stress, then performance alone, then capacity. */
+export async function runIsolatedOwners(options = {}) {
+  const repo = options.repo ?? REPO_ROOT;
+  const clock = options.clock ?? (() => performance.now());
+  const started = clock();
+  const environment = { ...process.env, ...options.environment };
+  const gates = sourceGateMap(qualificationGates("development"), "development");
+  const identity = { schemaVersion: ISOLATED_OWNERS_SCHEMA, profile: "development", gate_identity: sourceQualificationGateIdentity("development") };
+  try {
+    if (environment[SOURCE_PARTITION_ENVIRONMENT]) throw sourceProcessFailure("isolated-owners", `verify-isolated runs complete owner inventories; unset ${SOURCE_PARTITION_ENVIRONMENT}`, "failed");
+    const owners = isolatedOwnerGates(repo);
+    const readSourceIdentity = options.readSourceIdentity ?? (() => generatedSourceIdentity(path.join(repo, "packages/cli")));
+    const sourceIdentity = readSourceIdentity();
+    // This host reads its own inventory; in the single-host DAG these counts
+    // come from the overlap evidence, which this partition does not produce.
+    const inventory = options.inventoryCounts ?? verificationInventory(repo).counts;
+    if (!owners.every((name) => Number.isSafeInteger(inventory?.[name]) && inventory[name] > 0)) throw sourceProcessFailure("isolated-owners", "isolated owner inventory is incomplete", "failed");
+    const deadlineMs = RELEASE_MODEL.sourceQualificationMs;
+    const reconciliationMarginMs = SOURCE_DAG.overlapParentReconciliationMarginMs;
+    // As in the DAG, the child deadline is what remains of this run's budget,
+    // so setup time before the first owner cannot extend it.
+    const deadlineEpochMs = (options.wallClock ?? Date.now)() + Math.floor(deadlineMs - (clock() - started));
+    const common = {
+      repo,
+      createState: options.createState,
+      startOwner: options.startOwner,
+      environment: {
+        ...environment,
+        AGENTERA_OFFLINE: "1",
+        AGENTERA_ISOLATION_TMP_ROOT: process.env.AGENTERA_ISOLATION_TMP_ROOT ?? process.env.TMPDIR ?? os.tmpdir(),
+      },
+    };
+    const ran = {};
+    let performanceEvidence;
+    // One owner at a time: each starts only after the previous one settled,
+    // so performance never shares this host with another marked owner, and a
+    // failure stops every later owner.
+    for (const name of owners) {
+      const remaining = Math.floor(deadlineMs - (clock() - started));
+      if (remaining <= reconciliationMarginMs) throw sourceProcessFailure(name, `isolated owners have no safe ${name} execution window before reconciliation`, "failed");
+      const phaseStarted = clock();
+      const result = (
+        await (options.runConcurrent ?? runConcurrentSourceOwners)(
+          [
+            {
+              name,
+              command: gates.get(name).command,
+              repo,
+              timeoutMs: remaining - reconciliationMarginMs,
+              cancellable: true,
+              environment: { AGENTERA_SOURCE_DEADLINE_EPOCH_MS: String(deadlineEpochMs) },
+            },
+          ],
+          common,
+        )
+      )[name];
+      ran[name] = { result, phaseElapsedMs: Math.max(0, Math.round(clock() - phaseStarted)) };
+      if (name === "performance") performanceEvidence = performanceObservation(result, inventory.performance, false, "development");
+    }
+    if (!sameGeneratedSourceIdentity(readSourceIdentity(), sourceIdentity)) throw sourceProcessFailure("isolated-owners", "isolated owner source identity changed during verification", "failed");
+    const elapsedMs = Math.max(0, Math.round(clock() - started));
+    if (elapsedMs >= deadlineMs) throw sourceProcessFailure("isolated-owners", `isolated owners exceeded the ${deadlineMs}ms source verification budget`, "failed");
+    const phases = Object.fromEntries(owners.map((name) => [`${name}ElapsedMs`, ran[name].phaseElapsedMs]));
+    const unattributedElapsedMs = elapsedMs - Object.values(phases).reduce((total, value) => total + value, 0);
+    if (unattributedElapsedMs < 0) throw sourceProcessFailure("isolated-owners", "isolated owner phase timings do not reconcile", "failed");
+    return {
+      ...identity,
+      status: "pass",
+      source_identity: sourceIdentity,
+      gates: owners.map((name) => ({ name, phase: "isolated-owners", outcome: "passed", elapsedMs: ran[name].result.elapsedMs, origin: name, inventoryFiles: inventory[name] })),
+      performance: { latencyAdvisory: performanceEvidence.evidence.latencyAdvisory },
+      execution: { strategy: "serial-isolated-owners", deadlineMs, elapsedMs, ...phases, unattributedElapsedMs, reconciled: true },
+      first_failure: null,
+      owner: null,
+      correction: null,
+      side_effects: { ...NO_SIDE_EFFECTS },
+    };
+  } catch (error) {
+    const owner = error?.owner ?? "isolated-owners";
+    return {
+      ...identity,
+      status: "fail",
+      gates: [],
+      execution: { elapsedMs: Math.max(0, Math.round(clock() - started)) },
+      first_failure: owner,
+      owner: gates.get(owner)?.owner ?? `packages/cli/scripts/release-qualification.mjs#${owner}`,
+      violation: sourceDiagnostic(error instanceof Error ? error.message : error),
+      correction: gates.get(owner)?.correction ?? "pnpm -C packages/cli run verify:development:isolated",
+      side_effects: { ...NO_SIDE_EFFECTS },
+    };
+  }
+}
+
 function readPartitionJson(directory, name, label) {
   const file = path.join(directory, name);
   if (!fs.existsSync(file)) throw new Error(`${label} is missing: ${name}`);
@@ -1387,16 +1522,56 @@ function mergedSourceReport(reports) {
   return Buffer.from(JSON.stringify(merged));
 }
 
-function sourceInventoryFiles(repo) {
+function verificationInventory(repo) {
   const result = spawnSync(process.execPath, ["scripts/verify-lane.mjs", "inventory", "--json"], {
     cwd: path.join(repo, "packages/cli"),
     encoding: "utf8",
   });
   if (result.status !== 0) throw new Error(`verification inventory failed: ${result.stderr || result.stdout || result.error?.message}`);
-  return JSON.parse(result.stdout).files.source;
+  return JSON.parse(result.stdout);
 }
 
-/** Combine a core development conjunction with every source shard into one development conjunction. */
+function sourceInventoryFiles(repo) {
+  return verificationInventory(repo).files.source;
+}
+
+// Distributed timing reconciliation. The core and the isolated-owner partition
+// run on different hosts with separate clocks, so no one wall time spans both
+// and their phases cannot sum to a single elapsed time. Instead each partition
+// reconciles its own phases to its own elapsed time: core batch A + barrier B
+// + unattributed = core elapsed, and stress + performance + capacity +
+// unattributed = isolated elapsed, every term a nonnegative integer. The
+// assembled elapsedMs stays the core's wall time, as with source shards; the
+// isolated timings are reported beside it and never summed into it.
+function partitionTimingsReconcile(execution, phases) {
+  const terms = [...phases, "unattributedElapsedMs"].map((name) => execution?.[name]);
+  return Number.isSafeInteger(execution?.elapsedMs) && terms.every((value) => Number.isSafeInteger(value) && value >= 0) && terms.reduce((total, value) => total + value, 0) === execution.elapsedMs;
+}
+
+// Each isolated gate must report the nonempty owner inventory that this
+// assembler reads for the same source identity: an owner with zero files
+// passes vacuously.
+function validateIsolatedOwners(isolated, delegated, gateIdentity, sourceIdentity, inventoryCounts) {
+  if (
+    isolated.schemaVersion !== ISOLATED_OWNERS_SCHEMA ||
+    isolated.profile !== "development" ||
+    isolated.status !== "pass" ||
+    isolated.gate_identity !== gateIdentity ||
+    isolated.source_identity?.identitySha256 !== sourceIdentity.identitySha256 ||
+    !Array.isArray(isolated.gates) ||
+    canonicalJson(isolated.gates.map((gate) => gate?.name)) !== canonicalJson(delegated) ||
+    isolated.gates.some((gate) => gate.outcome !== "passed" || gate.phase !== "isolated-owners" || gate.origin !== gate.name || !Number.isSafeInteger(gate.elapsedMs) || gate.elapsedMs < 0 || !Number.isSafeInteger(gate.inventoryFiles) || gate.inventoryFiles < 1 || gate.inventoryFiles !== inventoryCounts?.[gate.name]) ||
+    typeof isolated.performance?.latencyAdvisory !== "object" ||
+    isolated.performance.latencyAdvisory === null ||
+    Array.isArray(isolated.performance.latencyAdvisory) ||
+    Object.keys(isolated.performance.latencyAdvisory).length === 0
+  ) {
+    throw new Error("isolated owners are not a passing isolated-owner partition for this source identity");
+  }
+  return isolated;
+}
+
+/** Combine a core development conjunction with every source shard, and any isolated-owner partition, into one development conjunction. */
 export function assembleDevelopmentConjunction(options = {}) {
   const repo = options.repo ?? REPO_ROOT;
   const directory = options.directory;
@@ -1412,6 +1587,11 @@ export function assembleDevelopmentConjunction(options = {}) {
     const sourceIdentity = options.sourceIdentity ?? generatedSourceIdentity(path.join(repo, "packages/cli"));
     const governed = qualificationGates("development");
     const core = JSON.parse(readPartitionJson(directory, "core.json", "core conjunction"));
+    const delegated = core.delegated_gates;
+    if (delegated !== undefined && canonicalJson(delegated) !== canonicalJson(verificationPolicy(repo).isolated_owners ?? null)) {
+      throw new Error("core conjunction delegates gates other than verification-policy.yaml#isolated_owners");
+    }
+    const coreGates = delegated === undefined ? governed : governed.filter(({ name }) => !delegated.includes(name));
     if (
       core.schemaVersion !== identity.schemaVersion ||
       core.profile !== "development" ||
@@ -1419,12 +1599,30 @@ export function assembleDevelopmentConjunction(options = {}) {
       core.gate_identity !== identity.gate_identity ||
       core.gate_count !== governed.length ||
       !Array.isArray(core.gates) ||
-      core.gates.length !== governed.length ||
-      core.gates.some((gate, index) => gate.name !== governed[index].name || gate.outcome !== "passed") ||
+      core.gates.length !== coreGates.length ||
+      core.gates.some((gate, index) => gate.name !== coreGates[index].name || gate.outcome !== "passed") ||
       core.execution?.sourceScope?.partition !== "core" ||
       core.execution?.generation !== sourceIdentity.identitySha256
     ) {
       throw new Error("core conjunction is not a passing partial development result for this source identity");
+    }
+    // A delegating core is only half of the non-source gates: without the
+    // isolated-owner partition for this source identity there is no candidate.
+    const isolated = delegated === undefined ? undefined : validateIsolatedOwners(JSON.parse(readPartitionJson(directory, ISOLATED_OWNERS_RESULT, "isolated-owner result")), delegated, identity.gate_identity, sourceIdentity, options.inventoryCounts ?? verificationInventory(repo).counts);
+    // A delegating core ran no delegated owner, so it must report no timing
+    // for one; such a term would sit beside the core's own phases.
+    if (isolated && delegated.some((name) => Object.hasOwn(core.execution, `${name}ElapsedMs`))) {
+      throw new Error("a delegating core reports timings for delegated owners");
+    }
+    const reconciled =
+      isolated === undefined ||
+      (partitionTimingsReconcile(core.execution, ["batchAElapsedMs", "barrierBElapsedMs"]) &&
+        partitionTimingsReconcile(
+          isolated.execution,
+          delegated.map((name) => `${name}ElapsedMs`),
+        ));
+    if (!reconciled) {
+      throw new Error("core and isolated-owner partition timings do not each reconcile to their own elapsed time");
     }
     const sourceFiles = options.sourceFiles ?? sourceInventoryFiles(repo);
     const names = ["core", ...Array.from({ length: partitions.shards }, (_, index) => `shard-${index + 1}`)];
@@ -1447,17 +1645,40 @@ export function assembleDevelopmentConjunction(options = {}) {
     const policyBytes = fs.readFileSync(path.join(repo, "references/analysis/verification-policy.yaml"));
     const merged = mergedSourceReport(reports);
     const pending = validatePendingTests("source", merged, Buffer.from(JSON.stringify(sourceFiles)), policyBytes, repo, options.platform ?? process.platform);
-    const { sourceScope: _sourceScope, ...execution } = core.execution;
-    return {
-      ...core,
-      status: "pass",
-      execution: {
-        ...execution,
-        distribution: {
-          source: { files: sourceFiles.length, tests: reports.reduce((total, report) => total + report.numTotalTests, 0), pending },
-          partitions: distribution,
+    const { sourceScope: _sourceScope, delegatedGates: _delegatedGates, ...execution } = core.execution;
+    const sourceDistribution = {
+      source: { files: sourceFiles.length, tests: reports.reduce((total, report) => total + report.numTotalTests, 0), pending },
+      partitions: distribution,
+    };
+    if (!isolated) {
+      return {
+        ...core,
+        status: "pass",
+        execution: {
+          ...execution,
+          distribution: sourceDistribution,
         },
+      };
+    }
+    const { delegated_gates: _delegated, ...coreResult } = core;
+    const byName = new Map([...core.gates, ...isolated.gates.map(({ name, phase, outcome, elapsedMs, origin }) => ({ name, phase, outcome, elapsedMs, origin }))].map((gate) => [gate.name, gate]));
+    // Copy only the isolated timing terms the reconciliation checked.
+    const isolatedTimings = Object.fromEntries(["elapsedMs", ...delegated.map((name) => `${name}ElapsedMs`), "unattributedElapsedMs"].map((name) => [name, isolated.execution[name]]));
+    return {
+      ...coreResult,
+      status: "pass",
+      gates: governed.map(({ name }) => byName.get(name)),
+      execution: {
+        // The core's phases sum to elapsedMs; the isolated phases sum only to
+        // isolated.elapsedMs, so they stay under isolated and never sit beside
+        // the core's terms. reconciled covers both partition checks above.
+        ...execution,
+        reconciled,
+        reconciliation: "per-partition",
+        isolated: isolatedTimings,
+        distribution: sourceDistribution,
       },
+      performance: isolated.performance,
     };
   } catch (error) {
     return {
@@ -2284,6 +2505,7 @@ export async function runNoReceiptVerificationCommand(flags, options = {}) {
   const result = await runSourceConjunction({
     ...options,
     sourcePartitionRequest: request,
+    delegatedGates: options.delegatedGates ?? isolatedOwnersDelegation(options.environment ?? process.env),
     profile: flags.get("--profile") ?? options.profile ?? "full",
   });
   writePartitionResult(request, result);
@@ -2309,6 +2531,17 @@ export async function runSourceShardCommand(flags, options = {}) {
   return result;
 }
 
+export async function runIsolatedOwnersCommand(flags, options = {}) {
+  const directory = (options.environment ?? process.env)[SOURCE_PARTITION_DIRECTORY_ENVIRONMENT];
+  if (!directory || !path.isAbsolute(directory)) throw new Error(`verify-isolated requires an absolute ${SOURCE_PARTITION_DIRECTORY_ENVIRONMENT}`);
+  fs.mkdirSync(directory, { recursive: true, mode: 0o700 });
+  const result = await runIsolatedOwners(options);
+  fs.writeFileSync(path.join(directory, ISOLATED_OWNERS_RESULT), `${JSON.stringify(result)}\n`, { flag: "wx", mode: 0o600 });
+  process.stdout.write(`${JSON.stringify(result)}\n`);
+  if (result.status !== "pass") process.exitCode = 1;
+  return result;
+}
+
 export function runAssembleCommand(flags, options = {}) {
   const environment = options.environment ?? process.env;
   const result = assembleDevelopmentConjunction({ ...options, directory: options.directory ?? environment[SOURCE_PARTITION_DIRECTORY_ENVIRONMENT] });
@@ -2319,18 +2552,19 @@ export function runAssembleCommand(flags, options = {}) {
 
 async function main() {
   const [command, ...rest] = process.argv.slice(2);
-  if (!["verify", "verify-shard", "assemble", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
-    throw new Error("usage: release-qualification.mjs <verify|verify-shard|assemble|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
+  if (!["verify", "verify-shard", "verify-isolated", "assemble", "source", "source-check", "candidate", "approval", "attest"].includes(command)) {
+    throw new Error("usage: release-qualification.mjs <verify|verify-shard|verify-isolated|assemble|source|source-check|candidate|approval|attest> [--candidate-dir DIR] [--adapter development|stable] [--json]");
   }
-  const valueFlags = command === "verify" ? ["--profile"] : ["verify-shard", "assemble"].includes(command) ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
+  const valueFlags = command === "verify" ? ["--profile"] : ["verify-shard", "verify-isolated", "assemble"].includes(command) ? [] : command === "source-check" ? ["--candidate-dir"] : ["--candidate-dir", "--adapter"];
   if (command === "candidate") valueFlags.push("--source-commit");
   if (command === "approval") valueFlags.push("--approved-by", "--source-run-id");
   const flags = parseReleaseFlags(rest, {
-    boolean: ["verify", "verify-shard", "assemble", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
+    boolean: ["verify", "verify-shard", "verify-isolated", "assemble", "source-check"].includes(command) ? ["--json"] : ["--json", "--verbose"],
     value: valueFlags,
   });
   if (command === "verify") await runNoReceiptVerificationCommand(flags);
   else if (command === "verify-shard") await runSourceShardCommand(flags);
+  else if (command === "verify-isolated") await runIsolatedOwnersCommand(flags);
   else if (command === "assemble") runAssembleCommand(flags);
   else if (command === "source-check") runSourceReceiptCheckCommand(flags);
   else await runCommand(command, flags);

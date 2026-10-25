@@ -1,0 +1,12 @@
+id: aucapswfpa
+artifact: plan
+record:
+  name: Measure the layout on GitHub and tune it
+  depends_on:
+    - qgwbvxtuvo
+  status: in_progress
+  acceptance:
+    - GIVEN explicit authorization to push a branch WHEN a temporary branch-only workflow mirroring the publish verification jobs and real assembly runs THEN every job passes without building or publishing anything.
+    - GIVEN that hosted run WHEN its timings are read THEN the package worker count and the number of isolated-owner runners are set from that evidence, with any change re-measured under a fresh push authorization.
+    - GIVEN the final hosted run WHEN it is recorded THEN the core job takes 360 seconds or less and the package owner stays within its 600 second budget, or the shortfall and its cause are recorded before landing.
+  plan: gtivhdjwkw

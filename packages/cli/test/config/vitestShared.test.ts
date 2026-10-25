@@ -5,7 +5,7 @@ import path from "node:path";
 import { pathToFileURL } from "node:url";
 import { describe, expect, inject, it } from "vite-plus/test";
 import YAML from "yaml";
-import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, ownerProjects, sharedTestConfig, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
+import { maxWorkersFor, MEASURED_LOCAL_WORKER_POLICY, ownerProjects, PACKAGE_OWNER_CONCURRENCY, PACKAGE_OWNER_WORKERS, packageWorkersFor, sharedTestConfig, testTimeoutFor, UNMEASURED_WORKER_POLICY, workerPolicyFor } from "../../vitest.shared.ts";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 
@@ -79,6 +79,16 @@ describe("source worker policy", () => {
     expect(maxWorkersFor({ VITEST_MAX_WORKERS: "6" })).toBe(6);
   });
 
+  it("runs package files in parallel behind the shared fixture guard unless explicitly overridden", () => {
+    expect(PACKAGE_OWNER_WORKERS).toBe(3);
+    expect(PACKAGE_OWNER_CONCURRENCY).toBe(2);
+    expect(packageWorkersFor({ AGENTERA_VITEST_RUNNER_POLICY: MEASURED_LOCAL_WORKER_POLICY })).toBe(3);
+    expect(packageWorkersFor({ VITEST_MAX_WORKERS: "1" })).toBe(1);
+    const [packaged] = ownerProjects("package");
+    expect(packaged.test.setupFiles).toEqual(["./test/fixtureSetup.ts", "./test/packaging/sharedFixtureGuard.ts"]);
+    expect(ownerProjects("source")[0].test.setupFiles).toEqual(["./test/fixtureSetup.ts"]);
+  });
+
   it("keeps the local test ceiling at 30 seconds unless the runner overrides it", () => {
     expect(testTimeoutFor({})).toBe(30_000);
     expect(testTimeoutFor({ VITEST_TEST_TIMEOUT_MS: "120000" })).toBe(120_000);
@@ -86,6 +96,8 @@ describe("source worker policy", () => {
 
   it.each([undefined, "", "invalid", "0", "-1", "500", "120000"])("shares the resolved test deadline with hooks for override %s", (override) => {
     const environment = { ...process.env };
+    // Generated overlap gives the source participant its own worker override.
+    delete environment.VITEST_MAX_WORKERS;
     if (override === undefined) delete environment.VITEST_TEST_TIMEOUT_MS;
     else environment.VITEST_TEST_TIMEOUT_MS = override;
     const result = spawnSync(process.execPath, ["--input-type=module", "-e", 'import source from "./vite.config.ts"; import packaged from "./vite.package.config.ts"; console.log(JSON.stringify({ source: source.test, packaged: packaged.test }));'], {
@@ -101,8 +113,9 @@ describe("source worker policy", () => {
     expect(source.hookTimeout).toBe(expected);
     expect(packaged.hookTimeout).toBe(expected);
     expect(packaged.testTimeout).toBe(120_000);
-    expect(packaged.maxWorkers).toBe(1);
-    expect(packaged.projects[0].test.maxConcurrency).toBe(4);
+    expect(packaged.maxWorkers).toBe(PACKAGE_OWNER_WORKERS);
+    expect(packaged.projects[0].test.maxWorkers).toBe(PACKAGE_OWNER_WORKERS);
+    expect(packaged.projects[0].test.maxConcurrency).toBe(PACKAGE_OWNER_CONCURRENCY);
   });
 
   it("enforces shared deadlines in real Vitest while allowing passing tests and hooks", () => {
@@ -141,9 +154,8 @@ describe("source worker policy", () => {
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
       AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2",
       VITEST_TEST_TIMEOUT_MS: "120000",
-      AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
-      AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
       AGENTERA_SOURCE_PARTITION: "core",
+      AGENTERA_ISOLATED_OWNERS: "delegate",
       AGENTERA_SOURCE_PARTITION_DIRECTORY: "${{ runner.temp }}/agentera-verification",
     });
     expect(workerPolicyFor(sourceOwnerStep.env)).toEqual({
@@ -156,6 +168,16 @@ describe("source worker policy", () => {
       AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
       VITEST_TEST_TIMEOUT_MS: "120000",
       AGENTERA_SOURCE_PARTITION: "shard:${{ matrix.shard }}/3",
+      AGENTERA_SOURCE_PARTITION_DIRECTORY: "${{ runner.temp }}/agentera-verification",
+    });
+    // The isolated owners run alone on their runner, also with the unmeasured
+    // default; performance pins its own single worker and records the runner.
+    const isolatedStep = workflow.jobs["verify-isolated-owners"].steps.find((step: { name?: string }) => step.name === "Verify development isolated owners");
+    expect(isolatedStep.env).toEqual({
+      AGENTERA_VITEST_RUNNER_POLICY: UNMEASURED_WORKER_POLICY,
+      VITEST_TEST_TIMEOUT_MS: "120000",
+      AGENTERA_PERFORMANCE_RUNNER_CLASS: "github-hosted-ubuntu-24.04",
+      AGENTERA_PERFORMANCE_RUNNER_IDENTITY: "${{ runner.name }}",
       AGENTERA_SOURCE_PARTITION_DIRECTORY: "${{ runner.temp }}/agentera-verification",
     });
   });

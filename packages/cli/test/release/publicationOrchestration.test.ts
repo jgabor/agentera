@@ -15,7 +15,7 @@ import { canonicalJson, issueCiAttestation, publicationWorkflowIdentity } from "
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const managedNode = `"$VP_CLI_BIN" env exec --node ${fs.readFileSync(path.join(REPO_ROOT, ".node-version"), "utf8").trim()}`;
 const qualificationYaml = fs.readFileSync(path.join(REPO_ROOT, ".github/workflows/publish.yml"), "utf8");
-const VERIFICATION_JOBS = ["verify-development", "verify-source-shard", "assemble-development-verification"];
+const VERIFICATION_JOBS = ["verify-development", "verify-isolated-owners", "verify-source-shard"];
 const developmentPackage = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "packages/cli/package.json"), "utf8"));
 const registry = JSON.parse(fs.readFileSync(path.join(REPO_ROOT, "registry.json"), "utf8"));
 const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
@@ -142,6 +142,7 @@ describe("package publication orchestration", () => {
   it.each([
     ["development", YAML.parse(qualificationYaml).jobs["verify-development"], { ref: "${{ github.sha }}", "fetch-depth": 0 }, "vp run verify:development"],
     ["development source shard", YAML.parse(qualificationYaml).jobs["verify-source-shard"], { ref: "${{ github.sha }}", "fetch-depth": 0 }, "vp run verify:development:shard"],
+    ["development isolated owner", YAML.parse(qualificationYaml).jobs["verify-isolated-owners"], { ref: "${{ github.sha }}", "fetch-depth": 0 }, "vp run verify:development:isolated"],
   ])("provides complete history without archival fetches before %s verification", (_name, job, checkoutInputs, verifyCommand) => {
     const archivalCommand = `git fetch --depth=1 origin '${"9".repeat(40)}'`;
     type Step = {
@@ -408,6 +409,8 @@ describe("package publication orchestration", () => {
     for (const job of VERIFICATION_JOBS) {
       const definition = workflow.jobs[job];
       expect(definition.permissions).toEqual({ contents: "read" });
+      expect(definition.needs).toBe("publication-state");
+      expect(definition["timeout-minutes"]).toBe(45);
       expect(definition.if).toBe("needs.publication-state.outputs.mode == 'build'");
       expect(JSON.stringify(definition)).not.toMatch(/--receipt-file|release-qualification\.mjs|candidate|npm publish|id-token/i);
       // Verification jobs share only partition evidence, never package bytes.
@@ -420,7 +423,7 @@ describe("package publication orchestration", () => {
       actions: "read",
     });
     expect(workflow.jobs["build-development"].permissions).not.toHaveProperty("id-token");
-    expect(workflow.jobs["build-development"].needs).toBe("assemble-development-verification");
+    expect(workflow.jobs["build-development"].needs).toEqual(["publication-state", ...VERIFICATION_JOBS]);
     expect(workflow.jobs["build-development"]).not.toHaveProperty("if");
     expect(workflow.jobs["publish-development"].permissions).toEqual({
       actions: "read",
@@ -433,6 +436,11 @@ describe("package publication orchestration", () => {
     expect(construction.run).toContain("--package-version");
     expect(publishSteps.some((step: { uses?: string }) => step.uses?.startsWith("actions/checkout@"))).toBe(false);
     expect(JSON.stringify(publishSteps)).not.toContain("packages/cli/scripts");
+    // The build reads only partition evidence before it constructs anything.
+    const partitionDownloads = buildSteps.filter((step: { uses?: string }) => step.uses === "actions/download-artifact@v4");
+    expect(partitionDownloads).toHaveLength(1);
+    expect(partitionDownloads[0].with.pattern).toBe("agentera-verification-*");
+    expect("agentera-development-candidate").not.toMatch(/^agentera-verification-/);
     const upload = buildSteps.find((step: { uses?: string }) => step.uses === "actions/upload-artifact@v4");
     expect(upload.with).toMatchObject({
       name: "agentera-development-candidate",
@@ -1214,7 +1222,7 @@ assert not responses
           "publish-development": { result: "skipped" },
         };
         const effects: string[] = [];
-        if (condition(workflow.jobs["verify-development"].if, needs)) effects.push("source-build");
+        for (const job of VERIFICATION_JOBS) if (condition(workflow.jobs[job].if, needs)) effects.push(`${job}-verification`);
         if (condition(workflow.jobs["publish-development"].if, needs)) effects.push("publisher");
         if (condition(workflow.jobs["confirm-development"].if, needs)) effects.push("observation");
         expect(effects).toEqual(["observation"]);

@@ -14,6 +14,7 @@ const freshCommands = {
   verify: "pnpm -C packages/cli run verify:release",
   "verify:development": "pnpm -C packages/cli run verify:development",
   "verify:development:shard": "pnpm -C packages/cli run verify:development:shard",
+  "verify:development:isolated": "pnpm -C packages/cli run verify:development:isolated",
   "verify:development:assemble": "pnpm -C packages/cli run verify:development:assemble",
   typecheck: "pnpm -C packages/cli run typecheck",
   "typecheck:fresh": "pnpm -C packages/cli run typecheck",

@@ -1,0 +1,24 @@
+id: qgwbvxtuvo
+artifact: plan
+record:
+  name: Wire the development workflow and its pinning tests
+  depends_on:
+    - reipbkghte
+    - xsmxlnmksw
+  status: complete
+  acceptance:
+    - GIVEN the publish workflow WHEN it verifies a push THEN the core, isolated-owner and source shard jobs run in parallel, and one named shard builds the checkout CLI and runs the migration scenarios after its own verification.
+    - GIVEN the candidate build job WHEN publication history selects a build THEN it assembles every partition before allocating a version or constructing anything; WHEN history selects replay or observation THEN assembly does not run.
+    - GIVEN any verification partition fails, is cancelled, or is skipped WHEN the workflow continues THEN no candidate is constructed, uploaded or published.
+    - GIVEN the workflow pinning tests WHEN a layout drops a partition, overrides the success check, runs an owner outside its partition, or moves assembly after construction THEN they fail.
+  plan: gtivhdjwkw
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: acceptance audit PASS (four scratch mutations each fail with intended message) and evidence-and-regressions audit PASS (mode trace unchanged for build, publish, observe)
+      recorded_at: 2026-10-24 23:04
+      writer_command: agentera state plan record-evaluation

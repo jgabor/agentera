@@ -94,6 +94,12 @@ export function verificationPolicyErrors(policy: Record<string, unknown>): strin
       if (!Number.isSafeInteger(weight) || (weight as number) < 1) issue(`${label}.weights_ms.${file} must be a positive safe integer`);
     }
   }
+  if (policy.isolated_owners !== undefined) {
+    // Only this set and order can leave the single-host DAG: stress needs no
+    // generated build, and performance must precede capacity.
+    const owners = array(policy.isolated_owners, "verification.isolated_owners");
+    if (JSON.stringify(owners) !== JSON.stringify(["stress", "performance", "capacity"])) issue("verification.isolated_owners must be exactly [stress, performance, capacity]");
+  }
   if (policy.conservative_routing !== undefined) {
     const routing = object(policy.conservative_routing, "verification.conservative_routing");
     for (const field of ["exact", "prefixes"]) {

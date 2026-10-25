@@ -88,6 +88,23 @@ source_partitions:
     packages/cli/test/release/sourceQualificationDag.test.ts: 10000
     packages/cli/test/state/write/mutationGrammar.test.ts: 10000
 
+# Development CI may also delegate these owners, in this order, from the core
+# partition to one isolated-owner partition on its own runner: stress, then
+# performance alone, then capacity, each against the complete inventory read
+# on that runner. The core then runs batch A without stress, skips the
+# performance and capacity barriers, and still runs barrier B on its private
+# build. The DAG failure rules below assume one host and cannot hold across
+# runners: barrier B on the core does not wait for performance or capacity, and
+# performance does not wait for the core's batch A. For this layout, assembly
+# replaces them: it issues no passing development conjunction, so CI builds no
+# candidate, unless the core, every shard, and the isolated-owner partition
+# passed for one source identity. Receipts, full qualification, and shards
+# refuse delegation.
+isolated_owners:
+  - stress
+  - performance
+  - capacity
+
 # Release source qualification executes this evidence DAG without changing the
 # public owner commands above. generated-overlap is the only
 # private generated-output owner and the only execution origin for source,

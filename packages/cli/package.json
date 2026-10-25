@@ -65,6 +65,7 @@
     "verify:release": "node scripts/release-qualification.mjs verify --json",
     "verify:development": "node scripts/release-qualification.mjs verify --profile development --json",
     "verify:development:shard": "node scripts/release-qualification.mjs verify-shard --json",
+    "verify:development:isolated": "node scripts/release-qualification.mjs verify-isolated --json",
     "verify:development:assemble": "node scripts/release-qualification.mjs assemble --json",
     "test:development-resource": "node scripts/verify-lane.mjs development-resource",
     "lint": "pnpm --workspace-root exec vp lint packages/cli",

@@ -23,6 +23,19 @@ export function maxWorkersFor(environment: NodeJS.ProcessEnv = process.env): num
   return workerPolicyFor(environment).workers;
 }
 
+// Package files run in parallel against one shared extracted package that no
+// test may change (test/packaging/sharedFixtureGuard.ts enforces it). The
+// sequential packageVerification file is the long pole, so concurrent journey
+// tests stay at two per worker to leave it CPU on a 4-CPU runner. See
+// docs/packaging/vite-plus-1-toolchain.md for the measurement.
+export const PACKAGE_OWNER_WORKERS = 3;
+export const PACKAGE_OWNER_CONCURRENCY = 2;
+
+export function packageWorkersFor(environment: NodeJS.ProcessEnv = process.env): number {
+  const policy = workerPolicyFor(environment);
+  return policy.name === "explicit-override" ? policy.workers : PACKAGE_OWNER_WORKERS;
+}
+
 export function testTimeoutFor(environment: NodeJS.ProcessEnv = process.env): number {
   const override = Number.parseInt(environment.VITEST_TEST_TIMEOUT_MS ?? "", 10);
   return override > 0 ? override : 30_000;
@@ -71,9 +84,9 @@ export function ownerProjects(owner = process.env.AGENTERA_VERIFICATION_OWNER ??
       name,
       include,
       exclude,
-      setupFiles: ["./test/fixtureSetup.ts"],
+      setupFiles: owner === "package" ? ["./test/fixtureSetup.ts", "./test/packaging/sharedFixtureGuard.ts"] : ["./test/fixtureSetup.ts"],
       globalSetup: [owner === "package" ? "./test/packaging/packageSetup.ts" : "./test/sourceSetup.ts"],
-      ...(owner === "package" ? { maxWorkers: 1, maxConcurrency: 4, testTimeout: 120_000 } : {}),
+      ...(owner === "package" ? { maxWorkers: packageWorkersFor(), maxConcurrency: PACKAGE_OWNER_CONCURRENCY, testTimeout: 120_000 } : {}),
     },
   });
   // Full source verification compiles its transient runtime once. Only root

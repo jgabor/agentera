@@ -42,7 +42,7 @@ const setupVpReleases = [
 ];
 const SETUP_NODE = "actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f";
 const BOOTSTRAP = "node packages/cli/scripts/bootstrap-integrity.mjs";
-const SETUP_JOBS = ["assemble-development-verification", "build-development", "verify-development", "verify-source-shard"];
+const SETUP_JOBS = ["build-development", "verify-development", "verify-isolated-owners", "verify-source-shard"];
 
 function validateSetupJobs(workflows: any[]): void {
   const jobs = workflows.flatMap((workflow) => Object.entries(workflow.jobs as Record<string, any>).map(([name, job]) => ({ name, job })));

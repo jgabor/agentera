@@ -16,6 +16,7 @@ import { buildDoctorStatus } from "../../src/upgrade/doctor.js";
 import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { coldProcessTest } from "../helpers/coldProcessTest.js";
+import { privatePackageCopy } from "../helpers/packageFixtureIsolation.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -274,55 +275,39 @@ describe("npm distribution boundary", () => {
     const suite = JSON.parse(fs.readFileSync(path.join(bundle, "registry.json"), "utf8")).skills[0];
     expect(manifest.agentera.suiteVersion).toBe(suite.version);
     expect(sourceBytes.toString()).toMatch(new RegExp(`version: ["']?${suite.version.replaceAll(".", "\\.")}["']?`));
-    // Remove the fixture's checkout dependency link for this standalone smoke.
-    const modules = path.join(fixture.packageRoot, "node_modules");
-    const link = fs.readlinkSync(modules);
-    const dependencies = Object.keys(manifest.dependencies).map((name) => ({
-      name,
-      source: fs.realpathSync(path.join(modules, name)),
-    }));
-    fs.unlinkSync(modules);
-    fs.mkdirSync(modules);
-    try {
-      expect(isContained(CHECKOUT_ROOT, fixture.root)).toBe(false);
-      const installedHost = path.join(fixture.root, "isolated-home/.agents/skills/agentera");
-      fs.mkdirSync(installedHost, { recursive: true });
-      fs.copyFileSync(path.join(selected, "SKILL.md"), path.join(installedHost, "SKILL.md"));
-      expect(fs.readdirSync(installedHost)).toEqual(["SKILL.md"]);
-      for (const dependency of dependencies) fs.cpSync(dependency.source, path.join(modules, dependency.name), { recursive: true });
-      const queries = [["schema", "--protocol"], ["schema", "--capability-contract"], ["schema", "--artifact", "plan"], ["route", "explain", "--topic", "triggers"], ...suite.capabilities.map((name: string) => ["prime", "--context", name, "--detail", "instructions"])];
-      for (const args of queries) {
-        const outputs = [fixture.constructionRoot, fixture.packageRoot].map((root) => {
-          const result = spawnSync(process.execPath, [path.join(root, "dist/bin/agentera.js"), ...args], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
-          expect(result.status, `${args.join(" ")}\n${result.stderr}\n${result.stdout}`).toBe(0);
-          return JSON.parse(result.stdout);
-        });
-        expect(outputs[1]).toEqual(outputs[0]);
-      }
-      const protocol = path.join(bundle, "skills/agentera/protocol.yaml");
-      const original = fs.readFileSync(protocol);
-      try {
-        for (const tamper of ["missing", "corrupt"]) {
-          if (tamper === "missing") fs.unlinkSync(protocol);
-          else fs.writeFileSync(protocol, "OPERATING_RULES: [invalid");
-          const result = spawnSync(process.execPath, [path.join(fixture.packageRoot, "dist/bin/agentera.js"), "schema", "--protocol"], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
-          expect(result.status, result.stdout).toBe(1);
-        }
-      } finally {
-        fs.writeFileSync(protocol, original);
-      }
-      console.log(
-        JSON.stringify({
-          hostDelivery: selected,
-          tarballSha256: fixture.deterministicBytes.sha256,
-          runtimeQueries: queries.length,
-          standaloneDependencies: dependencies.map(({ name }) => name),
-        }),
-      );
-    } finally {
-      fs.rmSync(modules, { recursive: true, force: true });
-      fs.symlinkSync(link, modules, "dir");
+    // Swap the checkout dependency link for real dependencies in a private
+    // copy; parallel package files execute the shared extraction meanwhile.
+    const standalone = privatePackageCopy(fixture.packageRoot, path.join(fixture.root, "standalone-package"), { standaloneDependencies: true });
+    expect(fs.lstatSync(path.join(standalone, "node_modules")).isSymbolicLink()).toBe(false);
+    expect(isContained(CHECKOUT_ROOT, fixture.root)).toBe(false);
+    const installedHost = path.join(fixture.root, "isolated-home/.agents/skills/agentera");
+    fs.mkdirSync(installedHost, { recursive: true });
+    fs.copyFileSync(path.join(selected, "SKILL.md"), path.join(installedHost, "SKILL.md"));
+    expect(fs.readdirSync(installedHost)).toEqual(["SKILL.md"]);
+    const queries = [["schema", "--protocol"], ["schema", "--capability-contract"], ["schema", "--artifact", "plan"], ["route", "explain", "--topic", "triggers"], ...suite.capabilities.map((name: string) => ["prime", "--context", name, "--detail", "instructions"])];
+    for (const args of queries) {
+      const outputs = [fixture.constructionRoot, standalone].map((root) => {
+        const result = spawnSync(process.execPath, [path.join(root, "dist/bin/agentera.js"), ...args], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
+        expect(result.status, `${args.join(" ")}\n${result.stderr}\n${result.stdout}`).toBe(0);
+        return JSON.parse(result.stdout);
+      });
+      expect(outputs[1]).toEqual(outputs[0]);
     }
+    const protocol = path.join(standalone, "bundle/skills/agentera/protocol.yaml");
+    for (const tamper of ["missing", "corrupt"]) {
+      if (tamper === "missing") fs.unlinkSync(protocol);
+      else fs.writeFileSync(protocol, "OPERATING_RULES: [invalid");
+      const result = spawnSync(process.execPath, [path.join(standalone, "dist/bin/agentera.js"), "schema", "--protocol"], { cwd: fixture.root, env: packageEnvironment(), encoding: "utf8" });
+      expect(result.status, result.stdout).toBe(1);
+    }
+    console.log(
+      JSON.stringify({
+        hostDelivery: selected,
+        tarballSha256: fixture.deterministicBytes.sha256,
+        runtimeQueries: queries.length,
+        standaloneDependencies: Object.keys(manifest.dependencies),
+      }),
+    );
   });
   it("preserves zero-finding publication and no-progress shared guidance in the extracted runtime", () => {
     const project = path.join(fixture.root, "proportionate-execution");
@@ -1103,8 +1088,10 @@ describe("npm distribution boundary", () => {
   });
 
   it("serves and isolates the bundled Profile contract", () => {
-    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
-    const authorityPath = path.join(fixture.packageRoot, "bundle/references/artifacts/glossary-entry-contract.yaml");
+    // The contract is a startup authority, so break it only in a private copy.
+    const packageCopy = privatePackageCopy(fixture.packageRoot, path.join(fixture.root, "profile-contract-package"));
+    const bin = path.join(packageCopy, "dist/bin/agentera.js");
+    const authorityPath = path.join(packageCopy, "bundle/references/artifacts/glossary-entry-contract.yaml");
     const projectRoot = path.join(fixture.root, "profile-contract");
     fs.mkdirSync(path.join(projectRoot, ".agentera"), { recursive: true });
     fs.writeFileSync(path.join(projectRoot, ".agentera", "state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
@@ -1122,24 +1109,19 @@ describe("npm distribution boundary", () => {
       capability_context: { capability: "profile" },
     });
 
-    try {
-      const authority = YAML.parse(originalAuthority.toString("utf8")) as Record<string, any>;
-      authority.personal_mining_authority.profile_full.existing_generation.list_limit = 0;
-      fs.writeFileSync(authorityPath, YAML.stringify(authority), "utf8");
+    const authority = YAML.parse(originalAuthority.toString("utf8")) as Record<string, any>;
+    authority.personal_mining_authority.profile_full.existing_generation.list_limit = 0;
+    fs.writeFileSync(authorityPath, YAML.stringify(authority), "utf8");
 
-      const malformed = runPrime("profile");
-      expect(malformed.status).not.toBe(0);
-      expect(malformed.stderr + malformed.stdout).toContain("personal glossary Profile Full contract is unavailable");
+    const malformed = runPrime("profile");
+    expect(malformed.status).not.toBe(0);
+    expect(malformed.stderr + malformed.stdout).toContain("personal glossary Profile Full contract is unavailable");
 
-      const build = runPrime("build");
-      expect(build.status, build.stderr || build.stdout).toBe(0);
-      expect(JSON.parse(build.stdout)).toMatchObject({
-        capability_context: { capability: "build" },
-      });
-    } finally {
-      fs.writeFileSync(authorityPath, originalAuthority);
-    }
-    expect(fs.readFileSync(authorityPath).equals(originalAuthority)).toBe(true);
+    const build = runPrime("build");
+    expect(build.status, build.stderr || build.stdout).toBe(0);
+    expect(JSON.parse(build.stdout)).toMatchObject({
+      capability_context: { capability: "build" },
+    });
   });
 
   it("matches the source personal glossary production workflow", () => {

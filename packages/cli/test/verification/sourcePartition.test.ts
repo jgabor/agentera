@@ -4,7 +4,8 @@ import path from "node:path";
 import { describe, expect, it } from "vite-plus/test";
 
 import { loadVerificationPolicy } from "../../scripts/overlap-pending.mjs";
-import { parseSourcePartition, sourcePartitionErrors, sourcePartitionFiles } from "../../scripts/source-partition.mjs";
+import { parseIsolatedOwnersDelegation, parseSourcePartition, sourcePartitionErrors, sourcePartitionFiles } from "../../scripts/source-partition.mjs";
+import { verificationPolicyErrors } from "../../src/registries/verificationPolicy.js";
 
 const REPO_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const CORE = ["core/a.test.ts", "core/b.test.ts"];
@@ -66,6 +67,15 @@ describe("source partitions", () => {
       "source partition weight names a file that is not source-owned: gone.test.ts",
     ]);
     expect(sourcePartitionErrors({ ...PARTITIONS, shards: 10 }, SOURCE, CORE)).toEqual(["source partition shards (10) exceed the 9 non-core source files"]);
+  });
+
+  it("accepts only the governed isolated owners, in order, and only an explicit delegation", () => {
+    const policy = loadVerificationPolicy(fs.readFileSync(path.join(REPO_ROOT, "references/analysis/verification-policy.yaml")));
+    expect(parseIsolatedOwnersDelegation(undefined, policy.isolated_owners)).toBeUndefined();
+    expect(parseIsolatedOwnersDelegation("delegate", policy.isolated_owners)).toEqual(["stress", "performance", "capacity"]);
+    expect(() => parseIsolatedOwnersDelegation("1", policy.isolated_owners)).toThrow("must be 'delegate'");
+    expect(() => parseIsolatedOwnersDelegation("delegate", undefined)).toThrow("requires verification-policy.yaml#isolated_owners");
+    expect(verificationPolicyErrors({ ...policy, isolated_owners: ["performance", "stress", "capacity"] })).toEqual(["verification.isolated_owners must be exactly [stress, performance, capacity]"]);
   });
 
   it("keeps the governed core on the activation evidence producer and the declared pending assertion", () => {

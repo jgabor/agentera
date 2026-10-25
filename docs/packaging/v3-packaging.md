@@ -260,9 +260,14 @@ the owner inventories, pending-test results, and build evidence. Source, package
 and build are not spawned again.
 The GitHub source verification step gives the long-running source participant two
 workers, gives hosted Vitest assertions a 120-second ceiling, and limits the
-concurrently starting package and stress participants to one worker each. Local
-assertions retain the 30-second default. This bounds initial contention without
-starving the source owner that determines the generated-overlap wall time.
+concurrently starting stress participant to one worker. The package participant
+runs three workers with at most two concurrent tests each, against one shared
+extracted package that no test may change (see
+[qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)).
+Local assertions retain the 30-second default. This bounds initial contention
+for the source owner that determines the generated-overlap wall time. The
+parallel package owner still slows source files that run beside it; its effect
+on the hosted core job is not yet measured.
 After every batch owner passes and overlap validates one immutable private build,
 performance runs alone with one worker in fresh isolated state on the pinned
 remote runner declared by the policy, and records the runner identity. Local

@@ -242,25 +242,11 @@ jobs:
           # Only the core source partition shares this runner with the package owner.
           AGENTERA_GENERATED_OVERLAP_SOURCE_WORKERS: "2"
           VITEST_TEST_TIMEOUT_MS: "120000"
-          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
-          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
           AGENTERA_SOURCE_PARTITION: core
+          # Stress, performance, and capacity run in verify-isolated-owners.
+          AGENTERA_ISOLATED_OWNERS: delegate
           AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
         run: vp run verify:development
-      # The private verification build is cleaned up; migration needs checkout dist.
-      - name: Build checkout CLI for migration
-        timeout-minutes: 1
-        run: vp run build
-      - name: Run v2→v3 migration scenarios
-        timeout-minutes: 2
-        env:
-          REPO_ROOT: ${{ github.workspace }}
-          AGENTERA_SANDBOX_TIER: L1
-        run: |
-          set -euo pipefail
-          for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
-            bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
-          done
       - name: Upload core verification evidence
         uses: actions/upload-artifact@v4
         timeout-minutes: 1
@@ -271,8 +257,55 @@ jobs:
           overwrite: true
           retention-days: 7
 
+  # The owners in verification-policy.yaml#isolated_owners run here, in series,
+  # with no other verification owner on this runner. Performance therefore runs
+  # alone on the authoritative runner while the core and shards run elsewhere.
+  verify-isolated-owners:
+    if: needs.publication-state.outputs.mode == 'build'
+    needs: publication-state
+    name: Verify development isolated owners
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+        timeout-minutes: 1
+        with:
+          ref: ${{ github.sha }}
+          fetch-depth: 0
+      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
+        timeout-minutes: 1
+        with:
+          node-version-file: .node-version
+          package-manager-cache: false
+      - name: Verified bootstrap and frozen install
+        timeout-minutes: 3
+        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
+      - name: Verify development isolated owners
+        timeout-minutes: 40
+        env:
+          AGENTERA_VITEST_RUNNER_POLICY: unmeasured
+          VITEST_TEST_TIMEOUT_MS: "120000"
+          AGENTERA_PERFORMANCE_RUNNER_CLASS: github-hosted-ubuntu-24.04
+          AGENTERA_PERFORMANCE_RUNNER_IDENTITY: ${{ runner.name }}
+          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
+        run: vp run verify:development:isolated
+      - name: Upload isolated owner verification evidence
+        uses: actions/upload-artifact@v4
+        timeout-minutes: 1
+        with:
+          name: agentera-verification-isolated
+          path: ${{ runner.temp }}/agentera-verification
+          if-no-files-found: error
+          overwrite: true
+          retention-days: 7
+
   # Every source file outside the core partition runs in exactly one shard.
   # The matrix size must equal verification-policy.yaml#source_partitions.shards.
+  # Shard 3 also builds the checkout CLI and runs the migration scenarios after
+  # its own verification passed: it was the fastest shard in hosted run
+  # 40109973358 (2 min 47 s against 3 min 24 s and 4 min 24 s).
   verify-source-shard:
     if: needs.publication-state.outputs.mode == 'build'
     needs: publication-state
@@ -306,6 +339,23 @@ jobs:
           AGENTERA_SOURCE_PARTITION: shard:${{ matrix.shard }}/3
           AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
         run: vp run verify:development:shard
+      # The private verification build is cleaned up; migration needs checkout dist.
+      # Without a status function, these steps also need every earlier step to pass.
+      - name: Build checkout CLI for migration
+        if: matrix.shard == 3
+        timeout-minutes: 1
+        run: vp run build
+      - name: Run v2→v3 migration scenarios
+        if: matrix.shard == 3
+        timeout-minutes: 2
+        env:
+          REPO_ROOT: ${{ github.workspace }}
+          AGENTERA_SANDBOX_TIER: L1
+        run: |
+          set -euo pipefail
+          for scenario in happy-path-clean stable-safety noisy-app-home codex-plugin-vs-copied partial-only-runtime; do
+            bash scripts/sandbox/v2v3-upgrade-harness.sh "$scenario"
+          done
       - name: Upload shard verification evidence
         uses: actions/upload-artifact@v4
         timeout-minutes: 1
@@ -316,47 +366,15 @@ jobs:
           overwrite: true
           retention-days: 7
 
-  # The implicit success() condition skips assembly when any partition failed,
-  # was cancelled, or was skipped, and the skip carries into build-development.
-  assemble-development-verification:
-    if: needs.publication-state.outputs.mode == 'build'
-    needs: [publication-state, verify-development, verify-source-shard]
-    name: Assemble development verification
-    runs-on: ubuntu-24.04
-    timeout-minutes: 8
-    permissions:
-      contents: read
-    steps:
-      - uses: actions/checkout@v5
-        timeout-minutes: 1
-        with:
-          ref: ${{ github.sha }}
-      - uses: actions/setup-node@53b83947a5a98c8d113130e565377fae1a50d02f # v6.3.0; trusted Node/npm prerequisite
-        timeout-minutes: 1
-        with:
-          node-version-file: .node-version
-          package-manager-cache: false
-      - name: Verified bootstrap and frozen install
-        timeout-minutes: 3
-        run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
-      - name: Download partition verification evidence
-        uses: actions/download-artifact@v4
-        timeout-minutes: 1
-        with:
-          pattern: agentera-verification-*
-          path: ${{ runner.temp }}/agentera-verification
-          merge-multiple: true
-      - name: Assemble development verification
-        timeout-minutes: 2
-        env:
-          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
-        run: vp run verify:development:assemble
-
+  # The implicit success() condition skips this job when any verification
+  # partition failed, was cancelled, or was skipped, so no candidate is built,
+  # uploaded, or published. Assembly then runs before version allocation and
+  # construction, and only when this job's own history read selects a build.
   build-development:
-    needs: assemble-development-verification
+    needs: [publication-state, verify-development, verify-isolated-owners, verify-source-shard]
     name: Build and classify development candidate
     runs-on: ubuntu-24.04
-    timeout-minutes: 8
+    timeout-minutes: 11
     permissions:
       contents: read
       actions: read
@@ -380,6 +398,20 @@ jobs:
         if: steps.history.outputs.mode == 'build'
         timeout-minutes: 3
         run: node packages/cli/scripts/bootstrap-integrity.mjs --ignore-scripts
+      - name: Download partition verification evidence
+        if: steps.history.outputs.mode == 'build'
+        uses: actions/download-artifact@v4
+        timeout-minutes: 1
+        with:
+          pattern: agentera-verification-*
+          path: ${{ runner.temp }}/agentera-verification
+          merge-multiple: true
+      - name: Assemble development verification
+        if: steps.history.outputs.mode == 'build'
+        timeout-minutes: 2
+        env:
+          AGENTERA_SOURCE_PARTITION_DIRECTORY: ${{ runner.temp }}/agentera-verification
+        run: vp run verify:development:assemble
       - name: Allocate candidate development version
         if: steps.history.outputs.mode == 'build'
         id: version

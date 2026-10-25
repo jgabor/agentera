@@ -24,6 +24,7 @@ const requiredFreshNames = [
   "verify",
   "verify:development",
   "verify:development:shard",
+  "verify:development:isolated",
   "verify:development:assemble",
   "typecheck",
   "typecheck:fresh",
@@ -275,7 +276,7 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     const manifest = JSON.parse(fs.readFileSync(path.join(repo, "package.json"), "utf8"));
     expect(manifest.scripts).toBeUndefined(); // Task/script names cannot overlap.
     expect(Object.keys(tasks).sort()).toEqual([...freshNames, "_typecheck:cached"].sort());
-    expect(requiredFreshNames).toHaveLength(23);
+    expect(requiredFreshNames).toHaveLength(24);
     for (const name of freshNames) {
       expect(tasks[name], name).toMatchObject({ cache: false, command: expect.any(String) });
     }
@@ -294,6 +295,9 @@ expect(value).toBe(Number(process.env.EXPECTED ?? 1));
     });
     expect(tasks["verify:development:shard"]).toMatchObject({
       command: `${managedNode} pnpm -C packages/cli run verify:development:shard`,
+    });
+    expect(tasks["verify:development:isolated"]).toMatchObject({
+      command: `${managedNode} pnpm -C packages/cli run verify:development:isolated`,
     });
     expect(tasks["verify:development:assemble"]).toMatchObject({
       command: `${managedNode} pnpm -C packages/cli run verify:development:assemble`,

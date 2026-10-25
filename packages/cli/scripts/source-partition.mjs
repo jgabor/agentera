@@ -4,6 +4,7 @@
 // membership: core plus every shard is always the exact source inventory.
 
 export const SOURCE_PARTITION_ENVIRONMENT = "AGENTERA_SOURCE_PARTITION";
+export const ISOLATED_OWNERS_ENVIRONMENT = "AGENTERA_ISOLATED_OWNERS";
 
 export function sourcePartitionErrors(partitions, sourceFiles, requiredCoreFiles = []) {
   if (partitions === undefined) return [];
@@ -60,4 +61,13 @@ function shardAssignments(sourceFiles, partitions) {
 export function sourcePartitionFiles(sourceFiles, partitions, partition) {
   if (partition.kind === "core") return [...partitions.core].sort();
   return shardAssignments(sourceFiles, partitions)[partition.index - 1];
+}
+
+// The isolated-owner partition moves whole owners, not source files: the core
+// delegates verification-policy.yaml#isolated_owners to one other runner.
+export function parseIsolatedOwnersDelegation(value, isolatedOwners) {
+  if (value === undefined || value === "") return undefined;
+  if (isolatedOwners === undefined) throw new Error(`${ISOLATED_OWNERS_ENVIRONMENT} requires verification-policy.yaml#isolated_owners`);
+  if (value !== "delegate") throw new Error(`${ISOLATED_OWNERS_ENVIRONMENT} must be 'delegate', not ${JSON.stringify(value)}`);
+  return [...isolatedOwners];
 }

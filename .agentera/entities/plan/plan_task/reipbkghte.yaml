@@ -1,0 +1,23 @@
+id: reipbkghte
+artifact: plan
+record:
+  name: Run package-owner test files in parallel safely
+  depends_on:
+    []
+  status: complete
+  acceptance:
+    - GIVEN the package owner runs several test files at once on a 4-CPU host while the core source partition also runs WHEN it completes THEN every package test passes in three consecutive runs.
+    - GIVEN the same conditions WHEN its wall time is compared with one file at a time THEN it is at most 75 percent of the one-file time.
+    - GIVEN parallel package files WHEN the package owner finishes THEN its activation package evidence, identity and snapshot match what one file at a time produces for the same source.
+    - GIVEN the cause found for the parallel failure WHEN its tests run THEN one test proves the fixed behavior holds and one proves the original failure mode is detected.
+  plan: gtivhdjwkw
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "orchestration workflow wf_e99597d9-258: acceptance and evidence-and-regressions audits both PASS; 75 percent target met by median and mean only"
+      recorded_at: 2026-10-24 21:41
+      writer_command: agentera state plan record-evaluation

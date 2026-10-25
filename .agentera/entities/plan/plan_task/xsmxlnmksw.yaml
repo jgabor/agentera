@@ -1,0 +1,27 @@
+id: xsmxlnmksw
+artifact: plan
+record:
+  name: Verify the isolated owners as their own partition
+  depends_on:
+    []
+  status: superseded
+  acceptance:
+    - GIVEN development CI selects the isolated-owner partition WHEN it runs THEN stress, then performance alone with no other verification owner on the host, then capacity pass, each against its own complete inventory.
+    - GIVEN the core partition runs with isolated owners delegated WHEN it finishes THEN it reports a partial result that names the delegated gates, and its read-only validators still run on its private build.
+    - GIVEN assembly WHEN the isolated-owner result is missing, failed, or from another source identity THEN assembly fails and names it; WHEN every partition passed THEN the assembled result lists every governed gate exactly once in governed order, takes performance evidence and timings from the isolated partition, and its timings reconcile.
+    - GIVEN no partition settings, full qualification, or a receipt request WHEN verification runs THEN it behaves exactly as before, and the full and development gate identities are unchanged.
+    - GIVEN the change WHEN its tests run THEN one passing and one failing case cover each new acceptance and refusal rule.
+  plan: gtivhdjwkw
+  evaluation:
+    attempt_count: 2
+    failure_count: 2
+    last_verdict: fail
+    last_failure_evidence: "Mutants survive with all tests green: isolated over-budget and no-safe-window refusals (clock fixed at 0), isolated.json no-overwrite, validateIsolatedOwners schemaVersion, profile, negative elapsedMs, inventoryFiles integer and below-one checks. Low: delegating core execution can carry performance and capacity keys into assembly; latency advisory accepts arrays and empty objects."
+    provenance:
+      attempt_id: audit-2
+      source: "re-audit after rework: acceptance FAIL on criterion 5 (mutation testing), evidence-and-regressions PASS"
+      recorded_at: 2026-10-24 22:12
+      writer_command: agentera state plan record-evaluation
+  superseded_by:
+    - jxdrsspnvj
+  superseded_reason: Blocked after two failed audits; the user authorized replacement with the attempt-3 work that passed re-audit

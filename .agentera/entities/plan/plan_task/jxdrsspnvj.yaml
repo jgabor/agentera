@@ -1,0 +1,24 @@
+id: jxdrsspnvj
+artifact: plan
+record:
+  plan: gtivhdjwkw
+  name: Verify the isolated owners as their own partition (replacement)
+  status: complete
+  depends_on:
+    []
+  acceptance:
+    - GIVEN development CI selects the isolated-owner partition WHEN it runs THEN stress, then performance alone with no other verification owner on the host, then capacity pass, each against its own complete inventory.
+    - GIVEN the core partition runs with isolated owners delegated WHEN it finishes THEN it reports a partial result that names the delegated gates, and its read-only validators still run on its private build.
+    - GIVEN assembly WHEN the isolated-owner result is missing, failed, or from another source identity THEN assembly fails and names it; WHEN every partition passed THEN the assembled result lists every governed gate exactly once in governed order, takes performance evidence and timings from the isolated partition, and its timings reconcile.
+    - GIVEN no partition settings, full qualification, or a receipt request WHEN verification runs THEN it behaves exactly as before, and the full and development gate identities are unchanged.
+    - GIVEN the change WHEN its tests run THEN one passing and one failing case cover each new acceptance and refusal rule.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: "replacement for xsmxlnmksw, user-authorized: attempt 3 acceptance re-audit PASS (33 of 34 mutants killed, survivor outcome-equivalent) plus regressions audit PASS on the same delegated-off path"
+      recorded_at: 2026-10-24 22:24
+      writer_command: agentera state plan record-evaluation

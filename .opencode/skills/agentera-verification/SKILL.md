@@ -85,6 +85,11 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   `vp run verify:development:assemble` passes only when every partition passed
   and together they cover the exact source inventory once. Receipts and
   `vp run verify` refuse a partition.
+- The core can also delegate `verification-policy.yaml#isolated_owners` with
+  `AGENTERA_ISOLATED_OWNERS=delegate`. It then skips stress, performance, and
+  capacity, and `vp run verify:development:isolated` runs them on a host with
+  no other verification owner. Assembly then requires that part for the same
+  source identity. Receipts, `vp run verify`, and shards refuse delegation.
 - `vp run verify` is full qualification: the same eleven gates with five cold
   performance repetitions. Its failures stay visible.
 

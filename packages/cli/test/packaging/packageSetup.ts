@@ -12,6 +12,7 @@ import { waitForVerificationBarrier } from "../../scripts/verification-barrier.m
 import { createPackageTimingRecorder } from "../../scripts/package-verification-timing.mjs";
 import { DEVELOPMENT_RUNTIME_REQUIRED_FILES } from "../../src/core/developmentInvocation.js";
 import { finalizePackageOwnerEvidence, writeContentAddressedOwnerEvidence, writeContentAddressedPackageIdentity } from "../../src/validate/activationArtifactEvidence.js";
+import { sharedTreeStamp, type SharedTreeStamp } from "../helpers/packageFixtureIsolation.js";
 
 export interface PackFile {
   path: string;
@@ -295,11 +296,14 @@ export async function createPackageFixture(): Promise<{
 export default async function setup({ provide }: GlobalSetupContext): Promise<() => void> {
   const { fixture, cleanup } = await createPackageFixture();
   provide("packageFixture", fixture);
+  // Stamped after activation evidence, so the guard sees only test-time changes.
+  provide("packageFixtureStamp", sharedTreeStamp([fixture.packageRoot, fixture.constructionRoot]));
   return cleanup;
 }
 
 declare module "vitest" {
   export interface ProvidedContext {
     packageFixture: PackageFixture;
+    packageFixtureStamp: SharedTreeStamp;
   }
 }

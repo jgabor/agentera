@@ -1,0 +1,45 @@
+id: gtivhdjwkw
+artifact: plan
+record:
+  header:
+    level: full
+    created: 2026-10-24
+    status: open
+    reviewed: 2026-10-24
+    critic_issues: 10 found, 10 addressed, 0 dismissed
+    title: "Plan: Shorten the development verification core job"
+  what: Cut the development publish run's core verification job from about 10.5 minutes to 6 minutes or less by running the package owner's test files in parallel, moving the stress, performance and capacity owners to their own runner, moving the checkout build and migration scenarios off the core, and folding assembly into the candidate build job.
+  why: After the source split, the core job is the critical path of every publish run. The package owner takes 460 seconds on it because its seven test files run one at a time on a runner shared with stress and the core source partition, and the performance and capacity owners then add about 90 seconds in series. Faster runs shorten the wait for every push to feat/v3.
+  constraints: "Keep every guarantee the development conjunction gives today: the complete gate set, exact source inventory coverage, the single declared skip, activation evidence from one host, the package owner's 600 second budget, the performance owner running alone on the authoritative runner, and the rule that no candidate is built, uploaded or published unless every verification partition passed. The full and development gate identities stay byte-identical. Local vp run verify:development without partition settings keeps running the whole DAG on one host, and receipts and full qualification keep refusing any partial run. Nothing lands on feat/v3 before the hosted measurement, and the change lands in one push. Each branch push, each rerun push and the landing push need separate explicit user authorization."
+  overall_acceptance: GIVEN a push to feat/v3 WHEN the publish workflow runs THEN it passes with every governed development gate accounted for exactly once, the core verification job takes 360 seconds or less, the run takes 9.5 minutes or less from creation to confirmed availability, and it publishes and confirms the package as before.
+  scope:
+    included:
+      - Parallel package-owner test files on the core runner, after finding and fixing why parallel files fail today
+      - A separate isolated-owner runner for stress, performance and capacity, whose results assembly requires
+      - Moving the checkout CLI build and v2 to v3 migration scenarios from the core job to one shard job
+      - Running assembly inside the candidate build job instead of a separate job
+      - Contract, policy, decision, guide and pinning-test updates for the new layout
+      - Hosted measurement through a temporary branch-only workflow that mirrors the publish verification jobs
+    excluded:
+      - Building the candidate tarball while verification runs, because it would upload a candidate before verification passes
+      - Splitting package test files across runners
+      - Adding source shards or splitting slow source test files
+      - Moving the npm availability confirmation out of the run
+      - Larger or paid runners and dependency caches
+      - Any change to full qualification, receipts or their gate identity
+    deferred:
+      - Package test sharding across runners with cross-host tarball equality
+      - Separating the runtime bootstrap matrix evidence test from the rest of its file
+  design: "First make the package owner safe and faster on one host, because it is the largest single cost and independent of the job layout. Then add an opt-in isolated-owner partition to the development distribution, mirroring source shards: the core keeps the private build, package owner, activation evidence and read-only validators, and assembly replaces the cross-owner barrier ordering with a requirement that every partition passed. The partition stays inactive until the workflow selects it, so local verification and full qualification are unchanged. Then wire the workflow and its pinning tests, measure on GitHub through a temporary branch workflow, and tune worker and runner counts from that evidence. Only then update the prose authorities and land everything in one push."
+  unknowns:
+    - question: "Why does the packaged project-migration journey fail when package test files run in parallel: shared state, CPU oversubscription, or a timeout?"
+      affects_task: 1
+      resolve_by: Reproduce on 4 CPUs with the core source partition competing, trace the failing doctor output, and fix the cause before choosing a worker count.
+    - question: How many parallel package files does the 4-vCPU core runner sustain within the 600 second budget and test timeouts?
+      affects_task: 4
+      resolve_by: Use the hosted measurement in task 4 and lower the worker count if the package owner slows or times out.
+    - question: Do stress, performance and capacity in series on one runner finish before the core, or do they need two runners?
+      affects_task: 4
+      resolve_by: Use the hosted measurement in task 4 and split the isolated owners only if they become the critical path.
+  surprises:
+    []

@@ -598,6 +598,44 @@ describe("source qualification DAG", () => {
     expect(batches).toEqual([["generated-overlap", "stress", "typecheck"], ["performance"]]);
   });
 
+  it("runs a delegating core without stress, performance or capacity but keeps barrier B on its private build", async () => {
+    const batches: string[][] = [];
+    const qualification = await runSourceQualificationDag({
+      profile: "development",
+      clock: () => 0,
+      delegatedGates: ["stress", "performance", "capacity"],
+      readGeneratedState: () => ({ generation: "generation-a", leases: [] }),
+      runConcurrent: async (specifications: any[]) => {
+        batches.push(specifications.map(({ name }) => name));
+        return Object.fromEntries(specifications.map((specification) => [specification.name, result(specification.name, specification)]));
+      },
+    });
+    expect(batches).toEqual([
+      ["generated-overlap", "typecheck"],
+      ["compact", "capability-contract", "activation-conjunction"],
+    ]);
+    expect(qualification.gates.map((entry: any) => entry.name)).toEqual(GATES.map((entry: any) => entry.name).filter((name: string) => !["stress", "performance", "capacity"].includes(name)));
+    expect(qualification.execution).toMatchObject({ delegatedGates: ["stress", "performance", "capacity"], reconciled: true });
+    expect(qualification.execution).not.toHaveProperty("performanceElapsedMs");
+    expect(qualification.execution).not.toHaveProperty("capacityElapsedMs");
+  });
+
+  it("blocks barrier B on a delegating core after a batch A failure", async () => {
+    const batches: string[][] = [];
+    await expect(
+      runSourceQualificationDag({
+        profile: "development",
+        clock: () => 0,
+        delegatedGates: ["stress", "performance", "capacity"],
+        runConcurrent: async (specifications: any[]) => {
+          batches.push(specifications.map(({ name }) => name));
+          throw ownerError("typecheck", "typecheck failed");
+        },
+      }),
+    ).rejects.toMatchObject({ owner: "typecheck" });
+    expect(batches).toEqual([["generated-overlap", "typecheck"]]);
+  });
+
   it("keeps the parent-owned overlap root through barrier B and removes it after the DAG", async () => {
     const ownerRoots: string[] = [];
     let overlapRoot = "";

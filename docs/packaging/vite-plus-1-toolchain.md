@@ -251,11 +251,38 @@ This is not a version-only causal benchmark. Baseline and candidate used separat
 host instances, and source allocation changed from two workers to one.
 Source and package ran together, so their durations are not additive.
 
-Package verification keeps one Vitest worker while allowing at most four
-independent journey scenarios together. This is distinct from source-worker
-allocation. Each journey owns its project/home and keeps command order and
-assertions. Cancellation drains children and settles the test body before
-fixture deletion; asynchronous cleanup must not race still-running work.
+Package verification runs three Vitest workers, each allowing at most two
+concurrent tests. This is distinct from source-worker allocation. Each journey
+owns its project/home and keeps command order and assertions. Cancellation
+drains children and settles the test body before fixture deletion; asynchronous
+cleanup must not race still-running work.
+
+Every package file executes the same extracted package and construction root,
+so no test may change either one. A test that needs a broken or standalone
+package changes a private copy from `test/helpers/packageFixtureIsolation.ts`.
+A package-only setup file fails any test after which an entry in either shared
+root has a different inode, mode, size, or time, which also catches a change
+whose bytes were restored. Before this, two package files swapped the shared
+`node_modules` link and rewrote bundled authorities in place. That was safe
+only while one worker ran files one at a time. At three workers, journeys in
+other files failed with `Cannot find module './compose/composer.js'` from a
+half-copied `yaml` and with startup-failure JSON instead of Doctor health.
+
+Measured on CPUs 0-3 of the Ryzen 7 9800X3D host with Node 24.22.0, while the
+core source partition files ran repeatedly beside the owner, three interleaved
+pairs took 192.8, 154.7, and 163.6 seconds before the change (one worker, four
+concurrent tests) and 110.3, 117.6, and 112.9 seconds after it. The medians are
+163.6 and 112.9 seconds (69 percent); the per-pair ratios were 57, 76, and 69
+percent, so host noise is large. The repeated source files ran slower beside
+the parallel owner: their first runs took about 28 to 45 seconds, with one
+outlier at 83 seconds, instead of about 16 to 24. Four concurrent tests per
+worker were not faster. An explicit `VITEST_MAX_WORKERS` now also sets the
+package owner's worker count; verification sets it only for the source
+participant, so the package owner keeps three workers there. In a direct
+Vitest run at three workers and four concurrent tests each, on CPUs 0-3 with
+no competing source files, the sequential
+`packageVerification.test.ts` file is the long pole and took 139 of the 146
+seconds, while eight journey processes shared the four CPUs with it.
 
 The migration-only comparison workflow and its dedicated test are retired; the
 linked run remains historical qualification evidence. Ordinary `publish.yml`
@@ -263,7 +290,8 @@ development verification later split source into a core partition and three
 shards on separate runners (see
 [v3 packaging](v3-packaging.md#preparation-verification-and-publication)). The core runs two source
 workers beside the package owner; shards use the four-worker default.
-Local source defaults and the package's one-worker allocation stay unchanged.
+Local source defaults stayed unchanged. The package owner later moved from one
+worker to three, as described above.
 The policy now allows 600 seconds for the whole package owner, explicitly
 authorized after publication run [37080534700](https://github.com/jgabor/agentera/actions/runs/37080534700)
 passed package tests but exceeded the former limit at 551.062 seconds.

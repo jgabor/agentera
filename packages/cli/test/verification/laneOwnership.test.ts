@@ -121,6 +121,16 @@ function packageTimingFixture() {
   return setup;
 }
 
+// Records the partition and delegation variables each owner child receives.
+function environmentProbeFixture() {
+  const setup = fixture();
+  fs.writeFileSync(
+    path.join(setup.bin, "vp"),
+    `#!/bin/sh\nprintf '{"owner":"%s","partition":"%s","directory":"%s","isolated":"%s","sentinel":"%s"}\\n' "$AGENTERA_VERIFICATION_OWNER" "$AGENTERA_SOURCE_PARTITION" "$AGENTERA_SOURCE_PARTITION_DIRECTORY" "$AGENTERA_ISOLATED_OWNERS" "$AGENTERA_LANE_SENTINEL" >> "${setup.record}"\n`,
+  );
+  return setup;
+}
+
 function run(args: string[], setup = fixture(), extraEnv: Record<string, string> = {}) {
   const result = spawnSync(process.execPath, [RUNNER, ...args], {
     cwd: PACKAGE_ROOT,
@@ -204,6 +214,17 @@ describe("verification lane ownership", () => {
     expect(runs[0]).toMatchObject({ owner });
     expect(runs[0].args).toContain(`${owner}.config.ts`);
     expect(runs[0].args).toContain(owner === "package" ? "test/packaging/package.test.ts" : owner === "capacity" ? "test/capacity/capacity.test.ts" : `test/${owner}.test.ts`);
+  });
+
+  it.each(["stress", "performance", "capacity"])("strips partition and owner delegation from the %s owner child but keeps other variables", (owner) => {
+    const { result, runs } = run([owner], environmentProbeFixture(), {
+      AGENTERA_SOURCE_PARTITION: "core",
+      AGENTERA_SOURCE_PARTITION_DIRECTORY: "/unused/partition-directory",
+      AGENTERA_ISOLATED_OWNERS: "delegate",
+      AGENTERA_LANE_SENTINEL: "kept",
+    });
+    expect(result.status, result.stderr).toBe(0);
+    expect(runs).toEqual([{ owner, partition: "", directory: "", isolated: "", sentinel: "kept" }]);
   });
 
   it("emits a structured full-owner result without replacing the owned inventory", () => {
