@@ -56,15 +56,9 @@ export function finalizeStatusCapabilityContextPayload(payload: Record<string, u
   // --fields shared_skill. Do not trim instructions or static detail actions.
   const { message: _message, path: _path, details: _details, ...sharedSkill } = state.shared_skill;
   payload.shared_skill = { ...sharedSkill, detail_availability: "summary" };
-  // The instructions are already delivered in full. Repeating their loader
-  // paths, provenance and first-read explanation is not dashboard state.
-  const firstRead = context.first_invocation_read as Record<string, unknown> | undefined;
-  if (firstRead)
-    context.first_invocation_read = {
-      value: firstRead.value,
-      startup_command: firstRead.startup_command,
-      runtime_enforcement: firstRead.runtime_enforcement,
-    };
+  // The instructions are already delivered in full, so metadata telling the
+  // agent to read this capsule is not dashboard state.
+  delete context.first_invocation_read;
   context.status_context = buildStatusContextState(state, command, {
     budgetBytes: PRIME_BRIEF_MAX_UTF8_BYTES,
     degradedMode: "status_routing",

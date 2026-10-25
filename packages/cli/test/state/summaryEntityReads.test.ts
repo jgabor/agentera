@@ -415,7 +415,6 @@ describe("summary entity ordinary reads", () => {
       id: "jjjjjjjjjj",
       grade: "A",
       worst: ["architecture_alignment", "A", 0],
-      trajectory: "stable",
       degrading: false,
     });
     expectStatusWithinBudget(status.out);

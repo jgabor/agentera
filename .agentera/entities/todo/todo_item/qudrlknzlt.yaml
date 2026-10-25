@@ -1,0 +1,23 @@
+id: qudrlknzlt
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Keep the vision north star short when the vision capability writes it.
+  requirements:
+    - Status shows the whole north_star on one line and never cuts it, so its length is bounded where it is written.
+    - The vision capability states and validates a length bound for north_star.
+  acceptance:
+    - A north_star past the bound fails vision validation with a clear message.
+    - The status north-star line stays within the status state budget's 40-token allowance for a valid vision.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Keep the vision north star short when the vision capability writes it."
+      severity: normal
+      status: open
+      order: 50

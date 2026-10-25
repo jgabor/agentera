@@ -159,6 +159,12 @@ function runStatus(): { rc: number; out: string; err: string; payload: Record<st
   return { ...result, payload: JSON.parse(result.out) as Record<string, any> };
 }
 
+function runPrime(args: string[]): string {
+  let out = "";
+  expect(main(["node", "agentera", ...args], { out: (text) => (out += text), err: () => undefined })).toBe(0);
+  return out;
+}
+
 function statusState(payload: Record<string, any>): Record<string, any> {
   return payload.capability_context.context.status_context;
 }
@@ -309,11 +315,9 @@ describe("status capability self-contained startup", () => {
     expect(JSON.parse(preview).status).toBe("pending");
     expect(fs.existsSync(host)).toBe(false);
     expect(result.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
-    expect(result.payload.capability_context.context.first_invocation_read).toEqual({
-      value: "prime_context",
-      startup_command: "npx -y agentera@next prime --context status",
-      runtime_enforcement: true,
-    });
+    // The capsule already carries its instructions, so it drops the metadata
+    // telling the agent to read it.
+    expect(result.payload.capability_context.context).not.toHaveProperty("first_invocation_read");
   });
 
   it("keeps unsafe ownership risks and recovery while sparse continuations recover omitted accounting and alternatives", () => {
@@ -588,7 +592,7 @@ describe("status capability self-contained startup", () => {
     expect(state.profile).toBeUndefined();
     expect(state.next_action).toBeDefined();
     expect(state.attention).toBeDefined();
-    expect(state.state_presence).toBeDefined();
+    expect(state).not.toHaveProperty("state_presence");
     expect(state.outcome).toBe(capsule.startup.outcome);
     expect(result.payload.runtime_lifecycle).toBeUndefined();
     expect(result.payload.shared_skill).toBeDefined();
@@ -625,7 +629,7 @@ describe("status capability self-contained startup", () => {
         },
       ]),
     );
-    expect(capsule.context).toHaveProperty("first_invocation_read");
+    expect(capsule.context).not.toHaveProperty("first_invocation_read");
     expect(capsule.context).toHaveProperty("schema_error");
     expect(state.project_integration).not.toHaveProperty("phases");
     expect(state.project_integration).not.toHaveProperty("guidance");
@@ -738,15 +742,19 @@ describe("status capability self-contained startup", () => {
       degraded: 1,
       normal: 21,
       annoying: 0,
-      detail: { total: 23, returned: 20, omitted: 3 },
     });
+    // TODO detail and its continuation belong to the todo detail read, not
+    // the dashboard state.
+    expect(state.todo).not.toHaveProperty("detail");
+    const todoDetail = JSON.parse(runPrime(["prime", "--fields", "todo"])).todo.detail;
+    expect(todoDetail).toMatchObject({ total: 23, returned: 20, omitted: 3 });
     expect(state.attention).toContain("critical: Critical open · → TODO zzzzzzzzzz · open");
     expect(state.next_action).toMatchObject({
       object: "Critical open · → TODO zzzzzzzzzz · actionable",
       capability: "build",
     });
 
-    const recovery = state.todo.detail.retrieval.continue as string;
+    const recovery = todoDetail.retrieval.continue as string;
     expect(recovery).toMatch(/^agentera state todo list --status 'open' --limit 20 --cursor \S+$/);
     const cursor = recovery.match(/--cursor (\S+)$/)?.[1];
     expect(cursor).toBeTruthy();
@@ -774,7 +782,7 @@ describe("status capability self-contained startup", () => {
     const state = statusState(result.payload);
 
     expect(result.rc).toBe(0);
-    expect(state.todo.detail).toMatchObject({ total: 22, returned: 20, omitted: 2 });
+    expect(JSON.parse(runPrime(["prime", "--fields", "todo"])).todo.detail).toMatchObject({ total: 22, returned: 20, omitted: 2 });
     expect(state.next_action).toMatchObject({
       id: "zzzzzzzzzz",
       artifact: "todo",
@@ -816,10 +824,11 @@ describe("status capability self-contained startup", () => {
       degraded: 20,
       normal: 0,
       annoying: 0,
-      detail: { total: 20, returned: 20, omitted: 0 },
     });
-    expect(state.todo.detail.retrieval.get).toBe("agentera state todo get --id ID");
-    expect(state.todo.detail.retrieval).not.toHaveProperty("continue");
+    const todoDetail = JSON.parse(runPrime(["prime", "--fields", "todo"])).todo.detail;
+    expect(todoDetail).toMatchObject({ total: 20, returned: 20, omitted: 0 });
+    expect(todoDetail.retrieval.get).toBe("agentera state todo get --id ID");
+    expect(todoDetail.retrieval).not.toHaveProperty("continue");
   });
 
   it("keeps fresh and returning mode, while incomplete state names CLI-first recovery", () => {
@@ -827,14 +836,14 @@ describe("status capability self-contained startup", () => {
     const freshDashboard = renderStatusDashboard(statusState(fresh.payload));
     expect(freshDashboard.mode).toBe("fresh");
     expect(freshDashboard.project_integration).toBeDefined();
-    expect(statusState(fresh.payload).state_presence.any_active).toBe(false);
+    expect(statusState(fresh.payload).plan.active).toBe(false);
 
     writeProjectFile(".agentera/state-mode.yaml", "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
     writeProjectFile(".agentera/entities/progress/progress_cycle/aaaaaaaaaa.yaml", ["id: aaaaaaaaaa", "artifact: progress", "record:", "  timestamp: 2026-07-16 00:00", "  type: test", "  phase: build", "  what: returning", "  context:", "    intent: exercise returning status", ""].join("\n"));
     const returning = runStatus();
     const returningDashboard = renderStatusDashboard(statusState(returning.payload));
     expect(returningDashboard.mode).toBe("returning");
-    expect(statusState(returning.payload).state_presence.available.progress).toBe(true);
+    expect(statusState(returning.payload).progress.exists).toBe(true);
     expect(returning.payload.capability_context.startup.raw_artifact_read_policy).toContain("included bounded state");
     expect(returning.payload.capability_context.startup.availability).toEqual(expect.any(Array));
   });

@@ -1,0 +1,24 @@
+id: rduzoccwod
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Serve attention as structured items on every startup surface.
+  requirements:
+    - Attention arrives as structured items (severity, family, id, short title, reason) in bare prime, routed starts, text output and status_context alike, from one builder.
+    - Bookkeeping such as "confidence firm; satisfaction unavailable" stays out of attention items.
+    - String matching on attention (the glossary slot reservation and the unsafe_inactive rewrite) moves to item fields.
+  acceptance:
+    - Every startup surface emits the same attention item shape, and tests pin it and its trimming.
+    - No attention item carries decision confidence or satisfaction bookkeeping.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Serve attention as structured items on every startup surface."
+      severity: normal
+      status: open
+      order: 49

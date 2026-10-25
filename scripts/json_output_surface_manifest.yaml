@@ -62,9 +62,9 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 26000
+  byte_budget: 25000
   instruction_byte_budget: 12000
-  state_byte_budget: 14000
+  state_byte_budget: 13000
   state_target_byte_budget: 7600
   token_budget: 4000
   instruction_token_budget: 2000
@@ -82,9 +82,9 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 26000
+  byte_budget: 25000
   instruction_byte_budget: 12000
-  state_byte_budget: 14000
+  state_byte_budget: 13000
   state_target_byte_budget: 7600
   token_budget: 4000
   instruction_token_budget: 2000
@@ -161,9 +161,9 @@ surfaces:
   # only by the removed_3_0 row above.
   budget_by_capability:
     status:
-      byte_budget: 26000
+      byte_budget: 25000
       instruction_byte_budget: 12000
-      state_byte_budget: 14000
+      state_byte_budget: 13000
       state_target_byte_budget: 7600
       token_budget: 4000
       instruction_token_budget: 2000
@@ -224,7 +224,7 @@ surfaces:
   # its own).
   budget_by_carried:
     status:
-      byte_budget: 30000
+      byte_budget: 29000
       token_budget: 5000
       instruction_budget_enforcement: deferred_to_status_rewrite
     capability:

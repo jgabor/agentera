@@ -7,7 +7,7 @@ record:
   requirements:
     - The vision, discuss and design capsules each carry about 20 KB of TODO data from capabilityContext/startup.ts.
     - Optimize declares `benchmark_context` as a consumed artifact, so its availability row falls back to `schema` as its detail command.
-    - Every capsule repeats about 900 bytes of `first_invocation_read` metadata telling the agent to read the capsule it is reading.
+    - The status capsule is already fitted; shared metadata such as first_invocation_read is reviewed under TODO ozhcboueiy.
   acceptance:
     - Each included family is used by the capability's instructions, and each availability row names a real reader.
   release_blocker: false

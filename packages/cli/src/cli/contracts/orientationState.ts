@@ -252,4 +252,6 @@ export interface OrientationState {
   next_action: ReadinessHint;
   attention: string[];
   history: Record<string, StartupHistorySummary>;
+  /** The vision's north star on one line, or null without a vision. */
+  north_star?: string | null;
 }

@@ -22,4 +22,4 @@ record:
       description: "[feat:3.0.0] Rewrite the status capability instructions per its second audit."
       severity: normal
       status: open
-      order: 48
+      order: 47

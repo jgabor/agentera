@@ -153,6 +153,17 @@ function freshness(text: string, env: Env): ProfileFreshnessResult {
   };
 }
 
+/** Days before the stale threshold when a valid profile reads as expiring. */
+export const PROFILE_EXPIRING_WINDOW_DAYS = 2;
+
+/** The one profile freshness value status shows: null while the profile is
+ *  current, unknown or absent. The CLI owns the window. */
+export function profileFreshnessSignal(validity: ProfileValidityResult, freshness: ProfileFreshnessResult): "expiring" | "expired" | null {
+  if (validity.status !== "valid" || freshness.days_since_generated === null || freshness.state === "unknown") return null;
+  if (freshness.state === "stale") return "expired";
+  return freshness.days_since_generated >= freshness.stale_threshold_days - PROFILE_EXPIRING_WINDOW_DAYS ? "expiring" : null;
+}
+
 function result(profilePath: string | null, env: Env, status: ProfileValidityStatus, validityClass: ProfileValidityClass, recovery: string | null): ProfileAcquisitionResult {
   return {
     validity: { status, class: validityClass, recovery },

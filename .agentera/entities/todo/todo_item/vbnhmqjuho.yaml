@@ -14,12 +14,16 @@ record:
     - Tests pin the attention item shape and the profile expiring state.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Serve status_context as data the dashboard renders without interpretation."
+      status: resolved
+      order: 177
       severity: normal
-      status: open
-      order: 47
+  lifecycle:
+    operation: resolve
+    reason: status_context carries the whole north star, profile freshness (expiring or expired) and at most one unused-capability hint; conditions arrive only as attention or next_action; structured attention moved to TODO rduzoccwod
+    date: 2026-10-25

@@ -4,7 +4,7 @@ import path from "node:path";
 
 import { summarizeProjectIntegration } from "../../../upgrade/projectIntegration.js";
 import type { SchemaInfo } from "../../appContext.js";
-import { selectStatusReadiness, statePresence } from "../../orientation.js";
+import { registryArtifactPath, selectStatusReadiness, statePresence } from "../../orientation.js";
 import { buildOrientationAttention } from "../../orientation/attention.js";
 import { readUnfinishedWork, resumeNextAction } from "../../orientation/unfinishedWork.js";
 import { corpusCoverageSummary } from "../../orientation/corpusCoverage.js";
@@ -21,6 +21,7 @@ import { preCutoverCommand } from "../../preCutoverCommand.js";
 import { projectMigrationOffer } from "../../../upgrade/projectMigrationOffer.js";
 import { entityStateMarkerPath } from "../../../state/stateMode.js";
 import { freshInitNextAction } from "../../migrationRequired.js";
+import { loadArtifact } from "../../stateQuery.js";
 
 const EMPTY_SCHEMAS: Record<string, SchemaInfo> = Object.freeze({});
 
@@ -201,7 +202,24 @@ export function collectOrientationState(opts: PrimeOpts): OrientationState {
     next_action: nextAction,
     attention,
     history,
+    north_star: readNorthStar(schemasDir),
   };
+}
+
+/** The vision's north star as one line: whitespace runs collapse to single
+ *  spaces and nothing is cut. A missing or unreadable vision yields null. */
+function readNorthStar(schemasDir: string): string | null {
+  let visionPath: string;
+  try {
+    visionPath = registryArtifactPath("vision", schemasDir, process.env, { warn: false });
+  } catch {
+    return null;
+  }
+  const vision = loadArtifact(visionPath);
+  const northStar = vision && typeof vision === "object" && !Array.isArray(vision) ? (vision as Record<string, unknown>).north_star : null;
+  if (typeof northStar !== "string") return null;
+  const line = northStar.replace(/\s+/g, " ").trim();
+  return line === "" ? null : line;
 }
 
 /** Whether the project holds state beyond the bare entity-mode marker that

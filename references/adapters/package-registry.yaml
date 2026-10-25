@@ -456,6 +456,8 @@ records:
           reason: Imports constructor-closure orientation state for attention selection, but does not construct command guidance.
         - path: packages/cli/src/cli/orientation/unfinishedWork.ts
           reason: Imports constructor-closure orientation types for the resume suggestion, but does not construct command guidance.
+        - path: packages/cli/src/cli/orientation/capabilityHint.ts
+          reason: Imports constructor-closure orientation state for the unused-capability hint, but does not construct command guidance.
         - path: packages/cli/src/cli/planArtifacts.ts
           reason: Imports constructor-closure plan state for artifact projection, but does not construct command guidance.
         - path: packages/cli/src/cli/planEvidence.ts

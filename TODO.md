@@ -42,7 +42,7 @@
 - [ ] [id:qjaadvbyjx] [docs:3.0.0] Add refresh-before-patch discipline to shipped agent guidance.
 - [ ] [id:clxxrzihnt] [chore] Review eight retained CLI lint diagnostics
 - [ ] [id:zcfyobenbh] [task] Explore reducing development-gate and source wall time
-- [ ] [id:lvxezpcpvv] [feat:3.0.0] Help users discover capabilities they have not used yet.
+- [ ] [id:lvxezpcpvv] [feat:3.0.0] Rewrite the README Get started section for users.
 - [ ] [id:sqkaukicrr] [test:3.0.0] Verify one-question consent journeys with a live agent.
 - [ ] [id:dpqmygjyme] [task] Decide the manual development recovery version policy
 - [ ] [id:hgzzwyerzo] [refactor:3.0.0] Investigate the chained `.replace()` patches in capability `instructions.ts` modules.
@@ -71,9 +71,11 @@
 - [ ] [id:irpspuslza] [feat:3.0.0] Add the in-capability autonomy rule to the operating manual.
 - [ ] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.
 - [ ] [id:nqbnvhenng] [refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited.
-- [ ] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.
 - [ ] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
 - [ ] [id:zlaqdzrnvg] [fix:3.0.0] Keep resolved TODO text that exists only in TODO.md before compaction can drop it.
+- [ ] [id:rduzoccwod] [feat:3.0.0] Serve attention as structured items on every startup surface.
+- [ ] [id:qudrlknzlt] [feat:3.0.0] Keep the vision north star short when the vision capability writes it.
+- [ ] [id:ozhcboueiy] [refactor:3.0.0] Decide which capsule metadata each capability startup keeps.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -263,3 +265,4 @@
 - [x] [id:pjwnakwnqg] [fix:3.0.0] Stop naming a PLAN.yaml file that does not exist in fresh-project guidance.
 - [x] [id:crzsyjlgsr] [fix:3.0.0] Return an empty list, not an error, when --fields meets a filter with no matches.
 - [x] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.
+- [x] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.

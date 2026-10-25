@@ -18,6 +18,8 @@ import { BriefBudgetError, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefByteBudget.
 import type { RouteResponse } from "../../../registries/hybridRoute.js";
 import { capabilityContext } from "../../capabilityContext/contract.js";
 import { startupAggregation } from "../../capabilityContext/startupAggregation.js";
+import { selectCapabilityHint } from "../../orientation/capabilityHint.js";
+import { profileFreshnessSignal } from "../../profileAcquisition.js";
 
 export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
 
@@ -34,7 +36,7 @@ export const STATUS_STATE_TOKEN_BUDGET = 2000;
 export const STATUS_CAPSULE_TOKEN_BUDGET = STATUS_INSTRUCTION_TOKEN_BUDGET + STATUS_STATE_TOKEN_BUDGET;
 export const STATUS_STATE_BYTES_PER_TOKEN = 3.8;
 export const STATUS_STATE_TARGET_UTF8_BYTES = STATUS_STATE_TOKEN_BUDGET * STATUS_STATE_BYTES_PER_TOKEN;
-export const STATUS_STATE_MAX_UTF8_BYTES = 14000;
+export const STATUS_STATE_MAX_UTF8_BYTES = 13000;
 
 /** The status_context a direct or routed status payload carries. */
 export function statusContextOf(payload: Record<string, unknown>): Record<string, unknown> {
@@ -241,6 +243,8 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
     recommended: redactRecovery(state.next_action.recommended),
     alternatives: state.next_action.alternatives.filter((action) => !unsafeDetailOmitted || action.artifact !== "todo").map(redactRecovery),
   };
+  const profileFreshness = profileFreshnessSignal(state.profile_dict.validity, state.profile_dict.freshness);
+  const capabilityHint = selectCapabilityHint(state, attention);
   return {
     outcome: startup.outcome,
     mode: state.mode,
@@ -256,7 +260,6 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
       id: state.health.id ?? null,
       grade: state.health.grade ?? null,
       worst: state.health.worst ?? null,
-      trajectory: state.health.trajectory ?? null,
       degrading: Boolean(state.health.degrading),
       ...(state.health.omitted === true
         ? {
@@ -268,7 +271,7 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
           }
         : {}),
     },
-    todo: { ...state.counts, detail: state.todo_detail },
+    todo: { ...state.counts },
     plan: {
       exists: plan.exists,
       active: plan.active ?? false,
@@ -300,8 +303,10 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
       title: state.objective.title ?? null,
       ...(state.objective.detail_omission ? { detail_omission: state.objective.detail_omission } : {}),
     },
-    state_presence: state.state_presence,
+    ...(state.north_star ? { north_star: state.north_star } : {}),
+    ...(profileFreshness ? { profile_freshness: profileFreshness } : {}),
     attention,
+    ...(capabilityHint ? { capability_hint: capabilityHint } : {}),
     next_action: nextActionPayload(nextAction),
   };
 }

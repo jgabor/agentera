@@ -96,7 +96,7 @@ const DOCTOR_SELF_CHECK_CATEGORIES = ["Agentera CLI self-check status", "install
 const DOCTOR_EXCLUDES = ["project artifact health", "codebase quality audit findings", "capability architecture, test, dependency, or documentation audit output"] as string[];
 const STATUS_STRUCTURED_FIELDS = PRIME_STRUCTURED_FIELDS;
 const COMMAND_DESCRIPTIONS: Record<string, string> = {
-  prime: "Composite orientation briefing and capability startup context; bare JSON is at most 16000 UTF-8 bytes and status startup is at most 26000 UTF-8 bytes, trimming state past 14000 bytes.",
+  prime: "Composite orientation briefing and capability startup context; bare JSON is at most 16000 UTF-8 bytes and status startup is at most 25000 UTF-8 bytes, trimming state past 13000 bytes.",
   schema: "Runtime CLI/schema introspection.",
   query: "Deprecated alias for state query. Advanced custom artifact query.",
   lint: "Deprecated alias for check lint. Optional draft prose preview; typed writers validate published bytes.",

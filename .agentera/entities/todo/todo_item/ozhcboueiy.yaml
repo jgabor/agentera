@@ -1,0 +1,24 @@
+id: ozhcboueiy
+artifact: todo
+record:
+  kind: refactor
+  target_version: 3.0.0
+  title: Decide which capsule metadata each capability startup keeps.
+  requirements:
+    - Review guidance_details, first_invocation_read, detail_discovery, raw_artifact_reads_required, raw_artifact_read_policy and a null schema_error across every capability capsule.
+    - "Decide per field: drop everywhere, keep everywhere, or decide per capability, with the reason recorded."
+    - Status already drops first_invocation_read; align the others with the decision.
+  acceptance:
+    - Each field is either served by every capsule that needs it or by none, as decided, and the contract docs say so.
+    - Capsule byte budgets are remeasured after the change.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[refactor:3.0.0] Decide which capsule metadata each capability startup keeps."
+      severity: normal
+      status: open
+      order: 51

@@ -4,10 +4,10 @@ record:
   name: Serve status_context as renderable data
   depends_on:
     - mfymiudngx
-  status: pending
+  status: complete
   acceptance:
-    - GIVEN open attention WHEN status starts THEN each item has severity, family, ID, short title and reason, no satisfaction or other bookkeeping, and budget trimming still works on these items.
-    - GIVEN a vision WHEN status starts THEN status_context carries its one-line north star; without a vision the value is absent, not an error.
+    - GIVEN attention WHEN status starts THEN budget trimming still works on its items; structured attention items on every surface, without bookkeeping, move to TODO rduzoccwod.
+    - GIVEN a vision WHEN status starts THEN status_context carries its whole north star on one line; without a vision the value is absent, not an error. Bounding its length moves to the vision capability (TODO qudrlknzlt).
     - GIVEN a profile near or past expiry WHEN status starts THEN one freshness value says expiring or expired, with the window owned by the CLI.
     - GIVEN a missing profile, a stale audit or a stalled objective WHEN status starts THEN each arrives only as an attention item or next_action, and the status capsule drops metadata telling the agent to read itself.
     - GIVEN empty attention WHEN status starts THEN at most one unused-capability hint appears with a state-based reason and no new tracking store; a direct capability route adds none.

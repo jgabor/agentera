@@ -58,7 +58,9 @@ current_state:
       `npx -y agentera@next prime --context <name>` emits
       `capability_context` metadata including `first_invocation_read`
       (value: `prime_context`, runtime_enforcement: true) and the full instructions
-      in the `instructions` field for supported capabilities. Historical
+      in the `instructions` field for supported capabilities. The status
+      capsule omits `first_invocation_read`: it already carries its full
+      instructions and the dashboard renders only status_context. Historical
       `hej --capability-context` is removed in 3.0.
 first_invocation_read:
   field_status: runtime_enforced
