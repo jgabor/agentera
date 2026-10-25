@@ -287,9 +287,11 @@ seconds, while eight journey processes shared the four CPUs with it.
 The migration-only comparison workflow and its dedicated test are retired; the
 linked run remains historical qualification evidence. Ordinary `publish.yml`
 development verification later split source into a core partition and three
-shards on separate runners (see
+shards on separate runners, and then moved stress, performance, and capacity to
+an isolated-owner job on its own runner (see
 [v3 packaging](v3-packaging.md#preparation-verification-and-publication)). The core runs two source
-workers beside the package owner; shards use the four-worker default.
+workers beside the package owner; shards use the four-worker default. Shard 3
+also builds the checkout CLI and runs the migration scenarios.
 Local source defaults stayed unchanged. The package owner later moved from one
 worker to three, as described above.
 The policy now allows 600 seconds for the whole package owner, explicitly
@@ -304,8 +306,8 @@ publication profile still needs a fresh passing ordinary CI run.
 
 - With one source worker, the source owner took about 25 minutes on the
   measured host. CI now distributes it across partitions; see
-  [verification performance](../verification-performance.md#distributed-development-ci)
-  for the hosted measurement.
+  [verification performance](../verification-performance.md#parallel-package-and-isolated-owners)
+  for the hosted measurement of the current layout.
 - CLI long-path budget fragility remains unresolved. Development success does
   not claim that issue is fixed.
 - Guarded compiler caching contains one known native failure mode, not every

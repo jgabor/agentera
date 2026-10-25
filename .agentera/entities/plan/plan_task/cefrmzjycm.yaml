@@ -4,7 +4,7 @@ record:
   name: Update the authorities and land in one push
   depends_on:
     - aucapswfpa
-  status: pending
+  status: in_progress
   acceptance:
     - GIVEN the contract, verification policy, decision record and maintainer guides WHEN a reader compares them with the measured workflow THEN they describe the same layout, failure rules and guarantees, including how assembly replaces cross-owner barrier ordering.
     - GIVEN the measurement is recorded WHEN the change lands on feat/v3 under explicit push authorization THEN the temporary workflow is gone and the first publish run passes, publishes and confirms the package within the run-time target of this plan.

@@ -85,11 +85,19 @@ assignment. `packages/cli/scripts/verify-lane.mjs` executes the policy.
   `vp run verify:development:assemble` passes only when every partition passed
   and together they cover the exact source inventory once. Receipts and
   `vp run verify` refuse a partition.
-- The core can also delegate `verification-policy.yaml#isolated_owners` with
-  `AGENTERA_ISOLATED_OWNERS=delegate`. It then skips stress, performance, and
-  capacity, and `vp run verify:development:isolated` runs them on a host with
-  no other verification owner. Assembly then requires that part for the same
-  source identity. Receipts, `vp run verify`, and shards refuse delegation.
+- The CI core delegates `verification-policy.yaml#isolated_owners` with
+  `AGENTERA_ISOLATED_OWNERS=delegate`. It skips stress, performance, and
+  capacity, and keeps the package owner and the read-only barrier B
+  validators. An isolated-owner job runs `vp run verify:development:isolated`
+  on its own runner with no other verification owner: stress, then performance
+  alone, then capacity. Shard 3 also builds the checkout CLI and runs the
+  migration scenarios after its own verification. Receipts, `vp run verify`,
+  and shards refuse delegation.
+- All partition jobs run in parallel. The candidate build job downloads their
+  reports and runs assembly in build mode, before version allocation.
+  Cross-runner barriers cannot hold, so assembly replaces them: the core and
+  the isolated part must each reconcile their own timings, and no candidate is built unless the core, every
+  shard, and the isolated part passed for one source identity.
 - `vp run verify` is full qualification: the same eleven gates with five cold
   performance repetitions. Its failures stay visible.
 

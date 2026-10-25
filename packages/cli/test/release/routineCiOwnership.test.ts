@@ -26,8 +26,13 @@ const PARTITION_JOBS = [CORE_JOB, ISOLATED_JOB, SHARD_JOB];
 const PARTITION_CONDITION = "needs.publication-state.outputs.mode == 'build'";
 const BUILD_STEP_CONDITION = "steps.history.outputs.mode == 'build'";
 // Shard 3 was the fastest shard in hosted run 40109973358, so it alone also
-// builds the checkout CLI and runs the migration scenarios.
-const MIGRATION_SHARD_CONDITION = "matrix.shard == 3";
+// builds the checkout CLI and runs the migration scenarios. It must stay a
+// policy shard in the matrix, or a smaller matrix would skip migration.
+const MIGRATION_SHARD = 3;
+const MIGRATION_SHARD_CONDITION = `matrix.shard == ${MIGRATION_SHARD}`;
+// Partition reports must survive a rerun of the same attempt's job and the
+// seven-day recovery window of the publication history.
+const PARTITION_UPLOAD_RETENTION_DAYS = 7;
 const PARTITION_DIRECTORY = "${{ runner.temp }}/agentera-verification";
 const PARTITION_UPLOADS: Record<string, string> = {
   [CORE_JOB]: "agentera-verification-core",
@@ -96,7 +101,7 @@ function condition(expression: string, needs: object): boolean {
   )(needs);
 }
 
-function validateRoutineCiOwnership(candidate: any): void {
+function validateRoutineCiOwnership(candidate: any, policy: any = verificationPolicy): void {
   const jobs = Object.keys(candidate.jobs);
 
   // Every partition exists, and the candidate build needs every one of them.
@@ -107,14 +112,18 @@ function validateRoutineCiOwnership(candidate: any): void {
   if (JSON.stringify(build.needs) !== JSON.stringify(["publication-state", ...PARTITION_JOBS])) {
     throw new Error("the candidate build must depend on every verification partition");
   }
-  const shards = verificationPolicy.source_partitions.shards;
+  const shards = policy.source_partitions.shards;
   const shardJob = candidate.jobs[SHARD_JOB];
   if (JSON.stringify(shardJob.strategy?.matrix) !== JSON.stringify({ shard: Array.from({ length: shards }, (_, index) => index + 1) })) {
     throw new Error("the shard matrix must cover every policy shard exactly once");
   }
+  if (!shardJob.strategy.matrix.shard.includes(MIGRATION_SHARD)) {
+    throw new Error("the migration shard must be a policy shard in the matrix");
+  }
   for (const name of PARTITION_JOBS) {
     const uploads = candidate.jobs[name].steps.filter((step: Step) => step.uses === "actions/upload-artifact@v4");
-    if (uploads.length !== 1 || uploads[0].with?.name !== PARTITION_UPLOADS[name] || uploads[0].with?.path !== PARTITION_DIRECTORY || uploads[0].with?.["if-no-files-found"] !== "error") {
+    const upload = uploads[0]?.with;
+    if (uploads.length !== 1 || upload?.name !== PARTITION_UPLOADS[name] || upload?.path !== PARTITION_DIRECTORY || upload?.["if-no-files-found"] !== "error" || upload?.overwrite !== true || upload?.["retention-days"] !== PARTITION_UPLOAD_RETENTION_DAYS) {
       throw new Error(`verification partition ${name} must upload its result`);
     }
   }
@@ -182,18 +191,19 @@ function validateRoutineCiOwnership(candidate: any): void {
     coreEnv.AGENTERA_SOURCE_PARTITION !== "core" ||
     coreEnv.AGENTERA_ISOLATED_OWNERS !== "delegate" ||
     Object.hasOwn(coreEnv, "AGENTERA_PERFORMANCE_RUNNER_IDENTITY") ||
+    Object.hasOwn(coreEnv, "AGENTERA_PERFORMANCE_RUNNER_CLASS") ||
     shardEnv.AGENTERA_SOURCE_PARTITION !== `shard:\${{ matrix.shard }}/${shards}` ||
     Object.hasOwn(shardEnv, "AGENTERA_ISOLATED_OWNERS") ||
     Object.hasOwn(isolatedEnv, "AGENTERA_SOURCE_PARTITION") ||
     Object.hasOwn(isolatedEnv, "AGENTERA_ISOLATED_OWNERS") ||
     isolatedEnv.AGENTERA_SOURCE_PARTITION_DIRECTORY !== PARTITION_DIRECTORY ||
-    isolatedEnv.AGENTERA_PERFORMANCE_RUNNER_CLASS !== verificationPolicy.owners.performance.execution.authoritative_runner.runner_class ||
+    isolatedEnv.AGENTERA_PERFORMANCE_RUNNER_CLASS !== policy.owners.performance.execution.authoritative_runner.runner_class ||
     isolatedEnv.AGENTERA_PERFORMANCE_RUNNER_IDENTITY !== "${{ runner.name }}"
   ) {
     throw new Error("each partition must select only its governed owners");
   }
   const isolatedJob = candidate.jobs[ISOLATED_JOB];
-  if (isolatedJob["runs-on"] !== verificationPolicy.owners.performance.execution.authoritative_runner.runs_on || Object.hasOwn(isolatedJob, "strategy")) {
+  if (isolatedJob["runs-on"] !== policy.owners.performance.execution.authoritative_runner.runs_on || Object.hasOwn(isolatedJob, "strategy")) {
     throw new Error("the isolated owners must run alone on one authoritative runner");
   }
   const shardSteps: Step[] = shardJob.steps;
@@ -255,6 +265,8 @@ const PARTITION_MUTATIONS: Mutation[] = [
   ["short shard matrix", (candidate) => (candidate.jobs[SHARD_JOB].strategy.matrix.shard = [1, 2]), "the shard matrix must cover every policy shard exactly once"],
   ["isolated result not uploaded", (candidate) => candidate.jobs[ISOLATED_JOB].steps.pop(), `verification partition ${ISOLATED_JOB} must upload its result`],
   ["isolated result upload tolerates no files", (candidate) => (stepBy(candidate, ISOLATED_JOB, (step) => step.uses === "actions/upload-artifact@v4").with!["if-no-files-found"] = "warn"), `verification partition ${ISOLATED_JOB} must upload its result`],
+  ["isolated result upload refuses a rerun", (candidate) => delete stepBy(candidate, ISOLATED_JOB, (step) => step.uses === "actions/upload-artifact@v4").with!.overwrite, `verification partition ${ISOLATED_JOB} must upload its result`],
+  ["isolated result upload expires early", (candidate) => (stepBy(candidate, ISOLATED_JOB, (step) => step.uses === "actions/upload-artifact@v4").with!["retention-days"] = 1), `verification partition ${ISOLATED_JOB} must upload its result`],
   ["download skips partitions", (candidate) => (stepBy(candidate, BUILD_JOB, isDownload).with!.pattern = "agentera-verification-shard-*"), "assembly must run on every downloaded partition before version allocation and construction"],
   ["download keeps partitions apart", (candidate) => delete stepBy(candidate, BUILD_JOB, isDownload).with!["merge-multiple"], "assembly must run on every downloaded partition before version allocation and construction"],
 ];
@@ -277,6 +289,7 @@ const OWNER_MUTATIONS: Mutation[] = [
   ["core runs the isolated owners", (candidate) => delete commandStep(candidate, CORE_JOB, RELEASE_COMMAND).env!.AGENTERA_ISOLATED_OWNERS, "each partition must select only its governed owners"],
   ["core runs the complete source inventory", (candidate) => delete commandStep(candidate, CORE_JOB, RELEASE_COMMAND).env!.AGENTERA_SOURCE_PARTITION, "each partition must select only its governed owners"],
   ["core measures performance", (candidate) => (commandStep(candidate, CORE_JOB, RELEASE_COMMAND).env!.AGENTERA_PERFORMANCE_RUNNER_IDENTITY = "${{ runner.name }}"), "each partition must select only its governed owners"],
+  ["core claims the performance runner class", (candidate) => (commandStep(candidate, CORE_JOB, RELEASE_COMMAND).env!.AGENTERA_PERFORMANCE_RUNNER_CLASS = "github-hosted-ubuntu-24.04"), "each partition must select only its governed owners"],
   ["shard delegates owners", (candidate) => (commandStep(candidate, SHARD_JOB, SHARD_COMMAND).env!.AGENTERA_ISOLATED_OWNERS = "delegate"), "each partition must select only its governed owners"],
   ["isolated job selects a source partition", (candidate) => (commandStep(candidate, ISOLATED_JOB, ISOLATED_COMMAND).env!.AGENTERA_SOURCE_PARTITION = "core"), "each partition must select only its governed owners"],
   ["isolated job loses runner identity", (candidate) => delete commandStep(candidate, ISOLATED_JOB, ISOLATED_COMMAND).env!.AGENTERA_PERFORMANCE_RUNNER_IDENTITY, "each partition must select only its governed owners"],
@@ -405,6 +418,17 @@ describe("routine CI owner DAG", () => {
       mutate(candidate);
       expect(() => validateRoutineCiOwnership(candidate)).toThrow(message);
     });
+  });
+
+  it("rejects a smaller shard layout that would skip the migration shard", () => {
+    const policy = structuredClone(verificationPolicy);
+    policy.source_partitions.shards = MIGRATION_SHARD - 1;
+    const candidate = structuredClone(workflow);
+    candidate.jobs[SHARD_JOB].strategy.matrix.shard = Array.from({ length: MIGRATION_SHARD - 1 }, (_, index) => index + 1);
+    commandStep(candidate, SHARD_JOB, SHARD_COMMAND).env!.AGENTERA_SOURCE_PARTITION = `shard:\${{ matrix.shard }}/${MIGRATION_SHARD - 1}`;
+    expect(() => validateRoutineCiOwnership(candidate, policy)).toThrow("the migration shard must be a policy shard in the matrix");
+    // The same layout with the policy's own shard count still passes.
+    expect(() => validateRoutineCiOwnership(workflow, structuredClone(verificationPolicy))).not.toThrow();
   });
 
   it("retains typecheck, parity, compact, stress, performance, and capacity coverage", () => {

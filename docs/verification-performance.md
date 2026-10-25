@@ -272,12 +272,12 @@ participant took 1,607 s: about 1,422 s of test cases and 185 s of collection.
 The package participant took 483 s in parallel. Every other gate took under
 two minutes.
 
-Development CI now splits source by `verification-policy.yaml#source_partitions`.
-The core job runs the unchanged DAG with only the activation evidence producer
+Development CI then split source by `verification-policy.yaml#source_partitions`.
+The core job ran the unchanged DAG with only the activation evidence producer
 and the declared Darwin-skip file as source, and two source workers beside the
-package owner. Three shard jobs run the other source files through a
-source-only generated overlap with the four-worker default. The assemble job
-merges the reports and reruns the full inventory, pending-identity, and
+package owner. Three shard jobs ran the other source files through a
+source-only generated overlap with the four-worker default. A separate assemble
+job merged the reports and reran the full inventory, pending-identity, and
 aggregate checks. The policy's weights are per-file wall times from that run;
 they balance shards and never change membership.
 
@@ -312,6 +312,70 @@ creation to assembly, against about 29.5 minutes for the single job before.
 | shard 3  | 2 min 47 s  | 100 files                                                                                                        |
 | assemble | 26 s        | 299 files, 5,133 tests, one declared skip                                                                        |
 
-The core job is now the critical path, bounded by the package owner at 447 s of
-its 600 s budget. Faster shards would not shorten the run; package
+The core job was then the critical path, bounded by the package owner at 447 s
+of its 600 s budget. Faster shards would not have shortened the run; package
 verification or the serial performance and capacity barriers would.
+
+## Parallel package and isolated owners
+
+The package owner now runs three workers with two concurrent tests each.
+Stress, performance, and capacity moved from the core job to an isolated-owner
+job on its own runner. Shard 3 now runs the checkout build and migration
+scenarios. Before this change,
+[run 40111173795](https://github.com/jgabor/agentera/actions/runs/40111173795)
+took 677 s from run creation to assembly and about 14 minutes in all. Its core
+job took 637 s. Package 461 s, source 251 s, and stress 98 s ran together in
+the 481 s overlap. The serial performance and capacity barriers added 15 s and
+76 s, barrier B 17 s, and migration 20 s. Shards 1, 2, and 3 took 346 s, 309 s,
+and 213 s.
+
+[Run 40176417267](https://github.com/jgabor/agentera/actions/runs/40176417267)
+measured the new layout on GitHub-hosted `ubuntu-24.04` runners through a
+temporary branch-only workflow at `bc0264ad`. It mirrors the publish
+verification jobs and real assembly, and it builds no release candidate and
+publishes nothing. It
+ran three times, and every job passed in every attempt. Job times are wall
+times; gate times come from the core and isolated-owner reports.
+
+| Attempt | Core job | Package | Core source | Barrier B | Isolated job | Shards 1, 2, 3  | Assemble | Verification |
+| ------- | -------- | ------- | ----------- | --------- | ------------ | --------------- | -------- | ------------ |
+| 1       | 273 s    | 223 s   | 227 s       | 11 s      | 122 s        | 330, 252, 245 s | 25 s     | 359 s        |
+| 2       | 422 s    | 351 s   | 360 s       | 16 s      | 177 s        | 331, 321, 237 s | 26 s     | 453 s        |
+| 3       | 320 s    | 261 s   | 267 s       | 13 s      | 165 s        | 201, 315, 171 s | 28 s     | 353 s        |
+
+Verification runs from run creation to the end of assembly. The temporary
+workflow ran assembly as its own job; `publish.yml` runs it as a step of the
+candidate build job, before version allocation. In the isolated
+job, stress, performance, and capacity took 35, 11, and 50 s in attempt 1 and
+48, 15, and 77 s in attempt 3. Shard 3's migration scenarios took 19, 19, and
+14 s.
+
+The core job's median is 320 s, half the 637 s before. Two of three attempts
+met the 360 s target. The package owner peaked at 351 s, within its 600 s
+budget. Attempt 2 missed the target at 422 s. Its core verification step ran
+58 percent slower than in attempt 1, package and core source 57 and 59 percent,
+barrier B 54 percent, and the isolated-owner step 53 percent. Shards 1 and 3
+ran at attempt 1's speed, and shard 2 ran 27 percent slower. A slowdown this
+uniform across unrelated gates on separate runners points to slower runners
+rather than contention between owners. This is an inference; the runs do not
+record runner hardware.
+
+The tuning keeps both settings:
+
+- Package workers stay at three. Package and core source finished within 3
+  percent of each other in every attempt, so the package owner is no longer
+  the long pole alone. More workers could not end the overlap sooner than core
+  source. On four vCPUs they would compete with it, as the parallel owner
+  already slowed source files in the local measurement in the
+  [toolchain guide](packaging/vite-plus-1-toolchain.md#qualification-and-performance).
+  Fewer workers would make package the long pole again.
+- One isolated-owner runner stays. Its job took 122 to 177 s, far below both
+  the core job and the slowest shard, so splitting it would not shorten the
+  run.
+
+The critical path is now whichever of the core job and the slowest shard ends
+last. Shard 1 led in attempt 1 and the core job in attempts 2 and 3; the slowest
+shard was within 5 s of the core in attempt 3. The shards are unbalanced, from
+171 to 331 s. Core source is two files, and `runtimeBootstrapMatrix.test.ts`
+holds ten of its eleven executed tests. Shard rebalancing and splitting that
+file are follow-ups outside this change.

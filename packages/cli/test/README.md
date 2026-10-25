@@ -101,8 +101,10 @@ boundary.
 Release source verification uses the policy-owned DAG. One generated-overlap
 process is the sole origin for source, package, build, and overlap evidence.
 Development CI runs the `source_partitions` core inside that process and the
-other source files in source-only overlaps on separate runners; assembly
-proves their union covers the inventory once. The core keeps the files below. It
+other source files in source-only overlaps on separate runners. It runs stress,
+performance, and capacity in one isolated-owner job on its own runner; assembly
+proves the source union covers the inventory once and that every part passed
+for one source identity. The core keeps the files below. It
 runs the exhaustive governed runtime-bootstrap matrix, every missing surface,
 and the adversarial activation-evidence cases instead of repeating them in
 ordinary source verification. Full runs reuse baseline capability observations
@@ -142,7 +144,8 @@ Root native discovery retains the three projects needed by local hooks.
 Whole-project typecheck runs separately. Fast feedback is scoped by membership,
 not a fixed wall-time SLA. Required CI runs authoritative
 development safety through `vp run verify:development` for the core partition,
-`vp run verify:development:shard` per shard, and
+`vp run verify:development:shard` per shard,
+`vp run verify:development:isolated` for stress, performance, and capacity, and
 `vp run verify:development:assemble`; explicit full
 `vp run verify` retains repeated performance. No arbitrary source exclusion is
 supported. Behavioral `cli/npmParityMatrix.test.ts` and the parity drift tests in

@@ -46,10 +46,12 @@ Use the same wrapper for the shim directory. The actual child process version,
 not the displayed pin, is the qualification check.
 
 Ordinary `publish.yml` development verification splits the source owner into a
-core partition and three source-only shards on separate runners, then assembles
-their evidence. The core job runs two source workers next to the package owner,
-which keeps its 600-second whole-owner budget from the verification policy. The
-migration-only baseline/candidate comparison workflow is retired.
+core partition and three source-only shards on separate runners, moves stress,
+performance, and capacity to an isolated-owner job on its own runner, and
+assembles their evidence in the candidate build job. The core job runs two
+source workers next to the package owner, which keeps its 600-second
+whole-owner budget from the verification policy. The migration-only
+baseline/candidate comparison workflow is retired.
 See [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)
 for the recorded hosted development pass and its limits. A new passing publication
 still requires fresh ordinary CI verification.
@@ -133,30 +135,51 @@ out `GITHUB_SHA` and install the exact pinned root Vite+ and pnpm 10.30.3
 toolchain without automatic install or caching:
 
 - The core job runs bare `vp check`, then uncached `vp run verify:development`
-  with `AGENTERA_SOURCE_PARTITION=core`. It runs every development gate, but its
-  source participant runs only the `verification-policy.yaml#source_partitions`
-  core files, so it reports `partial`.
+  with `AGENTERA_SOURCE_PARTITION=core` and `AGENTERA_ISOLATED_OWNERS=delegate`.
+  Its source participant runs only the
+  `verification-policy.yaml#source_partitions` core files, so it reports
+  `partial`. It runs the package owner, the activation evidence producer, and
+  the read-only compact, capability-contract, and activation-conjunction
+  validators of its private build. It skips stress, performance, and capacity.
+- The isolated-owner job runs `vp run verify:development:isolated` on its own
+  runner with no other verification owner: stress, then performance alone with
+  one worker and the recorded runner identity, then capacity, each against its
+  complete owner inventory.
 - Three shard jobs each run `vp run verify:development:shard` for one
   `shard:N/3` partition: the remaining source files through a source-only
   generated overlap with the same isolation and pending-test validation.
-- The assemble job runs `vp run verify:development:assemble`. It passes only
-  when the core passed every gate and the core and shard reports cover the
-  exact source inventory once, all for the same source identity. Jobs exchange
-  only these JSON reports as `agentera-verification-*` artifacts.
+  Shard 3 then builds the checkout CLI and runs the migration scenarios.
+- These jobs need only publication state, so they run in parallel. Each
+  uploads only its JSON report as an `agentera-verification-*` artifact. The
+  candidate build job downloads every report and, only in build mode and
+  before version allocation, runs `vp run verify:development:assemble`. It
+  passes only when the core passed every gate it did not delegate, the
+  isolated-owner part passed every delegated owner in order, and the core and
+  shard reports cover the exact source inventory once, all for the same source
+  identity.
+
+On one host, the source DAG runs performance after batch A, capacity after
+performance, and barrier B after capacity. Across runners those barriers cannot
+hold: barrier B on the core does not wait for performance or capacity, and
+performance does not wait for the core's batch A. Assembly replaces that
+ordering. The core and the isolated part must each reconcile their timings to
+their own elapsed time, and no candidate is built unless the core, every shard,
+and the isolated part passed for one source identity.
 
 This runs development safety, not full release qualification, and produces no
 receipt. Each verification step keeps a 40-minute deadline within the 2,400,000
-ms authority deadline. The 45-minute core job also allows an explicit
-`vp run build` of the checkout CLI and all five L1 source-migration scenarios:
-`happy-path-clean`, `stable-safety`, `noisy-app-home`,
+ms authority deadline. After its own verification passes, shard 3 runs an
+explicit `vp run build` of the checkout CLI and all five L1 source-migration
+scenarios: `happy-path-clean`, `stable-safety`, `noisy-app-home`,
 `codex-plugin-vs-copied`, and `partial-only-runtime`.
 The private verification build is cleaned up and cannot serve those scenarios.
 Each scenario must satisfy its typed outcome and preservation assertions;
 expected refusal is a passing safety test, not successful migration. No Bun or
 uv setup is needed. The dependent candidate build retains its separate
 construction allowance. A failed, cancelled, or skipped partition, build, or
-scenario skips assembly and therefore prevents candidate construction, artifact
-upload, and registry effects. After verification, CI
+scenario skips the candidate build job through its implicit success check, so
+no assembly, candidate construction, artifact upload, or registry effect
+follows. After verification, CI
 builds once from `GITHUB_SHA`, and sets the
 candidate version and `agentera.gitRef` to `GITHUB_SHA` only in the copied
 construction manifest. It
@@ -258,16 +281,17 @@ report outputs. Generated-overlap invokes the exact public source, package, and
 build commands once. The build writes only its private immutable root and returns
 the owner inventories, pending-test results, and build evidence. Source, package,
 and build are not spawned again.
-The GitHub source verification step gives the long-running source participant two
-workers, gives hosted Vitest assertions a 120-second ceiling, and limits the
-concurrently starting stress participant to one worker. The package participant
+The GitHub core verification step gives the long-running source participant two
+workers and gives hosted Vitest assertions a 120-second ceiling. Stress does not
+start beside them there; it runs in the isolated-owner job. The package participant
 runs three workers with at most two concurrent tests each, against one shared
 extracted package that no test may change (see
 [qualification and performance](vite-plus-1-toolchain.md#qualification-and-performance)).
 Local assertions retain the 30-second default. This bounds initial contention
 for the source owner that determines the generated-overlap wall time. The
-parallel package owner still slows source files that run beside it; its effect
-on the hosted core job is not yet measured.
+parallel package owner still slows source files that run beside it. On hosted
+runners, package and core source finish within 3 percent of each other (see
+[verification performance](../verification-performance.md#parallel-package-and-isolated-owners)).
 After every batch owner passes and overlap validates one immutable private build,
 performance runs alone with one worker in fresh isolated state on the pinned
 remote runner declared by the policy, and records the runner identity. Local
@@ -699,10 +723,11 @@ Missing local tools fail; recover with `VP_GIT_HOOKS=0 vp install`. Only network
 state compaction retains a 10-second watchdog; Python/TS parity stays narrowly
 triggered. The local hook never executes a specialized owner or release lane.
 The configured development-ref workflow invokes development safety once per
-source partition and assembles the result. Generated
+source partition, runs stress, one-sample live resource safety, and capacity
+once in the isolated-owner job, and assembles the result. Generated
 overlap is therefore the sole execution origin for source, package, and build;
-the same DAG retains source-owned Py-TS parity, typecheck, compact, stress,
-one-sample live resource safety, and capacity evidence without standalone duplicate steps. Full release
+the core DAG retains source-owned Py-TS parity, typecheck, and compact evidence
+without standalone duplicate steps. Full release
 gates add metadata and dry-run publication checks while using the same package
 construction path rather than adding another extracted-package matrix.
 
@@ -742,14 +767,17 @@ five. It retains:
   Generated-overlap remains the sole source/package/build execution origin;
   source identity, stale/mixed-generation rejection, pending-test validation,
   and fresh-build reader barriers are unchanged. In CI, source runs as one core
-  and three shard partitions whose union assembly proves; a partition is never
-  accepted on its own, and receipts always require one complete run.
+  and three shard partitions whose union assembly proves, and stress,
+  performance, and capacity run in one isolated-owner partition; a partition is
+  never accepted on its own, and receipts always require one complete run.
 - Stress and deterministic capacity, not just small correctness fixtures.
 - Live resource correctness through `test:development-resource`: the same seven
   targets at the existing 100/1,000 entity/archive scales, one fresh CLI process
   each, pre-baseline inspector GC, unchanged 1 ms heap sampling, behavior
   assertions, and existing blocking heap and serialized-output limits. Measurement
-  runs alone with one worker after batch A; capacity follows before readers.
+  runs alone with one worker after batch A; capacity follows before readers. In
+  CI, both run in the isolated-owner job after stress, and assembly replaces
+  that ordering against the core's readers.
 - Compact state budgets, capability contracts, and the activation conjunction
   as read-only validators of the selected private build.
 

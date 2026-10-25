@@ -50,9 +50,11 @@ overlap:
       platform: darwin
 
 # Development CI splits the source owner into a core partition, which runs inside
-# the complete generated-overlap DAG, and source-only shards on separate
-# runners. The core keeps the activation evidence producer and the declared
-# pending assertion; every other source file goes to exactly one shard. Weights
+# the generated-overlap DAG, and source-only shards on separate runners. The
+# core keeps the activation evidence producer and the declared pending
+# assertion; every other source file goes to exactly one shard. Shard 3 also
+# runs the migration scenarios, so keep at least three shards; the workflow
+# matrix covers every shard. Weights
 # are observed per-file milliseconds that only balance shards; unlisted files
 # use the default. Assembly proves that core plus shards is the exact inventory.
 source_partitions:
@@ -88,18 +90,20 @@ source_partitions:
     packages/cli/test/release/sourceQualificationDag.test.ts: 10000
     packages/cli/test/state/write/mutationGrammar.test.ts: 10000
 
-# Development CI may also delegate these owners, in this order, from the core
-# partition to one isolated-owner partition on its own runner: stress, then
-# performance alone, then capacity, each against the complete inventory read
-# on that runner. The core then runs batch A without stress, skips the
-# performance and capacity barriers, and still runs barrier B on its private
-# build. The DAG failure rules below assume one host and cannot hold across
-# runners: barrier B on the core does not wait for performance or capacity, and
-# performance does not wait for the core's batch A. For this layout, assembly
-# replaces them: it issues no passing development conjunction, so CI builds no
-# candidate, unless the core, every shard, and the isolated-owner partition
-# passed for one source identity. Receipts, full qualification, and shards
-# refuse delegation.
+# Development CI delegates these owners, in this order, from the core
+# partition to one isolated-owner partition on its own runner with no other
+# verification owner: stress, then performance alone, then capacity, each
+# against the complete inventory read on that runner. The core then runs batch
+# A without stress, skips the performance and capacity barriers, and still runs
+# barrier B on its private build. The DAG failure rules below assume one host
+# and cannot hold across runners: barrier B on the core does not wait for
+# performance or capacity, and performance does not wait for the core's batch
+# A. For this layout, assembly replaces them. The core and the isolated-owner
+# partition must each reconcile their timings to their own elapsed time, and
+# assembly issues no passing development
+# conjunction, so CI builds no candidate, unless the core, every shard, and the
+# isolated-owner partition passed for one source identity. Receipts, full
+# qualification, and shards refuse delegation.
 isolated_owners:
   - stress
   - performance
