@@ -62,8 +62,14 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 22500
-  token_budget: 6000
+  byte_budget: 26000
+  instruction_byte_budget: 12000
+  state_byte_budget: 14000
+  state_target_byte_budget: 7600
+  token_budget: 4000
+  instruction_token_budget: 2000
+  state_token_budget: 2000
+  instruction_budget_enforcement: deferred_to_status_rewrite
 - id: prime-status-context
   command: agentera prime --context status
   selector: --context status
@@ -76,8 +82,14 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 22500
-  token_budget: 6000
+  byte_budget: 26000
+  instruction_byte_budget: 12000
+  state_byte_budget: 14000
+  state_target_byte_budget: 7600
+  token_budget: 4000
+  instruction_token_budget: 2000
+  state_token_budget: 2000
+  instruction_budget_enforcement: deferred_to_status_rewrite
 - id: prime-briefing
   command: agentera prime
   selector: (default briefing)
@@ -144,13 +156,19 @@ surfaces:
   enforcement_tier: enforce
   # Current v3 capability names are the published expansion set. Generic
   # capability capsules retain the full instructions body and use the 55000
-  # byte ceiling declared by state-storage-authority; status has its dedicated
-  # 25000-byte one-call capsule above. The retired v2 aliases remain listed only
-  # by the removed_3_0 row above.
+  # byte ceiling declared by state-storage-authority; status uses the
+  # budget of its one-call capsule above. The retired v2 aliases remain listed
+  # only by the removed_3_0 row above.
   budget_by_capability:
     status:
-      byte_budget: 25000
-      token_budget: 6500
+      byte_budget: 26000
+      instruction_byte_budget: 12000
+      state_byte_budget: 14000
+      state_target_byte_budget: 7600
+      token_budget: 4000
+      instruction_token_budget: 2000
+      state_token_budget: 2000
+      instruction_budget_enforcement: deferred_to_status_rewrite
     vision:
       byte_budget: 55000
       token_budget: 14000
@@ -197,15 +215,18 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  # A routed response may use the bare brief budget (prime-briefing) plus the
-  # budget of what it carries: the status capsule (prime-status-context, sent
-  # with the manual and no brief), another capability's capsule
-  # (prime-capability-context), or the unchanged semantic_required route
-  # result (25000 bytes and 6000 tokens of its own).
+  # A routed status start carries the status capsule (prime-status-context)
+  # with the manual and no brief: the capsule bytes plus 4000 for the manual,
+  # route result and nesting, with a 5000-token target. Any other routed response may
+  # use the bare brief budget (prime-briefing) plus the budget of what it
+  # carries: another capability's capsule (prime-capability-context) or the
+  # unchanged semantic_required route result (25000 bytes and 6000 tokens of
+  # its own).
   budget_by_carried:
     status:
-      byte_budget: 38500
-      token_budget: 11000
+      byte_budget: 30000
+      token_budget: 5000
+      instruction_budget_enforcement: deferred_to_status_rewrite
     capability:
       byte_budget: 71000
       token_budget: 19000

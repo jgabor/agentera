@@ -7,6 +7,7 @@ import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { runHostSkillLifecycle, loadHostSkillSource } from "../../src/setup/hostSkillLifecycle.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { npxBundleFixture } from "../helpers/npxBundleFixture.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 
 const repo = path.resolve(import.meta.dirname, "../../../..");
 const question = "Agentera’s installed skill needs an update. Update it now? Your project files will not change.";
@@ -114,7 +115,7 @@ describe("one-confirmation shared-skill startup offer", () => {
     const before = snapshot();
     const result = capture(["prime", "--context", "status"]);
     expect(result.code, result.err).toBe(0);
-    expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(22500);
+    expectStatusWithinBudget(result.out);
     expect(result.payload.shared_skill.upgrade_offer.question).toBe(question);
     expect(result.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
     expect(result.payload.capability_context.context.status_context.plan.id).toBe("aaaaaaaaaa");
@@ -127,7 +128,8 @@ describe("one-confirmation shared-skill startup offer", () => {
     const before = snapshot();
     const startup = capture(["prime", ...flags]);
     expect(startup.code, startup.out + startup.err).toBe(0);
-    expect(Buffer.byteLength(startup.out)).toBeLessThanOrEqual(flags.length ? 22500 : 16000);
+    if (flags.length) expectStatusWithinBudget(startup.out);
+    else expect(Buffer.byteLength(startup.out)).toBeLessThanOrEqual(16000);
     if (flags.length) expect(startup.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
     const offer = startup.payload.shared_skill.upgrade_offer;
     expect(offer).toMatchObject({

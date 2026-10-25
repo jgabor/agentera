@@ -9,6 +9,7 @@ import { main } from "../../src/cli/dispatch/index.js";
 import { createArchivePerformanceFixture } from "../helpers/archivePerformanceFixture.js";
 import { measureColdCli, measureColdStateList } from "../helpers/coldCliMeasurement.js";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 import { deriveLatencyAdvisory, measurementProfile, performanceAuthority, performanceRunnerAuthority } from "../../scripts/performance-evidence.mjs";
 import { createPerformanceProgress } from "../../scripts/performance-progress.mjs";
 
@@ -130,6 +131,7 @@ describe("entity authority performance", () => {
           expect(measured.heapDeltaBytes, measurementDiagnostic(`${operation} ${scale} repetition ${repetition}`, measured)).toBeLessThanOrEqual(limits.max_heap_delta_bytes);
           expect(outputBytes, `${operation} ${scale} repetition ${repetition}`).toBeLessThanOrEqual(maxOutputBytes);
           if (operation === "bounded_list") expect(JSON.parse(measured.stdout).counts.total).toBe(fixture.progressCount);
+          else expectStatusWithinBudget(measured.stdout, `${operation} ${scale} repetition ${repetition}`);
           samples.push({
             operation,
             scale,

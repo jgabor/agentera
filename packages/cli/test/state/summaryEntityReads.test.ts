@@ -16,6 +16,7 @@ import { appendProgressEntity, getProgressEntity, listProgressEntities } from ".
 import { operationSpec, type StateWriteRequest } from "../../src/state/write/operations.js";
 import { projectedListSnapshot } from "../../src/state/listCursor.js";
 import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEntityOrientation.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 
 const SOURCE_ROOT = path.resolve(import.meta.dirname, "../../../..");
 const roots: string[] = [];
@@ -417,7 +418,7 @@ describe("summary entity ordinary reads", () => {
       trajectory: "stable",
       degrading: false,
     });
-    expect(Buffer.byteLength(status.out, "utf8")).toBeLessThanOrEqual(22_500);
+    expectStatusWithinBudget(status.out);
   });
 
   it("retains decision meaning and missing-satisfaction review pressure after bounded field selection", () => {
@@ -530,7 +531,7 @@ describe("summary entity ordinary reads", () => {
     const payload = JSON.parse(status.out).capability_context.context.status_context;
     expect(payload.progress.detail_omission.retrieval.get).toContain("state progress get --id ID");
     expect(payload.health.retrieval.get).toContain("state health get --id ID");
-    expect(Buffer.byteLength(status.out)).toBeLessThanOrEqual(22_500);
+    expectStatusWithinBudget(status.out);
   });
 
   it("keeps canonical full and compacted history evidence in bare prime", () => {
@@ -662,7 +663,7 @@ describe("summary entity ordinary reads", () => {
     const authority = YAML.parse(fs.readFileSync(path.join(SOURCE_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     const dashboard = cli(root, ["prime", "--dashboard", "--format", "json"]);
     expect(dashboard.rc, dashboard.err).toBe(0);
-    expect(Buffer.byteLength(dashboard.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes);
+    expectStatusWithinBudget(dashboard.out, "dashboard");
     const projected = JSON.parse(dashboard.out).capability_context.context.status_context;
     expect(projected.progress.latest).toMatchObject({ id: "aaaaaaaaaa", what: "full progress" });
     expect(projected.health).toMatchObject({ id: "cccccccccc" });
@@ -672,7 +673,7 @@ describe("summary entity ordinary reads", () => {
     expect(Buffer.byteLength(bare.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes);
     const status = cli(root, ["prime", "--context", "status", "--format", "json"]);
     expect(status.rc, status.err).toBe(0);
-    expect(Buffer.byteLength(status.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_status_context.max_utf8_bytes);
+    expectStatusWithinBudget(status.out);
   });
 
   it("bounds a summary-only dashboard beyond every page limit without fabricating current records", () => {
@@ -686,7 +687,7 @@ describe("summary entity ordinary reads", () => {
     const dashboard = cli(root, ["prime", "--dashboard", "--format", "json"]);
     expect(dashboard.rc, dashboard.err).toBe(0);
     const authority = YAML.parse(fs.readFileSync(path.join(SOURCE_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
-    expect(Buffer.byteLength(dashboard.out, "utf8")).toBeLessThanOrEqual(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes);
+    expectStatusWithinBudget(dashboard.out, "dashboard");
     const payload = JSON.parse(dashboard.out).capability_context.context.status_context;
     expect(payload.progress.latest).toBeNull();
     expect(payload.health.id).toBeNull();

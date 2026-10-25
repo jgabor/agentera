@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
 import { encode } from "gpt-tokenizer/model/gpt-5";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.js";
 
@@ -241,9 +242,12 @@ describe("prime projection contract", () => {
         startup: expect.any(Object),
         context: expect.any(Object),
       });
-      const budget = capability === "status" ? OUTPUT_BUDGETS.find((surface: any) => surface.id === "prime-status-context") : OUTPUT_BUDGETS.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability[capability];
-      expect(Buffer.byteLength(result.out), `${scenario}/${capability} raw stdout bytes`).toBeLessThanOrEqual(budget.byte_budget);
-      expect(encode(result.out).length, `${scenario}/${capability} raw stdout tokens`).toBeLessThanOrEqual(budget.token_budget);
+      if (capability === "status") expectStatusWithinBudget(result.out, `${scenario}/status`);
+      else {
+        const budget = OUTPUT_BUDGETS.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability[capability];
+        expect(Buffer.byteLength(result.out), `${scenario}/${capability} raw stdout bytes`).toBeLessThanOrEqual(budget.byte_budget);
+        expect(encode(result.out).length, `${scenario}/${capability} raw stdout tokens`).toBeLessThanOrEqual(budget.token_budget);
+      }
       const selected = capture((out, err) => main(["node", "agentera", "prime", "--context", capability, "--fields", "capability_context"], { out, err }));
       expect(selected.rc, selected.err).toBe(0);
       expect(JSON.parse(selected.out).capability_context).toEqual(payload.capability_context);
@@ -377,7 +381,8 @@ describe("prime projection contract", () => {
     for (const capability of CAPABILITY_NAMES) {
       const result = capture((out, err) => cmdPrime({ command: "prime", context: capability, format: "json" }, { out, err }));
       expect(result.rc, `${capability}: ${result.err}`).toBe(0);
-      expect(Buffer.byteLength(result.out), capability).toBeLessThanOrEqual(budgets[capability].byte_budget);
+      if (capability === "status") expectStatusWithinBudget(result.out);
+      else expect(Buffer.byteLength(result.out), capability).toBeLessThanOrEqual(budgets[capability].byte_budget);
       expect(JSON.parse(result.out).capability_context.instructions, capability).toContain(OPERATING_INSTRUCTIONS);
       outputs.push([`context ${capability}`, result.out]);
     }

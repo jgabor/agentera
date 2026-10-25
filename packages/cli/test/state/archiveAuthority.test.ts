@@ -210,19 +210,40 @@ describe("state storage authority", () => {
     expect(authority.budgets.projection.max_utf8_bytes).toBe(32768);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_utf8_bytes).toBe(surfaces["prime-briefing"]);
     expect(authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens).toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").token_budget);
-    expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(surfaces["prime-dashboard"]);
-    expect(authority.budgets.startup.surfaces.prime_status_context.max_utf8_bytes).toBe(surfaces["prime-status-context"]);
+    const statusAuthority = authority.budgets.startup.surfaces.prime_status_context;
+    const statusManifest = manifest.surfaces.find((surface: any) => surface.id === "prime-status-context");
+    expect(statusManifest).toMatchObject({
+      byte_budget: statusAuthority.max_utf8_bytes,
+      instruction_byte_budget: statusAuthority.instruction_max_utf8_bytes,
+      state_byte_budget: statusAuthority.state_max_utf8_bytes,
+      state_target_byte_budget: statusAuthority.state_target_utf8_bytes,
+      token_budget: statusAuthority.max_gpt5_tokens,
+      instruction_token_budget: statusAuthority.instruction_gpt5_tokens,
+      state_token_budget: statusAuthority.state_gpt5_tokens,
+    });
+    expect(statusAuthority.max_gpt5_tokens).toBe(statusAuthority.instruction_gpt5_tokens + statusAuthority.state_gpt5_tokens);
+    expect(statusAuthority.state_target_utf8_bytes).toBe(statusAuthority.state_gpt5_tokens * statusAuthority.state_bytes_per_token);
+    expect(statusAuthority.max_utf8_bytes).toBe(statusAuthority.instruction_max_utf8_bytes + statusAuthority.state_max_utf8_bytes);
+    expect(authority.budgets.startup.surfaces.prime_dashboard.max_utf8_bytes).toBe(statusAuthority.max_utf8_bytes);
+    expect(manifest.surfaces.find((surface: any) => surface.id === "prime-dashboard").byte_budget).toBe(statusAuthority.max_utf8_bytes);
+    for (const value of [statusAuthority.max_gpt5_tokens, statusAuthority.instruction_gpt5_tokens, statusAuthority.state_gpt5_tokens, authority.budgets.startup.surfaces.prime_routed_start.status_max_gpt5_tokens]) expect(value % 1000).toBe(0);
+    expect(authority.budgets.startup.surfaces.prime_dashboard.max_gpt5_tokens).toBe(statusAuthority.max_gpt5_tokens);
+    expect(manifest.surfaces.find((surface: any) => surface.id === "prime-dashboard").token_budget).toBe(statusAuthority.max_gpt5_tokens);
+    const { id: _id, command: _command, selector: _selector, argv: _argv, inventory_classification: _inventory, budget_classification: _classification, measurement_scope: _scope, fixture: _fixture, enforcement_tier: _tier, ...statusBudgets } = statusManifest;
+    expect(manifest.surfaces.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability.status).toEqual(statusBudgets);
+    expect(authority.budgets.startup.source_work.capability_budget_rule).toContain("never from measured output plus");
     expect(authority.budgets.startup.surfaces.prime_sparse.max_utf8_bytes).toBe(surfaces["prime-fields-sparse"]);
     const routed = authority.budgets.startup.surfaces.prime_routed_start;
     const routedRow = manifest.surfaces.find((surface: any) => surface.id === routed.manifest_id);
     const capsules = manifest.surfaces.find((surface: any) => surface.id === "prime-capability-context").budget_by_capability;
-    const statusRow = manifest.surfaces.find((surface: any) => surface.id === "prime-status-context");
     const briefRow = manifest.surfaces.find((surface: any) => surface.id === "prime-briefing");
     expect(routed.brief_max_utf8_bytes).toBe(briefRow.byte_budget);
-    expect(routed.max_utf8_bytes_by_carried).toEqual(Object.fromEntries(Object.entries(routedRow.budget_by_carried).map(([carried, budget]: [string, any]) => [carried, budget.byte_budget])));
-    expect(routed.max_utf8_bytes_by_carried.status).toBe(routed.brief_max_utf8_bytes + statusRow.byte_budget);
+    expect(routed.max_utf8_bytes_by_carried).toEqual(Object.fromEntries(Object.entries(routedRow.budget_by_carried).flatMap(([carried, budget]: [string, any]) => (carried === "status" ? [] : [[carried, budget.byte_budget]]))));
+    expect(routed.status_max_gpt5_tokens).toBe(routedRow.budget_by_carried.status.token_budget);
+    expect(routed.status_max_utf8_bytes).toBe(routedRow.budget_by_carried.status.byte_budget);
+    expect(routed.status_max_utf8_bytes).toBe(statusAuthority.max_utf8_bytes + routed.status_head_max_utf8_bytes);
+    expect(routed.status_max_gpt5_tokens).toBeGreaterThan(statusAuthority.max_gpt5_tokens);
     expect(routed.max_utf8_bytes_by_carried.semantic_required).toBe(routed.brief_max_utf8_bytes + routed.semantic_route_max_utf8_bytes);
-    expect(routedRow.budget_by_carried.status.token_budget).toBe(briefRow.token_budget + statusRow.token_budget);
     for (const [capability, budget] of Object.entries(capsules) as Array<[string, any]>) {
       if (capability === "status") continue;
       expect(routed.max_utf8_bytes_by_carried.capability, capability).toBe(routed.brief_max_utf8_bytes + budget.byte_budget);
@@ -252,7 +273,6 @@ describe("state storage authority", () => {
       large: { max_current_entries: 1000, max_archive_files: 1000, max_latency_ms: 15000 },
       serialized_output: {
         prime_capability_context_max_utf8_bytes: 55000,
-        prime_status_context_max_utf8_bytes: 22500,
       },
     });
   });
@@ -267,7 +287,7 @@ describe("state storage authority", () => {
     expect(authority.budgets.projection.omission_semantics).not.toContain("Never split UTF-8");
     authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens = 3000;
     expect(authority.budgets.startup.surfaces.prime_briefing.max_gpt5_tokens).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-briefing").token_budget);
-    authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status = 35000;
-    expect(authority.budgets.startup.surfaces.prime_routed_start.max_utf8_bytes_by_carried.status).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-routed-start").budget_by_carried.status.byte_budget);
+    authority.budgets.startup.surfaces.prime_routed_start.status_max_gpt5_tokens = 4500;
+    expect(authority.budgets.startup.surfaces.prime_routed_start.status_max_gpt5_tokens).not.toBe(manifest.surfaces.find((surface: any) => surface.id === "prime-routed-start").budget_by_carried.status.token_budget);
   });
 });

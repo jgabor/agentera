@@ -232,7 +232,7 @@ describe("cli help", () => {
     expect(out).toContain("agentera.buildExecutionRequest.v1");
     expect(out).toContain("one availability projection and aggregate outcome");
     expect(out).toContain("bare prime is at most 16000 UTF-8 bytes");
-    expect(out).toContain("status context at most 22500");
+    expect(out).toContain("status context is at most 26000 UTF-8 bytes, trimming state past 14000 bytes");
     expect(out).not.toContain("app_home:");
   });
 

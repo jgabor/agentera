@@ -3,7 +3,7 @@ import fs from "node:fs";
 import { PRIME_MANUAL } from "../prime-blob.js";
 import { buildPrimeCapabilityContextPayload, validatePrimeCapability } from "../capabilityContext.js";
 import { collectOrientationState } from "./prime/collectOrientationState.js";
-import { bareBriefPayload, buildOrientationJsonPayload, fitRoutedResponse, routedStartBudgetBytes, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, PRIME_BRIEF_MAX_UTF8_BYTES, PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "./prime/orientationOutput.js";
+import { bareBriefPayload, buildOrientationJsonPayload, fitRoutedResponse, routedStartBudgetBytes, buildStatusContextState, emitPrime, rejectRetiredPrimeFields, statusStateUtf8Bytes, PRIME_BRIEF_MAX_UTF8_BYTES, STATUS_STATE_MAX_UTF8_BYTES, STATUS_STATE_TOKEN_BUDGET } from "./prime/orientationOutput.js";
 import type { PrimeArgs, Io } from "./prime/types.js";
 import type { OrientationState } from "../contracts/orientationState.js";
 
@@ -83,18 +83,61 @@ export function finalizeStatusCapabilityContextPayload(payload: Record<string, u
     };
   }
   const status = context.status_context as Record<string, unknown>;
+  if (reconciliation?.state === "unsafe_inactive") omitAlternatives(status, 0);
+  trimStatusState(payload, status);
+  return payload;
+}
+
+/** Status keeps at most this many lower-ranked suggestions and attention lines
+ *  when state is over budget; the dashboard needs no more. */
+const TRIMMED_ALTERNATIVES = 2;
+const TRIMMED_ATTENTION = 5;
+
+function omitAlternatives(status: Record<string, unknown>, keep: number): number {
   const next = status.next_action as Record<string, unknown>;
   const alternatives = next.alternatives as unknown[];
-  // Preserve the complete instructions, primary action and actionable host offer.
-  // Reuse the existing continuation for secondary suggestions under byte pressure.
-  if (alternatives.length && (reconciliation?.state === "unsafe_inactive" || briefUtf8Bytes(payload) > PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES)) {
-    next.alternatives = [];
-    next.alternatives_omission = {
-      omitted_count: alternatives.length,
-      retrieval: preCutoverCommand("prime --fields next_action"),
-    };
+  if (alternatives.length <= keep) return 0;
+  const priorOmitted = Number((next.alternatives_omission as Record<string, unknown> | undefined)?.omitted_count ?? 0);
+  next.alternatives = alternatives.slice(0, keep);
+  next.alternatives_omission = {
+    omitted_count: priorOmitted + alternatives.length - keep,
+    retrieval: preCutoverCommand("prime --fields next_action"),
+  };
+  return alternatives.length - keep;
+}
+
+/**
+ * Bring status state within its budget instead of refusing: cut alternatives
+ * and attention to what the dashboard renders, then drop the remaining
+ * alternatives. Instructions, the primary action and
+ * offers are never trimmed. The result reports what was cut and whether state
+ * now fits.
+ */
+function trimStatusState(payload: Record<string, unknown>, status: Record<string, unknown>): void {
+  if (statusStateUtf8Bytes(payload) <= STATUS_STATE_MAX_UTF8_BYTES) return;
+  let omitted = omitAlternatives(status, TRIMMED_ALTERNATIVES);
+  const attention = status.attention as unknown[];
+  if (attention.length > TRIMMED_ATTENTION) {
+    omitted += attention.length - TRIMMED_ATTENTION;
+    status.attention = attention.slice(0, TRIMMED_ATTENTION);
   }
-  return payload;
+  if (statusStateUtf8Bytes(payload) > STATUS_STATE_MAX_UTF8_BYTES) omitted += omitAlternatives(status, 0);
+  status.state_budget = {
+    token_budget: STATUS_STATE_TOKEN_BUDGET,
+    max_utf8_bytes: STATUS_STATE_MAX_UTF8_BYTES,
+    utf8_bytes: 0,
+    within_budget: false,
+    omitted: true,
+    omitted_count: omitted,
+    omission_reason: "status_state_budget",
+    retrieval: {
+      next_action: preCutoverCommand("prime --fields next_action"),
+      attention: preCutoverCommand("prime --fields attention"),
+    },
+  };
+  const budget = status.state_budget as Record<string, unknown>;
+  budget.utf8_bytes = statusStateUtf8Bytes(payload);
+  budget.within_budget = (budget.utf8_bytes as number) <= STATUS_STATE_MAX_UTF8_BYTES;
 }
 
 /** The payload `prime --context <capability>` emits. */
@@ -150,9 +193,7 @@ function runRoutedPrime(request: string, command: string, collectOpts: Parameter
     // Status is never gated; its capsule already carries the orientation.
     const start = capabilityStartPayload(state, capability, command);
     const response = { command, manual: PRIME_MANUAL, route, start };
-    const bytes = briefUtf8Bytes(response);
-    // A status capsule a direct start would refuse as over budget is refused here too.
-    if (bytes > budget || briefUtf8Bytes(start) > PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES) return overBudget(bytes);
+    // The capsule already trimmed its state; a routed status start never refuses for size.
     emitStructured(response, "json", out);
     return 0;
   }
@@ -333,17 +374,13 @@ export function cmdPrime(args: PrimeArgs, io: Io = {}): number {
       }
     }
     const payload = capabilityStartPayload(state, capability, command, buildRequest, glossaryAdvice);
-    return emitPrime(command, payload, format, args.fields, out, err, {
-      maxUtf8Bytes: capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : undefined,
-    });
+    return emitPrime(command, payload, format, args.fields, out, err);
   }
   if (dashboard) {
     err("Deprecation: prime --dashboard is retained as an alias for `prime --context status`; use the status startup capsule directly.\n");
     const state = collectOrientationState(collectOpts);
     const payload = buildStatusCapabilityContextPayload(state, command);
-    return emitPrime(command, payload, format, args.fields, out, err, {
-      maxUtf8Bytes: PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES,
-    });
+    return emitPrime(command, payload, format, args.fields, out, err);
   }
   const state = collectOrientationState(collectOpts);
   const payload = buildOrientationJsonPayload(state, command);

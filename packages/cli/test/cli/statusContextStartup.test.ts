@@ -18,7 +18,8 @@ import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { main } from "../../src/cli/dispatch.js";
 import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { formatNextAction } from "../../src/cli/orientation.js";
-import { PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
+import { STATUS_CAPSULE_TOKEN_BUDGET, STATUS_INSTRUCTION_TOKEN_BUDGET, STATUS_STATE_MAX_UTF8_BYTES, STATUS_STATE_TOKEN_BUDGET } from "../../src/cli/commands/prime/orientationOutput.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 import { runState } from "../../src/cli/dispatch/state.js";
 import { startupAggregation } from "../../src/cli/capabilityContext/startupAggregation.js";
 import { TODO_ACTIVATION_RISK_LIMIT, TODO_UNSAFE_INACTIVE_RECOVERY } from "../../src/state/todoReconciliationActivation.js";
@@ -340,7 +341,7 @@ describe("status capability self-contained startup", () => {
     expect(next.alternatives_omission.omitted_count).toBe(fullNext.alternatives.length);
     expect(next.reason).toBe(fullNext.reason);
     expect(result.payload.capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
-    expect(Buffer.byteLength(result.out)).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
   });
 
   it.each(["decision", "task", "todo"] as const)("keeps long Unicode %s identity and textual state through attention, actions and text output", (family) => {
@@ -424,7 +425,8 @@ describe("status capability self-contained startup", () => {
           expect(text).toContain("satisfaction unavailable");
         } else expect(text).toContain(family === "task" ? "pending" : text === attention ? "open" : "actionable");
       }
-      expect(Buffer.byteLength(out)).toBeLessThanOrEqual(context ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : 16000);
+      if (context) expectStatusWithinBudget(out);
+      else expect(Buffer.byteLength(out)).toBeLessThanOrEqual(16000);
       expect(err).toBe("");
       const actionLine = formatNextAction(action);
       expect(actionLine).toContain(`${label} ${id}`);
@@ -447,7 +449,7 @@ describe("status capability self-contained startup", () => {
 
     expect(result.rc, result.err).toBe(0);
     expect(result.err).toBe("");
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
     expect(result.out).not.toContain(sentinel);
     expect(result.out).not.toContain(project);
 
@@ -489,7 +491,7 @@ describe("status capability self-contained startup", () => {
     const result = captureStatus();
 
     expect(result.rc, result.err).toBe(0);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
     const payload = JSON.parse(result.out) as Record<string, any>;
     const reconciliation = payload.capability_context.startup.todo_reconciliation;
     expect(reconciliation).toMatchObject({
@@ -521,11 +523,11 @@ describe("status capability self-contained startup", () => {
 
   it("uses the manifest's dedicated one-call status budget", () => {
     const manifest = YAML.parse(fs.readFileSync(BUDGET_MANIFEST_PATH, "utf8")) as {
-      surfaces: Array<{ id: string; byte_budget: number }>;
+      surfaces: Array<{ id: string; token_budget: number; instruction_token_budget: number; state_token_budget: number; state_byte_budget: number }>;
     };
     const surface = manifest.surfaces.find((entry) => entry.id === "prime-status-context");
-    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(surface?.byte_budget);
-    expect(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES).toBe(22500);
+    expect(surface).toMatchObject({ token_budget: STATUS_CAPSULE_TOKEN_BUDGET, instruction_token_budget: STATUS_INSTRUCTION_TOKEN_BUDGET, state_token_budget: STATUS_STATE_TOKEN_BUDGET, state_byte_budget: STATUS_STATE_MAX_UTF8_BYTES });
+    expect(STATUS_CAPSULE_TOKEN_BUDGET).toBe(4000);
   });
 
   it.each([
@@ -565,7 +567,7 @@ describe("status capability self-contained startup", () => {
     const result = runStatus();
     expect(result.rc).toBe(0);
     expect(result.out.endsWith("\n")).toBe(true);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
     expect(result.err).toBe("");
 
     const capsule = result.payload.capability_context;
@@ -663,7 +665,7 @@ describe("status capability self-contained startup", () => {
     expect(result.payload.outcome).toBe(outcome);
     expect(capsule.startup.outcome).toBe(outcome);
     expect(state.outcome).toBe(outcome);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
   });
 
   it.each([
@@ -729,7 +731,7 @@ describe("status capability self-contained startup", () => {
     const state = statusState(result.payload);
 
     expect(result.rc).toBe(0);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
     expect(state.todo).toMatchObject({
       critical: 1,
       degraded: 1,
@@ -781,7 +783,14 @@ describe("status capability self-contained startup", () => {
       outcome: "actionable",
       retrieval: { exact: "npx -y agentera@next state todo get --id zzzzzzzzzz" },
     });
-    expect(state.next_action.alternatives).toContainEqual(
+    // Over-budget state trims alternatives; the full list stays one read away.
+    let alternatives = state.next_action.alternatives;
+    if (state.next_action.alternatives_omission) {
+      let out = "";
+      expect(main(["node", "agentera", ...state.next_action.alternatives_omission.retrieval.split(" ").slice(3)], { out: (text) => (out += text) })).toBe(0);
+      alternatives = JSON.parse(out).next_action.alternatives;
+    }
+    expect(alternatives).toContainEqual(
       expect.objectContaining({
         capability: "status",
         outcome: "needs-triage",
@@ -839,7 +848,7 @@ describe("status capability self-contained startup", () => {
     writeProjectFile(".agentera/health.yaml", `audits:\n${rows}`);
     const result = runStatus();
     expect(result.rc).toBe(0);
-    expect(Buffer.byteLength(result.out, "utf8")).toBeLessThanOrEqual(PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES);
+    expectStatusWithinBudget(result.out);
     expect(result.out).not.toContain(unicodeSample.repeat(100));
     expect(result.err).toBe("");
   });

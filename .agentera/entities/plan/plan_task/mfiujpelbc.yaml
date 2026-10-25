@@ -11,4 +11,5 @@ record:
     - GIVEN a profile near or past expiry WHEN status starts THEN one freshness value says expiring or expired, with the window owned by the CLI.
     - GIVEN a missing profile, a stale audit or a stalled objective WHEN status starts THEN each arrives only as an attention item or next_action, and the status capsule drops metadata telling the agent to read itself.
     - GIVEN empty attention WHEN status starts THEN at most one unused-capability hint appears with a state-based reason and no new tracking store; a direct capability route adds none.
+    - GIVEN the status state outside status_context (startup rows, shared_skill, guidance details) WHEN status starts THEN it repeats nothing status_context or the instructions already carry, state moves toward its 2000-token target, and the state ratchet ceiling is lowered to the new largest measured bytes rounded up to 1000.
   plan: bvovjefuaq

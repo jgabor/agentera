@@ -17,6 +17,7 @@ import { NPX_BUNDLE_SENTINEL } from "../../src/core/sourceRoot.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { coldProcessTest } from "../helpers/coldProcessTest.js";
 import { privatePackageCopy } from "../helpers/packageFixtureIsolation.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 
 const fixture = inject("packageFixture");
 const CHECKOUT_ROOT = path.resolve(import.meta.dirname, "../../../..");
@@ -385,8 +386,11 @@ describe("npm distribution boundary", () => {
       expect(Object.keys(payload).sort()).toEqual(["capability_context", "command", "outcome", "shared_skill"]);
       expect(payload.shared_skill).toEqual(expect.any(Object));
       expect(result.stdout.endsWith("\n")).toBe(true);
-      expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(budget.byte_budget);
-      expect(encode(result.stdout).length).toBeLessThanOrEqual(budget.token_budget);
+      if (capability === "status") expectStatusWithinBudget(result.stdout, "packaged status");
+      else {
+        expect(Buffer.byteLength(result.stdout)).toBeLessThanOrEqual(budget.byte_budget);
+        expect(encode(result.stdout).length).toBeLessThanOrEqual(budget.token_budget);
+      }
       expect(payload.capability_context.instructions.match(/## Execution rules/g)).toHaveLength(1);
       expect(payload.capability_context.instructions).toContain("explicit permissions remain binding");
       expect(payload.capability_context.instructions).toContain("Stop at accepted scope, even if blocked");
@@ -747,7 +751,7 @@ describe("npm distribution boundary", () => {
         });
         expect((await read(["state", "todo", "list", "--fields", "description,status"])).entries[0].record).toEqual({ description, status: "open" });
         const startup = await read(["prime", "--context", "status"]);
-        expect(Buffer.byteLength(JSON.stringify(startup, null, 2) + "\n")).toBeLessThanOrEqual(22500);
+        expectStatusWithinBudget(JSON.stringify(startup, null, 2) + "\n");
         const context = startup.capability_context.context.status_context;
         const decisionAttention = context.attention.find((text: string) => text.includes("⛋ Decision"));
         expect(decisionAttention).toContain(`⛋ Decision ${ids[0]}`);

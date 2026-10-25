@@ -21,8 +21,33 @@ import { startupAggregation } from "../../capabilityContext/startupAggregation.j
 
 export { briefOrientationPayload, PRIME_BRIEF_MAX_UTF8_BYTES } from "./briefOrientation.js";
 
-/** Authority for the complete status startup capsule, including instructions. */
-export const PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES = 22500;
+/**
+ * Status startup budgets (references/artifacts/state-storage-authority.yaml
+ * budgets.startup.surfaces.prime_status_context). Token targets come from what
+ * the dashboard needs; the binding contract is bytes. State is everything a
+ * status start emits beyond its served instructions. Its ceiling is a ratchet
+ * at the largest measured state, above the byte target the token target
+ * implies; runtime trims past the ceiling rather than refusing.
+ */
+export const STATUS_INSTRUCTION_TOKEN_BUDGET = 2000;
+export const STATUS_STATE_TOKEN_BUDGET = 2000;
+export const STATUS_CAPSULE_TOKEN_BUDGET = STATUS_INSTRUCTION_TOKEN_BUDGET + STATUS_STATE_TOKEN_BUDGET;
+export const STATUS_STATE_BYTES_PER_TOKEN = 3.8;
+export const STATUS_STATE_TARGET_UTF8_BYTES = STATUS_STATE_TOKEN_BUDGET * STATUS_STATE_BYTES_PER_TOKEN;
+export const STATUS_STATE_MAX_UTF8_BYTES = 14000;
+
+/** The status_context a direct or routed status payload carries. */
+export function statusContextOf(payload: Record<string, unknown>): Record<string, unknown> {
+  const capsule = (payload.capability_context ?? (payload.start as Record<string, unknown> | undefined)?.capability_context) as Record<string, any>;
+  return capsule.context.status_context as Record<string, unknown>;
+}
+
+/** Bytes a status payload spends beyond its served instructions. */
+export function statusStateUtf8Bytes(payload: Record<string, unknown>): number {
+  const capsule = (payload.capability_context ?? (payload.start as Record<string, unknown> | undefined)?.capability_context) as Record<string, unknown> | undefined;
+  const instructions = typeof capsule?.instructions === "string" ? capsule.instructions : "";
+  return briefUtf8Bytes(payload) - Buffer.byteLength(JSON.stringify(instructions), "utf8");
+}
 
 /** Project a single {@link NextAction} to its JSON record shape. */
 function nextActionEntry(action: NextAction): Record<string, unknown> {
@@ -448,12 +473,11 @@ export const PRIME_CAPABILITY_CONTEXT_MAX_UTF8_BYTES = 55000;
 /** The unchanged semantic_required route result prime carries in place of a capsule. */
 export const PRIME_SEMANTIC_ROUTE_MAX_UTF8_BYTES = 25000;
 
-/** A routed prime response may use the bare brief budget plus the budget of
- *  what the route selects: the status capsule, another capability's capsule, or
- *  the semantic_required result. */
+/** A routed prime response other than status may use the bare brief budget
+ *  plus the budget of what the route selects: another capability's capsule or
+ *  the semantic_required result. A routed status start trims its own state. */
 export function routedStartBudgetBytes(route: RouteResponse): number {
-  if (route.outcome !== "deterministic_selection") return PRIME_BRIEF_MAX_UTF8_BYTES + PRIME_SEMANTIC_ROUTE_MAX_UTF8_BYTES;
-  return PRIME_BRIEF_MAX_UTF8_BYTES + (route.capability === "status" ? PRIME_STATUS_CONTEXT_MAX_UTF8_BYTES : PRIME_CAPABILITY_CONTEXT_MAX_UTF8_BYTES);
+  return PRIME_BRIEF_MAX_UTF8_BYTES + (route.outcome === "deterministic_selection" ? PRIME_CAPABILITY_CONTEXT_MAX_UTF8_BYTES : PRIME_SEMANTIC_ROUTE_MAX_UTF8_BYTES);
 }
 
 export type RoutedFit = { response: Record<string, unknown>; bytes: number; fits: boolean };

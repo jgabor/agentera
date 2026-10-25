@@ -5,6 +5,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import YAML from "yaml";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
 import { encode } from "gpt-tokenizer/model/gpt-5";
 import { afterEach, beforeEach, describe, expect, it } from "vite-plus/test";
 
@@ -121,6 +122,10 @@ describe("prime routes a request from --input", () => {
     for (const [request, carried] of requests) {
       const result = routed(request);
       expect(result.rc, `${request}: ${result.out}`).toBe(0);
+      if (carried === "status") {
+        expectStatusWithinBudget(result.out, request);
+        continue;
+      }
       expect(Buffer.byteLength(result.out), request).toBeLessThanOrEqual(ROUTED_BUDGETS[carried].byte_budget);
       expect(encode(result.out).length, request).toBeLessThanOrEqual(ROUTED_BUDGETS[carried].token_budget);
     }

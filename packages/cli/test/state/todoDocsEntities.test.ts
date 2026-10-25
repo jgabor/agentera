@@ -34,6 +34,8 @@ import { collectEntityOrientation } from "../../src/cli/commands/prime/collectEn
 import { closeoutTodoBlockers } from "../../src/cli/capabilityContext/closeout.js";
 import { evaluateTodoReadinessQueue } from "../../src/cli/todoReadinessSelection.js";
 import { shellCommandArgs } from "../helpers/shellCommand.js";
+import { expectStatusWithinBudget } from "../helpers/statusBudget.js";
+import { statusStateUtf8Bytes, STATUS_STATE_MAX_UTF8_BYTES } from "../../src/cli/commands/prime/orientationOutput.js";
 import { decodeListCursor, encodeListCursor } from "../../src/state/listCursor.js";
 import { loadStateStorageAuthority } from "../../src/state/stateStorageAuthority.js";
 import { resolveSourceRoot } from "../../src/core/sourceRoot.js";
@@ -2345,6 +2347,28 @@ describe("TODO item and documentation inventory entity authority", () => {
     const resolvedHeavy = capture(root, ["prime", "--context", "status", "--format", "json"]);
     expect(resolvedHeavy.rc, resolvedHeavy.err || resolvedHeavy.out).toBe(0);
     expect(resolvedHeavy.json.capability_context.context.status_context.todo.critical).toBe(10);
+  });
+
+  it("fits the largest startup state within the status budget, direct or routed", () => {
+    // Absent open items past the limit block reconciliation and carry the
+    // largest startup state; this start used to exceed the status byte cap.
+    // Over-budget trimming is covered in-process by statusDashboardBudget.
+    const { root } = todoReadProject(250);
+    for (let index = 250; index < 257; index += 1) seedAbsentTodoEntity(root, indexedId(index), `Open absent item ${index}`, index + 1);
+    const direct = capture(root, ["prime", "--context", "status", "--format", "json"]);
+    expect(direct.rc, direct.err || direct.out).toBe(0);
+    const status = direct.json.capability_context.context.status_context;
+    expect(status).not.toHaveProperty("state_budget");
+    expect(status.next_action.object).toBeTruthy();
+    for (const line of ["outcome", "plan", "todo", "health", "attention"]) expect(status).toHaveProperty(line);
+    const routed = capture(root, ["prime", "--input", "-"], JSON.stringify({ version: "agentera.route_request.v1", request: "/agentera" }));
+    expect(routed.rc, routed.err || routed.out).toBe(0);
+    expect(routed.json.start.capability_context.context.status_context).toEqual(status);
+    expectStatusWithinBudget(direct.out, "direct status");
+    expectStatusWithinBudget(routed.out, "routed status");
+    // This is the largest measured status state, so it sets the state
+    // ratchet: a cut of 1000 bytes or more must lower the ceiling too.
+    expect(STATUS_STATE_MAX_UTF8_BYTES).toBe(Math.ceil(statusStateUtf8Bytes(direct.json) / 1000) * 1000);
   });
 
   it("keeps resolved TODO.md rows and counts only open rows toward the create limit", () => {

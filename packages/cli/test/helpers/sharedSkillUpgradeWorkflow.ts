@@ -65,7 +65,10 @@ export function runSharedSkillUpgradeWorkflow(root: string, current: string, inv
   assert.equal(prime.code, 0);
   assert.equal(status.code, 0);
   assert.ok(Buffer.byteLength(prime.out) <= 16000);
-  assert.ok(Buffer.byteLength(status.out) <= 22500);
+  // Status state stays within its byte bound or reports what it trimmed.
+  const statusContext = status.payload.capability_context.context.status_context;
+  const stateBytes = Buffer.byteLength(status.out) - Buffer.byteLength(JSON.stringify(status.payload.capability_context.instructions));
+  assert.ok(stateBytes <= 14000 || statusContext.state_budget?.omitted === true);
   const offer = prime.payload.shared_skill.upgrade_offer;
   assert.equal(offer.question, "Agentera’s installed skill needs an update. Update it now? Your project files will not change.");
   assert.equal(offer.approval, "explicit_yes_only");

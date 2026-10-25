@@ -2579,10 +2579,25 @@ budgets:
         max_latency_ms: 15000
         max_heap_delta_bytes: 268435456
       serialized_output:
-        # Generic prime capability capsules retain the full instructions body.
-        # The status capability is the one bounded aggregation surface.
+        # Generic prime capability capsules retain the full instructions body
+        # and keep this byte ceiling until their own audit derives a budget
+        # under capability_budget_rule. Status already has one.
         prime_capability_context_max_utf8_bytes: 55000
-        prime_status_context_max_utf8_bytes: 22500
+      capability_budget_rule: >-
+        Each capability startup has one token target, counted with the
+        manifest tokenizer over its full stdout and split into an instruction
+        target and a state target. Both are derived from what the capability's
+        job needs on every start, never from measured output plus headroom,
+        and each value is rounded up to the next 1000 tokens. Bytes are the
+        binding contract. The byte target is each token target at the
+        bytes-per-token ratio measured on that part, and a calibration test
+        fails when the ratio drifts. Each part is held by a ratchet ceiling at
+        its largest measured bytes rounded up to 1000, lowered as the
+        capability approaches its targets and never raised. State growth never
+        refuses a start: the runtime trims lower-ranked detail past the state
+        ceiling and reports what it omitted and whether state now fits. The
+        output bound is the sum of the ceilings. Status derives its budget
+        first; each later capability audit derives its own.
       aggregation:
         schema_version: agentera.primeStartup.v1
         outcome_values: [ok, degraded, blocked]
@@ -2613,30 +2628,71 @@ budgets:
         max_gpt5_tokens: 5000
       prime_dashboard:
         manifest_id: prime-dashboard
-        max_utf8_bytes: 22500
+        # The deprecated alias emits the status capsule and shares its budget.
+        max_utf8_bytes: 26000
+        max_gpt5_tokens: 4000
       prime_status_context:
         manifest_id: prime-status-context
-        # Status startup includes its instructions and one bounded availability
-        # aggregation. Diagnostics remain on stderr.
-        max_utf8_bytes: 22500
+        # Token targets derive from the dashboard's job (2026-10-24):
+        # instructions 2000 cover the six-section spine, the dashboard
+        # template, routing, offer and exit rules and the injected shared
+        # sections. State 2000 covers the north-star line 40, plan line 60,
+        # counts 80, attention at most 5 items of 50 (250), the next action
+        # plus at most 2 alternatives (320), profile freshness, unfinished
+        # work and the capability hint 100, offers 250, startup and
+        # availability rows 600 and envelope pointers 300. Those item caps are
+        # also the trim order.
+        #
+        # Bytes are the binding contract, because runtime has no tokenizer
+        # and token counts differ by model. Pretty UTF-8 stdout has two parts:
+        # the served instructions as a JSON string, and state, which is
+        # everything else, startup rows included, since their size follows
+        # project state. The state target is 2000 tokens at 3.8 bytes per
+        # token, the lowest ratio measured on status state (3.81 in this
+        # repository; 4.07 and 4.10 in the largest and fresh fixtures), and a
+        # calibration test fails when a measured state falls below it. Both
+        # parts are held by ratchet ceilings at the largest measured value
+        # rounded up to 1000, which may only go down: instructions 11927, and
+        # state 13559 with blocked TODO reconciliation in startup. Runtime
+        # trims state past its ceiling and reports the trim instead of
+        # refusing. The status_context data task cuts state toward its target
+        # and the status rewrite cuts instructions toward theirs.
+        # max_utf8_bytes is the sum of the two ceilings.
+        max_utf8_bytes: 26000
+        instruction_max_utf8_bytes: 12000
+        state_max_utf8_bytes: 14000
+        state_target_utf8_bytes: 7600
+        state_bytes_per_token: 3.8
+        max_gpt5_tokens: 4000
+        instruction_gpt5_tokens: 2000
+        state_gpt5_tokens: 2000
+        instruction_enforcement: deferred_to_status_rewrite
       prime_sparse:
         manifest_id: prime-fields-sparse
         max_utf8_bytes: 28000
       prime_routed_start:
         manifest_id: prime-routed-start
         # `prime --input <file|->` with an agentera.route_request.v1 mapping
-        # carries the unchanged route result. Its budget is the bare brief
-        # budget plus the budget of what it carries: the status capsule (sent
-        # with the manual and no brief), another capability's capsule, or the
+        # carries the unchanged route result. A routed status start sends the
+        # status capsule with the manual and no brief; its budget is the status
+        # capsule plus what the routed response adds: the manual, the route
+        # result and the indentation of the nested capsule (3579 bytes
+        # measured on the largest status state), rounded up to 4000 bytes,
+        # and it trims state as a direct
+        # status start does instead of failing. Its token target is 5000. Any
+        # other route's budget is the bare brief budget
+        # plus what it carries: another capability's capsule or the
         # semantic_required route result. The brief gets the bytes the carried
         # result leaves, at most its own budget, and degrades as bare prime
         # does; when no brief fits, the manual stays and the response names
-        # bare prime for the orientation. A response that still cannot fit
-        # fails with routed_output_budget and the direct command.
+        # bare prime for the orientation. Such a response that still cannot
+        # fit fails with routed_output_budget and the direct command.
         brief_max_utf8_bytes: 16000
         semantic_route_max_utf8_bytes: 25000
+        status_head_max_utf8_bytes: 4000
+        status_max_utf8_bytes: 30000
+        status_max_gpt5_tokens: 5000
         max_utf8_bytes_by_carried:
-          status: 38500
           capability: 71000
           semantic_required: 41000
     required_when_over_budget: [omitted, omitted_count, omission_reason, retrieval]
@@ -2673,7 +2729,7 @@ budgets:
     max_utf8_bytes: 3000
 validation:
   authority: this file plus the referenced JSON surface manifest
-  drift_rule: tests fail if manifest IDs, byte values or the prime_briefing token value disagree with this contract
+  drift_rule: tests fail if manifest IDs, byte values, the prime_briefing token value or the status token values disagree with this contract
 
 # The mutation grammar is the only declarative inventory of public state writes.
 # Runtime code owns execution; this section owns the vocabulary, shape, bounds,
