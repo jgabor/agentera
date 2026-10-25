@@ -1,0 +1,24 @@
+id: aicwhezuhs
+artifact: todo
+record:
+  kind: chore
+  target_version: null
+  title: Move the runtime bootstrap matrix evidence test out of the core verification job.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - The development publish core job takes 436 s on a slow hosted runner (273 to 320 s on faster ones). Its floor is the core source partition, 375 s in landing run 40180347516, and the largest part is `test/integration/runtimeBootstrapMatrix.test.ts`, which stays in the core because it writes the source-owner activation evidence that must match the package owner's tarball on one host.
+    - Split the evidence-producing cases from the rest of that file so only they stay in the core partition and the remaining cases run in a source shard. Activation evidence, tarball parity and exact source inventory coverage must not change.
+    - Measure the result on hosted runners; record it in docs/verification-performance.md.
+  acceptance:
+    - GIVEN the split WHEN development CI runs THEN the core source partition holds only the activation-evidence cases and the declared Darwin-skip file, assembly still covers every source file exactly once, and activation evidence matches the package owner.
+    - GIVEN a hosted run WHEN its timings are recorded THEN the core job time is reported against the 436 s landing baseline.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore] Move the runtime bootstrap matrix evidence test out of the core verification job."
+      severity: normal
+      status: open
+      order: 43

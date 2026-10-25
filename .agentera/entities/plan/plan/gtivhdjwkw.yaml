@@ -4,7 +4,7 @@ record:
   header:
     level: full
     created: 2026-10-24
-    status: open
+    status: archived
     reviewed: 2026-10-24
     critic_issues: 10 found, 10 addressed, 0 dismissed
     title: "Plan: Shorten the development verification core job"
@@ -41,5 +41,4 @@ record:
     - question: Do stress, performance and capacity in series on one runner finish before the core, or do they need two runners?
       affects_task: 4
       resolve_by: Use the hosted measurement in task 4 and split the isolated owners only if they become the critical path.
-  surprises:
-    []
+  surprises: "The original targets (core job 360 s, whole run 9.5 min) were met only on faster hosted runners. Two of four hosted runs of the new layout ran about 55 to 60 percent slower, and the landing run took 436 s in the core job and 10.8 min in total, from 637 s and about 14 min before. The user accepted the measured result as done. Further cuts need the deferred work: splitting the runtime bootstrap matrix evidence test out of the core and rebalancing shards."

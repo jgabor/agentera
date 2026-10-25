@@ -1,0 +1,23 @@
+id: evjcrdvkoh
+artifact: todo
+record:
+  kind: chore
+  target_version: null
+  title: Rebalance the development source shards so no shard sets the critical path.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - Hosted shard times are uneven. Run 40176417267 measured 330, 252 and 245 s in attempt 1, and landing run 40180347516 measured 338, 202 and 249 s, so the slowest shard ends with or after the core job.
+    - Shard 3 also builds the checkout CLI and runs the migration scenarios, so its balance must include those steps.
+    - Use `references/analysis/verification-policy.yaml#source_partitions` weights or the partition algorithm in `packages/cli/scripts/source-partition.mjs`; weights affect balance only, never coverage.
+  acceptance:
+    - GIVEN the rebalanced partition WHEN a hosted run is recorded THEN the slowest and fastest shard jobs differ by at most 60 s, and every source file is still covered exactly once.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore] Rebalance the development source shards so no shard sets the critical path."
+      severity: normal
+      status: open
+      order: 44

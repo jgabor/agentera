@@ -4,8 +4,21 @@ record:
   name: Update the authorities and land in one push
   depends_on:
     - aucapswfpa
-  status: in_progress
+  status: complete
   acceptance:
     - GIVEN the contract, verification policy, decision record and maintainer guides WHEN a reader compares them with the measured workflow THEN they describe the same layout, failure rules and guarantees, including how assembly replaces cross-owner barrier ordering.
-    - GIVEN the measurement is recorded WHEN the change lands on feat/v3 under explicit push authorization THEN the temporary workflow is gone and the first publish run passes, publishes and confirms the package within the run-time target of this plan.
+    - GIVEN the measurement is recorded WHEN the change lands on feat/v3 under explicit push authorization THEN the temporary workflow is gone and the first publish run passes, publishes and confirms the package, with its core job and total time recorded against the targets the user accepted.
   plan: gtivhdjwkw
+  evidence:
+    - Landing publish run 40180347516 passed every job and published 3.0.0-dev.152 to next; total 648 s (10.8 min, from about 14 min before), core job 436 s with core source 375 s and package 366 s, isolated owners 180 s, slowest shard 338 s, build 34 s, publish 18 s, confirm 136 s.
+    - The core job missed the original 360 s target on a slow runner, matching the slow profile of measurement attempt 2; the user accepted the measured result as done.
+  evaluation:
+    attempt_count: 1
+    failure_count: 0
+    last_verdict: pass
+    last_failure_evidence: null
+    provenance:
+      attempt_id: audit-1
+      source: workflow wf_ddf51b1c-eea acceptance and evidence-and-regressions audits PASS on authorities; landing run 40180347516 passed and published; run-time result accepted by the user
+      recorded_at: 2026-10-25 10:42
+      writer_command: agentera state plan record-evaluation

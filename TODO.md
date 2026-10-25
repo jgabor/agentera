@@ -61,6 +61,10 @@
 - [ ] [id:svlmflnetx] [fix:3.0.0] Stop top-level capability commands from pointing agents at checkout source.
 - [ ] [id:ujqomryeao] [docs:3.0.0] Reconcile handoff verbs between the operating manual and the vocabulary.
 - [ ] [id:vvmgsvwlrg] [fix:3.0.0] Make check explain describe what capability validators actually check.
+- [ ] [id:aicwhezuhs] [chore] Move the runtime bootstrap matrix evidence test out of the core verification job.
+- [ ] [id:evjcrdvkoh] [chore] Rebalance the development source shards so no shard sets the critical path.
+- [ ] [id:nwmjxztigu] [chore] Take npm availability confirmation off the development publish critical path.
+- [ ] [id:ueffpmnzdr] [chore] Shard package-owner test files across runners with cross-host tarball equality.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.

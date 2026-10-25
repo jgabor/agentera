@@ -1,0 +1,24 @@
+id: nwmjxztigu
+artifact: todo
+record:
+  kind: chore
+  target_version: null
+  title: Take npm availability confirmation off the development publish critical path.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - "`confirm-development` waits for npm registry propagation after publication: 136 s in landing run 40180347516 and 101 to 108 s in run 40111173795, about a fifth of the 648 s run."
+    - Keep confirmation as read-only evidence that the published version is available on `@next`, but stop it from gating how long a push takes to verify and publish. Options include a separate workflow triggered after publication or a non-blocking job whose failure is still reported.
+    - Load the agentera-release skill before changing publication jobs. Any change must keep replay, observation and the publication-history guards working.
+  acceptance:
+    - GIVEN a development push WHEN publication succeeds THEN the run's critical path ends at publication, and availability is still confirmed and reported for that version.
+    - GIVEN confirmation fails WHEN it runs THEN the failure is visible and recorded against the published version.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore] Take npm availability confirmation off the development publish critical path."
+      severity: normal
+      status: open
+      order: 45

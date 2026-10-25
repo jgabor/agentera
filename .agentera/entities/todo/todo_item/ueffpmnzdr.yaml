@@ -1,0 +1,23 @@
+id: ueffpmnzdr
+artifact: todo
+record:
+  kind: chore
+  target_version: null
+  title: Shard package-owner test files across runners with cross-host tarball equality.
+  severity: normal
+  release_blocker: false
+  requirements:
+    - The package owner runs three workers on the core runner (223 to 366 s on hosted runners) and finishes within a few percent of the core source partition, so it sets the core job's length together with it.
+    - Splitting package test files across runners needs each runner to build the same package tarball and prove byte equality across hosts, and the activation evidence must still come from one host.
+    - This was deferred from the core job plan; take it up only if the core source split does not bring the core job under its target.
+  acceptance:
+    - GIVEN package files on more than one runner WHEN assembly runs THEN it requires identical package identities from every package partition and still validates activation evidence from one host.
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[chore] Shard package-owner test files across runners with cross-host tarball equality."
+      severity: normal
+      status: open
+      order: 46
