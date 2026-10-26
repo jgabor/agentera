@@ -1,0 +1,25 @@
+id: ehwtmgrlui
+artifact: todo
+record:
+  kind: feat
+  target_version: 3.0.0
+  title: Add the invalidate and defer plan task verbs and update the plan contract.
+  requirements:
+    - Add state plan invalidate (reason required, at most 500 characters) and state plan defer (an existing open TODO ID required, checked by the writer, plus a reason). Both close the task like drop does and keep dependency, evaluation and plan-completion rules aligned with dropped.
+    - Invalidate records a plan surprise for the task so build and status show that the plan needs a look. Defer stores the TODO ID with the task.
+    - Update the plan task schema, the plan instructions (Replan section) and the writer explain text to define superseded, dropped, invalidated and deferred as the decision records.
+  acceptance:
+    - GIVEN an open task WHEN it is invalidated with a reason THEN it is closed and the plan carries a surprise naming it.
+    - GIVEN an open task WHEN defer names a missing or resolved TODO THEN the writer rejects it and changes nothing.
+    - GIVEN a plan whose remaining tasks are complete, superseded, dropped, invalidated or deferred WHEN completion is requested THEN the plan completes.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[feat:3.0.0] Add the invalidate and defer plan task verbs and update the plan contract."
+      severity: normal
+      status: open
+      order: 63

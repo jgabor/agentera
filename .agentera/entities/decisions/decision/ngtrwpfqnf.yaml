@@ -1,0 +1,23 @@
+id: ngtrwpfqnf
+artifact: decisions
+record:
+  date: 2026-10-26
+  question: Which terminal states should a plan task have when it leaves a plan without being done, and what must each one mean?
+  context: "The merged plan audit added the dropped status and removed skipped from the plan task validator. Skipped was never writable: set-status accepts only complete, in_progress, pending and blocked, and no verb produced it, so no stored plan holds it. The user asked whether invalidated and deferred name the states better, and wanted each term defined before the approach is chosen. A later reader of a plan needs to tell why a task left and whether its work will return."
+  alternatives:
+    - name: Four ways to leave a plan, each its own verb with its own required input. Superseded means replacement tasks in the same plan now cover the work. Dropped means the user decided the work will not be done, with a reason. Invalidated means the plan assumed something false; it requires a reason and records a plan surprise so build and status show the plan needs a look. Deferred means the work returns later; it requires the ID of an existing open TODO, which the writer checks, and is closed for the plan.
+      status: chosen
+    - name: Keep three states (complete, superseded, dropped) and let reason text carry why and whether it returns; a reader cannot tell a false premise from a changed mind, and a promise to return can be lost.
+      status: rejected
+    - name: Add deferred only and fold invalidated into dropped; it loses the replan signal that a false premise gives.
+      status: rejected
+    - name: One close verb with an --as flag; the grammar could not reject a deferral without a TODO.
+      status: rejected
+    - name: Keep a deferred plan open until its TODO is done; plans would sit open for long and archives would never close.
+      status: rejected
+    - name: Restore skipped; it was never writable and means the same as dropped or deferred without saying which.
+      status: rejected
+  choice: "Superseded, dropped, invalidated and deferred are the closed non-complete task states. Each has its own verb: supersede, drop, invalidate, defer. A plan completes when every task is complete or in one of these states. Skipped stays removed. The TODO about skipped is moot and is replaced by work to add invalidate and defer."
+  reasoning: Both axes matter to a later reader, why it left and whether it returns, and a state earns its place only when a capability acts on it. Deferred points to a checked TODO, so the promise is read at startup. Invalidated raises a plan surprise, so a false premise prompts a replan, which a dropped decision does not. Separate verbs let the grammar enforce each rule. Skipped was never writable, so removing it needs no migration.
+  confidence: firm
+  feeds_into: skills/agentera/schemas/artifacts/plan.yaml, packages/cli/src/state/planEntities.ts, packages/cli/src/state/write/planEvaluation.ts, packages/cli/src/state/write/runtimeOperations.ts, packages/cli/src/capabilities/plan/instructions.ts

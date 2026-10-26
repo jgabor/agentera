@@ -82,7 +82,7 @@
 - [ ] [id:ycnfuhmffy] [refactor:3.0.0] Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term.
 - [ ] [id:zgjozzimtt] [fix:3.0.0] Carry the vision's identity.voice in capsules that delegate voice to it.
 - [ ] [id:forcnazdcb] [fix:3.0.0] Rewrite the injected Human references section so agents can apply it.
-- [ ] [id:pmllkmbfcv] [fix:3.0.0] Keep plan task status skipped valid for existing plans, or migrate it to dropped.
+- [ ] [id:ehwtmgrlui] [feat:3.0.0] Add the invalidate and defer plan task verbs and update the plan contract.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -277,3 +277,4 @@
 - [x] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
 - [x] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.
 - [x] [id:dbtvjwestz] [test:3.0.0] Rewrite the Discuss closeout journey test to follow the current closeout.
+- [x] [id:pmllkmbfcv] [fix:3.0.0] Keep plan task status skipped valid for existing plans, or migrate it to dropped.
