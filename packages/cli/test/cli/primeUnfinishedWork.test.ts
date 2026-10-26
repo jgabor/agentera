@@ -103,6 +103,15 @@ describe("prime suggests resuming unfinished work", () => {
     expect(next.alternatives[0].object).toBe(clean.object);
   });
 
+  it("ignores changes under .agentera, which capabilities write routinely", () => {
+    committedProject();
+    git("checkout", "-q", "-b", "feat/state-only");
+    fs.mkdirSync(path.join(project, ".agentera", "entities"), { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera", "entities", "routine.yaml"), "id: routine\n");
+
+    expect(statusNextAction()).not.toHaveProperty("unfinished_work");
+  });
+
   it("routes a clean working tree exactly as a project outside Git", () => {
     createEntityAuthorityFixture(project, 25, AUTHORITY);
     const outsideGit = statusNextAction();

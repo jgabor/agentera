@@ -14,7 +14,8 @@ function gitEnvironment(): NodeJS.ProcessEnv {
 
 /**
  * The project's uncommitted work: current branch and changed-file count, never
- * file names or content. One read-only `git status` that takes no optional
+ * file names or content. Project state under `.agentera/` is excluded: capabilities
+ * write it routinely, so it says nothing about code left unfinished. One read-only `git status` that takes no optional
  * locks, so startup never rewrites the index. An untracked directory counts as
  * one change. A repository without a first commit has nothing to resume: its
  * files are the new project, and init hands off to vision. Any failure (no
@@ -22,7 +23,7 @@ function gitEnvironment(): NodeJS.ProcessEnv {
  * a degraded start.
  */
 export function readUnfinishedWork(project: string): UnfinishedWork | null {
-  const result = spawnSync("git", ["--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--", "."], {
+  const result = spawnSync("git", ["--no-optional-locks", "status", "--porcelain=v2", "--branch", "-z", "--untracked-files=normal", "--", ".", ":(exclude).agentera"], {
     cwd: project,
     env: gitEnvironment(),
     encoding: "utf8",

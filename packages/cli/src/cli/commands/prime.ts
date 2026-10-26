@@ -24,7 +24,6 @@ import { acquireGlossaryInputs } from "../../analytics/glossaryInputAcquisition.
 import { resolveStartupGlossaryAdvice } from "../capabilityContext/startupGlossaryAdvice.js";
 import { discoverSchemasDir } from "../appContext.js";
 import { registryArtifactPath } from "../orientation.js";
-import { briefUtf8Bytes } from "./prime/briefOrientation.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import { isCorruptSuiteVersion, readSuiteVersion } from "../../upgrade/appModel.js";
 import { emitStartupFailure } from "../startupFailure.js";

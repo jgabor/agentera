@@ -1,0 +1,22 @@
+id: pmllkmbfcv
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Keep plan task status skipped valid for existing plans, or migrate it to dropped.
+  requirements:
+    - The plan task validator now accepts pending, in_progress, complete, blocked, superseded and dropped, and no longer accepts skipped. A project whose older plans hold a skipped task fails plan validation after upgrade.
+    - Either keep skipped readable for existing records, or have the project migration rewrite skipped tasks to dropped with a reason. State the choice in the CHANGELOG.
+  acceptance:
+    - GIVEN a plan that holds a skipped task WHEN the project is validated after upgrade THEN validation passes or the migration offer converts the task.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Keep plan task status skipped valid for existing plans, or migrate it to dropped."
+      severity: normal
+      status: open
+      order: 63

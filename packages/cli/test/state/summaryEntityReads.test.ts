@@ -685,7 +685,6 @@ describe("summary entity ordinary reads", () => {
     }
     const dashboard = cli(root, ["prime", "--dashboard", "--format", "json"]);
     expect(dashboard.rc, dashboard.err).toBe(0);
-    const authority = YAML.parse(fs.readFileSync(path.join(SOURCE_ROOT, "references/artifacts/state-storage-authority.yaml"), "utf8"));
     expectStatusWithinBudget(dashboard.out, "dashboard");
     const payload = JSON.parse(dashboard.out).capability_context.context.status_context;
     expect(payload.progress.latest).toBeNull();
