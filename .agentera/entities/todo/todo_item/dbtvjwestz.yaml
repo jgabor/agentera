@@ -18,7 +18,7 @@ record:
       present: true
       description: "[test:3.0.0] Rewrite the Discuss closeout journey test to follow the current closeout."
       status: resolved
-      order: 176
+      order: 181
       severity: normal
   lifecycle:
     operation: resolve

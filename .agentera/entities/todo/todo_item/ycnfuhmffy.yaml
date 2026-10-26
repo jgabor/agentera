@@ -20,4 +20,4 @@ record:
       description: "[refactor:3.0.0] Serve one glossary-advice block to Discuss, Plan and Build, and let a routed start carry the selected term."
       severity: normal
       status: open
-      order: 55
+      order: 60

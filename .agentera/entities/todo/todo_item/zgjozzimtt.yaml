@@ -18,4 +18,4 @@ record:
       description: "[fix:3.0.0] Carry the vision's identity.voice in capsules that delegate voice to it."
       severity: normal
       status: open
-      order: 56
+      order: 61

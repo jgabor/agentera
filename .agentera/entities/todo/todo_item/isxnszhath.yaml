@@ -20,4 +20,4 @@ record:
       description: "[feat:3.0.0] Consolidate decisions and TODOs so Discuss's prior context stays near 20k tokens."
       severity: normal
       status: open
-      order: 51
+      order: 56

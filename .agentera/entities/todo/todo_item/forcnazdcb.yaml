@@ -19,4 +19,4 @@ record:
       description: "[fix:3.0.0] Rewrite the injected Human references section so agents can apply it."
       severity: normal
       status: open
-      order: 57
+      order: 62

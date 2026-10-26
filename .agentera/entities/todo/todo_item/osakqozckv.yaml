@@ -25,4 +25,4 @@ record:
       description: "[feat:3.0.0] Start Discuss and Plan with every prior decision, open TODO and plan within a 20k-token goal."
       severity: normal
       status: open
-      order: 53
+      order: 58

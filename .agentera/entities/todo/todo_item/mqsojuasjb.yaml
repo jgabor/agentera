@@ -19,4 +19,4 @@ record:
       description: "[fix:3.0.0] Detect instruction patches that apply but are overwritten by a later patch."
       severity: normal
       status: open
-      order: 52
+      order: 57
