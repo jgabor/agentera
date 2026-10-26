@@ -47,7 +47,7 @@ export interface RuntimeOperationSpec {
   projection: RuntimeOperationProjectionContract;
 }
 
-export const RUNTIME_WRITE_VERBS = ["append", "update", "amend", "set-status", "supersede", "set-plan-status", "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "correct-owners", "set-severity", "resolve", "reopen", "explain"] as const;
+export const RUNTIME_WRITE_VERBS = ["append", "update", "amend", "set-status", "supersede", "drop", "set-plan-status", "record-evaluation", "archive", "create", "replace", "publish", "activate", "repair", "correct-owners", "set-severity", "resolve", "reopen", "explain"] as const;
 export type RuntimeWriteVerb = (typeof RUNTIME_WRITE_VERBS)[number];
 
 // Validate when writer contracts are consumed, not when static instruction
@@ -149,22 +149,22 @@ const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
   }),
   op("plan", "append", [f("--plan", "plan", "string")], {
     selectors: ["--plan"],
-    ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+    ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "dropped_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
     inputMode: "structured",
     inputRoot: "one plan task record",
     inputSources: ["file", "stdin"],
     structuredInputSources: ["file", "stdin"],
-    cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+    cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "dropped_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
     inputMaxBytes: 32768,
   }),
   op("plan", "update", [f("--id", "id", "string", { required: true }), f("--plan", "plan", "string")], {
     selectors: ["--id", "--plan"],
-    ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+    ownedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "dropped_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
     inputMode: "structured",
     inputRoot: "plan task patch",
     inputSources: ["file", "stdin"],
     structuredInputSources: ["file", "stdin"],
-    cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
+    cliOwnedFields: ["id", "artifact", "plan", "status", "superseded_by", "superseded_reason", "dropped_reason", "evaluation", "header.status", "header.id", "previous_plan_archived", "task_ids"],
     inputMaxBytes: 32768,
   }),
   op(
@@ -185,6 +185,19 @@ const RUNTIME_OPERATION_CORES: RuntimeOperationCoreSpec[] = [
     selectors: ["--id", "--plan"],
     ownedFields: ["id", "artifact", "plan", "superseded_by", "superseded_reason"],
   }),
+  op(
+    "plan",
+    "drop",
+    [
+      f("--id", "id", "string", { required: true }),
+      f("--plan", "plan", "string"),
+      f("--reason", "dropped_reason", "string", {
+        required: true,
+        description: "Why the task will not be done; non-empty, at most 500 characters, stored trimmed as dropped_reason.",
+      }),
+    ],
+    { selectors: ["--id", "--plan"], ownedFields: ["id", "artifact", "plan", "status", "dropped_reason"] },
+  ),
   op(
     "plan",
     "set-plan-status",
@@ -423,6 +436,10 @@ const RUNTIME_OPERATION_PROJECTIONS: Record<string, RuntimeOperationProjectionCo
   "plan.update": projection("Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.", developmentCommand("state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml")),
   "plan.set-status": projection("Reread the task list, copy its bare task ID, and use one of complete, in_progress, pending, or blocked.", developmentCommand("state plan set-status --id qjtrmnpvka --status complete")),
   "plan.supersede": projection("Complete and evaluate each replacement task with latest PASS evidence, then retry with the returned bare IDs.", developmentCommand('state plan supersede --id qjtrmnpvka --by zqtrmnpvka --reason "Replacement task"')),
+  "plan.drop": projection(
+    "Drop only a pending, in_progress or blocked task in an open plan. If open tasks depend on it, remove it from their depends_on with state plan update first, then retry with the same reason; no state was changed.",
+    developmentCommand('state plan drop --id qjtrmnpvka --reason "No longer needed after the scope change"'),
+  ),
   "plan.set-plan-status": projection("Keep the plan open or resolve every incomplete task and replacement evaluation before retrying completion.", developmentCommand("state plan set-plan-status --status complete")),
   "plan.record-evaluation": projection("Use the task's bare ID, a stable attempt ID, and evaluator provenance, then retry without changing published evidence.", developmentCommand('state plan record-evaluation --id qjtrmnpvka --attempt-id audit-1 --verdict pass --provenance "audit report"')),
   "plan.archive": projection(

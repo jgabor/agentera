@@ -87,8 +87,8 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
       sha256: "08a5f7400fd5e537ad0d4cdb4a0de6ad32ceeab2a3fe0d1c6ed843c6e882db1d",
     },
     state: {
-      count: 38,
-      sha256: "7ab0dd6ef1b1b1ce66bd9ea94d1de3d542528233e928a44102e289bf12416681",
+      count: 39,
+      sha256: "16e8e9e884f437ac5fdc4d2e333a0e98c96a836fc51dcfe5359028bf3c6541b9",
     },
     package: {
       count: 80,
@@ -99,7 +99,7 @@ export const ACTIVATION_CENSUS_AUTHORITY: Readonly<{
       sha256: "71c2038744e2518a6adb722acbb5f9352bddfb5d1c92eeb0e347297ef2ca2f1e",
     },
   },
-  total: { count: 319, sha256: "39b2c8ff98aca2c49e9fe892c9efc6107edd20593e75bde18da833b659fa6aba" },
+  total: { count: 320, sha256: "9d50518ef52c9dd7b4a381b35954e4ca9a338a21e65c1dd68b9d6b84da06b582" },
 });
 
 /** Each dimension names the production contract it observes independently. */

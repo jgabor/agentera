@@ -18,6 +18,8 @@ import { operationSpec, type StateWriteRequest } from "../../src/state/write/ope
 import { shellCommandArgs } from "../helpers/shellCommand.js";
 import { entityListFamily } from "../../src/state/entityRetrievalHelp.js";
 import { explainedOperationSection } from "../helpers/operationDetail.js";
+import { firstActionablePlanTask } from "../../src/cli/capabilityContext/planState.js";
+import { planTaskRecordViolations } from "../../src/state/write/planEvaluation.js";
 
 const roots: string[] = [];
 const VALID_MARKER = "schemaVersion: agentera.stateMode.v1\nmode: entities\n";
@@ -546,7 +548,7 @@ describe("plan and task entity authority", () => {
 
   it("explains task mutations with bare IDs in entity mode", () => {
     const root = project();
-    for (const verb of ["update", "set-status", "supersede", "record-evaluation"]) {
+    for (const verb of ["update", "set-status", "supersede", "drop", "record-evaluation"]) {
       const result = capture(root, ["state", "plan", "explain", "--verb", verb, "--format", "json"]);
       expect(result.rc, result.err || result.out).toBe(0);
       const explanation = JSON.parse(result.out);
@@ -556,6 +558,75 @@ describe("plan and task entity authority", () => {
       expect(explanation.example).toContain("--id qjtrmnpvka");
       if (verb === "record-evaluation") expect(explanation.guidance).toEqual(expect.arrayContaining([expect.stringContaining("evaluate before completing"), expect.stringContaining("first PASS on an unevaluated complete replacement")]));
     }
+  });
+
+  it("explains the complete drop contract", () => {
+    const explanation = JSON.parse(capture(project(), ["state", "plan", "explain", "--verb", "drop", "--format", "json"]).out);
+    expect(explanation).toMatchObject({ mutation_class: "simple_transition", selectors: ["--id", "--plan"], owned_fields: ["id", "artifact", "plan", "status", "dropped_reason"], example: 'agentera state plan drop --id qjtrmnpvka --reason "No longer needed after the scope change"' });
+    expect(explanation.fields).toEqual([expect.objectContaining({ flag: "--id", required: true }), expect.objectContaining({ flag: "--plan", required: false }), expect.objectContaining({ flag: "--reason", field: "dropped_reason", required: true, description: expect.stringContaining("500 characters") })]);
+    expect(explanation.preconditions).toEqual(expect.arrayContaining(["selected_plan_is_open", "task_status_is_pending_in_progress_or_blocked", "no_open_same_plan_task_depends_on_target"]));
+    expect(explanation.recovery).toContain("state plan update");
+    expect(explanation.writer_owned_fields).toContain("dropped_reason");
+  });
+
+  it("drops a task with a reason only after open dependents release it, then lets the plan complete", () => {
+    const root = project();
+    const created = create(root, "drop", true);
+    const [first, second] = created.tasks.map((task: any) => task.id as string);
+    const drop = (reason: string, ...extra: string[]) => capture(root, ["state", "plan", "drop", "--plan", created.id, "--id", first, "--reason", reason, ...extra, "--format", "json"]);
+    const taskPath = path.join(root, `.agentera/entities/plan/plan_task/${first}.yaml`);
+    const original = fs.readFileSync(taskPath, "utf8");
+
+    const blocked = drop("Scope moved elsewhere.");
+    expect(blocked.rc).not.toBe(0);
+    expect(blocked.out + blocked.err).toContain(second);
+    expect(blocked.out + blocked.err).toContain("state plan update");
+    expect(fs.readFileSync(taskPath, "utf8")).toBe(original);
+
+    expect(updateTask(root, second, { depends_on: null }, created.id).rc).toBe(0);
+    const preview = drop("Scope moved elsewhere.", "--dry-run");
+    expect(preview.rc, preview.err || preview.out).toBe(0);
+    expect(fs.readFileSync(taskPath, "utf8")).toBe(original);
+    const dropped = drop("  Scope moved elsewhere.  ");
+    expect(dropped.rc, dropped.err || dropped.out).toBe(0);
+    expect(JSON.parse(dropped.out).record).toMatchObject({ status: "dropped", dropped_reason: "Scope moved elsewhere." });
+    const written = fs.readFileSync(taskPath, "utf8");
+
+    const replay = drop("Scope moved elsewhere.");
+    expect(replay.rc, replay.err || replay.out).toBe(0);
+    expect(JSON.parse(replay.out).operation.idempotent_replay).toBe(true);
+    const divergent = drop("A different reason.");
+    expect(divergent.rc).not.toBe(0);
+    expect(divergent.out + divergent.err).toContain("different reason");
+    expect(fs.readFileSync(taskPath, "utf8")).toBe(written);
+    expect(capture(root, ["state", "plan", "record-evaluation", "--plan", created.id, "--id", first, "--attempt-id", "audit-1", "--verdict", "pass", "--provenance", "audit", "--format", "json"]).rc).not.toBe(0);
+
+    expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", second, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    const closeout = capture(root, ["state", "plan", "set-plan-status", "--plan", created.id, "--status", "complete", "--format", "json"]);
+    expect(closeout.rc, closeout.err || closeout.out).toBe(0);
+    expect(validateEntityState(root).valid).toBe(true);
+  });
+
+  it("rejects dropping a complete task", () => {
+    const root = project();
+    const created = create(root, "drop-complete", true);
+    const second = created.tasks[1].id as string;
+    expect(capture(root, ["state", "plan", "set-status", "--plan", created.id, "--id", second, "--status", "complete", "--format", "json"]).rc).toBe(0);
+    const result = capture(root, ["state", "plan", "drop", "--plan", created.id, "--id", second, "--reason", "Too late.", "--format", "json"]);
+    expect(result.rc).not.toBe(0);
+    expect(result.out + result.err).toContain("only a pending, in_progress or blocked task can be dropped");
+  });
+
+  it("never selects a dropped task as next work and accepts dropped, not skipped, as a task status", () => {
+    const dropped = { id: "aaaaaaaaaa", status: "dropped", depends_on: [] };
+    const dependent = { id: "bbbbbbbbbb", status: "pending", depends_on: ["aaaaaaaaaa"] };
+    expect(firstActionablePlanTask([dropped, dependent])).toBe(dependent);
+    expect(firstActionablePlanTask([dropped])).toBeNull();
+    const base = { plan: "cccccccccc", name: "Task", depends_on: [], acceptance: [] };
+    expect(planTaskRecordViolations({ ...base, status: "dropped", dropped_reason: "Not needed." })).toEqual([]);
+    expect(planTaskRecordViolations({ ...base, status: "skipped" })).toEqual([expect.stringContaining("status must be")]);
+    expect(planTaskRecordViolations({ ...base, status: "dropped" })).toEqual([expect.stringContaining("dropped_reason must be")]);
+    expect(planTaskRecordViolations({ ...base, status: "pending", dropped_reason: "Not needed." })).toEqual([expect.stringContaining("only valid when status is dropped")]);
   });
 
   it("discovers one targeted replacement grammar with bare roles and an optional creation payload", () => {

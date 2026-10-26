@@ -23,7 +23,7 @@ function defaultVerb(artifact: WritableArtifact): Exclude<WriteVerb, "explain"> 
 function entityBoundary(artifact: WritableArtifact, verb: string): string {
   if (artifact === "progress") return "progress_cycle";
   if (artifact === "health") return "health_audit";
-  if (artifact === "plan") return ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb) ? "plan_task" : "plan";
+  if (artifact === "plan") return ["append", "update", "set-status", "supersede", "drop", "record-evaluation"].includes(verb) ? "plan_task" : "plan";
   if (artifact === "objective") return "objective";
   if (artifact === "experiments") return "experiment";
   if (artifact === "todo") return "todo_item";
@@ -45,7 +45,7 @@ function exposedFields(artifact: WritableArtifact, verb: string, spec: NonNullab
           description:
             artifact === "objective" && field.flag === "--id"
               ? "Bare ten-letter objective ID returned by objective create or list."
-              : artifact === "plan" && field.flag === "--id" && ["update", "set-status", "supersede", "record-evaluation"].includes(verb)
+              : artifact === "plan" && field.flag === "--id" && ["update", "set-status", "supersede", "drop", "record-evaluation"].includes(verb)
                 ? "Bare ten-letter task ID returned by plan task append or list."
                 : artifact === "plan" && field.flag === "--plan"
                   ? "Bare ten-letter plan ID returned by plan create or list."
@@ -289,8 +289,16 @@ function decisionsGuidance(artifact: WritableArtifact, verb: string, _entityHeal
       "if a referenced historical replacement has an existing non-PASS evaluation, first-PASS recovery is unavailable; use another complete latest-PASS replacement, or keep or archive the plan without claiming completion as applicable",
       ...base,
     ];
+  if (entityArtifact && artifact === "plan" && verb === "drop")
+    return [
+      "select one task entity with its bare ten-letter --id; the selected plan must be open",
+      "only a pending, in_progress or blocked task can be dropped; complete and superseded tasks stay as recorded",
+      "if open tasks in the plan list the task in depends_on, the drop is rejected with their IDs; remove the dependency with state plan update --id ID --input task-patch.yaml first, then retry",
+      "a dropped task counts as closed for plan completion and is never selected as next work; repeating the same reason is a replay, a different reason conflicts",
+      ...base,
+    ];
   if (entityArtifact && artifact === "plan" && verb === "update")
-    return ["select one task entity with its bare ten-letter --id; supply an omission-preserving YAML/JSON task patch through --input", "task status, supersession, evaluation, and plan lifecycle remain flag-only transitions; surprise remains plan-level content", ...base];
+    return ["select one task entity with its bare ten-letter --id; supply an omission-preserving YAML/JSON task patch through --input", "task status, supersession, drop, evaluation, and plan lifecycle remain flag-only transitions; surprise remains plan-level content", ...base];
   if (entityArtifact && artifact === "plan" && verb === "set-status") return ["select one task entity with its bare ten-letter --id; lifecycle status is a flag-only transition", ...base];
   if (entityArtifact && artifact === "plan" && verb === "append") return ["the CLI assigns a bare ten-letter ID to the new task entity", "supply one complete YAML/JSON task record through --input; dependencies must be bare ten-letter IDs in the selected plan", ...base];
   if (entityArtifact && artifact === "plan" && verb === "archive")

@@ -132,14 +132,14 @@ describe("declarative state mutation grammar", () => {
     expect(Buffer.byteLength(explainJson.out, "utf8")).toBeLessThan(32_768);
   });
 
-  it("keeps requiredness identical across all 29 runtime, authority, schema, and explain operations", () => {
+  it("keeps requiredness identical across all 30 runtime, authority, schema, and explain operations", () => {
     const root = project();
     const runtime = runtimeOperationSpecs();
     const grammar = loadMutationGrammar();
     const schema = runCli(root, ["schema", "--format", "json"], "", false);
     expect(schema.rc, schema.err).toBe(0);
-    expect(runtime).toHaveLength(29);
-    expect(grammar.operations).toHaveLength(29);
+    expect(runtime).toHaveLength(30);
+    expect(grammar.operations).toHaveLength(30);
 
     const schemaOperations = new Map<string, any>();
     for (const artifact of schema.json.state_writer.artifacts) {
@@ -147,7 +147,7 @@ describe("declarative state mutation grammar", () => {
         schemaOperations.set(`${artifact.artifact}.${operation.verb}`, operation);
       }
     }
-    expect(schemaOperations.size).toBe(29);
+    expect(schemaOperations.size).toBe(30);
 
     const explainAllOperations = new Map<string, any>();
     for (const artifact of new Set(runtime.map((operation) => operation.artifact))) {
@@ -157,7 +157,7 @@ describe("declarative state mutation grammar", () => {
         explainAllOperations.set(`${artifact}.${operation.requested_verb}`, operation);
       }
     }
-    expect(explainAllOperations.size).toBe(29);
+    expect(explainAllOperations.size).toBe(30);
 
     for (const operation of runtime) {
       const key = `${operation.artifact}.${operation.verb}`;
@@ -462,8 +462,8 @@ describe("declarative state mutation grammar", () => {
   it("binds recovery and example parity to every code-owned mutation operation", () => {
     const authorityPath = path.join(repoRoot, "references", "artifacts", "state-storage-authority.yaml");
     const authority = loadYamlMapping(fs.readFileSync(authorityPath, "utf8")) as any;
-    expect(authority.mutation_grammar.operations).toHaveLength(29);
-    expect(runtimeOperationSpecs()).toHaveLength(29);
+    expect(authority.mutation_grammar.operations).toHaveLength(30);
+    expect(runtimeOperationSpecs()).toHaveLength(30);
     for (const operation of authority.mutation_grammar.operations) {
       for (const field of ["recovery", "examples"] as const) {
         const sourceRoot = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-mutation-owner-"));

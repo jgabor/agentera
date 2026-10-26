@@ -2824,13 +2824,13 @@ mutation_grammar:
       class: record_payload
       selectors: [--plan]
       preconditions: [entity_mode_marker_is_valid, selected_plan_is_open, input_is_one_complete_plan_task_record, task_dependencies_are_bare_ids_in_same_plan]
-      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, dropped_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       input:
         mode: structured
         root: one plan task record
         sources: [file, stdin]
         structured_sources: [file, stdin]
-        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, dropped_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       recovery: Use npx -y agentera@next state plan explain --verb append, select an open plan, and supply one complete task record with bare same-plan dependencies.
       examples: ['npx -y agentera@next state plan append --plan qjtrmnpvka --input task.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
@@ -2842,13 +2842,13 @@ mutation_grammar:
       class: record_payload
       selectors: [--id, --plan]
       preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, selected_plan_is_open, input_is_plan_task_patch, task_dependencies_are_bare_ids_in_same_plan]
-      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+      owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, dropped_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       input:
         mode: structured
         root: plan task patch
         sources: [file, stdin]
         structured_sources: [file, stdin]
-        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
+        cli_owned_fields: [id, artifact, plan, status, superseded_by, superseded_reason, dropped_reason, evaluation, header.status, header.id, previous_plan_archived, task_ids]
       recovery: Reread the plan task by its bare ID, supply an omission-preserving patch through --input, and retry; no state was changed.
       examples: ['npx -y agentera@next state plan update --id qjtrmnpvka --plan abcdefghij --input task-patch.yaml']
       bounds: { max_input_utf8_bytes: 32768, max_collection_items: 1 }
@@ -2886,6 +2886,21 @@ mutation_grammar:
         - { flag: --plan, field: plan, kind: string }
         - { flag: --by, field: superseded_by, kind: string_list, required: true, repeatable: true }
         - { flag: --reason, field: superseded_reason, kind: string, required: true }
+
+    - artifact: plan
+      verb: drop
+      class: simple_transition
+      selectors: [--id, --plan]
+      preconditions: [entity_mode_marker_is_valid, target_id_is_bare_ten_letters, task_exists_in_selected_plan, selected_plan_is_open, task_status_is_pending_in_progress_or_blocked, task_is_not_named_by_superseded_predecessor, no_open_same_plan_task_depends_on_target]
+      owned_fields: [id, artifact, plan, status, dropped_reason]
+      input: { mode: none, sources: [], cli_owned_fields: [] }
+      recovery: Drop only a pending, in_progress or blocked task in an open plan. If open tasks depend on it, remove it from their depends_on with state plan update first, then retry with the same reason; no state was changed.
+      examples: ['npx -y agentera@next state plan drop --id qjtrmnpvka --reason "No longer needed after the scope change"']
+      bounds: { max_input_utf8_bytes: 0, max_collection_items: 1, max_reason_code_points: 500 }
+      fields:
+        - { flag: --id, field: id, kind: string, required: true }
+        - { flag: --plan, field: plan, kind: string }
+        - { flag: --reason, field: dropped_reason, kind: string, required: true, description: "Why the task will not be done; non-empty, at most 500 characters, stored trimmed as dropped_reason." }
 
     - artifact: plan
       verb: set-plan-status

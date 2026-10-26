@@ -147,6 +147,15 @@ const addedTuples: ActivationCanonicalTuple[] = [
   },
   {
     class: "state",
+    surface_id: "write:plan.drop",
+    owner_path: "packages/cli/src/state/write/runtimeOperations.ts",
+    owner_symbol_or_selector: "runtimeOperationSpecs",
+    owner_selector: "plan.drop",
+    semantic_selector_if_any: null,
+    canonical_correction: "node packages/cli/dist/bin/agentera.js check validate state",
+  },
+  {
+    class: "state",
     surface_id: "write:todo.activate",
     owner_path: "packages/cli/src/state/write/runtimeOperations.ts",
     owner_symbol_or_selector: "runtimeOperationSpecs",
@@ -357,8 +366,8 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "22fb8d32e037367fdd0cb69fa18c401002e8120115e2d1b2f10ea712b03ca74f",
     },
     state: {
-      count: 38,
-      sha256: "d3fa99f049a9e3a17f5a20e3aa77ebf8f4a9788bbc76a632c2d7d9a5b7049777",
+      count: 39,
+      sha256: "58efe45bebff3fb0248e60cd5c328302a73a07817be0f6ba8d60ec850ab4fd16",
     },
     package: {
       count: 80,
@@ -369,7 +378,7 @@ export const ACTIVATION_TUPLE_AUTHORITY = Object.freeze({
       sha256: "9a7dd7e27110d85cf5c08835fdd8f08119e75579858e63bc6d396c733961d0bc",
     },
   },
-  total: { count: 319, sha256: "9f2e1426fb46a2d8df7c36a7ba3d432a402c9ff4d445f3edeb947d49066d56d5" },
+  total: { count: 320, sha256: "4e2503192c3d419d64a165d2371ac0009ca9573ee8d2fe7c46eceeb70f08e3c7" },
 });
 export function canonicalTupleJson(value: ActivationCanonicalTuple): string {
   return JSON.stringify(value);

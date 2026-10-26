@@ -25,6 +25,8 @@ const PLAN = "plan";
 const TASK = "plan_task";
 const ID = /^[a-z]{10}$/;
 const OPEN = new Set(["open"]);
+const CLOSED_TASK_STATUSES = new Set(["complete", "superseded", "dropped"]);
+const DROPPABLE_TASK_STATUSES = new Set(["pending", "in_progress", "blocked"]);
 const ORDER = "created_desc_then_id_asc";
 const TASK_ORDER = "id_asc";
 
@@ -607,7 +609,7 @@ function assertProjectedTask(entities: DiscoveredEntity[], id: string, record: J
   if ([...records.keys()].some(visit)) reject({ class: "schema_violation", message: `task '${id}' would create a dependency cycle in plan '${planId}'` });
   if (record.status !== "complete" && hasSupersededPredecessor(entities, planId, id)) reject({ class: "conflict", message: `task '${id}' must remain complete while it is referenced by a superseded task` });
   const plan = entities.find((entity) => entity.boundary === PLAN && entity.id === planId);
-  if (plan && planStatus(plan) === "complete" && !["complete", "superseded"].includes(String(record.status))) reject({ class: "conflict", message: `task '${id}' cannot become incomplete while plan '${planId}' is complete` });
+  if (plan && planStatus(plan) === "complete" && !CLOSED_TASK_STATUSES.has(String(record.status))) reject({ class: "conflict", message: `task '${id}' cannot become incomplete while plan '${planId}' is complete` });
 }
 
 function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, taskId: string, planId: string, values: Record<string, unknown>): JsonObject {
@@ -647,6 +649,29 @@ function supersedeTask(entities: DiscoveredEntity[], task: DiscoveredEntity, tas
   record.superseded_reason = reason;
   return record;
 }
+function dropTask(entities: DiscoveredEntity[], plan: DiscoveredEntity, taskId: string, record: JsonObject, values: Record<string, unknown>): void {
+  const reason = String(values.dropped_reason ?? "").trim();
+  if (!reason || reason.length > 500) reject({ class: "schema_violation", message: "drop --reason must be a non-empty explanation of at most 500 characters" });
+  const status = String(record.status);
+  if (status === "dropped") {
+    if (record.dropped_reason === reason) return;
+    reject({ class: "conflict", message: `task '${taskId}' is already dropped with a different reason` });
+  }
+  if (!OPEN.has(planStatus(plan))) reject({ class: "conflict", message: `plan '${plan.id}' is ${planStatus(plan)}; only a task in an open plan can be dropped` });
+  if (!DROPPABLE_TASK_STATUSES.has(status)) reject({ class: "conflict", message: `only a pending, in_progress or blocked task can be dropped; task '${taskId}' is ${status}` });
+  const dependents = entities
+    .filter((entity) => entity.boundary === TASK && entity.id !== taskId && entity.record?.plan === plan.id && !CLOSED_TASK_STATUSES.has(String(entity.record?.status)) && Array.isArray(entity.record?.depends_on) && entity.record.depends_on.includes(taskId))
+    .map((entity) => entity.id!)
+    .sort();
+  if (dependents.length)
+    reject({
+      class: "conflict",
+      message: `task '${taskId}' cannot be dropped while open tasks depend on it: ${dependents.join(", ")}`,
+      recovery: `Remove '${taskId}' from depends_on in ${dependents.map((id) => `'${id}'`).join(", ")} with agentera state plan update --id ID --input task-patch.yaml first, then retry the drop; no state was changed.`,
+    });
+  record.status = "dropped";
+  record.dropped_reason = reason;
+}
 export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}): StateWriteEnvelope {
   if (req.spec.verb === "create") return createPlanEntities(req, options);
   if (req.spec.verb === "replace") return replacePlanEntities(req, options);
@@ -685,7 +710,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
     record.header = header;
     const command = "state plan set-plan-status";
     if (canonicalRecordJson(record) === canonicalRecordJson(plan.record)) return envelope(command, { id: plan.id!, path: plan.path, replay: true }, record, req.dryRun);
-    if (requested === "complete" && tasks.some((task) => !["complete", "superseded"].includes(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
+    if (requested === "complete" && tasks.some((task) => !CLOSED_TASK_STATUSES.has(String(task.record?.status)))) reject({ class: "conflict", message: "plan cannot be completed while incomplete tasks remain" });
     if (requested === "complete") {
       for (const task of tasks.filter((candidate) => candidate.record?.status === "superseded")) {
         for (const replacementId of Array.isArray(task.record?.superseded_by) ? task.record.superseded_by : []) {
@@ -763,6 +788,7 @@ export function mutatePlanEntities(req: StateWriteRequest, options: Options = {}
       }
     assertDependencies(req.projectRoot, sourceRoot, record, taskId);
   } else if (req.spec.verb === "set-status") record.status = String(req.values.status);
+  else if (req.spec.verb === "drop") dropTask(entities, plan, taskId, record, req.values);
   else if (req.spec.verb === "record-evaluation") {
     const completedReplacementRecovery = OPEN.has(planStatus(plan)) && hasSupersededPredecessor(entities, plan.id!, taskId);
     const mutation = mutatePlanTaskEvaluation(record, req.values.evaluation, `plan task '${taskId}'`, completedReplacementRecovery);

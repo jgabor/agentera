@@ -118,7 +118,7 @@ function uniqueReplacementTaskNames(tasks: JsonObject[], context: string, failur
 
 function logicalReplacementTask(record: JsonObject, dependencies: unknown[], resolveDependency: (dependency: unknown) => string): JsonObject {
   const logical = structuredClone(record);
-  for (const field of ["number", "plan", "status", "evaluation", "superseded_by", "superseded_reason"]) delete logical[field];
+  for (const field of ["number", "plan", "status", "evaluation", "superseded_by", "superseded_reason", "dropped_reason"]) delete logical[field];
   logical.depends_on = dependencies.map(resolveDependency);
   if (!Array.isArray(logical.acceptance)) logical.acceptance = [];
   return logical;

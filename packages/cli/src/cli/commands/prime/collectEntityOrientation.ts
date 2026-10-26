@@ -88,7 +88,7 @@ function header(entry: JsonObject | undefined): JsonObject {
 }
 
 function terminal(status: unknown): boolean {
-  return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded"].includes(String(status ?? "").toLowerCase());
+  return ["complete", "completed", "closed", "done", "resolved", "retired", "superseded", "dropped"].includes(String(status ?? "").toLowerCase());
 }
 
 function healthSummary(latest: JsonObject | undefined, history: JsonObject | undefined, currentCount: number): HealthSummary {

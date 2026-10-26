@@ -286,7 +286,7 @@ const RULES: Record<string, string[]> = {
     "One complete plan document, not an entity envelope. header.id, task IDs and lineage are writer-owned. Task numbers are create-local ordinals 1..N. Dependencies may be positive integers or canonical numeric strings referring to tasks in this same input; no duplicates, self edges, missing targets or cycles.",
     "Light/full header level, title, created date and lifecycle plus what, why, scope and tasks follow the field definitions. Full plans also require reviewed, critic_issues and design. critic_issues is 'N found, M addressed, K dismissed'; M+K=N and K equals rejected entries, each with issue and rationale.",
     "unknowns and rejected are optional lists of mappings: omit or use [] when empty; no minimum quota. Each unknown requires question, integer affects_task and resolve_by. Each rejected entry requires issue and rationale. Full-plan task acceptance must be non-empty; complete plan creation requires every task complete.",
-    "Cannot create archived plans or superseded tasks. Missing task dependencies and acceptance normalize to empty lists where permitted by level. Strict prose lint and candidate validation run before publication.",
+    "Cannot create archived plans, superseded tasks or dropped tasks. Missing task dependencies and acceptance normalize to empty lists where permitted by level. Strict prose lint and candidate validation run before publication.",
     "Plan create and init are the two initializers of genuinely fresh state; init publishes only the marker after preview and --yes. Fresh state is the exact real Git worktree root with no .agentera directory, or one that is empty or holds only writer-lock residue whose owner process is gone. A non-Git directory, a Git subdirectory, or any other marker-absent .agentera content is not fresh. Legacy, partial or unknown state requires read-only upgrade inspection and the applicable authorized recovery path. Existing open plans block creation unless --force selects exactly one predecessor; multiple open predecessors reject. Force preserves predecessor task/evaluation history and archives it unchanged.",
     "Creation allocates new identities and is not content-idempotent; inspect the returned plan before retrying an uncertain success. --dry-run validates but does not reserve the returned candidate IDs.",
   ],
@@ -300,18 +300,22 @@ const RULES: Record<string, string[]> = {
   ],
   "plan.update": [
     "Select a bare task --id, optionally checked against --plan. Non-empty omission-preserving patch. Null clears only depends_on, acceptance, evidence and blocked_reason. Dependencies must remain same-plan and acyclic.",
-    "surprise belongs to the plan, not the task; it cannot be combined with task-field changes. Status/evaluation/supersession are separate verbs. An unchanged resulting record is a no-effect replay.",
+    "surprise belongs to the plan, not the task; it cannot be combined with task-field changes. Status/evaluation/supersession/drop are separate verbs. An unchanged resulting record is a no-effect replay.",
   ],
   "plan.set-status": ["Changes only task execution status. Plan lifecycle is separate. A blocked task with an exhausted evaluation retry budget cannot be reopened; completion must respect persisted evaluation and supersession requirements. Identical status is a no-effect replay."],
   "plan.supersede": [
     "The selected task must currently be blocked, except for exact supersession replay. --by is repeatable, one bare replacement ID per occurrence. Replacements must be distinct same-plan tasks, complete with latest persisted PASS. No self-reference, cycles or missing tasks. Reason must be non-empty and at most 500 characters.",
     "Records superseded status and exact replacement evidence; does not fabricate completion or evaluation. Repeat the exact relationship for replay; divergence rejects.",
   ],
+  "plan.drop": [
+    "Select a bare task --id, optionally checked against --plan. The plan must be open; archived and complete plans reject. Only pending, in_progress or blocked tasks can be dropped; complete and superseded tasks reject, and a task named by a superseded predecessor must stay complete. --reason must be non-empty after trimming and at most 500 characters.",
+    "Rejects while any same-plan task that is not complete, superseded or dropped lists the task in depends_on, naming those task IDs; update their depends_on with state plan update first, then retry. Records status dropped and the trimmed dropped_reason; does not fabricate completion or evaluation. A dropped task counts as closed for plan completion and is never selected as next work. The same reason is a no-effect replay; a different reason conflicts.",
+  ],
   "plan.record-evaluation": [
     "--attempt-id and --provenance must be non-empty. Fail requires non-empty --failure-evidence; pass forbids it. The last attempt with identical ID/result/provenance is a replay; divergent result data conflicts.",
-    "New evaluations reject complete, blocked or superseded tasks. Narrow recovery allows a first PASS for an unevaluated complete replacement only when an open same-plan superseded predecessor names it. Two persisted failures block the task; another failed attempt exceeds the retry budget. recorded_at and counters are writer-owned.",
+    "New evaluations reject complete, blocked, superseded or dropped tasks. Narrow recovery allows a first PASS for an unevaluated complete replacement only when an open same-plan superseded predecessor names it. Two persisted failures block the task; another failed attempt exceeds the retry budget. recorded_at and counters are writer-owned.",
   ],
-  "plan.set-plan-status": ["Select --plan or the unique applicable plan. Completing requires every task complete or validly superseded with complete PASS-evaluated replacements. Does not complete tasks, synthesize evaluations or satisfy the user. Identical lifecycle is replay."],
+  "plan.set-plan-status": ["Select --plan or the unique applicable plan. Completing requires every task complete, dropped, or validly superseded with complete PASS-evaluated replacements. Does not complete tasks, synthesize evaluations or satisfy the user. Identical lifecycle is replay."],
   "plan.archive": ["Archive a complete plan normally. --force permits archiving a selected open plan without changing tasks, evaluation or completion history. Implicit selection rejects competing open candidates. Exact archive replay is no-effect; archive is not completion."],
   "health.append": [
     "One audit record, not an audits wrapper. Omit number, stable_id, artifact_id, entry_number, id, artifact and appended_at. Missing date defaults to today. The writer assigns UTC appended_at only for new publication and ignores it in logical replay comparison.",
@@ -455,7 +459,7 @@ export function currentOperationDetail(artifact: WritableArtifact, verb: string,
   const definitions = target.entities as Record<string, unknown>[];
   const boundary =
     artifact === "plan"
-      ? ["append", "update", "set-status", "supersede", "record-evaluation"].includes(verb)
+      ? ["append", "update", "set-status", "supersede", "drop", "record-evaluation"].includes(verb)
         ? "plan_task"
         : "plan"
       : (

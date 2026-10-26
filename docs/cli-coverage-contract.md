@@ -553,8 +553,8 @@ The successful inventories are:
   **status, vision, discuss, research, plan, build, optimize, audit, document,
   profile, design, orchestrate**. Real quoted selectors containing an apostrophe
   (Research worker guidance) are parsed and exercised without a shell.
-- State: nine families; **29 advertised verbs**. Progress/health append;
-  decisions append/update/amend; plan append/update/set-status/supersede/
+- State: nine families; **30 advertised verbs**. Progress/health append;
+  decisions append/update/amend; plan append/update/set-status/supersede/drop/
   set-plan-status/record-evaluation/archive/create/replace; objective create/update;
   experiments publish; todo activate/repair/correct-owners/create/update/
   set-severity/supersede/resolve/reopen; docs create/update; glossary publish.

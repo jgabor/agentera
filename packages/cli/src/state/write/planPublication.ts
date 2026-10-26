@@ -58,6 +58,13 @@ export function normalizeAndValidatePlanCreateInput(input: Record<string, unknow
       violations: ["superseded task relationships are assigned only by agentera state plan supersede"],
     });
   }
+  if (tasks.some((task) => task.status === "dropped")) {
+    reject({
+      class: "schema_violation",
+      message: "plan create cannot publish dropped tasks",
+      violations: ["dropped status and dropped_reason are assigned only by agentera state plan drop"],
+    });
+  }
   const numbers = tasks.map((task) => Number(task.number));
   const expected = tasks.map((_, index) => index + 1);
   if (numbers.some((number, index) => number !== expected[index])) {

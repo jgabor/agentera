@@ -302,7 +302,7 @@ export function validateEntityDiscovery(projectRoot: string, sourceRoot: string 
   for (const plan of discovery.entities.filter((entity) => entity.boundary === "plan" && entity.classification === "valid" && entity.id && entity.record)) {
     const header = mapping(plan.record!.header) ? (plan.record!.header as JsonObject) : {};
     if (header.status === "complete") {
-      const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => !["complete", "superseded"].includes(String(task.record?.status)));
+      const incomplete = (tasksByPlan.get(plan.id!) ?? []).filter((task) => !["complete", "superseded", "dropped"].includes(String(task.record?.status)));
       if (incomplete.length)
         issues.push({
           code: "conflicting_ownership",

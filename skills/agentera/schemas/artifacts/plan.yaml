@@ -385,7 +385,7 @@ TASK:
       Task execution status. Uses visual tokens from protocol.yaml
       VISUAL_TOKENS (VT1-VT4) for display.
     validation:
-      - "Must be one of: complete, in_progress, pending, blocked, superseded"
+      - "Must be one of: complete, in_progress, pending, blocked, superseded, dropped"
   5:
     id: PT19
     field: acceptance
@@ -425,6 +425,16 @@ TASK:
     description: >-
       CLI-owned required explanation, at most 500 characters, for a superseded
       task. Present only with superseded_by when status is superseded.
+  9:
+    id: PT23
+    field: dropped_reason
+    type: string
+    required: false
+    description: >-
+      CLI-owned required explanation, at most 500 characters and stored
+      trimmed, for a task dropped by `npx -y agentera@next state plan drop`.
+      Present only when status is dropped. A dropped task counts as closed for
+      plan completion and is never selected as next work.
 
 VALIDATION:
   1:
@@ -519,7 +529,7 @@ LIFECYCLE_CONTRACT:
         - archived
       meaning:
         open: Work is active and unfinished.
-        complete: Every task is complete or validly superseded.
+        complete: Every task is complete, validly superseded, or dropped.
         archived: Historical or abandoned source; tasks may be incomplete or empty.
     position:
       active: A unique open entity plan supplies the default active selection.
@@ -537,7 +547,7 @@ LIFECYCLE_CONTRACT:
         field: replacement_input_sha256
         representation: lowercase SHA-256 of the normalized logical replacement input
         ownership: Writer-owned at targeted replacement publication and immutable afterward.
-        exclusions: [task.status, task.evaluation, task.superseded_by, task.superseded_reason]
+        exclusions: [task.status, task.evaluation, task.superseded_by, task.superseded_reason, task.dropped_reason]
     forced_archive:
       unfinished_status: archived
       effect: Change the plan lifecycle to archived without claiming completion or changing tasks, evaluations, or completion history.

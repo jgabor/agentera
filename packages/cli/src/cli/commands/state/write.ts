@@ -361,7 +361,7 @@ function parseWrite(artifactRaw: string, argv: string[]): ParsedWrite {
       });
   }
   if (artifact === "plan" && verb !== "create") {
-    const taskVerb = ["update", "set-status", "supersede", "record-evaluation"].includes(verb);
+    const taskVerb = ["update", "set-status", "supersede", "drop", "record-evaluation"].includes(verb);
     const id = mappingPath(values, "id");
     if (taskVerb && id === undefined)
       invalid({
