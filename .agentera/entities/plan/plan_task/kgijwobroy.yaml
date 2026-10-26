@@ -10,7 +10,7 @@ record:
     - oboljsuljr
     - aqbmwrllwi
     - ashzoykves
-  status: pending
+  status: complete
   acceptance:
     - GIVEN the audit prompt WHEN the task runs THEN the user confirms the north-star statements, findings, related-TODO dispositions, outline and complete draft before it is applied.
     - GIVEN a cold agent with only the installed skill, in this repository and a fresh one, WHEN the user runs bare /agentera THEN it renders the dashboard in one CLI call with no follow-up reads and at most one question; if the user declines the paid eval, the task ends flagged.

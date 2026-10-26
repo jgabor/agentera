@@ -12,12 +12,16 @@ record:
     - The cold-agent eval asks at most one question per reply.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply."
+      status: resolved
+      order: 180
       severity: normal
-      status: open
-      order: 45
+  lifecycle:
+    operation: resolve
+    reason: Offers carry blocking flags, the manual asks one question per reply, and the paid status eval passed 6 of 6 bare /agentera runs with one question.
+    date: 2026-10-26

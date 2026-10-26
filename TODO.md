@@ -68,13 +68,12 @@
 - [ ] [id:ueffpmnzdr] [chore] Shard package-owner test files across runners with cross-host tarball equality.
 - [ ] [id:hlryvcuzyu] [fix:3.0.0] Give Discuss a closeout handoff to plan or TODOs for decisions that call for work.
 - [ ] [id:irpspuslza] [feat:3.0.0] Add the in-capability autonomy rule to the operating manual.
-- [ ] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.
 - [ ] [id:nqbnvhenng] [refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited.
-- [ ] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
 - [ ] [id:zlaqdzrnvg] [fix:3.0.0] Keep resolved TODO text that exists only in TODO.md before compaction can drop it.
 - [ ] [id:rduzoccwod] [feat:3.0.0] Serve attention as structured items on every startup surface.
 - [ ] [id:qudrlknzlt] [feat:3.0.0] Keep the vision north star short when the vision capability writes it.
 - [ ] [id:ozhcboueiy] [refactor:3.0.0] Decide which capsule metadata each capability startup keeps.
+- [ ] [id:mesptlylox] [fix:3.0.0] Make next_action alternatives distinct and truthful.
 
 ## ⇢ Annoying
 - [ ] [id:wrkrtdbfdn] [fix:3.0.0] Clarify shared-skill diagnosis labels and blocked messages.
@@ -266,3 +265,5 @@
 - [x] [id:idscqacjdm] [feat:3.0.0] Let next_action suggest resuming unfinished work in the working tree.
 - [x] [id:vbnhmqjuho] [feat:3.0.0] Serve status_context as data the dashboard renders without interpretation.
 - [x] [id:pqzldtmyui] [fix:3.0.0] Lead a first run with the init preview instead of an upgrade suggestion.
+- [x] [id:ziymlghyzi] [feat:3.0.0] Rewrite the status capability instructions per its second audit.
+- [x] [id:jyitpcmnos] [feat:3.0.0] Mark offers as blocking or non-blocking and ask one question per reply.

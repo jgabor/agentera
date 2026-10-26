@@ -24,7 +24,6 @@ try {
   });
   if (compiled.status !== 0) throw new Error(`source capability compilation failed: ${(compiled.stderr || compiled.stdout).trim()}`);
   const tuples = await import(pathToFileURL(path.join(dist, "registries/activationTuples.js")).href);
-  const statusStartup = await import(pathToFileURL(path.join(dist, "capabilities/status/startupInstructions.js")).href);
   const runtime = await import(pathToFileURL(path.join(dist, "capabilities/index.js")).href);
   const capabilityIds = tuples.ACTIVATION_CANONICAL_TUPLES.filter((tuple) => tuple.class === "capability")
     .map((tuple) => tuple.surface_id)
@@ -34,7 +33,7 @@ try {
     const module = await import(pathToFileURL(path.join(dist, `capabilities/${capability}/instructions.js`)).href);
     const instructionBody = typeof module.servedInstructions === "function" ? module.servedInstructions() : module.default;
     if (typeof instructionBody !== "string") throw new Error(`source capability '${capability}' has no default instruction body`);
-    const body = capability === "status" ? statusStartup.statusStartupInstructions(instructionBody) : instructionBody;
+    const body = instructionBody;
     modules[capability] = runtime.servedInstructions(body);
   }
   const routes = await import(pathToFileURL(path.join(dist, "cli/commands/capability.js")).href);

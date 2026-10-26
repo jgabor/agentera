@@ -37,13 +37,13 @@ VALIDATION:
     id: V4
     rule: word_budget
     description: >-
-      The briefing MUST be ≤120 words total. Each routing suggestion MUST be
-      ≤15 words. These constraints keep the briefing scannable and avoid
+      The dashboard MUST be ≤120 words, logo excluded. Each line of the next
+      section MUST be ≤15 words. These constraints keep the briefing scannable and avoid
       information overload.
     severity: warning
     checks:
-      - "Briefing word count ≤ 120"
-      - "Each routing suggestion ≤ 15 words"
+      - "Dashboard word count ≤ 120, logo excluded"
+      - "Each next-section line ≤ 15 words"
   5:
     id: V5
     rule: single_clarifying_question
@@ -53,3 +53,14 @@ VALIDATION:
     severity: critical
     checks:
       - "At most one clarifying question when routing is unclear"
+  6:
+    id: V6
+    rule: render_from_response
+    description: >-
+      Status MUST render the dashboard from its startup response alone and
+      MUST NOT render an item, count or field the response does not carry.
+      Detail commands run only for recovery or when the user asks for more.
+    severity: critical
+    checks:
+      - "No CLI call or file read before the first reply on an ok or degraded startup"
+      - "Every rendered attention item appears in status_context.attention"

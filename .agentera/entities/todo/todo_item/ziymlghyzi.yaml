@@ -14,12 +14,16 @@ record:
     - Every rendered line maps to a status_context field.
   release_blocker: false
   severity: normal
-  status: open
+  status: resolved
   reconciliation:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
       description: "[feat:3.0.0] Rewrite the status capability instructions per its second audit."
+      status: resolved
+      order: 179
       severity: normal
-      status: open
-      order: 47
+  lifecycle:
+    operation: resolve
+    reason: Status instructions rewritten per the second status audit.
+    date: 2026-10-26

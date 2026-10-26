@@ -8,7 +8,6 @@ import { describe, expect, it } from "vite-plus/test";
 import YAML from "yaml";
 
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath, servedInstructions } from "../../src/capabilities/index.js";
-import { statusStartupInstructions } from "../../src/capabilities/status/startupInstructions.js";
 import { PRIME_MANUAL } from "../../src/cli/prime-blob.js";
 import { printCapabilityHelp, printRouteHelp, printStateHelp, printTopLevelHelp, printUpgradeHelp, stateCommandNames } from "../../src/cli/help.js";
 import { renderProductV1ResetPreview } from "../../src/cli/commands/upgrade.js";
@@ -172,7 +171,7 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = servedInstructions(capability === "status" ? statusStartupInstructions(canonical) : canonical);
+      const expected = servedInstructions(canonical);
       // Historical literals transformed by the module are not current guidance;
       // check the complete effective export as served.
       surfaces.push([`${modulePath} effective instructions`, canonical]);
@@ -1468,7 +1467,7 @@ describe("retired runtime current-surface policy", () => {
       const module = await import(pathToFileURL(path.join(repoRoot, modulePath)).href);
       const staticInstructions = typeof module.default === "string" ? module.default : raw;
       const canonical = typeof module.servedInstructions === "function" ? module.servedInstructions() : staticInstructions;
-      const expected = servedInstructions(capability === "status" ? statusStartupInstructions(canonical) : canonical);
+      const expected = servedInstructions(canonical);
       expect(expected, `${capability} expected instructions`).toBe(served);
       expect(currentSupportViolations(raw), `${modulePath} raw instructions`).toEqual([]);
       expect(currentSupportViolations(served), `${capability} served instructions`).toEqual([]);

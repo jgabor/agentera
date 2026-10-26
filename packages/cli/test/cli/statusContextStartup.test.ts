@@ -203,27 +203,19 @@ describe("informational status handoff", () => {
     expect(JSON.parse(out).capability_context.instructions).toBe(CAPABILITY_INSTRUCTIONS.build);
   }
 
-  it("serves the same informational first handoff in status and vocabulary, not in the shared skill", () => {
+  it("serves one suggestion and one question in status, with question gating in vocabulary, not in the shared skill", () => {
     const guidance = suggestion();
     const skill = fs.readFileSync(path.join(REPO_ROOT, "skills/agentera/SKILL.md"), "utf8");
-    const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
-    for (const text of [guidance, vocabulary]) {
-      const normalized = text.replace(/\s+/g, " ");
-      expect(normalized).toContain("free-form continuation prompt");
-      expect(normalized).toContain("even when the suggested capability may mutate state");
-      expect(normalized).toContain("user requested bounded choices");
-      expect(normalized).toContain("without a second status confirmation");
-      expect(normalized).toContain("invoked capability owns any additional mutation approval");
-      expect(normalized).not.toContain("state-changing Proceed/Cancel handoff");
-      expect(normalized).not.toContain("Any proposed project/runtime mutation needs a Proceed/Cancel handoff");
-    }
-    expect(guidance).toContain("Initial status: free-form continuation prompt");
-    expect(guidance).toContain("native choices only if the user requested bounded choices");
-    expect(guidance).toContain("scope and permissions stay unchanged, including autonomous orchestration");
-    // The shared skill no longer restates the handoff; the status capsule
-    // carries it whole and the manual keeps the one-start rule.
-    expect(guidance).toContain("Decline stops without invocation; ambiguity asks one clarification before invocation");
-    expect(guidance).toContain("A direct capability route is already consent to invoke it");
+    const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8").replace(/\s+/g, " ");
+    expect(vocabulary).toContain("free-form continuation prompt");
+    expect(vocabulary).toContain("without a second status confirmation");
+    expect(vocabulary).toContain("invoked capability owns any additional mutation approval");
+    // Status names its one suggestion and question; the manual owns when a
+    // suggestion starts and vocabulary owns question gating.
+    expect(guidance).toContain("Suggest exactly one step: `next_action` with its object and reason.");
+    expect(guidance).toContain("that is the reply's one question");
+    expect(guidance).toContain("a capability starts when the user accepts it or named it");
+    expect(guidance).not.toContain("Proceed/Cancel");
     expect(skill).not.toContain("next_action");
     expect(PRIME_MANUAL).toContain("`next_action` is a suggestion; start it once, only if the user accepts");
     expect(PRIME_MANUAL.match(/Override it only on what the user said this session, and say why\./g)).toHaveLength(1);
@@ -232,7 +224,7 @@ describe("informational status handoff", () => {
   // These are explicit compliant-host traces against real CLI startup and route
   // responses, not a native prompt implementation or CLI enforcement of consent.
   it("accepts the named suggestion and starts it once without a second status prompt", () => {
-    expect(suggestion()).toContain("start exactly that capability once");
+    expect(suggestion()).toContain("a capability starts when the user accepts it or named it");
     const trace = ["status brief", "free-form continuation", "user: yes"];
     startBuild();
     trace.push("prime --context build");
@@ -242,7 +234,7 @@ describe("informational status handoff", () => {
   });
 
   it("stops on decline without starting the suggested capability", () => {
-    expect(suggestion()).toContain("Decline stops without invocation");
+    expect(suggestion()).toContain("If the user declines, offer `next_action.alternatives` in one question.");
     const before = fs.readFileSync(path.join(project, ".agentera/entities/todo/todo_item/abcdefghij.yaml"), "utf8");
     const trace = ["status brief", "free-form continuation", "user: no", "stop"];
     expect(trace).not.toContain("prime --context build");
@@ -250,7 +242,7 @@ describe("informational status handoff", () => {
   });
 
   it.each(["yes", "no"])("asks one clarification for ambiguity, then handles %s", (reply) => {
-    expect(suggestion()).toContain("ambiguity asks one clarification before invocation");
+    expect(suggestion()).toContain("that is the reply's one question");
     const trace = ["status brief", "user: maybe", "clarify: Start build for the fixture bug?"];
     expect(trace).not.toContain("prime --context build");
     trace.push(`user: ${reply}`);
@@ -280,7 +272,7 @@ describe("informational status handoff", () => {
       outcome: "deterministic_selection",
       capability: "build",
     });
-    expect(CAPABILITY_INSTRUCTIONS.status).toContain("A direct capability route is already consent to invoke it");
+    expect(CAPABILITY_INSTRUCTIONS.status).toContain("a capability starts when the user accepts it or named it");
     const trace = ["user: /agentera build"];
     startBuild();
     trace.push("prime --context build", "user: decline additional mutation", "stop");
@@ -520,8 +512,8 @@ describe("status capability self-contained startup", () => {
   it("delegates TODO selection to typed readiness without prose inference", () => {
     const instructions = runStatus().payload.capability_context.instructions as string;
 
-    expect(instructions).toContain("selected from complete typed readiness state");
-    expect(instructions).toContain("preserve its TODO ID, declared reason, derived phase, and exact retrieval");
+    expect(instructions).toContain("Suggest exactly one step: `next_action` with its object and reason.");
+    expect(instructions).not.toContain("Priority order");
     expect(instructions).not.toContain("route by shape");
     expect(instructions).not.toContain("contract-shaped, multi-surface");
   });
@@ -578,11 +570,12 @@ describe("status capability self-contained startup", () => {
     const capsule = result.payload.capability_context;
     const state = statusState(result.payload);
     expect(capsule.instructions).toBe(CAPABILITY_INSTRUCTIONS.status);
-    expect(capsule.instructions).toContain("capability_context.instructions");
+    expect(capsule.instructions).toContain("capability_context.startup.outcome");
     expect(capsule.instructions).toContain("capability_context.context.status_context");
     expect(capsule.instructions).toContain("⌂ status · <status>");
-    expect(capsule.instructions).toContain("NEVER execute implementation work");
-    expect(capsule.instructions).toContain("NEVER modify any state artifact");
+    expect(capsule.instructions).toContain("Status MUST NOT write project state, edit code or do another capability's work.");
+    expect(capsule.instructions).toContain("Status MUST NOT render an item, count or field the response does not carry.");
+    expect(capsule.instructions).not.toContain("NEVER");
     expect(capsule.instructions).toContain("detail_command");
     expect(capsule.instructions).not.toContain("Status MUST source state from `agentera prime`");
 

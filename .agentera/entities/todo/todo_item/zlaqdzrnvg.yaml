@@ -22,4 +22,4 @@ record:
       description: "[fix:3.0.0] Keep resolved TODO text that exists only in TODO.md before compaction can drop it."
       severity: normal
       status: open
-      order: 48
+      order: 46

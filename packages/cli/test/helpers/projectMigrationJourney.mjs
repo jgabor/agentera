@@ -199,7 +199,7 @@ export async function projectMigrationJourney(binary, fixture, scenario, baseEnv
     assert.deepEqual(bytes(project), before, "startup preflight must be zero-write");
     if (scenario === "yes") {
       const fullStatus = await run(["prime", "--context", "status", "--detail", "instructions", "--section", "instructions"]);
-      assert.match(fullStatus.json.items.map((item) => item.content).join(""), /Dashboard rendering/);
+      assert.match(fullStatus.json.items.map((item) => item.content).join(""), /## Workflow phases/);
       const details = await run(["upgrade", "--explain", "--operation", "migrate", "--section", "usage"]);
       assert.match(details.json.items[0].content.offer, /unchanged complete apply_command/);
       const schema = await run(["schema"]);

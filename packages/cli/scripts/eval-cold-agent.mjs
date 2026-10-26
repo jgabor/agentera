@@ -1,7 +1,9 @@
 #!/usr/bin/env node
-// Opt-in cold-agent eval: a real coding agent, an isolated HOME holding only the
-// installed shared skill, and a fresh Git repository. The agent is asked to set
-// up Agentera, then approves in a resumed second turn. The shipped skill calls
+// Opt-in cold-agent eval: a real coding agent and an isolated HOME holding only
+// the installed shared skill. The setup scenario asks a fresh Git repository to
+// set up Agentera, then approves in a resumed second turn. The status scenario
+// sends bare `/agentera` in a fresh repository and in a clone of this one. The
+// shipped skill calls
 // `npx -y agentera@next`; inside the eval only, a PATH-first npx shim maps that
 // spec to a package constructed from this checkout, so the skill text is not
 // changed. Runs a paid model; never part of routine test or verify lanes.
@@ -26,7 +28,11 @@ export const COLD_AGENT_EVAL = Object.freeze({
   runs: 3,
   requiredPasses: 2,
   turns: Object.freeze(["Set up Agentera in this repository.", "Yes, go ahead."]),
+  status: Object.freeze({ turns: Object.freeze(["/agentera"]), projects: Object.freeze(["fresh", "repository"]) }),
 });
+
+const READ_TOOLS = new Set(["read", "glob", "grep", "list", "webfetch"]);
+const STATUS_MARKER = /⌂ status · (?:complete|flagged|stuck|waiting)\b/;
 
 const STATE_MARKER = ".agentera/state-mode.yaml";
 const OFFER = /\b(would you like|do you want|want me to|shall i|should i|i can|i'll|let me|ready to)\b/i;
@@ -82,6 +88,28 @@ export function gradeColdAgentRun({ turn1Calls, turn2Calls, turn1Text = "", turn
   return { verdict: reasons.length === 0 ? "pass" : "fail", checks, reasons };
 }
 
+/** Grades one bare `/agentera` run.
+ *  - one_cli_call: the only CLI call is `prime --input -` carrying `/agentera`.
+ *  - no_follow_up_reads: no other shell command and no file read, search or fetch.
+ *  - at_most_one_question: outside code fences, the reply asks at most one question.
+ *  - exit_marker: the reply carries a status exit marker. */
+export function gradeStatusRun({ calls, commands, tools, text }) {
+  const only = calls.length === 1 ? calls[0] : null;
+  // Dashboard lines inside code fences render served titles, not questions.
+  const prose = text.replace(/```[\s\S]*?```/g, "");
+  const questions = prose.split(/(?<=[.?!])\s+|\n+/).filter((sentence) => sentence.trim().endsWith("?")).length;
+  const checks = {
+    one_cli_call: only !== null && only.args.join(" ") === "prime --input -" && String(parsedStdin(only)?.request ?? "").trim() === "/agentera",
+    no_follow_up_reads: commands.length === 1 && !tools.some((tool) => READ_TOOLS.has(tool)),
+    at_most_one_question: questions <= 1,
+    exit_marker: STATUS_MARKER.test(text),
+  };
+  const reasons = Object.entries(checks)
+    .filter(([, passed]) => !passed)
+    .map(([name]) => name);
+  return { verdict: reasons.length === 0 ? "pass" : "fail", checks, reasons };
+}
+
 /** Reads the shim's tab-separated call log (time, spec, args, base64 stdin);
  *  a TURN line separates the turns. */
 export function splitCallLog(text) {
@@ -98,20 +126,22 @@ export function splitCallLog(text) {
   return turns;
 }
 
-/** Extracts the session, bash commands and assistant text from opencode JSON events. */
+/** Extracts the session, bash commands, tool names and assistant text from opencode JSON events. */
 export function readOpencodeEvents(text) {
   let sessionId = null;
   const commands = [];
+  const tools = [];
   const messages = [];
   for (const line of text.split("\n")) {
     if (!line.startsWith("{")) continue;
     const event = JSON.parse(line);
     sessionId ??= event.sessionID ?? null;
     const part = event.part ?? {};
+    if (event.type === "tool_use") tools.push(part.tool);
     if (event.type === "tool_use" && part.tool === "bash") commands.push(part.state?.input?.command ?? "");
     if (event.type === "text" && typeof part.text === "string") messages.push(part.text);
   }
-  return { sessionId, commands, text: messages.join("\n\n") };
+  return { sessionId, commands, tools, text: messages.join("\n\n") };
 }
 
 function sha256(buffer) {
@@ -216,16 +246,16 @@ function readCredential() {
   return entry;
 }
 
-function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir }) {
+function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir, scenario, projectKind }) {
   const root = fs.mkdtempSync(path.join(os.tmpdir(), "agentera-cold-agent-"));
-  const runDir = path.join(outDir, `run-${index}`);
+  const runDir = path.join(outDir, scenario === "status" ? `${projectKind}-run-${index}` : `run-${index}`);
   fs.mkdirSync(runDir, { recursive: true });
   try {
     const home = path.join(root, "home");
     const project = path.join(root, "project");
     const bin = path.join(root, "bin");
     const callLog = path.join(root, "calls.log");
-    for (const directory of [home, project, bin]) fs.mkdirSync(directory);
+    for (const directory of [home, bin]) fs.mkdirSync(directory);
     const env = {
       HOME: home,
       XDG_CONFIG_HOME: path.join(home, ".config"),
@@ -238,11 +268,15 @@ function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir })
       GIT_CONFIG_NOSYSTEM: "1",
       OPENCODE_DISABLE_AUTOUPDATE: "1",
     };
-    const git = (...args) => checked("git", args, { cwd: project, env });
-    git("init", "-q");
-    fs.writeFileSync(path.join(project, "README.md"), "# Tide\n\nA small command-line tool that prints local tide tables.\n");
-    git("add", "README.md");
-    git("-c", "user.name=Eval", "-c", "user.email=eval@example.invalid", "commit", "-qm", "Add README");
+    if (projectKind === "repository") checked("git", ["clone", "-q", repoRoot, project], { cwd: root, env });
+    else {
+      fs.mkdirSync(project);
+      const git = (...args) => checked("git", args, { cwd: project, env });
+      git("init", "-q");
+      fs.writeFileSync(path.join(project, "README.md"), "# Tide\n\nA small command-line tool that prints local tide tables.\n");
+      git("add", "README.md");
+      git("-c", "user.name=Eval", "-c", "user.email=eval@example.invalid", "commit", "-qm", "Add README");
+    }
 
     const install = JSON.parse(checked(process.execPath, [cli, "upgrade", "--shared-skill", "--home", home, "--yes"], { cwd: root, env }));
     if (install.status !== "success") throw new Error(`shared skill install returned ${install.status}`);
@@ -255,7 +289,8 @@ function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir })
 
     let sessionId = null;
     const turns = [];
-    for (const [turn, prompt] of COLD_AGENT_EVAL.turns.entries()) {
+    const prompts = scenario === "status" ? COLD_AGENT_EVAL.status.turns : COLD_AGENT_EVAL.turns;
+    for (const [turn, prompt] of prompts.entries()) {
       if (turn > 0) fs.appendFileSync(callLog, `TURN\t${turn + 1}\n`);
       const args = ["run", "--format", "json", "--model", model, ...(sessionId ? ["--session", sessionId] : []), prompt];
       const started = Date.now();
@@ -264,15 +299,16 @@ function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir })
       fs.writeFileSync(path.join(runDir, `turn${turn + 1}.stderr.log`), result.stderr ?? "");
       const events = readOpencodeEvents(result.stdout ?? "");
       sessionId ??= events.sessionId;
-      turns.push({ prompt, exit: result.status, signal: result.signal, seconds: Math.round((Date.now() - started) / 1000), commands: events.commands, text: events.text });
+      turns.push({ prompt, exit: result.status, signal: result.signal, seconds: Math.round((Date.now() - started) / 1000), commands: events.commands, tools: events.tools, text: events.text });
       if (!sessionId) break;
     }
     const log = fs.readFileSync(callLog, "utf8");
     fs.writeFileSync(path.join(runDir, "calls.log"), log);
     const [turn1Calls = [], turn2Calls = []] = splitCallLog(log);
-    const grade = gradeColdAgentRun({ turn1Calls, turn2Calls, turn1Text: turns[0]?.text ?? "", turn2Text: turns[1]?.text ?? "" });
+    const grade = scenario === "status" ? gradeStatusRun({ calls: turn1Calls, commands: turns[0]?.commands ?? [], tools: turns[0]?.tools ?? [], text: turns[0]?.text ?? "" }) : gradeColdAgentRun({ turn1Calls, turn2Calls, turn1Text: turns[0]?.text ?? "", turn2Text: turns[1]?.text ?? "" });
     return {
       run: index,
+      ...(scenario === "status" ? { project: projectKind } : {}),
       session_id: sessionId,
       skill_sha256: sha256(installedSkill),
       skill_matches_source: installedSkill.equals(fs.readFileSync(path.join(repoRoot, "skills/agentera/SKILL.md"))),
@@ -287,8 +323,12 @@ function evalRun(index, { cli, opencode, model, credential, timeoutMs, outDir })
 }
 
 function main() {
-  const flags = parseReleaseFlags(process.argv.slice(2), { value: ["--out", "--model", "--timeout"] });
-  if (!flags.has("--out")) throw new Error("usage: eval-cold-agent.mjs --out DIR [--model PROVIDER/MODEL] [--timeout SECONDS]");
+  const flags = parseReleaseFlags(process.argv.slice(2), { value: ["--out", "--model", "--timeout", "--scenario", "--project"] });
+  if (!flags.has("--out")) throw new Error("usage: eval-cold-agent.mjs --out DIR [--scenario setup|status [--project fresh|repository]] [--model PROVIDER/MODEL] [--timeout SECONDS]");
+  const scenario = flags.get("--scenario") ?? "setup";
+  if (!["setup", "status"].includes(scenario)) throw new Error(`unknown scenario '${scenario}'; use setup or status`);
+  const projectKinds = scenario === "status" ? COLD_AGENT_EVAL.status.projects.filter((kind) => !flags.has("--project") || kind === flags.get("--project")) : ["fresh"];
+  if (projectKinds.length === 0) throw new Error(`unknown project '${flags.get("--project")}'; use fresh or repository`);
   const outDir = path.resolve(flags.get("--out"));
   const model = flags.get("--model") ?? COLD_AGENT_EVAL.defaultModel;
   const timeoutMs = Number(flags.get("--timeout") ?? 900) * 1000;
@@ -301,21 +341,26 @@ function main() {
   try {
     const constructed = constructPackage(root);
     const runs = [];
-    for (let index = 1; index <= COLD_AGENT_EVAL.runs; index += 1) {
-      runs.push(evalRun(index, { cli: constructed.cli, opencode, model, credential, timeoutMs, outDir }));
-      process.stderr.write(`run ${index}: ${runs.at(-1).verdict}${runs.at(-1).reasons.length ? ` (${runs.at(-1).reasons.join(", ")})` : ""}\n`);
+    for (const projectKind of projectKinds) {
+      for (let index = 1; index <= COLD_AGENT_EVAL.runs; index += 1) {
+        runs.push(evalRun(index, { cli: constructed.cli, opencode, model, credential, timeoutMs, outDir, scenario, projectKind }));
+        process.stderr.write(`${projectKind} run ${index}: ${runs.at(-1).verdict}${runs.at(-1).reasons.length ? ` (${runs.at(-1).reasons.join(", ")})` : ""}\n`);
+      }
     }
-    const passes = runs.filter((entry) => entry.verdict === "pass").length;
+    // Each project kind needs its own required passes.
+    const passesBy = projectKinds.map((kind) => runs.filter((entry) => (entry.project ?? "fresh") === kind && entry.verdict === "pass").length);
+    const passes = passesBy.reduce((sum, count) => sum + count, 0);
     const report = {
       schemaVersion: COLD_AGENT_EVAL.schemaVersion,
       recorded_at: new Date().toISOString(),
-      outcome: passes >= COLD_AGENT_EVAL.requiredPasses ? "pass" : "fail",
+      scenario,
+      outcome: passesBy.every((count) => count >= COLD_AGENT_EVAL.requiredPasses) ? "pass" : "fail",
       passes,
-      runs_total: COLD_AGENT_EVAL.runs,
+      runs_total: runs.length,
       required_passes: COLD_AGENT_EVAL.requiredPasses,
       runtime: { name: COLD_AGENT_EVAL.runtime, version: checked(opencode, ["--version"]).trim(), binary: opencode, auto_approve: false, isolation: "temporary HOME and XDG directories holding only the installed skill and the github-copilot login" },
       model,
-      prompts: COLD_AGENT_EVAL.turns,
+      prompts: scenario === "status" ? COLD_AGENT_EVAL.status.turns : COLD_AGENT_EVAL.turns,
       package: { ...build, ...constructed.identity, construction: "packages/cli/scripts/pack-package.mjs --output-dir", resolution: "PATH-first npx shim maps agentera@* to the extracted package" },
       runs,
     };

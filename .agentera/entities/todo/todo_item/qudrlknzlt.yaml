@@ -20,4 +20,4 @@ record:
       description: "[feat:3.0.0] Keep the vision north star short when the vision capability writes it."
       severity: normal
       status: open
-      order: 50
+      order: 48

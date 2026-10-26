@@ -4,7 +4,7 @@ ARTIFACTS:
     artifact: vision
     local_role: consumes
     description: >-
-      Status reads this for the briefing's project context.
+      Status renders the vision's north star on every dashboard.
   2:
     id: A2
     artifact: decisions
@@ -53,8 +53,8 @@ ARTIFACTS:
     artifact: docs
     local_role: consumes
     description: >-
-      Status reads this first to resolve project-local artifact mappings before
-      reading other artifacts.
+      Prime reads this to resolve project-local artifact mappings for the
+      status startup.
   10:
     id: A10
     artifact: design

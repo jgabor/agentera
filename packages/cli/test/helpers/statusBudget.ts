@@ -25,9 +25,9 @@ export function statusParts(capsulePayload: Record<string, any>): { instructions
  * Assert a direct or routed status start against its declared byte budget.
  * Instructions stay under their ratchet ceiling. State fits its ceiling or
  * carries a state_budget report of what was trimmed; only a state that fits
- * can hold the whole output to the sum of the ceilings. Every measured state
- * must also tokenize at no fewer bytes per token than the ratio its byte
- * target assumes.
+ * can hold the whole output to the sum of the ceilings. Instructions also
+ * stay within their token target. State is held by bytes, and every measured
+ * state must tokenize at no fewer bytes per token than its byte target assumes.
  */
 export function expectStatusWithinBudget(stdout: string, label = "status"): void {
   const payload = JSON.parse(stdout) as Record<string, any>;
@@ -44,5 +44,5 @@ export function expectStatusWithinBudget(stdout: string, label = "status"): void
   }
   const row = payload.start ? ROUTED_STATUS : STATUS_ROW;
   expect(Buffer.byteLength(stdout, "utf8"), `${label} bytes`).toBeLessThanOrEqual(row.byte_budget);
-  if (row.instruction_budget_enforcement !== "deferred_to_status_rewrite") expect(encode(stdout).length, `${label} tokens`).toBeLessThanOrEqual(row.token_budget);
+  expect(encode(capsulePayload.capability_context.instructions).length, `${label} instruction tokens`).toBeLessThanOrEqual(STATUS_ROW.instruction_token_budget);
 }

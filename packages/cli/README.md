@@ -38,7 +38,7 @@ same channel.
 `prime` returns a bounded decision brief (at most 16000 UTF-8
 bytes). Status startup returns
 `capability_context.instructions` and bounded
-`capability_context.context.status_context` together (at most 25000 UTF-8
+`capability_context.context.status_context` together (at most 19000 UTF-8
 bytes). Omitted detail names its authoritative recovery command. `doctor`
 returns detailed read-only evidence and exact user actions. It exposes bounded
 `current_health` results for the CLI, shared skill, project state,

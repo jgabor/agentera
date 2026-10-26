@@ -4,7 +4,6 @@
 // imports this barrel from `../capabilities/index.js` so source-mode (vitest)
 // and dist-mode (npm install) resolve the same path.
 import statusInstructions from "./status/instructions.js";
-import { statusStartupInstructions } from "./status/startupInstructions.js";
 import visionInstructions from "./vision/instructions.js";
 import discussInstructions from "./discuss/instructions.js";
 import { instructions as researchInstructions } from "./research/instructions.js";
@@ -21,7 +20,7 @@ import { withHumanReferences } from "./humanReferences.js";
 import { withOperatingRules } from "./operatingRules.js";
 
 const canonicalInstructions: Record<string, string> = {
-  status: statusStartupInstructions(statusInstructions),
+  status: statusInstructions,
   vision: visionInstructions,
   discuss: discussInstructions,
   research: researchInstructions,

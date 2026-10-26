@@ -302,12 +302,11 @@ describe("shared bounded profile acquisition", () => {
     }
   });
 
-  it("serves only the current Status validity and freshness vocabulary", () => {
+  it("renders a profile line only from the served freshness signal", () => {
     const served = CAPABILITY_INSTRUCTIONS.status;
-    expect(served).toContain("`profile.validity` exactly: `valid`, `absent`, `repair_needed`");
-    expect(served).toContain("`profile.freshness` separately (`current`, `stale`, `unknown`)");
-    expect(served).toContain("stale guidance only for valid stale input");
-    expect(served).toContain("Preserve exact absent/repair-needed recovery; never suggest refresh for repair-needed input");
+    expect(served).toContain("♾ profile   [expiring | expired]");
+    expect(served).toContain("`profile_freshness`");
+    expect(served).not.toContain("profile.validity");
     expect(served).not.toMatch(/`?loaded`?\s*(?:\||or)\s*`?not found`?/i);
   });
 });

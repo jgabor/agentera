@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
@@ -10,6 +11,7 @@ import { createEntityAuthorityFixture } from "../helpers/entityAuthorityFixture.
 import { main } from "../../src/cli/dispatch/index.js";
 import type { OrientationState } from "../../src/cli/contracts/orientationState.js";
 import { selectCapabilityHint } from "../../src/cli/orientation/capabilityHint.js";
+import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { profileFreshnessSignal, type ProfileFreshnessResult, type ProfileValidityResult } from "../../src/cli/profileAcquisition.js";
 
 const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../../../..");
@@ -83,8 +85,9 @@ describe("profile freshness", () => {
 });
 
 describe("unused-capability hint", () => {
-  const state = (overrides: { health?: boolean; docs?: boolean; objective?: boolean; decisions?: number; recommended?: string }): OrientationState =>
+  const state = (overrides: { health?: boolean; docs?: boolean; objective?: boolean; decisions?: number; recommended?: string; northStar?: string | null }): OrientationState =>
     ({
+      north_star: overrides.northStar === undefined ? "Ship it." : overrides.northStar,
       health: { exists: overrides.health ?? true },
       docs: { exists: overrides.docs ?? true },
       objective: { exists: overrides.objective ?? true },
@@ -103,9 +106,43 @@ describe("unused-capability hint", () => {
     expect(selectCapabilityHint(state({}), [])).toBeNull();
   });
 
+  it("gives no hint before the vision has a north star", () => {
+    expect(selectCapabilityHint(state({ health: false, northStar: null }), [])).toBeNull();
+  });
+
   it("adds no hint to a direct capability route", () => {
     const routed = run(["prime", "--input", "-"], JSON.stringify({ version: "agentera.route_request.v1", request: "/agentera build" }));
     expect(JSON.stringify(routed)).not.toContain("capability_hint");
+  });
+});
+
+describe("status first run", () => {
+  it("carries the init preview in the routed bare start, so status needs no second call", () => {
+    const fresh = path.join(tmp, "fresh");
+    fs.mkdirSync(fresh);
+    execFileSync("git", ["init", "-q"], { cwd: fresh });
+    process.chdir(fresh);
+    const routed = run(["prime", "--input", "-"], JSON.stringify({ version: "agentera.route_request.v1", request: "/agentera" }));
+    const context = routed.start.capability_context.context.status_context;
+    expect(context.next_action.object).toBe("Agentera init preview");
+    expect(context.fresh_start).toEqual({
+      about: expect.any(String),
+      writes: [{ path: ".agentera/state-mode.yaml", action: "create", content: { schemaVersion: "agentera.stateMode.v1", mode: "entities" } }],
+      apply_command: expect.stringMatching(/ init --project .+ --yes$/),
+    });
+    expect(context).not.toHaveProperty("capability_hint");
+  });
+
+  it("drops the init preview once the project is initialized", () => {
+    expect(statusContext()).not.toHaveProperty("fresh_start");
+  });
+});
+
+describe("status instructions and data", () => {
+  it("names only status_context fields the capsule can carry", () => {
+    const served = CAPABILITY_INSTRUCTIONS.status;
+    for (const field of ["north_star", "health", "todo", "plan", "profile_freshness", "progress.latest.what", "attention", "next_action", "capability_hint", "fresh_start.about", "fresh_start.writes", "fresh_start.apply_command", "project_integration.recommendation"]) expect(served, field).toContain(`\`${field}`);
+    for (const retired of ["profile.validity", "app.status", "health.stale", "fresh_start.writes` in bare prime", "Priority order"]) expect(served, retired).not.toContain(retired);
   });
 });
 

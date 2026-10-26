@@ -8,6 +8,7 @@ record:
     - Attention arrives as structured items (severity, family, id, short title, reason) in bare prime, routed starts, text output and status_context alike, from one builder.
     - Bookkeeping such as "confidence firm; satisfaction unavailable" stays out of attention items.
     - String matching on attention (the glossary slot reservation and the unsafe_inactive rewrite) moves to item fields.
+    - Open critical and degraded TODOs reach status attention; today a project with 4 critical TODOs shows none there, so an agent can only cite counts.
   acceptance:
     - Every startup surface emits the same attention item shape, and tests pin it and its trimming.
     - No attention item carries decision confidence or satisfaction bookkeeping.
@@ -21,4 +22,4 @@ record:
       description: "[feat:3.0.0] Serve attention as structured items on every startup surface."
       severity: normal
       status: open
-      order: 49
+      order: 47

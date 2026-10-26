@@ -115,9 +115,10 @@ function resolveIntegrationTargets(args: ProjectIntegrationArgs): {
     env: args.env,
   });
   // The executing npm bundle is already a complete app. A missing optional
-  // platform install therefore needs no integration work, while an existing
+  // platform install, or one holding only user data such as the shared-skill
+  // ownership journal, therefore needs no integration work, while an existing
   // stale or damaged platform install still retains its observed status.
-  const platformBundleStatus = platformStatus.rootStatus === "missing" ? APP_UP_TO_DATE : platformStatus.status;
+  const platformBundleStatus = platformStatus.rootStatus === "missing" || platformStatus.rootStatus === "user_data_only" ? APP_UP_TO_DATE : platformStatus.status;
   return {
     installRoot: platformRoot,
     bundleStatus: args.bundleStatus,

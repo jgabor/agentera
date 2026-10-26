@@ -898,6 +898,28 @@ describe("npm distribution boundary", () => {
     }
   });
 
+  it("recommends no upgrade for a returning project once the shared skill is installed", () => {
+    const bin = path.join(fixture.packageRoot, "dist/bin/agentera.js");
+    const root = path.join(fixture.root, "returning-with-skill"),
+      home = path.join(root, "home"),
+      project = path.join(root, "project");
+    fs.mkdirSync(path.join(project, ".agentera"), { recursive: true });
+    fs.mkdirSync(home, { recursive: true });
+    fs.writeFileSync(path.join(project, ".agentera/state-mode.yaml"), "schemaVersion: agentera.stateMode.v1\nmode: entities\n");
+    const env = { ...packageEnvironment(home), XDG_DATA_HOME: path.join(home, ".local/share") };
+    const run = (args: string[]) => {
+      const result = spawnSync(process.execPath, [bin, ...args], { cwd: project, env, encoding: "utf8" });
+      expect(result.status, result.stderr).toBe(0);
+      return JSON.parse(result.stdout) as Record<string, any>;
+    };
+    // The install leaves only its ownership journal in the app home.
+    expect(run(["upgrade", "--shared-skill", "--home", home, "--yes"]).status).toBe("success");
+    const status = run(["prime", "--context", "status"]).capability_context.context.status_context;
+    expect(status.project_integration.recommendation).toBe("stay");
+    expect(status.outcome).toBe("ok");
+    expect(JSON.stringify([status.next_action, status.attention])).not.toMatch(/upgrade/i);
+  });
+
   it("matches fresh host installation and ownership-bound Doctor cleanup across constructed and extracted runtimes", () => {
     const bins = [path.join(fixture.constructionRoot, "dist/bin/agentera.js"), path.join(fixture.packageRoot, "dist/bin/agentera.js")];
     const observations = bins.map((bin, index) => {

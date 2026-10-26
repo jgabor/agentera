@@ -1,0 +1,22 @@
+id: mesptlylox
+artifact: todo
+record:
+  kind: fix
+  target_version: 3.0.0
+  title: Make next_action alternatives distinct and truthful.
+  requirements:
+    - The selector emits each alternative object once; "VISION refresh" no longer appears via both plan and vision.
+    - An alternative's reason holds for the current state; "no executable follow-up" never appears while executable follow-ups exist.
+  acceptance:
+    - In a project with pending plan tasks and actionable TODOs, next_action alternatives contain no duplicate object and no "no executable follow-up" reason, and a test pins it.
+  release_blocker: false
+  severity: normal
+  status: open
+  reconciliation:
+    schema_version: agentera.todoReconciliation.v1
+    public:
+      present: true
+      description: "[fix:3.0.0] Make next_action alternatives distinct and truthful."
+      severity: normal
+      status: open
+      order: 50

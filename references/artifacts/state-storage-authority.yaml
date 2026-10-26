@@ -2629,7 +2629,7 @@ budgets:
       prime_dashboard:
         manifest_id: prime-dashboard
         # The deprecated alias emits the status capsule and shares its budget.
-        max_utf8_bytes: 25000
+        max_utf8_bytes: 19000
         max_gpt5_tokens: 4000
       prime_status_context:
         manifest_id: prime-status-context
@@ -2653,21 +2653,21 @@ budgets:
         # and 4.10 in the largest and fresh fixtures), and a calibration test
         # fails when a measured state falls below it. Both
         # parts are held by ratchet ceilings at the largest measured value
-        # rounded up to 1000, which may only go down: instructions 11927, and
-        # state 12252 with blocked TODO reconciliation in startup. Runtime
-        # trims state past its ceiling and reports the trim instead of
-        # refusing. The status_context data task cuts state toward its target
-        # and the status rewrite cuts instructions toward theirs.
-        # max_utf8_bytes is the sum of the two ceilings.
-        max_utf8_bytes: 25000
-        instruction_max_utf8_bytes: 12000
+        # rounded up to 1000, which may only go down: instructions 5812
+        # (1341 tokens, before the status rewrite 11927), and state 12252
+        # with blocked TODO reconciliation in startup. Runtime trims state
+        # past its ceiling and reports the trim instead of refusing.
+        # max_utf8_bytes is the sum of the two ceilings. Tests hold the
+        # instructions to their token target; state is held by its bytes, so
+        # max_gpt5_tokens is reached only once state meets its target.
+        max_utf8_bytes: 19000
+        instruction_max_utf8_bytes: 6000
         state_max_utf8_bytes: 13000
         state_target_utf8_bytes: 7400
         state_bytes_per_token: 3.7
         max_gpt5_tokens: 4000
         instruction_gpt5_tokens: 2000
         state_gpt5_tokens: 2000
-        instruction_enforcement: deferred_to_status_rewrite
       prime_sparse:
         manifest_id: prime-fields-sparse
         max_utf8_bytes: 28000
@@ -2691,7 +2691,7 @@ budgets:
         brief_max_utf8_bytes: 16000
         semantic_route_max_utf8_bytes: 25000
         status_head_max_utf8_bytes: 4000
-        status_max_utf8_bytes: 29000
+        status_max_utf8_bytes: 23000
         status_max_gpt5_tokens: 5000
         max_utf8_bytes_by_carried:
           capability: 71000

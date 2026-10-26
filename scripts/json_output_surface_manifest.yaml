@@ -62,14 +62,13 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 25000
-  instruction_byte_budget: 12000
+  byte_budget: 19000
+  instruction_byte_budget: 6000
   state_byte_budget: 13000
   state_target_byte_budget: 7400
   token_budget: 4000
   instruction_token_budget: 2000
   state_token_budget: 2000
-  instruction_budget_enforcement: deferred_to_status_rewrite
 - id: prime-status-context
   command: agentera prime --context status
   selector: --context status
@@ -82,14 +81,13 @@ surfaces:
   measurement_scope: primary
   fixture: repo_root
   enforcement_tier: enforce
-  byte_budget: 25000
-  instruction_byte_budget: 12000
+  byte_budget: 19000
+  instruction_byte_budget: 6000
   state_byte_budget: 13000
   state_target_byte_budget: 7400
   token_budget: 4000
   instruction_token_budget: 2000
   state_token_budget: 2000
-  instruction_budget_enforcement: deferred_to_status_rewrite
 - id: prime-briefing
   command: agentera prime
   selector: (default briefing)
@@ -161,14 +159,13 @@ surfaces:
   # only by the removed_3_0 row above.
   budget_by_capability:
     status:
-      byte_budget: 25000
-      instruction_byte_budget: 12000
+      byte_budget: 19000
+      instruction_byte_budget: 6000
       state_byte_budget: 13000
       state_target_byte_budget: 7400
       token_budget: 4000
       instruction_token_budget: 2000
       state_token_budget: 2000
-      instruction_budget_enforcement: deferred_to_status_rewrite
     vision:
       byte_budget: 55000
       token_budget: 14000
@@ -224,9 +221,8 @@ surfaces:
   # its own).
   budget_by_carried:
     status:
-      byte_budget: 29000
+      byte_budget: 23000
       token_budget: 5000
-      instruction_budget_enforcement: deferred_to_status_rewrite
     capability:
       byte_budget: 71000
       token_budget: 19000

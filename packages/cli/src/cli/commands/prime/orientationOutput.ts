@@ -245,6 +245,7 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
   };
   const profileFreshness = profileFreshnessSignal(state.profile_dict.validity, state.profile_dict.freshness);
   const capabilityHint = selectCapabilityHint(state, attention);
+  const freshPreview = state.state_cutover.status === "fresh_uninitialized" ? freshStart(state.project_root) : null;
   return {
     outcome: startup.outcome,
     mode: state.mode,
@@ -307,6 +308,7 @@ export function buildStatusContextState(state: OrientationState, _command = "pri
     ...(profileFreshness ? { profile_freshness: profileFreshness } : {}),
     attention,
     ...(capabilityHint ? { capability_hint: capabilityHint } : {}),
+    ...(freshPreview ? { fresh_start: { about: freshPreview.about, writes: freshPreview.writes, apply_command: freshPreview.apply_command } } : {}),
     next_action: nextActionPayload(nextAction),
   };
 }

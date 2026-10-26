@@ -19,4 +19,4 @@ record:
       description: "[refactor:3.0.0] Remove routine-write approval gates from each capability as it is audited."
       severity: normal
       status: open
-      order: 46
+      order: 45

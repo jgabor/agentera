@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vite-plus/test";
 
-import { gradeColdAgentRun, splitCallLog } from "../../scripts/eval-cold-agent.mjs";
+import { gradeColdAgentRun, gradeStatusRun, splitCallLog } from "../../scripts/eval-cold-agent.mjs";
 
 const PROJECT = "/tmp/agentera-cold-agent-x/project";
 const APPLY = `init --project ${PROJECT} --yes`;
@@ -48,5 +48,30 @@ describe("cold-agent eval grading", () => {
   it("fails a turn two that only mentions vision or starts it before the apply", () => {
     expect(grade([`init --project ${PROJECT}`, "TURN\t2", APPLY], ASKED, "Agentera is initialized. Init hands off to vision.").reasons).toEqual(["vision_handoff"]);
     expect(grade([`init --project ${PROJECT}`, "TURN\t2", "prime --context vision", APPLY], ASKED, "Done.").reasons).toEqual(["vision_handoff"]);
+  });
+});
+
+describe("cold-agent status grading", () => {
+  const bare = `prime --input - <<< ${JSON.stringify({ version: "agentera.route_request.v1", request: "/agentera" })}`;
+  const reply = "```text\n─── next ───\n```\n⌂ status · waiting\nOne step suggested.\n▸ Should I start ⧉ build on the fixture bug?";
+  const status = (lines: string[], extra: { commands?: string[]; tools?: string[]; text?: string } = {}) => {
+    const [calls] = turns(lines);
+    return gradeStatusRun({ calls, commands: extra.commands ?? ["npx -y agentera@next prime --input -"], tools: extra.tools ?? ["skill", "bash"], text: extra.text ?? reply });
+  };
+
+  it("passes one routed call, no reads, one question and an exit marker", () => {
+    expect(status([bare])).toEqual({ verdict: "pass", checks: { one_cli_call: true, no_follow_up_reads: true, at_most_one_question: true, exit_marker: true }, reasons: [] });
+  });
+
+  it("fails a second CLI call, a file read, two questions or a missing marker", () => {
+    expect(status([bare, "state todo list"]).reasons).toEqual(["one_cli_call"]);
+    expect(status([bare], { tools: ["skill", "bash", "read"] }).reasons).toEqual(["no_follow_up_reads"]);
+    expect(status([bare], { commands: ["npx -y agentera@next prime --input -", "git status"] }).reasons).toEqual(["no_follow_up_reads"]);
+    expect(status([bare], { text: `${reply} Or would you rather update the skill?` }).reasons).toEqual(["at_most_one_question"]);
+    expect(status([bare], { text: "Here is your dashboard." }).reasons).toEqual(["exit_marker"]);
+  });
+
+  it("does not count a served title that ends in a question mark inside the dashboard fence", () => {
+    expect(status([bare], { text: `\`\`\`text\n  ⇢ How should status be redesigned? · ⛋ Decision abcdefghij\n\`\`\`\n${reply}` }).checks.at_most_one_question).toBe(true);
   });
 });

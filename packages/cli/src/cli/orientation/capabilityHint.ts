@@ -12,12 +12,12 @@ function decisionCount(state: OrientationState): number | null {
 
 /**
  * At most one capability the project has not used yet, derived from existing
- * state with no tracking store. Status shows it only when attention is empty,
- * and never names the capability next_action already recommends. It is
- * informational, never consent.
+ * state with no tracking store. Status shows it only once the vision has a
+ * north star and attention is empty, and never names the capability
+ * next_action already recommends. It is informational, never consent.
  */
 export function selectCapabilityHint(state: OrientationState, attention: readonly unknown[]): CapabilityHint | null {
-  if (attention.length > 0) return null;
+  if (!state.north_star || attention.length > 0) return null;
   const candidates: Array<CapabilityHint & { unused: boolean }> = [
     { capability: "audit", reason: "No health audit has been recorded.", unused: !state.health.exists },
     { capability: "document", reason: "No documentation index exists.", unused: !state.docs.exists },
