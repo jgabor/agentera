@@ -19,4 +19,4 @@ record:
       description: "[fix:3.0.0] Make next_action alternatives distinct and truthful."
       severity: normal
       status: open
-      order: 50
+      order: 54

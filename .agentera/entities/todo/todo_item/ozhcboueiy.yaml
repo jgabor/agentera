@@ -21,4 +21,4 @@ record:
       description: "[refactor:3.0.0] Decide which capsule metadata each capability startup keeps."
       severity: normal
       status: open
-      order: 49
+      order: 53

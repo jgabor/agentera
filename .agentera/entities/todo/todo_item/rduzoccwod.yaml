@@ -22,4 +22,4 @@ record:
       description: "[feat:3.0.0] Serve attention as structured items on every startup surface."
       severity: normal
       status: open
-      order: 47
+      order: 51

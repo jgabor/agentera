@@ -21,4 +21,4 @@ record:
       description: "[fix:3.0.0] Give Discuss a closeout handoff to plan or TODOs for decisions that call for work."
       severity: normal
       status: open
-      order: 43
+      order: 47
