@@ -3,12 +3,10 @@ import path from "node:path";
 import { loadYamlMapping } from "../../core/yaml.js";
 import { activeAppModel, discoverSchemasDir } from "../appContext.js";
 import { capabilityStartupCommand } from "../../capabilities/index.js";
-import { PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION, PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS, PLAN_PLANNING_LEVELS, PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR, PLAN_STARTUP_CONTRACT_VERSION, PLAN_STEP_VERBS, PLAN_TASK_COHERENCE_RULE, STATE_FAMILY_FALLBACK_COMMANDS } from "./types.js";
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
 import { isFile, pyRepr, appendUnique } from "./shared.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { startupAvailabilityProjection } from "./startupAggregation.js";
-import { preCutoverCommand } from "../preCutoverCommand.js";
 
 export function capabilityInstructionContractPath(): string {
   const model = activeAppModel();
@@ -65,63 +63,6 @@ export function firstInvocationReadMetadata(capability: string): JsonObject {
   };
 }
 
-export function planStartupContract(): JsonObject {
-  return {
-    schemaVersion: PLAN_STARTUP_CONTRACT_VERSION,
-    status: "implemented_compact_normal_startup_contract",
-    canonical_surface: capabilityStartupCommand("plan"),
-    bounded: true,
-    instructions_runtime_read_required: false,
-    instructions_authority: {
-      normal_startup: "Use this compact context for normal Plan execution startup; " + `shell out to \`${capabilityStartupCommand("plan")}\` for the full Plan instructions.`,
-      read_plan_instructions_when: PLAN_INSTRUCTIONS_AUTHORITY_EXCEPTIONS,
-    },
-    planning: {
-      levels: PLAN_PLANNING_LEVELS,
-      step_marker_format: "── step N/6: verb",
-      required_steps: PLAN_STEP_VERBS,
-      full_plan_review_required: true,
-      pre_write_self_audit_required: true,
-      task_coherence_rule: PLAN_TASK_COHERENCE_RULE,
-    },
-    cli_first_orientation: {
-      use_startup_state_first: true,
-      current_plan_command: STATE_FAMILY_FALLBACK_COMMANDS.plan,
-      complete_plan_contract_key: "source_contract.complete_for_plan_artifact",
-      fallback_policy: "Use CLI-provided fallback commands for missing or incomplete state families " + "before any last-resort raw artifact read.",
-    },
-    artifact_access_boundaries: {
-      skip_raw_plan_artifact_when: `\`${STATE_FAMILY_FALLBACK_COMMANDS.plan}\` reports source_contract.complete_for_plan_artifact=true ` + "during normal read-only startup or evaluation.",
-      raw_plan_artifact_allowed_for: PLAN_RAW_PLAN_ACCESS_ALLOWED_FOR,
-      completed_plan_archive_confirmation: PLAN_COMPLETED_PLAN_ARCHIVE_CONFIRMATION,
-      artifact_mapping_source: STATE_FAMILY_FALLBACK_COMMANDS.docs,
-    },
-    handoff_expectations: [
-      "skip level suggests ⧉ build and waits unless implementation is already requested",
-      "after final save-and-execute approval and successful publication, start ⧉ build for one task or ⎈ orchestrate for multiple tasks without another confirmation",
-      "planning-only approval suggests execution without starting it; silence, failed publication or material changes do not authorize execution; Git/global/history permissions remain separate",
-    ],
-    unsupported_command_boundary: {
-      capability_cli_commands_added: true,
-      forbidden_examples: [],
-      route_boundary: "Use `/agentera plan` for routing, `agentera state plan list` for plan state, " + "and `agentera plan` for capability routing guidance only.",
-    },
-    seam_decision: {
-      selected: "prime --context",
-      not_changed: [
-        {
-          surface: preCutoverCommand("schema"),
-          reason: "runtime/schema command discovery, not capability workflow startup context",
-        },
-        {
-          surface: "dispatcher guidance",
-          reason: "route and CLI-state separation guidance, not a bounded Plan workflow payload",
-        },
-      ],
-    },
-  };
-}
-
 export function capabilityArtifactInventory(capability: string): [JsonObject, string | null] {
   const inventory: JsonObject & { read_needs: string[]; write_targets: string[] } = {
     read_needs: [],
@@ -174,6 +115,5 @@ export function capabilityContext(capability: string | null): JsonObject | null 
     availability: startupAvailabilityProjection(needs),
     schema_error: error,
   };
-  if (capability === "plan") context.startup_contract = planStartupContract();
   return context;
 }

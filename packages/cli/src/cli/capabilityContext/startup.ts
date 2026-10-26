@@ -159,7 +159,6 @@ export function genericSlimStartupContext(capability: string, context: JsonObjec
     }
     return {
       planning_context: {
-        startup_contract: slimPlanStartupContract(context.startup_contract as JsonObject | undefined),
         plan: slimPlanState(plan),
         docs: docsState,
         health: slimHealthState(health),
@@ -178,21 +177,6 @@ export function genericSlimStartupContext(capability: string, context: JsonObjec
       },
     };
   return {};
-}
-
-function slimPlanStartupContract(contract: JsonObject | undefined): JsonObject | null {
-  if (!contract) return null;
-  // Full instructions are already in this response. Keep the workflow markers,
-  // not a second copy of its orientation, permission and handoff prose. The
-  // static section retains every field, including historical seam commentary.
-  const keys = ["schemaVersion", "status", "canonical_surface", "bounded", "instructions_runtime_read_required", "planning"];
-  return {
-    ...Object.fromEntries(keys.map((key) => [key, contract[key]])),
-    detail_availability: "summary",
-    omitted_fields: Object.keys(contract).filter((key) => !keys.includes(key)),
-    detail_command: preCutoverCommand("prime --context plan --detail instructions --section startup_contract"),
-    read_before_reliance: true,
-  };
 }
 
 export function slimCapabilityContext(

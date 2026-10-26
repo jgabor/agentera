@@ -667,11 +667,9 @@ historical seam prose beside the now-complete instructions; first-read loader
 metadata and the host repair narrative added further duplication. This was not
 an oversized selected term, advice echo, truncated pipe or stale executable.
 
-Plan startup now retains workflow markers and full instructions, with explicit
-`detail_availability`, `omitted_fields`, `read_before_reliance` and the exact
-`prime --context plan --detail instructions --section startup_contract` action.
-That section returns the complete existing startup contract without changed
-semantics. First-read invocation/enforcement and host health/ownership facts plus
+Plan startup now carries the full instructions and no separate startup
+contract: the instructions own levels, steps, review and handoff, and the former
+`--detail instructions --section startup_contract` page was removed. First-read invocation/enforcement and host health/ownership facts plus
 the exact home-scoped repair preview remain, following the existing Status
 summary pattern. Instructions, governing glossary/caveat rules, advice fields,
 receipt privacy and the 32,768-byte budget were not changed. Source tests compare

@@ -9,7 +9,6 @@ import { main } from "../../src/cli/dispatch.js";
 import { CAPABILITY_INSTRUCTIONS } from "../../src/capabilities/index.js";
 import { CAPABILITY_DETAILS } from "../../src/cli/commands/capabilityDetail.js";
 import { cmdPrime } from "../../src/cli/commands/prime.js";
-import { planStartupContract } from "../../src/cli/capabilityContext/contract.js";
 import { sourceBuildOutputRoot, sourceSubprocessEnv } from "../helpers/sourceSubprocess.js";
 
 const root = path.resolve(import.meta.dirname, "../../../..");
@@ -87,17 +86,7 @@ describe("bounded static capability execution details", () => {
         expect(context.instructions).toBe(CAPABILITY_INSTRUCTIONS[capability]);
         if (capability === "plan") {
           expect(Buffer.byteLength(out)).toBeLessThanOrEqual(32_768);
-          const summary = context.context.planning_context.startup_contract;
-          expect(summary.detail_availability).toBe("summary");
-          expect(summary.read_before_reliance).toBe(true);
-          const complete = reconstruct(commandArgs(summary.detail_command), planStartupContract());
-          expect(complete).toEqual(planStartupContract());
-          expect(summary.omitted_fields.sort()).toEqual(
-            Object.keys(complete)
-              .filter((key) => !(key in summary))
-              .sort(),
-          );
-          for (const key of Object.keys(complete).filter((key) => key in summary)) expect(summary[key]).toEqual(complete[key]);
+          expect(context.context.planning_context).not.toHaveProperty("startup_contract");
         }
         expect(context.startup.availability).toBeInstanceOf(Array);
         for (const detail of CAPABILITY_DETAILS) {

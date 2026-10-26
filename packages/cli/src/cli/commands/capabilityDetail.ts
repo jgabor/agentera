@@ -3,7 +3,6 @@ import path from "node:path";
 import { createHash } from "node:crypto";
 import YAML from "yaml";
 import { CAPABILITY_INSTRUCTIONS, capabilityInstructionModulePath } from "../../capabilities/index.js";
-import { planStartupContract } from "../capabilityContext/contract.js";
 import { resolveSourceRoot } from "../../core/sourceRoot.js";
 import type { JsonObject } from "../../core/jsonValue.js";
 import { loadCapabilitySchemaContract } from "../../registries/capabilityContract.js";
@@ -72,16 +71,6 @@ export function runCapabilityDetail(argv: string[], io: { out?: (text: string) =
         authority: capabilityInstructionModulePath(capability),
         classification: "compiled_execution_instructions",
       });
-      if (capability === "plan") {
-        const content = planStartupContract();
-        hash.update(JSON.stringify(content));
-        sections.push({
-          name: "startup_contract",
-          content,
-          authority: "packages/cli/src/cli/capabilityContext/contract.ts#planStartupContract",
-          classification: "governing_execution_contract",
-        });
-      }
     } else if (detail === "worker") {
       hash.update(CAPABILITY_INSTRUCTIONS[capability]);
       sections.push(...workerSections(capability, root, (relative) => read(relative).mapping));

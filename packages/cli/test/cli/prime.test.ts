@@ -322,7 +322,7 @@ describe("cli prime", () => {
     expect(payload.capability_context.schemaVersion).toBe("agentera.capabilityContext.v1");
     expect(payload.capability_context.capability).toBe("plan");
     expect(payload.capability_context.context.planning_context).toBeTruthy();
-    expect(payload.capability_context.context.planning_context.startup_contract.schemaVersion).toBe("agentera.planeraStartup.v1");
+    expect(payload.capability_context.context.planning_context).not.toHaveProperty("startup_contract");
     expect(payload.capability_context.startup.availability).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -338,9 +338,6 @@ describe("cli prime", () => {
       ]),
     );
     expect(payload.capability_context).not.toHaveProperty("state");
-    const planning = payload.capability_context.context.planning_context.startup_contract.planning;
-    expect(planning.task_coherence_rule).toBe("Keep full-plan tasks within a coherent lifecycle boundary; split only at real lifecycle or coherence boundaries.");
-    expect(planning).not.toHaveProperty(["max", "full", "plan", "tasks"].join("_"));
   });
 
   it("emits the orchestration bespoke context for orkestrera", () => {

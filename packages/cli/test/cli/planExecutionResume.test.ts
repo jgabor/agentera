@@ -109,9 +109,6 @@ it("serves consistent final approval and resume rules through the complete instr
   expect(orchestrate).toContain("A PASS label alone cannot substitute for missing or stale evidence");
   expect(orchestrate).toContain("Surface the failure and required user decision");
   expect(orchestrate).not.toMatch(/Increment the retry count|retries [<=]|max 2 retries|retry a task more than 2 times/);
-  const contract = run(["prime", "--context", "plan", "--detail", "instructions", "--section", "startup_contract", "--limit", "20"]);
-  expect(JSON.stringify(contract)).toContain("without another confirmation");
-  expect(JSON.stringify(contract)).not.toContain("full plans suggest");
 });
 
 it.each(["pending", "in_progress"])("resumes eligible persisted PASS from %s before new work without another evaluation", (status) => {
