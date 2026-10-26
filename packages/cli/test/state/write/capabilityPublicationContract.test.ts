@@ -96,15 +96,15 @@ describe("capability advice and plan publication contracts", () => {
   it("serves proportionate Plan requirements without weakening review or approval", () => {
     for (const text of [planInstructions, served("plan")]) {
       expect(text).toContain("zero findings is a valid result");
-      expect(text).toContain("No redundant synchronization task is required");
-      expect(text).toContain("Never invent or conceal uncertainty");
-      expect(text).toContain("Report genuine issues and incomplete acceptance explicitly");
-      expect(text).toContain("omit `unknowns:` or use `unknowns: []`");
-      expect(text).toContain("omit `rejected:` or use `rejected: []`");
-      expect(text).toContain("Plan MUST NOT skip adversarial review for full plans");
-      expect(text).toContain("After approval, serialize the complete plan once");
-      expect(text).toContain("Never edit entity paths directly");
-      expect(text).toContain("Three levels: skip");
+      expect(text).toContain("add a separate closeout task only when needed");
+      expect(text).toContain("do not invent or hide uncertainty");
+      expect(text).toContain("Report real issues only");
+      expect(text).toContain("Omit `unknowns:` when none remain");
+      expect(text).toContain("Omit `rejected:` when no critic finding was dismissed");
+      expect(text).toContain("MUST NOT save a full plan without adversarial review");
+      expect(text).toContain("give a fresh worker only the plan and this brief");
+      expect(text).toContain("Write only through typed writers");
+      expect(text).toContain("MUST NOT write a plan for work one build cycle can finish");
       expect(text).not.toMatch(/MUST (?:find issues|identify at least one issue)|every full plan (?:ends with a final state sync|surfaces at least one)/);
     }
   });
@@ -153,16 +153,12 @@ describe("capability advice and plan publication contracts", () => {
 
   it("publishes normally once and reuses one explicit-preview input", () => {
     for (const text of [planInstructions, served("plan")]) {
-      expect(text).toContain("Reuse unchanged input for preview/review");
-      expect(text).toContain("Bind approval or effect confirmation to first-phase evidence");
-      expect(text).toContain("reject stale/changed input");
-      expect(text).toContain("Complete caller content or authority still requires structured input");
-      expect(text).toMatch(/exactly one `(?:agentera|npx -y agentera@next) state plan create --input PATH` call/);
-      expect(text).toContain("No standalone lint or dry-run first normally");
-      expect(text).toContain("For explicitly requested preview, serialize once, add `--dry-run`");
-      expect(text).toContain("publish the unchanged PATH without reserialization");
-      const stale = text.replace("unchanged PATH without reserialization", "newly serialized content");
-      expect(stale).not.toContain("publish the unchanged PATH without reserialization");
+      expect(text).toMatch(/Serialize the complete plan once and call `(?:agentera|npx -y agentera@next) state plan create --input PATH` once/);
+      expect(text).toContain("Use `--dry-run` first only when the user asks for a preview");
+      expect(text).toContain("then save the same unchanged PATH");
+      expect(text).not.toContain("check lint");
+      const stale = text.replace("save the same unchanged PATH", "save newly serialized content");
+      expect(stale).not.toContain("save the same unchanged PATH");
     }
   });
 

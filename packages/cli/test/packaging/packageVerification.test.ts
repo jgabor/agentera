@@ -395,7 +395,7 @@ describe("npm distribution boundary", () => {
       expect(payload.capability_context.instructions).toContain("explicit permissions remain binding");
       expect(payload.capability_context.instructions).toContain("Stop at accepted scope, even if blocked");
       if (capability === "plan") {
-        expect(payload.capability_context.instructions).toContain("carry explicit save-and-execute approval forward without another confirmation");
+        expect(payload.capability_context.instructions).toContain("Ask one question: start ⧉ build (one task) or ⎈ orchestrate (several tasks)");
         expect(payload.capability_context.instructions).not.toContain("suggest ⎈ orchestrate to execute the entire plan and wait for confirmation");
       }
       if (capability === "document") {

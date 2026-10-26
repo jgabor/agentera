@@ -128,7 +128,7 @@ describe("producer capability writer integration", () => {
     expect(discussInstructions).not.toContain("Append with `agentera state decisions append`");
     expect(discussInstructions).toContain("agentera state decisions update --id ID");
     expect(planInstructions).toContain("agentera state plan create --input PATH");
-    expect(planInstructions).toContain("agentera state plan archive");
+    expect(planInstructions).toContain("agentera state todo explain --verb create");
     expect(orchestrateInstructions).toContain("agentera state plan set-status");
     expect(orchestrateInstructions).toContain("agentera state plan record-evaluation");
     expect(orchestrateInstructions).toContain("For a new evaluator verdict, persist it through");
@@ -254,10 +254,10 @@ describe("producer capability writer integration", () => {
   it("uses the writer as the final plan publication gate", () => {
     const vocabulary = fs.readFileSync(path.join(REPO_ROOT, "references/cli/vocabulary.md"), "utf8");
 
-    expect(planInstructions).toContain("### Step 4: Validate and publish");
-    expect(planInstructions).toContain("Call `agentera state plan create --input PATH` once");
-    expect(planInstructions).toContain("writer validates strict prose lint and schema on final bytes");
-    expect(planInstructions).toContain("Only for an explicitly requested preview, use `--dry-run`, then publish the same unchanged PATH");
+    expect(planInstructions).toContain("4. **Save.**");
+    expect(planInstructions).toContain("call `agentera state plan create --input PATH` once");
+    expect(planInstructions).toContain("the writer runs prose lint and schema validation on the final bytes");
+    expect(planInstructions).toContain("Use `--dry-run` first only when the user asks for a preview, then save the same unchanged PATH");
     expect(planInstructions).not.toContain("Optionally run `agentera check lint");
     expect(planInstructions).not.toContain("Pre-write self-audit");
     expect(vocabulary).toContain("Draft lint preview");

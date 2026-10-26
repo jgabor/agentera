@@ -24,12 +24,15 @@ VALIDATION:
     id: V3
     rule: adversarial_review_required
     description: >-
-      Full plans MUST undergo adversarial review. Zero findings is valid
-      after real review; never invent findings or hide genuine issues or
-      incomplete acceptance. Skip level and light plans are exempt.
+      Full plans MUST undergo adversarial review by a separate worker when
+      the host can start one. A self-review is a fallback that the handoff
+      names and that exits flagged. Zero findings is valid after real review;
+      never invent findings or hide genuine issues or incomplete acceptance.
+      Work routed to build or filed as a TODO is exempt.
     severity: critical
     checks:
       - "Adversarial review ran for full plans"
+      - "A separate worker reviewed, or the self-review fallback is named and flagged"
   4:
     id: V4
     rule: plan_final_state_sync
@@ -52,16 +55,19 @@ VALIDATION:
       - "Test tasks state proportionality target"
   6:
     id: V6
-    rule: skip_level_for_trivial_work
+    rule: size_before_planning
     description: >-
-      Plan MUST detect skip level for trivial work (single-file change,
+      Plan MUST size the work first. Trivial work (single-file change,
       localized defect fix, or config tweak that touches no shared
-      abstraction) and route directly to /build without producing a
-      PLAN.md. LOC count is not a skip signal because small changes to
-      shared exports can ripple across many consumers.
+      abstraction) routes to build without a plan. Work one build cycle can
+      finish is filed as a TODO with behavioral acceptance criteria, not as a
+      plan. Only ordered multi-cycle work becomes a plan. LOC count is not a
+      sizing signal because small changes to shared exports can ripple across
+      many consumers.
     severity: critical
     checks:
-      - "Trivial work routed to /build without plan"
+      - "Trivial work routed to build without a plan"
+      - "One-cycle work filed as a TODO, not a plan"
   7:
     id: V7
     rule: full_plan_unknowns_required
@@ -128,7 +134,7 @@ VALIDATION:
     id: V11
     rule: approved_plan_publication
     description: >-
-      Plan MUST publish an approved plan that does not require preview with
+      Plan MUST publish a plan that does not require preview with
       exactly one `npx -y agentera@next state plan create --input PATH` call and
       MUST NOT run standalone lint or dry-run first. When the user
       explicitly requests preview, dry-run and final publication MUST reference
@@ -140,13 +146,46 @@ VALIDATION:
       - "Explicit preview and publication reuse one unchanged input"
   12:
     id: V12
-    rule: final_plan_execution_approval
+    rule: execution_start_approval
     description: >-
-      Apply protocol OPERATING_RULES to the final reviewed plan: explicit approval
-      to save and execute carries through successful publication and handoff.
-      Planning-only approval, silence, failed publication or material changes
-      cannot start execution. Git, global installation and history remain separate.
+      Plan saves a plan or TODO without asking and reports each write with its
+      undo. It MUST NOT start build or orchestrate until the user says yes to
+      the saved plan; a plan changed after that yes needs a new yes. Silence or
+      a failed save cannot start execution. Git, global installation and history
+      remain separate.
     severity: critical
     checks:
-      - "Save-and-execute starts the appropriate capability once after publication"
-      - "Planning-only and changed-plan cases do not infer execution consent"
+      - "Saves are reported with their undo before the start question"
+      - "Execution starts once, only after a yes to the unchanged saved plan"
+  13:
+    id: V13
+    rule: deferred_scope_filed_as_todos
+    description: >-
+      After saving a plan, Plan MUST file each deferred scope item and
+      follow-up found while planning as a TODO unless an open TODO already
+      covers it, and report each with its undo.
+    severity: warning
+    checks:
+      - "Deferred scope and follow-ups are filed as TODOs after the save"
+      - "Open TODOs are checked before filing to avoid duplicates"
+  14:
+    id: V14
+    rule: replan_in_place_or_successor
+    description: >-
+      Replanning MUST edit, add or drop tasks in place only while what, why,
+      scope and overall acceptance still hold. Each in-place edit or addition
+      records why as a plan surprise, and each drop carries its reason. A change
+      to what, why, scope or overall acceptance MUST produce a reviewed
+      successor plan instead.
+    severity: warning
+    checks:
+      - "In-place edits record why; drops carry a reason"
+      - "Plan-level changes go to a reviewed successor plan"
+  15:
+    id: V15
+    rule: unrelated_open_plan_replacement_asks
+    description: >-
+      Plan MUST NOT replace an unrelated open plan without the user's answer.
+    severity: critical
+    checks:
+      - "Replacing an unrelated open plan waits for the user's answer"

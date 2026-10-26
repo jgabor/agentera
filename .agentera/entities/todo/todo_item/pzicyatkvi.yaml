@@ -8,6 +8,7 @@ record:
     - "Base the decision on the 2026-07-23 to 2026-10-03 OpenCode session review: the deterministic tier never fired for a real request because users type phrases such as orchestrate or create a plan rather than curated phrases or the /agentera prefix; each request returned a 5 to 13 KB capsule; routed sessions averaged 5.8 route calls; and 787 of 855 sessions that started a capability through prime never called route."
     - Compare keeping, reworking, and retiring route request, receipt, and evaluate against the agent reading triggers and calling prime directly.
     - Discuss triggers have reciprocal hints only against plan. Add discuss-research hints ("should we adopt library X or Y?" fits discuss T3 and research T2) and discuss-vision hints ("decide what it should become" is vision T4) when triggers next change, with a new corpus version.
+    - Plan and orchestrate have no disambiguates_against hints against each other ("make a plan" versus "run the plan"); add a reciprocal pair when triggers next change, with a new corpus version.
   acceptance:
     - A recorded decision chooses one option with its reasoning, and any follow-up work is planned.
   release_blocker: false

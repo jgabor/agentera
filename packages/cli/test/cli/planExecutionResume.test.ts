@@ -97,10 +97,10 @@ it("serves consistent final approval and resume rules through the complete instr
   };
   const plan = text("plan"),
     orchestrate = text("orchestrate");
-  expect(plan).toContain("Present the final reviewed plan for meaningful approval");
-  expect(plan).toContain("After the writer confirms publication, carry explicit save-and-execute approval forward without another confirmation");
-  expect(plan).toContain("Planning-only approval saves the plan and suggests the appropriate execution capability without starting it");
-  expect(plan).toContain("a material scope, constraint or acceptance change requires renewed approval");
+  expect(plan).toContain("Report the saved plan with its undo");
+  expect(plan).toContain("Ask one question: start ⧉ build (one task) or ⎈ orchestrate (several tasks), revise the plan, or stop here");
+  expect(plan).toContain("Start only on a yes");
+  expect(plan).toContain("Start another capability only on the user's yes; a plan changed after that yes needs a new one");
   expect(plan).not.toContain("Suggest, don't dispatch");
   expect(plan).not.toContain("suggest ⎈ orchestrate to execute the entire plan and wait for confirmation");
   for (const body of [plan, orchestrate]) expect(body).toContain("Git, global installation and history permissions remain separate");

@@ -7,7 +7,8 @@ ARTIFACTS:
       Current plan with tasks, dependencies, and behavioral acceptance criteria.
       Its active position is derived from the docs-mapped current-plan path,
       not persisted lifecycle status. Plan writes this during the planning
-      session and may read existing plan context before replacing or refining it.
+      session, edits, adds or drops tasks when replanning, and reads existing
+      plan context before replacing or refining it.
   2:
     id: A2
     artifact: plan_archive
@@ -32,10 +33,11 @@ ARTIFACTS:
   5:
     id: A5
     artifact: todo
-    local_role: consumes
+    local_role: produces_and_consumes
     description: >-
-      Plan reads this to identify related known
-      issues that the plan should address.
+      Plan reads open TODOs to avoid planning work that is already filed. It
+      files one-cycle work, deferred scope and follow-ups as TODOs through the
+      TODO writer.
   6:
     id: A6
     artifact: health
@@ -63,7 +65,7 @@ ARTIFACTS:
     local_role: consumes
     description: >-
       Plan reads this first to resolve project-local artifact mappings and
-      reads the versioning block for version bump task generation.
+      reads version_files for version bump task generation.
   10:
     id: A10
     artifact: glossary

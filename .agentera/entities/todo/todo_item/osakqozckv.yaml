@@ -3,7 +3,7 @@ artifact: todo
 record:
   kind: feat
   target_version: 3.0.0
-  title: Start Discuss with every prior decision, open TODO and plan within a 20k-token goal.
+  title: Start Discuss and Plan with every prior decision, open TODO and plan within a 20k-token goal.
   requirements:
     - "capabilityContext/startup.ts carries decisions, open TODOs and plans for Discuss: full text while the set fits about 20k tokens, otherwise a one-line index of everything plus full text for items on the topic."
     - The index line is each decision's question and choice, and each TODO and plan title.
@@ -11,8 +11,10 @@ record:
     - Also carry the full decision profile content from report profile-grounding (12.8 KB today) when its validity is valid.
     - Mark the objective availability row deferred with its real reader; today it says included but the capsule has no objective data.
     - List vision, objective and decisions as Discuss protected write boundaries instead of vision, todo and objective, per the in-capability autonomy decision.
+    - Plan gets the same prior context from the same builder (plan audit, 2026-10-26); archived plans stay out of the index. Today Plan carries 3 TODO rows and defers decisions, vision and profile, and its instructions already tell it to run a detail_command when an included summary reports omitted rows.
   acceptance:
     - A Discuss start in this repository needs no separate decisions call and stays within the capsule and routed-start budgets.
+    - A Plan start in this repository needs no separate decisions call and stays within the capsule and routed-start budgets.
   release_blocker: false
   severity: normal
   status: open
@@ -20,7 +22,7 @@ record:
     schema_version: agentera.todoReconciliation.v1
     public:
       present: true
-      description: "[feat:3.0.0] Start Discuss with every prior decision, open TODO and plan within a 20k-token goal."
+      description: "[feat:3.0.0] Start Discuss and Plan with every prior decision, open TODO and plan within a 20k-token goal."
       severity: normal
       status: open
       order: 53

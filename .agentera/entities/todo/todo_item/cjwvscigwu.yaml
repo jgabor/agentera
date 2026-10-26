@@ -10,6 +10,7 @@ record:
     - Plan instructions say Build logs surprises, and plans carry a surprises list, but Build instructions never mention surprises or name a command, so surprises end up in progress records instead.
     - The plan writer already accepts a plan-level surprise through state plan update --id TASK --plan PLAN with an input that holds only surprise; it needs a task ID for a plan-level write and cannot be combined with task-field changes.
     - Name the supported surprise command in Build and Plan guidance, and make the command easy to discover from state plan explain, without adding a second surprise store.
+    - Build should state that a build cycle changes only task status and surprises, and that a change to a task's acceptance or the plan's scope goes back to plan. Plan's own rail on this was removed in the plan audit; Plan now names the surprise write (state plan update with only surprise).
   acceptance:
     - GIVEN Build guidance WHEN read THEN it names the exact command that records a plan surprise.
     - GIVEN that command on an open plan WHEN it runs THEN the surprise appears in the plan's surprises and no task field changes.

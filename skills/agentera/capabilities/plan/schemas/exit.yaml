@@ -3,32 +3,29 @@ EXIT_CONDITIONS:
     id: E1
     condition: complete
     description: >-
-      PLAN.md was written and approved (or skip level confirmed), the
-      adversarial review ran for full plans, and explicit save-and-execute
-      approval started build or orchestrate without another confirmation,
-      or planning-only approval left a suggested handoff without execution.
+      A plan was saved after a separate worker reviewed it, or a TODO was
+      saved, or the work was routed to build. Each write was reported with
+      its undo, and the user started execution or chose to stop.
     exit_signal: complete
   2:
     id: E2
     condition: flagged
     description: >-
-      The plan was produced but with caveats: adversarial critic issues
-      dismissed rather than resolved, work scope larger than ideal, or
-      acceptance criteria could not be made fully behavioral.
+      Saved with caveats: a self-review instead of a separate worker,
+      dismissed critic findings, unknowns still open at handoff, or a scope
+      larger than ideal.
     exit_signal: flagged
   3:
     id: E3
     condition: stuck
     description: >-
-      Cannot plan because the work description is too ambiguous to
-      decompose, required context files contain contradictions, or the
-      user declined to approve the plan with no clear revision path.
+      The work is too ambiguous to decompose, required context contradicts
+      itself, or a write failed.
     exit_signal: stuck
   4:
     id: E4
     condition: waiting
     description: >-
-      The feature or change to plan has not been specified with enough
-      detail to produce acceptance criteria, or key architectural
-      constraints are unknown and cannot be inferred from the codebase.
+      No topic and no answer yet, acceptance criteria need the user's input,
+      or the user must decide whether to replace an open plan.
     exit_signal: waiting

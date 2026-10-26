@@ -7,6 +7,7 @@ record:
   requirements:
     - Move the glossary consumer rules (about 2.6 KB in Discuss, also in Plan and Build) into one block composed at serve time.
     - A routed start through prime --input cannot pass --term-input, so a meaning-sensitive start costs a second full capsule; let the routed start carry the term.
+    - "Move Plan's autonomous handoff-intent rules (about 2.5 KB) to static detail with a one-line pointer, and replace the stale phrases \"Preserve Plan's ordinary clarification and approval gates\" and \"never alter ordinary Plan approval semantics\": saving a plan no longer asks."
   acceptance:
     - Discuss, Plan and Build serve identical glossary rules from one source, and a routed start returns glossary advice without a second prime call.
   release_blocker: false

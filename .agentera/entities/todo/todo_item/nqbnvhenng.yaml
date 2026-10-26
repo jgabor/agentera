@@ -7,6 +7,7 @@ record:
   requirements:
     - Each capability audit replaces its own approval gates for routine project-state writes with write-then-report, starting with findings filing in audit and research (findingsFiling.ts).
     - Gates for intent-recording writes (Discuss closeout, Optimize objective setup) and irreversible effects stay.
+    - "Plan is done (plan audit, 2026-10-26): it saves plans and TODOs without asking, reports each write with its undo, and asks only before starting build or orchestrate."
   acceptance:
     - No capability asks before a routine project-state write; each reports the change and its undo.
   release_blocker: false

@@ -100,8 +100,9 @@ HEADER:
     type: string
     required: true
     description: >-
-      Plan detail level. 'light' for small scoped work; 'full' for
-      multi-task plans with explicit acceptance criteria and review.
+      Plan detail level. New plans are 'full': multi-task plans with
+      explicit acceptance criteria and review. Work one build cycle can
+      finish is a TODO, so 'light' remains valid only for earlier plans.
     validation:
       - "Must be one of: light, full"
   2:

@@ -7,6 +7,7 @@ record:
   requirements:
     - Add an archival and reflection mechanism that compacts, consolidates and trims decisions and resolved or superseded TODOs through their typed writers.
     - Today this repository holds 74 decisions (282 KB) and 20 open TODOs (23 KB), about 75k tokens.
+    - "Include plans: 215 archived plans accumulate, and their scope.deferred lists hold 273 items that never reached a queue."
   acceptance:
     - Prior context for Discuss (decisions, open TODOs, plans) fits about 20k tokens in this repository without losing any decision's question and choice.
   release_blocker: false

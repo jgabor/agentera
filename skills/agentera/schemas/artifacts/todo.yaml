@@ -18,7 +18,7 @@ meta:
   artifact_type: human_facing
   path: "TODO.md"
   producer:
-    [document, audit, research, optimize, orchestrate, build, discuss, design]
+    [document, audit, research, optimize, orchestrate, build, discuss, design, plan]
   consumers: [status, all_skills]
   format: markdown
 
