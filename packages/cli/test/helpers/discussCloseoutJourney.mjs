@@ -3,7 +3,20 @@ import fs from "node:fs";
 import os from "node:os";
 import path from "node:path";
 
-export const discussScenarios = ["bundle", "refusal", "silence", "changed-proposal", "scoped-pivot", "qualified-gap", "resume", "writer-failure"];
+export const discussScenarios = ["approve", "refusal", "silence", "changed-proposal", "intent-gap", "scoped-pivot", "provisional", "writer-failure"];
+
+// The served Discuss rule each scenario follows; the journey asserts it is present.
+const RULES = {
+  approve: "append the decision, then file the follow-up work the decision calls for and report each write with its undo",
+  refusal: "Skip or silence writes nothing",
+  silence: "Skip or silence writes nothing",
+  "changed-proposal": '"Save this exact closeout?"',
+  "intent-gap": "If the user still ends, save nothing as firm and exit flagged with the gap named",
+  "scoped-pivot": "the conclusion contradicts prior decisions without acknowledgment",
+  provisional: "Record facts you cannot check as conditions in the decision",
+  "writer-failure": "if one fails, report what saved and what did not",
+  "pending-transaction": "if one fails, report what saved and what did not",
+};
 
 // Cooperative host model, not an LLM/UI test or enforcement of human consent.
 // Every observable save/read uses the supplied real CLI; no production consent store.
@@ -39,18 +52,12 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
     const detail = await call(["prime", "--context", "discuss", "--detail", "instructions", "--section", "instructions", "--limit", "20"]);
     assert.equal(detail.completeness.complete, true);
     const guidance = detail.items.map((item) => item.content).join("");
-    assert.ok(guidance.includes("Save this exact closeout?"));
-    assert.ok(!guidance.includes("Offer to capture and connect"));
-    const shared = await call(["schema", "--protocol", "--section", "OPERATING_RULES"]);
-    assert.equal(shared.completeness.complete, true);
-    assert.ok(JSON.stringify(shared).includes("whole-project audit"));
-    const inventory = await call(["state", "query", "--list-artifacts"]);
-    const design = inventory.artifacts.find((item) => item.artifact === "design");
-    assert.equal(design.path.exists, false);
+    assert.ok(guidance.includes(RULES[scenario]), `served Discuss instructions lack the ${scenario} rule`);
+    assert.ok(guidance.includes("Offer **Approve**, **Revise** and **Done (skip saving)**"));
+    assert.ok(guidance.includes("Larger or ordered work is a suggestion of ≡ plan that waits for the user's yes"));
     for (const [artifact, verb] of [
       ["decisions", "append"],
       ["todo", "create"],
-      ["plan", "update"],
     ]) {
       await call(["state", artifact, "explain", "--verb", verb, "--section", "detail"]);
     }
@@ -62,46 +69,31 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
       choice: "Retry all clients",
       reasoning: "Original scope",
       confidence: "firm",
-      feeds_into: "Existing client plan",
+      feeds_into: "Client retry work",
     };
     const previous = await call(["state", "decisions", "append", "--input", "-"], previousDecision);
-    const plan = await call(["state", "plan", "create", "--input", "-"], {
-      header: { level: "light", created: "2026-10-01", status: "open", title: "Client retry plan" },
-      what: "Specify retry scope for `code.ts` without changing code",
-      why: "Retain the selected scope",
-      scope: { included: ["client retry policy"], excluded: ["implementation"] },
-      tasks: [
-        {
-          number: 1,
-          name: "Specify client retries",
-          status: "pending",
-          acceptance: ["All clients retry"],
-        },
-      ],
-    });
-    const tasks = (await call(["state", "plan", "get", "--id", plan.id])).tasks;
-    const task = tasks[0];
-    assert.equal(task.record.status, "pending");
     const before = snapshot();
-    const pivot = scenario === "scoped-pivot";
-    const gap = scenario === "qualified-gap";
-    if (pivot || gap) {
-      trace.push({
-        kind: "question",
-        text: pivot ? "Allow a mobile-only exception?" : "Close with the missing design authority flagged?",
-        options: ["Accept scoped outcome", "Done"],
-      });
-      trace.push({ kind: "host-response", value: "Accept scoped outcome" });
+    const unchanged = () => assert.deepEqual(snapshot(), before);
+
+    if (scenario === "intent-gap") {
+      trace.push({ kind: "question", text: "Should retries cover desktop clients too?", options: ["Desktop too", "Mobile only", "Done"] });
+      trace.push({ kind: "host-response", value: "Done" });
+      trace.push({ kind: "gap", text: "Whether desktop clients retry is still open" });
+      unchanged();
+      return { scenario, status: "flagged", trace };
     }
+
+    const pivot = scenario === "scoped-pivot";
+    const provisional = scenario === "provisional";
     const decision = {
       date: "2026-10-01",
       question: "How should client retries be bounded?",
-      context: gap ? "Design authority is absent; its implications remain unverified." : "Bound the existing retry policy without implementation.",
+      context: provisional ? "Bound the retry policy. Condition: the mobile SDK's retry hook is unverified." : "Bound the existing retry policy without implementation.",
       alternatives: [{ name: pivot ? "Mobile-only exception" : "Bound all clients", status: "chosen" }],
       choice: pivot ? "Mobile-only exception to the prior all-client commitment; desktop remains unchanged." : "Bound retries to three attempts",
       reasoning: pivot ? `Explicit scoped exception to decision ${previous.id}; preserve its history.` : "Avoid unbounded retries",
-      confidence: gap ? "provisional" : "firm",
-      feeds_into: gap ? "Client retry plan; unresolved design tension, flagged closure" : "Client retry plan and TODO; implementation separately gated",
+      confidence: provisional ? "provisional" : "firm",
+      feeds_into: "Client retry TODO; implementation separately gated",
     };
     const todo = {
       schema_version: "agentera.todoCreateBatch.v1",
@@ -120,101 +112,62 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
         },
       ],
     };
-    const patch = { acceptance: [decision.choice] };
-    const update = ["state", "plan", "update", "--id", task.id, "--plan", plan.id, "--input", "-"];
-    const create = ["state", "todo", "create", "--input", "-"];
-    const preview = await call([...create, "--dry-run"], todo);
-    await call([...update, "--dry-run"], patch);
-    assert.deepEqual(snapshot(), before);
-    const proposal = {
-      decision,
-      todo,
-      plan: { id: plan.id, task: task.id, patch },
-      basis: { previous: previous.id, task: task.record },
-    };
+    const proposal = { decision, followUp: "one build cycle: file a TODO", basis: { previous: previous.id } };
     trace.push({ kind: "proposal", proposal: structuredClone(proposal) });
-    trace.push({
-      kind: "question",
-      text: "Save this exact closeout?",
-      options: ["Approve", "Revise", "Done (skip saving)"],
-    });
+    trace.push({ kind: "question", text: "Save this exact closeout?", options: ["Approve", "Revise", "Done (skip saving)"] });
     const response = scenario === "refusal" ? "Done (skip saving)" : scenario === "silence" ? null : "Approve";
     trace.push({ kind: "host-response", value: response });
     if (!response || response === "Done (skip saving)") {
-      assert.deepEqual(snapshot(), before);
+      unchanged();
       return { scenario, status: "waiting", trace };
     }
-    const approved = structuredClone(proposal);
     if (scenario === "changed-proposal") {
+      const approved = structuredClone(proposal);
       proposal.decision.choice = "Unlimited retries and implement now";
       assert.notDeepEqual(proposal, approved);
       trace.push({ kind: "blocked", reason: "Changed proposal requires fresh approval" });
-      assert.deepEqual(snapshot(), before);
+      unchanged();
       return { scenario, status: "waiting", trace };
     }
+
     const saved = await call(["state", "decisions", "append", "--input", "-"], decision);
     assert.deepEqual((await call(["state", "decisions", "get", "--id", saved.id])).entry.record, decision);
-    {
-      const apply = [...create, "--effect-sha256", preview.effect_sha256, "--yes"];
-      if (scenario === "resume" || scenario === "writer-failure") {
-        if (scenario === "writer-failure") {
-          // Fixture-only environmental failure: the approved public file becomes
-          // a directory. Restore its exact bytes, never change the approved batch.
-          const publicPath = path.join(root, "TODO.md");
-          const original = fs.readFileSync(publicPath);
-          fs.unlinkSync(publicPath);
-          fs.mkdirSync(publicPath);
-          await call(apply, todo, false);
-          assert.deepEqual((await call(["state", "plan", "get", "--id", plan.id])).tasks[0].record, task.record);
-          trace.push({
-            kind: "incomplete",
-            saved: [saved.id],
-            remaining: ["TODO batch", "dependent plan patch"],
-          });
-          fs.rmdirSync(publicPath);
-          fs.writeFileSync(publicPath, original);
-        } else
-          trace.push({
-            kind: "incomplete",
-            saved: [saved.id],
-            remaining: ["TODO batch", "dependent plan patch"],
-          });
-        // Current-state proof before continuing an unchanged approval. Native
-        // append replay proves no duplicate; it does not authorize new content.
-        assert.deepEqual((await call(["state", "decisions", "get", "--id", saved.id])).entry.record, decision);
-        assert.equal((await call(["state", "todo", "list"])).entries.length, 0);
-        const replay = await call(["state", "decisions", "append", "--input", "-"], decision);
-        assert.equal(replay.id, saved.id);
-        assert.equal(replay.operation.idempotent_replay, true);
-      }
-      if (scenario === "pending-transaction") {
+    const create = ["state", "todo", "create", "--input", "-"];
+    const preview = await call([...create, "--dry-run"], todo);
+    const apply = [...create, "--effect-sha256", preview.effect_sha256, "--yes"];
+
+    if (scenario === "writer-failure" || scenario === "pending-transaction") {
+      if (scenario === "writer-failure") {
+        // Fixture-only environmental failure: the public TODO file becomes a directory.
+        const publicPath = path.join(root, "TODO.md");
+        fs.unlinkSync(publicPath);
+        fs.mkdirSync(publicPath);
+        await call(apply, todo, false);
+      } else {
         interruptTodo(root, todo, preview.effect_sha256);
         const blocked = await call(["state", "todo", "list"], undefined, false);
         assert.ok(blocked.error.message.includes("pending"));
-        trace.push({
-          kind: "incomplete",
-          saved: [saved.id],
-          unverified: ["TODO batch"],
-          remaining: ["dependent plan patch"],
-        });
-        const pending = snapshot();
-        await call(apply, { ...todo, creates: [] }, false);
-        assert.deepEqual(snapshot(), pending);
       }
-      const created = await call(apply, todo);
-      const id = created.local_refs.retry;
-      assert.deepEqual((await call(["state", "todo", "get", "--id", id])).entry.record.requirements, [decision.choice]);
+      trace.push({ kind: "report", saved: [{ artifact: "decisions", id: saved.id }], notSaved: ["TODO: Bound client retry attempts"] });
       assert.deepEqual((await call(["state", "decisions", "get", "--id", saved.id])).entry.record, decision);
-      await call(update, patch);
-      const actual = (await call(["state", "plan", "get", "--id", plan.id])).tasks[0];
-      assert.deepEqual(actual.record.acceptance, patch.acceptance);
-      assert.equal(actual.record.status, "pending");
-      assert.equal(actual.record.name, task.record.name);
-      const complete = snapshot();
-      assert.equal((await call(apply, todo)).operation.idempotent_replay, true);
-      assert.equal((await call(update, patch)).operation.idempotent_replay, true);
-      assert.deepEqual(snapshot(), complete);
+      return { scenario, status: "stuck", trace };
     }
+
+    const created = await call(apply, todo);
+    const id = created.local_refs.retry;
+    assert.deepEqual((await call(["state", "todo", "get", "--id", id])).entry.record.requirements, [decision.choice]);
+    trace.push({
+      kind: "report",
+      saved: [
+        { artifact: "decisions", id: saved.id, undo: `remove uncommitted ${path.relative(root, saved.path)}` },
+        { artifact: "todo", id, undo: `state todo resolve --id ${id}` },
+      ],
+    });
+    const complete = snapshot();
+    assert.equal((await call(apply, todo)).operation.idempotent_replay, true);
+    assert.deepEqual(snapshot(), complete);
+    trace.push({ kind: "suggestion", capability: "plan", started: false });
+    assert.equal((await call(["state", "plan", "list"])).entries.length, 0);
     assert.deepEqual((await call(["state", "decisions", "get", "--id", previous.id])).entry.record, previousDecision);
     assert.equal((await call(["state", "decisions", "list"])).entries.length, 2);
     assert.equal(fs.readFileSync(path.join(root, ".agentera/vision.yaml"), "utf8"), "purpose: preserve unrelated vision\n");
@@ -222,8 +175,9 @@ export async function discussCloseoutJourney(cli, scenario, interruptTodo) {
     assert.ok(fs.readFileSync(path.join(root, "TODO.md"), "utf8").includes("User notes must remain."));
     const approvalQuestions = trace.filter((item) => item.kind === "question" && item.text === "Save this exact closeout?");
     assert.equal(approvalQuestions.length, 1);
-    trace.push({ kind: "verified", status: gap ? "flagged" : "complete" });
-    return { scenario, status: gap ? "flagged" : "complete", trace };
+    const status = provisional ? "flagged" : "complete";
+    trace.push({ kind: "verified", status });
+    return { scenario, status, trace };
   } finally {
     fs.rmSync(root, { recursive: true, force: true });
   }

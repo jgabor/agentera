@@ -1,10 +1,11 @@
 import path from "node:path";
 import { describe, expect, inject, it } from "vite-plus/test";
-import { closeout } from "../../src/capabilities/discuss/instructions.js";
+import instructions from "../../src/capabilities/discuss/instructions.js";
 import { discussCloseoutJourney, discussScenarios } from "../helpers/discussCloseoutJourney.mjs";
 import { coldProcessTest } from "../helpers/coldProcessTest.js";
 
 const fixture = inject("packageFixture");
+const closeout = instructions.slice(instructions.indexOf('### When the user picks "Done"'), instructions.indexOf("## Safety rails"));
 describe("Discuss closeout through extracted package", () => {
   it.concurrent.for(discussScenarios)("%s", async (scenario, context) => {
     const env = {

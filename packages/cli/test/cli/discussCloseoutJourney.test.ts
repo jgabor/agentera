@@ -60,6 +60,6 @@ describe("Discuss closeout, cooperative host with built CLI writers", () => {
         }
       },
     );
-    expect(result.trace.filter((item: { kind: string }) => item.kind === "proposal")).toHaveLength(1);
+    expect(result.trace.filter((item: { kind: string }) => item.kind === "proposal")).toHaveLength(scenario === "intent-gap" ? 0 : 1);
   });
 });
